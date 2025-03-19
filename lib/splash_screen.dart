@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'login_page.dart'; // Garanta que este arquivo está no mesmo diretório
+import 'design_system/themes/app_text_styles.dart';
+import 'login_page.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -25,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text('Novo SIX App!', style: Theme.of(context).textTheme.headlineMedium),
+            Text(kIsWeb? 'versao WEB SIX App!' : 'versao mobile SIX App!', style: AppTextStyles.heading),
             // Adicione aqui o seu logo ou outra imagem, se necessário
           ],
         ),
