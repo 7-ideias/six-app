@@ -17,7 +17,9 @@ dependencies:
   shared_preferences: ^2.2.3  # ✅ Adicionado para salvar a escolha do usuário
   flutter_localizations:
     sdk: flutter
-  intl: 0.19.0
+  intl: ^0.20.2
+dependency_overrides:
+  intl: ^0.20.2  # Força o uso da versão desejada
 
 dev_dependencies:
   flutter_test:
