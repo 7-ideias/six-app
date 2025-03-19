@@ -7,6 +7,7 @@ import 'cadastro_cliente.dart';
 import 'custom_nav_bar.dart';
 import 'widget_catalog.dart';
 import 'new_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -66,7 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text(kIsWeb? 'WEB -> Dashboard' : 'Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today),
