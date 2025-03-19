@@ -1,0 +1,10 @@
+{
+  "hello": "¡Hola!",
+  "welcome": "Bienvenido a nuestra aplicación",
+  "preferences_title": "Preferencias",
+  "preferences_language": "Seleccionar Idioma",
+  "preferences_dark_mode": "Activar Modo Oscuro",
+  "teste" : "em espanhol",
+  "dashboard_title": "Dashboard",
+  "dashboard_web_title": "WEB -> em espanhol"
+}

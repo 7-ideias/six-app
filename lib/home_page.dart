@@ -7,7 +7,10 @@ import 'cadastro_cliente.dart';
 import 'custom_nav_bar.dart';
 import 'widget_catalog.dart';
 import 'new_screen.dart';
+import 'preferences_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -68,7 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(kIsWeb? 'WEB -> Dashboard' : 'Dashboard'),
+        title: Text(kIsWeb ? AppLocalizations.of(context)!.dashboard_web_title : AppLocalizations.of(context)!.dashboard_title),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today),
@@ -89,9 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
               accountEmail: Text("email@exemplo.com"),
               currentAccountPicture: CircleAvatar(
                 backgroundImage: _image != null ? FileImage(_image!) : null,
-                child: _image == null
-                    ? Icon(Icons.camera_alt, size: 24.0)
-                    : null,
+                child: _image == null ? Icon(Icons.camera_alt, size: 24.0) : null,
               ),
               decoration: BoxDecoration(
                 color: Colors.blue,
@@ -160,7 +161,16 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               ),
             ),
-
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('Preferências'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => PreferencesScreen()),
+                );
+              },
+            ),
           ],
         ),
       ),

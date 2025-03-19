@@ -15,6 +15,9 @@ dependencies:
   http: ^0.13.3
   provider: ^6.1.2  # ✅ Adicionado para gerenciar o estado do tema
   shared_preferences: ^2.2.3  # ✅ Adicionado para salvar a escolha do usuário
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.19.0
 
 dev_dependencies:
   flutter_test:
@@ -22,6 +25,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/images/placeholder.png
