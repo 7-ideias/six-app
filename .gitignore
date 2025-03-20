@@ -1,7 +1,8 @@
-!/pubspec.lock
+!/pubspecx.lock
 !/pubspec.yaml
-!/pubspec.lock
+!/pubspecx.lock
 /.idea/
 /build/
 /.dart_tool/
 /assets/translations/
+!/pubspec.lock

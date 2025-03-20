@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
+import 'on_boarding.dart';
 import 'theme_provider.dart';
 import 'theme.dart';
-import 'splash_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,18 +16,21 @@ void main() async {
       ? Locale(savedLanguage.split("_")[0], savedLanguage.split("_")[1])
       : Locale('en', 'US');
 
+  bool hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
-      child: MyApp(initialLocale: initialLocale),
+      child: MyApp(initialLocale: initialLocale, hasSeenOnboarding: hasSeenOnboarding),
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
   final Locale initialLocale;
+  final bool hasSeenOnboarding;
 
-  const MyApp({super.key, required this.initialLocale});
+  const MyApp({super.key, required this.initialLocale, required this.hasSeenOnboarding});
 
   @override
   MyAppState createState() => MyAppState();
@@ -58,7 +62,7 @@ class MyAppState extends State<MyApp> {
       themeMode: themeProvider.themeMode,
       theme: lightTheme,
       darkTheme: darkTheme,
-      locale: _locale, // ✅ Define o idioma global
+      locale: _locale,
       supportedLocales: [
         Locale('en', 'US'),
         Locale('pt', 'BR'),
@@ -70,7 +74,7 @@ class MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: SplashScreen(),
+      home: widget.hasSeenOnboarding ? LoginPage() : OnboardingScreen(),
     );
   }
 }
