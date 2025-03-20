@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'home_page.dart'; // Adjust this import based on your project structure.
+import 'home_page_mobile.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _navigateToHome() {
     // if (_loginController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Flutter Demo Home Page')));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageMobile(title: 'Flutter Demo Home Page')));
     // } else {
     //   ScaffoldMessenger.of(context).showSnackBar(
     //     const SnackBar(content: Text("Login and Password must not be empty!")),
@@ -34,7 +35,7 @@ class _LoginPageState extends State<LoginPage> {
         child: SingleChildScrollView(
           child: Container(
             padding: const EdgeInsets.all(16.0),
-            width: MediaQuery.of(context).size.width * 0.6,
+            width: kIsWeb ? MediaQuery.of(context).size.width * 0.25 : MediaQuery.of(context).size.width * 0.6,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[

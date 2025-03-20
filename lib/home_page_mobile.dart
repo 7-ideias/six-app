@@ -1,3 +1,4 @@
+import 'package:appplanilha/home_page_web.dart';
 import 'package:appplanilha/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -12,16 +13,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomePageMobile extends StatefulWidget {
+  const HomePageMobile({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePageMobile> createState() => _HomePageMobileState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageMobileState extends State<HomePageMobile> {
   DateTimeRange? _selectedDateRange;
   int _selectedIndex = 0;
 
@@ -69,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
       {'title': 'OTs em espera', 'count': '11'},
     ];
 
-    return Scaffold(
+    return kIsWeb ? HomePageWeb() : Scaffold(
       appBar: AppBar(
         title: Text(kIsWeb ? AppLocalizations.of(context)!.dashboard_web_title : AppLocalizations.of(context)!.dashboard_title),
         actions: [
