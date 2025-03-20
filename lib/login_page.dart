@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'home_page.dart'; // Adjust this import based on your project structure.
 
 class LoginPage extends StatefulWidget {
@@ -41,8 +41,8 @@ class _LoginPageState extends State<LoginPage> {
                 TextFormField(
                   controller: _loginController,
                   decoration: InputDecoration(
-                    hintText: 'Login',
-                    labelText: 'Login',
+                    hintText: AppLocalizations.of(context)!.login.toUpperCase(),
+                    labelText: AppLocalizations.of(context)!.login.toUpperCase(),
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
@@ -52,8 +52,8 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: 'Password',
-                    labelText: 'Password',
+                    hintText: AppLocalizations.of(context)!.senha.toUpperCase(),
+                    labelText: AppLocalizations.of(context)!.senha.toUpperCase(),
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.lock),
                   ),
@@ -64,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size.fromHeight(50), // makes the button taller
                   ),
-                  child: const Text('Follow', style: TextStyle(fontSize: 18)),
+                  child: Text(AppLocalizations.of(context)!.entrar.toUpperCase(), style: TextStyle(fontSize: 18)),
                 ),
               ],
             ),

@@ -6,5 +6,9 @@
   "preferences_dark_mode": "Enable Dark Mode",
   "teste" : "em default",
   "dashboard_title": "Dashboard",
-  "dashboard_web_title": "WEB -> em default"
+  "dashboard_web_title": "WEB -> em default",
+  "bemvindo" : "welcome",
+  "login" : "login",
+  "senha" : "password",
+  "entrar" : "entrar"
 }

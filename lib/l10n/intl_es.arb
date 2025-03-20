@@ -6,5 +6,9 @@
   "preferences_dark_mode": "Activar Modo Oscuro",
   "teste" : "em espanhol",
   "dashboard_title": "Dashboard",
-  "dashboard_web_title": "WEB -> em espanhol"
+  "dashboard_web_title": "WEB -> em espanhol",
+  "bemvindo" : "welcome",
+  "login" : "login",
+  "senha" : "password",
+  "entrar" : "entrar"
 }
