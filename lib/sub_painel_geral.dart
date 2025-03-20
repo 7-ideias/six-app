@@ -1,12 +1,10 @@
-import 'package:appplanilha/theme_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SubPainelGeral extends StatelessWidget {
   final Widget body;
+  final String textoDaAppBar;
 
-  const SubPainelGeral({Key? key, required this.body}) : super(key: key);
+  const SubPainelGeral({super.key, required this.body, required this.textoDaAppBar});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +21,7 @@ class SubPainelGeral extends StatelessWidget {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Painel Administrativo'),
+                Text(textoDaAppBar),
                 IconButton(
                   icon: Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
@@ -32,34 +30,20 @@ class SubPainelGeral extends StatelessWidget {
             ),
             backgroundColor: Colors.blue,
           ),
-          body: Column(
-            children: [
-              body,
-              ListTile(
-                leading: const Icon(Icons.color_lens),
-                title: Text(AppLocalizations.of(context)!.preferences_dark_mode),
-                trailing: Switch(
-                  value: Provider.of<ThemeProvider>(context).themeMode == ThemeMode.dark,
-                  onChanged: (value) {
-                    Provider.of<ThemeProvider>(context, listen: false).toggleTheme(value);
-                  },
-                ),
-              ),
-            ],
-          ),
+          body: body
         ),
       ),
     );
   }
 }
 
-void showSubPainel(BuildContext context, Widget body) {
+void showSubPainel(BuildContext context, Widget body, String textoDaAppBar) {
   showDialog(
     context: context,
     barrierDismissible: true,
     barrierColor: Colors.black.withOpacity(0.5),
     builder: (BuildContext context) {
-      return SubPainelGeral(body: body);
+      return SubPainelGeral(body: body, textoDaAppBar: textoDaAppBar,);
     },
   );
 }

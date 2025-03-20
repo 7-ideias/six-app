@@ -1,3 +1,5 @@
+import 'package:appplanilha/sub_painel_cadastro_produto.dart';
+import 'package:appplanilha/sub_painel_configuracoes.dart';
 import 'package:appplanilha/sub_painel_geral.dart';
 import 'package:flutter/material.dart';
 
@@ -16,9 +18,7 @@ class HomePageWeb extends StatelessWidget {
                   'Painel Administrativo'
                 ], onSelect: (value) {
                   if (value == 'Painel Administrativo') {
-                    showSubPainel(context, Center(
-                      child: Text('Conteúdo do Painel Administrativo', style: TextStyle(fontSize: 18)),
-                    ));
+                    showSubPainelConfiguracoes(context, 'Configurações');
                   }
                 }),
                 _buildMenuItem(context, 'Banco de Dados/Backup', [
@@ -33,7 +33,11 @@ class HomePageWeb extends StatelessWidget {
                   'Clientes',
                   'Produtos',
                   'Fornecedores'
-                ]),
+                ], onSelect: (value) {
+                  if (value == 'Produtos') {
+                    showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+                  }
+                }),
                 _buildMenuItem(context, 'Relatórios', [
                   'Vendas',
                   'Estoque',
