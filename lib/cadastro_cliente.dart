@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class CadastroClienteScreen extends StatefulWidget {
   @override
-  _CadastroClienteScreenState createState() => _CadastroClienteScreenState();
+  CadastroClienteScreenState createState() => CadastroClienteScreenState();
 }
 
-class _CadastroClienteScreenState extends State<CadastroClienteScreen> {
+class CadastroClienteScreenState extends State<CadastroClienteScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _cpfCnpjController = TextEditingController();

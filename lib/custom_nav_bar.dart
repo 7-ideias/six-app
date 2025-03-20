@@ -25,9 +25,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       onTap: _onNavItemTapped,
       items: [
         _buildNavItem(Icons.chat, "Chat"),
-        _buildNavItem(Icons.search, "Buscar"),
+        // _buildNavItem(Icons.search, "Buscar"),
         _buildNavItem(Icons.radio_button_checked, "Home"), // Ícone do meio com destaque
-        _buildNavItem(Icons.notifications, "Notificações"),
+        // _buildNavItem(Icons.notifications, "Notificações"),
         _buildNavItem(Icons.person, "Perfil"),
       ],
     );
