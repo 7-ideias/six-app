@@ -73,7 +73,7 @@ class _CadastroClienteScreenState extends State<CadastroClienteScreen> {
                 decoration: InputDecoration(labelText: 'Estado'),
                 validator: (value) => value!.isEmpty ? 'Digite o estado' : null,
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 28),
               ElevatedButton(
                 onPressed: _salvarCadastro,
                 child: Text('Salvar Cadastro'),
