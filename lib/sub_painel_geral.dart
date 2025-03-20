@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 
-class SubPainelGeral extends StatelessWidget {
+class SubPainelGeral extends StatefulWidget {
   final Widget body;
   final String textoDaAppBar;
 
   const SubPainelGeral({super.key, required this.body, required this.textoDaAppBar});
 
   @override
+  State<SubPainelGeral> createState() => _SubPainelGeralState();
+}
+
+class _SubPainelGeralState extends State<SubPainelGeral> {
+  @override
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.8,
+        width: MediaQuery.of(context).size.width * 0.9,
+        height: MediaQuery.of(context).size.height * 0.9,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
@@ -21,7 +26,7 @@ class SubPainelGeral extends StatelessWidget {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(textoDaAppBar),
+                Text(widget.textoDaAppBar),
                 IconButton(
                   icon: Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
@@ -30,7 +35,7 @@ class SubPainelGeral extends StatelessWidget {
             ),
             backgroundColor: Colors.blue,
           ),
-          body: body
+          body: widget.body
         ),
       ),
     );
@@ -38,12 +43,13 @@ class SubPainelGeral extends StatelessWidget {
 }
 
 void showSubPainel(BuildContext context, Widget body, String textoDaAppBar) {
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
-    builder: (BuildContext context) {
-      return SubPainelGeral(body: body, textoDaAppBar: textoDaAppBar,);
-    },
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: true,
+      pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+        opacity: animation,
+        child: SubPainelGeral(body: body, textoDaAppBar: textoDaAppBar),
+      ),
+    ),
   );
 }
