@@ -1,6 +1,5 @@
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
-import 'package:appplanilha/sub_painel_geral.dart';
 import 'package:flutter/material.dart';
 
 class HomePageWeb extends StatelessWidget {
