@@ -25,10 +25,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_gen_runner: ^5.3.0 # Verifique a versão mais recente
+  build_runner: ^2.4.6
 
 flutter:
-  generate: true
   uses-material-design: true
+  generate: true
   assets:
     - assets/images/placeholder.png
 

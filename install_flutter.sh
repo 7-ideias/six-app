@@ -11,3 +11,7 @@ flutter clean
 flutter config --enable-web
 flutter pub get
 flutter gen-l10n
+
+echo "ARQUIVOS GERADOS:"
+find . -name "app_localizations.dart"
+
