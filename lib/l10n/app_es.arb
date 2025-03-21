@@ -1,4 +1,5 @@
 {
+  "@@locale": "es",
   "hello": "Olá!",
   "welcome": "Bem-vindo ao nosso app",
   "preferences_title": "Preferências",

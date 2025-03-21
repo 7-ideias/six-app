@@ -32,11 +32,17 @@ flutter:
   assets:
     - assets/images/placeholder.png
 
-flutter_gen-l10n:
+flutter_gen:
+  integrations:
+    flutter_localizations: true
+
+# Configuração de internacionalização
+localizations:
   arb-dir: lib/l10n
   template-arb-file: app_en.arb
   output-localization-file: app_localizations.dart
   output-class: AppLocalizations
-  supported-locales:
+  preferred-supported-locales:
     - en
     - pt
+    - es
