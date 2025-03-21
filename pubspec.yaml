@@ -21,13 +21,9 @@ dependencies:
   smooth_page_indicator: ^1.1.0
   fl_chart: ^0.63.0
 
-dev_dependencies:
-  flutter_gen_runner: ^5.10.0
-  build_runner: ^2.4.6
-
 flutter:
-  uses-material-design: true
   generate: true
+  uses-material-design: true
   assets:
     - assets/images/placeholder.png
 
@@ -43,3 +39,4 @@ flutter_localizations:
     - en
     - pt
     - es
+
