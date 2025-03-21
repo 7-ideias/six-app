@@ -7,5 +7,6 @@ esses comandos sao necessarios para subir a app
 flutter clean
 flutter pub get
 flutter gen-l10n
+flutter build web
 ```
 
