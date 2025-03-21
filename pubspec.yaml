@@ -27,10 +27,7 @@ flutter:
   assets:
     - assets/images/placeholder.png
 
-flutter_gen:
-  output: lib/gen/
-
-flutter_localizations:
+generate-l10n:
   arb-dir: lib/l10n
   template-arb-file: app_en.arb
   output-localization-file: app_localizations.dart
@@ -39,4 +36,3 @@ flutter_localizations:
     - en
     - pt
     - es
-
