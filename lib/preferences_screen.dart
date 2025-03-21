@@ -12,7 +12,7 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
-  late Locale _selectedLocale;
+  Locale? _selectedLocale;
   bool _isDarkMode = false;
 
   final List<Map<String, dynamic>> _languages = [
@@ -69,6 +69,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    if (_selectedLocale == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text("Loading...")),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.preferences_title)), // ✅ Tradução
       body: ListView(
