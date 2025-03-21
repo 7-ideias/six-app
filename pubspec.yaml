@@ -22,10 +22,7 @@ dependencies:
   fl_chart: ^0.63.0
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^5.0.0
-  flutter_gen_runner: ^5.3.0 # Verifique a versão mais recente
+  flutter_gen_runner: ^5.10.0
   build_runner: ^2.4.6
 
 flutter:
@@ -35,10 +32,9 @@ flutter:
     - assets/images/placeholder.png
 
 flutter_gen:
-  integrations:
-    flutter_localizations: true
+  output: lib/gen/
 
-localizations:
+flutter_localizations:
   arb-dir: lib/l10n
   template-arb-file: app_en.arb
   output-localization-file: app_localizations.dart
