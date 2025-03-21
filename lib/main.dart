@@ -1,8 +1,10 @@
+import 'package:appplanilha/login_page_mobile.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'design_system/themes/app_theme.dart';
-import 'login_page.dart';
+import 'login_page_web.dart';
 import 'on_boarding.dart';
 import 'theme_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -74,7 +76,7 @@ class MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: widget.hasSeenOnboarding ? LoginPage() : OnboardingScreen(),
+      home: widget.hasSeenOnboarding ? kIsWeb ? LoginPageWeb() : LoginPageMobile() : OnboardingScreen(),
     );
   }
 }

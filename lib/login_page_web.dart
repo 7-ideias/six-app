@@ -3,14 +3,14 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'home_page_mobile.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class LoginPageWeb extends StatefulWidget {
+  const LoginPageWeb({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _LoginPageWebState createState() => _LoginPageWebState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageWebState extends State<LoginPageWeb> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 

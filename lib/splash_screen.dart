@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'design_system/themes/app_text_styles.dart';
-import 'login_page.dart';
+import 'login_page_mobile.dart';
+import 'login_page_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SplashScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => kIsWeb ? LoginPageWeb() : LoginPageMobile()));
     });
   }
 

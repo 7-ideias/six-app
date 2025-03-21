@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'login_page.dart';
+import 'login_page_mobile.dart';
+import 'login_page_web.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class OnboardingScreen extends StatefulWidget {
   @override
@@ -51,7 +53,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  MaterialPageRoute(builder: (context) => kIsWeb ? LoginPageWeb() : LoginPageMobile()),
                 );
               },
               child: Text("Começar"),
