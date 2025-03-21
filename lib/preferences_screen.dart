@@ -105,10 +105,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.dark_mode),,
+            leading: Icon(Icons.dark_mode),
             title: Text('preferences_dark_mode'),
-            // ✅ Tradução
-            // title: Text(AppLocalizations.of(context)!.preferences_dark_mode), // ✅ Traduçãtrailing: Switch(
+            // title: Text(AppLocalizations.of(context)!.preferences_dark_mode), //
+            trailing: Switch(
               value: _isDarkMode,
               onChanged: _toggleDarkMode,
             ),
