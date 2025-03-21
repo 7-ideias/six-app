@@ -1,16 +1,18 @@
+import 'dart:io';
+
 import 'package:appplanilha/home_page_web.dart';
 import 'package:appplanilha/theme_provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
 import 'cadastro_cliente.dart';
 import 'custom_nav_bar.dart';
-import 'widget_catalog.dart';
 import 'new_screen.dart';
 import 'preferences_screen.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'widget_catalog.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 
 class HomePageMobile extends StatefulWidget {
@@ -55,7 +57,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
     return kIsWeb ? HomePageWeb() : Scaffold(
       appBar: AppBar(
-        title: Text(kIsWeb ? AppLocalizations.of(context)!.dashboard_web_title : AppLocalizations.of(context)!.dashboard_title),
+        title: Text('dashboard_title'),
+        // title: Text(kIsWeb ? AppLocalizations.of(context)!.dashboard_web_title : AppLocalizations.of(context)!.dashboard_title),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today),

@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'home_page_mobile.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'home_page_mobile.dart';
 
 class LoginPageMobile extends StatefulWidget {
   const LoginPageMobile({super.key});
@@ -42,8 +43,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                 TextFormField(
                   controller: _loginController,
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.login.toUpperCase(),
-                    labelText: AppLocalizations.of(context)!.login.toUpperCase(),
+                    hintText: 'login',
+                    // hintText: AppLocalizations.of(context)!.login.toUpperCase(),
+                    labelText: 'login',
+                    // labelText: AppLocalizations.of(context)!.login.toUpperCase(),
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
@@ -53,8 +56,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.senha.toUpperCase(),
-                    labelText: AppLocalizations.of(context)!.senha.toUpperCase(),
+                    hintText: 'senha',
+                    // hintText: AppLocalizations.of(context)!.senha.toUpperCase(),
+                    // labelText: AppLocalizations.of(context)!.senha.toUpperCase(),
+                    labelText: 'senha',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.lock),
                   ),
@@ -65,7 +70,8 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size.fromHeight(50), // makes the button taller
                   ),
-                  child: Text(AppLocalizations.of(context)!.entrar.toUpperCase(), style: TextStyle(fontSize: 18)),
+                  child: Text('entrar', style: TextStyle(fontSize: 18)),
+                  // child: Text(AppLocalizations.of(context)!.entrar.toUpperCase(), style: TextStyle(fontSize: 18)),
                 ),
               ],
             ),

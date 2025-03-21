@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:appplanilha/theme_provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'main.dart';
 
@@ -78,13 +78,17 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.preferences_title)), // ✅ Tradução
+      appBar: AppBar(title: Text('preferences_title')),
+      // ✅ Tradução
+      // appBar: AppBar(title: Text(AppLocalizations.of(context)!.preferences_title)), // ✅ Tradução
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           ListTile(
             leading: Icon(Icons.language),
-            title: Text(AppLocalizations.of(context)!.preferences_language), // ✅ Tradução
+            title: Text('preferences_title'),
+            // ✅ Tradução
+            // title: Text(AppLocalizations.of(context)!.preferences_language), // ✅ Tradução
             subtitle: Text(
               _languages.firstWhere((element) => element['locale'] == _selectedLocale)['name'],
             ),
@@ -101,9 +105,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.dark_mode),
-            title: Text(AppLocalizations.of(context)!.preferences_dark_mode), // ✅ Tradução
-            trailing: Switch(
+            leading: Icon(Icons.dark_mode),,
+            title: Text('preferences_dark_mode'),
+            // ✅ Tradução
+            // title: Text(AppLocalizations.of(context)!.preferences_dark_mode), // ✅ Traduçãtrailing: Switch(
               value: _isDarkMode,
               onChanged: _toggleDarkMode,
             ),

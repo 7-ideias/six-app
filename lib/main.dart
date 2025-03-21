@@ -8,7 +8,7 @@ import 'login_page_web.dart';
 import 'on_boarding.dart';
 import 'theme_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,7 +71,7 @@ class MyAppState extends State<MyApp> {
         Locale('es', 'ES'),
       ],
       localizationsDelegates: [
-        AppLocalizations.delegate,
+        // AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
