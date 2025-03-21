@@ -1,0 +1,4 @@
+{
+  "buildCommand": "flutter pub get && flutter gen-l10n && flutter build web --release",
+  "outputDirectory": "build/web"
+}
