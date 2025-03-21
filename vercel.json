@@ -1,5 +1,4 @@
 {
-  "installCommand": "./vercel_build.sh",
-  "buildCommand": "",
+  "buildCommand": "flutter pub get && flutter gen-l10n && flutter build web --release",
   "outputDirectory": "build/web"
 }
