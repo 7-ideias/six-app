@@ -1,3 +1,4 @@
+import 'package:appplanilha/presentation/pages/sub_painel_web_produto_lista.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
 import 'package:flutter/material.dart';
@@ -30,10 +31,33 @@ class HomePageWeb extends StatelessWidget {
                   _buildMenuItem(context, 'Cadastros', [
                     'Clientes',
                     'Produtos',
-                    'Fornecedores'
+                    'Fornecedores',
+                    'Produtos List'
                   ], onSelect: (value) {
                     if (value == 'Produtos') {
                       showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+                    }
+                    if (value == 'Produtos List') {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return Dialog(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            child: Container(
+                              width: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .width * 0.8,
+                              height: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height * 0.8,
+                              child: SubPainelWebProdutoLista(),
+                            ),
+                          );
+                        },
+                      );
                     }
                   }),
                   _buildMenuItem(context, 'Relatórios', [

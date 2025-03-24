@@ -1,14 +1,18 @@
 import 'package:appplanilha/login_page_mobile.dart';
+import 'package:appplanilha/providers/BaseProviderParaListas.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'core/services/produto_service.dart';
+import 'data/models/produto_model.dart';
 import 'design_system/themes/app_theme.dart';
 import 'login_page_web.dart';
 import 'on_boarding.dart';
 import 'theme_provider.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +25,20 @@ void main() async {
   bool hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
-      child: MyApp(initialLocale: initialLocale, hasSeenOnboarding: hasSeenOnboarding),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(
+          create: (_) =>
+              BaseProviderParaListas<ProdutoModel>(
+                fetchFunction: ProdutoService().ProdutosList,
+              ),
+        ),
+      ],
+      child: MyApp(
+        initialLocale: initialLocale,
+        hasSeenOnboarding: hasSeenOnboarding,
+      ),
     ),
   );
 }
