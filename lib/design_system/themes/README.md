@@ -1,0 +1,1 @@
+# Tema light/dark, cores, tipografia, etc.
