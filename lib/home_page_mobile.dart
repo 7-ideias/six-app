@@ -1,7 +1,8 @@
 import 'dart:io';
 
 import 'package:appplanilha/home_page_web.dart';
-import 'package:appplanilha/theme_provider.dart';
+import 'package:appplanilha/presentation/pages/produtoList_mobile_screen.dart';
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -108,6 +109,17 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => CadastroClienteScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.add_call),
+              title: Text('Cadastro de Produtos'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ProdutolistMobileScreen()),
                 );
               },
             ),
