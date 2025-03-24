@@ -1,15 +1,16 @@
 class ProdutoModel {
-  final int id;
-  final String nome;
-  final double preco;
+  final String id;
+  final String nomeProduto;
+  final double precoVenda;
 
-  ProdutoModel({required this.id, required this.nome, required this.preco});
+  ProdutoModel(
+      {required this.id, required this.nomeProduto, required this.precoVenda});
 
   factory ProdutoModel.fromJson(Map<String, dynamic> json) {
     return ProdutoModel(
       id: json['id'],
-      nome: json['nome'],
-      preco: json['preco'].toDouble(),
+      nomeProduto: json['nomeProduto'],
+      precoVenda: json['precoVenda'].toDouble(),
     );
   }
 }
