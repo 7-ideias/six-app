@@ -1,7 +1,8 @@
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:appplanilha/theme_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'main.dart';

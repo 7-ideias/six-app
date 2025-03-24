@@ -12,7 +12,7 @@ import 'data/models/produto_model.dart';
 import 'design_system/themes/app_theme.dart';
 import 'login_page_web.dart';
 import 'on_boarding.dart';
-import 'theme_provider.dart';
+import 'providers/theme_provider.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart'; 
 
 void main() async {
