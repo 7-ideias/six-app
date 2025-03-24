@@ -10,8 +10,9 @@ Function(String)? onMensagemRecebida;
 void connectStomp() {
   stompClient = StompClient(
     config: StompConfig.SockJS(
-      url: 'http://localhost:8082/ws',
-      // url: 'http://10.0.2.2:8082/ws',
+      // url: 'http://localhost:8082/ws',
+      url: 'http://10.0.2.2:8082/ws',
+      // ASSIM FUNCIONA. ESSE É O CORRETO PARA LOCAL
       onConnect: onConnectCallback,
       onWebSocketError: (error) => print('Erro no WebSocket: $error'),
       onDisconnect: (frame) => print('WebSocket desconectado'),
