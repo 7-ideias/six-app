@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:appplanilha/sub_painel_geral.dart';
+import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../providers/BaseProviderParaListas.dart';
 
-class SubPainelWebProdutoLista extends SubPainelGeral {
+class SubPainelWebProdutoLista extends SubPainelWebGeneral {
   SubPainelWebProdutoLista({super.key})
     : super(body: ProdutoListaBody(), textoDaAppBar: 'Lista de Produtos');
 }
@@ -64,6 +64,24 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     setState(() {
       produtosFiltrados = resultado;
     });
+  }
+
+  void retornarProdutosList(BuildContext context) {
+    final provider = Provider.of<BaseProviderParaListas<ProdutoModel>>(
+      context,
+      listen: false,
+    );
+    provider
+        .carregar(
+          headers: {
+            'Content-Type': 'application/json',
+            'idUsuario': '2ea5e611cab0439a917229e44e9301a8',
+            'idColaborador': '2ea5e611cab0439a917229e44e9301a8',
+          },
+        )
+        .then((_) {
+          atualizarListaComProvider(provider.items);
+        });
   }
 
   @override
@@ -174,27 +192,37 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             child: const Icon(Icons.refresh),
           ),
         ),
+        Positioned(
+          bottom: 90,
+          right: 20,
+          child: Material(
+            elevation: 6,
+            borderRadius: BorderRadius.circular(30),
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                      Icons.format_list_numbered, color: Colors.blueAccent),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${produtosFiltrados.length} itens encontrados',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
       ],
     );
     ;
-  }
-
-  void retornarProdutosList(BuildContext context) {
-    final provider = Provider.of<BaseProviderParaListas<ProdutoModel>>(
-      context,
-      listen: false,
-    );
-    provider
-        .carregar(
-          headers: {
-            'Content-Type': 'application/json',
-            'idUsuario': '2ea5e611cab0439a917229e44e9301a8',
-            'idColaborador': '2ea5e611cab0439a917229e44e9301a8',
-          },
-        )
-        .then((_) {
-          atualizarListaComProvider(provider.items);
-        });
   }
 }
 

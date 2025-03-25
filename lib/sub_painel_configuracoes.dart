@@ -1,10 +1,10 @@
-import 'package:appplanilha/sub_painel_geral.dart';
-import 'package:appplanilha/theme_provider.dart';
+import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class SubPainelConfiguracoes extends SubPainelGeral {
+class SubPainelConfiguracoes extends SubPainelWebGeneral {
   const SubPainelConfiguracoes({super.key, required super.body, required super.textoDaAppBar});
 }
 
