@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:appplanilha/sub_painel_geral.dart';
+import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../providers/BaseProviderParaListas.dart';
 
-class SubPainelWebProdutoLista extends SubPainelGeral {
+class SubPainelWebProdutoLista extends SubPainelWebGeneral {
   SubPainelWebProdutoLista({super.key})
     : super(body: ProdutoListaBody(), textoDaAppBar: 'Lista de Produtos');
 }
@@ -64,6 +64,24 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     setState(() {
       produtosFiltrados = resultado;
     });
+  }
+
+  void retornarProdutosList(BuildContext context) {
+    final provider = Provider.of<BaseProviderParaListas<ProdutoModel>>(
+      context,
+      listen: false,
+    );
+    provider
+        .carregar(
+          headers: {
+            'Content-Type': 'application/json',
+            'idUsuario': '2ea5e611cab0439a917229e44e9301a8',
+            'idColaborador': '2ea5e611cab0439a917229e44e9301a8',
+          },
+        )
+        .then((_) {
+          atualizarListaComProvider(provider.items);
+        });
   }
 
   @override
@@ -177,24 +195,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ],
     );
     ;
-  }
-
-  void retornarProdutosList(BuildContext context) {
-    final provider = Provider.of<BaseProviderParaListas<ProdutoModel>>(
-      context,
-      listen: false,
-    );
-    provider
-        .carregar(
-          headers: {
-            'Content-Type': 'application/json',
-            'idUsuario': '2ea5e611cab0439a917229e44e9301a8',
-            'idColaborador': '2ea5e611cab0439a917229e44e9301a8',
-          },
-        )
-        .then((_) {
-          atualizarListaComProvider(provider.items);
-        });
   }
 }
 

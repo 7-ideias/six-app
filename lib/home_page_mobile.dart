@@ -202,9 +202,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   mainAxisSpacing: 12,
                   childAspectRatio: 1.6,
                 ),
-                itemCount: HomePageWeb().data.length,
+                itemCount: data.length,
                 itemBuilder: (context, index) {
-                  return _buildDashboardCard(HomePageWeb().data[index]['title']!, HomePageWeb().data[index]['count']!);
+                  return _buildDashboardCard(
+                    data[index]['title']!,
+                    data[index]['count']!,
+                  );
                 },
               ),
             ),
@@ -214,6 +217,23 @@ class _HomePageMobileState extends State<HomePageMobile> {
       bottomNavigationBar: kIsWeb? null : CustomBottomNavBar(),
     );
   }
+
+  static final List<Map<String, String>> data = [
+    {'title': 'OTs em revisão', 'count': '33'},
+    {'title': 'OTs em processo', 'count': '27'},
+    {'title': 'OTs finalizadas', 'count': '94'},
+    {'title': 'OTs atrasadas', 'count': '10'},
+    {'title': 'OTs pendentes', 'count': '15'},
+    {'title': 'OTs canceladas', 'count': '7'},
+    {'title': 'OTs em auditoria', 'count': '12'},
+    {'title': 'OTs para reabertura', 'count': '5'},
+    {'title': 'OTs em verificação', 'count': '9'},
+    {'title': 'OTs com erro', 'count': '4'},
+    {'title': 'OTs urgentes', 'count': '20'},
+    {'title': 'OTs concluídas hoje', 'count': '30'},
+    {'title': 'OTs em análise', 'count': '8'},
+    {'title': 'OTs em espera', 'count': '11'},
+  ];
 
   Widget _buildDashboardCard(String title, String count) {
     return Card(

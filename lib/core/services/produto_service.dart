@@ -20,6 +20,8 @@ class ProdutoService {
       final List produtosJson = jsonMap['produtosList'] ?? [];
       return produtosJson.map((json) => ProdutoModel.fromJson(json)).toList();
     } else {
+      print('🔴 Erro: status ${response.statusCode}');
+      print('🔴 Body: ${response.body}');
       throw Exception('Erro ao carregar produtos: ${response.statusCode}');
     }
   }

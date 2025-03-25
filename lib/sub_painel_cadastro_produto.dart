@@ -1,11 +1,13 @@
-import 'package:appplanilha/sub_painel_geral.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'dart:async';
+
 import 'design_system/components/circular progress bar/circular_progress_bar_web.dart';
 
-class SubPainelCadastroProduto extends SubPainelGeral {
+class SubPainelCadastroProduto extends SubPainelWebGeneral {
   const SubPainelCadastroProduto({super.key, required super.body, required super.textoDaAppBar});
 }
 

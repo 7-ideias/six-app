@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-class SubPainelGeral extends StatefulWidget {
+class SubPainelWebGeneral extends StatefulWidget {
   final Widget body;
   final String textoDaAppBar;
 
-  const SubPainelGeral({super.key, required this.body, required this.textoDaAppBar});
+  const SubPainelWebGeneral(
+      {super.key, required this.body, required this.textoDaAppBar});
 
   @override
-  State<SubPainelGeral> createState() => _SubPainelGeralState();
+  State<SubPainelWebGeneral> createState() => _SubPainelWebGeneralState();
 }
 
-class _SubPainelGeralState extends State<SubPainelGeral> {
+class _SubPainelWebGeneralState extends State<SubPainelWebGeneral> {
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -48,7 +49,7 @@ void showSubPainel(BuildContext context, Widget body, String textoDaAppBar) {
       opaque: true,
       pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
         opacity: animation,
-        child: SubPainelGeral(body: body, textoDaAppBar: textoDaAppBar),
+        child: SubPainelWebGeneral(body: body, textoDaAppBar: textoDaAppBar),
       ),
     ),
   );
