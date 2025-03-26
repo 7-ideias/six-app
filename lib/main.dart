@@ -13,7 +13,9 @@ import 'design_system/themes/app_theme.dart';
 import 'login_page_web.dart';
 import 'on_boarding.dart';
 import 'providers/theme_provider.dart';
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart'; 
+
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:go_router/go_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +73,27 @@ class MyAppState extends State<MyApp> {
     });
   }
 
+  // late final GoRouter _router = GoRouter(
+  //   routes: [
+  //     GoRoute(
+  //       path: '/catalogo/:slug',
+  //       builder: (context, state) {
+  //         final slug = state.pathParameters['slug']!;
+  //         return CatalogoPage(slug: slug);
+  //       },
+  //     ),
+  //     // Rota principal
+  //     GoRoute(
+  //       path: '/',
+  //       builder: (context, state) => widget.hasSeenOnboarding
+  //           ? kIsWeb
+  //           ? LoginPageWeb()
+  //           : LoginPageMobile()
+  //           : OnboardingScreen(),
+  //     ),
+  //   ],
+  // );
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -94,6 +117,21 @@ class MyAppState extends State<MyApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       home: widget.hasSeenOnboarding ? kIsWeb ? LoginPageWeb() : LoginPageMobile() : OnboardingScreen(),
+    );
+  }
+}
+
+// 🔹 Tela simples para exibir o catálogo (mock)
+class CatalogoPage extends StatelessWidget {
+  final String slug;
+
+  const CatalogoPage({super.key, required this.slug});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Catálogo de $slug')),
+      body: Center(child: Text('Exibir catálogo para: $slug')),
     );
   }
 }
