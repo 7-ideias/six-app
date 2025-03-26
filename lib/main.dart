@@ -1,6 +1,6 @@
+import 'package:appplanilha/core/services/websocket_service.dart';
 import 'package:appplanilha/login_page_mobile.dart';
 import 'package:appplanilha/providers/BaseProviderParaListas.dart';
-import 'package:appplanilha/services/websocket_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
