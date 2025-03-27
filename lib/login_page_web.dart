@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'home_page_mobile.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'presentation/pages/home_page_mobile_screen.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});

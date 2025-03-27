@@ -1,34 +1,72 @@
+import 'package:appplanilha/presentation/pages/gestao_mobile_screen.dart';
+import 'package:appplanilha/presentation/pages/home_page_mobile_screen.dart';
+import 'package:appplanilha/presentation/pages/operacao_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
+  final int initialIndex;
+
+  const CustomBottomNavBar({super.key, this.initialIndex = 1}); // 1 = Home
+
   @override
   _CustomBottomNavBarState createState() => _CustomBottomNavBarState();
 }
 
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
-  int _selectedIndex = 2; // Índice inicial (ícone do meio)
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
 
   void _onNavItemTapped(int index) {
+    if (_selectedIndex == index) return;
+
     setState(() {
       _selectedIndex = index;
     });
+
+    Widget page;
+
+    switch (index) {
+      case 0:
+        page = GestaoMobileScreen();
+        break;
+      case 1:
+        page = HomePageMobile(title: 'home');
+        break;
+      case 2:
+        page = OperacaoMobileScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => page,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
-      backgroundColor: Colors.black87, // Fundo escuro como na imagem
-      selectedItemColor: Colors.white, // Ícone selecionado branco
-      unselectedItemColor: Colors.grey, // Ícones não selecionados em cinza
+      backgroundColor: Colors.black87,
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.grey,
       currentIndex: _selectedIndex,
-      type: BottomNavigationBarType.fixed, // Evita comportamento estranho com 5 itens
+      type: BottomNavigationBarType.fixed,
       onTap: _onNavItemTapped,
       items: [
-        _buildNavItem(Icons.chat, "Chat"),
-        // _buildNavItem(Icons.search, "Buscar"),
-        _buildNavItem(Icons.radio_button_checked, "Home"), // Ícone do meio com destaque
-        // _buildNavItem(Icons.notifications, "Notificações"),
-        _buildNavItem(Icons.person, "Perfil"),
+        _buildNavItem(Icons.chat, "Gestão"), // index 0
+        _buildNavItem(Icons.radio_button_checked, "Home"), // index 1
+        _buildNavItem(Icons.person, "Operação"), // index 2
       ],
     );
   }
@@ -38,13 +76,13 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       icon: Icon(icon, size: 24),
       activeIcon: Column(
         children: [
-          Icon(icon, size: 28), // Ícone maior quando ativo
+          Icon(icon, size: 28),
           Container(
             height: 3,
             width: 20,
             margin: EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
-              color: Colors.blue, // Indicador azul como na imagem
+              color: Colors.blue,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
