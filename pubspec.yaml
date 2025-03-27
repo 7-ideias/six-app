@@ -25,6 +25,7 @@ dependencies:
 #  go_router: ^13.0.0
 #  flutter_web_plugins:
 #    sdk: flutter
+  signature: ^5.3.0
 
 flutter:
   generate: true

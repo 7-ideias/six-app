@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:appplanilha/presentation/pages/configuracoes_mobile_screen.dart';
+import 'package:appplanilha/presentation/pages/perfil_do_meu_negocio_mobile_screen.dart';
 import 'package:appplanilha/presentation/pages/precos_e_planos_mobile_screen.dart';
 import 'package:appplanilha/presentation/pages/protecao_de_dados_mobile_screen.dart';
 import 'package:flutter/material.dart';
@@ -40,9 +41,14 @@ class AppDrawer extends StatelessWidget {
           _buildItem(
             context,
             Icons.work_outline,
-            'Perfil do meu negócio',
-            () {},
-          ),
+            'Perfil do meu negócio', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PerfilDoMeuNegocioMobileScreen(),
+              ),
+            );
+          }),
           _buildItem(context, Icons.edit, 'Preferências', () {
             Navigator.push(
               context,
@@ -95,6 +101,19 @@ class AppDrawer extends StatelessWidget {
           }),
           Divider(),
           _buildItem(context, Icons.logout, 'Sair da conta', () {}),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16.0),
+            child: Center(
+              child: Text(
+                'versão 1.0.1',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
