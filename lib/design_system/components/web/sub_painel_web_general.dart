@@ -14,6 +14,7 @@ class SubPainelWebGeneral extends StatefulWidget {
 class _SubPainelWebGeneralState extends State<SubPainelWebGeneral> {
   @override
   Widget build(BuildContext context) {
+    final temaDaAplicacao = Theme.of(context);
     return Center(
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
@@ -34,7 +35,7 @@ class _SubPainelWebGeneralState extends State<SubPainelWebGeneral> {
                 ),
               ],
             ),
-            backgroundColor: Colors.blue,
+            backgroundColor: temaDaAplicacao.appBarTheme.backgroundColor,
           ),
           body: widget.body
         ),

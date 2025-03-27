@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 
+/**
+ * COMO USAR??
+ * final temaDaAplicacao = Theme.of(context);
+ *
+ */
+
+
 // Tema claro
 final ThemeData lightTheme = ThemeData(
   brightness: Brightness.light,
   primaryColor: Colors.blue,
   scaffoldBackgroundColor: Colors.white,
   appBarTheme: const AppBarTheme(
-    color: Colors.blue,
+    backgroundColor: Colors.blue,
+    // color: Colors.blue,
     titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
   ),
   cardColor: Colors.white,

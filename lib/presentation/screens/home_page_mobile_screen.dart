@@ -4,7 +4,9 @@ import 'package:appplanilha/pdv_page_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/theme_provider.dart';
 import '../components/custom_nav_bar.dart';
 import 'drawer_mobile.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -49,8 +51,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   @override
   Widget build(BuildContext context) {
+    final temaDaAplicacao = Theme.of(context);
+
     return kIsWeb ? PDVWeb() : Scaffold(
       appBar: AppBar(
+        backgroundColor: temaDaAplicacao.appBarTheme.backgroundColor,
         title: Text('home'),
         // title: Text(kIsWeb ? AppLocalizations.of(context)!.dashboard_web_title : AppLocalizations.of(context)!.dashboard_title),
         actions: [
@@ -69,6 +74,23 @@ class _HomePageMobileState extends State<HomePageMobile> {
         onPickImage: _pickImage,
       ),
       // body: buildPaddingComCardsFlutuantes(),
+      body: Row(
+        children: [
+          const Icon(Icons.dark_mode),
+          const SizedBox(width: 8),
+          const Text("Modo escuro"),
+          const Spacer(),
+          Switch(
+            value: Provider
+                .of<ThemeProvider>(context)
+                .themeMode == ThemeMode.dark,
+            onChanged: (value) {
+              Provider.of<ThemeProvider>(context, listen: false).toggleTheme(
+                  value);
+            },
+          ),
+        ],
+      ),
       bottomNavigationBar: kIsWeb ? null : CustomBottomNavBar(initialIndex: 1),
     );
   }

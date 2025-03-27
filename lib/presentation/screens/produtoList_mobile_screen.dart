@@ -88,6 +88,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   @override
   Widget build(BuildContext context) {
+    final temaDaAplicacao = Theme.of(context);
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: todosProdutos.length,

@@ -21,12 +21,13 @@ class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final temaDaAplicacao = Theme.of(context);
     return Center(
       child: Container(
         child: Scaffold(
           appBar: AppBar(
             title: Text(widget.textoDaAppBar),
-            backgroundColor: Colors.blue,
+            backgroundColor: temaDaAplicacao.appBarTheme.backgroundColor,
             leading: const BackButton(),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(60),
