@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-import '../../custom_nav_bar.dart';
+import '../components/custom_nav_bar.dart';
 
 class GestaoMobileScreen extends StatefulWidget {
   @override

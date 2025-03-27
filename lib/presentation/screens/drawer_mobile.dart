@@ -1,14 +1,13 @@
 import 'dart:io';
 
-import 'package:appplanilha/presentation/pages/configuracoes_mobile_screen.dart';
-import 'package:appplanilha/presentation/pages/perfil_do_meu_negocio_mobile_screen.dart';
-import 'package:appplanilha/presentation/pages/precos_e_planos_mobile_screen.dart';
-import 'package:appplanilha/presentation/pages/protecao_de_dados_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/configuracoes_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/perfil_do_meu_negocio_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/precos_e_planos_mobile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../pages/meu_perfil_mobile_screen.dart';
-import '../pages/preferencias_mobile_screen.dart';
+import 'meu_perfil_mobile_screen.dart';
+import 'preferencias_mobile_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final File? image;
@@ -23,15 +22,47 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
+          // UserAccountsDrawerHeader(
+          //   accountName: Text("Nome do Usuário"),
+          //   accountEmail: Text("email@exemplo.com"),
+          //   currentAccountPicture: CircleAvatar(
+          //     backgroundImage: image != null ? FileImage(image!) : null,
+          //     child: image == null ? Icon(Icons.camera_alt, size: 24.0) : null,
+          //   ),
+          //   decoration: BoxDecoration(color: Colors.white),
+          // ),
           UserAccountsDrawerHeader(
-            accountName: Text("Nome do Usuário"),
-            accountEmail: Text("email@exemplo.com"),
-            currentAccountPicture: CircleAvatar(
-              backgroundImage: image != null ? FileImage(image!) : null,
-              child: image == null ? Icon(Icons.camera_alt, size: 24.0) : null,
+            accountName: const Text(
+              "Nome do Usuário",
+              style: TextStyle(color: Colors.white),
             ),
-            decoration: BoxDecoration(color: Colors.white),
+            accountEmail: const Text(
+              "email@exemplo.com",
+              style: TextStyle(color: Colors.white70),
+            ),
+            currentAccountPicture: CircleAvatar(
+              radius: 36,
+              backgroundImage: image != null ? FileImage(image!) : null,
+              child: image == null
+                  ? const Icon(
+                  Icons.camera_alt, size: 28.0, color: Colors.white)
+                  : null,
+              backgroundColor: Colors.transparent,
+            ),
+            otherAccountsPictures: const [
+              CircleAvatar(
+                backgroundImage: AssetImage(
+                    'assets/images/avatar_placeholder.png'), // ou outro ícone
+              ),
+            ],
+            onDetailsPressed: () {
+              // Pode usar para abrir um menu suspenso ou dropdown no futuro
+            },
+            decoration: const BoxDecoration(
+              color: Colors.lightBlue, // muda conforme seu tema
+            ),
           ),
+
           _buildItem(context, Icons.person_outline, 'Meu perfil', () {
             Navigator.push(
               context,
@@ -96,7 +127,8 @@ class AppDrawer extends StatelessWidget {
           _buildItem(context, Icons.lock_outline, 'Gerenciar meus dados', () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ProtecaoDeDadosScreen()),
+              MaterialPageRoute(
+                  builder: (context) => PreferencesMobileScreen()),
             );
           }),
           Divider(),

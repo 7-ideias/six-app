@@ -1,5 +1,7 @@
 import 'package:appplanilha/core/services/websocket_service.dart';
-import 'package:appplanilha/login_page_mobile.dart';
+import 'package:appplanilha/presentation/screens/login_mobile.dart';
+import 'package:appplanilha/presentation/screens/login_page_web.dart';
+import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/providers/BaseProviderParaListas.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/services/produto_service.dart';
 import 'data/models/produto_model.dart';
 import 'design_system/themes/app_theme.dart';
-import 'login_page_web.dart';
-import 'presentation/pages/on_boarding_screen.dart';
 import 'providers/theme_provider.dart';
 
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';

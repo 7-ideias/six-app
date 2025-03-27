@@ -47,9 +47,11 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text(
-                "Escolha qual status do pedido vai indicar que suas peças não estão mais no estoque.",
-                style: TextStyle(fontSize: 14),
+              Flexible(
+                child: Text(
+                  "Escolha qual status do pedido vai indicar que suas peças não estão mais no estoque.",
+                  style: TextStyle(fontSize: 14),
+                ),
               ),
               Icon(Icons.info_outline, color: Colors.deepPurple),
             ],

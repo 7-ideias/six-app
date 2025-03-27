@@ -1,6 +1,6 @@
-import 'package:appplanilha/presentation/pages/gestao_mobile_screen.dart';
-import 'package:appplanilha/presentation/pages/home_page_mobile_screen.dart';
-import 'package:appplanilha/presentation/pages/operacao_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/gestao_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/home_page_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/operacao_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class CustomBottomNavBar extends StatefulWidget {

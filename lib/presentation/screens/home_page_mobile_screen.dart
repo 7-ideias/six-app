@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../custom_nav_bar.dart';
-import '../components/app_drawer_mobile.dart';
+import '../components/custom_nav_bar.dart';
+import 'drawer_mobile.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 

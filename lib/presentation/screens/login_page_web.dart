@@ -2,16 +2,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'presentation/pages/home_page_mobile_screen.dart';
+import 'home_page_mobile_screen.dart';
 
-class LoginPageMobile extends StatefulWidget {
-  const LoginPageMobile({super.key});
+class LoginPageWeb extends StatefulWidget {
+  const LoginPageWeb({super.key});
 
   @override
-  _LoginPageMobileState createState() => _LoginPageMobileState();
+  _LoginPageWebState createState() => _LoginPageWebState();
 }
 
-class _LoginPageMobileState extends State<LoginPageMobile> {
+class _LoginPageWebState extends State<LoginPageWeb> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -56,10 +56,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: 'senha',
+                    hintText: 'login',
                     // hintText: AppLocalizations.of(context)!.senha.toUpperCase(),
+                    labelText: 'login',
                     // labelText: AppLocalizations.of(context)!.senha.toUpperCase(),
-                    labelText: 'senha',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.lock),
                   ),

@@ -1,4 +1,4 @@
-import 'package:appplanilha/presentation/pages/certeza_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/certeza_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class ProtecaoDeDadosScreen extends StatelessWidget {

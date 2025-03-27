@@ -1,4 +1,4 @@
-import 'package:appplanilha/presentation/pages/sub_painel_web_produto_lista.dart';
+import 'package:appplanilha/presentation/screens/sub_painel_web_produto_lista.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
 import 'package:flutter/material.dart';

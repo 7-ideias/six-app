@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-import '../../login_page_mobile.dart';
-import '../../login_page_web.dart';
+import 'login_mobile.dart';
+import 'login_page_web.dart';
 
 class OnboardingScreen extends StatefulWidget {
   @override

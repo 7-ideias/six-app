@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
-import 'design_system/themes/app_text_styles.dart';
-import 'login_page_mobile.dart';
-import 'login_page_web.dart';
+
+import 'package:appplanilha/presentation/screens/login_mobile.dart';
+import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+
+import 'design_system/themes/app_text_styles.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);

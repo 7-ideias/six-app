@@ -1,4 +1,4 @@
-import 'package:appplanilha/presentation/pages/assinatura_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/assinatura_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class PerfilDoMeuNegocioMobileScreen extends StatelessWidget {
