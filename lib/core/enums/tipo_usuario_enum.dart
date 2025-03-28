@@ -1,1 +1,1 @@
-enum TipoUsuario { administrador, colaborador }
+enum TipoUsuarioEnum { ADMINISTRADOR, COLABORADOR, CLIENTE, SUPER }

@@ -15,7 +15,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  TipoUsuario? _tipoSelecionado;
+  TipoUsuarioEnum? _tipoSelecionado;
 
   void _navigateToHome() {
     if (_tipoSelecionado == null) {
@@ -28,9 +28,8 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) =>
-      const HomePageMobile(
-          title: 'Home')),
+      MaterialPageRoute(
+          builder: (context) => const HomePageMobile(title: 'Home')),
     );
   }
 
@@ -57,6 +56,40 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   void _createAccount() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Criar nova conta (mocked)")),
+    );
+  }
+
+  Widget _buildUserTypeCard(TipoUsuarioEnum tipo, String label, IconData icon,
+      Color color) {
+    final bool selected = _tipoSelecionado == tipo;
+    return GestureDetector(
+      onTap: () => setState(() => _tipoSelecionado = tipo),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? color.withOpacity(0.1) : Colors.transparent,
+          border: Border.all(
+              color: selected ? color : Colors.grey.shade300, width: 2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: selected ? color : Colors.grey),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: selected ? color : Colors.black87,
+                ),
+              ),
+            ),
+            if (selected) Icon(Icons.check_circle, color: color)
+          ],
+        ),
+      ),
     );
   }
 
@@ -108,34 +141,26 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                     prefixIcon: Icon(Icons.lock),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Você é:", style: theme.textTheme.titleMedium),
-                    RadioListTile<TipoUsuario>(
-                      title: const Text('Administrador'),
-                      value: TipoUsuario.administrador,
-                      groupValue: _tipoSelecionado,
-                      onChanged: (TipoUsuario? value) {
-                        setState(() {
-                          _tipoSelecionado = value;
-                        });
-                      },
-                    ),
-                    RadioListTile<TipoUsuario>(
-                      title: const Text('Colaborador'),
-                      value: TipoUsuario.colaborador,
-                      groupValue: _tipoSelecionado,
-                      onChanged: (TipoUsuario? value) {
-                        setState(() {
-                          _tipoSelecionado = value;
-                        });
-                      },
-                    ),
-                  ],
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text("Você é:", style: theme.textTheme.titleMedium),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+                _buildUserTypeCard(
+                  TipoUsuarioEnum.ADMINISTRADOR,
+                  "Administrador",
+                  Icons.admin_panel_settings,
+                  Colors.purple,
+                ),
+                const SizedBox(height: 12),
+                _buildUserTypeCard(
+                  TipoUsuarioEnum.COLABORADOR,
+                  "Colaborador",
+                  Icons.groups,
+                  Colors.teal,
+                ),
+                const SizedBox(height: 20),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -197,4 +222,3 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     );
   }
 }
-

@@ -5,40 +5,27 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../components/custom_nav_bar.dart';
-import '../components/drawer_mobile.dart';
 import '../components/escolha_card_grid.dart';
-import 'cadastro_mobile_screen.dart';
+import 'cadastro_produto_mobile_screen.dart';
 
-class OperacaoMobileScreen extends StatefulWidget {
+class CadastroMobileScreen extends StatefulWidget {
   @override
-  State<OperacaoMobileScreen> createState() => _OperacaoMobileScreenState();
+  State<CadastroMobileScreen> createState() => _CadastroMobileScreenState();
 }
 
-class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
-  List<OperacaoItem> _buildOperacoes(BuildContext context) =>
-      [
-        OperacaoItem(Icons.point_of_sale, 'Operações', Colors.green, () {
+class _CadastroMobileScreenState extends State<CadastroMobileScreen> {
+  List<OperacaoItem> _buildOperacoes(BuildContext context) => [
+    OperacaoItem(Icons.point_of_sale, 'Colaboradores', Colors.green, () {
       // TODO: ação venda
-        }, description: "vendas, os"),
-        OperacaoItem(Icons.person_add, 'Cadastros', Colors.blue, () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => CadastroMobileScreen()),
-          );
-    }),
-        OperacaoItem(
-      Icons.request_page,
-      'Financeiro',
-      Colors.deepPurple,
-      () {
-        // TODO: ação contas a receber
-      },
-    ),
-        OperacaoItem(Icons.person_add, 'Colaboradores', Colors.blue, () {
+    }, description: "vendas, os"),
+    OperacaoItem(Icons.person_add, 'Fornecedores', Colors.green, () {
       // TODO: ação cadastro
     }),
-        OperacaoItem(Icons.person_add, 'outros', Colors.blueGrey, () {
-      // TODO: ação cadastro
+    OperacaoItem(Icons.person_add, 'Produtos', Colors.green, () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CadastroProdutoMobileScreen()),
+      );
     }),
   ];
 
@@ -58,10 +45,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('O que deseja fazer?')),
-      drawer: AppDrawerDoMobile(
-        image: _image,
-        onPickImage: _pickImage,
-      ),
+      // drawer: AppDrawerDoMobile(
+      //   image: _image,
+      //   onPickImage: _pickImage,
+      // ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -78,4 +65,3 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     );
   }
 }
-
