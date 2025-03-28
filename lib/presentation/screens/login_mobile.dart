@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../core/enums/tipo_usuario_enum.dart';
 import 'home_page_mobile_screen.dart';
 
 class LoginPageMobile extends StatefulWidget {
@@ -29,7 +30,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
       context,
       MaterialPageRoute(builder: (context) =>
       const HomePageMobile(
-          title: 'Flutter Demo Home Page')),
+          title: 'Home')),
     );
   }
 
@@ -197,4 +198,3 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   }
 }
 
-enum TipoUsuario { administrador, colaborador }
