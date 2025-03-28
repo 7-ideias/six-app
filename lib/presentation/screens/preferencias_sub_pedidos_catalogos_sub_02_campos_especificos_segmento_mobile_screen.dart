@@ -14,6 +14,10 @@ class _CamposEspecificosSegmentoScreenState
     'Validade do orçamento (data)': 'data',
     'Validade do orçamento (texto)': 'texto',
     'Horário de início': 'hora',
+    'Tipo de evento': 'texto',
+    'Tema do evento': 'texto',
+    'Local do evento': 'texto',
+    'Número esperado de pessoas': 'texto',
     'Duração do serviço': 'texto',
     'Observações': 'texto',
   };

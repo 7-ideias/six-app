@@ -25,6 +25,10 @@ class _CamposPrincipaisPedidosScreenState
     'Garantia': true,
     'Cláusulas contratuais': true,
     'Informações adicionais': true,
+    'Relatório': true,
+    'Membros da equipe': true,
+    'Fotos': true,
+    'Arquivos': true,
   };
 
   @override

@@ -9,11 +9,11 @@ import 'package:image_picker/image_picker.dart';
 import '../screens/meu_perfil_mobile_screen.dart';
 import '../screens/preferencias_mobile_screen.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawerDoMobile extends StatelessWidget {
   final File? image;
   final void Function(ImageSource source) onPickImage;
 
-  const AppDrawer({Key? key, required this.image, required this.onPickImage})
+  const AppDrawerDoMobile({Key? key, required this.image, required this.onPickImage})
     : super(key: key);
 
   @override

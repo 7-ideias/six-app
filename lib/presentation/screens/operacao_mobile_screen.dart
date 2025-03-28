@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../components/custom_nav_bar.dart';
+import '../components/drawer_mobile.dart';
 
 class OperacaoMobileScreen extends StatefulWidget {
   @override
@@ -11,42 +15,66 @@ class OperacaoMobileScreen extends StatefulWidget {
 
 class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   final List<_OperacaoItem> operacoes = [
-    _OperacaoItem(Icons.point_of_sale, 'Nova venda', Colors.green, () {
+    _OperacaoItem(Icons.point_of_sale, 'Operações', Colors.green, () {
       // TODO: ação venda
     }),
-    _OperacaoItem(Icons.person_add, 'Novo cadastro', Colors.blue, () {
+    _OperacaoItem(Icons.person_add, 'Cadastros', Colors.blue, () {
       // TODO: ação cadastro
     }),
     _OperacaoItem(
       Icons.request_page,
-      'Contas a receber',
+      'Financeiro',
       Colors.deepPurple,
       () {
         // TODO: ação contas a receber
       },
     ),
+    _OperacaoItem(Icons.person_add, 'Colaboradores', Colors.blue, () {
+      // TODO: ação cadastro
+    }),
+    _OperacaoItem(Icons.person_add, 'outros', Colors.blueGrey, () {
+      // TODO: ação cadastro
+    }),
   ];
+
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? selected = await _picker.pickImage(source: source);
+    if (selected != null) {
+      setState(() {
+        _image = File(selected.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('O que deseja fazer?')),
+      drawer: AppDrawerDoMobile(
+        image: _image,
+        onPickImage: _pickImage,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             const SizedBox(height: 24),
             Expanded(
-              child:
-                  GridView.count(
-                    crossAxisCount: 1,
-                    childAspectRatio: 2.8,
-                    mainAxisSpacing: 20,
-                    children:
-                        operacoes
-                            .map((item) => _buildOperacaoCard(item))
-                            .toList(),
-                  ).animate().fade(duration: 500.ms).slideY(),
+              child: Align(
+                alignment: Alignment.center,
+                child: GridView.count(
+                  shrinkWrap: true,
+                  crossAxisCount: 1,
+                  childAspectRatio: 2.8,
+                  mainAxisSpacing: 20,
+                  children: operacoes
+                      .map((item) => _buildOperacaoCard(item))
+                      .toList(),
+                ).animate().fade(duration: 600.ms).slideY(),
+              ),
             ),
           ],
         ),
@@ -54,6 +82,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       bottomNavigationBar: kIsWeb ? null : CustomBottomNavBar(initialIndex: 2),
     );
   }
+
 
   Widget _buildOperacaoCard(_OperacaoItem item) {
     return GestureDetector(

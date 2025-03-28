@@ -4,11 +4,9 @@ import 'package:appplanilha/pdv_page_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/theme_provider.dart';
 import '../components/custom_nav_bar.dart';
-import 'drawer_mobile.dart';
+import '../components/drawer_mobile.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 
@@ -56,7 +54,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     return kIsWeb ? PDVWeb() : Scaffold(
       appBar: AppBar(
         backgroundColor: temaDaAplicacao.appBarTheme.backgroundColor,
-        title: Text('home'),
+        title: Text(widget.title),
         // title: Text(kIsWeb ? AppLocalizations.of(context)!.dashboard_web_title : AppLocalizations.of(context)!.dashboard_title),
         actions: [
           IconButton(
@@ -69,28 +67,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
           ),
         ],
       ),
-      drawer: AppDrawer(
+      drawer: AppDrawerDoMobile(
         image: _image,
         onPickImage: _pickImage,
       ),
-      // body: buildPaddingComCardsFlutuantes(),
-      body: Row(
-        children: [
-          const Icon(Icons.dark_mode),
-          const SizedBox(width: 8),
-          const Text("Modo escuro"),
-          const Spacer(),
-          Switch(
-            value: Provider
-                .of<ThemeProvider>(context)
-                .themeMode == ThemeMode.dark,
-            onChanged: (value) {
-              Provider.of<ThemeProvider>(context, listen: false).toggleTheme(
-                  value);
-            },
-          ),
-        ],
-      ),
+      body: buildPaddingComCardsFlutuantes(),
       bottomNavigationBar: kIsWeb ? null : CustomBottomNavBar(initialIndex: 1),
     );
   }
@@ -125,11 +106,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 mainAxisSpacing: 12,
                 childAspectRatio: 1.6,
               ),
-              itemCount: data.length,
+              itemCount: cardsVisaoDasOperacoes.length,
               itemBuilder: (context, index) {
                 return _buildDashboardCard(
-                  data[index]['title']!,
-                  data[index]['count']!,
+                  cardsVisaoDasOperacoes[index]['title']!,
+                  cardsVisaoDasOperacoes[index]['count']!,
                 );
               },
             ),
@@ -139,21 +120,22 @@ class _HomePageMobileState extends State<HomePageMobile> {
     );
   }
 
-  static final List<Map<String, String>> data = [
+  static final List<Map<String, String>> cardsVisaoDasOperacoes = [
+    {'title': 'Vendas - não pagas', 'count': '33'},
     {'title': 'OTs em revisão', 'count': '33'},
     {'title': 'OTs em processo', 'count': '27'},
-    {'title': 'OTs finalizadas', 'count': '94'},
-    {'title': 'OTs atrasadas', 'count': '10'},
-    {'title': 'OTs pendentes', 'count': '15'},
-    {'title': 'OTs canceladas', 'count': '7'},
-    {'title': 'OTs em auditoria', 'count': '12'},
-    {'title': 'OTs para reabertura', 'count': '5'},
-    {'title': 'OTs em verificação', 'count': '9'},
-    {'title': 'OTs com erro', 'count': '4'},
-    {'title': 'OTs urgentes', 'count': '20'},
-    {'title': 'OTs concluídas hoje', 'count': '30'},
-    {'title': 'OTs em análise', 'count': '8'},
-    {'title': 'OTs em espera', 'count': '11'},
+    // {'title': 'OTs finalizadas', 'count': '94'},
+    // {'title': 'OTs atrasadas', 'count': '10'},
+    // {'title': 'OTs pendentes', 'count': '15'},
+    // {'title': 'OTs canceladas', 'count': '7'},
+    // {'title': 'OTs em auditoria', 'count': '12'},
+    // {'title': 'OTs para reabertura', 'count': '5'},
+    // {'title': 'OTs em verificação', 'count': '9'},
+    // {'title': 'OTs com erro', 'count': '4'},
+    // {'title': 'OTs urgentes', 'count': '20'},
+    // {'title': 'OTs concluídas hoje', 'count': '30'},
+    // {'title': 'OTs em análise', 'count': '8'},
+    // {'title': 'OTs em espera', 'count': '11'},
   ];
 
   Widget _buildDashboardCard(String title, String count) {
