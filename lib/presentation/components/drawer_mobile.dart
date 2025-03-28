@@ -6,8 +6,8 @@ import 'package:appplanilha/presentation/screens/precos_e_planos_mobile_screen.d
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'meu_perfil_mobile_screen.dart';
-import 'preferencias_mobile_screen.dart';
+import '../screens/meu_perfil_mobile_screen.dart';
+import '../screens/preferencias_mobile_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final File? image;
