@@ -1,12 +1,12 @@
 import 'dart:io';
 
+import 'package:appplanilha/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../components/custom_nav_bar.dart';
 import '../components/escolha_card_grid.dart';
-import 'cadastro_produto_mobile_screen.dart';
 
 class CadastroMobileScreen extends StatefulWidget {
   @override
@@ -24,7 +24,7 @@ class _CadastroMobileScreenState extends State<CadastroMobileScreen> {
     OperacaoItem(Icons.person_add, 'Produtos', Colors.green, () {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => CadastroProdutoMobileScreen()),
+        MaterialPageRoute(builder: (context) => ProdutolistMobileScreen()),
       );
     }),
   ];

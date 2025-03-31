@@ -1,4 +1,5 @@
 import 'package:appplanilha/presentation/screens/assinatura_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/seguimento_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class PerfilDoMeuNegocioMobileScreen extends StatelessWidget {
@@ -21,7 +22,14 @@ class PerfilDoMeuNegocioMobileScreen extends StatelessWidget {
           ListTile(
             title: const Text('Segmento'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SeguimentoMobileScreen(),
+                ),
+              );
+            },
           ),
           const Divider(),
 

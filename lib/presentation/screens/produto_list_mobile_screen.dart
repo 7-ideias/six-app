@@ -7,7 +7,7 @@ import '../../providers/BaseProviderParaListas.dart';
 
 class ProdutolistMobileScreen extends MobileGeneralScreen {
   ProdutolistMobileScreen({super.key})
-    : super(body: ProdutoListaBody(), textoDaAppBar: 'Lista de Produtos x');
+    : super(body: ProdutoListaBody(), textoDaAppBar: 'Lista de Produtos');
 }
 
 class ProdutoListaBody extends StatefulWidget {
@@ -88,7 +88,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   @override
   Widget build(BuildContext context) {
-    final temaDaAplicacao = Theme.of(context);
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: todosProdutos.length,

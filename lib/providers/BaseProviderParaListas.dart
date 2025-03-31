@@ -1,4 +1,3 @@
-// lib/core/providers/base_provider.dart
 import 'package:flutter/material.dart';
 
 class BaseProviderParaListas<T> with ChangeNotifier {

@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../components/custom_nav_bar.dart';
 import '../components/drawer_mobile.dart';
+import 'catalogo_disponivel_mobile_screen.dart';
+import 'catalogo_nao_disponivel_mobile_screen.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 
@@ -111,6 +113,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 return _buildDashboardCard(
                   cardsVisaoDasOperacoes[index]['title']!,
                   cardsVisaoDasOperacoes[index]['count']!,
+                  cardsVisaoDasOperacoes[index]['mapeamentoDePara'],
                 );
               },
             ),
@@ -121,6 +124,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   static final List<Map<String, String>> cardsVisaoDasOperacoes = [
+    {
+      'title': 'Catálogo Disponível',
+      'count': '10',
+      'mapeamentoDePara': 'CATALOGODISPONIVEL'
+    },
+    {
+      'title': 'Catálogo Não Ativo',
+      'count': '0',
+      'mapeamentoDePara': 'CATALOGONAOATIVO'
+    },
     {'title': 'Vendas - não pagas', 'count': '33'},
     {'title': 'OTs em revisão', 'count': '33'},
     {'title': 'OTs em processo', 'count': '27'},
@@ -138,28 +151,50 @@ class _HomePageMobileState extends State<HomePageMobile> {
     // {'title': 'OTs em espera', 'count': '11'},
   ];
 
-  Widget _buildDashboardCard(String title, String count) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              count,
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ],
+  Widget _buildDashboardCard(String title, String count,
+      String? mapeamentoDePara) {
+    return GestureDetector(
+      onTap: () {
+        if (mapeamentoDePara == 'CATALOGONAOATIVO') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) =>
+                MeuCatalogoMobileScreen()), // substitua por sua tela real
+          );
+        }
+        if (mapeamentoDePara == 'CATALOGODISPONIVEL') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) =>
+                CatalogoDisponivelMobileScreen()), // substitua por sua tela real
+          );
+        }
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                count,
+                style: const TextStyle(
+                    fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
 }
+

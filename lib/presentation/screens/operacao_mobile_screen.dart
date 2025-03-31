@@ -34,9 +34,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         // TODO: ação contas a receber
       },
     ),
-        OperacaoItem(Icons.person_add, 'Colaboradores', Colors.blue, () {
-      // TODO: ação cadastro
-    }),
         OperacaoItem(Icons.person_add, 'outros', Colors.blueGrey, () {
       // TODO: ação cadastro
     }),

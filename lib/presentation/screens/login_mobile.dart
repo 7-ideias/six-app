@@ -68,7 +68,8 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.1) : Colors.transparent,
+          color: selected ? color.withAlpha((0.5 * 255).round()) : Colors
+              .transparent,
           border: Border.all(
               color: selected ? color : Colors.grey.shade300, width: 2),
           borderRadius: BorderRadius.circular(12),

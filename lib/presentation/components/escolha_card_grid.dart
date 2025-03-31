@@ -52,7 +52,7 @@ class OperacaoCardGrid extends StatelessWidget {
         height: cardHeight,
         child: Container(
           decoration: BoxDecoration(
-            color: item.color.withOpacity(0.1),
+            color: item.color.withAlpha((0.5 * 255).round()),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: item.color, width: 1.5),
           ),

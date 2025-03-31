@@ -49,8 +49,53 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
               ],
             ),
             onTap: () {
-              // TODO: implementar seleção de idioma
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                builder: (BuildContext context) {
+                  return DraggableScrollableSheet(
+                    initialChildSize: 0.5,
+                    // 50% da tela
+                    minChildSize: 0.3,
+                    maxChildSize: 0.5,
+                    expand: false,
+                    builder: (context, scrollController) {
+                      return SingleChildScrollView(
+                        controller: scrollController,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            const Text('Selecione o idioma', style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                            const Divider(),
+                            ListTile(
+                              leading: const Icon(Icons.language),
+                              title: const Text('Português (BR)'),
+                              onTap: () {
+                                // TODO: mudar idioma para pt_BR
+                                Navigator.pop(context);
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.language),
+                              title: const Text('English (US)'),
+                              onTap: () {
+                                // TODO: mudar idioma para en_US
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
             },
+
           ),
           const Divider(height: 0),
           ListTile(

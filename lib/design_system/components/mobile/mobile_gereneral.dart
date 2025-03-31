@@ -114,6 +114,7 @@ class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
             ),
           ),
           body: widget.body,
+          floatingActionButton: FloatingActionButton(onPressed: () {}),
         ),
       ),
     );

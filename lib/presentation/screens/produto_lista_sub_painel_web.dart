@@ -222,7 +222,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
       ],
     );
-    ;
   }
 }
 
