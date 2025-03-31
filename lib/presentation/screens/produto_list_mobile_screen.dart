@@ -1,3 +1,4 @@
+import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,7 +8,9 @@ import '../../providers/BaseProviderParaListas.dart';
 
 class ProdutolistMobileScreen extends MobileGeneralScreen {
   ProdutolistMobileScreen({super.key})
-    : super(body: ProdutoListaBody(), textoDaAppBar: 'Lista de Produtos');
+      : super(body: ProdutoListaBody(),
+      textoDaAppBar: 'Lista de Produtos',
+      tipoCadastroEnum: TipoCadastroEnum.PRODUTOSEOUSERVICOS);
 }
 
 class ProdutoListaBody extends StatefulWidget {
