@@ -1,14 +1,17 @@
+import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
 import 'package:flutter/material.dart';
 
 class MobileGeneralScreen extends StatefulWidget {
   final Widget body;
   final String textoDaAppBar;
+  final TipoCadastroEnum tipoCadastroEnum;
   final void Function(String)? onOptionSelected;
 
   const MobileGeneralScreen({
     super.key,
     required this.body,
     required this.textoDaAppBar,
+    required this.tipoCadastroEnum,
     this.onOptionSelected,
   });
 
@@ -17,14 +20,93 @@ class MobileGeneralScreen extends StatefulWidget {
 }
 
 class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
-  String selected = "PRODUTOS";
+  TipoCadastroEnum selected = TipoCadastroEnum.PRODUTOS;
+  bool _fabAberto = false;
+
+  void _toggleFab() {
+    setState(() => _fabAberto = !_fabAberto);
+  }
+
+  void _cadastrarProduto() {
+    print('Cadastrar produto');
+    setState(() => _fabAberto = false);
+  }
+
+  void _cadastrarServico() {
+    print('Cadastrar serviço');
+    setState(() => _fabAberto = false);
+  }
+
+  Widget buildFloatingActionButton_Produtos() {
+    return Stack(
+      alignment: Alignment.bottomRight,
+      children: [
+        Positioned(
+          bottom: 150,
+          right: 0,
+          child: AnimatedSlide(
+            duration: const Duration(milliseconds: 300),
+            offset: _fabAberto ? Offset.zero : const Offset(0, 1),
+            child: AnimatedOpacity(
+              opacity: _fabAberto ? 1 : 0,
+              duration: const Duration(milliseconds: 300),
+              child: FloatingActionButton.extended(
+                heroTag: 'produto',
+                onPressed: _cadastrarProduto,
+                icon: const Icon(Icons.add_shopping_cart),
+                label: const Text('Produto'),
+                backgroundColor: Colors.blue,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 90,
+          right: 0,
+          child: AnimatedSlide(
+            duration: const Duration(milliseconds: 300),
+            offset: _fabAberto ? Offset.zero : const Offset(0, 1),
+            child: AnimatedOpacity(
+              opacity: _fabAberto ? 1 : 0,
+              duration: const Duration(milliseconds: 300),
+              child: FloatingActionButton.extended(
+                heroTag: 'servico',
+                onPressed: _cadastrarServico,
+                icon: const Icon(Icons.build),
+                label: const Text('Serviço'),
+                backgroundColor: Colors.blue,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 20,
+          right: 0,
+          child: FloatingActionButton(
+            heroTag: 'main',
+            onPressed: _toggleFab,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, anim) =>
+                  RotationTransition(turns: anim, child: child),
+              child: Icon(
+                _fabAberto ? Icons.close : Icons.add,
+                key: ValueKey(_fabAberto),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final temaDaAplicacao = Theme.of(context);
-    return Center(
-      child: Container(
-        child: Scaffold(
+
+    return Stack(
+      children: [
+        Scaffold(
           appBar: AppBar(
             title: Text(widget.textoDaAppBar),
             backgroundColor: temaDaAplicacao.appBarTheme.backgroundColor,
@@ -33,9 +115,7 @@ class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
               preferredSize: const Size.fromHeight(60),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8,
-                ),
+                    horizontal: 16.0, vertical: 8),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white24,
@@ -48,27 +128,27 @@ class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            setState(() => selected = "PRODUTOS");
-                            widget.onOptionSelected?.call("PRODUTOS");
+                            setState(() =>
+                            selected = TipoCadastroEnum.PRODUTOS);
+                            widget.onOptionSelected?.call(
+                                TipoCadastroEnum.PRODUTOS.toString());
                           },
                           child: AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            padding: EdgeInsets.symmetric(vertical: 10),
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
-                              color:
-                                  selected == "PRODUTOS"
-                                      ? Colors.white
-                                      : Colors.transparent,
+                              color: selected == TipoCadastroEnum.PRODUTOS
+                                  ? Colors.white
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: Center(
                               child: Text(
                                 'PRODUTOS',
                                 style: TextStyle(
-                                  color:
-                                      selected == "PRODUTOS"
-                                          ? Colors.blue
-                                          : Colors.white,
+                                  color: selected == TipoCadastroEnum.PRODUTOS
+                                      ? Colors.blue
+                                      : Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -79,27 +159,27 @@ class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            setState(() => selected = "SERVIÇOS");
-                            widget.onOptionSelected?.call("SERVIÇOS");
+                            setState(() =>
+                            selected = TipoCadastroEnum.SERVICOS);
+                            widget.onOptionSelected?.call(
+                                TipoCadastroEnum.SERVICOS.toString());
                           },
                           child: AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            padding: EdgeInsets.symmetric(vertical: 10),
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
-                              color:
-                                  selected == "SERVIÇOS"
-                                      ? Colors.white
-                                      : Colors.transparent,
+                              color: selected == TipoCadastroEnum.SERVICOS
+                                  ? Colors.white
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: Center(
                               child: Text(
                                 'SERVIÇOS',
                                 style: TextStyle(
-                                  color:
-                                      selected == "SERVIÇOS"
-                                          ? Colors.blue
-                                          : Colors.white,
+                                  color: selected == TipoCadastroEnum.SERVICOS
+                                      ? Colors.blue
+                                      : Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -114,9 +194,13 @@ class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
             ),
           ),
           body: widget.body,
-          floatingActionButton: FloatingActionButton(onPressed: () {}),
+          floatingActionButton: widget.tipoCadastroEnum ==
+              TipoCadastroEnum.PRODUTOS_E_OU_SERVICOS
+              ? buildFloatingActionButton_Produtos()
+              : null,
         ),
-      ),
+      ],
     );
   }
+
 }

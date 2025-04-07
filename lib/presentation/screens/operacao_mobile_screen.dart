@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:appplanilha/presentation/screens/pdv_mobile_screen.dart';
 import 'package:appplanilha/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/tabela_de_precos_mobile_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -124,6 +125,13 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           buildCadastrosCard(Colors.green, 'Clientes', 205, () {}),
           buildCadastrosCard(Colors.red, 'Fornecedores', 10, () {}),
           buildCadastrosCard(Colors.pink, 'Catálogo', 10, () {}),
+          buildCadastrosCard(Colors.pink, 'Tabela de Preços', 10, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => TabelaDePrecosMobileScreen()),
+            );
+          }),
         ],
       ),
     );
