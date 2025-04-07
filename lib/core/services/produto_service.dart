@@ -13,18 +13,12 @@ class ProdutoService {
 
   Future<List<ProdutoModel>> ProdutosList(Map<String, String>? headers) async {
     final url = Uri.parse(endpoint);
-    final bodyMap = {
-      'produtosAtivos': true,
-      'tipo': 'SERVICO',
-    };
-    final body = jsonEncode(bodyMap);
 
     try {
-      print('🌐 POST $url');
+      print('🌐 GET $url');
       print('🟦 Headers: $headers');
-      print('📦 Body: $body');
 
-      final response = await client.post(url, headers: headers, body: body);
+      final response = await client.get(url, headers: headers);
 
       print('✅ STATUS: ${response.statusCode}');
       print('📥 Response body: ${response.body}');

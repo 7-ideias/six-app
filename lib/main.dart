@@ -2,7 +2,7 @@ import 'package:appplanilha/core/services/websocket_service.dart';
 import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
-import 'package:appplanilha/providers/BaseProviderParaListas.dart';
+import 'package:appplanilha/providers/produtos_list_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -33,7 +33,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
           create: (_) =>
-              BaseProviderParaListas<ProdutoModel>(
+              ProdutosListProvider<ProdutoModel>(
                 fetchFunction: ProdutoService().ProdutosList,
               ),
         ),

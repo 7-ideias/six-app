@@ -4,13 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../design_system/components/mobile/mobile_gereneral.dart';
-import '../../providers/BaseProviderParaListas.dart';
+import '../../providers/produtos_list_provider.dart';
 
 class ProdutolistMobileScreen extends MobileGeneralScreen {
   ProdutolistMobileScreen({super.key})
       : super(body: ProdutoListaBody(),
       textoDaAppBar: 'Lista de Produtos',
-      tipoCadastroEnum: TipoCadastroEnum.PRODUTOSEOUSERVICOS);
+      tipoCadastroEnum: TipoCadastroEnum.PRODUTOS_E_OU_SERVICOS);
 }
 
 class ProdutoListaBody extends StatefulWidget {
@@ -19,11 +19,14 @@ class ProdutoListaBody extends StatefulWidget {
 }
 
 class _ProdutoListaBodyState extends State<ProdutoListaBody> {
+
   List<ProdutoModel> todosProdutos = [];
   List<ProdutoModel> produtosFiltrados = [];
   String termoBusca = '';
+  String _tipoProdutoOuServico = 'SERVICO';
   String ordenacao = 'nome';
   TextEditingController _controllerBusca = TextEditingController();
+
   final List<String> produtos = List.generate(
     20,
     (index) => 'Produto ${index + 1}',
@@ -40,7 +43,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   void aplicarFiltroOrdenacao() {
     List<ProdutoModel> resultado = [...todosProdutos];
 
-    // Filtro por nome a partir da 3ª letra
     if (termoBusca.length >= 1) {
       resultado =
           resultado
@@ -65,7 +67,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   void retornarProdutosList(BuildContext context) {
-    final provider = Provider.of<BaseProviderParaListas<ProdutoModel>>(
+    final provider = Provider.of<ProdutosListProvider<ProdutoModel>>(
       context,
       listen: false,
     );
@@ -75,54 +77,67 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             'Content-Type': 'application/json',
             'idUsuario': '2ea5e611cab0439a917229e44e9301a8',
             'idColaborador': '2ea5e611cab0439a917229e44e9301a8',
+            'produtosAtivos': 'true',
+            'tipo': _tipoProdutoOuServico
           },
         )
         .then((_) {
-          atualizarListaComProvider(provider.items);
+      atualizarListaComProvider(provider.listaDeProdutos);
         });
   }
 
-  void atualizarListaComProvider(List<ProdutoModel> items) {
+  void atualizarListaComProvider(List<ProdutoModel> listaDeProdutos) {
     setState(() {
-      todosProdutos = items;
+      todosProdutos = listaDeProdutos;
       aplicarFiltroOrdenacao();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: todosProdutos.length,
-      itemBuilder: (context, index) {
-        final produto = todosProdutos[index];
-        return Card(
-          elevation: 3,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: CircleAvatar(
-              child: Text('${index + 1}'),
-              backgroundColor: Colors.blue.shade200,
-              foregroundColor: Colors.white,
-            ),
-            title: Text(
-              'produto',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: const Text('Descrição do produto'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // ação ao clicar no item
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('Clicou em $produto')));
-            },
-          ),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        retornarProdutosList(context);
       },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: todosProdutos.length,
+        itemBuilder: (context, index) {
+          final produto = todosProdutos[index];
+          final ativo = produto.ativo == true;
+          return Card(
+            elevation: 3,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Text('${index + 1}'),
+                backgroundColor: Colors.blue.shade200,
+                foregroundColor: Colors.white,
+              ),
+              title: Text(
+                produto.codigoDeBarras + produto.nomeProduto,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'Preço: R\$ ${produto.precoVenda.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.black54),
+              ),
+              trailing: ativo
+                  ? const Icon(Icons.check_circle, color: Colors.green)
+                  : const Icon(Icons.cancel, color: Colors.red),
+              onTap: () {
+                // ação ao clicar no item
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Clicou em $produto')));
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

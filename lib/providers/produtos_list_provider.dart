@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class BaseProviderParaListas<T> with ChangeNotifier {
+class ProdutosListProvider<T> with ChangeNotifier {
   final Future<List<T>> Function(Map<String, String>? headers) fetchFunction;
 
-  BaseProviderParaListas({required this.fetchFunction});
+  ProdutosListProvider({required this.fetchFunction});
 
   List<T> _items = [];
   bool _isLoading = false;
   String? _erro;
 
-  List<T> get items => _items;
+  List<T> get listaDeProdutos => _items;
 
   bool get isLoading => _isLoading;
 

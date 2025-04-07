@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/produto_model.dart';
-import '../../providers/BaseProviderParaListas.dart';
+import '../../providers/produtos_list_provider.dart';
 
 class SubPainelWebProdutoLista extends SubPainelWebGeneral {
   SubPainelWebProdutoLista({super.key})
@@ -67,7 +67,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   void retornarProdutosList(BuildContext context) {
-    final provider = Provider.of<BaseProviderParaListas<ProdutoModel>>(
+    final provider = Provider.of<ProdutosListProvider<ProdutoModel>>(
       context,
       listen: false,
     );
@@ -80,7 +80,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           },
         )
         .then((_) {
-          atualizarListaComProvider(provider.items);
+      atualizarListaComProvider(provider.listaDeProdutos);
         });
   }
 
@@ -147,18 +147,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               ),
             ),
             Expanded(
-              child: Consumer<BaseProviderParaListas<ProdutoModel>>(
+              child: Consumer<ProdutosListProvider<ProdutoModel>>(
                 builder: (context, provider, _) {
                   if (provider.isLoading) {
                     return const Center(child: CircularProgressIndicator());
-                  } else if (provider.items.isEmpty) {
+                  } else if (provider.listaDeProdutos.isEmpty) {
                     return const Center(
                       child: Text('Nenhum produto encontrado.'),
                     );
                   }
 
                   if (todosProdutos.isEmpty) {
-                    todosProdutos = provider.items;
+                    todosProdutos = provider.listaDeProdutos;
                     aplicarFiltroOrdenacao();
                   }
 
