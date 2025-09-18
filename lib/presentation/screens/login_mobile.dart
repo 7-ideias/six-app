@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:app_links/app_links.dart';
 
 import '../../core/enums/tipo_usuario_enum.dart';
+import '../../core/utils/pkce_utils.dart';
 import 'home_page_mobile_screen.dart';
 
 class LoginPageMobile extends StatefulWidget {
@@ -16,6 +20,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   final TextEditingController _passwordController = TextEditingController();
 
   TipoUsuarioEnum? _tipoSelecionado;
+  String? _oidcError;
 
   void _navigateToHome() {
     if (_tipoSelecionado == null) {
@@ -178,11 +183,16 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                     minimumSize: const Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30)),
-                    backgroundColor: theme.colorScheme.primary,
+                    backgroundColor: Colors.deepPurple,
                   ),
                   child: const Text('entrar',
                       style: TextStyle(fontSize: 18, color: Colors.white)),
                 ),
+                if (_oidcError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(_oidcError!, style: TextStyle(color: Colors.red)),
+                  ),
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: _createAccount,
@@ -214,7 +224,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(45),
                   ),
-                )
+                ),
               ],
             ),
           ),

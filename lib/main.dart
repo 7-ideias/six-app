@@ -1,6 +1,5 @@
 import 'package:appplanilha/core/services/websocket_service.dart';
-import 'package:appplanilha/presentation/screens/login_mobile.dart';
-import 'package:appplanilha/presentation/screens/login_page_web.dart';
+import 'package:appplanilha/presentation/screens/login_oidc.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/providers/produtos_list_provider.dart';
 import 'package:flutter/foundation.dart';
@@ -116,7 +115,7 @@ class MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: widget.hasSeenOnboarding ? kIsWeb ? LoginPageWeb() : LoginPageMobile() : OnboardingScreen(),
+      home: widget.hasSeenOnboarding ? const LoginOidcPage() : OnboardingScreen(),
     );
   }
 }
