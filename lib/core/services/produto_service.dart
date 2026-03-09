@@ -7,7 +7,7 @@ import 'package:http_interceptor/http_interceptor.dart';
 import '../config/app_config.dart';
 
 class ProdutoService {
-  final String endpoint = '${AppConfig.baseUrl}/produto/lista';
+  final String endpoint = '${AppConfig.baseUrl}/private/api/produto/lista';
 
   final client = InterceptedClient.build(interceptors: [LoggingInterceptor()]);
 

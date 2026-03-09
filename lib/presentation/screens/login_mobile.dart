@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../core/enums/tipo_usuario_enum.dart';
+import '../../core/services/auth_service.dart';
 import 'home_page_mobile_screen.dart';
 
 class LoginPageMobile extends StatefulWidget {
@@ -14,8 +15,50 @@ class LoginPageMobile extends StatefulWidget {
 class _LoginPageMobileState extends State<LoginPageMobile> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
 
   TipoUsuarioEnum? _tipoSelecionado;
+
+  bool _isLoading = false;
+
+  Future<void> _login() async {
+    if (_tipoSelecionado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(
+            "Por favor, selecione se você é Administrador ou Colaborador")),
+      );
+      return;
+    }
+
+    final String login = _loginController.text.trim();
+    final String senha = _passwordController.text.trim();
+
+    if (login.isEmpty || senha.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Por favor, preencha o login e a senha")),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authService.login(login, senha);
+      _navigateToHome();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void _navigateToHome() {
     if (_tipoSelecionado == null) {
@@ -173,15 +216,24 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: _navigateToHome,
+                  onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30)),
                     backgroundColor: theme.colorScheme.primary,
                   ),
-                  child: const Text('entrar',
-                      style: TextStyle(fontSize: 18, color: Colors.white)),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('entrar',
+                          style: TextStyle(fontSize: 18, color: Colors.white)),
                 ),
                 const SizedBox(height: 10),
                 TextButton(

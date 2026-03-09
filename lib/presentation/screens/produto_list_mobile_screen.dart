@@ -1,4 +1,5 @@
 import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
+import 'package:appplanilha/core/utils/produto_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -23,7 +24,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   List<ProdutoModel> todosProdutos = [];
   List<ProdutoModel> produtosFiltrados = [];
   String termoBusca = '';
-  String _tipoProdutoOuServico = 'SERVICO';
+  String _tipoProdutoOuServico = 'PRODUTO';
   String ordenacao = 'nome';
   TextEditingController _controllerBusca = TextEditingController();
 
@@ -36,68 +37,30 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      retornarProdutosList(context);
+      ProdutoHelper.retornarProdutosList(context, onSucesso: atualizarListaComProvider);
     });
   }
 
   void aplicarFiltroOrdenacao() {
-    List<ProdutoModel> resultado = [...todosProdutos];
-
-    if (termoBusca.length >= 1) {
-      resultado =
-          resultado
-              .where(
-                (p) => p.nomeProduto.toLowerCase().contains(
-                  termoBusca.toLowerCase(),
-                ),
-              )
-              .toList();
-    }
-
-    // Ordenação
-    if (ordenacao == 'nome') {
-      resultado.sort((a, b) => a.nomeProduto.compareTo(b.nomeProduto));
-    } else if (ordenacao == 'preco') {
-      resultado.sort((a, b) => a.precoVenda.compareTo(b.precoVenda));
-    }
-
     setState(() {
-      produtosFiltrados = resultado;
+      produtosFiltrados = ProdutoHelper.filtrarEOrdenarProdutos(
+        produtos: todosProdutos,
+        termoBusca: termoBusca,
+        ordenacao: ordenacao,
+      );
     });
-  }
-
-  void retornarProdutosList(BuildContext context) {
-    final provider = Provider.of<ProdutosListProvider<ProdutoModel>>(
-      context,
-      listen: false,
-    );
-    provider
-        .carregar(
-          headers: {
-            'Content-Type': 'application/json',
-            'idUsuario': '2ea5e611cab0439a917229e44e9301a8',
-            'idColaborador': '2ea5e611cab0439a917229e44e9301a8',
-            'produtosAtivos': 'true',
-            'tipo': _tipoProdutoOuServico
-          },
-        )
-        .then((_) {
-      atualizarListaComProvider(provider.listaDeProdutos);
-        });
   }
 
   void atualizarListaComProvider(List<ProdutoModel> listaDeProdutos) {
-    setState(() {
-      todosProdutos = listaDeProdutos;
-      aplicarFiltroOrdenacao();
-    });
+    todosProdutos = listaDeProdutos;
+    aplicarFiltroOrdenacao();
   }
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () async {
-        retornarProdutosList(context);
+        await ProdutoHelper.retornarProdutosList(context, onSucesso: atualizarListaComProvider);
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
