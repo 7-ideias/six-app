@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/browser_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'http_client_factory.dart';
 import '../config/app_config.dart';
 import '../../data/models/auth_response_model.dart';
 
@@ -18,15 +18,8 @@ class AuthService {
   AuthService._internal();
 
   Timer? _refreshTimer;
-  BrowserClient? _webClient;
 
-  http.Client _client() {
-    if (kIsWeb) {
-      _webClient ??= BrowserClient()..withCredentials = true;
-      return _webClient!;
-    }
-    return http.Client();
-  }
+  http.Client _client() => createHttpClient();
 
   Future<AuthResponseModel?> login(String login, String senha) async {
     final String pathLogin = kIsWeb ? 'web' : 'mobile';
