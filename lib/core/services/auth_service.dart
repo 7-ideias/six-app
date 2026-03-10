@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
@@ -10,9 +12,22 @@ class AuthService {
   static const String _userDataKey = 'userData';
   static const String _empresaIdKey = 'idUnicoDaEmpresa';
 
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
+
+  Timer? _refreshTimer;
+
   Future<AuthResponseModel?> login(String login, String senha) async {
+
+    var pathLogin;
+
+    kIsWeb
+        ? pathLogin = 'web'
+        : pathLogin = 'mobile';
+
     final response = await http.post(
-      Uri.parse('${AppConfig.baseUrl}/public/auth/login'),
+      Uri.parse('${AppConfig.baseUrl}/auth/${pathLogin}/login'),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -25,6 +40,7 @@ class AuthService {
     if (response.statusCode == 200) {
       final authData = AuthResponseModel.fromJson(jsonDecode(response.body));
       await _saveAuthData(authData);
+      _startRefreshTimer();
       return authData;
     } else {
       throw Exception(jsonDecode(response.body)['message'] ?? 'Falha ao realizar login');
@@ -35,23 +51,47 @@ class AuthService {
     final String? refreshToken = await getRefreshToken();
     if (refreshToken == null) throw Exception('No refresh token found');
 
-    final response = await http.post(
-      Uri.parse('${AppConfig.baseUrl}/public/auth/refresh'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
+    String pathLogin = kIsWeb ? 'web' : 'mobile';
+    Map<String, String> headers = {
+      'Content-Type': 'application/json',
+    };
+    dynamic body;
+
+    if (pathLogin == 'mobile') {
+      body = jsonEncode({
         'refreshToken': refreshToken,
-      }),
+      });
+    } else {
+      headers['Cookie'] = 'refresh_token=$refreshToken';
+      body = '';
+    }
+
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/auth/$pathLogin/refresh'),
+      headers: headers,
+      body: body,
     );
 
     if (response.statusCode == 200) {
       final authData = AuthResponseModel.fromJson(jsonDecode(response.body));
       await _saveAuthData(authData);
+      _startRefreshTimer();
     } else {
       await logout();
       throw Exception('Falha ao atualizar token');
     }
+  }
+
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) async {
+      try {
+        await refreshToken();
+        debugPrint('Sucesso no refresh automático');
+      } catch (e) {
+        debugPrint('Erro no refresh automático: $e');
+      }
+    });
   }
 
   Future<void> _saveAuthData(AuthResponseModel authData) async {
@@ -89,6 +129,8 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
