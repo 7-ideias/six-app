@@ -9,10 +9,12 @@ import '../../providers/produtos_list_provider.dart';
 
 
 class ProdutolistMobileScreen extends MobileGeneralScreen {
-  ProdutolistMobileScreen({super.key})
+  final bool isSelecao;
+
+  ProdutolistMobileScreen({super.key, this.isSelecao = false})
       : super(
     body: SafeArea(
-      child: ProdutoListaBody(),
+      child: ProdutoListaBody(isSelecao: isSelecao),
     ),
     textoDaAppBar: 'Lista de Produtos',
     tipoCadastroEnum: TipoCadastroEnum.PRODUTOS_E_OU_SERVICOS,
@@ -30,7 +32,8 @@ class ProdutolistMobileScreen extends MobileGeneralScreen {
 // }
 
 class ProdutoListaBody extends StatefulWidget {
-  const ProdutoListaBody({super.key});
+  final bool isSelecao;
+  const ProdutoListaBody({super.key, this.isSelecao = false});
 
   @override
   State<ProdutoListaBody> createState() => _ProdutoListaBodyState();
@@ -296,9 +299,13 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Clicou em ${produto.nomeProduto}')),
-          );
+          if (widget.isSelecao) {
+            Navigator.pop(context, produto);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Clicou em ${produto.nomeProduto}')),
+            );
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
