@@ -3,6 +3,7 @@ import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
 
+import '../config/app_config.dart';
 import 'notification_service.dart';
 
 late StompClient stompClient;
@@ -13,12 +14,10 @@ Function(String)? onMensagemRecebida;
 void connectStomp() {
   stompClient = StompClient(
     config: StompConfig.SockJS(
+
       // url: 'http://localhost:8082/ws',
       // url: 'http://10.0.2.2:8082/ws',
-      url:
-          kIsWeb
-              ? 'http://localhost:8082/ws' // ou o IP da sua máquina se não estiver rodando localmente
-              : 'http://10.0.2.2:8082/ws',
+      url: AppConfig.baseUrl+'/ws',
 
       // ASSIM FUNCIONA. ESSE É O CORRETO PARA LOCAL
       onConnect: onConnectCallback,

@@ -3,9 +3,13 @@ import 'dart:io';
 import 'package:appplanilha/presentation/screens/pdv_mobile_screen.dart';
 import 'package:appplanilha/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:appplanilha/presentation/screens/tabela_de_precos_mobile_screen.dart';
+import 'package:appplanilha/core/utils/produto_helper.dart';
+import 'package:appplanilha/data/models/produto_model.dart';
+import 'package:appplanilha/providers/produtos_list_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../components/custom_nav_bar.dart';
 import '../components/drawer_mobile.dart';
@@ -114,13 +118,22 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         mainAxisSpacing: 12,
         childAspectRatio: 1.2,
         children: [
-          buildCadastrosCard(Colors.teal, 'Produtos', 257, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => ProdutolistMobileScreen()),
-            );
-          }),
+          Consumer<ProdutosListProvider<ProdutoModel>>(
+            builder: (context, provider, _) {
+              final response = provider.fullResponse;
+              final int valorProdutos = (response is ProdutoResponseModel) 
+                  ? response.itensTotaisNoEstoque 
+                  : 0;
+              
+              return buildCadastrosCard(Colors.teal, 'Produtos', valorProdutos, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ProdutolistMobileScreen()),
+                );
+              });
+            },
+          ),
           buildCadastrosCard(Colors.amber, 'Colaboradores', 9, () {}),
           buildCadastrosCard(Colors.green, 'Clientes', 205, () {}),
           buildCadastrosCard(Colors.red, 'Fornecedores', 10, () {}),
@@ -176,6 +189,14 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         _image = File(selected.path);
       });
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ProdutoHelper.retornarProdutosList(context);
+    });
   }
 
   @override

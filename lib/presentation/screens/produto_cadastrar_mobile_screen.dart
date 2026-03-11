@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../data/models/produto_model.dart';
+import '../../core/services/produto_service.dart';
 
 class CadastroProdutoMobileScreen extends StatefulWidget {
   const CadastroProdutoMobileScreen({super.key});
@@ -25,6 +27,7 @@ class _CadastroProdutoMobileScreenState
 
   String? _tipoSelecionado;
   bool _ativo = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -41,11 +44,62 @@ class _CadastroProdutoMobileScreenState
     super.dispose();
   }
 
-  void _salvar() {
+  Future<void> _salvar() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Produto salvo com sucesso!')),
-      );
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final produto = ProdutoModel(
+          ativo: _ativo,
+          codigoDeBarras: _codigoController.text,
+          nomeProduto: _nomeController.text,
+          tipoProduto: _tipoSelecionado ?? 'PRODUTO',
+          modeloProduto: _modeloController.text.isNotEmpty
+              ? _modeloController.text
+              : 'UNIDADE',
+          estoqueMaximo: int.tryParse(_estoqueMaxController.text) ?? 0,
+          estoqueMinimo: int.tryParse(_estoqueMinController.text) ?? 0,
+          precoVenda: double.tryParse(_precoVendaController.text) ?? 0.0,
+          objAgrupamento: _skuController.text.isNotEmpty
+              ? ObjAgrupamento(grupoDoProduto: _skuController.text)
+              : null,
+          // Mapeando outros campos conforme necessário ou deixando null se não houver no form
+          objEntradaSaidaProduto: [
+            ObjEntradaSaidaProduto(
+              quantidade: double.tryParse(_estoqueMaxController.text) ?? 0,
+              valorCusto: 0,
+              valorDaVenda: double.tryParse(_precoVendaController.text) ?? 0,
+            )
+          ],
+          objComissao: ObjComissao(
+              produtoTemComissaoEspecial: false,
+              valorFixoDeComissaoParaEsseProduto: 0.0,
+          )
+        );
+
+        await ProdutoService().cadastrarProduto(produto);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Produto salvo com sucesso!')),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao salvar produto: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -201,10 +255,12 @@ class _CadastroProdutoMobileScreenState
                         ),
                         backgroundColor: theme.colorScheme.primary,
                       ),
-                      child: const Text(
-                        'Salvar',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
+                      child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Salvar',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                     ),
                   ),
                 ],

@@ -1,4 +1,5 @@
 import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
+import 'package:appplanilha/presentation/screens/produto_cadastrar_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class MobileGeneralScreen extends StatefulWidget {
@@ -28,7 +29,12 @@ class _MobileGeneralScreenState extends State<MobileGeneralScreen> {
   }
 
   void _cadastrarProduto() {
-    print('Cadastrar produto');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CadastroProdutoMobileScreen(),
+      ),
+    );
     setState(() => _fabAberto = false);
   }
 

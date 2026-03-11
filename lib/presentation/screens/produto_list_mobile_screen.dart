@@ -58,49 +58,82 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        await ProdutoHelper.retornarProdutosList(context, onSucesso: atualizarListaComProvider);
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: todosProdutos.length,
-        itemBuilder: (context, index) {
-          final produto = todosProdutos[index];
-          final ativo = produto.ativo == true;
-          return Card(
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: CircleAvatar(
-                child: Text('${index + 1}'),
-                backgroundColor: Colors.blue.shade200,
-                foregroundColor: Colors.white,
+    return Column(
+      children: [
+        Consumer<ProdutosListProvider<ProdutoModel>>(
+          builder: (context, provider, _) {
+            final response = provider.fullResponse;
+            if (response is! ProdutoResponseModel) return const SizedBox.shrink();
+            return Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.blue.shade50,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildSummaryItem('No Estoque', response.qtNoEstoque.toString()),
+                  _buildSummaryItem('Sem Estoque', response.qtSemEstoque.toString()),
+                  _buildSummaryItem('Valor', 'R\$ ${response.vlEstoqueEmGrana.toStringAsFixed(2)}'),
+                ],
               ),
-              title: Text(
-                produto.codigoDeBarras + produto.nomeProduto,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(
-                'Preço: R\$ ${produto.precoVenda.toStringAsFixed(2)}',
-                style: const TextStyle(color: Colors.black54),
-              ),
-              trailing: ativo
-                  ? const Icon(Icons.check_circle, color: Colors.green)
-                  : const Icon(Icons.cancel, color: Colors.red),
-              onTap: () {
-                // ação ao clicar no item
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Clicou em $produto')));
+            );
+          },
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await ProdutoHelper.retornarProdutosList(context, onSucesso: atualizarListaComProvider);
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: todosProdutos.length,
+              itemBuilder: (context, index) {
+                final produto = todosProdutos[index];
+                final ativo = produto.ativo == true;
+                return Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Text('${index + 1}'),
+                      backgroundColor: Colors.blue.shade200,
+                      foregroundColor: Colors.white,
+                    ),
+                    title: Text(
+                      produto.codigoDeBarras + produto.nomeProduto,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      'Preço: R\$ ${produto.precoVenda.toStringAsFixed(2)}',
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                    trailing: ativo
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : const Icon(Icons.cancel, color: Colors.red),
+                    onTap: () {
+                      // ação ao clicar no item
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Clicou em $produto')));
+                    },
+                  ),
+                );
               },
             ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(value, style: const TextStyle(fontSize: 14, color: Colors.blue)),
+      ],
     );
   }
 }
