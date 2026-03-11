@@ -70,7 +70,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildSummaryItem('No Estoque', response.qtNoEstoque.toString()),
+                  _buildSummaryItem('Itens TT', response.itensTotaisNoEstoque.toString()),
                   _buildSummaryItem('Sem Estoque', response.qtSemEstoque.toString()),
                   _buildSummaryItem('Valor', 'R\$ ${response.vlEstoqueEmGrana.toStringAsFixed(2)}'),
                 ],
