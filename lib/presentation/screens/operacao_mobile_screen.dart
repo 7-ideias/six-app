@@ -174,6 +174,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
             );
           }),
           buildCadastrosCard(Colors.amber, 'Os', 9, () {}),
+          buildCadastrosCard(Colors.pink, 'Caixa', 9, () {}),
         ],
       ),
     );
