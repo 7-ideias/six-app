@@ -8,7 +8,7 @@ class ProdutoHelper {
   static final AuthService _authService = AuthService();
 
   static Future<void> retornarProdutosList(BuildContext context,
-      {Function(List<ProdutoModel>)? onSucesso}) async {
+      {String tipo = 'PRODUTO', Function(List<ProdutoModel>)? onSucesso}) async {
     final provider = Provider.of<ProdutosListProvider<ProdutoModel>>(
       context,
       listen: false,
@@ -23,7 +23,7 @@ class ProdutoHelper {
         'idUnicoDaEmpresa': empresaId ?? '',
         'Authorization': 'Bearer $accessToken',
         'produtosAtivos': 'true',
-        'tipo': 'PRODUTO'
+        'tipo': tipo
       },
     );
 

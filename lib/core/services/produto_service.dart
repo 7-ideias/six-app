@@ -15,7 +15,12 @@ class ProdutoService {
   final client = InterceptedClient.build(interceptors: [LoggingInterceptor()]);
 
   Future<ProdutoResponseModel> ProdutosList(Map<String, String>? headers) async {
-    final url = Uri.parse(endpointList);
+    final queryParams = <String, String>{};
+    if (headers != null && headers.containsKey('tipo')) {
+      queryParams['tipo'] = headers['tipo']!;
+    }
+
+    final url = Uri.parse(endpointList).replace(queryParameters: queryParams);
 
     try {
       print('🌐 GET $url');

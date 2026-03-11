@@ -22,6 +22,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   List<ProdutoModel> todosProdutos = [];
   List<ProdutoModel> produtosFiltrados = [];
   String termoBusca = '';
+  String tipoSelecionado = 'PRODUTO';
   String ordenacao = 'nome';
   TextEditingController _controllerBusca = TextEditingController();
 
@@ -29,8 +30,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ProdutoHelper.retornarProdutosList(context, onSucesso: atualizarListaComProvider);
+      _recarregar();
     });
+  }
+
+  void _recarregar() {
+    ProdutoHelper.retornarProdutosList(
+      context,
+      tipo: tipoSelecionado,
+      onSucesso: atualizarListaComProvider,
+    );
   }
 
   void atualizarListaComProvider(List<ProdutoModel> items) {
@@ -149,9 +158,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           bottom: 20,
           right: 20,
           child: FloatingActionButton(
-            onPressed: () {
-              ProdutoHelper.retornarProdutosList(context, onSucesso: atualizarListaComProvider);
-            },
+            onPressed: _recarregar,
             backgroundColor: Colors.blueAccent,
             child: const Icon(Icons.refresh),
           ),

@@ -55,6 +55,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     Future.microtask(() {
       ProdutoHelper.retornarProdutosList(
         context,
+        tipo: tipoSelecionado,
         onSucesso: atualizarListaComProvider,
       );
     });
@@ -109,6 +110,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   Future<void> _recarregar() async {
     await ProdutoHelper.retornarProdutosList(
       context,
+      tipo: tipoSelecionado,
       onSucesso: atualizarListaComProvider,
     );
   }
@@ -226,7 +228,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   setState(() {
                     tipoSelecionado = 'PRODUTO';
                   });
-                  aplicarFiltroOrdenacao();
+                  _recarregar();
                 },
               ),
             ),
@@ -239,7 +241,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   setState(() {
                     tipoSelecionado = 'SERVICO';
                   });
-                  aplicarFiltroOrdenacao();
+                  _recarregar();
                 },
               ),
             ),
