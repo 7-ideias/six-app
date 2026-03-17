@@ -122,7 +122,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
             builder: (context, provider, _) {
               final response = provider.fullResponse;
               final int valorProdutos = (response is ProdutoResponseModel) 
-                  ? response.itensTotaisNoEstoque 
+                  ? response.skusTotaisNoEstoque 
                   : 0;
               
               return buildCadastrosCard(Colors.teal, 'Produtos', valorProdutos, () {

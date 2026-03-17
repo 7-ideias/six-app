@@ -266,7 +266,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               Expanded(
                 child: _SummaryCard(
                   label: 'Itens',
-                  value: response.itensTotaisNoEstoque.toString(),
+                  value: response.skusTotaisNoEstoque.toString(),
                 ),
               ),
               const SizedBox(width: 8),

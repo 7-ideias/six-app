@@ -218,24 +218,28 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Widget _buildResumoCupomFiscal() {
     final total = _produtosSelecionados.fold<double>(
       0,
-          (soma, item) => soma + ((item['preco'] ?? 0.0) * (item['quantidade'] ?? 1)),
+          (soma, item) =>
+      soma + ((item['preco'] ?? 0.0) * (item['quantidade'] ?? 1)),
     );
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      // margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 16),
+      margin: const EdgeInsets.fromLTRB(4, 16, 4, 24),
+      // margin: const EdgeInsets.fromLTRB(8, 16, 8, 24),
+      // margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFFFE89A),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: const Color(0xFFE6D89A)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,11 +251,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.1,
+                color: Color(0xFF5C4B00),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Divider(color: Colors.grey.shade400, thickness: 1),
+          const Divider(color: Color(0xFFD8C67A), thickness: 1),
           const SizedBox(height: 8),
 
           ..._produtosSelecionados.map((produto) {
@@ -269,7 +274,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     nome,
                     style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3E3300),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -278,9 +284,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     children: [
                       Text(
                         '$quantidade x R\$ ${preco.toStringAsFixed(2)}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade700,
+                          color: Color(0xFF6B5B1E),
                         ),
                       ),
                       Text(
@@ -288,6 +294,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
+                          color: Color(0xFF3E3300),
                         ),
                       ),
                     ],
@@ -297,7 +304,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             );
           }),
 
-          Divider(color: Colors.grey.shade400, thickness: 1),
+          const Divider(color: Color(0xFFD8C67A), thickness: 1),
           const SizedBox(height: 8),
 
           _buildLinhaResumo('Subtotal', total),
@@ -311,6 +318,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
+              color: Color(0xFF5C4B00),
             ),
           ),
         ],
@@ -402,7 +410,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               //   ),
               // ),
               // const SizedBox(height: 16),
-              const Text(
+              _produtosSelecionados.isEmpty? Container() : const Text(
                 'Itens selecionados',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -416,12 +424,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               //   title: const Text('Oferecer garantia estendida'),
               // ),
               const SizedBox(height: 24),
-              const Text(
+              _produtosSelecionados.isEmpty? Container() : const Text(
                 'Formas de pagamento',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Wrap(
+              _produtosSelecionados.isEmpty? Container() : Wrap(
                 spacing: 8,
                 children:
                     _formasPagamento.map((forma) {
@@ -444,7 +452,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               ),
               ..._formasSelecionadas.map(_buildPagamentoField).toList(),
               const SizedBox(height: 36),
-              ElevatedButton.icon(
+              _produtosSelecionados.isEmpty? Container() : ElevatedButton.icon(
                     onPressed: _finalizarVenda,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -463,7 +471,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   .fade(duration: 600.ms)
                   .slideY(begin: 1, curve: Curves.easeOut),
               const SizedBox(height: 10),
-              ElevatedButton.icon(
+              _produtosSelecionados.isEmpty? Container() : ElevatedButton.icon(
                     onPressed: _finalizarVenda,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -482,7 +490,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   .fade(duration: 600.ms)
                   .slideY(begin: 1, curve: Curves.easeOut),
               const SizedBox(height: 10),
-              ElevatedButton.icon(
+              _produtosSelecionados.isEmpty? Container() : ElevatedButton.icon(
                     onPressed: _finalizarVenda,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -502,7 +510,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   .slideY(begin: 1, curve: Curves.easeOut),
 
               const SizedBox(height: 16),
-              _buildResumoCupomFiscal(),
+              _produtosSelecionados.isEmpty? Container() : _buildResumoCupomFiscal(),
             ],
           ),
         ),

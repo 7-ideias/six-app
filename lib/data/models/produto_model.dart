@@ -76,15 +76,17 @@ class ProdutoModel {
 }
 
 class ProdutoResponseModel {
-  final int itensTotaisNoEstoque;
+  final int skusTotaisNoEstoque;
   final double qtNoEstoque;
+  final bool erroNoEstoque;
   final double qtSemEstoque;
   final double vlEstoqueEmGrana;
   final List<ProdutoModel> produtosList;
 
   ProdutoResponseModel({
-    required this.itensTotaisNoEstoque,
+    required this.skusTotaisNoEstoque,
     required this.qtNoEstoque,
+    required this.erroNoEstoque,
     required this.qtSemEstoque,
     required this.vlEstoqueEmGrana,
     required this.produtosList,
@@ -92,8 +94,9 @@ class ProdutoResponseModel {
 
   factory ProdutoResponseModel.fromJson(Map<String, dynamic> json) {
     return ProdutoResponseModel(
-      itensTotaisNoEstoque: json['itensTotaisNoEstoque'],
+      skusTotaisNoEstoque: json['skusTotaisNoEstoque'],
       qtNoEstoque: (json['qtNoEstoque'] ?? 0.0).toDouble(),
+      erroNoEstoque: (json['erroNoEstoque'] ?? false) as bool,
       qtSemEstoque: (json['qtSemEstoque'] ?? 0.0).toDouble(),
       vlEstoqueEmGrana: (json['vlEstoqueEmGrana'] ?? 0.0).toDouble(),
       produtosList: json['produtosList'] != null
@@ -106,8 +109,9 @@ class ProdutoResponseModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'itensTotaisNoEstoque': itensTotaisNoEstoque,
+      'skusTotaisNoEstoque': skusTotaisNoEstoque,
       'qtNoEstoque': qtNoEstoque,
+      'erroNoEstoque': erroNoEstoque,
       'qtSemEstoque': qtSemEstoque,
       'vlEstoqueEmGrana': vlEstoqueEmGrana,
       'produtosList': produtosList.map((e) => e.toJson()).toList(),
