@@ -1,9 +1,70 @@
+import 'package:appplanilha/core/services/auth_service.dart';
+import 'package:appplanilha/core/services/empresa_service.dart';
+import 'package:appplanilha/data/models/empresa_model.dart';
 import 'package:appplanilha/presentation/screens/assinatura_mobile_screen.dart';
 import 'package:appplanilha/presentation/screens/seguimento_mobile_screen.dart';
+import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:flutter/material.dart';
 
-class PerfilDoMeuNegocioMobileScreen extends StatelessWidget {
+class PerfilDoMeuNegocioMobileScreen extends StatefulWidget {
   const PerfilDoMeuNegocioMobileScreen({Key? key}) : super(key: key);
+
+  @override
+  _PerfilDoMeuNegocioMobileScreenState createState() =>
+      _PerfilDoMeuNegocioMobileScreenState();
+}
+
+class _PerfilDoMeuNegocioMobileScreenState
+    extends State<PerfilDoMeuNegocioMobileScreen> {
+  late TextEditingController _nomeEmpresaController;
+  late TextEditingController _cnpjController;
+  late TextEditingController _razaoSocialController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final empresaProvider = EmpresaProvider();
+    final empresa = empresaProvider.empresa;
+
+
+    _nomeEmpresaController =
+        TextEditingController(text: empresa?.nomeEmpresa ?? '');
+    _cnpjController =
+        TextEditingController(text: empresa?.documentoNoBrasilCNPJ ?? '');
+    _razaoSocialController =
+        TextEditingController(text: empresa?.nomeFantasia ?? '');
+
+    _carregarDadosDaEmpresa();
+  }
+
+  Future<void> _carregarDadosDaEmpresa() async {
+    final empresaService = EmpresaService();
+
+    try {
+      await empresaService.buscarDadosDaEmpresa();
+      if (mounted) {
+        final empresa = EmpresaProvider().empresa;
+        if (empresa != null) {
+          setState(() {
+            _nomeEmpresaController.text = empresa.nomeEmpresa;
+            _cnpjController.text = empresa.documentoNoBrasilCNPJ;
+            _razaoSocialController.text = empresa.nomeFantasia;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro ao buscar dados da empresa na inicialização: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _nomeEmpresaController.dispose();
+    _cnpjController.dispose();
+    _razaoSocialController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +125,17 @@ class PerfilDoMeuNegocioMobileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const TextField(
-            decoration: InputDecoration(labelText: 'Nome da empresa'),
+          TextField(
+            controller: _nomeEmpresaController,
+            decoration: const InputDecoration(labelText: 'Nome da empresa'),
           ),
-          const TextField(decoration: InputDecoration(labelText: 'CNPJ')),
-          const TextField(
-            decoration: InputDecoration(labelText: 'Razão social'),
+          TextField(
+            controller: _cnpjController,
+            decoration: const InputDecoration(labelText: 'CNPJ'),
+          ),
+          TextField(
+            controller: _razaoSocialController,
+            decoration: const InputDecoration(labelText: 'Razão social'),
           ),
           const SizedBox(height: 8),
           ListTile(
@@ -191,8 +257,36 @@ class PerfilDoMeuNegocioMobileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: () {
-              // Salvar ação
+            onPressed: () async {
+              final empresaService = EmpresaService();
+
+              final novaEmpresa = EmpresaModel(
+                nomeEmpresa: _nomeEmpresaController.text,
+                nomeFantasia: _razaoSocialController.text,
+                documentoNoBrasilCNPJ: _cnpjController.text,
+              );
+
+              try {
+                await empresaService.atualizarDadosDaEmpresa(novaEmpresa);
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Perfil atualizado com sucesso!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao atualizar: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text(
               'salvar perfil do negócio',

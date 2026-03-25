@@ -3,6 +3,7 @@ import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/providers/produtos_list_provider.dart';
+import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -37,6 +38,7 @@ void main() async {
                 fetchFunction: ProdutoService().ProdutosList,
               ),
         ),
+        ChangeNotifierProvider(create: (_) => EmpresaProvider()),
       ],
       child: MyApp(
         initialLocale: initialLocale,

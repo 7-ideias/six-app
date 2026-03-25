@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'http_client_factory.dart';
+import 'empresa_service.dart';
 import '../config/app_config.dart';
 import '../../data/models/auth_response_model.dart';
 
@@ -44,6 +45,15 @@ class AuthService {
       final authData = AuthResponseModel.fromJson(decoded);
       await _saveAuthData(authData);
       _startRefreshTimer();
+
+      // Buscar dados da empresa após o login bem-sucedido
+      try {
+        await EmpresaService().buscarDadosDaEmpresa();
+        print('Dados da empresa buscados e armazenados com sucesso');
+      } catch (e) {
+        debugPrint('Erro ao buscar dados da empresa: $e');
+      }
+
       return authData;
     }
 
