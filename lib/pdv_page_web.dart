@@ -197,34 +197,17 @@ class _PDVWebState extends State<PDVWeb> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Wrap(
-                              spacing: 20,
+                              spacing: 12,
                               runSpacing: 12,
                               children: [
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.person_search),
-                                  label: const Text("Buscar Cliente"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                                    foregroundColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                    textStyle: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 4,
-                                  ),
+                                _buildTopActionButton(
+                                  context: context,
+                                  icon: Icons.person_search,
+                                  label: 'Buscar Cliente',
                                   onPressed: () {
                                     showDialog(
                                       context: context,
@@ -246,27 +229,10 @@ class _PDVWebState extends State<PDVWeb> {
                                     );
                                   },
                                 ),
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.person_search),
-                                  label: const Text("Vendedor"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                                    foregroundColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                    textStyle: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 4,
-                                  ),
+                                _buildTopActionButton(
+                                  context: context,
+                                  icon: Icons.person_search,
+                                  label: 'Vendedor',
                                   onPressed: () {
                                     showDialog(
                                       context: context,
@@ -289,27 +255,10 @@ class _PDVWebState extends State<PDVWeb> {
                                     );
                                   },
                                 ),
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.point_of_sale),
-                                  label: const Text("VENDA"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                                    foregroundColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                    textStyle: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 4,
-                                  ),
+                                _buildTopActionButton(
+                                  context: context,
+                                  icon: Icons.point_of_sale,
+                                  label: 'VENDA',
                                   onPressed: () {
                                     showDialog(
                                       context: context,
@@ -334,6 +283,7 @@ class _PDVWebState extends State<PDVWeb> {
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
                           IconButton(
                             onPressed: () {},
                             icon: const Icon(Icons.construction),
@@ -610,6 +560,41 @@ class _PDVWebState extends State<PDVWeb> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 220,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          side: BorderSide(
+            width: 2,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          foregroundColor: Theme.of(context).colorScheme.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+          backgroundColor: Colors.transparent,
         ),
       ),
     );
