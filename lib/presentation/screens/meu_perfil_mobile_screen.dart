@@ -15,6 +15,17 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
   final TextEditingController _sobrenomeController = TextEditingController();
   final TextEditingController _cpfController = TextEditingController();
   final TextEditingController _registroController = TextEditingController();
+  final TextEditingController _nomeDeGuerraController = TextEditingController();
+  final TextEditingController _celularController = TextEditingController();
+  final TextEditingController _rgController = TextEditingController();
+  final TextEditingController _dataNascimentoController = TextEditingController();
+  final TextEditingController _cepController = TextEditingController();
+  final TextEditingController _logradouroController = TextEditingController();
+  final TextEditingController _complementoController = TextEditingController();
+  final TextEditingController _bairroController = TextEditingController();
+  final TextEditingController _localidadeController = TextEditingController();
+  final TextEditingController _ufController = TextEditingController();
+  final TextEditingController _email = TextEditingController();
 
   @override
   void initState() {
@@ -35,6 +46,19 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         _sobrenomeController.text = usuario.sobrenome;
         _cpfController.text = usuario.cpf;
         _registroController.text = usuario.registroProfissional;
+        _nomeDeGuerraController.text = usuario.nomeDeGuerra;
+        _celularController.text = usuario.celular;
+        _rgController.text = usuario.rg;
+        _dataNascimentoController.text = usuario.dataNascimento;
+        _email.text = usuario.email;
+        if (usuario.objEndereco != null) {
+          _cepController.text = usuario.objEndereco!.cep;
+          _logradouroController.text = usuario.objEndereco!.logradouro;
+          _complementoController.text = usuario.objEndereco!.complemento;
+          _bairroController.text = usuario.objEndereco!.bairro;
+          _localidadeController.text = usuario.objEndereco!.localidade;
+          _ufController.text = usuario.objEndereco!.uf;
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -53,6 +77,17 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     _sobrenomeController.dispose();
     _cpfController.dispose();
     _registroController.dispose();
+    _nomeDeGuerraController.dispose();
+    _celularController.dispose();
+    _rgController.dispose();
+    _dataNascimentoController.dispose();
+    _email.dispose();
+    _cepController.dispose();
+    _logradouroController.dispose();
+    _complementoController.dispose();
+    _bairroController.dispose();
+    _localidadeController.dispose();
+    _ufController.dispose();
     super.dispose();
   }
 
@@ -114,8 +149,22 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
               _buildSectionTitle("Dados pessoais"),
               _buildInput("Primeiro nome", _nomeController),
               _buildInput("Sobrenome", _sobrenomeController),
+              _buildInput("Nome de guerra", _nomeDeGuerraController),
               _buildInput("CPF", _cpfController),
+              _buildInput("RG", _rgController),
+              _buildInput("Data de nascimento", _dataNascimentoController),
+              _buildInput("Celular", _celularController),
               _buildInput("Registro profissional", _registroController),
+              _buildInput("Email", _email),
+              const SizedBox(height: 8),
+              const Divider(thickness: 1),
+              _buildSectionTitle("Endereço"),
+              _buildInput("CEP", _cepController),
+              _buildInput("Logradouro", _logradouroController),
+              _buildInput("Complemento", _complementoController),
+              _buildInput("Bairro", _bairroController),
+              _buildInput("Localidade", _localidadeController),
+              _buildInput("UF", _ufController),
               const SizedBox(height: 8),
               const Divider(thickness: 1),
               _buildSectionTitle("E-mail e senha"),
@@ -148,14 +197,21 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                     sobrenome: _sobrenomeController.text,
                     cpf: _cpfController.text,
                     registroProfissional: _registroController.text,
-                    email: usuarioAtual.email,
-                    nomeDeGuerra: usuarioAtual.nomeDeGuerra,
-                    celular: usuarioAtual.celular,
+                    email: _email.text,
+                    nomeDeGuerra: _nomeDeGuerraController.text,
+                    celular: _celularController.text,
                     senha: usuarioAtual.senha,
                     salt: usuarioAtual.salt,
-                    rg: usuarioAtual.rg,
-                    dataNascimento: usuarioAtual.dataNascimento,
-                    objEndereco: usuarioAtual.objEndereco,
+                    rg: _rgController.text,
+                    dataNascimento: _dataNascimentoController.text,
+                    objEndereco: EnderecoModel(
+                      cep: _cepController.text,
+                      logradouro: _logradouroController.text,
+                      complemento: _complementoController.text,
+                      bairro: _bairroController.text,
+                      localidade: _localidadeController.text,
+                      uf: _ufController.text,
+                    ),
                   );
 
                   provider.setLoading(true);

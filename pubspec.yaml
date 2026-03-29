@@ -34,3 +34,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/placeholder.png
+    - assets/images/moca-tela-login.png
