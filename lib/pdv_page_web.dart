@@ -167,8 +167,8 @@ class _PDVWebState extends State<PDVWeb> {
                                   icon: const Icon(Icons.person_search),
                                   label: const Text("Buscar Cliente"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                     textStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -207,8 +207,8 @@ class _PDVWebState extends State<PDVWeb> {
                                   icon: const Icon(Icons.person_search),
                                   label: const Text("Vendedor"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                     textStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -248,8 +248,8 @@ class _PDVWebState extends State<PDVWeb> {
                                   icon: const Icon(Icons.point_of_sale),
                                   label: const Text("VENDA"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                     textStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -368,10 +368,10 @@ class _PDVWebState extends State<PDVWeb> {
                               child: ListTile(
                                 leading: CircleAvatar(
                                   radius: 24,
-                                  backgroundColor: Colors.grey[200],
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                                   child: Icon(
                                     Icons.inventory_2,
-                                    color: Colors.grey[800],
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     size: 24,
                                   ),
                                 ),
@@ -433,6 +433,7 @@ class _PDVWebState extends State<PDVWeb> {
                                   style: TextStyle(
                                     fontSize: fontSize,
                                     fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -577,16 +578,20 @@ class _PDVWebState extends State<PDVWeb> {
             children: [
               Text(
                 count,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ],
           ),

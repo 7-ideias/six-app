@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class TopNavItemData {
   final String title;
@@ -129,8 +131,15 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final brightness = Theme.of(context).brightness;
+    final currentTheme = brightness == Brightness.dark
+        ? themeProvider.darkTheme
+        : themeProvider.lightTheme;
+    final colorScheme = currentTheme.colorScheme;
+
     return Material(
-      color: Colors.blue,
+      color: colorScheme.primary,
       child: Focus(
         autofocus: true,
         focusNode: _focusNode,
@@ -140,7 +149,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
             final compact = constraints.maxWidth < 1100;
 
             return AppBar(
-              backgroundColor: Colors.blue,
+              backgroundColor: Colors.transparent,
               elevation: 0,
               titleSpacing: compact ? 12 : 24,
               title: compact
@@ -187,9 +196,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                   const Spacer(),
                   IconButton(
                     onPressed: widget.onNotificationPressed,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.notifications_none,
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                     ),
                     tooltip: 'Notificações',
                   ),
@@ -231,6 +240,13 @@ class _ResponsiveHeader extends StatefulWidget {
 class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final brightness = Theme.of(context).brightness;
+    final currentTheme = brightness == Brightness.dark
+        ? themeProvider.darkTheme
+        : themeProvider.lightTheme;
+    final colorScheme = currentTheme.colorScheme;
+
     final veryCompact = MediaQuery.of(context).size.width < 760;
 
     if (!veryCompact) {
@@ -262,9 +278,9 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
           ),
           IconButton(
             onPressed: widget.onNotificationPressed,
-            icon: const Icon(
+            icon: Icon(
               Icons.notifications_none,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
             ),
             tooltip: 'Notificações',
           ),
@@ -274,43 +290,53 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
 
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
             'Menu',
             style: TextStyle(
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
-        PopupMenuButton<int>(
-          tooltip: 'Abrir menu',
-          color: Colors.white,
-          onSelected: (index) {
-            widget.onKeyboardFocusChanged(index);
+        Theme(
+          data: Theme.of(context).copyWith(
+            popupMenuTheme: PopupMenuThemeData(
+              color: colorScheme.surface,
+              textStyle: TextStyle(color: colorScheme.onSurface),
+            ),
+          ),
+          child: PopupMenuButton<int>(
+            tooltip: 'Abrir menu',
+            onSelected: (index) {
+              widget.onKeyboardFocusChanged(index);
 
-            final item = widget.items[index];
-            if (item.subItems.isNotEmpty) {
-              widget.onMenuOpened(index);
-              widget.itemKeys[index]?.currentState?.openFromExternal();
-            }
-          },
-          itemBuilder: (context) {
-            return List.generate(widget.items.length, (index) {
-              return PopupMenuItem<int>(
-                value: index,
-                child: Text(widget.items[index].title),
-              );
-            });
-          },
-          icon: const Icon(Icons.menu, color: Colors.white),
+              final item = widget.items[index];
+              if (item.subItems.isNotEmpty) {
+                widget.onMenuOpened(index);
+                widget.itemKeys[index]?.currentState?.openFromExternal();
+              }
+            },
+            itemBuilder: (context) {
+              return List.generate(widget.items.length, (index) {
+                return PopupMenuItem<int>(
+                  value: index,
+                  child: Text(
+                    widget.items[index].title,
+                    style: TextStyle(color: colorScheme.onSurface),
+                  ),
+                );
+              });
+            },
+            icon: Icon(Icons.menu, color: colorScheme.onPrimary),
+          ),
         ),
         IconButton(
           onPressed: widget.onNotificationPressed,
-          icon: const Icon(
+          icon: Icon(
             Icons.notifications_none,
-            color: Colors.white,
+            color: colorScheme.onPrimary,
           ),
           tooltip: 'Notificações',
         ),
@@ -504,6 +530,13 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
   }
 
   OverlayEntry _buildOverlayEntry() {
+    final themeProvider = context.read<ThemeProvider>();
+    final brightness = Theme.of(context).brightness;
+    final currentTheme = brightness == Brightness.dark
+        ? themeProvider.darkTheme
+        : themeProvider.lightTheme;
+    final colorScheme = currentTheme.colorScheme;
+
     final width = widget.compactMode ? 210.0 : 230.0;
 
     return OverlayEntry(
@@ -539,21 +572,17 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
                     scale: _scaleAnimation,
                     alignment: Alignment.topCenter,
                     child: Material(
-                      color: Colors.transparent,
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(12),
+                      color: colorScheme.surface,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFFE5ECF6),
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withOpacity(0.1),
                           ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x22000000),
-                              blurRadius: 18,
-                              offset: Offset(0, 8),
-                            ),
-                          ],
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -652,6 +681,13 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final brightness = Theme.of(context).brightness;
+    final currentTheme = brightness == Brightness.dark
+        ? themeProvider.darkTheme
+        : themeProvider.lightTheme;
+    final colorScheme = currentTheme.colorScheme;
+
     final isActive =
         _isOpen || _isHoveringTrigger || _isHoveringMenu || widget.isKeyboardFocused;
 
@@ -706,12 +742,12 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
               ),
               decoration: BoxDecoration(
                 color: isActive
-                    ? Colors.white.withOpacity(0.12)
+                    ? colorScheme.onPrimary.withOpacity(0.12)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 border: Border(
                   bottom: BorderSide(
-                    color: isActive ? Colors.white : Colors.transparent,
+                    color: isActive ? colorScheme.onPrimary : Colors.transparent,
                     width: 3,
                   ),
                 ),
@@ -720,7 +756,7 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: colorScheme.onPrimary,
                   fontSize: fontSize,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 ),
@@ -734,9 +770,9 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
                         turns: _isOpen ? 0.5 : 0,
                         duration: const Duration(milliseconds: 180),
                         curve: Curves.easeOutCubic,
-                        child: const Icon(
+                        child: Icon(
                           Icons.keyboard_arrow_down,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                           size: 18,
                         ),
                       ),
@@ -776,6 +812,13 @@ class _AnimatedSubMenuItemState extends State<_AnimatedSubMenuItem> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final brightness = Theme.of(context).brightness;
+    final currentTheme = brightness == Brightness.dark
+        ? themeProvider.darkTheme
+        : themeProvider.lightTheme;
+    final colorScheme = currentTheme.colorScheme;
+
     final active = widget.isSelected || widget.isHighlighted || _hovering;
 
     return MouseRegion(
@@ -802,14 +845,14 @@ class _AnimatedSubMenuItemState extends State<_AnimatedSubMenuItem> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: widget.isSelected
-                ? const Color(0xFFDCEBFF)
+                ? colorScheme.primaryContainer
                 : active
-                ? const Color(0xFFF1F7FF)
+                ? colorScheme.primary.withOpacity(0.05)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: widget.isSelected
-                  ? const Color(0xFF7FB0F8)
+                  ? colorScheme.primary
                   : Colors.transparent,
             ),
           ),
@@ -822,15 +865,17 @@ class _AnimatedSubMenuItemState extends State<_AnimatedSubMenuItem> {
                     fontSize: 15,
                     fontWeight:
                     widget.isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: const Color(0xFF173B67),
+                    color: widget.isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
               ),
               if (widget.isSelected)
-                const Icon(
+                Icon(
                   Icons.check,
                   size: 16,
-                  color: Color(0xFF173B67),
+                  color: colorScheme.primary,
                 ),
             ],
           ),
