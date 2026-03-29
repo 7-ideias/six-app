@@ -32,22 +32,22 @@ class AppDrawerDoMobile extends StatelessWidget {
           //   decoration: BoxDecoration(color: Colors.white),
           // ),
           UserAccountsDrawerHeader(
-            accountName: const Text(
+            accountName: Text(
               "Nome do Usuário",
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
             ),
-            accountEmail: const Text(
+            accountEmail: Text(
               "email@exemplo.com",
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7)),
             ),
             currentAccountPicture: CircleAvatar(
               radius: 36,
               backgroundImage: image != null ? FileImage(image!) : null,
               child: image == null
-                  ? const Icon(
-                  Icons.camera_alt, size: 28.0, color: Colors.white)
+                  ? Icon(
+                  Icons.camera_alt, size: 28.0, color: Theme.of(context).colorScheme.onPrimary)
                   : null,
-              backgroundColor: Colors.transparent,
+              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             ),
             otherAccountsPictures: const [
               CircleAvatar(
@@ -58,8 +58,8 @@ class AppDrawerDoMobile extends StatelessWidget {
             onDetailsPressed: () {
               // Pode usar para abrir um menu suspenso ou dropdown no futuro
             },
-            decoration: const BoxDecoration(
-              color: Colors.lightBlue, // muda conforme seu tema
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
 
@@ -158,13 +158,14 @@ class AppDrawerDoMobile extends StatelessWidget {
     VoidCallback onTap, {
     bool bold = false,
   }) {
+    final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: Colors.deepPurple),
+      leading: Icon(icon, color: theme.colorScheme.primary),
       title: Text(
         title,
-        style: TextStyle(
+        style: theme.textTheme.bodyLarge?.copyWith(
           fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-          color: Colors.black,
+          color: theme.colorScheme.onSurface,
         ),
       ),
       onTap: onTap,

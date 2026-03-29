@@ -92,27 +92,27 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.primary,
+        ),
       ),
     );
   }
 
   Widget _buildInput(String hint, TextEditingController controller) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
-          hintText: hint,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 10,
-          ),
+          labelText: hint,
+          alignLabelWithHint: true,
         ),
       ),
     );
@@ -175,17 +175,10 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
               const SizedBox(height: 32),
             ],
           ),
-          bottomNavigationBar: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              height: 48,
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 onPressed: () async {
                   final provider = UsuarioProvider();
                   final usuarioAtual = provider.usuario;
@@ -234,10 +227,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                     provider.setLoading(false);
                   }
                 },
-                child: const Text(
-                  "salvar meu perfil",
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: const Text("Salvar meu perfil"),
               ),
             ),
           ),

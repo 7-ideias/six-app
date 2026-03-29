@@ -102,35 +102,35 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     );
   }
 
-  Widget _buildUserTypeCard(TipoUsuarioEnum tipo, String label, IconData icon,
-      Color color) {
+  Widget _buildUserTypeCard(BuildContext context, TipoUsuarioEnum tipo, String label, IconData icon) {
+    final theme = Theme.of(context);
     final bool selected = _tipoSelecionado == tipo;
+    final Color activeColor = theme.colorScheme.primary;
+
     return GestureDetector(
       onTap: () => setState(() => _tipoSelecionado = tipo),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? color.withAlpha((0.5 * 255).round()) : Colors
-              .transparent,
+          color: selected ? activeColor.withOpacity(0.1) : theme.colorScheme.surface.withOpacity(0.5),
           border: Border.all(
-              color: selected ? color : Colors.grey.shade300, width: 2),
+              color: selected ? activeColor : theme.dividerColor, width: 2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? color : Colors.grey),
+            Icon(icon, color: selected ? activeColor : theme.hintColor),
             const SizedBox(width: 12),
             Expanded(
               child: Text(label,
-                style: TextStyle(
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: selected ? color : Colors.black87,
+                  color: selected ? activeColor : theme.colorScheme.onSurface,
                 ),
               ),
             ),
-            if (selected) Icon(Icons.check_circle, color: color)
+            if (selected) Icon(Icons.check_circle, color: activeColor)
           ],
         ),
       ),
@@ -165,66 +165,71 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
           Center(
             child: SingleChildScrollView(
               child: Container(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(24.0),
                 width: kIsWeb
-                    ? MediaQuery.of(context).size.width * 0.25
-                    : MediaQuery.of(context).size.width * 0.85,
+                    ? MediaQuery.of(context).size.width * 0.35
+                    : MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha((0.1 * 255).round()),
-                  borderRadius: BorderRadius.circular(16),
+                  color: theme.colorScheme.surface.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    // const SizedBox(height: 20),
-                    // Image.asset(
-                    //   'assets/images/moca-tela-login.png',
-                    //   height: 100,
-                    //   fit: BoxFit.contain,
-                    // ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
+                    Icon(Icons.lock_person_rounded, size: 64, color: theme.colorScheme.primary),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Bem-vindo",
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
                     TextFormField(
                       controller: _loginController,
                       decoration: const InputDecoration(
-                        hintText: 'login',
-                        labelText: 'login',
-                        filled: true,
-                        fillColor: Colors.white70,
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
+                        hintText: 'Login',
+                        labelText: 'Login',
+                        prefixIcon: Icon(Icons.person_outline),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
                       decoration: const InputDecoration(
-                        hintText: 'senha',
-                        labelText: 'senha',
-                        filled: true,
-                        fillColor: Colors.white70,
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock),
+                        hintText: 'Senha',
+                        labelText: 'Senha',
+                        prefixIcon: Icon(Icons.lock_outline),
                       ),
                     ),
                     const SizedBox(height: 24),
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text("Voce é:", style: theme.textTheme.titleMedium),
+                      child: Text("Você é:", style: theme.textTheme.titleMedium),
                     ),
                     const SizedBox(height: 12),
                     _buildUserTypeCard(
+                      context,
                       TipoUsuarioEnum.ADMINISTRADOR,
                       "Administrador",
-                      Icons.admin_panel_settings,
-                      Colors.purple,
+                      Icons.admin_panel_settings_outlined,
                     ),
                     const SizedBox(height: 12),
                     _buildUserTypeCard(
+                      context,
                       TipoUsuarioEnum.COLABORADOR,
                       "Colaborador",
-                      Icons.groups,
-                      Colors.teal,
+                      Icons.groups_outlined,
                     ),
                     const SizedBox(height: 20),
                     Align(
@@ -241,13 +246,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                     const SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: _isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        backgroundColor: theme.colorScheme.primary,
-                      ),
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
@@ -257,10 +255,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
-                              'entrar',
-                              style: TextStyle(fontSize: 18, color: Colors.white),
-                            ),
+                          : const Text('Entrar'),
                     ),
                     const SizedBox(height: 10),
                     TextButton(

@@ -19,6 +19,13 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _loginController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _login() async {
     final String login = _loginController.text.trim();
     final String senha = _passwordController.text.trim();
@@ -62,56 +69,126 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   @override
   Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
+    final double formWidth = kIsWeb
+        ? (screenSize.width * 0.28).clamp(320.0, 460.0)
+        : (screenSize.width * 0.9).clamp(280.0, 420.0);
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text("Login"),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(16.0),
-            width: kIsWeb ? MediaQuery.of(context).size.width * 0.25 : MediaQuery.of(context).size.width * 0.6,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                TextFormField(
-                  controller: _loginController,
-                  decoration: InputDecoration(
-                    hintText: 'login',
-                    // hintText: AppLocalizations.of(context)!.login.toUpperCase(),
-                    labelText: 'login',
-                    // labelText: AppLocalizations.of(context)!.login.toUpperCase(),
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                ),
-                SizedBox(height: 20),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: 'login',
-                    // hintText: AppLocalizations.of(context)!.senha.toUpperCase(),
-                    labelText: 'login',
-                    // labelText: AppLocalizations.of(context)!.senha.toUpperCase(),
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                ),
-                SizedBox(height: 40),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: Size.fromHeight(50), // makes the button taller
-                  ),
-                  child: Text('entrar', style: TextStyle(fontSize: 18)),
-                  // child: Text(AppLocalizations.of(context)!.entrar.toUpperCase(), style: TextStyle(fontSize: 18)),
-                ),
-              ],
+      body: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/web/atendente_login_web.png',
+              fit: BoxFit.cover,
             ),
           ),
-        ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.35),
+              ),
+            ),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Container(
+                width: formWidth,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const <BoxShadow>[
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 24,
+                      offset: Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      'Bem-vindo',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Acesse sua conta para continuar',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.black54,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _loginController,
+                      decoration: const InputDecoration(
+                        hintText: 'login',
+                        // hintText: AppLocalizations.of(context)!.login.toUpperCase(),
+                        labelText: 'login',
+                        // labelText: AppLocalizations.of(context)!.login.toUpperCase(),
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        hintText: 'senha',
+                        // hintText: AppLocalizations.of(context)!.senha.toUpperCase(),
+                        labelText: 'senha',
+                        // labelText: AppLocalizations.of(context)!.senha.toUpperCase(),
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text(
+                                'entrar',
+                                style: TextStyle(fontSize: 18),
+                              ),
+                        // child: Text(AppLocalizations.of(context)!.entrar.toUpperCase(), style: TextStyle(fontSize: 18)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

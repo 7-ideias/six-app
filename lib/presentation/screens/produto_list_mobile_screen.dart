@@ -123,7 +123,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         : todosProdutos;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
       body: Column(
         children: [
           _buildTabs(),
@@ -161,6 +160,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildSearchField() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
@@ -171,10 +171,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         },
         decoration: InputDecoration(
           hintText: 'Buscar produto ou SKU',
-          hintStyle: const TextStyle(
-            color: Color(0xFF9CA3AF),
-            fontWeight: FontWeight.w500,
-          ),
           prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: _controllerBusca.text.isEmpty
               ? null
@@ -186,36 +182,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             },
             icon: const Icon(Icons.close_rounded),
           ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.3),
-          ),
         ),
       ),
     );
   }
 
   Widget _buildTabs() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF2F7),
+          color: theme.colorScheme.primary.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -423,31 +402,37 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF6B7280),
+            style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w700,
+              color: theme.hintColor,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             value,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF111827),
+            style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -463,10 +448,11 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final backgroundColor =
-    ativo ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2);
+    ativo ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1);
     final foregroundColor =
-    ativo ? const Color(0xFF166534) : const Color(0xFF991B1B);
+    ativo ? Colors.green : Colors.red;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -476,9 +462,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         ativo ? 'Ativo' : 'Inativo',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.bold,
           color: foregroundColor,
         ),
       ),
@@ -491,29 +476,27 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final theme = Theme.of(context);
+    return Column(
       children: [
         Icon(
           Icons.search_off_rounded,
           size: 56,
-          color: Color(0xFF9CA3AF),
+          color: theme.hintColor,
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         Text(
           'Nenhum item encontrado',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF111827),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 6),
+        const SizedBox(height: 6),
         Text(
           'Tente outro termo de busca ou altere a aba selecionada.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF6B7280),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor,
           ),
         ),
       ],

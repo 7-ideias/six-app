@@ -87,10 +87,10 @@ class MyAppState extends State<MyApp> {
   //     // Rota principal
   //     GoRoute(
   //       path: '/',
-  //       builder: (context, state) => widget.hasSeenOnboarding
-  //           ? kIsWeb
+  //       builder: (context, state) => kIsWeb
   //           ? LoginPageWeb()
-  //           : LoginPageMobile()
+  //           : widget.hasSeenOnboarding
+  //           ? LoginPageMobile()
   //           : OnboardingScreen(),
   //     ),
   //   ],
@@ -101,11 +101,11 @@ class MyAppState extends State<MyApp> {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Six',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
-      theme: lightTheme,
-      darkTheme: darkTheme,
+      theme: themeProvider.lightTheme,
+      darkTheme: themeProvider.darkTheme,
       locale: _locale,
       supportedLocales: [
         Locale('en', 'US'),
@@ -118,7 +118,7 @@ class MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: widget.hasSeenOnboarding ? kIsWeb ? LoginPageWeb() : LoginPageMobile() : OnboardingScreen(),
+      home: kIsWeb ? LoginPageWeb() : widget.hasSeenOnboarding ? LoginPageMobile() : OnboardingScreen(),
     );
   }
 }
