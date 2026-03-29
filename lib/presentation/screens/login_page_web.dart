@@ -9,7 +9,7 @@ class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
 
   @override
-  _LoginPageWebState createState() => _LoginPageWebState();
+  State<LoginPageWeb> createState() => _LoginPageWebState();
 }
 
 class _LoginPageWebState extends State<LoginPageWeb> {
@@ -58,13 +58,29 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _navigateToHome() {
-    // if (_loginController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageMobile(title: 'Flutter Demo Home Page')));
-    // } else {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text("Login and Password must not be empty!")),
-    //   );
-    // }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+        const HomePageMobile(title: 'Flutter Demo Home Page'),
+      ),
+    );
+  }
+
+  void _onForgotPassword() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fluxo de recuperação de senha ainda não implementado.'),
+      ),
+    );
+  }
+
+  void _onCreateNewUser() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fluxo de cadastro de novo usuário ainda não implementado.'),
+      ),
+    );
   }
 
   @override
@@ -121,16 +137,16 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                     Text(
                       'Bem-vindo',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Acesse sua conta para continuar',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black54,
-                          ),
+                        color: Colors.black54,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -138,9 +154,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                       controller: _loginController,
                       decoration: const InputDecoration(
                         hintText: 'login',
-                        // hintText: AppLocalizations.of(context)!.login.toUpperCase(),
                         labelText: 'login',
-                        // labelText: AppLocalizations.of(context)!.login.toUpperCase(),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.person),
                         filled: true,
@@ -153,16 +167,22 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                       obscureText: true,
                       decoration: const InputDecoration(
                         hintText: 'senha',
-                        // hintText: AppLocalizations.of(context)!.senha.toUpperCase(),
                         labelText: 'senha',
-                        // labelText: AppLocalizations.of(context)!.senha.toUpperCase(),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.lock),
                         filled: true,
                         fillColor: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _onForgotPassword,
+                        child: const Text('Esqueci a senha'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -172,16 +192,32 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                         ),
                         child: _isLoading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                             : const Text(
-                                'entrar',
-                                style: TextStyle(fontSize: 18),
-                              ),
-                        // child: Text(AppLocalizations.of(context)!.entrar.toUpperCase(), style: TextStyle(fontSize: 18)),
+                          'entrar',
+                          style: TextStyle(fontSize: 18),
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'Novo por aqui?',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.black87,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _onCreateNewUser,
+                          child: const Text('Criar conta'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
