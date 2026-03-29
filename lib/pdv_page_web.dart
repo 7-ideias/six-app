@@ -16,6 +16,17 @@ class PDVWeb extends StatefulWidget {
 class _PDVWebState extends State<PDVWeb> {
   bool _mostrarDashboardLateral = true;
 
+  final List<Map<String, dynamic>> _produtosSelecionados = List.generate(
+    8,
+        (index) => {
+      'nome': 'Produto Exemplo $index',
+      'preco': 50.0,
+      'quantidade': 2,
+    },
+  );
+
+  final Set<String> _formasSelecionadas = {'Pix', 'Cartão Crédito'};
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,7 +205,6 @@ class _PDVWebState extends State<PDVWeb> {
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -291,268 +301,333 @@ class _PDVWebState extends State<PDVWeb> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      Center(
-                        child: Text(
-                          "F R E N T E   D E   C A I X A",
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              autofocus: true,
-                              decoration: const InputDecoration(
-                                labelText: "Código de Barras",
-                                border: OutlineInputBorder(),
-                              ),
-                              onSubmitted: (value) {},
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.search),
-                            tooltip: 'Buscar produto',
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return Dialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: SizedBox(
-                                      width:
-                                      MediaQuery.of(context).size.width *
-                                          0.8,
-                                      height:
-                                      MediaQuery.of(context).size.height *
-                                          0.8,
-                                      child: SubPainelWebProdutoLista(),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              decoration: const InputDecoration(
-                                labelText: "Itens Total",
-                                border: OutlineInputBorder(),
-                              ),
-                              onSubmitted: (value) {},
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: "Cliente Identificado",
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      const SizedBox(height: 20),
                       Expanded(
-                        child: ListView.builder(
-                          itemCount: 20,
-                          itemBuilder: (context, index) {
-                            return ZebraListItem(
-                              index: index,
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  radius: 24,
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHighest,
-                                  child: Icon(
-                                    Icons.inventory_2,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                    size: 24,
-                                  ),
-                                ),
-                                title:
-                                Text("#$index - Produto Exemplo $index"),
-                                subtitle: const Text("Qtd: 2 • R\$ 50,00"),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.remove_circle_outline,
-                                      ),
-                                      onPressed: () {},
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.add_circle_outline,
-                                      ),
-                                      onPressed: () {},
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () {},
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const Divider(),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final double screenWidth = constraints.maxWidth;
-                          final double fontSize = screenWidth > 600 ? 40 : 20;
-                          final double buttonFontSize =
-                          screenWidth > 600 ? 24 : 16;
-                          final EdgeInsets buttonPadding = screenWidth > 600
-                              ? const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 20,
-                          )
-                              : const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          );
-
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  "Total: R\$ 250,00",
-                                  style: TextStyle(
-                                    fontSize: fontSize,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                    Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  OutlinedButton.icon(
-                                    icon: Icon(
-                                      Icons.check,
-                                      size: buttonFontSize,
+                                  Center(
+                                    child: Text(
+                                      "F R E N T E   D E   C A I X A",
+                                      style:
+                                      Theme.of(context).textTheme.bodyLarge,
                                     ),
-                                    label: Text(
-                                      "Pausar",
-                                      style: TextStyle(
-                                        fontSize: buttonFontSize,
-                                      ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: buttonPadding,
-                                    ),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return AlertDialog(
-                                            title: const Text('Pausar'),
-                                            content: const Text(
-                                              'A ideia é receber depois e deixar a venda aberta.',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(context).pop(),
-                                                child: const Text('Fechar'),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
                                   ),
-                                  OutlinedButton.icon(
-                                    icon: Icon(
-                                      Icons.check,
-                                      size: buttonFontSize,
-                                    ),
-                                    label: Text(
-                                      "Finalizar",
-                                      style: TextStyle(
-                                        fontSize: buttonFontSize,
+                                  const SizedBox(height: 20),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          autofocus: true,
+                                          decoration: const InputDecoration(
+                                            labelText: "Código de Barras",
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          onSubmitted: (value) {},
+                                        ),
                                       ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: buttonPadding,
-                                    ),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return AlertDialog(
-                                            title: const Text('Finalizar'),
-                                            content: const Text(
-                                              'A ideia é confirmar o tipo de venda e propor alguma coisa.',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(context).pop(),
-                                                child: const Text('Fechar'),
-                                              ),
-                                            ],
+                                      IconButton(
+                                        icon: const Icon(Icons.search),
+                                        tooltip: 'Buscar produto',
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return Dialog(
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                  BorderRadius.circular(10),
+                                                ),
+                                                child: SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                      0.8,
+                                                  height: MediaQuery.of(context)
+                                                      .size
+                                                      .height *
+                                                      0.8,
+                                                  child:
+                                                  SubPainelWebProdutoLista(),
+                                                ),
+                                              );
+                                            },
                                           );
                                         },
-                                      );
-                                    },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: TextField(
+                                          decoration: const InputDecoration(
+                                            labelText: "Itens Total",
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          onSubmitted: (value) {},
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  OutlinedButton.icon(
-                                    icon: Icon(
-                                      Icons.cancel,
-                                      size: buttonFontSize,
+                                  const SizedBox(height: 10),
+                                  const TextField(
+                                    decoration: InputDecoration(
+                                      labelText: "Cliente Identificado",
+                                      border: OutlineInputBorder(),
                                     ),
-                                    label: Text(
-                                      "Cancelar",
-                                      style: TextStyle(
-                                        fontSize: buttonFontSize,
-                                      ),
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Expanded(
+                                    child: ListView.builder(
+                                      itemCount: _produtosSelecionados.length,
+                                      itemBuilder: (context, index) {
+                                        final produto =
+                                        _produtosSelecionados[index];
+                                        return ZebraListItem(
+                                          index: index,
+                                          child: ListTile(
+                                            leading: CircleAvatar(
+                                              radius: 24,
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
+                                              child: Icon(
+                                                Icons.inventory_2,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                                size: 24,
+                                              ),
+                                            ),
+                                            title: Text(
+                                              "#$index - ${produto['nome']}",
+                                            ),
+                                            subtitle: Text(
+                                              "Qtd: ${produto['quantidade']} • R\$ ${(produto['preco'] as double).toStringAsFixed(2)}",
+                                            ),
+                                            trailing: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons
+                                                        .remove_circle_outline,
+                                                  ),
+                                                  onPressed: () {},
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.add_circle_outline,
+                                                  ),
+                                                  onPressed: () {},
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.delete,
+                                                    color: Colors.red,
+                                                  ),
+                                                  onPressed: () {},
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: buttonPadding,
-                                      side: const BorderSide(width: 2),
-                                    ),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return AlertDialog(
-                                            title: const Text('Cancelar'),
-                                            content:
-                                            const Text('Não implementado'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(context).pop(),
-                                                child: const Text('Fechar'),
+                                  ),
+                                  const Divider(),
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final double screenWidth =
+                                          constraints.maxWidth;
+                                      final double fontSize =
+                                      screenWidth > 600 ? 40 : 20;
+                                      final double buttonFontSize =
+                                      screenWidth > 600 ? 24 : 16;
+                                      final EdgeInsets buttonPadding =
+                                      screenWidth > 600
+                                          ? const EdgeInsets.symmetric(
+                                        horizontal: 32,
+                                        vertical: 20,
+                                      )
+                                          : const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      );
+
+                                      return Row(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              "Total: R\$ ${_calcularTotal().toStringAsFixed(2)}",
+                                              style: TextStyle(
+                                                fontSize: fontSize,
+                                                fontWeight: FontWeight.bold,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                              ),
+                                            ),
+                                          ),
+                                          Wrap(
+                                            spacing: 10,
+                                            runSpacing: 10,
+                                            children: [
+                                              OutlinedButton.icon(
+                                                icon: Icon(
+                                                  Icons.check,
+                                                  size: buttonFontSize,
+                                                ),
+                                                label: Text(
+                                                  "Pausar",
+                                                  style: TextStyle(
+                                                    fontSize: buttonFontSize,
+                                                  ),
+                                                ),
+                                                style:
+                                                OutlinedButton.styleFrom(
+                                                  padding: buttonPadding,
+                                                ),
+                                                onPressed: () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder:
+                                                        (BuildContext context) {
+                                                      return AlertDialog(
+                                                        title: const Text(
+                                                          'Pausar',
+                                                        ),
+                                                        content: const Text(
+                                                          'A ideia é receber depois e deixar a venda aberta.',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  context,
+                                                                ).pop(),
+                                                            child: const Text(
+                                                              'Fechar',
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                              ),
+                                              OutlinedButton.icon(
+                                                icon: Icon(
+                                                  Icons.check,
+                                                  size: buttonFontSize,
+                                                ),
+                                                label: Text(
+                                                  "Finalizar",
+                                                  style: TextStyle(
+                                                    fontSize: buttonFontSize,
+                                                  ),
+                                                ),
+                                                style:
+                                                OutlinedButton.styleFrom(
+                                                  padding: buttonPadding,
+                                                ),
+                                                onPressed: () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder:
+                                                        (BuildContext context) {
+                                                      return AlertDialog(
+                                                        title: const Text(
+                                                          'Finalizar',
+                                                        ),
+                                                        content: const Text(
+                                                          'A ideia é confirmar o tipo de venda e propor alguma coisa.',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  context,
+                                                                ).pop(),
+                                                            child: const Text(
+                                                              'Fechar',
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                              ),
+                                              OutlinedButton.icon(
+                                                icon: Icon(
+                                                  Icons.cancel,
+                                                  size: buttonFontSize,
+                                                ),
+                                                label: Text(
+                                                  "Cancelar",
+                                                  style: TextStyle(
+                                                    fontSize: buttonFontSize,
+                                                  ),
+                                                ),
+                                                style:
+                                                OutlinedButton.styleFrom(
+                                                  padding: buttonPadding,
+                                                  side: const BorderSide(
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder:
+                                                        (BuildContext context) {
+                                                      return AlertDialog(
+                                                        title: const Text(
+                                                          'Cancelar',
+                                                        ),
+                                                        content: const Text(
+                                                          'Não implementado',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  context,
+                                                                ).pop(),
+                                                            child: const Text(
+                                                              'Fechar',
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
                                               ),
                                             ],
-                                          );
-                                        },
+                                          ),
+                                        ],
                                       );
                                     },
                                   ),
                                 ],
                               ),
-                            ],
-                          );
-                        },
+                            ),
+                            const SizedBox(width: 20),
+                            SizedBox(
+                              width: 340,
+                              child: SingleChildScrollView(
+                                child: _buildResumoCupomFiscalWeb(),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -562,6 +637,144 @@ class _PDVWebState extends State<PDVWeb> {
           ],
         ),
       ),
+    );
+  }
+
+  double _calcularTotal() {
+    return _produtosSelecionados.fold<double>(
+      0.0,
+          (soma, item) =>
+      soma +
+          (((item['preco'] ?? 0.0) as num).toDouble() *
+              ((item['quantidade'] ?? 1) as int)),
+    );
+  }
+
+  Widget _buildResumoCupomFiscalWeb() {
+    final total = _calcularTotal();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFE89A),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE6D89A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Center(
+            child: Text(
+              'RESUMO DA VENDA',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+                color: Color(0xFF5C4B00),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: Color(0xFFD8C67A), thickness: 1),
+          const SizedBox(height: 8),
+          ..._produtosSelecionados.map((produto) {
+            final nome = produto['nome'] ?? '';
+            final preco = (produto['preco'] ?? 0.0).toDouble();
+            final quantidade = (produto['quantidade'] ?? 1) as int;
+            final subtotal = preco * quantidade;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nome,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3E3300),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$quantidade x R\$ ${preco.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B5B1E),
+                        ),
+                      ),
+                      Text(
+                        'R\$ ${subtotal.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF3E3300),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+          const Divider(color: Color(0xFFD8C67A), thickness: 1),
+          const SizedBox(height: 8),
+          _buildLinhaResumoWeb('Subtotal', total),
+          _buildLinhaResumoWeb('Desconto', 0.0),
+          const SizedBox(height: 6),
+          _buildLinhaResumoWeb('TOTAL', total, destaque: true),
+          const SizedBox(height: 10),
+          Text(
+            'Pagamento: ${_formasSelecionadas.isEmpty ? 'Não definido' : _formasSelecionadas.join(', ')}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF5C4B00),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinhaResumoWeb(
+      String label,
+      double valor, {
+        bool destaque = false,
+      }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: destaque ? 15 : 13,
+            fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
+            color: const Color(0xFF3E3300),
+          ),
+        ),
+        Text(
+          'R\$ ${valor.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: destaque ? 15 : 13,
+            fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
+            color: const Color(0xFF3E3300),
+          ),
+        ),
+      ],
     );
   }
 
