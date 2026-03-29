@@ -14,6 +14,8 @@ class PDVWeb extends StatefulWidget {
 }
 
 class _PDVWebState extends State<PDVWeb> {
+  bool _mostrarDashboardLateral = true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,35 +118,74 @@ class _PDVWebState extends State<PDVWeb> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 2,
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 250,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 1.6,
-                      ),
-                      itemCount: data.length,
-                      itemBuilder: (context, index) {
-                        return _buildDashboardCard(
-                          data[index]['title']!,
-                          data[index]['count']!,
-                        );
-                      },
+            if (_mostrarDashboardLateral) ...[
+              SizedBox(
+                width: 320,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Resumo',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Ocultar painel',
+                          onPressed: () {
+                            setState(() {
+                              _mostrarDashboardLateral = false;
+                            });
+                          },
+                          icon: const Icon(Icons.chevron_left),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: data.length,
+                        separatorBuilder: (_, __) =>
+                        const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          return _buildDashboardCard(
+                            data[index]['title']!,
+                            data[index]['count']!,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 20),
+              const SizedBox(width: 20),
+            ] else ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 16, right: 12),
+                child: Tooltip(
+                  message: 'Mostrar painel',
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _mostrarDashboardLateral = true;
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_right),
+                    label: const Text('Resumo'),
+                  ),
+                ),
+              ),
+            ],
             Expanded(
-              flex: 3,
               child: Card(
                 elevation: 6,
                 shape: RoundedRectangleBorder(
@@ -167,8 +208,10 @@ class _PDVWebState extends State<PDVWeb> {
                                   icon: const Icon(Icons.person_search),
                                   label: const Text("Buscar Cliente"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
-                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                    backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                    foregroundColor:
+                                    Theme.of(context).colorScheme.onPrimary,
                                     textStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -207,8 +250,10 @@ class _PDVWebState extends State<PDVWeb> {
                                   icon: const Icon(Icons.person_search),
                                   label: const Text("Vendedor"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
-                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                    backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                    foregroundColor:
+                                    Theme.of(context).colorScheme.onPrimary,
                                     textStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -248,8 +293,10 @@ class _PDVWebState extends State<PDVWeb> {
                                   icon: const Icon(Icons.point_of_sale),
                                   label: const Text("VENDA"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
-                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                    backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                    foregroundColor:
+                                    Theme.of(context).colorScheme.onPrimary,
                                     textStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -368,10 +415,14 @@ class _PDVWebState extends State<PDVWeb> {
                               child: ListTile(
                                 leading: CircleAvatar(
                                   radius: 24,
-                                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   child: Icon(
                                     Icons.inventory_2,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                     size: 24,
                                   ),
                                 ),
@@ -433,7 +484,8 @@ class _PDVWebState extends State<PDVWeb> {
                                   style: TextStyle(
                                     fontSize: fontSize,
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:
+                                    Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -565,36 +617,44 @@ class _PDVWebState extends State<PDVWeb> {
 
   Widget _buildDashboardCard(String title, String count) {
     return Card(
-      elevation: 4,
+      elevation: 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                count,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  count,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
                 title,
-                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
