@@ -6,16 +6,16 @@ import '../../top_navigation_bar.dart';
 class RecebimentoPagamentoWeb extends StatefulWidget {
   const RecebimentoPagamentoWeb({
     super.key,
-    this.valorTotalVenda = 1379.80,
-    this.clienteNome = 'Marina Oliveira',
-    this.numeroVenda = 'PV-2026-00481',
-    this.itensResumo,
+    required this.valorTotalVenda,
+    required this.itensResumo,
+    this.clienteNome,
+    this.numeroVenda,
   });
 
   final double valorTotalVenda;
-  final String clienteNome;
-  final String numeroVenda;
-  final List<Map<String, dynamic>>? itensResumo;
+  final List<Map<String, dynamic>> itensResumo;
+  final String? clienteNome;
+  final String? numeroVenda;
 
   @override
   State<RecebimentoPagamentoWeb> createState() =>
@@ -85,29 +85,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   @override
   void initState() {
     super.initState();
-    _itensResumo = widget.itensResumo ??
-        [
-          {
-            'nome': 'Troca de display OLED premium',
-            'quantidade': 1,
-            'valor': 790.00,
-          },
-          {
-            'nome': 'Película 3D',
-            'quantidade': 1,
-            'valor': 49.90,
-          },
-          {
-            'nome': 'Capa magnética premium',
-            'quantidade': 1,
-            'valor': 79.90,
-          },
-          {
-            'nome': 'Mão de obra técnica',
-            'quantidade': 1,
-            'valor': 460.00,
-          },
-        ];
+    _itensResumo = List<Map<String, dynamic>>.from(widget.itensResumo);
   }
 
   double _valorSelecionadoTotal() {
@@ -331,8 +309,18 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
               ),
             ],
           ),
-          _buildBadgeInformativo(widget.numeroVenda, Icons.receipt_long_outlined),
-          _buildBadgeInformativo(widget.clienteNome, Icons.person_outline),
+          _buildBadgeInformativo(
+            (widget.numeroVenda?.trim().isNotEmpty ?? false)
+                ? widget.numeroVenda!.trim()
+                : 'Venda em andamento',
+            Icons.receipt_long_outlined,
+          ),
+          _buildBadgeInformativo(
+            (widget.clienteNome?.trim().isNotEmpty ?? false)
+                ? widget.clienteNome!.trim()
+                : 'Cliente não identificado',
+            Icons.person_outline,
+          ),
           _buildBadgeInformativo(
             '${_quantidadeFormasSelecionadas()} forma(s) ativa(s)',
             Icons.payments_outlined,
@@ -656,8 +644,18 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildLinhaResumo('Venda', widget.numeroVenda),
-            _buildLinhaResumo('Cliente', widget.clienteNome),
+            _buildLinhaResumo(
+              'Venda',
+              (widget.numeroVenda?.trim().isNotEmpty ?? false)
+                  ? widget.numeroVenda!.trim()
+                  : 'Em andamento',
+            ),
+            _buildLinhaResumo(
+              'Cliente',
+              (widget.clienteNome?.trim().isNotEmpty ?? false)
+                  ? widget.clienteNome!.trim()
+                  : 'Não identificado',
+            ),
             const Divider(height: 28),
             Text(
               'Itens da operação',

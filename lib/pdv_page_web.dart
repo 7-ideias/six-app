@@ -1180,9 +1180,22 @@ class _PDVWebState extends State<PDVWeb> {
                                 padding: buttonPadding,
                               ),
                               onPressed: () {
+                                if (_produtosSelecionados.isEmpty) {
+                                  _mostrarDialogMensagem(
+                                    'Venda vazia',
+                                    'Adicione pelo menos um item antes de finalizar.',
+                                  );
+                                  return;
+                                }
+
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => RecebimentoPagamentoWeb(),
+                                    builder: (_) => RecebimentoPagamentoWeb(
+                                      valorTotalVenda: _calcularTotal(),
+                                      itensResumo: _montarItensResumoPagamento(),
+                                      clienteNome: _clienteIdentificadoController.text.trim(),
+                                      numeroVenda: '',
+                                    ),
                                   ),
                                 );
                               },
@@ -1396,4 +1409,22 @@ class _PDVWebState extends State<PDVWeb> {
       ),
     );
   }
+
+
+  List<Map<String, dynamic>> _montarItensResumoPagamento() {
+    return _produtosSelecionados.map((produto) {
+      final quantidade = (produto['quantidade'] ?? 1) as int;
+      final precoUnitario = ((produto['preco'] ?? 0.0) as num).toDouble();
+
+      return {
+        'id': produto['id'],
+        'codigo': produto['codigo'],
+        'nome': produto['nome'] ?? '',
+        'quantidade': quantidade,
+        'valor': precoUnitario,
+        'subtotal': precoUnitario * quantidade,
+      };
+    }).toList();
+  }
+
 }
