@@ -9,7 +9,6 @@ class AgendaFinanceiraWeb extends StatefulWidget {
 }
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
-
   void _voltarTelaAnterior() {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
@@ -118,7 +117,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final List<Map<String, dynamic>> _gruposAgenda = [
     {
       'grupo': 'Atrasados',
-      'descricao': 'Compromissos que já passaram do vencimento e precisam de ação imediata.',
+      'descricao':
+      'Compromissos que já passaram do vencimento e precisam de ação imediata.',
       'itens': [
         {
           'id': 'fin-1001',
@@ -154,7 +154,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           'empresa': 'Matriz Centro',
           'categoria': 'Reposição de estoque',
           'responsavel': 'Aline Costa',
-          'observacoes': 'Prioridade alta para evitar bloqueio de fornecimento.',
+          'observacoes':
+          'Prioridade alta para evitar bloqueio de fornecimento.',
           'historico': [
             'Compra lançada em 21/03/2026',
             'Boleto anexado em 22/03/2026',
@@ -247,7 +248,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           'empresa': 'Filial Norte',
           'categoria': 'Terceiros',
           'responsavel': 'Renata Alves',
-          'observacoes': 'Pagamento vinculado a serviços concluídos da semana.',
+          'observacoes':
+          'Pagamento vinculado a serviços concluídos da semana.',
           'historico': [
             'Apuração criada automaticamente pelo módulo operacional',
           ],
@@ -260,7 +262,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   @override
   void initState() {
     super.initState();
-    _lancamentoSelecionado = _gruposAgenda.first['itens'].first as Map<String, dynamic>;
+    _lancamentoSelecionado =
+    _gruposAgenda.first['itens'].first as Map<String, dynamic>;
   }
 
   @override
@@ -269,7 +272,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     super.dispose();
   }
 
-  Color _corTipo(BuildContext context, String tipo) {
+  Color _corTipo(String tipo) {
     return tipo == 'receber'
         ? const Color(0xFF0F9D58)
         : const Color(0xFFC66A00);
@@ -294,7 +297,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   List<Map<String, dynamic>> get _itensFiltrados {
-    final itens = _gruposAgenda
+    return _gruposAgenda
         .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
         .where((item) {
       final bateTipo = _tipoSelecionado == 'Todos' ||
@@ -315,13 +318,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
       return bateTipo && bateStatus && bateOrigem && bateEmpresa && bateCritico;
     }).toList();
-
-    return itens;
   }
 
   List<Map<String, dynamic>> _itensPorGrupo(String grupo) {
     final grupoEncontrado = _gruposAgenda.firstWhere(
-      (g) => g['grupo'] == grupo,
+          (g) => g['grupo'] == grupo,
       orElse: () => {'itens': <Map<String, dynamic>>[]},
     );
 
@@ -366,7 +367,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                     CircleAvatar(
                       radius: 26,
                       backgroundColor: theme.colorScheme.primary,
-                      child: const Icon(Icons.calendar_month_rounded, color: Colors.white),
+                      child: const Icon(Icons.calendar_month_rounded,
+                          color: Colors.white),
                     ),
                     Text(
                       'Agenda Financeira',
@@ -479,8 +481,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         final cardWidth = width > 1500
             ? (width - 40) / 3
             : width > 1000
-                ? (width - 24) / 2
-                : width;
+            ? (width - 24) / 2
+            : width;
 
         return Wrap(
           spacing: 12,
@@ -514,7 +516,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 color: theme.colorScheme.primary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
+              child:
+              Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -551,76 +554,91 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildFiltros(BuildContext context) {
+  Widget _buildToolbarFiltros(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Wrap(
-          spacing: 14,
-          runSpacing: 14,
-          children: [
-            _buildDropdownBox(
-              context,
-              label: 'Período',
-              value: _periodoSelecionado,
-              items: _periodos,
-              onChanged: (value) => setState(() => _periodoSelecionado = value!),
-              width: 220,
-            ),
-            _buildDropdownBox(
-              context,
-              label: 'Tipo',
-              value: _tipoSelecionado,
-              items: _tipos,
-              onChanged: (value) => setState(() => _tipoSelecionado = value!),
-              width: 170,
-            ),
-            _buildDropdownBox(
-              context,
-              label: 'Status',
-              value: _statusSelecionado,
-              items: _statusDisponiveis,
-              onChanged: (value) => setState(() => _statusSelecionado = value!),
-              width: 190,
-            ),
-            _buildDropdownBox(
-              context,
-              label: 'Origem',
-              value: _origemSelecionada,
-              items: _origens,
-              onChanged: (value) => setState(() => _origemSelecionada = value!),
-              width: 220,
-            ),
-            _buildDropdownBox(
-              context,
-              label: 'Empresa',
-              value: _empresaSelecionada,
-              items: _empresas.map((e) => e['nome'] as String).toList(),
-              onChanged: (value) => setState(() => _empresaSelecionada = value!),
-              width: 220,
-            ),
-            SizedBox(
-              width: 260,
-              child: SwitchListTile(
-                value: _mostrarSomenteCriticos,
-                onChanged: (value) => setState(() => _mostrarSomenteCriticos = value),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final campoLargo = width > 1600 ? 220.0 : 190.0;
+            final campoMedio = width > 1600 ? 180.0 : 160.0;
+
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _buildDropdownBox(
+                  context,
+                  label: 'Período',
+                  value: _periodoSelecionado,
+                  items: _periodos,
+                  onChanged: (value) =>
+                      setState(() => _periodoSelecionado = value!),
+                  width: campoLargo,
                 ),
-                title: const Text(
-                  'Somente críticos',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                _buildDropdownBox(
+                  context,
+                  label: 'Tipo',
+                  value: _tipoSelecionado,
+                  items: _tipos,
+                  onChanged: (value) =>
+                      setState(() => _tipoSelecionado = value!),
+                  width: campoMedio,
                 ),
-                subtitle: const Text('Exibe vencidos e vencimentos do dia'),
-              ),
-            ),
-          ],
+                _buildDropdownBox(
+                  context,
+                  label: 'Status',
+                  value: _statusSelecionado,
+                  items: _statusDisponiveis,
+                  onChanged: (value) =>
+                      setState(() => _statusSelecionado = value!),
+                  width: campoMedio,
+                ),
+                _buildDropdownBox(
+                  context,
+                  label: 'Origem',
+                  value: _origemSelecionada,
+                  items: _origens,
+                  onChanged: (value) =>
+                      setState(() => _origemSelecionada = value!),
+                  width: campoLargo,
+                ),
+                _buildDropdownBox(
+                  context,
+                  label: 'Empresa',
+                  value: _empresaSelecionada,
+                  items: _empresas.map((e) => e['nome'] as String).toList(),
+                  onChanged: (value) =>
+                      setState(() => _empresaSelecionada = value!),
+                  width: campoLargo,
+                ),
+                FilterChip(
+                  selected: _mostrarSomenteCriticos,
+                  onSelected: (value) =>
+                      setState(() => _mostrarSomenteCriticos = value),
+                  label: const Text('Somente críticos'),
+                  avatar: const Icon(Icons.priority_high_rounded, size: 18),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.search_rounded),
+                  label: const Text('Buscar'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(120, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -642,8 +660,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
+          isDense: true,
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         items: items
@@ -709,48 +730,52 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: gruposVisiveis.isEmpty
-            ? const Center(child: Text('Nenhum lançamento encontrado com os filtros atuais.'))
+            ? const Center(
+          child: Text('Nenhum lançamento encontrado com os filtros atuais.'),
+        )
             : ListView.separated(
-                controller: _mainScrollController,
-                itemCount: gruposVisiveis.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 18),
-                itemBuilder: (context, index) {
-                  final grupo = gruposVisiveis[index];
-                  final nome = grupo['grupo'] as String;
-                  final itens = _itensPorGrupo(nome);
+          controller: _mainScrollController,
+          itemCount: gruposVisiveis.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 20),
+          itemBuilder: (context, index) {
+            final grupo = gruposVisiveis[index];
+            final nome = grupo['grupo'] as String;
+            final itens = _itensPorGrupo(nome);
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        nome,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        grupo['descricao'] as String,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                      const SizedBox(height: 14),
-                      ...itens.map((item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildLancamentoCard(context, item),
-                          )),
-                    ],
-                  );
-                },
-              ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nome,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  grupo['descricao'] as String,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ...itens.map(
+                      (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildLancamentoCard(context, item),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildLancamentoCard(BuildContext context, Map<String, dynamic> item) {
     final theme = Theme.of(context);
-    final corTipo = _corTipo(context, item['tipo'] as String);
+    final corTipo = _corTipo(item['tipo'] as String);
     final corStatus = _corStatus(item['status'] as String);
     final selecionado = _lancamentoSelecionado?['id'] == item['id'];
 
@@ -766,138 +791,201 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selecionado ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+            color: selecionado
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outlineVariant,
             width: selecionado ? 1.6 : 1,
           ),
         ),
-        child: Column(
-          children: [
-            Wrap(
-              spacing: 12,
-              runSpacing: 10,
-              crossAxisAlignment: WrapCrossAlignment.center,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final empilhar = constraints.maxWidth < 980;
+
+            if (empilhar) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLancamentoBadges(context, item, corTipo, corStatus),
+                  const SizedBox(height: 14),
+                  _buildLancamentoConteudo(context, item),
+                  const SizedBox(height: 14),
+                  _buildLancamentoValorEAcoes(context, item, corTipo),
+                ],
+              );
+            }
+
+            return Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: corTipo.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        item['tipo'] == 'receber'
-                            ? Icons.south_west_rounded
-                            : Icons.north_east_rounded,
-                        size: 18,
-                        color: corTipo,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        item['tipo'] == 'receber' ? 'Receber' : 'Pagar',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: corTipo,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: corStatus.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    item['status'] as String,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: corStatus,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    item['origem'] as String,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Wrap(
-                    runSpacing: 12,
-                    children: [
-                      Text(
-                        item['descricao'] as String,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 10,
-                        children: [
-                          _buildMiniInfo(context, Icons.person_outline, item['contato'] as String),
-                          _buildMiniInfo(context, Icons.event_outlined, 'Vence em ${item['vencimento']}'),
-                          _buildMiniInfo(context, Icons.credit_card_outlined, item['formaPagamento'] as String),
-                          _buildMiniInfo(context, Icons.category_outlined, item['categoria'] as String),
-                        ],
-                      ),
-                      Text(
-                        item['observacoes'] as String,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                _buildLancamentoBadges(context, item, corTipo, corStatus),
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'R\$ ${(item['valor'] as double).toStringAsFixed(2)}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: corTipo,
-                      ),
+                    Expanded(
+                      child: _buildLancamentoConteudo(context, item),
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: (item['acoes'] as List).map((acao) {
-                        return OutlinedButton(
-                          onPressed: () {},
-                          child: Text(acao.toString()),
-                        );
-                      }).toList(),
+                    const SizedBox(width: 18),
+                    SizedBox(
+                      width: 280,
+                      child: _buildLancamentoValorEAcoes(context, item, corTipo),
                     ),
                   ],
                 ),
               ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLancamentoBadges(
+      BuildContext context,
+      Map<String, dynamic> item,
+      Color corTipo,
+      Color corStatus,
+      ) {
+    final theme = Theme.of(context);
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: corTipo.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                item['tipo'] == 'receber'
+                    ? Icons.south_west_rounded
+                    : Icons.north_east_rounded,
+                size: 18,
+                color: corTipo,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                item['tipo'] == 'receber' ? 'Receber' : 'Pagar',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: corTipo,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: corStatus.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            item['status'] as String,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: corStatus,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            item['origem'] as String,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLancamentoConteudo(
+      BuildContext context, Map<String, dynamic> item) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item['descricao'] as String,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 16,
+          runSpacing: 10,
+          children: [
+            _buildMiniInfo(context, Icons.person_outline, item['contato'] as String),
+            _buildMiniInfo(
+              context,
+              Icons.event_outlined,
+              'Vence em ${item['vencimento']}',
+            ),
+            _buildMiniInfo(
+              context,
+              Icons.credit_card_outlined,
+              item['formaPagamento'] as String,
+            ),
+            _buildMiniInfo(
+              context,
+              Icons.category_outlined,
+              item['categoria'] as String,
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 12),
+        Text(
+          item['observacoes'] as String,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLancamentoValorEAcoes(
+      BuildContext context, Map<String, dynamic> item, Color corTipo) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          'R\$ ${(item['valor'] as double).toStringAsFixed(2)}',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: corTipo,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          runSpacing: 8,
+          children: (item['acoes'] as List).take(3).map((acao) {
+            return OutlinedButton(
+              onPressed: () {},
+              child: Text(acao.toString()),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -932,15 +1020,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             Text(
               'Calendário financeiro',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                fontWeight: FontWeight.w900,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Visão mensal com densidade de compromissos, vencidos e dias críticos.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -983,14 +1071,19 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         const Spacer(),
                         if (movimento)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.10),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: const Text(
                               '3 lançamentos',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                              style: TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                           ),
                         if (critico) ...[
@@ -1034,15 +1127,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             Text(
               'Fluxo previsto',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                fontWeight: FontWeight.w900,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Resumo visual das entradas e saídas esperadas para apoiar decisões de caixa.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 18),
             ...barras.map((barra) {
@@ -1057,7 +1150,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1065,8 +1160,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       Text(
                         barra['mes'] as String,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       _buildBarraFluxo(
@@ -1089,7 +1184,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         'Saldo previsto: R\$ ${saldo.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
-                          color: saldo >= 0 ? const Color(0xFF0F9D58) : const Color(0xFFC62828),
+                          color: saldo >= 0
+                              ? const Color(0xFF0F9D58)
+                              : const Color(0xFFC62828),
                         ),
                       ),
                     ],
@@ -1104,12 +1201,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildBarraFluxo(
-    BuildContext context, {
-    required String label,
-    required double valor,
-    required double maxValor,
-    required Color color,
-  }) {
+      BuildContext context, {
+        required String label,
+        required double valor,
+        required double maxValor,
+        required Color color,
+      }) {
     final double ratio = (valor / maxValor).clamp(0.0, 1.0).toDouble();
 
     return Column(
@@ -1122,7 +1219,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           child: LinearProgressIndicator(
             value: ratio,
             minHeight: 14,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor:
+            Theme.of(context).colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -1130,34 +1228,32 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildPainelLateral(BuildContext context) {
+  Widget _buildPainelDetalheUnificado(BuildContext context) {
     final item = _lancamentoSelecionado ?? _itensFiltrados.firstOrNull;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: _buildDetalheLancamento(context, item),
-        ),
-        const SizedBox(height: 14),
-        Flexible(
-          child: SingleChildScrollView(
-            child: _buildResumoLateral(context),
-          ),
-        ),
-      ],
-    );
+    return _buildDetalheLancamento(context, item);
   }
 
-  Widget _buildDetalheLancamento(BuildContext context, Map<String, dynamic>? item) {
+  Widget _buildDetalheLancamento(
+      BuildContext context, Map<String, dynamic>? item) {
+    final theme = Theme.of(context);
+
     if (item == null) {
       return Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: const Center(child: Text('Selecione um lançamento para ver detalhes.')),
+        child: const Center(
+          child: Text('Selecione um lançamento para ver detalhes.'),
+        ),
       );
     }
 
-    final corTipo = _corTipo(context, item['tipo'] as String);
+    final corTipo = _corTipo(item['tipo'] as String);
+    final totalReceber = _itensFiltrados
+        .where((i) => i['tipo'] == 'receber')
+        .fold<double>(0, (soma, i) => soma + (i['valor'] as double));
+    final totalPagar = _itensFiltrados
+        .where((i) => i['tipo'] == 'pagar')
+        .fold<double>(0, (soma, i) => soma + (i['valor'] as double));
+    final saldo = totalReceber - totalPagar;
 
     return Card(
       elevation: 2,
@@ -1168,69 +1264,102 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           children: [
             Text(
               'Detalhe do lançamento',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               item['descricao'] as String,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               'R\$ ${(item['valor'] as double).toStringAsFixed(2)}',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: corTipo,
-                  ),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: corTipo,
+              ),
             ),
             const SizedBox(height: 18),
             _buildLinhaDetalhe('Contato', item['contato'] as String),
             _buildLinhaDetalhe('Vencimento', item['vencimento'] as String),
             _buildLinhaDetalhe('Status', item['status'] as String),
             _buildLinhaDetalhe('Origem', item['origem'] as String),
-            _buildLinhaDetalhe('Forma de pagamento', item['formaPagamento'] as String),
+            _buildLinhaDetalhe(
+                'Forma de pagamento', item['formaPagamento'] as String),
             _buildLinhaDetalhe('Empresa', item['empresa'] as String),
             _buildLinhaDetalhe('Categoria', item['categoria'] as String),
             _buildLinhaDetalhe('Responsável', item['responsavel'] as String),
             const Divider(height: 28),
             Text(
+              'Ações rápidas',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: (item['acoes'] as List).map((acao) {
+                return OutlinedButton(
+                  onPressed: () {},
+                  child: Text(acao.toString()),
+                );
+              }).toList(),
+            ),
+            const Divider(height: 28),
+            Text(
+              'Resumo do período',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildIndicadorLateral('Total a receber', totalReceber),
+            _buildIndicadorLateral('Total a pagar', totalPagar),
+            _buildIndicadorLateral('Saldo previsto', saldo, destaque: true),
+            _buildIndicadorTexto('Alertas financeiros', '2 cobranças críticas'),
+            const Divider(height: 28),
+            Text(
               'Observações',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               item['observacoes'] as String,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.45),
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
             ),
             const Divider(height: 28),
             Text(
               'Histórico',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 10),
-            ...((item['historico'] as List).map((evento) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(evento.toString())),
-                    ],
-                  ),
-                ))),
+            ...((item['historico'] as List).map(
+                  (evento) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(evento.toString())),
+                  ],
+                ),
+              ),
+            )),
             const Divider(height: 28),
             Wrap(
               spacing: 10,
@@ -1281,62 +1410,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildResumoLateral(BuildContext context) {
-    final totalReceber = _itensFiltrados
-        .where((item) => item['tipo'] == 'receber')
-        .fold<double>(0, (soma, item) => soma + (item['valor'] as double));
-
-    final totalPagar = _itensFiltrados
-        .where((item) => item['tipo'] == 'pagar')
-        .fold<double>(0, (soma, item) => soma + (item['valor'] as double));
-
-    final vencidos =
-        _itensFiltrados.where((item) => item['status'] == 'Vencido').length;
-    final saldo = totalReceber - totalPagar;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Resumo contextual',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _buildIndicadorLateral('Total a receber', totalReceber),
-              _buildIndicadorLateral('Total a pagar', totalPagar),
-              _buildIndicadorLateral('Saldo previsto', saldo, destaque: true),
-              _buildIndicadorTexto('Vencidos no filtro', '$vencidos itens'),
-              _buildIndicadorTexto(
-                'Alertas financeiros',
-                '2 cobranças e 1 pagamento crítico',
-              ),
-              const Divider(height: 26),
-              Text(
-                'Próximos passos sugeridos',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _buildPasso('Cobrar clientes em atraso por WhatsApp'),
-              _buildPasso('Validar débitos automáticos do dia'),
-              _buildPasso('Revisar saldo previsto antes do fechamento'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIndicadorLateral(String label, double valor, {bool destaque = false}) {
+  Widget _buildIndicadorLateral(String label, double valor,
+      {bool destaque = false}) {
     final color = destaque
         ? (valor >= 0 ? const Color(0xFF0F9D58) : const Color(0xFFC62828))
         : Theme.of(context).colorScheme.onSurface;
@@ -1385,24 +1460,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildPasso(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 14,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1418,7 +1475,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               const SizedBox(height: 16),
               _buildResumoCards(context),
               const SizedBox(height: 16),
-              _buildFiltros(context),
+              _buildToolbarFiltros(context),
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
@@ -1428,7 +1485,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final larguraEstreita = constraints.maxWidth < 1350;
+                    final larguraEstreita = constraints.maxWidth < 1380;
 
                     if (larguraEstreita) {
                       return Column(
@@ -1438,8 +1495,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                           ),
                           const SizedBox(height: 14),
                           SizedBox(
-                            height: constraints.maxHeight * 0.42,
-                            child: _buildPainelLateral(context),
+                            height: constraints.maxHeight * 0.50,
+                            child: _buildPainelDetalheUnificado(context),
                           ),
                         ],
                       );
@@ -1449,13 +1506,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          flex: 7,
+                          flex: 8,
                           child: _buildAreaPrincipal(context),
                         ),
                         const SizedBox(width: 16),
                         SizedBox(
                           width: 420,
-                          child: _buildPainelLateral(context),
+                          child: _buildPainelDetalheUnificado(context),
                         ),
                       ],
                     );
