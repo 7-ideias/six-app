@@ -1,3 +1,4 @@
+
 import 'package:appplanilha/presentation/screens/agenda_financeira_web.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_web.dart';
 import 'package:appplanilha/presentation/screens/pdv_page_web_orcamento.dart';
@@ -25,8 +26,7 @@ class _PDVWebState extends State<PDVWeb> {
   final List<Map<String, dynamic>> _produtosSelecionados = [];
   final Set<String> _formasSelecionadas = {};
 
-  final TextEditingController _codigoBarrasController =
-  TextEditingController();
+  final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _itensTotalController =
   TextEditingController(text: '0');
   final TextEditingController _clienteIdentificadoController =
@@ -528,13 +528,11 @@ class _PDVWebState extends State<PDVWeb> {
         break;
       case 'Orçamento':
         badge = 'Assistência técnica';
-        descricao =
-        'Monte propostas elegantes, ...';
+        descricao = 'Monte propostas elegantes, ...';
         break;
       default:
         badge = 'Operação interna';
-        descricao =
-        'Controle financeiro ....';
+        descricao = 'Controle financeiro ....';
     }
 
     final theme = Theme.of(context);
@@ -660,29 +658,33 @@ class _PDVWebState extends State<PDVWeb> {
   }
 
   Widget _buildDashboardCard(String title, String count) {
+    final theme = Theme.of(context);
+
     return Card(
-      elevation: 3,
+      elevation: 0,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         child: Row(
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 54,
+              height: 54,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(12),
+                color: theme.colorScheme.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
                 child: Text(
                   count,
                   style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -693,12 +695,183 @@ class _PDVWebState extends State<PDVWeb> {
                 title,
                 style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                  height: 1.25,
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResumoSidebarHeader() {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Resumo',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          Tooltip(
+            message: 'Ocultar painel',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () {
+                setState(() {
+                  _mostrarDashboardLateral = false;
+                });
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoSidebar() {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildResumoSidebarHeader(),
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary.withOpacity(0.08),
+                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.70),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Painel operacional',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Acompanhe rapidamente os principais indicadores do balcão e da operação.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: data.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                return _buildDashboardCard(
+                  data[index]['title']!,
+                  data[index]['count']!,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoSidebarCollapsed() {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 14, right: 12),
+      child: Tooltip(
+        message: 'Mostrar painel',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            setState(() {
+              _mostrarDashboardLateral = true;
+            });
+          },
+          child: Container(
+            width: 72,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.dashboard_customize_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 10),
+                RotatedBox(
+                  quarterTurns: 3,
+                  child: Text(
+                    'Resumo',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -863,8 +1036,7 @@ class _PDVWebState extends State<PDVWeb> {
                         final quantidade =
                         (produto['quantidade'] ?? 1) as int;
                         final preco =
-                        ((produto['preco'] ?? 0.0) as num)
-                            .toDouble();
+                        ((produto['preco'] ?? 0.0) as num).toDouble();
 
                         return ZebraListItem(
                           index: index,
@@ -895,31 +1067,28 @@ class _PDVWebState extends State<PDVWeb> {
                                   icon: const Icon(
                                     Icons.remove_circle_outline,
                                   ),
-                                  onPressed: () =>
-                                      _alterarQuantidade(
-                                        produto,
-                                        -1,
-                                      ),
+                                  onPressed: () => _alterarQuantidade(
+                                    produto,
+                                    -1,
+                                  ),
                                 ),
                                 IconButton(
                                   icon: const Icon(
                                     Icons.add_circle_outline,
                                   ),
-                                  onPressed: () =>
-                                      _alterarQuantidade(
-                                        produto,
-                                        1,
-                                      ),
+                                  onPressed: () => _alterarQuantidade(
+                                    produto,
+                                    1,
+                                  ),
                                 ),
                                 IconButton(
                                   icon: const Icon(
                                     Icons.delete,
                                     color: Colors.red,
                                   ),
-                                  onPressed: () =>
-                                      _removerProduto(
-                                        produto,
-                                      ),
+                                  onPressed: () => _removerProduto(
+                                    produto,
+                                  ),
                                 ),
                               ],
                             ),
@@ -966,9 +1135,7 @@ class _PDVWebState extends State<PDVWeb> {
                             style: TextStyle(
                               fontSize: fontSize,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
@@ -1158,71 +1325,10 @@ class _PDVWebState extends State<PDVWeb> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_mostrarDashboardLateral) ...[
-              SizedBox(
-                width: 320,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Resumo',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Ocultar painel',
-                          onPressed: () {
-                            setState(() {
-                              _mostrarDashboardLateral = false;
-                            });
-                          },
-                          icon: const Icon(Icons.chevron_left),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: data.length,
-                        separatorBuilder: (_, __) =>
-                        const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          return _buildDashboardCard(
-                            data[index]['title']!,
-                            data[index]['count']!,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildResumoSidebar(),
               const SizedBox(width: 20),
             ] else ...[
-              Padding(
-                padding: const EdgeInsets.only(top: 16, right: 12),
-                child: Tooltip(
-                  message: 'Mostrar painel',
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _mostrarDashboardLateral = true;
-                      });
-                    },
-                    icon: const Icon(Icons.chevron_right),
-                    label: const Text('Resumo'),
-                  ),
-                ),
-              ),
+              _buildResumoSidebarCollapsed(),
             ],
             Expanded(
               child: Card(
