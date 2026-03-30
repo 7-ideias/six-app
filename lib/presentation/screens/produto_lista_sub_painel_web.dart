@@ -9,7 +9,7 @@ import '../../data/models/produto_model.dart';
 import '../../providers/produtos_list_provider.dart';
 
 class SubPainelWebProdutoLista extends SubPainelWebGeneral {
-  SubPainelWebProdutoLista({super.key})
+  SubPainelWebProdutoLista({super.key, required bool isSelecao})
     : super(body: ProdutoListaBody(), textoDaAppBar: 'Lista de Produtos');
 }
 
