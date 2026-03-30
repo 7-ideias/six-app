@@ -1,3 +1,5 @@
+import 'package:appplanilha/presentation/screens/agenda_financeira_web.dart';
+import 'package:appplanilha/presentation/screens/ordem_servico_web.dart';
 import 'package:appplanilha/presentation/screens/pdv_page_web_orcamento.dart';
 import 'package:appplanilha/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
@@ -757,11 +759,37 @@ class _PDVWebState extends State<PDVWeb> {
                 );
               },
             ),
+            _buildModoOperacaoButton(
+              context: context,
+              icon: Icons.account_balance_wallet,
+              label: 'Ordem de Serviço',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const OrdemServicoWeb(),
+                  ),
+                );
+              },
+            ),
+            _buildModoOperacaoButton(
+              context: context,
+              icon: Icons.monetization_on,
+              label: labelAgendaFinanceira(),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AgendaFinanceiraWeb(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
     );
   }
+
+  String labelAgendaFinanceira() => 'Agenda Financeira';
 
   Widget _buildAreaVenda(double total) {
     return Expanded(
