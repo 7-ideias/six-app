@@ -1170,218 +1170,225 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
     final theme = Theme.of(context);
 
     return Expanded(
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withOpacity(0.08),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.65),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 12,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool alturaCurta = constraints.maxHeight < 760;
+
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(alturaCurta ? 14 : 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary.withOpacity(0.08),
+                      theme.colorScheme.surfaceContainerHighest.withOpacity(0.65),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: theme.colorScheme.primary,
-                          child: const Icon(
-                            Icons.request_quote,
-                            color: Colors.white,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 24,
+                              backgroundColor: theme.colorScheme.primary,
+                              child: const Icon(
+                                Icons.request_quote,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Fluxo de Orçamento de Serviço',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Fluxo de Orçamento de Serviço',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                        _buildBadgeInformativo(
+                          'Etapa ${_etapaOrcamentoAtual + 1}/${_calcularTotalEtapasOrcamento()}',
+                          Icons.view_carousel_outlined,
+                        ),
+                        _buildBadgeInformativo(
+                          _orcamentoStatusSelecionado,
+                          Icons.flag_outlined,
+                        ),
+                        _buildBadgeInformativo(
+                          _orcamentoPrioridadeSelecionada,
+                          Icons.bolt_outlined,
                         ),
                       ],
                     ),
-                    _buildBadgeInformativo(
-                      'Etapa ${_etapaOrcamentoAtual + 1}/${_calcularTotalEtapasOrcamento()}',
-                      Icons.view_carousel_outlined,
+                    const SizedBox(height: 14),
+                    Text(
+                      'Jornada sequencial inspirada em softwares atuais de assistência técnica: entrada do cliente, identificação do equipamento, diagnóstico, composição do orçamento e aprovação clara.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                    _buildBadgeInformativo(
-                      _orcamentoStatusSelecionado,
-                      Icons.flag_outlined,
-                    ),
-                    _buildBadgeInformativo(
-                      _orcamentoPrioridadeSelecionada,
-                      Icons.bolt_outlined,
+                    SizedBox(height: alturaCurta ? 12 : 18),
+                    SizedBox(
+                      height: alturaCurta ? 82 : 92,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _calcularTotalEtapasOrcamento(),
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          final etapa = _dadosEtapasOrcamento()[index];
+                          final selecionada = index == _etapaOrcamentoAtual;
+                          final concluida = index < _etapaOrcamentoAtual;
+
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(22),
+                            onTap: () => _irParaEtapaOrcamento(index),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              width: alturaCurta ? 220 : 250,
+                              padding: EdgeInsets.all(alturaCurta ? 12 : 16),
+                              decoration: BoxDecoration(
+                                color: selecionada
+                                    ? theme.colorScheme.primary
+                                    : concluida
+                                    ? theme.colorScheme.primaryContainer
+                                    : theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(
+                                  color: selecionada
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.outlineVariant,
+                                  width: selecionada ? 2 : 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(
+                                      selecionada ? 0.10 : 0.04,
+                                    ),
+                                    blurRadius: selecionada ? 18 : 8,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: selecionada
+                                        ? Colors.white
+                                        : concluida
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.surfaceContainerHighest,
+                                    foregroundColor: selecionada
+                                        ? theme.colorScheme.primary
+                                        : concluida
+                                        ? Colors.white
+                                        : theme.colorScheme.onSurfaceVariant,
+                                    child: Icon(
+                                      etapa['icone'] as IconData,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          etapa['titulo'] as String,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.titleSmall?.copyWith(
+                                            color: selecionada
+                                                ? Colors.white
+                                                : theme.colorScheme.onSurface,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          etapa['descricao'] as String,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: selecionada
+                                                ? Colors.white.withOpacity(0.90)
+                                                : theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  'Jornada sequencial inspirada em softwares atuais de assistência técnica: entrada do cliente, identificação do equipamento, diagnóstico, composição do orçamento e aprovação clara.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  height: 92,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _calcularTotalEtapasOrcamento(),
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (context, index) {
-                      final etapa = _dadosEtapasOrcamento()[index];
-                      final selecionada = index == _etapaOrcamentoAtual;
-                      final concluida = index < _etapaOrcamentoAtual;
-
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(22),
-                        onTap: () => _irParaEtapaOrcamento(index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          width: 250,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: selecionada
-                                ? theme.colorScheme.primary
-                                : concluida
-                                    ? theme.colorScheme.primaryContainer
-                                    : theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: selecionada
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.outlineVariant,
-                              width: selecionada ? 2 : 1,
+              ),
+              SizedBox(height: alturaCurta ? 12 : 18),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: PageView(
+                        controller: _orcamentoPageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _etapaOrcamentoAtual = index;
+                          });
+                        },
+                        children: [
+                          _buildEtapaClienteOrcamento(),
+                          _buildEtapaEquipamentoOrcamento(),
+                          _buildEtapaDiagnosticoOrcamento(),
+                          _buildEtapaItensOrcamento(),
+                          _buildEtapaCondicoesOrcamento(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    SizedBox(
+                      width: 370,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _buildResumoLateralOrcamento(),
+                          ),
+                          const SizedBox(height: 14),
+                          Flexible(
+                            child: SingleChildScrollView(
+                              child: _buildCardsProximosPassos(),
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(
-                                  selecionada ? 0.10 : 0.04,
-                                ),
-                                blurRadius: selecionada ? 18 : 8,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: selecionada
-                                    ? Colors.white
-                                    : concluida
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme.surfaceContainerHighest,
-                                foregroundColor: selecionada
-                                    ? theme.colorScheme.primary
-                                    : concluida
-                                        ? Colors.white
-                                        : theme.colorScheme.onSurfaceVariant,
-                                child: Icon(
-                                  etapa['icone'] as IconData,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      etapa['titulo'] as String,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.titleSmall?.copyWith(
-                                        color: selecionada
-                                            ? Colors.white
-                                            : theme.colorScheme.onSurface,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      etapa['descricao'] as String,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: selecionada
-                                            ? Colors.white.withOpacity(0.90)
-                                            : theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: PageView(
-                    controller: _orcamentoPageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _etapaOrcamentoAtual = index;
-                      });
-                    },
-                    children: [
-                      _buildEtapaClienteOrcamento(),
-                      _buildEtapaEquipamentoOrcamento(),
-                      _buildEtapaDiagnosticoOrcamento(),
-                      _buildEtapaItensOrcamento(),
-                      _buildEtapaCondicoesOrcamento(),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 18),
-                SizedBox(
-                  width: 370,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: _buildResumoLateralOrcamento(),
+                        ],
                       ),
-                      const SizedBox(height: 14),
-                      Flexible(
-                        child: SingleChildScrollView(
-                          child: _buildCardsProximosPassos(),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildBarraNavegacaoOrcamento(),
-        ],
+              ),
+              SizedBox(height: alturaCurta ? 10 : 16),
+              _buildBarraNavegacaoOrcamento(),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1641,42 +1648,40 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
     return _buildCardEtapaOrcamento(
       titulo: '3. Diagnóstico técnico inicial',
       subtitulo:
-          'Registre defeito relatado, observações técnicas e checklist perceptível para equipe e cliente.',
-      child: Column(
-        children: [
-          _buildTextFieldOrcamento(
-            controller: _orcamentoDefeitoRelatadoController,
-            label: 'Defeito relatado pelo cliente',
-            icon: Icons.report_problem_outlined,
-            maxLines: 4,
-          ),
-          const SizedBox(height: 14),
-          _buildTextFieldOrcamento(
-            controller: _orcamentoObservacoesTecnicasController,
-            label: 'Observações técnicas iniciais',
-            icon: Icons.engineering_outlined,
-            maxLines: 4,
-          ),
-          const SizedBox(height: 18),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Checklist de entrada',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+      'Registre defeito relatado, observações técnicas e checklist perceptível para equipe e cliente.',
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildTextFieldOrcamento(
+              controller: _orcamentoDefeitoRelatadoController,
+              label: 'Defeito relatado pelo cliente',
+              icon: Icons.report_problem_outlined,
+              maxLines: 4,
             ),
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: ListView.separated(
-              itemCount: _checklistDiagnostico.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final item = _checklistDiagnostico[index];
-                final bool ok = item['ok'] == true;
+            const SizedBox(height: 14),
+            _buildTextFieldOrcamento(
+              controller: _orcamentoObservacoesTecnicasController,
+              label: 'Observações técnicas iniciais',
+              icon: Icons.engineering_outlined,
+              maxLines: 4,
+            ),
+            const SizedBox(height: 18),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Checklist de entrada',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ..._checklistDiagnostico.map((item) {
+              final bool ok = item['ok'] == true;
 
-                return InkWell(
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () {
                     setState(() {
@@ -1700,7 +1705,9 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                       children: [
                         Icon(
                           ok ? Icons.check_circle : Icons.radio_button_unchecked,
-                          color: ok ? Colors.green : Theme.of(context).colorScheme.outline,
+                          color: ok
+                              ? Colors.green
+                              : Theme.of(context).colorScheme.outline,
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -1717,7 +1724,9 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                               Text(
                                 item['descricao'] as String,
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -1726,11 +1735,11 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                       ],
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -2044,92 +2053,97 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildResumoLinhaOrcamento(
-              'Cliente',
-              _orcamentoNomeClienteController.text,
-            ),
-            _buildResumoLinhaOrcamento(
-              'Equipamento',
-              _orcamentoEquipamentoController.text,
-            ),
-            _buildResumoLinhaOrcamento(
-              'Status',
-              _orcamentoStatusSelecionado,
-            ),
-            _buildResumoLinhaOrcamento(
-              'Prazo',
-              _orcamentoPrazoController.text,
-            ),
-            const Divider(height: 28),
-            Text(
-              'Itens selecionados',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
             Expanded(
-              child: ListView(
-                children: _servicosOrcamento
-                    .where((item) => item['selecionado'] == true)
-                    .map((item) {
-                  final quantidade = (item['quantidade'] ?? 1) as int;
-                  final valor = ((item['valor'] ?? 0) as num).toDouble();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          item['tipo'] == 'produto'
-                              ? Icons.inventory_2_outlined
-                              : Icons.build_circle_outlined,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '${item['nome']} ($quantidade x)',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'R\$ ${(valor * quantidade).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildResumoLinhaOrcamento(
+                      'Cliente',
+                      _orcamentoNomeClienteController.text,
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const Divider(height: 26),
-            _buildResumoLinhaValorOrcamento('Subtotal', total),
-            _buildResumoLinhaValorOrcamento('Sinal sugerido', sinal),
-            const SizedBox(height: 10),
-            _buildResumoLinhaValorOrcamento(
-              'Total',
-              total,
-              destaque: true,
-            ),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: () {
-                _mostrarDialogMensagem(
-                  'Mock de geração',
-                  'No futuro, aqui você poderá gerar PDF, compartilhar por WhatsApp/e-mail e registrar a proposta no backend.',
-                );
-              },
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('Gerar PDF / Compartilhar'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
+                    _buildResumoLinhaOrcamento(
+                      'Equipamento',
+                      _orcamentoEquipamentoController.text,
+                    ),
+                    _buildResumoLinhaOrcamento(
+                      'Status',
+                      _orcamentoStatusSelecionado,
+                    ),
+                    _buildResumoLinhaOrcamento(
+                      'Prazo',
+                      _orcamentoPrazoController.text,
+                    ),
+                    const Divider(height: 28),
+                    Text(
+                      'Itens selecionados',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ..._servicosOrcamento
+                        .where((item) => item['selecionado'] == true)
+                        .map((item) {
+                      final quantidade = (item['quantidade'] ?? 1) as int;
+                      final valor = ((item['valor'] ?? 0) as num).toDouble();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              item['tipo'] == 'produto'
+                                  ? Icons.inventory_2_outlined
+                                  : Icons.build_circle_outlined,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '${item['nome']} ($quantidade x)',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'R\$ ${(valor * quantidade).toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Divider(height: 26),
+                    _buildResumoLinhaValorOrcamento('Subtotal', total),
+                    _buildResumoLinhaValorOrcamento('Sinal sugerido', sinal),
+                    const SizedBox(height: 10),
+                    _buildResumoLinhaValorOrcamento(
+                      'Total',
+                      total,
+                      destaque: true,
+                    ),
+                    const SizedBox(height: 18),
+                    FilledButton.icon(
+                      onPressed: () {
+                        _mostrarDialogMensagem(
+                          'Mock de geração',
+                          'No futuro, aqui você poderá gerar PDF, compartilhar por WhatsApp/e-mail e registrar a proposta no backend.',
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: const Text('Gerar PDF / Compartilhar'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -2257,41 +2271,55 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
           color: Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
         children: [
-          OutlinedButton.icon(
-            onPressed: _voltarEtapaOrcamento,
-            icon: const Icon(Icons.arrow_back),
-            label: Text(_etapaOrcamentoAtual == 0 ? 'Sair' : 'Voltar'),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _voltarEtapaOrcamento,
+                icon: const Icon(Icons.arrow_back),
+                label: Text(_etapaOrcamentoAtual == 0 ? 'Sair' : 'Voltar'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _confirmarCancelamentoOrcamento,
+                icon: const Icon(Icons.close),
+                label: const Text('Cancelar'),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: _confirmarCancelamentoOrcamento,
-            icon: const Icon(Icons.close),
-            label: const Text('Cancelar'),
-          ),
-          const Spacer(),
-          Text(
-            'Etapa ${_etapaOrcamentoAtual + 1} de ${_calcularTotalEtapasOrcamento()}',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 16),
-          FilledButton.icon(
-            onPressed: _avancarEtapaOrcamento,
-            icon: Icon(
-              _estaNaUltimaEtapaOrcamento()
-                  ? Icons.check_circle_outline
-                  : Icons.arrow_forward,
-            ),
-            label: Text(
-              _estaNaUltimaEtapaOrcamento() ? 'Concluir' : 'Próxima etapa',
-            ),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(180, 48),
-            ),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                'Etapa ${_etapaOrcamentoAtual + 1} de ${_calcularTotalEtapasOrcamento()}',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _avancarEtapaOrcamento,
+                icon: Icon(
+                  _estaNaUltimaEtapaOrcamento()
+                      ? Icons.check_circle_outline
+                      : Icons.arrow_forward,
+                ),
+                label: Text(
+                  _estaNaUltimaEtapaOrcamento() ? 'Concluir' : 'Próxima etapa',
+                ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(180, 48),
+                ),
+              ),
+            ],
           ),
         ],
       ),
