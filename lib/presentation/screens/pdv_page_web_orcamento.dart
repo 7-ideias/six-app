@@ -1283,8 +1283,10 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                                 ],
                               ),
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   CircleAvatar(
+                                    radius: 20,
                                     backgroundColor: selecionada
                                         ? Colors.white
                                         : concluida
@@ -1297,12 +1299,13 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                                         : theme.colorScheme.onSurfaceVariant,
                                     child: Icon(
                                       etapa['icone'] as IconData,
-                                      size: 20,
+                                      size: 18,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
+                                      mainAxisSize: MainAxisSize.min,
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
@@ -1311,18 +1314,22 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.titleSmall?.copyWith(
+                                            fontSize: 15,
+                                            height: 1.1,
                                             color: selecionada
                                                 ? Colors.white
                                                 : theme.colorScheme.onSurface,
                                             fontWeight: FontWeight.w800,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 2),
                                         Text(
                                           etapa['descricao'] as String,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.bodySmall?.copyWith(
+                                            fontSize: 12,
+                                            height: 1.15,
                                             color: selecionada
                                                 ? Colors.white.withOpacity(0.90)
                                                 : theme.colorScheme.onSurfaceVariant,
