@@ -9,6 +9,14 @@ class AgendaFinanceiraWeb extends StatefulWidget {
 }
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+
+  void _voltarTelaAnterior() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+  }
+
   final ScrollController _mainScrollController = ScrollController();
 
   final List<String> _periodos = const [
@@ -393,6 +401,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             spacing: 12,
             runSpacing: 12,
             children: [
+              OutlinedButton.icon(
+                onPressed: _voltarTelaAnterior,
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: const Text('Voltar'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(140, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
               _buildHeaderAction(
                 context,
                 icon: Icons.add_card_rounded,
@@ -608,27 +627,36 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildDropdownBox(
-    BuildContext context, {
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    required double width,
-  }) {
+      BuildContext context, {
+        required String label,
+        required String value,
+        required List<String> items,
+        required ValueChanged<String?> onChanged,
+        required double width,
+      }) {
     return SizedBox(
       width: width,
       child: DropdownButtonFormField<String>(
         value: value,
+        isExpanded: true,
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
         items: items
-            .map((item) => DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item),
-                ))
+            .map(
+              (item) => DropdownMenuItem<String>(
+            value: item,
+            child: Text(
+              item,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        )
             .toList(),
       ),
     );
@@ -1106,12 +1134,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final item = _lancamentoSelecionado ?? _itensFiltrados.firstOrNull;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: _buildDetalheLancamento(context, item),
         ),
         const SizedBox(height: 14),
-        _buildResumoLateral(context),
+        Flexible(
+          child: SingleChildScrollView(
+            child: _buildResumoLateral(context),
+          ),
+        ),
       ],
     );
   }
@@ -1257,7 +1290,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         .where((item) => item['tipo'] == 'pagar')
         .fold<double>(0, (soma, item) => soma + (item['valor'] as double));
 
-    final vencidos = _itensFiltrados.where((item) => item['status'] == 'Vencido').length;
+    final vencidos =
+        _itensFiltrados.where((item) => item['status'] == 'Vencido').length;
     final saldo = totalReceber - totalPagar;
 
     return Card(
@@ -1265,33 +1299,38 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Resumo contextual',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 14),
-            _buildIndicadorLateral('Total a receber', totalReceber),
-            _buildIndicadorLateral('Total a pagar', totalPagar),
-            _buildIndicadorLateral('Saldo previsto', saldo, destaque: true),
-            _buildIndicadorTexto('Vencidos no filtro', '$vencidos itens'),
-            _buildIndicadorTexto('Alertas financeiros', '2 cobranças e 1 pagamento crítico'),
-            const Divider(height: 26),
-            Text(
-              'Próximos passos sugeridos',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 10),
-            _buildPasso('Cobrar clientes em atraso por WhatsApp'),
-            _buildPasso('Validar débitos automáticos do dia'),
-            _buildPasso('Revisar saldo previsto antes do fechamento'),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Resumo contextual',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 14),
+              _buildIndicadorLateral('Total a receber', totalReceber),
+              _buildIndicadorLateral('Total a pagar', totalPagar),
+              _buildIndicadorLateral('Saldo previsto', saldo, destaque: true),
+              _buildIndicadorTexto('Vencidos no filtro', '$vencidos itens'),
+              _buildIndicadorTexto(
+                'Alertas financeiros',
+                '2 cobranças e 1 pagamento crítico',
+              ),
+              const Divider(height: 26),
+              Text(
+                'Próximos passos sugeridos',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildPasso('Cobrar clientes em atraso por WhatsApp'),
+              _buildPasso('Validar débitos automáticos do dia'),
+              _buildPasso('Revisar saldo previsto antes do fechamento'),
+            ],
+          ),
         ),
       ),
     );
@@ -1399,7 +1438,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                           ),
                           const SizedBox(height: 14),
                           SizedBox(
-                            height: 420,
+                            height: constraints.maxHeight * 0.42,
                             child: _buildPainelLateral(context),
                           ),
                         ],
