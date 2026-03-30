@@ -1,6 +1,7 @@
 import 'package:appplanilha/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/produto_model.dart';
@@ -16,6 +17,7 @@ class PDVWeb extends StatefulWidget {
 
 class _PDVWebState extends State<PDVWeb> {
   bool _mostrarDashboardLateral = true;
+  bool _mostrarAreaVenda = false;
 
   final List<Map<String, dynamic>> _produtosSelecionados = [];
   final Set<String> _formasSelecionadas = {};
@@ -27,6 +29,36 @@ class _PDVWebState extends State<PDVWeb> {
   final TextEditingController _clienteIdentificadoController =
   TextEditingController();
 
+  void _logInfo(String message) {
+    debugPrint('[PDVWeb][INFO] $message');
+  }
+
+  void _logError(
+      String errorContext,
+      Object error,
+      StackTrace stackTrace,
+      ) {
+    debugPrint('[PDVWeb][ERROR] $errorContext');
+    debugPrint('[PDVWeb][ERROR] $error');
+    debugPrint('[PDVWeb][STACK] $stackTrace');
+
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'pdv_page_web',
+        context: ErrorDescription(errorContext),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _logInfo('PDVWeb iniciado');
+    _atualizarCamposDerivados();
+  }
+
   @override
   void dispose() {
     _codigoBarrasController.dispose();
@@ -36,122 +68,258 @@ class _PDVWebState extends State<PDVWeb> {
   }
 
   Future<void> _abrirSelecaoProdutoWeb() async {
-    final result = await showDialog<ProdutoModel>(
+    try {
+      _logInfo('Abrindo dialog de seleção de produto');
+
+      final result = await showDialog<ProdutoModel>(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: SubPainelWebProdutoLista(isSelecao: true),
+            ),
+          );
+        },
+      );
+
+      _logInfo(
+        'Dialog de seleção fechado. Retorno nulo? ${result == null}',
+      );
+
+      if (result != null) {
+        _logInfo(
+          'Produto retornado: nome=${result.nomeProduto}, codigo=${result.codigoDeBarras}, preco=${result.precoVenda}',
+        );
+        _adicionarProdutoSelecionado(result);
+      }
+    } catch (error, stackTrace) {
+      _logError('Erro ao abrir seleção de produto web', error, stackTrace);
+      if (mounted) {
+        _mostrarDialogMensagem(
+          'Erro',
+          'Falha ao abrir a seleção de produtos. Veja os logs.',
+        );
+      }
+    }
+  }
+
+  void _iniciarVenda() {
+    setState(() {
+      _mostrarAreaVenda = true;
+    });
+  }
+
+  Future<void> _confirmarCancelamentoVenda() async {
+    final confirmar = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+        return AlertDialog(
+          title: const Text('Cancelar venda'),
+          content: const Text(
+            'Deseja realmente cancelar a venda atual?',
           ),
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.8,
-            height: MediaQuery.of(context).size.height * 0.8,
-            child: SubPainelWebProdutoLista(isSelecao: true),
-          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Não'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Sim, cancelar'),
+            ),
+          ],
         );
       },
     );
 
-    if (result != null) {
-      _adicionarProdutoSelecionado(result);
+    if (confirmar == true) {
+      _cancelarVenda();
+    }
+  }
+
+  void _cancelarVenda() {
+    try {
+      _logInfo('Cancelando venda atual');
+
+      setState(() {
+        _produtosSelecionados.clear();
+        _formasSelecionadas.clear();
+        _codigoBarrasController.clear();
+        _itensTotalController.text = '0';
+        _clienteIdentificadoController.clear();
+        _mostrarAreaVenda = false;
+      });
+    } catch (error, stackTrace) {
+      _logError('Erro ao cancelar venda', error, stackTrace);
+      _mostrarDialogMensagem(
+        'Erro',
+        'Falha ao cancelar a venda. Veja os logs.',
+      );
     }
   }
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
-    setState(() {
-      final indexExistente = _produtosSelecionados.indexWhere(
-            (item) => _mesmoProduto(item, produto),
+    try {
+      _logInfo(
+        'Adicionando produto selecionado: nome=${produto.nomeProduto}, codigo=${produto.codigoDeBarras}, preco=${produto.precoVenda}',
       );
 
-      if (indexExistente >= 0) {
-        _produtosSelecionados[indexExistente]['quantidade'] =
-            (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) + 1;
-      } else {
-        _produtosSelecionados.add({
-          'id': _extrairIdProduto(produto),
-          'codigo': produto.codigoDeBarras,
-          'nome': produto.nomeProduto,
-          'preco': (produto.precoVenda as num).toDouble(),
-          'quantidade': 1,
-          'produtoOriginal': produto,
-        });
-      }
+      setState(() {
+        final indexExistente = _produtosSelecionados.indexWhere(
+              (item) => _mesmoProduto(item, produto),
+        );
 
-      _atualizarCamposDerivados();
-    });
+        if (indexExistente >= 0) {
+          _produtosSelecionados[indexExistente]['quantidade'] =
+              (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) + 1;
+
+          _logInfo(
+            'Produto já existia. Nova quantidade=${_produtosSelecionados[indexExistente]['quantidade']}',
+          );
+        } else {
+          _produtosSelecionados.add({
+            'id': _extrairIdProduto(produto),
+            'codigo': produto.codigoDeBarras,
+            'nome': produto.nomeProduto,
+            'preco': (produto.precoVenda as num).toDouble(),
+            'quantidade': 1,
+            'produtoOriginal': produto,
+          });
+
+          _logInfo(
+            'Produto incluído na lista. Total de linhas=${_produtosSelecionados.length}',
+          );
+        }
+
+        _atualizarCamposDerivados();
+      });
+
+      _logInfo(
+        'Estado após inclusão: linhas=${_produtosSelecionados.length}, itens=${_calcularQuantidadeItens()}, total=${_calcularTotal()}',
+      );
+    } catch (error, stackTrace) {
+      _logError('Erro ao adicionar produto selecionado', error, stackTrace);
+      _mostrarDialogMensagem(
+        'Erro',
+        'Falha ao adicionar o produto. Veja os logs.',
+      );
+    }
   }
 
   bool _mesmoProduto(Map<String, dynamic> item, ProdutoModel produto) {
-    final idItem = item['id'];
-    final idProduto = _extrairIdProduto(produto);
+    try {
+      final idItem = item['id'];
+      final idProduto = _extrairIdProduto(produto);
 
-    if (idItem != null && idProduto != null) {
-      return idItem == idProduto;
+      if (idItem != null && idProduto != null) {
+        return idItem == idProduto;
+      }
+
+      final codigoItem = item['codigo']?.toString();
+      final codigoProduto = produto.codigoDeBarras?.toString();
+
+      if (codigoItem != null &&
+          codigoItem.isNotEmpty &&
+          codigoProduto != null &&
+          codigoProduto.isNotEmpty) {
+        return codigoItem == codigoProduto;
+      }
+
+      return item['nome'] == produto.nomeProduto;
+    } catch (error, stackTrace) {
+      _logError('Erro ao comparar produto existente', error, stackTrace);
+      return false;
     }
-
-    final codigoItem = item['codigo']?.toString();
-    final codigoProduto = produto.codigoDeBarras?.toString();
-
-    if (codigoItem != null &&
-        codigoItem.isNotEmpty &&
-        codigoProduto != null &&
-        codigoProduto.isNotEmpty) {
-      return codigoItem == codigoProduto;
-    }
-
-    return item['nome'] == produto.nomeProduto;
   }
 
   dynamic _extrairIdProduto(ProdutoModel produto) {
     try {
       final dynamic p = produto;
       return p.id ?? p.uuid ?? p.idUnico ?? p.codigo;
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _logError('Erro ao extrair id do produto', error, stackTrace);
       return null;
     }
   }
 
   void _alterarQuantidade(Map<String, dynamic> produto, int delta) {
-    setState(() {
-      final quantidadeAtual = (produto['quantidade'] ?? 1) as int;
-      final novaQuantidade = quantidadeAtual + delta;
+    try {
+      _logInfo(
+        'Alterando quantidade. Produto=${produto['nome']}, delta=$delta',
+      );
 
-      if (novaQuantidade <= 0) {
-        _produtosSelecionados.remove(produto);
-      } else {
-        produto['quantidade'] = novaQuantidade;
-      }
+      setState(() {
+        final quantidadeAtual = (produto['quantidade'] ?? 1) as int;
+        final novaQuantidade = quantidadeAtual + delta;
 
-      _atualizarCamposDerivados();
-    });
+        if (novaQuantidade <= 0) {
+          _produtosSelecionados.remove(produto);
+          _logInfo('Produto removido por quantidade <= 0');
+        } else {
+          produto['quantidade'] = novaQuantidade;
+          _logInfo('Nova quantidade=$novaQuantidade');
+        }
+
+        _atualizarCamposDerivados();
+      });
+    } catch (error, stackTrace) {
+      _logError('Erro ao alterar quantidade', error, stackTrace);
+    }
   }
 
   void _removerProduto(Map<String, dynamic> produto) {
-    setState(() {
-      _produtosSelecionados.remove(produto);
-      _atualizarCamposDerivados();
-    });
+    try {
+      _logInfo('Removendo produto=${produto['nome']}');
+      setState(() {
+        _produtosSelecionados.remove(produto);
+        _atualizarCamposDerivados();
+      });
+    } catch (error, stackTrace) {
+      _logError('Erro ao remover produto', error, stackTrace);
+    }
   }
 
   void _atualizarCamposDerivados() {
-    _itensTotalController.text = _calcularQuantidadeItens().toString();
+    try {
+      _itensTotalController.text = _calcularQuantidadeItens().toString();
+      _logInfo(
+        'Campos derivados atualizados. Itens total=${_itensTotalController.text}',
+      );
+    } catch (error, stackTrace) {
+      _logError('Erro ao atualizar campos derivados', error, stackTrace);
+    }
   }
 
   double _calcularTotal() {
-    return _produtosSelecionados.fold<double>(
-      0.0,
-          (soma, item) =>
-      soma +
-          (((item['preco'] ?? 0.0) as num).toDouble() *
-              ((item['quantidade'] ?? 1) as int)),
-    );
+    try {
+      return _produtosSelecionados.fold<double>(
+        0.0,
+            (soma, item) =>
+        soma +
+            (((item['preco'] ?? 0.0) as num).toDouble() *
+                ((item['quantidade'] ?? 1) as int)),
+      );
+    } catch (error, stackTrace) {
+      _logError('Erro ao calcular total', error, stackTrace);
+      return 0.0;
+    }
   }
 
   int _calcularQuantidadeItens() {
-    return _produtosSelecionados.fold<int>(
-      0,
-          (soma, item) => soma + ((item['quantidade'] ?? 1) as int),
-    );
+    try {
+      return _produtosSelecionados.fold<int>(
+        0,
+            (soma, item) => soma + ((item['quantidade'] ?? 1) as int),
+      );
+    } catch (error, stackTrace) {
+      _logError('Erro ao calcular quantidade de itens', error, stackTrace);
+      return 0;
+    }
   }
 
   Widget _buildResumoCupomFiscalWeb() {
@@ -340,6 +508,34 @@ class _PDVWebState extends State<PDVWeb> {
     );
   }
 
+  Widget _buildModoOperacaoButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 280,
+      height: 280,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 28),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDashboardCard(String title, String count) {
     return Card(
       elevation: 3,
@@ -400,6 +596,315 @@ class _PDVWebState extends State<PDVWeb> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildSeletorModoOperacao() {
+    return Expanded(
+      child: Center(
+        child: Wrap(
+          spacing: 20,
+          runSpacing: 20,
+          alignment: WrapAlignment.center,
+          children: [
+            _buildModoOperacaoButton(
+              context: context,
+              icon: Icons.point_of_sale,
+              label: 'Vendas',
+              onPressed: _iniciarVenda,
+            ),
+            _buildModoOperacaoButton(
+              context: context,
+              icon: Icons.request_quote,
+              label: 'Orçamento',
+              onPressed: () {
+                _mostrarDialogMensagem(
+                  'Não implementado',
+                  'O fluxo de orçamento ainda não foi implementado.',
+                );
+              },
+            ),
+            _buildModoOperacaoButton(
+              context: context,
+              icon: Icons.account_balance_wallet,
+              label: 'Operações de caixa',
+              onPressed: () {
+                _mostrarDialogMensagem(
+                  'Não implementado',
+                  'O fluxo de operações de caixa ainda não foi implementado.',
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAreaVenda(double total) {
+    return Expanded(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Text(
+                    "F R E N T E   D E   C A I X A",
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _codigoBarrasController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: "Código de Barras",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      tooltip: 'Buscar produto',
+                      onPressed: _abrirSelecaoProdutoWeb,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _itensTotalController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: "Itens Total",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _clienteIdentificadoController,
+                  decoration: const InputDecoration(
+                    labelText: "Cliente Identificado",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: _produtosSelecionados.isEmpty
+                      ? Center(
+                    child: Text(
+                      'Nenhum item selecionado.',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  )
+                      : ListView.builder(
+                    itemCount: _produtosSelecionados.length,
+                    itemBuilder: (context, index) {
+                      try {
+                        final produto = _produtosSelecionados[index];
+                        final quantidade =
+                        (produto['quantidade'] ?? 1) as int;
+                        final preco =
+                        ((produto['preco'] ?? 0.0) as num)
+                            .toDouble();
+
+                        return ZebraListItem(
+                          index: index,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              radius: 24,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child: Icon(
+                                Icons.inventory_2,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                                size: 24,
+                              ),
+                            ),
+                            title: Text(
+                              produto['nome'] ?? '',
+                            ),
+                            subtitle: Text(
+                              'Qtd: $quantidade • R\$ ${preco.toStringAsFixed(2)}',
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                  ),
+                                  onPressed: () =>
+                                      _alterarQuantidade(
+                                        produto,
+                                        -1,
+                                      ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.add_circle_outline,
+                                  ),
+                                  onPressed: () =>
+                                      _alterarQuantidade(
+                                        produto,
+                                        1,
+                                      ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () =>
+                                      _removerProduto(
+                                        produto,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      } catch (error, stackTrace) {
+                        _logError(
+                          'Erro ao renderizar item da lista no PDV',
+                          error,
+                          stackTrace,
+                        );
+                        return const ListTile(
+                          title: Text(
+                            'Erro ao renderizar item',
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                const Divider(),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double screenWidth = constraints.maxWidth;
+                    final double fontSize = screenWidth > 600 ? 40 : 20;
+                    final double buttonFontSize =
+                    screenWidth > 600 ? 24 : 16;
+                    final EdgeInsets buttonPadding = screenWidth > 600
+                        ? const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 20,
+                    )
+                        : const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    );
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "Total: R\$ ${total.toStringAsFixed(2)}",
+                            style: TextStyle(
+                              fontSize: fontSize,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary,
+                            ),
+                          ),
+                        ),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            OutlinedButton.icon(
+                              icon: Icon(
+                                Icons.check,
+                                size: buttonFontSize,
+                              ),
+                              label: Text(
+                                "Pausar",
+                                style: TextStyle(
+                                  fontSize: buttonFontSize,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: buttonPadding,
+                              ),
+                              onPressed: () {
+                                _mostrarDialogMensagem(
+                                  'Pausar',
+                                  'A ideia é receber depois e deixar a venda aberta.',
+                                );
+                              },
+                            ),
+                            OutlinedButton.icon(
+                              icon: Icon(
+                                Icons.check,
+                                size: buttonFontSize,
+                              ),
+                              label: Text(
+                                "Finalizar",
+                                style: TextStyle(
+                                  fontSize: buttonFontSize,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: buttonPadding,
+                              ),
+                              onPressed: () {
+                                _mostrarDialogMensagem(
+                                  'Finalizar',
+                                  'A ideia é confirmar o tipo de venda e propor alguma coisa.',
+                                );
+                              },
+                            ),
+                            OutlinedButton.icon(
+                              icon: Icon(
+                                Icons.cancel,
+                                size: buttonFontSize,
+                              ),
+                              label: Text(
+                                "Cancelar",
+                                style: TextStyle(
+                                  fontSize: buttonFontSize,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: buttonPadding,
+                                side: const BorderSide(
+                                  width: 2,
+                                ),
+                              ),
+                              onPressed: _confirmarCancelamentoVenda,
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 20),
+          SizedBox(
+            width: 340,
+            child: SingleChildScrollView(
+              child: _buildResumoCupomFiscalWeb(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -609,17 +1114,6 @@ class _PDVWebState extends State<PDVWeb> {
                                     );
                                   },
                                 ),
-                                _buildTopActionButton(
-                                  context: context,
-                                  icon: Icons.point_of_sale,
-                                  label: 'VENDA',
-                                  onPressed: () {
-                                    _mostrarDialogMensagem(
-                                      'Venda',
-                                      'Aqui você pode implementar as ações da venda.',
-                                    );
-                                  },
-                                ),
                               ],
                             ),
                           ),
@@ -631,281 +1125,9 @@ class _PDVWebState extends State<PDVWeb> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: Text(
-                                      "F R E N T E   D E   C A I X A",
-                                      style:
-                                      Theme.of(context).textTheme.bodyLarge,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _codigoBarrasController,
-                                          autofocus: true,
-                                          decoration: const InputDecoration(
-                                            labelText: "Código de Barras",
-                                            border: OutlineInputBorder(),
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.search),
-                                        tooltip: 'Buscar produto',
-                                        onPressed: _abrirSelecaoProdutoWeb,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _itensTotalController,
-                                          readOnly: true,
-                                          decoration: const InputDecoration(
-                                            labelText: "Itens Total",
-                                            border: OutlineInputBorder(),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  TextField(
-                                    controller:
-                                    _clienteIdentificadoController,
-                                    decoration: const InputDecoration(
-                                      labelText: "Cliente Identificado",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Expanded(
-                                    child: _produtosSelecionados.isEmpty
-                                        ? Center(
-                                      child: Text(
-                                        'Nenhum item selecionado.',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyLarge,
-                                      ),
-                                    )
-                                        : ListView.builder(
-                                      itemCount:
-                                      _produtosSelecionados.length,
-                                      itemBuilder: (context, index) {
-                                        final produto =
-                                        _produtosSelecionados[index];
-                                        final quantidade =
-                                        (produto['quantidade'] ?? 1)
-                                        as int;
-                                        final preco =
-                                        ((produto['preco'] ?? 0.0)
-                                        as num)
-                                            .toDouble();
-
-                                        return ZebraListItem(
-                                          index: index,
-                                          child: ListTile(
-                                            leading: CircleAvatar(
-                                              radius: 24,
-                                              backgroundColor:
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceContainerHighest,
-                                              child: Icon(
-                                                Icons.inventory_2,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                                size: 24,
-                                              ),
-                                            ),
-                                            title: Text(
-                                              produto['nome'] ?? '',
-                                            ),
-                                            subtitle: Text(
-                                              'Qtd: $quantidade • R\$ ${preco.toStringAsFixed(2)}',
-                                            ),
-                                            trailing: Row(
-                                              mainAxisSize:
-                                              MainAxisSize.min,
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons
-                                                        .remove_circle_outline,
-                                                  ),
-                                                  onPressed: () =>
-                                                      _alterarQuantidade(
-                                                        produto,
-                                                        -1,
-                                                      ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons
-                                                        .add_circle_outline,
-                                                  ),
-                                                  onPressed: () =>
-                                                      _alterarQuantidade(
-                                                        produto,
-                                                        1,
-                                                      ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.delete,
-                                                    color: Colors.red,
-                                                  ),
-                                                  onPressed: () =>
-                                                      _removerProduto(
-                                                        produto,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const Divider(),
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final double screenWidth =
-                                          constraints.maxWidth;
-                                      final double fontSize =
-                                      screenWidth > 600 ? 40 : 20;
-                                      final double buttonFontSize =
-                                      screenWidth > 600 ? 24 : 16;
-                                      final EdgeInsets buttonPadding =
-                                      screenWidth > 600
-                                          ? const EdgeInsets.symmetric(
-                                        horizontal: 32,
-                                        vertical: 20,
-                                      )
-                                          : const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      );
-
-                                      return Row(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              "Total: R\$ ${total.toStringAsFixed(2)}",
-                                              style: TextStyle(
-                                                fontSize: fontSize,
-                                                fontWeight: FontWeight.bold,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary,
-                                              ),
-                                            ),
-                                          ),
-                                          Wrap(
-                                            spacing: 10,
-                                            runSpacing: 10,
-                                            children: [
-                                              OutlinedButton.icon(
-                                                icon: Icon(
-                                                  Icons.check,
-                                                  size: buttonFontSize,
-                                                ),
-                                                label: Text(
-                                                  "Pausar",
-                                                  style: TextStyle(
-                                                    fontSize: buttonFontSize,
-                                                  ),
-                                                ),
-                                                style:
-                                                OutlinedButton.styleFrom(
-                                                  padding: buttonPadding,
-                                                ),
-                                                onPressed: () {
-                                                  _mostrarDialogMensagem(
-                                                    'Pausar',
-                                                    'A ideia é receber depois e deixar a venda aberta.',
-                                                  );
-                                                },
-                                              ),
-                                              OutlinedButton.icon(
-                                                icon: Icon(
-                                                  Icons.check,
-                                                  size: buttonFontSize,
-                                                ),
-                                                label: Text(
-                                                  "Finalizar",
-                                                  style: TextStyle(
-                                                    fontSize: buttonFontSize,
-                                                  ),
-                                                ),
-                                                style:
-                                                OutlinedButton.styleFrom(
-                                                  padding: buttonPadding,
-                                                ),
-                                                onPressed: () {
-                                                  _mostrarDialogMensagem(
-                                                    'Finalizar',
-                                                    'A ideia é confirmar o tipo de venda e propor alguma coisa.',
-                                                  );
-                                                },
-                                              ),
-                                              OutlinedButton.icon(
-                                                icon: Icon(
-                                                  Icons.cancel,
-                                                  size: buttonFontSize,
-                                                ),
-                                                label: Text(
-                                                  "Cancelar",
-                                                  style: TextStyle(
-                                                    fontSize: buttonFontSize,
-                                                  ),
-                                                ),
-                                                style:
-                                                OutlinedButton.styleFrom(
-                                                  padding: buttonPadding,
-                                                  side: const BorderSide(
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                onPressed: () {
-                                                  _mostrarDialogMensagem(
-                                                    'Cancelar',
-                                                    'Não implementado',
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            SizedBox(
-                              width: 340,
-                              child: SingleChildScrollView(
-                                child: _buildResumoCupomFiscalWeb(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _mostrarAreaVenda
+                          ? _buildAreaVenda(total)
+                          : _buildSeletorModoOperacao(),
                     ],
                   ),
                 ),

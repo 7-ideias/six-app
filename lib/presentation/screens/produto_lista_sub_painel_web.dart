@@ -46,11 +46,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   void _logError(
-      String context,
+      String errorContext,
       Object error,
       StackTrace stackTrace,
       ) {
-    debugPrint('[SubPainelWebProdutoLista][ERROR] $context');
+    debugPrint('[SubPainelWebProdutoLista][ERROR] $errorContext');
     debugPrint('[SubPainelWebProdutoLista][ERROR] $error');
     debugPrint('[SubPainelWebProdutoLista][STACK] $stackTrace');
 
@@ -59,7 +59,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         exception: error,
         stack: stackTrace,
         library: 'produto_lista_sub_painel_web',
-        context: ErrorDescription(context),
+        context: ErrorDescription(errorContext),
       ),
     );
   }
