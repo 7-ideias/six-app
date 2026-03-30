@@ -25,6 +25,12 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
 class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   late final List<Map<String, dynamic>> _itensResumo;
 
+  List<Map<String, dynamic>> _formasPagamentoVisiveis() {
+    return _formasPagamento
+        .where((forma) => forma['selecionado'] == true)
+        .toList();
+  }
+
   final List<Map<String, dynamic>> _formasPagamento = [
     {
       'codigo': 'DINHEIRO',
@@ -148,6 +154,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   void _alternarForma(Map<String, dynamic> forma, bool selecionado) {
     setState(() {
       forma['selecionado'] = selecionado;
+
       if (!selecionado) {
         forma['valor'] = 0.0;
       }
@@ -460,6 +467,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   }
 
   Widget _buildPainelEsquerdo() {
+    final theme = Theme.of(context);
+    final formasVisiveis = _formasPagamentoVisiveis();
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -468,15 +478,16 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(
                   child: Text(
                     'Formas de pagamento',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
                 _buildBadgeInformativo(
@@ -486,22 +497,103 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
               ],
             ),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Escolha a composição financeira da operação. Você pode usar múltiplas formas para fechar o valor total.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+            Text(
+              'Clique em uma forma para exibir o card correspondente. Clique novamente para ocultar.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 18),
+
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _formasPagamento.map((forma) {
+                final selecionado = forma['selecionado'] == true;
+
+                return FilterChip(
+                  label: Text(forma['titulo'] as String),
+                  selected: selecionado,
+                  avatar: Icon(
+                    forma['icone'] as IconData,
+                    size: 18,
+                    color: selecionado
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.primary,
+                  ),
+                  onSelected: (selected) => _alternarForma(forma, selected),
+                  selectedColor: theme.colorScheme.primary,
+                  checkmarkColor: theme.colorScheme.onPrimary,
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: selecionado
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurface,
+                  ),
+                  side: BorderSide(
+                    color: selecionado
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outlineVariant,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 18),
+
             Expanded(
-              child: SingleChildScrollView(
+              child: formasVisiveis.isEmpty
+                  ? Center(
+                child: Container(
+                  width: 420,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app_outlined,
+                        size: 38,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Nenhuma forma aberta',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Selecione uma forma de pagamento acima para exibir o card e preencher o valor.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+                  : SingleChildScrollView(
                 child: Wrap(
                   spacing: 14,
                   runSpacing: 14,
-                  children: _formasPagamento.map((forma) {
+                  children: formasVisiveis.map((forma) {
                     return SizedBox(
                       width: 520,
                       child: _buildPainelFormaPagamento(forma),
