@@ -1,3 +1,4 @@
+import 'package:appplanilha/presentation/screens/pdv_page_web_orcamento.dart';
 import 'package:appplanilha/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
@@ -618,9 +619,10 @@ class _PDVWebState extends State<PDVWeb> {
               icon: Icons.request_quote,
               label: 'Orçamento',
               onPressed: () {
-                _mostrarDialogMensagem(
-                  'Não implementado',
-                  'O fluxo de orçamento ainda não foi implementado.',
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const OrcamentoWeb(),
+                  ),
                 );
               },
             ),
