@@ -20,7 +20,8 @@ RODAR O EMULADOR RAPIDAO [20260308]
 
 --------------------------------
 # PARA RODAR A APP NO EMULADOR OU WEB - CONFIGURACOES [20260308]
-# PASSO 1 - DESCOBRINDO O NOME DO DISPOSITIVO
+
+# PASSO 1 - DESCOBRINDO O NOME DO DISPOSITIVO MOBILE LOCAL
 ```bash
 flutter devices
 ```
@@ -28,9 +29,14 @@ exemplo de saida:
 emulator-5554
 chrome
 
-# PASSO 2 - RODANDO A APP NO DISPOSITIVO
+# PASSO 2 - RODANDO A APP NO DISPOSITIVO 
 entao coloque no Additional run args para android:
     -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8082
+
+# PASSO 3 A - RODANDO A APP NA WEB COM PORTA ALEATORIA - o problema é que a cada vez que rodar, a porta muda, entao tem que ficar olhando qual porta foi escolhida
 e para web, coloque:
     -d chrome --dart-define=API_BASE_URL=http://localhost:8082
+
+# PASSO 3 B - RODANDO A APP NA WEB COM PORTA PERSONALIZADA - MINHA PREDILETA!!!
+-d web-server --web-port=39441 --dart-define=API_BASE_URL=http://localhost:8082
 --------------------------------
