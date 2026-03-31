@@ -1,0 +1,2202 @@
+import 'package:flutter/material.dart';
+
+class OperacoesCaixaWebPage extends StatefulWidget {
+  const OperacoesCaixaWebPage({super.key});
+
+  @override
+  State<OperacoesCaixaWebPage> createState() => _OperacoesCaixaWebPageState();
+}
+
+class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
+  final ScrollController _scrollController = ScrollController();
+
+  final TextEditingController _valorController = TextEditingController();
+  final TextEditingController _observacaoController = TextEditingController();
+  final TextEditingController _referenciaController = TextEditingController();
+  final TextEditingController _trocoInicialController =
+  TextEditingController(text: '200,00');
+  final TextEditingController _fechamentoDinheiroController =
+  TextEditingController();
+  final TextEditingController _fechamentoPixController =
+  TextEditingController();
+  final TextEditingController _fechamentoCartaoController =
+  TextEditingController();
+  final TextEditingController _fechamentoObservacaoController =
+  TextEditingController();
+
+  CaixaSessaoMock? _sessaoAtual;
+  OperacaoCaixaTipo? _tipoSelecionado;
+  FormaMovimentoMock? _formaSelecionada;
+  String? _caixaSelecionado;
+  bool _vincularVenda = false;
+  bool _mostrarPainelFechamento = false;
+  bool _mostrarApenasHoje = true;
+
+  late List<String> _caixas;
+  late List<FormaMovimentoMock> _formas;
+  late List<MovimentoCaixaMock> _movimentos;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _caixas = ['Caixa principal', 'Balcão 01', 'Balcão 02', 'Recepção'];
+    _formas = [
+      const FormaMovimentoMock(
+        codigo: 'tipo1',
+        descricao: 'Dinheiro',
+        natureza: NaturezaRecebimento.imediato,
+      ),
+      const FormaMovimentoMock(
+        codigo: 'tipo2',
+        descricao: 'Pix',
+        natureza: NaturezaRecebimento.imediato,
+      ),
+      const FormaMovimentoMock(
+        codigo: 'tipo3',
+        descricao: 'Cartão crédito',
+        natureza: NaturezaRecebimento.imediato,
+      ),
+      const FormaMovimentoMock(
+        codigo: 'tipo4',
+        descricao: 'Cartão débito',
+        natureza: NaturezaRecebimento.imediato,
+      ),
+      const FormaMovimentoMock(
+        codigo: 'tipo10',
+        descricao: 'Outros',
+        natureza: NaturezaRecebimento.imediato,
+      ),
+    ];
+
+    _caixaSelecionado = _caixas.first;
+    _formaSelecionada = _formas.first;
+
+    _movimentos = [
+      MovimentoCaixaMock(
+        id: '1',
+        tipo: OperacaoCaixaTipo.aberturaCaixa,
+        natureza: NaturezaMovimento.entrada,
+        valor: 200,
+        forma: _formas.first,
+        caixaNome: 'Caixa principal',
+        colaborador: 'Carlos Cartaxo',
+        observacao: 'Troco inicial do dia',
+        referencia: 'ABR-001',
+        dataHora: DateTime.now().subtract(const Duration(hours: 2, minutes: 15)),
+        status: StatusMovimento.concluida,
+        vinculadoVenda: false,
+      ),
+      MovimentoCaixaMock(
+        id: '2',
+        tipo: OperacaoCaixaTipo.suprimento,
+        natureza: NaturezaMovimento.entrada,
+        valor: 80,
+        forma: _formas.first,
+        caixaNome: 'Caixa principal',
+        colaborador: 'Larissa Souza',
+        observacao: 'Reforço para troco',
+        referencia: 'SUP-001',
+        dataHora: DateTime.now().subtract(const Duration(hours: 1, minutes: 45)),
+        status: StatusMovimento.concluida,
+        vinculadoVenda: false,
+      ),
+      MovimentoCaixaMock(
+        id: '3',
+        tipo: OperacaoCaixaTipo.retiradaDespesa,
+        natureza: NaturezaMovimento.saida,
+        valor: 35,
+        forma: _formas.first,
+        caixaNome: 'Caixa principal',
+        colaborador: 'Carlos Cartaxo',
+        observacao: 'Motoboy',
+        referencia: 'DESP-001',
+        dataHora: DateTime.now().subtract(const Duration(minutes: 50)),
+        status: StatusMovimento.pendenteConferencia,
+        vinculadoVenda: false,
+      ),
+    ];
+
+    _sessaoAtual = CaixaSessaoMock(
+      id: 'sessao-001',
+      caixaNome: 'Caixa principal',
+      colaborador: 'Carlos Cartaxo',
+      dataAbertura: DateTime.now().subtract(const Duration(hours: 2, minutes: 20)),
+      valorAbertura: 200,
+      status: StatusSessaoCaixa.aberta,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _valorController.dispose();
+    _observacaoController.dispose();
+    _referenciaController.dispose();
+    _trocoInicialController.dispose();
+    _fechamentoDinheiroController.dispose();
+    _fechamentoPixController.dispose();
+    _fechamentoCartaoController.dispose();
+    _fechamentoObservacaoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resumo = _calcularResumo();
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: const Color(0xfff4f7fb),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 1260;
+            final isMedium = constraints.maxWidth >= 900;
+
+            return SingleChildScrollView(
+              controller: _scrollController,
+              padding: EdgeInsets.symmetric(
+                horizontal: isWide ? 28 : 18,
+                vertical: 20,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1540),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(theme, resumo, isMedium),
+                      const SizedBox(height: 20),
+                      if (!_temCaixaAberto)
+                        _buildPainelAbertura(theme)
+                      else
+                        isWide
+                            ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 7,
+                              child: Column(
+                                children: [
+                                  _buildContextoOperacao(theme),
+                                  const SizedBox(height: 20),
+                                  _buildAtalhosOperacao(theme),
+                                  const SizedBox(height: 20),
+                                  _buildFormularioMovimento(theme),
+                                  const SizedBox(height: 20),
+                                  _buildHistorico(theme),
+                                  const SizedBox(height: 20),
+                                  if (_mostrarPainelFechamento)
+                                    _buildPainelFechamento(theme),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              flex: 3,
+                              child: _buildResumoLateral(theme, resumo),
+                            ),
+                          ],
+                        )
+                            : Column(
+                          children: [
+                            _buildContextoOperacao(theme),
+                            const SizedBox(height: 20),
+                            _buildResumoLateral(theme, resumo),
+                            const SizedBox(height: 20),
+                            _buildAtalhosOperacao(theme),
+                            const SizedBox(height: 20),
+                            _buildFormularioMovimento(theme),
+                            const SizedBox(height: 20),
+                            _buildHistorico(theme),
+                            const SizedBox(height: 20),
+                            if (_mostrarPainelFechamento)
+                              _buildPainelFechamento(theme),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  bool get _temCaixaAberto =>
+      _sessaoAtual != null && _sessaoAtual!.status == StatusSessaoCaixa.aberta;
+
+  Widget _buildHeader(
+      ThemeData theme,
+      ResumoCaixaMock resumo,
+      bool isMedium,
+      ) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Wrap(
+        runSpacing: 18,
+        spacing: 18,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                colors: [Color(0xff1d4ed8), Color(0xff2563eb)],
+              ),
+            ),
+            child: const Icon(Icons.point_of_sale_rounded,
+                color: Colors.white, size: 30),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Operações de caixa',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xff14213d),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _temCaixaAberto
+                      ? 'Controle operacional do caixa com visão de entradas, saídas, conferência e fechamento.'
+                      : 'Inicie a sessão do caixa para registrar suprimentos, sangrias, ajustes, despesas e fechamento do dia.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xff5b6475),
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 4),
+          if (isMedium)
+            ...[
+              _buildTopInfoChip(
+                icon: Icons.storefront_outlined,
+                label: 'Empresa',
+                value: 'Six Assistência Técnica',
+              ),
+              _buildTopInfoChip(
+                icon: Icons.person_outline_rounded,
+                label: 'Operador',
+                value: _sessaoAtual?.colaborador ?? 'Carlos Cartaxo',
+              ),
+              _buildTopInfoChip(
+                icon: Icons.calendar_today_outlined,
+                label: 'Movimentos',
+                value: '${resumo.quantidadeMovimentos}',
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopInfoChip({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xfff8fbff),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xffd9e4f2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xff2563eb)),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff7a8394),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff18243d),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPainelAbertura(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(26),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: const Color(0xffe8f0fe),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.lock_open_rounded,
+                    color: Color(0xff1d4ed8)),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Abertura de caixa',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xff14213d),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Defina o caixa, o troco inicial e inicie a operação do dia.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xff5b6475),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 18,
+            runSpacing: 18,
+            children: [
+              _buildFieldBox(
+                width: 260,
+                label: 'Caixa / guichê',
+                child: _buildDropdown<String>(
+                  value: _caixaSelecionado,
+                  items: _caixas,
+                  onChanged: (value) {
+                    setState(() => _caixaSelecionado = value);
+                  },
+                  itemLabel: (item) => item,
+                ),
+              ),
+              _buildFieldBox(
+                width: 220,
+                label: 'Troco inicial',
+                child: _buildTextField(
+                  controller: _trocoInicialController,
+                  hint: '0,00',
+                  prefix: 'R\$ ',
+                ),
+              ),
+              _buildFieldBox(
+                width: 260,
+                label: 'Colaborador responsável',
+                child: _buildReadOnlyField('Carlos Cartaxo'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              ElevatedButton.icon(
+                onPressed: _abrirCaixa,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('Abrir caixa'),
+                style: _primaryButtonStyle(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextoOperacao(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Wrap(
+        spacing: 18,
+        runSpacing: 18,
+        children: [
+          _buildMiniMetric(
+            title: 'Sessão',
+            value: _sessaoAtual?.id ?? '--',
+            icon: Icons.badge_outlined,
+          ),
+          _buildMiniMetric(
+            title: 'Caixa',
+            value: _sessaoAtual?.caixaNome ?? '--',
+            icon: Icons.store_mall_directory_outlined,
+          ),
+          _buildMiniMetric(
+            title: 'Abertura',
+            value: _formatDateTime(_sessaoAtual?.dataAbertura),
+            icon: Icons.schedule_rounded,
+          ),
+          _buildMiniMetric(
+            title: 'Troco inicial',
+            value: _formatCurrency(_sessaoAtual?.valorAbertura ?? 0),
+            icon: Icons.account_balance_wallet_outlined,
+          ),
+          _buildMiniMetric(
+            title: 'Status',
+            value: _labelSessao(_sessaoAtual?.status),
+            icon: Icons.verified_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniMetric({
+    required String title,
+    required String value,
+    required IconData icon,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 190, maxWidth: 250),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xfff8fbff),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xffdde7f3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xffe8f0fe),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: const Color(0xff2563eb), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff7a8394),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff162033),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAtalhosOperacao(ThemeData theme) {
+    final cards = [
+      _AtalhoOperacaoData(
+        tipo: OperacaoCaixaTipo.suprimento,
+        titulo: 'Suprimento',
+        descricao: 'Adicionar valores ao caixa para reforço operacional.',
+        icone: Icons.add_card_rounded,
+        cor: const Color(0xff0f766e),
+      ),
+      _AtalhoOperacaoData(
+        tipo: OperacaoCaixaTipo.sangria,
+        titulo: 'Sangria',
+        descricao: 'Retirar excesso de numerário para segurança.',
+        icone: Icons.outbox_rounded,
+        cor: const Color(0xffb45309),
+      ),
+      _AtalhoOperacaoData(
+        tipo: OperacaoCaixaTipo.retiradaDespesa,
+        titulo: 'Despesa',
+        descricao: 'Registrar saída para motoboy, café, material e similares.',
+        icone: Icons.receipt_long_rounded,
+        cor: const Color(0xffbe123c),
+      ),
+      _AtalhoOperacaoData(
+        tipo: OperacaoCaixaTipo.ajuste,
+        titulo: 'Ajuste',
+        descricao: 'Corrigir diferenças operacionais com rastreabilidade.',
+        icone: Icons.tune_rounded,
+        cor: const Color(0xff4338ca),
+      ),
+      _AtalhoOperacaoData(
+        tipo: OperacaoCaixaTipo.recebimentoAvulso,
+        titulo: 'Recebimento avulso',
+        descricao: 'Entrada operacional sem vínculo direto com venda.',
+        icone: Icons.arrow_downward_rounded,
+        cor: const Color(0xff047857),
+      ),
+      _AtalhoOperacaoData(
+        tipo: OperacaoCaixaTipo.pagamentoAvulso,
+        titulo: 'Pagamento avulso',
+        descricao: 'Saída operacional pontual com justificativa.',
+        icone: Icons.arrow_upward_rounded,
+        cor: const Color(0xff991b1b),
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ações rápidas',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xff14213d),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Selecione a operação para preencher o formulário com o contexto adequado.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: const Color(0xff5b6475),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: cards.map((item) {
+              final selecionado = _tipoSelecionado == item.tipo;
+              return InkWell(
+                borderRadius: BorderRadius.circular(22),
+                onTap: () {
+                  setState(() {
+                    _tipoSelecionado = item.tipo;
+                    _mostrarPainelFechamento = false;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 280,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: selecionado ? item.cor.withOpacity(.10) : Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: selecionado
+                          ? item.cor
+                          : const Color(0xffdbe4ef),
+                      width: selecionado ? 1.6 : 1.0,
+                    ),
+                    boxShadow: selecionado
+                        ? [
+                      BoxShadow(
+                        color: item.cor.withOpacity(.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ]
+                        : null,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: item.cor.withOpacity(.12),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(item.icone, color: item.cor, size: 26),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        item.titulo,
+                        style: const TextStyle(
+                          color: Color(0xff162033),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        item.descricao,
+                        style: const TextStyle(
+                          color: Color(0xff5f6878),
+                          fontSize: 13.4,
+                          height: 1.42,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _mostrarPainelFechamento = !_mostrarPainelFechamento;
+                    _tipoSelecionado = null;
+                  });
+                },
+                icon: const Icon(Icons.rule_folder_outlined),
+                label: Text(_mostrarPainelFechamento
+                    ? 'Ocultar fechamento'
+                    : 'Preparar fechamento'),
+                style: _secondaryButtonStyle(),
+              ),
+              OutlinedButton.icon(
+                onPressed: _confirmarEncerramentoSessao,
+                icon: const Icon(Icons.power_settings_new_rounded),
+                label: const Text('Encerrar sessão'),
+                style: _dangerButtonStyle(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormularioMovimento(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lançamento operacional',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xff14213d),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _tipoSelecionado == null
+                ? 'Escolha uma ação rápida acima para orientar o lançamento.'
+                : 'Preencha os dados da operação ${_labelTipo(_tipoSelecionado!)} com segurança e rastreabilidade.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: const Color(0xff5b6475),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 18,
+            runSpacing: 18,
+            children: [
+              _buildFieldBox(
+                width: 260,
+                label: 'Tipo da operação',
+                child: _buildDropdown<OperacaoCaixaTipo>(
+                  value: _tipoSelecionado,
+                  items: OperacaoCaixaTipo.values
+                      .where((e) => e != OperacaoCaixaTipo.fechamentoCaixa)
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() => _tipoSelecionado = value);
+                  },
+                  itemLabel: _labelTipo,
+                  hint: 'Selecione',
+                ),
+              ),
+              _buildFieldBox(
+                width: 220,
+                label: 'Valor',
+                child: _buildTextField(
+                  controller: _valorController,
+                  hint: '0,00',
+                  prefix: 'R\$ ',
+                ),
+              ),
+              _buildFieldBox(
+                width: 240,
+                label: 'Forma relacionada',
+                child: _buildDropdown<FormaMovimentoMock>(
+                  value: _formaSelecionada,
+                  items: _formas,
+                  onChanged: (value) {
+                    setState(() => _formaSelecionada = value);
+                  },
+                  itemLabel: (item) => item.descricao,
+                ),
+              ),
+              _buildFieldBox(
+                width: 240,
+                label: 'Caixa / guichê',
+                child: _buildReadOnlyField(_sessaoAtual?.caixaNome ?? '--'),
+              ),
+              _buildFieldBox(
+                width: 260,
+                label: 'Referência / comprovante',
+                child: _buildTextField(
+                  controller: _referenciaController,
+                  hint: 'Ex.: MOV-001',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 18,
+            runSpacing: 18,
+            children: [
+              SizedBox(
+                width: 540,
+                child: _buildFieldBox(
+                  width: 540,
+                  label: 'Observação',
+                  child: TextField(
+                    controller: _observacaoController,
+                    maxLines: 4,
+                    decoration: _inputDecoration(
+                      hint: 'Descreva o motivo da movimentação com clareza.',
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 280,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xfff8fbff),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xffdbe4ef)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Contexto adicional',
+                      style: TextStyle(
+                        color: Color(0xff162033),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    CheckboxListTile(
+                      value: _vincularVenda,
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Possui vínculo com venda',
+                        style: TextStyle(fontSize: 13.5),
+                      ),
+                      onChanged: (value) {
+                        setState(() => _vincularVenda = value ?? false);
+                      },
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Use em estornos ou situações operacionais relacionadas a atendimento anterior.',
+                      style: TextStyle(
+                        color: Colors.blueGrey.shade700,
+                        fontSize: 12.8,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _salvarMovimento,
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Registrar movimentação'),
+                style: _primaryButtonStyle(),
+              ),
+              OutlinedButton.icon(
+                onPressed: _limparFormularioMovimento,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Limpar formulário'),
+                style: _secondaryButtonStyle(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistorico(ThemeData theme) {
+    final movimentosVisiveis = _mostrarApenasHoje
+        ? _movimentos.where((m) => _isSameDay(m.dataHora, DateTime.now())).toList()
+        : _movimentos;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                'Histórico de movimentações',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xff14213d),
+                ),
+              ),
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xffeef5ff),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${movimentosVisiveis.length} registros',
+                  style: const TextStyle(
+                    color: Color(0xff1d4ed8),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('Somente hoje'),
+                selected: _mostrarApenasHoje,
+                onSelected: (value) {
+                  setState(() => _mostrarApenasHoje = value);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Column(
+            children: movimentosVisiveis.map((movimento) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _buildMovimentoCard(movimento),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMovimentoCard(MovimentoCaixaMock movimento) {
+    final cor = _corPorNatureza(movimento.natureza);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xffdce5f0)),
+      ),
+      child: Wrap(
+        spacing: 18,
+        runSpacing: 18,
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: cor.withOpacity(.10),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    movimento.natureza == NaturezaMovimento.entrada
+                        ? Icons.south_west_rounded
+                        : Icons.north_east_rounded,
+                    color: cor,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          Text(
+                            _labelTipo(movimento.tipo),
+                            style: const TextStyle(
+                              color: Color(0xff162033),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          _buildStatusPill(
+                            _labelStatusMovimento(movimento.status),
+                            _corPorStatus(movimento.status),
+                          ),
+                          _buildStatusPill(
+                            _labelNatureza(movimento.natureza),
+                            cor,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        movimento.observacao.isEmpty
+                            ? 'Sem observação informada.'
+                            : movimento.observacao,
+                        style: const TextStyle(
+                          color: Color(0xff5c6677),
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 8,
+                        children: [
+                          _buildInlineInfo(
+                              Icons.person_outline_rounded, movimento.colaborador),
+                          _buildInlineInfo(Icons.store_outlined, movimento.caixaNome),
+                          _buildInlineInfo(Icons.payments_outlined,
+                              movimento.forma.descricao),
+                          _buildInlineInfo(Icons.receipt_long_outlined,
+                              movimento.referencia.isEmpty
+                                  ? 'Sem referência'
+                                  : movimento.referencia),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 220, maxWidth: 320),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _formatCurrency(movimento.valor),
+                  style: TextStyle(
+                    color: cor,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _formatDateTime(movimento.dataHora),
+                  style: const TextStyle(
+                    color: Color(0xff7a8394),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Detalhamento de ${_labelTipo(movimento.tipo)} preparado para futura integração.',
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Detalhes'),
+                    ),
+                    if (movimento.status != StatusMovimento.cancelada)
+                      OutlinedButton(
+                        onPressed: () => _cancelarMovimento(movimento),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xffb91c1c),
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoLateral(ThemeData theme, ResumoCaixaMock resumo) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: _cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Resumo inteligente do caixa',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xff14213d),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Visão rápida para operação e conferência do dia.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xff5b6475),
+                ),
+              ),
+              const SizedBox(height: 18),
+              _buildResumoLinha('Troco inicial', resumo.trocoInicial),
+              _buildResumoLinha('Entradas operacionais', resumo.totalEntradas),
+              _buildResumoLinha('Saídas operacionais', resumo.totalSaidas),
+              const Divider(height: 28),
+              _buildResumoLinha(
+                'Saldo esperado',
+                resumo.saldoEsperado,
+                destaque: true,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xfff8fbff),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xffdce5f0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Conferência por forma',
+                      style: TextStyle(
+                        color: Color(0xff162033),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildResumoSecundario(
+                        'Dinheiro', _formatCurrency(resumo.dinheiro)),
+                    _buildResumoSecundario('Pix', _formatCurrency(resumo.pix)),
+                    _buildResumoSecundario(
+                        'Cartão', _formatCurrency(resumo.cartao)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: _cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Checklist operacional',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xff14213d),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildChecklistItem(
+                checked: _temCaixaAberto,
+                title: 'Caixa aberto',
+              ),
+              _buildChecklistItem(
+                checked: _movimentos.isNotEmpty,
+                title: 'Movimentações registradas',
+              ),
+              _buildChecklistItem(
+                checked: _movimentos
+                    .any((m) => m.status == StatusMovimento.pendenteConferencia),
+                title: 'Há pendências para conferência',
+              ),
+              _buildChecklistItem(
+                checked: _mostrarPainelFechamento,
+                title: 'Fechamento preparado',
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPainelFechamento(ThemeData theme) {
+    final resumo = _calcularResumo();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Fechamento de caixa',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xff14213d),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Informe os valores apurados para comparar com o saldo esperado e concluir a sessão.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: const Color(0xff5b6475),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 18,
+            runSpacing: 18,
+            children: [
+              _buildFieldBox(
+                width: 200,
+                label: 'Dinheiro apurado',
+                child: _buildTextField(
+                  controller: _fechamentoDinheiroController,
+                  hint: _formatCurrency(resumo.dinheiro),
+                  prefix: 'R\$ ',
+                ),
+              ),
+              _buildFieldBox(
+                width: 200,
+                label: 'Pix apurado',
+                child: _buildTextField(
+                  controller: _fechamentoPixController,
+                  hint: _formatCurrency(resumo.pix),
+                  prefix: 'R\$ ',
+                ),
+              ),
+              _buildFieldBox(
+                width: 220,
+                label: 'Cartão apurado',
+                child: _buildTextField(
+                  controller: _fechamentoCartaoController,
+                  hint: _formatCurrency(resumo.cartao),
+                  prefix: 'R\$ ',
+                ),
+              ),
+              Container(
+                width: 280,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xfff8fbff),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xffdbe4ef)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Saldo esperado',
+                      style: TextStyle(
+                        color: Color(0xff7a8394),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatCurrency(resumo.saldoEsperado),
+                      style: const TextStyle(
+                        color: Color(0xff0f172a),
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _buildFieldBox(
+            width: double.infinity,
+            label: 'Observação do fechamento',
+            child: TextField(
+              controller: _fechamentoObservacaoController,
+              maxLines: 3,
+              decoration: _inputDecoration(
+                hint: 'Detalhe divergências, conferências e observações finais.',
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _fecharCaixa,
+                icon: const Icon(Icons.task_alt_rounded),
+                label: const Text('Concluir fechamento'),
+                style: _primaryButtonStyle(),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _mostrarPainelFechamento = false);
+                },
+                icon: const Icon(Icons.close_rounded),
+                label: const Text('Cancelar fechamento'),
+                style: _secondaryButtonStyle(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChecklistItem({
+    required bool checked,
+    required String title,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(
+            checked ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            size: 19,
+            color: checked ? const Color(0xff16a34a) : const Color(0xff94a3b8),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xff334155),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoLinha(String label, double valor, {bool destaque = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: destaque ? const Color(0xff0f172a) : const Color(0xff64748b),
+                fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            _formatCurrency(valor),
+            style: TextStyle(
+              color: destaque ? const Color(0xff0f172a) : const Color(0xff1e293b),
+              fontWeight: destaque ? FontWeight.w900 : FontWeight.w800,
+              fontSize: destaque ? 18 : 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoSecundario(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xff64748b),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xff162033),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInlineInfo(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: const Color(0xff64748b)),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xff64748b),
+              fontSize: 12.8,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFieldBox({
+    required double width,
+    required String label,
+    required Widget child,
+  }) {
+    return SizedBox(
+      width: width == double.infinity ? null : width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xff4b5563),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField(String value) {
+    return Container(
+      height: 52,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xfff8fbff),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xffdbe4ef)),
+      ),
+      child: Text(
+        value,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Color(0xff162033),
+          fontSize: 14.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    String? prefix,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: _inputDecoration(
+        hint: hint,
+        prefixText: prefix,
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required T? value,
+    required List<T> items,
+    required void Function(T?) onChanged,
+    required String Function(T item) itemLabel,
+    String? hint,
+  }) {
+    return DropdownButtonFormField<T>(
+      value: value,
+      decoration: _inputDecoration(hint: hint),
+      items: items
+          .map(
+            (item) => DropdownMenuItem<T>(
+          value: item,
+          child: Text(
+            itemLabel(item),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      )
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String? hint,
+    String? prefixText,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      prefixText: prefixText,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xffdbe4ef)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xff2563eb), width: 1.4),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: const Color(0xffdde6f0)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(.04),
+          blurRadius: 26,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    );
+  }
+
+  ButtonStyle _primaryButtonStyle() {
+    return ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xff1d4ed8),
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+      elevation: 0,
+    );
+  }
+
+  ButtonStyle _secondaryButtonStyle() {
+    return OutlinedButton.styleFrom(
+      foregroundColor: const Color(0xff1e293b),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      side: const BorderSide(color: Color(0xffd3deea)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+    );
+  }
+
+  ButtonStyle _dangerButtonStyle() {
+    return OutlinedButton.styleFrom(
+      foregroundColor: const Color(0xffb91c1c),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      side: const BorderSide(color: Color(0xfffecaca)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+    );
+  }
+
+  void _abrirCaixa() {
+    final valor = _parseCurrency(_trocoInicialController.text);
+
+    setState(() {
+      _sessaoAtual = CaixaSessaoMock(
+        id: 'sessao-${DateTime.now().millisecondsSinceEpoch}',
+        caixaNome: _caixaSelecionado ?? 'Caixa principal',
+        colaborador: 'Carlos Cartaxo',
+        dataAbertura: DateTime.now(),
+        valorAbertura: valor,
+        status: StatusSessaoCaixa.aberta,
+      );
+
+      _movimentos.insert(
+        0,
+        MovimentoCaixaMock(
+          id: 'mov-${DateTime.now().millisecondsSinceEpoch}',
+          tipo: OperacaoCaixaTipo.aberturaCaixa,
+          natureza: NaturezaMovimento.entrada,
+          valor: valor,
+          forma: _formas.first,
+          caixaNome: _caixaSelecionado ?? 'Caixa principal',
+          colaborador: 'Carlos Cartaxo',
+          observacao: 'Abertura de caixa com troco inicial',
+          referencia: 'ABR-${_movimentos.length + 1}',
+          dataHora: DateTime.now(),
+          status: StatusMovimento.concluida,
+          vinculadoVenda: false,
+        ),
+      );
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Caixa aberto com sucesso.')),
+    );
+  }
+
+  void _salvarMovimento() {
+    if (_tipoSelecionado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione o tipo da operação.')),
+      );
+      return;
+    }
+
+    final valor = _parseCurrency(_valorController.text);
+    if (valor <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe um valor válido.')),
+      );
+      return;
+    }
+
+    final natureza = _naturezaPorTipo(_tipoSelecionado!);
+
+    setState(() {
+      _movimentos.insert(
+        0,
+        MovimentoCaixaMock(
+          id: 'mov-${DateTime.now().millisecondsSinceEpoch}',
+          tipo: _tipoSelecionado!,
+          natureza: natureza,
+          valor: valor,
+          forma: _formaSelecionada ?? _formas.first,
+          caixaNome: _sessaoAtual?.caixaNome ?? 'Caixa principal',
+          colaborador: _sessaoAtual?.colaborador ?? 'Carlos Cartaxo',
+          observacao: _observacaoController.text.trim(),
+          referencia: _referenciaController.text.trim(),
+          dataHora: DateTime.now(),
+          status: StatusMovimento.concluida,
+          vinculadoVenda: _vincularVenda,
+        ),
+      );
+    });
+
+    _limparFormularioMovimento();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Movimentação registrada com sucesso.')),
+    );
+  }
+
+  void _limparFormularioMovimento() {
+    setState(() {
+      _tipoSelecionado = null;
+      _valorController.clear();
+      _observacaoController.clear();
+      _referenciaController.clear();
+      _vincularVenda = false;
+    });
+  }
+
+  void _fecharCaixa() {
+    final resumo = _calcularResumo();
+    final dinheiroInformado = _fechamentoDinheiroController.text.trim().isEmpty
+        ? resumo.dinheiro
+        : _parseCurrency(_fechamentoDinheiroController.text);
+    final pixInformado = _fechamentoPixController.text.trim().isEmpty
+        ? resumo.pix
+        : _parseCurrency(_fechamentoPixController.text);
+    final cartaoInformado = _fechamentoCartaoController.text.trim().isEmpty
+        ? resumo.cartao
+        : _parseCurrency(_fechamentoCartaoController.text);
+
+    final apurado = dinheiroInformado + pixInformado + cartaoInformado;
+    final diferenca = apurado - resumo.saldoEsperado;
+
+    setState(() {
+      _movimentos.insert(
+        0,
+        MovimentoCaixaMock(
+          id: 'mov-${DateTime.now().millisecondsSinceEpoch}',
+          tipo: OperacaoCaixaTipo.fechamentoCaixa,
+          natureza: NaturezaMovimento.saida,
+          valor: apurado,
+          forma: _formas.first,
+          caixaNome: _sessaoAtual?.caixaNome ?? 'Caixa principal',
+          colaborador: _sessaoAtual?.colaborador ?? 'Carlos Cartaxo',
+          observacao:
+          'Fechamento realizado. Diferença apurada: ${_formatCurrency(diferenca)}. ${_fechamentoObservacaoController.text.trim()}',
+          referencia: 'FEC-${_movimentos.length + 1}',
+          dataHora: DateTime.now(),
+          status: diferenca == 0
+              ? StatusMovimento.concluida
+              : StatusMovimento.pendenteConferencia,
+          vinculadoVenda: false,
+        ),
+      );
+
+      _sessaoAtual = _sessaoAtual?.copyWith(
+        status: StatusSessaoCaixa.fechada,
+      );
+
+      _mostrarPainelFechamento = false;
+      _fechamentoDinheiroController.clear();
+      _fechamentoPixController.clear();
+      _fechamentoCartaoController.clear();
+      _fechamentoObservacaoController.clear();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          diferenca == 0
+              ? 'Fechamento concluído com sucesso.'
+              : 'Fechamento registrado com diferença de ${_formatCurrency(diferenca)}.',
+        ),
+      ),
+    );
+  }
+
+  void _confirmarEncerramentoSessao() async {
+    if (!_temCaixaAberto) return;
+
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text('Encerrar sessão?'),
+          content: const Text(
+            'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Voltar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Encerrar'),
+            ),
+          ],
+        );
+      },
+    ) ??
+        false;
+
+    if (!confirmou) return;
+
+    setState(() {
+      _sessaoAtual = _sessaoAtual?.copyWith(status: StatusSessaoCaixa.fechada);
+      _mostrarPainelFechamento = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sessão encerrada.')),
+    );
+  }
+
+  void _cancelarMovimento(MovimentoCaixaMock movimento) async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text('Cancelar movimentação?'),
+          content: Text(
+            'Deseja cancelar a operação ${_labelTipo(movimento.tipo)} no valor de ${_formatCurrency(movimento.valor)}?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Voltar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xffb91c1c),
+              ),
+              child: const Text('Cancelar operação'),
+            ),
+          ],
+        );
+      },
+    ) ??
+        false;
+
+    if (!confirmou) return;
+
+    setState(() {
+      final index = _movimentos.indexWhere((m) => m.id == movimento.id);
+      if (index >= 0) {
+        _movimentos[index] =
+            _movimentos[index].copyWith(status: StatusMovimento.cancelada);
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Movimentação cancelada.')),
+    );
+  }
+
+  ResumoCaixaMock _calcularResumo() {
+    final trocoInicial = _sessaoAtual?.valorAbertura ?? 0;
+
+    double totalEntradas = 0;
+    double totalSaidas = 0;
+    double dinheiro = 0;
+    double pix = 0;
+    double cartao = 0;
+
+    for (final mov in _movimentos.where(
+          (m) => m.status != StatusMovimento.cancelada,
+    )) {
+      if (mov.natureza == NaturezaMovimento.entrada) {
+        totalEntradas += mov.valor;
+      } else {
+        totalSaidas += mov.valor;
+      }
+
+      if (mov.natureza == NaturezaMovimento.entrada) {
+        switch (mov.forma.codigo) {
+          case 'tipo1':
+            dinheiro += mov.valor;
+            break;
+          case 'tipo2':
+            pix += mov.valor;
+            break;
+          case 'tipo3':
+          case 'tipo4':
+            cartao += mov.valor;
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    final saldoEsperado = trocoInicial + totalEntradas - totalSaidas;
+
+    return ResumoCaixaMock(
+      trocoInicial: trocoInicial,
+      totalEntradas: totalEntradas,
+      totalSaidas: totalSaidas,
+      saldoEsperado: saldoEsperado,
+      quantidadeMovimentos: _movimentos.length,
+      dinheiro: dinheiro,
+      pix: pix,
+      cartao: cartao,
+    );
+  }
+
+  NaturezaMovimento _naturezaPorTipo(OperacaoCaixaTipo tipo) {
+    switch (tipo) {
+      case OperacaoCaixaTipo.aberturaCaixa:
+      case OperacaoCaixaTipo.suprimento:
+      case OperacaoCaixaTipo.recebimentoAvulso:
+        return NaturezaMovimento.entrada;
+      case OperacaoCaixaTipo.fechamentoCaixa:
+      case OperacaoCaixaTipo.sangria:
+      case OperacaoCaixaTipo.retiradaDespesa:
+      case OperacaoCaixaTipo.ajuste:
+      case OperacaoCaixaTipo.estorno:
+      case OperacaoCaixaTipo.pagamentoAvulso:
+        return NaturezaMovimento.saida;
+    }
+  }
+
+  Color _corPorNatureza(NaturezaMovimento natureza) {
+    return natureza == NaturezaMovimento.entrada
+        ? const Color(0xff15803d)
+        : const Color(0xffb91c1c);
+  }
+
+  Color _corPorStatus(StatusMovimento status) {
+    switch (status) {
+      case StatusMovimento.aberta:
+        return const Color(0xff1d4ed8);
+      case StatusMovimento.concluida:
+        return const Color(0xff15803d);
+      case StatusMovimento.cancelada:
+        return const Color(0xffb91c1c);
+      case StatusMovimento.pendenteConferencia:
+        return const Color(0xffb45309);
+    }
+  }
+
+  String _labelTipo(OperacaoCaixaTipo tipo) {
+    switch (tipo) {
+      case OperacaoCaixaTipo.aberturaCaixa:
+        return 'Abertura de caixa';
+      case OperacaoCaixaTipo.fechamentoCaixa:
+        return 'Fechamento de caixa';
+      case OperacaoCaixaTipo.suprimento:
+        return 'Suprimento';
+      case OperacaoCaixaTipo.sangria:
+        return 'Sangria';
+      case OperacaoCaixaTipo.retiradaDespesa:
+        return 'Retirada para despesa';
+      case OperacaoCaixaTipo.ajuste:
+        return 'Ajuste';
+      case OperacaoCaixaTipo.estorno:
+        return 'Estorno';
+      case OperacaoCaixaTipo.recebimentoAvulso:
+        return 'Recebimento avulso';
+      case OperacaoCaixaTipo.pagamentoAvulso:
+        return 'Pagamento avulso';
+    }
+  }
+
+  String _labelNatureza(NaturezaMovimento natureza) {
+    return natureza == NaturezaMovimento.entrada ? 'Entrada' : 'Saída';
+  }
+
+  String _labelStatusMovimento(StatusMovimento status) {
+    switch (status) {
+      case StatusMovimento.aberta:
+        return 'Aberta';
+      case StatusMovimento.concluida:
+        return 'Concluída';
+      case StatusMovimento.cancelada:
+        return 'Cancelada';
+      case StatusMovimento.pendenteConferencia:
+        return 'Pendente conferência';
+    }
+  }
+
+  String _labelSessao(StatusSessaoCaixa? status) {
+    switch (status) {
+      case StatusSessaoCaixa.aberta:
+        return 'Aberta';
+      case StatusSessaoCaixa.fechada:
+        return 'Fechada';
+      case null:
+        return '--';
+    }
+  }
+
+  String _formatCurrency(double value) {
+    final negative = value < 0;
+    final absolute = value.abs();
+    final fixed = absolute.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final integer = parts[0];
+    final decimal = parts[1];
+
+    final buffer = StringBuffer();
+    for (int i = 0; i < integer.length; i++) {
+      final position = integer.length - i;
+      buffer.write(integer[i]);
+      if (position > 1 && position % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+
+    return '${negative ? '-' : ''}R\$ ${buffer.toString()},$decimal';
+  }
+
+  double _parseCurrency(String text) {
+    final cleaned = text
+        .replaceAll('R\$', '')
+        .replaceAll('.', '')
+        .replaceAll(' ', '')
+        .replaceAll(',', '.')
+        .trim();
+    return double.tryParse(cleaned) ?? 0;
+  }
+
+  String _formatDateTime(DateTime? value) {
+    if (value == null) return '--';
+    final dd = value.day.toString().padLeft(2, '0');
+    final mm = value.month.toString().padLeft(2, '0');
+    final yyyy = value.year.toString();
+    final hh = value.hour.toString().padLeft(2, '0');
+    final min = value.minute.toString().padLeft(2, '0');
+    return '$dd/$mm/$yyyy às $hh:$min';
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+enum OperacaoCaixaTipo {
+  aberturaCaixa,
+  fechamentoCaixa,
+  suprimento,
+  sangria,
+  retiradaDespesa,
+  ajuste,
+  estorno,
+  recebimentoAvulso,
+  pagamentoAvulso,
+}
+
+enum NaturezaMovimento {
+  entrada,
+  saida,
+}
+
+enum NaturezaRecebimento {
+  imediato,
+  futuro,
+}
+
+enum StatusMovimento {
+  aberta,
+  concluida,
+  cancelada,
+  pendenteConferencia,
+}
+
+enum StatusSessaoCaixa {
+  aberta,
+  fechada,
+}
+
+class FormaMovimentoMock {
+  final String codigo;
+  final String descricao;
+  final NaturezaRecebimento natureza;
+
+  const FormaMovimentoMock({
+    required this.codigo,
+    required this.descricao,
+    required this.natureza,
+  });
+}
+
+class CaixaSessaoMock {
+  final String id;
+  final String caixaNome;
+  final String colaborador;
+  final DateTime dataAbertura;
+  final double valorAbertura;
+  final StatusSessaoCaixa status;
+
+  CaixaSessaoMock({
+    required this.id,
+    required this.caixaNome,
+    required this.colaborador,
+    required this.dataAbertura,
+    required this.valorAbertura,
+    required this.status,
+  });
+
+  CaixaSessaoMock copyWith({
+    String? id,
+    String? caixaNome,
+    String? colaborador,
+    DateTime? dataAbertura,
+    double? valorAbertura,
+    StatusSessaoCaixa? status,
+  }) {
+    return CaixaSessaoMock(
+      id: id ?? this.id,
+      caixaNome: caixaNome ?? this.caixaNome,
+      colaborador: colaborador ?? this.colaborador,
+      dataAbertura: dataAbertura ?? this.dataAbertura,
+      valorAbertura: valorAbertura ?? this.valorAbertura,
+      status: status ?? this.status,
+    );
+  }
+}
+
+class MovimentoCaixaMock {
+  final String id;
+  final OperacaoCaixaTipo tipo;
+  final NaturezaMovimento natureza;
+  final double valor;
+  final FormaMovimentoMock forma;
+  final String caixaNome;
+  final String colaborador;
+  final String observacao;
+  final String referencia;
+  final DateTime dataHora;
+  final StatusMovimento status;
+  final bool vinculadoVenda;
+
+  MovimentoCaixaMock({
+    required this.id,
+    required this.tipo,
+    required this.natureza,
+    required this.valor,
+    required this.forma,
+    required this.caixaNome,
+    required this.colaborador,
+    required this.observacao,
+    required this.referencia,
+    required this.dataHora,
+    required this.status,
+    required this.vinculadoVenda,
+  });
+
+  MovimentoCaixaMock copyWith({
+    String? id,
+    OperacaoCaixaTipo? tipo,
+    NaturezaMovimento? natureza,
+    double? valor,
+    FormaMovimentoMock? forma,
+    String? caixaNome,
+    String? colaborador,
+    String? observacao,
+    String? referencia,
+    DateTime? dataHora,
+    StatusMovimento? status,
+    bool? vinculadoVenda,
+  }) {
+    return MovimentoCaixaMock(
+      id: id ?? this.id,
+      tipo: tipo ?? this.tipo,
+      natureza: natureza ?? this.natureza,
+      valor: valor ?? this.valor,
+      forma: forma ?? this.forma,
+      caixaNome: caixaNome ?? this.caixaNome,
+      colaborador: colaborador ?? this.colaborador,
+      observacao: observacao ?? this.observacao,
+      referencia: referencia ?? this.referencia,
+      dataHora: dataHora ?? this.dataHora,
+      status: status ?? this.status,
+      vinculadoVenda: vinculadoVenda ?? this.vinculadoVenda,
+    );
+  }
+}
+
+class ResumoCaixaMock {
+  final double trocoInicial;
+  final double totalEntradas;
+  final double totalSaidas;
+  final double saldoEsperado;
+  final int quantidadeMovimentos;
+  final double dinheiro;
+  final double pix;
+  final double cartao;
+
+  ResumoCaixaMock({
+    required this.trocoInicial,
+    required this.totalEntradas,
+    required this.totalSaidas,
+    required this.saldoEsperado,
+    required this.quantidadeMovimentos,
+    required this.dinheiro,
+    required this.pix,
+    required this.cartao,
+  });
+}
+
+class _AtalhoOperacaoData {
+  final OperacaoCaixaTipo tipo;
+  final String titulo;
+  final String descricao;
+  final IconData icone;
+  final Color cor;
+
+  _AtalhoOperacaoData({
+    required this.tipo,
+    required this.titulo,
+    required this.descricao,
+    required this.icone,
+    required this.cor,
+  });
+}
