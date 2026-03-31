@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/models/produto_model.dart';
 import 'core/di/operacao_module.dart';
+import 'core/services/websocket_service.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'top_navigation_bar.dart';
@@ -32,7 +33,14 @@ enum ModuloCentralPDV {
   agendaFinanceira,
 }
 
-class _PDVWebState extends State<PDVWeb> {
+class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
+
+  Map<String, dynamic>? _ultimoEventoWebSocket;
+  final List<Map<String, dynamic>> _notificacoes = [];
+  int _quantidadeNotificacoesNaoLidas = 0;
+
+  late final AnimationController _bellAnimationController;
+  late final Animation<double> _bellRotationAnimation;
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
 
@@ -113,14 +121,299 @@ class _PDVWebState extends State<PDVWeb> {
     super.initState();
     _logInfo('PDVWeb iniciado');
     _atualizarCamposDerivados();
+
+    _bellAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _bellRotationAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -0.10), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -0.10, end: 0.10), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 0.10, end: -0.08), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -0.08, end: 0.08), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 0.08, end: 0.0), weight: 1),
+    ]).animate(
+      CurvedAnimation(
+        parent: _bellAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _configurarWebSocket();
   }
 
   @override
   void dispose() {
+    onMensagemRecebida = null;
+    disconnectStomp();
+    _bellAnimationController.dispose();
     _codigoBarrasController.dispose();
     _itensTotalController.dispose();
     _clienteIdentificadoController.dispose();
     super.dispose();
+  }
+
+  void _configurarWebSocket() {
+    onMensagemRecebida = (json) {
+      if (!mounted) return;
+
+      _logInfo('Evento recebido via WebSocket: $json');
+
+      final notificacao = {
+        ...json,
+        'recebidoEm': DateTime.now().toIso8601String(),
+      };
+
+      setState(() {
+        _ultimoEventoWebSocket = notificacao;
+        _notificacoes.insert(0, notificacao);
+        _quantidadeNotificacoesNaoLidas =
+            (_quantidadeNotificacoesNaoLidas + 1).clamp(0, 9);
+      });
+
+      _bellAnimationController.forward(from: 0);
+
+      final mensagem =
+          json['mensagem']?.toString() ?? 'Evento recebido do backend';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensagem),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    };
+
+    connectStomp();
+  }
+
+  String _badgeNotificacaoTexto() {
+    if (_quantidadeNotificacoesNaoLidas <= 0) return '';
+    if (_quantidadeNotificacoesNaoLidas > 9) return '+9';
+    return '+$_quantidadeNotificacoesNaoLidas';
+  }
+
+  void _abrirPainelNotificacoes() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Container(
+            width: 560,
+            constraints: const BoxConstraints(maxHeight: 640),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.notifications_active_rounded,
+                        color: theme.colorScheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Notificações',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _notificacoes.clear();
+                          _quantidadeNotificacoesNaoLidas = 0;
+                          _ultimoEventoWebSocket = null;
+                        });
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Limpar'),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: _notificacoes.isEmpty
+                      ? Center(
+                    child: Text(
+                      'Nenhuma notificação recebida.',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                      : ListView.separated(
+                    itemCount: _notificacoes.length,
+                    separatorBuilder: (_, __) =>
+                    const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final item = _notificacoes[index];
+                      final ordemId =
+                          item['ordemId']?.toString() ?? '-';
+                      final status =
+                          item['status']?.toString() ?? '-';
+                      final mensagem =
+                          item['mensagem']?.toString() ?? 'Sem mensagem';
+                      final recebidoEm =
+                          item['recebidoEm']?.toString() ?? '';
+
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.10),
+                                    borderRadius:
+                                    BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.campaign_rounded,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    mensagem,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text('Ordem: $ordemId'),
+                            const SizedBox(height: 4),
+                            Text('Status: $status'),
+                            if (recebidoEm.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Recebido em: $recebidoEm',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                  theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      if (!mounted) return;
+      setState(() {
+        _quantidadeNotificacoesNaoLidas = 0;
+      });
+    });
+  }
+
+  Widget _buildNotificationBellButton() {
+    final theme = Theme.of(context);
+    final badgeTexto = _badgeNotificacaoTexto();
+    final temNaoLidas = _quantidadeNotificacoesNaoLidas > 0;
+
+    return AnimatedBuilder(
+      animation: _bellRotationAnimation,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _bellRotationAnimation.value,
+          child: child,
+        );
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: _abrirPainelNotificacoes,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Icon(
+                  temNaoLidas
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+          if (temNaoLidas)
+            Positioned(
+              top: -6,
+              right: -8,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.redAccent.withOpacity(0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  badgeTexto,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _abrirSelecaoProdutoWeb() async {
@@ -950,63 +1243,71 @@ class _PDVWebState extends State<PDVWeb> {
 
   Widget _buildSeletorModoOperacao() {
     return Expanded(
-      child: Center(
-        child: Wrap(
-          spacing: 20,
-          runSpacing: 20,
-          alignment: WrapAlignment.center,
+      child: SingleChildScrollView(
+        child: Column(
           children: [
-            _buildModoOperacaoButton(
-              context: context,
-              icon: Icons.point_of_sale,
-              label: 'Vendas',
-              onPressed: _iniciarVenda,
-            ),
-            _buildModoOperacaoButton(
-              context: context,
-              icon: Icons.request_quote,
-              label: 'Orçamento',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const OrcamentoWeb(),
+            _buildCardUltimoEvento(),
+            const SizedBox(height: 24),
+            Center(
+              child: Wrap(
+                spacing: 20,
+                runSpacing: 20,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildModoOperacaoButton(
+                    context: context,
+                    icon: Icons.point_of_sale,
+                    label: 'Vendas',
+                    onPressed: _iniciarVenda,
                   ),
-                );
-              },
-            ),
-            _buildModoOperacaoButton(
-              context: context,
-              icon: Icons.account_balance_wallet,
-              label: 'Operações de caixa',
-              onPressed: () {
-                setState(() {
-                  _moduloAtual = ModuloCentralPDV.operacoesCaixa;
-                });
-              },
-            ),
-            _buildModoOperacaoButton(
-              context: context,
-              icon: Icons.account_balance_wallet,
-              label: 'Ordem de Serviço',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const OrdemServicoWeb(),
+                  _buildModoOperacaoButton(
+                    context: context,
+                    icon: Icons.request_quote,
+                    label: 'Orçamento',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const OrcamentoWeb(),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-            _buildModoOperacaoButton(
-              context: context,
-              icon: Icons.monetization_on,
-              label: labelAgendaFinanceira(),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AgendaFinanceiraWeb(),
+                  _buildModoOperacaoButton(
+                    context: context,
+                    icon: Icons.account_balance_wallet,
+                    label: 'Operações de caixa',
+                    onPressed: () {
+                      setState(() {
+                        _moduloAtual = ModuloCentralPDV.operacoesCaixa;
+                      });
+                    },
                   ),
-                );
-              },
+                  _buildModoOperacaoButton(
+                    context: context,
+                    icon: Icons.account_balance_wallet,
+                    label: 'Ordem de Serviço',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const OrdemServicoWeb(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildModoOperacaoButton(
+                    context: context,
+                    icon: Icons.monetization_on,
+                    label: labelAgendaFinanceira(),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AgendaFinanceiraWeb(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1305,6 +1606,7 @@ class _PDVWebState extends State<PDVWeb> {
 
   @override
   Widget build(BuildContext context) {
+
     final total = _calcularTotal();
 
     return Scaffold(
@@ -1386,7 +1688,8 @@ class _PDVWebState extends State<PDVWeb> {
             ],
           ),
         ],
-        onNotificationPressed: () {},
+        notificationWidget: _buildNotificationBellButton(),
+        onNotificationPressed: _abrirPainelNotificacoes,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1437,6 +1740,89 @@ class _PDVWebState extends State<PDVWeb> {
         'ehServico': false,
       };
     }).toList();
+  }
+
+  Widget _buildCardUltimoEvento() {
+    final theme = Theme.of(context);
+
+    if (_ultimoEventoWebSocket == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.notifications_none_rounded,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Nenhum evento recebido do backend até agora.',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final ordemId = _ultimoEventoWebSocket!['ordemId']?.toString() ?? '-';
+    final status = _ultimoEventoWebSocket!['status']?.toString() ?? '-';
+    final mensagem =
+        _ultimoEventoWebSocket!['mensagem']?.toString() ?? 'Sem mensagem';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.notifications_active_rounded,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Último evento do backend',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Ordem: $ordemId',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Status: $status',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(mensagem),
+        ],
+      ),
+    );
   }
 
 }

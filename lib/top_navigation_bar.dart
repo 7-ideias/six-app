@@ -21,11 +21,13 @@ class TopNavItemData {
 class TopNavigationBar extends StatefulWidget implements PreferredSizeWidget {
   final List<TopNavItemData> items;
   final VoidCallback? onNotificationPressed;
+  final Widget? notificationWidget;
 
   const TopNavigationBar({
     super.key,
     required this.items,
     this.onNotificationPressed,
+    this.notificationWidget,
   });
 
   @override
@@ -168,6 +170,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                   }
                 },
                 onNotificationPressed: widget.onNotificationPressed,
+                notificationWidget: widget.notificationWidget,
               )
                   : Row(
                 children: [
@@ -194,14 +197,15 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                     );
                   }),
                   const Spacer(),
-                  IconButton(
-                    onPressed: widget.onNotificationPressed,
-                    icon: Icon(
-                      Icons.notifications_none,
-                      color: colorScheme.onPrimary,
-                    ),
-                    tooltip: 'Notificações',
-                  ),
+                  widget.notificationWidget ??
+                      IconButton(
+                        onPressed: widget.onNotificationPressed,
+                        icon: Icon(
+                          Icons.notifications_none,
+                          color: colorScheme.onPrimary,
+                        ),
+                        tooltip: 'Notificações',
+                      ),
                 ],
               ),
             );
@@ -221,6 +225,7 @@ class _ResponsiveHeader extends StatefulWidget {
   final ValueChanged<int> onMenuOpened;
   final ValueChanged<int> onMenuClosed;
   final VoidCallback? onNotificationPressed;
+  final Widget? notificationWidget;
 
   const _ResponsiveHeader({
     required this.items,
@@ -231,6 +236,7 @@ class _ResponsiveHeader extends StatefulWidget {
     required this.onMenuOpened,
     required this.onMenuClosed,
     required this.onNotificationPressed,
+    required this.notificationWidget,
   });
 
   @override
@@ -276,14 +282,15 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
               ),
             ),
           ),
-          IconButton(
-            onPressed: widget.onNotificationPressed,
-            icon: Icon(
-              Icons.notifications_none,
-              color: colorScheme.onPrimary,
-            ),
-            tooltip: 'Notificações',
-          ),
+          widget.notificationWidget ??
+              IconButton(
+                onPressed: widget.onNotificationPressed,
+                icon: Icon(
+                  Icons.notifications_none,
+                  color: colorScheme.onPrimary,
+                ),
+                tooltip: 'Notificações',
+              ),
         ],
       );
     }
@@ -332,14 +339,15 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
             icon: Icon(Icons.menu, color: colorScheme.onPrimary),
           ),
         ),
-        IconButton(
-          onPressed: widget.onNotificationPressed,
-          icon: Icon(
-            Icons.notifications_none,
-            color: colorScheme.onPrimary,
-          ),
-          tooltip: 'Notificações',
-        ),
+        widget.notificationWidget ??
+            IconButton(
+              onPressed: widget.onNotificationPressed,
+              icon: Icon(
+                Icons.notifications_none,
+                color: colorScheme.onPrimary,
+              ),
+              tooltip: 'Notificações',
+            ),
       ],
     );
   }

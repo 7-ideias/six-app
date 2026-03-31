@@ -1,25 +1,18 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
 
 import '../config/app_config.dart';
-import 'notification_service.dart';
 
 late StompClient stompClient;
 
-// Criamos uma função que pode ser injetada de fora:
-Function(String)? onMensagemRecebida;
+Function(Map<String, dynamic>)? onMensagemRecebida;
 
 void connectStomp() {
   stompClient = StompClient(
     config: StompConfig.SockJS(
-
-      // url: 'http://localhost:8082/ws',
-      // url: 'http://10.0.2.2:8082/ws',
-      url: AppConfig.baseUrl+'/ws',
-
-      // ASSIM FUNCIONA. ESSE É O CORRETO PARA LOCAL
+      url: '${AppConfig.baseUrl}/ws',
       onConnect: onConnectCallback,
       onWebSocketError: (error) => print('Erro no WebSocket: $error'),
       onDisconnect: (frame) => print('WebSocket desconectado'),
@@ -38,15 +31,23 @@ void onConnectCallback(StompFrame frame) {
       final body = frame.body;
       print('📩 Mensagem recebida: $body');
 
-      if (onMensagemRecebida != null && body != null) {
-        onMensagemRecebida!(body);
-      }
+      if (body == null || body.isEmpty) return;
 
-      if (body != null) {
-        showNotification("Nova mensagem recebida", body);
+      try {
+        final Map<String, dynamic> jsonBody = jsonDecode(body);
+
+        if (onMensagemRecebida != null) {
+          onMensagemRecebida!(jsonBody);
+        }
+      } catch (e) {
+        print('Erro ao converter mensagem do WebSocket: $e');
       }
     },
   );
 
   print('✅ Conectado ao WebSocket!');
+}
+
+void disconnectStomp() {
+  stompClient.deactivate();
 }

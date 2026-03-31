@@ -78,60 +78,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     _caixaSelecionado = _caixas.first;
     _formaSelecionada = _formas.first;
-
-    _movimentos = [
-      MovimentoCaixaMock(
-        id: '1',
-        tipo: OperacaoCaixaTipo.aberturaCaixa,
-        natureza: NaturezaMovimento.entrada,
-        valor: 200,
-        forma: _formas.first,
-        caixaNome: 'Caixa principal',
-        colaborador: 'Carlos Cartaxo',
-        observacao: 'Troco inicial do dia',
-        referencia: 'ABR-001',
-        dataHora: DateTime.now().subtract(const Duration(hours: 2, minutes: 15)),
-        status: StatusMovimento.concluida,
-        vinculadoVenda: false,
-      ),
-      MovimentoCaixaMock(
-        id: '2',
-        tipo: OperacaoCaixaTipo.suprimento,
-        natureza: NaturezaMovimento.entrada,
-        valor: 80,
-        forma: _formas.first,
-        caixaNome: 'Caixa principal',
-        colaborador: 'Larissa Souza',
-        observacao: 'Reforço para troco',
-        referencia: 'SUP-001',
-        dataHora: DateTime.now().subtract(const Duration(hours: 1, minutes: 45)),
-        status: StatusMovimento.concluida,
-        vinculadoVenda: false,
-      ),
-      MovimentoCaixaMock(
-        id: '3',
-        tipo: OperacaoCaixaTipo.retiradaDespesa,
-        natureza: NaturezaMovimento.saida,
-        valor: 35,
-        forma: _formas.first,
-        caixaNome: 'Caixa principal',
-        colaborador: 'Carlos Cartaxo',
-        observacao: 'Motoboy',
-        referencia: 'DESP-001',
-        dataHora: DateTime.now().subtract(const Duration(minutes: 50)),
-        status: StatusMovimento.pendenteConferencia,
-        vinculadoVenda: false,
-      ),
-    ];
-
-    _sessaoAtual = CaixaSessaoMock(
-      id: 'sessao-001',
-      caixaNome: 'Caixa principal',
-      colaborador: 'Carlos Cartaxo',
-      dataAbertura: DateTime.now().subtract(const Duration(hours: 2, minutes: 20)),
-      valorAbertura: 200,
-      status: StatusSessaoCaixa.aberta,
-    );
+    _movimentos = [];
+    _sessaoAtual = null;
+    _tipoSelecionado = null;
   }
 
   @override
@@ -265,6 +214,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   bool get _temCaixaAberto =>
       _sessaoAtual != null && _sessaoAtual!.status == StatusSessaoCaixa.aberta;
 
+  void _mostrarAvisoCaixaNaoAberto() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Antes de lançar operações, faça a abertura do caixa.'),
+      ),
+    );
+  }
+
   Widget _buildHeader(
       ThemeData theme,
       ResumoCaixaMock resumo,
@@ -287,8 +244,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 colors: [Color(0xff1d4ed8), Color(0xff2563eb)],
               ),
             ),
-            child: const Icon(Icons.point_of_sale_rounded,
-                color: Colors.white, size: 30),
+            child: const Icon(
+              Icons.point_of_sale_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
           ),
           ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
@@ -306,7 +266,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 Text(
                   _temCaixaAberto
                       ? 'Controle operacional do caixa com visão de entradas, saídas, conferência e fechamento.'
-                      : 'Inicie a sessão do caixa para registrar suprimentos, sangrias, ajustes, despesas e fechamento do dia.',
+                      : 'Antes de registrar operações, faça a abertura do caixa e defina o troco inicial do dia.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: const Color(0xff5b6475),
                     height: 1.45,
@@ -326,7 +286,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildTopInfoChip(
                 icon: Icons.person_outline_rounded,
                 label: 'Operador',
-                value: _sessaoAtual?.colaborador ?? 'Carlos Cartaxo',
+                value: _sessaoAtual?.colaborador ?? 'Aguardando abertura',
               ),
               _buildTopInfoChip(
                 icon: Icons.calendar_today_outlined,
@@ -408,8 +368,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   color: const Color(0xffe8f0fe),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.lock_open_rounded,
-                    color: Color(0xff1d4ed8)),
+                child: const Icon(
+                  Icons.lock_open_rounded,
+                  color: Color(0xff1d4ed8),
+                ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,15 +428,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             ],
           ),
           const SizedBox(height: 22),
-          Row(
-            children: [
-              ElevatedButton.icon(
-                onPressed: _abrirCaixa,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Abrir caixa'),
-                style: _primaryButtonStyle(),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _abrirCaixa,
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('Abrir caixa'),
+                  style: _primaryButtonStyle(),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -662,7 +627,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   width: 280,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: selecionado ? item.cor.withOpacity(.10) : Colors.white,
+                    color:
+                    selecionado ? item.cor.withOpacity(.10) : Colors.white,
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: selecionado
@@ -723,15 +689,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             children: [
               OutlinedButton.icon(
                 onPressed: () {
+                  if (!_temCaixaAberto) {
+                    _mostrarAvisoCaixaNaoAberto();
+                    return;
+                  }
                   setState(() {
                     _mostrarPainelFechamento = !_mostrarPainelFechamento;
                     _tipoSelecionado = null;
                   });
                 },
                 icon: const Icon(Icons.rule_folder_outlined),
-                label: Text(_mostrarPainelFechamento
-                    ? 'Ocultar fechamento'
-                    : 'Preparar fechamento'),
+                label: Text(
+                  _mostrarPainelFechamento
+                      ? 'Ocultar fechamento'
+                      : 'Preparar fechamento',
+                ),
                 style: _secondaryButtonStyle(),
               ),
               OutlinedButton.icon(
@@ -918,7 +890,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _buildHistorico(ThemeData theme) {
     final movimentosVisiveis = _mostrarApenasHoje
-        ? _movimentos.where((m) => _isSameDay(m.dataHora, DateTime.now())).toList()
+        ? _movimentos
+        .where((m) => _isSameDay(m.dataHora, DateTime.now()))
+        .toList()
         : _movimentos;
 
     return Container(
@@ -966,14 +940,32 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             ],
           ),
           const SizedBox(height: 18),
-          Column(
-            children: movimentosVisiveis.map((movimento) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: _buildMovimentoCard(movimento),
-              );
-            }).toList(),
-          ),
+          if (movimentosVisiveis.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: const Color(0xfff8fbff),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xffdbe4ef)),
+              ),
+              child: const Text(
+                'Nenhuma movimentação registrada após a abertura do caixa.',
+                style: TextStyle(
+                  color: Color(0xff64748b),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            Column(
+              children: movimentosVisiveis.map((movimento) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _buildMovimentoCard(movimento),
+                );
+              }).toList(),
+            ),
         ],
       ),
     );
@@ -1058,14 +1050,23 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                         runSpacing: 8,
                         children: [
                           _buildInlineInfo(
-                              Icons.person_outline_rounded, movimento.colaborador),
-                          _buildInlineInfo(Icons.store_outlined, movimento.caixaNome),
-                          _buildInlineInfo(Icons.payments_outlined,
-                              movimento.forma.descricao),
-                          _buildInlineInfo(Icons.receipt_long_outlined,
-                              movimento.referencia.isEmpty
-                                  ? 'Sem referência'
-                                  : movimento.referencia),
+                            Icons.person_outline_rounded,
+                            movimento.colaborador,
+                          ),
+                          _buildInlineInfo(
+                            Icons.store_outlined,
+                            movimento.caixaNome,
+                          ),
+                          _buildInlineInfo(
+                            Icons.payments_outlined,
+                            movimento.forma.descricao,
+                          ),
+                          _buildInlineInfo(
+                            Icons.receipt_long_outlined,
+                            movimento.referencia.isEmpty
+                                ? 'Sem referência'
+                                : movimento.referencia,
+                          ),
                         ],
                       ),
                     ],
@@ -1187,10 +1188,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     ),
                     const SizedBox(height: 12),
                     _buildResumoSecundario(
-                        'Dinheiro', _formatCurrency(resumo.dinheiro)),
-                    _buildResumoSecundario('Pix', _formatCurrency(resumo.pix)),
+                      'Dinheiro',
+                      _formatCurrency(resumo.dinheiro),
+                    ),
                     _buildResumoSecundario(
-                        'Cartão', _formatCurrency(resumo.cartao)),
+                      'Pix',
+                      _formatCurrency(resumo.pix),
+                    ),
+                    _buildResumoSecundario(
+                      'Cartão',
+                      _formatCurrency(resumo.cartao),
+                    ),
                   ],
                 ),
               ),
@@ -1222,8 +1230,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 title: 'Movimentações registradas',
               ),
               _buildChecklistItem(
-                checked: _movimentos
-                    .any((m) => m.status == StatusMovimento.pendenteConferencia),
+                checked: _movimentos.any(
+                      (m) => m.status == StatusMovimento.pendenteConferencia,
+                ),
                 title: 'Há pendências para conferência',
               ),
               _buildChecklistItem(
@@ -1400,7 +1409,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             child: Text(
               label,
               style: TextStyle(
-                color: destaque ? const Color(0xff0f172a) : const Color(0xff64748b),
+                color:
+                destaque ? const Color(0xff0f172a) : const Color(0xff64748b),
                 fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
@@ -1408,7 +1418,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           Text(
             _formatCurrency(valor),
             style: TextStyle(
-              color: destaque ? const Color(0xff0f172a) : const Color(0xff1e293b),
+              color:
+              destaque ? const Color(0xff0f172a) : const Color(0xff1e293b),
               fontWeight: destaque ? FontWeight.w900 : FontWeight.w800,
               fontSize: destaque ? 18 : 15,
             ),
@@ -1488,8 +1499,24 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required String label,
     required Widget child,
   }) {
-    return SizedBox(
-      width: width == double.infinity ? null : width,
+    return width == double.infinity
+        ? Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xff4b5563),
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    )
+        : SizedBox(
+      width: width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1652,6 +1679,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         status: StatusSessaoCaixa.aberta,
       );
 
+      _movimentos.clear();
       _movimentos.insert(
         0,
         MovimentoCaixaMock(
@@ -1663,7 +1691,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           caixaNome: _caixaSelecionado ?? 'Caixa principal',
           colaborador: 'Carlos Cartaxo',
           observacao: 'Abertura de caixa com troco inicial',
-          referencia: 'ABR-${_movimentos.length + 1}',
+          referencia: 'ABR-${DateTime.now().millisecondsSinceEpoch}',
           dataHora: DateTime.now(),
           status: StatusMovimento.concluida,
           vinculadoVenda: false,
@@ -1677,6 +1705,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   void _salvarMovimento() {
+    if (!_temCaixaAberto) {
+      _mostrarAvisoCaixaNaoAberto();
+      return;
+    }
+
     if (_tipoSelecionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecione o tipo da operação.')),
@@ -1732,6 +1765,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   void _fecharCaixa() {
+    if (!_temCaixaAberto) {
+      _mostrarAvisoCaixaNaoAberto();
+      return;
+    }
+
     final resumo = _calcularResumo();
     final dinheiroInformado = _fechamentoDinheiroController.text.trim().isEmpty
         ? resumo.dinheiro
@@ -1791,7 +1829,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   void _confirmarEncerramentoSessao() async {
-    if (!_temCaixaAberto) return;
+    if (!_temCaixaAberto) {
+      _mostrarAvisoCaixaNaoAberto();
+      return;
+    }
 
     final confirmou = await showDialog<bool>(
       context: context,
@@ -1919,7 +1960,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       totalEntradas: totalEntradas,
       totalSaidas: totalSaidas,
       saldoEsperado: saldoEsperado,
-      quantidadeMovimentos: _movimentos.length,
+      quantidadeMovimentos: _temCaixaAberto ? _movimentos.length : 0,
       dinheiro: dinheiro,
       pix: pix,
       cartao: cartao,
