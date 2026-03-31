@@ -54,8 +54,15 @@ class _PDVWebState extends State<PDVWeb> {
         return _buildAreaVenda(total);
 
       case ModuloCentralPDV.operacoesCaixa:
-        return const Expanded(
-          child: OperacoesCaixaWebPage(embedded: true),
+        return Expanded(
+          child: OperacoesCaixaWebPage(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
         );
 
       case ModuloCentralPDV.orcamento:

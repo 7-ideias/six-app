@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class OperacoesCaixaWebPage extends StatefulWidget {
   final bool embedded;
+  final VoidCallback? onBack;
 
   const OperacoesCaixaWebPage({
     super.key,
     this.embedded = false,
+    this.onBack,
   });
 
   @override
@@ -182,6 +184,26 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (widget.embedded) ...[
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: widget.onBack,
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          label: const Text('Voltar'),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Retornar para os módulos',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xff64748b),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   _buildHeader(theme, resumo, isMedium),
                   const SizedBox(height: 20),
                   if (!_temCaixaAberto)
