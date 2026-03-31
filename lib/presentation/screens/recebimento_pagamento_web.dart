@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/di/operacao_module.dart';
-import '../../core/services/auth_service.dart';
 import '../../data/models/operacao_models.dart';
 import '../../domain/services/operacao/operacao_service.dart';
 import '../../top_navigation_bar.dart';
@@ -195,8 +194,6 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     });
   }
 
-
-
   Future<void> _mostrarDialogMensagem({
     required String titulo,
     required String mensagem,
@@ -227,8 +224,6 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   }
 
   Future<void> _confirmarOperacao() async {
-
-
 
     if (_quantidadeFormasSelecionadas() == 0) {
       await _mostrarDialogMensagem(

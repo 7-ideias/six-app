@@ -1,6 +1,4 @@
 
-
-
 import '../../../data/models/operacao_models.dart';
 import '../../../data/services/operacao/operacao_api_client.dart';
 import '../../../mappers/operacao_mapper.dart';
