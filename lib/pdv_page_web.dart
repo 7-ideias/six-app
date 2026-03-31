@@ -23,12 +23,21 @@ class PDVWeb extends StatefulWidget {
   State<PDVWeb> createState() => _PDVWebState();
 }
 
+enum ModuloCentralPDV {
+  seletor,
+  vendas,
+  orcamento,
+  operacoesCaixa,
+  ordemServico,
+  agendaFinanceira,
+}
+
 class _PDVWebState extends State<PDVWeb> {
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
 
   bool _mostrarDashboardLateral = true;
-  bool _mostrarAreaVenda = false;
+  ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
 
   final List<Map<String, dynamic>> _produtosSelecionados = [];
   final Set<String> _formasSelecionadas = {};
@@ -38,6 +47,36 @@ class _PDVWebState extends State<PDVWeb> {
   TextEditingController(text: '0');
   final TextEditingController _clienteIdentificadoController =
   TextEditingController();
+
+  Widget _buildConteudoCentral(double total) {
+    switch (_moduloAtual) {
+      case ModuloCentralPDV.vendas:
+        return _buildAreaVenda(total);
+
+      case ModuloCentralPDV.operacoesCaixa:
+        return const Expanded(
+          child: OperacoesCaixaWebPage(embedded: true),
+        );
+
+      case ModuloCentralPDV.orcamento:
+        return const Expanded(
+          child: OrcamentoWeb(),
+        );
+
+      case ModuloCentralPDV.ordemServico:
+        return const Expanded(
+          child: OrdemServicoWeb(),
+        );
+
+      case ModuloCentralPDV.agendaFinanceira:
+        return const Expanded(
+          child: AgendaFinanceiraWeb(),
+        );
+
+      case ModuloCentralPDV.seletor:
+        return _buildSeletorModoOperacao();
+    }
+  }
 
   void _logInfo(String message) {
     debugPrint('[PDVWeb][INFO] $message');
@@ -120,7 +159,7 @@ class _PDVWebState extends State<PDVWeb> {
 
   void _iniciarVenda() {
     setState(() {
-      _mostrarAreaVenda = true;
+      _moduloAtual = ModuloCentralPDV.vendas;
     });
   }
 
@@ -162,7 +201,7 @@ class _PDVWebState extends State<PDVWeb> {
         _codigoBarrasController.clear();
         _itensTotalController.text = '0';
         _clienteIdentificadoController.clear();
-        _mostrarAreaVenda = false;
+        _moduloAtual = ModuloCentralPDV.seletor;
       });
     } catch (error, stackTrace) {
       _logError('Erro ao cancelar venda', error, stackTrace);
@@ -933,11 +972,9 @@ class _PDVWebState extends State<PDVWeb> {
               icon: Icons.account_balance_wallet,
               label: 'Operações de caixa',
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const OperacoesCaixaWebPage(),
-                  ),
-                );
+                setState(() {
+                  _moduloAtual = ModuloCentralPDV.operacoesCaixa;
+                });
               },
             ),
             _buildModoOperacaoButton(
@@ -1365,50 +1402,7 @@ class _PDVWebState extends State<PDVWeb> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                _buildTopActionButton(
-                                  context: context,
-                                  icon: Icons.person_search,
-                                  label: 'Buscar Cliente',
-                                  onPressed: () {
-                                    _mostrarDialogMensagem(
-                                      'Buscar Cliente',
-                                      'Aqui você pode implementar uma busca por nome, CPF, telefone etc.',
-                                    );
-                                  },
-                                ),
-                                _buildTopActionButton(
-                                  context: context,
-                                  icon: Icons.person_search,
-                                  label: 'Vendedor',
-                                  onPressed: () {
-                                    _mostrarDialogMensagem(
-                                      'Atribuir vendedor',
-                                      'Aqui você pode implementar uma busca por nome, CPF, telefone etc.',
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.construction),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      _mostrarAreaVenda
-                          ? _buildAreaVenda(total)
-                          : _buildSeletorModoOperacao(),
+                      _buildConteudoCentral(total),
                     ],
                   ),
                 ),

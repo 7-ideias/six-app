@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class OperacoesCaixaWebPage extends StatefulWidget {
-  const OperacoesCaixaWebPage({super.key});
+  final bool embedded;
+
+  const OperacoesCaixaWebPage({
+    super.key,
+    this.embedded = false,
+  });
 
   @override
   State<OperacoesCaixaWebPage> createState() => _OperacoesCaixaWebPageState();
@@ -143,85 +148,94 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    final resumo = _calcularResumo();
-    final theme = Theme.of(context);
+    final content = _buildContent(context);
+
+    if (widget.embedded) {
+      return content;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xfff4f7fb),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 1260;
-            final isMedium = constraints.maxWidth >= 900;
+      body: SafeArea(child: content),
+    );
+  }
 
-            return SingleChildScrollView(
-              controller: _scrollController,
-              padding: EdgeInsets.symmetric(
-                horizontal: isWide ? 28 : 18,
-                vertical: 20,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1540),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(theme, resumo, isMedium),
-                      const SizedBox(height: 20),
-                      if (!_temCaixaAberto)
-                        _buildPainelAbertura(theme)
-                      else
-                        isWide
-                            ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 7,
-                              child: Column(
-                                children: [
-                                  _buildContextoOperacao(theme),
-                                  const SizedBox(height: 20),
-                                  _buildAtalhosOperacao(theme),
-                                  const SizedBox(height: 20),
-                                  _buildFormularioMovimento(theme),
-                                  const SizedBox(height: 20),
-                                  _buildHistorico(theme),
-                                  const SizedBox(height: 20),
-                                  if (_mostrarPainelFechamento)
-                                    _buildPainelFechamento(theme),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              flex: 3,
-                              child: _buildResumoLateral(theme, resumo),
-                            ),
-                          ],
-                        )
-                            : Column(
-                          children: [
-                            _buildContextoOperacao(theme),
-                            const SizedBox(height: 20),
-                            _buildResumoLateral(theme, resumo),
-                            const SizedBox(height: 20),
-                            _buildAtalhosOperacao(theme),
-                            const SizedBox(height: 20),
-                            _buildFormularioMovimento(theme),
-                            const SizedBox(height: 20),
-                            _buildHistorico(theme),
-                            const SizedBox(height: 20),
-                            if (_mostrarPainelFechamento)
-                              _buildPainelFechamento(theme),
-                          ],
+  Widget _buildContent(BuildContext context) {
+    final resumo = _calcularResumo();
+    final theme = Theme.of(context);
+
+    return Container(
+      color: const Color(0xfff4f7fb),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 1260;
+          final isMedium = constraints.maxWidth >= 900;
+
+          return SingleChildScrollView(
+            controller: _scrollController,
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.embedded ? 0 : (isWide ? 28 : 18),
+              vertical: widget.embedded ? 0 : 20,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 400),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(theme, resumo, isMedium),
+                  const SizedBox(height: 20),
+                  if (!_temCaixaAberto)
+                    _buildPainelAbertura(theme)
+                  else
+                    isWide
+                        ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 7,
+                          child: Column(
+                            children: [
+                              _buildContextoOperacao(theme),
+                              const SizedBox(height: 20),
+                              _buildAtalhosOperacao(theme),
+                              const SizedBox(height: 20),
+                              _buildFormularioMovimento(theme),
+                              const SizedBox(height: 20),
+                              _buildHistorico(theme),
+                              const SizedBox(height: 20),
+                              if (_mostrarPainelFechamento)
+                                _buildPainelFechamento(theme),
+                            ],
+                          ),
                         ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          flex: 3,
+                          child: _buildResumoLateral(theme, resumo),
+                        ),
+                      ],
+                    )
+                        : Column(
+                      children: [
+                        _buildContextoOperacao(theme),
+                        const SizedBox(height: 20),
+                        _buildResumoLateral(theme, resumo),
+                        const SizedBox(height: 20),
+                        _buildAtalhosOperacao(theme),
+                        const SizedBox(height: 20),
+                        _buildFormularioMovimento(theme),
+                        const SizedBox(height: 20),
+                        _buildHistorico(theme),
+                        const SizedBox(height: 20),
+                        if (_mostrarPainelFechamento)
+                          _buildPainelFechamento(theme),
+                      ],
+                    ),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
