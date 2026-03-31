@@ -10,7 +10,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/produto_model.dart';
+import 'core/di/operacao_module.dart';
 import 'design_system/themes/zebra_list_item.dart';
+import 'domain/services/operacao/operacao_service.dart';
 import 'top_navigation_bar.dart';
 
 class PDVWeb extends StatefulWidget {
@@ -21,6 +23,9 @@ class PDVWeb extends StatefulWidget {
 }
 
 class _PDVWebState extends State<PDVWeb> {
+
+  final OperacaoService _operacaoService = OperacaoModule.operacaoService;
+
   bool _mostrarDashboardLateral = true;
   bool _mostrarAreaVenda = false;
 
@@ -1195,6 +1200,9 @@ class _PDVWebState extends State<PDVWeb> {
                                       itensResumo: _montarItensResumoPagamento(),
                                       clienteNome: _clienteIdentificadoController.text.trim(),
                                       numeroVenda: '',
+                                      idColaborador: 'idUnicoDoColaborador',
+                                      nomeColaborador: 'Nome do colaborador',
+                                      operacaoService: _operacaoService,
                                     ),
                                   ),
                                 );
@@ -1423,6 +1431,7 @@ class _PDVWebState extends State<PDVWeb> {
         'quantidade': quantidade,
         'valor': precoUnitario,
         'subtotal': precoUnitario * quantidade,
+        'ehServico': false,
       };
     }).toList();
   }

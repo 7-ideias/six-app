@@ -1,6 +1,10 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/di/operacao_module.dart';
+import '../../core/services/auth_service.dart';
+import '../../data/models/operacao_models.dart';
+import '../../domain/services/operacao/operacao_service.dart';
 import '../../top_navigation_bar.dart';
 
 class RecebimentoPagamentoWeb extends StatefulWidget {
@@ -8,14 +12,20 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
     super.key,
     required this.valorTotalVenda,
     required this.itensResumo,
+    required this.idColaborador,
+    required this.nomeColaborador,
     this.clienteNome,
     this.numeroVenda,
+    this.operacaoService,
   });
 
   final double valorTotalVenda;
   final List<Map<String, dynamic>> itensResumo;
+  final String idColaborador;
+  final String nomeColaborador;
   final String? clienteNome;
   final String? numeroVenda;
+  final OperacaoService? operacaoService;
 
   @override
   State<RecebimentoPagamentoWeb> createState() =>
@@ -24,6 +34,9 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
 
 class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   late final List<Map<String, dynamic>> _itensResumo;
+
+  late final OperacaoService _operacaoService;
+  bool _salvandoOperacao = false;
 
   List<Map<String, dynamic>> _formasPagamentoVisiveis() {
     return _formasPagamento
@@ -86,6 +99,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   void initState() {
     super.initState();
     _itensResumo = List<Map<String, dynamic>>.from(widget.itensResumo);
+    _operacaoService = widget.operacaoService ?? OperacaoModule.operacaoService;
   }
 
   double _valorSelecionadoTotal() {
@@ -116,6 +130,37 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     if (navigator.canPop()) {
       navigator.pop();
     }
+  }
+
+  List<FormaPagamentoSelecionada> _montarFormasSelecionadas() {
+    return _formasPagamento
+        .where((forma) => forma['selecionado'] == true)
+        .map(
+          (forma) => FormaPagamentoSelecionada(
+        codigo: (forma['codigo'] ?? '').toString(),
+        valor: ((forma['valor'] ?? 0.0) as num).toDouble(),
+      ),
+    )
+        .toList();
+  }
+
+  List<ItemVendaAtual> _montarItensDaVenda() {
+    return _itensResumo.map((item) {
+      final idProduto = (item['id'] ??
+          item['codigo'] ??
+          item['idSKU'] ??
+          item['idCodigoUnicoDoProduto'] ??
+          '')
+          .toString();
+
+      return ItemVendaAtual(
+        idProduto: idProduto,
+        nome: (item['nome'] ?? '').toString(),
+        quantidade: (item['quantidade'] ?? 1) as int,
+        valorUnitario: ((item['valor'] ?? 0.0) as num).toDouble(),
+        ehServico: (item['ehServico'] ?? false) == true,
+      );
+    }).toList();
   }
 
   void _preencherValorRestante(Map<String, dynamic> forma) {
@@ -150,6 +195,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     });
   }
 
+
+
   Future<void> _mostrarDialogMensagem({
     required String titulo,
     required String mensagem,
@@ -180,11 +227,14 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   }
 
   Future<void> _confirmarOperacao() async {
+
+
+
     if (_quantidadeFormasSelecionadas() == 0) {
       await _mostrarDialogMensagem(
         titulo: 'Selecione uma forma de pagamento',
         mensagem:
-            'Para confirmar a operação, escolha pelo menos uma forma de pagamento.',
+        'Para confirmar a operação, escolha pelo menos uma forma de pagamento.',
       );
       return;
     }
@@ -194,7 +244,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       await _mostrarDialogMensagem(
         titulo: 'Ajuste os valores para finalizar',
         mensagem:
-            'A soma das formas selecionadas deve ser exatamente igual ao total da venda.',
+        'A soma das formas selecionadas deve ser exatamente igual ao total da venda.',
       );
       return;
     }
@@ -230,14 +280,44 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       return;
     }
 
-    await _mostrarDialogMensagem(
-      titulo: 'Operação concluída',
-      mensagem:
-          'Sucesso no fluxo visual. A persistência real ainda não foi implementada no backend.',
-      sucesso: true,
-    );
+    setState(() {
+      _salvandoOperacao = true;
+    });
 
-    await _fecharTela();
+    try {
+      final response = await _operacaoService.finalizarVenda(
+        OperacaoVendaInput(
+          descricao: 'Venda ${widget.numeroVenda ?? 'em andamento'}',
+          idColaborador: widget.idColaborador,
+          nomeColaborador: widget.nomeColaborador,
+          itens: _montarItensDaVenda(),
+          formasPagamento: _montarFormasSelecionadas(),
+        ),
+      );
+
+      if (!mounted) return;
+
+      await _mostrarDialogMensagem(
+        titulo: 'Operação concluída',
+        mensagem: 'Venda enviada com sucesso. UUID: ${response.uuid}',
+        sucesso: true,
+      );
+
+      await _fecharTela();
+    } catch (e) {
+      if (!mounted) return;
+
+      await _mostrarDialogMensagem(
+        titulo: 'Erro ao enviar operação',
+        mensagem: e.toString(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _salvandoOperacao = false;
+        });
+      }
+    }
   }
 
   Widget _buildBadgeInformativo(String texto, IconData icone) {
@@ -790,13 +870,16 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
                 ),
               ),
               FilledButton.icon(
-                onPressed: _confirmarOperacao,
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Confirmar'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(190, 50),
-                ),
-              ),
+                onPressed: _salvandoOperacao ? null : _confirmarOperacao,
+                icon: _salvandoOperacao
+                    ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : const Icon(Icons.check_circle_outline),
+                label: Text(_salvandoOperacao ? 'Enviando...' : 'Confirmar'),
+              )
             ],
           ),
         ],
