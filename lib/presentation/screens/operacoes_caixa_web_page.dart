@@ -1219,15 +1219,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     const SizedBox(height: 12),
                     _buildResumoSecundario(
                       'Dinheiro',
-                      _formatCurrency(resumo.dinheiro),
+                      _formatCurrency(resumo.totalDinheiro),
                     ),
                     _buildResumoSecundario(
                       'Pix',
-                      _formatCurrency(resumo.pix),
+                      _formatCurrency(resumo.totalPix),
                     ),
                     _buildResumoSecundario(
                       'Cartão',
-                      _formatCurrency(resumo.cartao),
+                      _formatCurrency(resumo.totalCartao),
                     ),
                   ],
                 ),
@@ -1310,7 +1310,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Dinheiro apurado',
                 child: _buildTextField(
                   controller: _fechamentoDinheiroController,
-                  hint: _formatCurrency(resumo.dinheiro),
+                  hint: _formatCurrency(resumo.totalDinheiro),
                   prefix: 'R\$ ',
                 ),
               ),
@@ -1319,7 +1319,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Pix apurado',
                 child: _buildTextField(
                   controller: _fechamentoPixController,
-                  hint: _formatCurrency(resumo.pix),
+                  hint: _formatCurrency(resumo.totalPix),
                   prefix: 'R\$ ',
                 ),
               ),
@@ -1328,7 +1328,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Cartão apurado',
                 child: _buildTextField(
                   controller: _fechamentoCartaoController,
-                  hint: _formatCurrency(resumo.cartao),
+                  hint: _formatCurrency(resumo.totalCartao),
                   prefix: 'R\$ ',
                 ),
               ),
@@ -1782,21 +1782,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     final resumo = _resumo;
     final dinheiroInformado = _fechamentoDinheiroController.text.trim().isEmpty
-        ? (resumo?.dinheiro ?? 0)
+        ? (resumo?.totalDinheiro ?? 0)
         : _parseCurrency(_fechamentoDinheiroController.text);
     final pixInformado = _fechamentoPixController.text.trim().isEmpty
-        ? (resumo?.pix ?? 0)
+        ? (resumo?.totalPix ?? 0)
         : _parseCurrency(_fechamentoPixController.text);
     final cartaoInformado = _fechamentoCartaoController.text.trim().isEmpty
-        ? (resumo?.cartao ?? 0)
+        ? (resumo?.totalCartao ?? 0)
         : _parseCurrency(_fechamentoCartaoController.text);
 
     setState(() => _isLoading = true);
     try {
       await _caixaService.fecharCaixa(FecharCaixaRequest(
         idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
-        valorDinheiroApurado: pixInformado,
-        valorPixApurado: cartaoInformado,
+        valorDinheiroApurado: dinheiroInformado,
+        valorPixApurado: pixInformado,
         valorCartaoApurado: cartaoInformado,
         observacaoFechamento: _fechamentoObservacaoController.text.trim(),
       ));
@@ -1925,9 +1925,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     double totalEntradas = 0;
     double totalSaidas = 0;
-    double dinheiro = 0;
-    double pix = 0;
-    double cartao = 0;
+    double totalDinheiro = 0;
+    double totalPix = 0;
+    double totalCartao = 0;
 
     for (final mov in _movimentos.where(
           (m) => m.status.toLowerCase() != 'cancelada',
@@ -1941,14 +1941,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       if (mov.natureza.toLowerCase() == 'entrada') {
         switch (mov.codigoTipoRecebimento) {
           case 'tipo1':
-            dinheiro += mov.valor;
+            totalDinheiro += mov.valor;
             break;
           case 'tipo2':
-            pix += mov.valor;
+            totalPix += mov.valor;
             break;
           case 'tipo3':
           case 'tipo4':
-            cartao += mov.valor;
+            totalCartao += mov.valor;
             break;
           default:
             break;
@@ -1964,27 +1964,27 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       totalSaidas: totalSaidas,
       saldoEsperado: saldoEsperado,
       quantidadeMovimentos: _movimentos.length,
-      dinheiro: dinheiro,
-      pix: pix,
-      cartao: cartao,
+      totalDinheiro: totalDinheiro,
+      totalPix: totalPix,
+      totalCartao: totalCartao,
     );
   }
 
-  // NaturezaMovimento _naturezaPorTipo(OperacaoCaixaTipo tipo) {
-  //   switch (tipo) {
-  //     case OperacaoCaixaTipo.aberturaCaixa:
-  //     case OperacaoCaixaTipo.suprimento:
-  //     case OperacaoCaixaTipo.recebimentoAvulso:
-  //       return NaturezaMovimento.entrada;
-  //     case OperacaoCaixaTipo.fechamentoCaixa:
-  //     case OperacaoCaixaTipo.sangria:
-  //     case OperacaoCaixaTipo.retiradaDespesa:
-  //     case OperacaoCaixaTipo.ajuste:
-  //     case OperacaoCaixaTipo.estorno:
-  //     case OperacaoCaixaTipo.pagamentoAvulso:
-  //       return NaturezaMovimento.saida;
-  //   }
-  // }
+  NaturezaMovimento _naturezaPorTipo(OperacaoCaixaTipo tipo) {
+    switch (tipo) {
+      case OperacaoCaixaTipo.aberturaCaixa:
+      case OperacaoCaixaTipo.suprimento:
+      case OperacaoCaixaTipo.recebimentoAvulso:
+        return NaturezaMovimento.entrada;
+      case OperacaoCaixaTipo.fechamentoCaixa:
+      case OperacaoCaixaTipo.sangria:
+      case OperacaoCaixaTipo.retiradaDespesa:
+      case OperacaoCaixaTipo.ajuste:
+      case OperacaoCaixaTipo.estorno:
+      case OperacaoCaixaTipo.pagamentoAvulso:
+        return NaturezaMovimento.saida;
+    }
+  }
 
   Color _corPorNatureza(String? natureza) {
     if (natureza == null) return const Color(0xff7a8394);

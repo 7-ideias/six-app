@@ -260,9 +260,9 @@ class ResumoCaixa {
   final double totalSaidas;
   final double saldoEsperado;
   final int quantidadeMovimentos;
-  final double dinheiro;
-  final double pix;
-  final double cartao;
+  final double totalDinheiro;
+  final double totalPix;
+  final double totalCartao;
 
   ResumoCaixa({
     required this.trocoInicial,
@@ -270,9 +270,9 @@ class ResumoCaixa {
     required this.totalSaidas,
     required this.saldoEsperado,
     required this.quantidadeMovimentos,
-    required this.dinheiro,
-    required this.pix,
-    required this.cartao,
+    required this.totalDinheiro,
+    required this.totalPix,
+    required this.totalCartao,
   });
 
   factory ResumoCaixa.fromJson(Map<String, dynamic> json) {
@@ -282,9 +282,9 @@ class ResumoCaixa {
       totalSaidas: (json['totalSaidas'] as num? ?? 0).toDouble(),
       saldoEsperado: (json['saldoEsperado'] as num? ?? 0).toDouble(),
       quantidadeMovimentos: (json['quantidadeMovimentos'] as num? ?? 0).toInt(),
-      dinheiro: (json['dinheiro'] as num? ?? 0).toDouble(),
-      pix: (json['pix'] as num? ?? 0).toDouble(),
-      cartao: (json['cartao'] as num? ?? 0).toDouble(),
+      totalDinheiro: (json['totalDinheiro'] as num? ?? 0).toDouble(),
+      totalPix: (json['totalPix'] as num? ?? 0).toDouble(),
+      totalCartao: (json['totalCartao'] as num? ?? 0).toDouble(),
     );
   }
 }
