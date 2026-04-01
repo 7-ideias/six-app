@@ -9,8 +9,8 @@ class CaixaService {
 
   final CaixaApiClient _apiClient;
 
-  Future<CaixaInformacoesBasicas> buscarInformacoesBasicas() {
-    return _apiClient.getInformacoesBasicas();
+  Future<InformacoesBasicasCaixaResponse> buscarInformacoesBasicasDoCaixa() {
+    return _apiClient.getInformacoesBasicasDoCaixa();
   }
 
   Future<CaixaSessao?> buscarSessaoAtual() {

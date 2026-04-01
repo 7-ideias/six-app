@@ -6,7 +6,7 @@ import '../../../core/services/auth_service.dart';
 import '../../models/caixa_models.dart';
 
 abstract class CaixaApiClient {
-  Future<CaixaInformacoesBasicas> getInformacoesBasicas();
+  Future<InformacoesBasicasCaixaResponse> getInformacoesBasicasDoCaixa();
   Future<CaixaSessao?> getSessaoAtual();
   Future<void> abrirCaixa(AbrirCaixaRequest request);
   Future<void> registrarMovimento(RegistrarMovimentoRequest request);
@@ -37,7 +37,7 @@ class HttpCaixaApiClient implements CaixaApiClient {
   }
 
   @override
-  Future<CaixaInformacoesBasicas> getInformacoesBasicas() async {
+  Future<InformacoesBasicasCaixaResponse> getInformacoesBasicasDoCaixa() async {
     final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/informacoes-basicas');
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
@@ -45,7 +45,7 @@ class HttpCaixaApiClient implements CaixaApiClient {
       throw CaixaApiException(statusCode: response.statusCode, body: response.body);
     }
 
-    return CaixaInformacoesBasicas.fromJson(jsonDecode(response.body));
+    return InformacoesBasicasCaixaResponse.fromJson(jsonDecode(response.body));
   }
 
   @override

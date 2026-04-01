@@ -47,6 +47,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   late List<String> _caixas;
   late List<FormaMovimento> _formas;
+  late List<InformacoesBasicasCaixaResponse> _informacoesBasicasDoCaixa;
   late List<MovimentoCaixa> _movimentos;
   ResumoCaixa? _resumo;
 
@@ -56,6 +57,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     _caixas = [];
     _formas = [];
     _movimentos = [];
+    _informacoesBasicasDoCaixa = [];
     _caixaSelecionado = null;
     _formaSelecionada = null;
     _sessaoAtual = null;
@@ -67,12 +69,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Future<void> _carregarDadosIniciais() async {
     setState(() => _isLoading = true);
     try {
-      final info = await _caixaService.buscarInformacoesBasicas();
+      final informacoesBasicasDoCaixa = await _caixaService.buscarInformacoesBasicasDoCaixa();
       final sessao = await _caixaService.buscarSessaoAtual();
       
       setState(() {
-        _caixas = info.caixas;
-        _formas = info.formas;
+        _caixas = informacoesBasicasDoCaixa.caixas;
+        _formas = informacoesBasicasDoCaixa.formas;
+        _informacoesBasicasDoCaixa = [informacoesBasicasDoCaixa];
         if (_caixas.isNotEmpty) _caixaSelecionado = _caixas.first;
         if (_formas.isNotEmpty) _formaSelecionada = _formas.first;
         _sessaoAtual = sessao;
@@ -1739,12 +1742,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     setState(() => _isLoading = true);
     try {
       await _caixaService.registrarMovimentacao(RegistrarMovimentoRequest(
-        tipo: _tipoSelecionado!.name,
-        valor: valor,
-        formaPagamentoCodigo: _formaSelecionada?.codigo ?? '',
+        idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
+        tipoMovimento: _tipoSelecionado!.name,
+        codigoTipoRecebimento: 'tipo1', // Placeholder para futura implementação
+        valor: 500, // Placeholder para futura implementação
         observacao: _observacaoController.text.trim(),
         referencia: _referenciaController.text.trim(),
-        vincularVenda: _vincularVenda,
+        vinculadoVenda: _vincularVenda,
       ));
 
       await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
@@ -1790,12 +1794,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     setState(() => _isLoading = true);
     try {
       await _caixaService.fecharCaixa(FecharCaixaRequest(
-        dinheiro: dinheiroInformado,
-        pix: pixInformado,
-        cartao: cartaoInformado,
-        observacao: _fechamentoObservacaoController.text.trim(),
+        idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
+        valorDinheiroApurado: pixInformado,
+        valorPixApurado: cartaoInformado,
+        valorCartaoApurado: cartaoInformado,
+        observacaoFechamento: _fechamentoObservacaoController.text.trim(),
       ));
-
       await _carregarDadosIniciais();
 
       setState(() {

@@ -1,19 +1,101 @@
 
-class CaixaInformacoesBasicas {
+class InformacoesBasicasCaixaResponse {
+  final bool possuiSessaoAberta;
+  // final SessaoAtual sessaoAtual;
+  final List<TiposRecebimento> tiposRecebimento;
   final List<String> caixas;
   final List<FormaMovimento> formas;
 
-  CaixaInformacoesBasicas({
+  InformacoesBasicasCaixaResponse({
+    required this.possuiSessaoAberta,
+    // required this.sessaoAtual,
+    required this.tiposRecebimento,
     required this.caixas,
     required this.formas,
   });
 
-  factory CaixaInformacoesBasicas.fromJson(Map<String, dynamic> json) {
-    return CaixaInformacoesBasicas(
+  factory InformacoesBasicasCaixaResponse.fromJson(Map<String, dynamic> json) {
+    return InformacoesBasicasCaixaResponse(
+      possuiSessaoAberta: json['possuiSessaoAberta'] ?? false,
+      // sessaoAtual: SessaoAtual.fromJson(json['sessaoAtual']),
+      tiposRecebimento:
+      (json['tiposRecebimento'] as List? ?? [])
+          .map((item) => TiposRecebimento.fromJson(item))
+          .toList(),
       caixas: List<String>.from(json['caixas'] ?? []),
       formas: (json['formas'] as List? ?? [])
           .map((item) => FormaMovimento.fromJson(item))
           .toList(),
+    );
+  }
+}
+
+class TiposRecebimento {
+  final String codigoTipo;
+  final String descricaoExibicao;
+  final String naturezaRecebimento;
+  final bool aceitaParcelamento;
+  final bool ativo;
+  final bool exigeCliente;
+  final int ordemExibicao;
+  final String corHex;
+  final String icone;
+
+  TiposRecebimento({
+    required this.codigoTipo,
+    required this.descricaoExibicao,
+    required this.naturezaRecebimento,
+    required this.aceitaParcelamento,
+    required this.ativo,
+    required this.exigeCliente,
+    required this.ordemExibicao,
+    required this.corHex,
+    required this.icone,
+  });
+
+  factory TiposRecebimento.fromJson(Map<String, dynamic> json) {
+    return TiposRecebimento(
+      codigoTipo: json['codigoTipo'] ?? '',
+      descricaoExibicao: json['descricaoExibicao'] ?? '',
+      naturezaRecebimento: json['naturezaRecebimento'] ?? '',
+      aceitaParcelamento: json['aceitaParcelamento'] ?? false,
+      ativo: json['ativo'] ?? false,
+      exigeCliente: json['exigeCliente'] ?? false,
+      ordemExibicao: (json['ordemExibicao'] as num? ?? 0).toInt(),
+      corHex: json['corHex'] ?? '',
+      icone: json['icone'] ?? '',
+    );
+  }
+}
+
+class SessaoAtual {
+  final String idSessaoCaixa;
+  final String nomeCaixa;
+  final String idColaboradorAbertura;
+  final String nomeColaboradorAbertura;
+  final String dataHoraAbertura;
+  final double valorAbertura;
+  final bool status;
+
+  SessaoAtual({
+    required this.idSessaoCaixa,
+    required this.nomeCaixa,
+    required this.idColaboradorAbertura,
+    required this.nomeColaboradorAbertura,
+    required this.dataHoraAbertura,
+    required this.valorAbertura,
+    required this.status,
+  });
+
+  factory SessaoAtual.fromJson(Map<String, dynamic> json) {
+    return SessaoAtual(
+      idSessaoCaixa: json['idSessaoCaixa']?.toString() ?? '',
+      nomeCaixa: json['nomeCaixa'] ?? '',
+      idColaboradorAbertura: json['idColaboradorAbertura'] ?? '',
+      nomeColaboradorAbertura: json['nomeColaboradorAbertura'] ?? '',
+      dataHoraAbertura: json['dataHoraAbertura'] ?? '',
+      valorAbertura: (json['valorAbertura'] as num? ?? 0).toDouble(),
+      status: json['status'] ?? false,
     );
   }
 }
@@ -65,6 +147,7 @@ class CaixaSessao {
       status: json['status'] ?? '',
     );
   }
+
   CaixaSessao copyWith({
     String? id,
     String? caixaNome,
@@ -200,67 +283,67 @@ class AbrirCaixaRequest {
   final String nomeCaixa;
   final double valorAbertura;
 
-  AbrirCaixaRequest({
-    required this.nomeCaixa,
-    required this.valorAbertura,
-  });
+  AbrirCaixaRequest({required this.nomeCaixa, required this.valorAbertura});
 
   Map<String, dynamic> toJson() {
-    return {
-      'caixaNome': nomeCaixa,
-      'valorAbertura': valorAbertura,
-    };
+    return {'caixaNome': nomeCaixa, 'valorAbertura': valorAbertura};
   }
 }
 
 class RegistrarMovimentoRequest {
-  final String tipo;
+  final String idSessaoCaixa;
+  final String tipoMovimento;
+  final String codigoTipoRecebimento;
   final double valor;
-  final String formaPagamentoCodigo;
   final String observacao;
   final String referencia;
-  final bool vincularVenda;
+  final bool vinculadoVenda;
 
   RegistrarMovimentoRequest({
-    required this.tipo,
+    required this.idSessaoCaixa,
+    required this.tipoMovimento,
+    required this.codigoTipoRecebimento,
     required this.valor,
-    required this.formaPagamentoCodigo,
     required this.observacao,
     required this.referencia,
-    required this.vincularVenda,
+    required this.vinculadoVenda,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'tipo': tipo,
+      'idSessaoCaixa': idSessaoCaixa,
+      'tipoMovimento': tipoMovimento,
+      'codigoTipoRecebimento': codigoTipoRecebimento,
       'valor': valor,
-      'formaPagamentoCodigo': formaPagamentoCodigo,
       'observacao': observacao,
       'referencia': referencia,
-      'vincularVenda': vincularVenda,
+      'vinculadoVenda': vinculadoVenda,
     };
   }
 }
 
 class FecharCaixaRequest {
-  final double dinheiro;
-  final double pix;
-  final double cartao;
-  final String observacao;
+  final String idSessaoCaixa;
+  final double valorDinheiroApurado;
+  final double valorPixApurado;
+  final double valorCartaoApurado;
+  final String observacaoFechamento;
 
   FecharCaixaRequest({
-    required this.dinheiro,
-    required this.pix,
-    required this.cartao,
-    required this.observacao,
+    required this.idSessaoCaixa,
+    required this.valorDinheiroApurado,
+    required this.valorPixApurado,
+    required this.valorCartaoApurado,
+    required this.observacaoFechamento,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'dinheiro': dinheiro,
-      'pix': pix,
-      'cartao': cartao,
-      'observacao': observacao,
+      'idSessaoCaixa': idSessaoCaixa,
+      'valorDinheiroApurado': valorDinheiroApurado,
+      'valorPixApurado': valorPixApurado,
+      'valorCartaoApurado': valorCartaoApurado,
+      'observacaoFechamento': observacaoFechamento,
     };
   }
 }
