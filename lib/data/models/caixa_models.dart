@@ -170,32 +170,36 @@ class CaixaSessao {
 }
 
 class MovimentoCaixa {
-  final String id;
-  final String tipo;
+  final String idMovimento;
+  final String idSessaoCaixa;
+  final String tipoMovimento;
   final String natureza;
+  final String codigoTipoRecebimento;
+  final String descricaoTipoRecebimento;
   final double valor;
-  final FormaMovimento forma;
-  final String caixaNome;
-  final String colaborador;
+  final String descricao;
   final String observacao;
   final String referencia;
-  final String dataHora;
+  final String idColaborador;
+  final String nomeColaborador;
+  final String dataHoraMovimento;
   final String status;
-  final bool vinculadoVenda;
 
   MovimentoCaixa({
-    required this.id,
-    required this.tipo,
+    required this.idMovimento,
+    required this.idSessaoCaixa,
+    required this.tipoMovimento,
     required this.natureza,
+    required this.codigoTipoRecebimento,
+    required this.descricaoTipoRecebimento,
     required this.valor,
-    required this.forma,
-    required this.caixaNome,
-    required this.colaborador,
+    required this.descricao,
     required this.observacao,
     required this.referencia,
-    required this.dataHora,
+    required this.idColaborador,
+    required this.nomeColaborador,
+    required this.dataHoraMovimento,
     required this.status,
-    required this.vinculadoVenda,
   });
 
   MovimentoCaixa copyWith({
@@ -213,35 +217,39 @@ class MovimentoCaixa {
     bool? vinculadoVenda,
   }) {
     return MovimentoCaixa(
-      id: id ?? this.id,
-      tipo: tipo ?? this.tipo,
+      idMovimento: id ?? this.idMovimento,
+      idSessaoCaixa: idSessaoCaixa,
+      tipoMovimento: tipo ?? this.tipoMovimento,
       natureza: natureza ?? this.natureza,
+      codigoTipoRecebimento: codigoTipoRecebimento,
+      descricaoTipoRecebimento: descricaoTipoRecebimento,
       valor: valor ?? this.valor,
-      forma: forma ?? this.forma,
-      caixaNome: caixaNome ?? this.caixaNome,
-      colaborador: colaborador ?? this.colaborador,
+      descricao: descricao,
       observacao: observacao ?? this.observacao,
       referencia: referencia ?? this.referencia,
-      dataHora: dataHora ?? this.dataHora,
+      idColaborador: idColaborador,
+      nomeColaborador: colaborador ?? this.nomeColaborador,
+      dataHoraMovimento: dataHora ?? this.dataHoraMovimento,
       status: status ?? this.status,
-      vinculadoVenda: vinculadoVenda ?? this.vinculadoVenda,
     );
   }
 
   factory MovimentoCaixa.fromJson(Map<String, dynamic> json) {
     return MovimentoCaixa(
-      id: json['id']?.toString() ?? '',
-      tipo: json['tipo'] ?? '',
+      idMovimento: json['idMovimento']?.toString() ?? '',
+      idSessaoCaixa: json['idSessaoCaixa']?.toString() ?? '',
+      tipoMovimento: json['tipoMovimento'] ?? '',
       natureza: json['natureza'] ?? '',
+      codigoTipoRecebimento: json['codigoTipoRecebimento'] ?? '',
+      descricaoTipoRecebimento: json['descricaoTipoRecebimento'] ?? '',
       valor: (json['valor'] as num? ?? 0).toDouble(),
-      forma: FormaMovimento.fromJson(json['forma'] ?? {}),
-      caixaNome: json['caixaNome'] ?? '',
-      colaborador: json['colaborador'] ?? '',
+      descricao: json['descricao'] ?? '',
       observacao: json['observacao'] ?? '',
       referencia: json['referencia'] ?? '',
-      dataHora: json['dataHora'] ?? '',
+      idColaborador: json['idColaborador'] ?? '',
+      nomeColaborador: json['nomeColaborador'] ?? '',
+      dataHoraMovimento: json['dataHoraMovimento'] ?? '',
       status: json['status'] ?? '',
-      vinculadoVenda: json['vinculadoVenda'] ?? false,
     );
   }
 }

@@ -921,7 +921,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Widget _buildHistorico(ThemeData theme) {
     final movimentosVisiveis = _mostrarApenasHoje
         ? _movimentos
-        .where((m) => _isSameDay(m.dataHora, DateTime.now()))
+        .where((m) => _isSameDay(m.dataHoraMovimento, DateTime.now()))
         .toList()
         : _movimentos;
 
@@ -1047,7 +1047,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                         runSpacing: 8,
                         children: [
                           Text(
-                            _labelTipo(movimento.tipo),
+                            _labelTipo(movimento.tipoMovimento),
                             style: const TextStyle(
                               color: Color(0xff162033),
                               fontSize: 15,
@@ -1081,15 +1081,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                         children: [
                           _buildInlineInfo(
                             Icons.person_outline_rounded,
-                            movimento.colaborador,
+                            movimento.nomeColaborador,
                           ),
                           _buildInlineInfo(
                             Icons.store_outlined,
-                            movimento.caixaNome,
+                            movimento.nomeColaborador,
                           ),
                           _buildInlineInfo(
                             Icons.payments_outlined,
-                            movimento.forma.descricao,
+                            movimento.descricao,
                           ),
                           _buildInlineInfo(
                             Icons.receipt_long_outlined,
@@ -1120,7 +1120,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _formatDateTime(movimento.dataHora),
+                  _formatDateTime(movimento.dataHoraMovimento),
                   style: const TextStyle(
                     color: Color(0xff7a8394),
                     fontSize: 13,
@@ -1138,7 +1138,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Detalhamento de ${_labelTipo(movimento.tipo)} preparado para futura integração.',
+                              'Detalhamento de ${_labelTipo(movimento.tipoMovimento)} preparado para futura integração.',
                             ),
                           ),
                         );
@@ -1731,8 +1731,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
-    final valor = _parseCurrency(_valorController.text);
-    if (valor <= 0) {
+    final valorDoLancamentoOperacional = _parseCurrency(_valorController.text);
+    if (valorDoLancamentoOperacional <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Informe um valor válido.')),
       );
@@ -1745,7 +1745,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
         tipoMovimento: _tipoSelecionado!,
         codigoTipoRecebimento: 'tipo1', // Placeholder para futura implementação
-        valor: 500, // Placeholder para futura implementação
+        valor: valorDoLancamentoOperacional,
         observacao: _observacaoController.text.trim(),
         referencia: _referenciaController.text.trim(),
         vinculadoVenda: _vincularVenda,
@@ -1883,7 +1883,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               ),
               title: const Text('Cancelar movimentação?'),
               content: Text(
-                'Deseja cancelar a operação ${_labelTipo(movimento.tipo)} no valor de ${_formatCurrency(movimento.valor)}?',
+                'Deseja cancelar a operação ${_labelTipo(movimento.tipoMovimento)} no valor de ${_formatCurrency(movimento.valor)}?',
               ),
               actions: [
                 TextButton(
@@ -1907,7 +1907,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     setState(() => _isLoading = true);
     try {
-      await _caixaService.cancelarMovimentacao(movimento.id);
+      await _caixaService.cancelarMovimentacao(movimento.idSessaoCaixa);
       await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1939,7 +1939,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       }
 
       if (mov.natureza.toLowerCase() == 'entrada') {
-        switch (mov.forma.codigo) {
+        switch (mov.codigoTipoRecebimento) {
           case 'tipo1':
             dinheiro += mov.valor;
             break;
