@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/di/caixa_module.dart';
+import '../../data/models/caixa_models.dart';
+import '../../domain/services/caixa/caixa_service.dart';
 
 class OperacoesCaixaWebPage extends StatefulWidget {
   final bool embedded;
@@ -31,56 +34,77 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   final TextEditingController _fechamentoObservacaoController =
   TextEditingController();
 
-  CaixaSessaoMock? _sessaoAtual;
+  final CaixaService _caixaService = CaixaModule.caixaService;
+  bool _isLoading = false;
+
+  CaixaSessao? _sessaoAtual;
   OperacaoCaixaTipo? _tipoSelecionado;
-  FormaMovimentoMock? _formaSelecionada;
+  FormaMovimento? _formaSelecionada;
   String? _caixaSelecionado;
   bool _vincularVenda = false;
   bool _mostrarPainelFechamento = false;
   bool _mostrarApenasHoje = true;
 
   late List<String> _caixas;
-  late List<FormaMovimentoMock> _formas;
-  late List<MovimentoCaixaMock> _movimentos;
+  late List<FormaMovimento> _formas;
+  late List<MovimentoCaixa> _movimentos;
+  ResumoCaixa? _resumo;
 
   @override
   void initState() {
     super.initState();
-
-    _caixas = ['Caixa principal', 'Balcão 01', 'Balcão 02', 'Recepção'];
-    _formas = [
-      const FormaMovimentoMock(
-        codigo: 'tipo1',
-        descricao: 'Dinheiro',
-        natureza: NaturezaRecebimento.imediato,
-      ),
-      const FormaMovimentoMock(
-        codigo: 'tipo2',
-        descricao: 'Pix',
-        natureza: NaturezaRecebimento.imediato,
-      ),
-      const FormaMovimentoMock(
-        codigo: 'tipo3',
-        descricao: 'Cartão crédito',
-        natureza: NaturezaRecebimento.imediato,
-      ),
-      const FormaMovimentoMock(
-        codigo: 'tipo4',
-        descricao: 'Cartão débito',
-        natureza: NaturezaRecebimento.imediato,
-      ),
-      const FormaMovimentoMock(
-        codigo: 'tipo10',
-        descricao: 'Outros',
-        natureza: NaturezaRecebimento.imediato,
-      ),
-    ];
-
-    _caixaSelecionado = _caixas.first;
-    _formaSelecionada = _formas.first;
+    _caixas = [];
+    _formas = [];
     _movimentos = [];
+    _caixaSelecionado = null;
+    _formaSelecionada = null;
     _sessaoAtual = null;
     _tipoSelecionado = null;
+    
+    _carregarDadosIniciais();
+  }
+
+  Future<void> _carregarDadosIniciais() async {
+    setState(() => _isLoading = true);
+    try {
+      final info = await _caixaService.buscarInformacoesBasicas();
+      final sessao = await _caixaService.buscarSessaoAtual();
+      
+      setState(() {
+        _caixas = info.caixas;
+        _formas = info.formas;
+        if (_caixas.isNotEmpty) _caixaSelecionado = _caixas.first;
+        if (_formas.isNotEmpty) _formaSelecionada = _formas.first;
+        _sessaoAtual = sessao;
+      });
+
+      if (_sessaoAtual != null) {
+        await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
+      }
+    } catch (e) {
+      _mostrarErro('Erro ao carregar dados do caixa: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _carregarMovimentosEResumo(String idCaixaSessao) async {
+    try {
+      final movimentos = await _caixaService.listarMovimentacoes(idCaixaSessao);
+      final resumo = await _caixaService.buscarResumo(idCaixaSessao);
+      setState(() {
+        _movimentos = movimentos;
+        _resumo = resumo;
+      });
+    } catch (e) {
+      _mostrarErro('Erro ao carregar movimentações: $e');
+    }
+  }
+
+  void _mostrarErro(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -112,7 +136,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildContent(BuildContext context) {
-    final resumo = _calcularResumo();
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final resumo = _resumo ?? _calcularResumo();
     final theme = Theme.of(context);
 
     return Container(
@@ -212,7 +239,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   bool get _temCaixaAberto =>
-      _sessaoAtual != null && _sessaoAtual!.status == StatusSessaoCaixa.aberta;
+      _sessaoAtual != null && _sessaoAtual!.status.toLowerCase() == 'aberta';
 
   void _mostrarAvisoCaixaNaoAberto() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -223,10 +250,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildHeader(
-      ThemeData theme,
-      ResumoCaixaMock resumo,
-      bool isMedium,
-      ) {
+    ThemeData theme,
+    dynamic resumo,
+    bool isMedium,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: _cardDecoration(),
@@ -286,7 +313,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildTopInfoChip(
                 icon: Icons.person_outline_rounded,
                 label: 'Operador',
-                value: _sessaoAtual?.colaborador ?? 'Aguardando abertura',
+                value: _sessaoAtual?.idColaboradorAbertura ?? 'Aguardando abertura',
               ),
               _buildTopInfoChip(
                 icon: Icons.calendar_today_outlined,
@@ -457,17 +484,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         children: [
           _buildMiniMetric(
             title: 'Sessão',
-            value: _sessaoAtual?.id ?? '--',
+            value: _sessaoAtual?.idSessaoCaixa ?? '--',
             icon: Icons.badge_outlined,
           ),
           _buildMiniMetric(
             title: 'Caixa',
-            value: _sessaoAtual?.caixaNome ?? '--',
+            value: _sessaoAtual?.nomeCaixa ?? '--',
             icon: Icons.store_mall_directory_outlined,
           ),
           _buildMiniMetric(
             title: 'Abertura',
-            value: _formatDateTime(_sessaoAtual?.dataAbertura),
+            value: _formatDateTime(_sessaoAtual?.dataHoraAbertura),
             icon: Icons.schedule_rounded,
           ),
           _buildMiniMetric(
@@ -775,7 +802,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildFieldBox(
                 width: 240,
                 label: 'Forma relacionada',
-                child: _buildDropdown<FormaMovimentoMock>(
+                child: _buildDropdown<FormaMovimento>(
                   value: _formaSelecionada,
                   items: _formas,
                   onChanged: (value) {
@@ -787,7 +814,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildFieldBox(
                 width: 240,
                 label: 'Caixa / guichê',
-                child: _buildReadOnlyField(_sessaoAtual?.caixaNome ?? '--'),
+                child: _buildReadOnlyField(_sessaoAtual?.nomeCaixa ?? '--'),
               ),
               _buildFieldBox(
                 width: 260,
@@ -971,7 +998,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildMovimentoCard(MovimentoCaixaMock movimento) {
+  Widget _buildMovimentoCard(MovimentoCaixa movimento) {
     final cor = _corPorNatureza(movimento.natureza);
 
     return Container(
@@ -1133,7 +1160,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildResumoLateral(ThemeData theme, ResumoCaixaMock resumo) {
+  Widget _buildResumoLateral(ThemeData theme, dynamic resumo) {
     return Column(
       children: [
         Container(
@@ -1666,45 +1693,29 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  void _abrirCaixa() {
+  Future<void> _abrirCaixa() async {
     final valor = _parseCurrency(_trocoInicialController.text);
-
-    setState(() {
-      _sessaoAtual = CaixaSessaoMock(
-        id: 'sessao-${DateTime.now().millisecondsSinceEpoch}',
-        caixaNome: _caixaSelecionado ?? 'Caixa principal',
-        colaborador: 'Carlos Cartaxo',
-        dataAbertura: DateTime.now(),
+    
+    setState(() => _isLoading = true);
+    try {
+      await _caixaService.abrirCaixa(AbrirCaixaRequest(
+        nomeCaixa: _caixaSelecionado ?? 'Caixa principal',
         valorAbertura: valor,
-        status: StatusSessaoCaixa.aberta,
+      ));
+      
+      await _carregarDadosIniciais();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Caixa aberto com sucesso.')),
       );
-
-      _movimentos.clear();
-      _movimentos.insert(
-        0,
-        MovimentoCaixaMock(
-          id: 'mov-${DateTime.now().millisecondsSinceEpoch}',
-          tipo: OperacaoCaixaTipo.aberturaCaixa,
-          natureza: NaturezaMovimento.entrada,
-          valor: valor,
-          forma: _formas.first,
-          caixaNome: _caixaSelecionado ?? 'Caixa principal',
-          colaborador: 'Carlos Cartaxo',
-          observacao: 'Abertura de caixa com troco inicial',
-          referencia: 'ABR-${DateTime.now().millisecondsSinceEpoch}',
-          dataHora: DateTime.now(),
-          status: StatusMovimento.concluida,
-          vinculadoVenda: false,
-        ),
-      );
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Caixa aberto com sucesso.')),
-    );
+    } catch (e) {
+      _mostrarErro('Erro ao abrir caixa: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _salvarMovimento() {
+  Future<void> _salvarMovimento() async {
     if (!_temCaixaAberto) {
       _mostrarAvisoCaixaNaoAberto();
       return;
@@ -1725,33 +1736,28 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
-    final natureza = _naturezaPorTipo(_tipoSelecionado!);
+    setState(() => _isLoading = true);
+    try {
+      await _caixaService.registrarMovimentacao(RegistrarMovimentoRequest(
+        tipo: _tipoSelecionado!.name,
+        valor: valor,
+        formaPagamentoCodigo: _formaSelecionada?.codigo ?? '',
+        observacao: _observacaoController.text.trim(),
+        referencia: _referenciaController.text.trim(),
+        vincularVenda: _vincularVenda,
+      ));
 
-    setState(() {
-      _movimentos.insert(
-        0,
-        MovimentoCaixaMock(
-          id: 'mov-${DateTime.now().millisecondsSinceEpoch}',
-          tipo: _tipoSelecionado!,
-          natureza: natureza,
-          valor: valor,
-          forma: _formaSelecionada ?? _formas.first,
-          caixaNome: _sessaoAtual?.caixaNome ?? 'Caixa principal',
-          colaborador: _sessaoAtual?.colaborador ?? 'Carlos Cartaxo',
-          observacao: _observacaoController.text.trim(),
-          referencia: _referenciaController.text.trim(),
-          dataHora: DateTime.now(),
-          status: StatusMovimento.concluida,
-          vinculadoVenda: _vincularVenda,
-        ),
+      await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
+      _limparFormularioMovimento();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Movimentação registrada com sucesso.')),
       );
-    });
-
-    _limparFormularioMovimento();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Movimentação registrada com sucesso.')),
-    );
+    } catch (e) {
+      _mostrarErro('Erro ao registrar movimentação: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _limparFormularioMovimento() {
@@ -1764,68 +1770,50 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     });
   }
 
-  void _fecharCaixa() {
+  Future<void> _fecharCaixa() async {
     if (!_temCaixaAberto) {
       _mostrarAvisoCaixaNaoAberto();
       return;
     }
 
-    final resumo = _calcularResumo();
+    final resumo = _resumo;
     final dinheiroInformado = _fechamentoDinheiroController.text.trim().isEmpty
-        ? resumo.dinheiro
+        ? (resumo?.dinheiro ?? 0)
         : _parseCurrency(_fechamentoDinheiroController.text);
     final pixInformado = _fechamentoPixController.text.trim().isEmpty
-        ? resumo.pix
+        ? (resumo?.pix ?? 0)
         : _parseCurrency(_fechamentoPixController.text);
     final cartaoInformado = _fechamentoCartaoController.text.trim().isEmpty
-        ? resumo.cartao
+        ? (resumo?.cartao ?? 0)
         : _parseCurrency(_fechamentoCartaoController.text);
 
-    final apurado = dinheiroInformado + pixInformado + cartaoInformado;
-    final diferenca = apurado - resumo.saldoEsperado;
+    setState(() => _isLoading = true);
+    try {
+      await _caixaService.fecharCaixa(FecharCaixaRequest(
+        dinheiro: dinheiroInformado,
+        pix: pixInformado,
+        cartao: cartaoInformado,
+        observacao: _fechamentoObservacaoController.text.trim(),
+      ));
 
-    setState(() {
-      _movimentos.insert(
-        0,
-        MovimentoCaixaMock(
-          id: 'mov-${DateTime.now().millisecondsSinceEpoch}',
-          tipo: OperacaoCaixaTipo.fechamentoCaixa,
-          natureza: NaturezaMovimento.saida,
-          valor: apurado,
-          forma: _formas.first,
-          caixaNome: _sessaoAtual?.caixaNome ?? 'Caixa principal',
-          colaborador: _sessaoAtual?.colaborador ?? 'Carlos Cartaxo',
-          observacao:
-          'Fechamento realizado. Diferença apurada: ${_formatCurrency(diferenca)}. ${_fechamentoObservacaoController.text.trim()}',
-          referencia: 'FEC-${_movimentos.length + 1}',
-          dataHora: DateTime.now(),
-          status: diferenca == 0
-              ? StatusMovimento.concluida
-              : StatusMovimento.pendenteConferencia,
-          vinculadoVenda: false,
-        ),
+      await _carregarDadosIniciais();
+
+      setState(() {
+        _mostrarPainelFechamento = false;
+        _fechamentoDinheiroController.clear();
+        _fechamentoPixController.clear();
+        _fechamentoCartaoController.clear();
+        _fechamentoObservacaoController.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Caixa fechado com sucesso.')),
       );
-
-      _sessaoAtual = _sessaoAtual?.copyWith(
-        status: StatusSessaoCaixa.fechada,
-      );
-
-      _mostrarPainelFechamento = false;
-      _fechamentoDinheiroController.clear();
-      _fechamentoPixController.clear();
-      _fechamentoCartaoController.clear();
-      _fechamentoObservacaoController.clear();
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          diferenca == 0
-              ? 'Fechamento concluído com sucesso.'
-              : 'Fechamento registrado com diferença de ${_formatCurrency(diferenca)}.',
-        ),
-      ),
-    );
+    } catch (e) {
+      _mostrarErro('Erro ao fechar caixa: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _confirmarEncerramentoSessao() async {
@@ -1835,89 +1823,100 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
 
     final confirmou = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: const Text('Encerrar sessão?'),
-          content: const Text(
-            'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Voltar'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Encerrar'),
-            ),
-          ],
-        );
-      },
-    ) ??
-        false;
-
-    if (!confirmou) return;
-
-    setState(() {
-      _sessaoAtual = _sessaoAtual?.copyWith(status: StatusSessaoCaixa.fechada);
-      _mostrarPainelFechamento = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sessão encerrada.')),
-    );
-  }
-
-  void _cancelarMovimento(MovimentoCaixaMock movimento) async {
-    final confirmou = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: const Text('Cancelar movimentação?'),
-          content: Text(
-            'Deseja cancelar a operação ${_labelTipo(movimento.tipo)} no valor de ${_formatCurrency(movimento.valor)}?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Voltar'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffb91c1c),
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: const Text('Cancelar operação'),
-            ),
-          ],
-        );
-      },
-    ) ??
+              title: const Text('Encerrar sessão?'),
+              content: const Text(
+                'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Voltar'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Encerrar'),
+                ),
+              ],
+            );
+          },
+        ) ??
         false;
 
     if (!confirmou) return;
 
-    setState(() {
-      final index = _movimentos.indexWhere((m) => m.id == movimento.id);
-      if (index >= 0) {
-        _movimentos[index] =
-            _movimentos[index].copyWith(status: StatusMovimento.cancelada);
-      }
-    });
+    setState(() => _isLoading = true);
+    try {
+      await _caixaService.encerrarSessao();
+      await _carregarDadosIniciais();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Movimentação cancelada.')),
-    );
+      setState(() {
+        _mostrarPainelFechamento = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sessão encerrada.')),
+      );
+    } catch (e) {
+      _mostrarErro('Erro ao encerrar sessão: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  ResumoCaixaMock _calcularResumo() {
+  Future<void> _cancelarMovimento(MovimentoCaixa movimento) async {
+    final confirmou = await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: const Text('Cancelar movimentação?'),
+              content: Text(
+                'Deseja cancelar a operação ${_labelTipo(movimento.tipo)} no valor de ${_formatCurrency(movimento.valor)}?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Voltar'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffb91c1c),
+                  ),
+                  child: const Text('Cancelar operação'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!confirmou) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _caixaService.cancelarMovimentacao(movimento.id);
+      await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Movimentação cancelada.')),
+      );
+    } catch (e) {
+      _mostrarErro('Erro ao cancelar movimentação: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  ResumoCaixa _calcularResumo() {
     final trocoInicial = _sessaoAtual?.valorAbertura ?? 0;
 
     double totalEntradas = 0;
@@ -1927,15 +1926,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     double cartao = 0;
 
     for (final mov in _movimentos.where(
-          (m) => m.status != StatusMovimento.cancelada,
+          (m) => m.status.toLowerCase() != 'cancelada',
     )) {
-      if (mov.natureza == NaturezaMovimento.entrada) {
+      if (mov.natureza.toLowerCase() == 'entrada') {
         totalEntradas += mov.valor;
       } else {
         totalSaidas += mov.valor;
       }
 
-      if (mov.natureza == NaturezaMovimento.entrada) {
+      if (mov.natureza.toLowerCase() == 'entrada') {
         switch (mov.forma.codigo) {
           case 'tipo1':
             dinheiro += mov.valor;
@@ -1955,12 +1954,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     final saldoEsperado = trocoInicial + totalEntradas - totalSaidas;
 
-    return ResumoCaixaMock(
+    return ResumoCaixa(
       trocoInicial: trocoInicial,
       totalEntradas: totalEntradas,
       totalSaidas: totalSaidas,
       saldoEsperado: saldoEsperado,
-      quantidadeMovimentos: _temCaixaAberto ? _movimentos.length : 0,
+      quantidadeMovimentos: _movimentos.length,
       dinheiro: dinheiro,
       pix: pix,
       cartao: cartao,
@@ -1983,73 +1982,98 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
   }
 
-  Color _corPorNatureza(NaturezaMovimento natureza) {
-    return natureza == NaturezaMovimento.entrada
+  Color _corPorNatureza(String? natureza) {
+    if (natureza == null) return const Color(0xff7a8394);
+    return natureza.toLowerCase() == 'entrada'
         ? const Color(0xff15803d)
         : const Color(0xffb91c1c);
   }
 
-  Color _corPorStatus(StatusMovimento status) {
-    switch (status) {
-      case StatusMovimento.aberta:
+  Color _corPorStatus(String? status) {
+    if (status == null) return const Color(0xff7a8394);
+    switch (status.toLowerCase()) {
+      case 'aberta':
         return const Color(0xff1d4ed8);
-      case StatusMovimento.concluida:
+      case 'concluida':
         return const Color(0xff15803d);
-      case StatusMovimento.cancelada:
+      case 'cancelada':
         return const Color(0xffb91c1c);
-      case StatusMovimento.pendenteConferencia:
+      case 'pendenteconferencia':
         return const Color(0xffb45309);
+      default:
+        return const Color(0xff7a8394);
     }
   }
 
-  String _labelTipo(OperacaoCaixaTipo tipo) {
-    switch (tipo) {
-      case OperacaoCaixaTipo.aberturaCaixa:
+  String _labelTipo(dynamic tipo) {
+    String? tipoStr;
+    if (tipo is OperacaoCaixaTipo) {
+      tipoStr = tipo.name;
+    } else if (tipo is String) {
+      tipoStr = tipo;
+    }
+    if (tipoStr == null) return '--';
+    switch (tipoStr) {
+      case 'aberturaCaixa':
         return 'Abertura de caixa';
-      case OperacaoCaixaTipo.fechamentoCaixa:
+      case 'fechamentoCaixa':
         return 'Fechamento de caixa';
-      case OperacaoCaixaTipo.suprimento:
+      case 'suprimento':
         return 'Suprimento';
-      case OperacaoCaixaTipo.sangria:
+      case 'sangria':
         return 'Sangria';
-      case OperacaoCaixaTipo.retiradaDespesa:
+      case 'retiradaDespesa':
         return 'Retirada para despesa';
-      case OperacaoCaixaTipo.ajuste:
+      case 'ajuste':
         return 'Ajuste';
-      case OperacaoCaixaTipo.estorno:
+      case 'estorno':
         return 'Estorno';
-      case OperacaoCaixaTipo.recebimentoAvulso:
+      case 'recebimentoAvulso':
         return 'Recebimento avulso';
-      case OperacaoCaixaTipo.pagamentoAvulso:
+      case 'pagamentoAvulso':
         return 'Pagamento avulso';
+      default:
+        return tipo;
     }
   }
 
-  String _labelNatureza(NaturezaMovimento natureza) {
-    return natureza == NaturezaMovimento.entrada ? 'Entrada' : 'Saída';
+  String _labelNatureza(String? natureza) {
+    if (natureza == null) return '--';
+    switch (natureza.toLowerCase()) {
+      case 'entrada':
+        return 'Entrada';
+      case 'saida':
+        return 'Saída';
+      default:
+        return natureza;
+    }
   }
 
-  String _labelStatusMovimento(StatusMovimento status) {
-    switch (status) {
-      case StatusMovimento.aberta:
+  String _labelStatusMovimento(String? status) {
+    if (status == null) return '--';
+    switch (status.toLowerCase()) {
+      case 'aberta':
         return 'Aberta';
-      case StatusMovimento.concluida:
+      case 'concluida':
         return 'Concluída';
-      case StatusMovimento.cancelada:
+      case 'cancelada':
         return 'Cancelada';
-      case StatusMovimento.pendenteConferencia:
+      case 'pendenteconferencia':
         return 'Pendente conferência';
+      default:
+        return status;
     }
   }
 
-  String _labelSessao(StatusSessaoCaixa? status) {
-    switch (status) {
-      case StatusSessaoCaixa.aberta:
+  String _labelSessao(String? status) {
+    if (status == null) return '--';
+    switch (status.toLowerCase()) {
+      case 'aberta':
         return 'Aberta';
-      case StatusSessaoCaixa.fechada:
+      case 'fechada':
         return 'Fechada';
-      case null:
-        return '--';
+      default:
+        return status;
     }
   }
 
@@ -2083,18 +2107,31 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     return double.tryParse(cleaned) ?? 0;
   }
 
-  String _formatDateTime(DateTime? value) {
-    if (value == null) return '--';
-    final dd = value.day.toString().padLeft(2, '0');
-    final mm = value.month.toString().padLeft(2, '0');
-    final yyyy = value.year.toString();
-    final hh = value.hour.toString().padLeft(2, '0');
-    final min = value.minute.toString().padLeft(2, '0');
-    return '$dd/$mm/$yyyy às $hh:$min';
+  String _formatDateTime(String? value) {
+    if (value == null || value.isEmpty) return '--';
+    try {
+      final dateTime = DateTime.parse(value);
+      final dd = dateTime.day.toString().padLeft(2, '0');
+      final mm = dateTime.month.toString().padLeft(2, '0');
+      final yyyy = dateTime.year.toString();
+      final hh = dateTime.hour.toString().padLeft(2, '0');
+      final min = dateTime.minute.toString().padLeft(2, '0');
+      return '$dd/$mm/$yyyy às $hh:$min';
+    } catch (e) {
+      return value;
+    }
   }
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+  bool _isSameDay(String? a, DateTime b) {
+    if (a == null || a.isEmpty) return false;
+    try {
+      final dateTimeA = DateTime.parse(a);
+      return dateTimeA.year == b.year &&
+          dateTimeA.month == b.month &&
+          dateTimeA.day == b.day;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
@@ -2130,136 +2167,6 @@ enum StatusMovimento {
 enum StatusSessaoCaixa {
   aberta,
   fechada,
-}
-
-class FormaMovimentoMock {
-  final String codigo;
-  final String descricao;
-  final NaturezaRecebimento natureza;
-
-  const FormaMovimentoMock({
-    required this.codigo,
-    required this.descricao,
-    required this.natureza,
-  });
-}
-
-class CaixaSessaoMock {
-  final String id;
-  final String caixaNome;
-  final String colaborador;
-  final DateTime dataAbertura;
-  final double valorAbertura;
-  final StatusSessaoCaixa status;
-
-  CaixaSessaoMock({
-    required this.id,
-    required this.caixaNome,
-    required this.colaborador,
-    required this.dataAbertura,
-    required this.valorAbertura,
-    required this.status,
-  });
-
-  CaixaSessaoMock copyWith({
-    String? id,
-    String? caixaNome,
-    String? colaborador,
-    DateTime? dataAbertura,
-    double? valorAbertura,
-    StatusSessaoCaixa? status,
-  }) {
-    return CaixaSessaoMock(
-      id: id ?? this.id,
-      caixaNome: caixaNome ?? this.caixaNome,
-      colaborador: colaborador ?? this.colaborador,
-      dataAbertura: dataAbertura ?? this.dataAbertura,
-      valorAbertura: valorAbertura ?? this.valorAbertura,
-      status: status ?? this.status,
-    );
-  }
-}
-
-class MovimentoCaixaMock {
-  final String id;
-  final OperacaoCaixaTipo tipo;
-  final NaturezaMovimento natureza;
-  final double valor;
-  final FormaMovimentoMock forma;
-  final String caixaNome;
-  final String colaborador;
-  final String observacao;
-  final String referencia;
-  final DateTime dataHora;
-  final StatusMovimento status;
-  final bool vinculadoVenda;
-
-  MovimentoCaixaMock({
-    required this.id,
-    required this.tipo,
-    required this.natureza,
-    required this.valor,
-    required this.forma,
-    required this.caixaNome,
-    required this.colaborador,
-    required this.observacao,
-    required this.referencia,
-    required this.dataHora,
-    required this.status,
-    required this.vinculadoVenda,
-  });
-
-  MovimentoCaixaMock copyWith({
-    String? id,
-    OperacaoCaixaTipo? tipo,
-    NaturezaMovimento? natureza,
-    double? valor,
-    FormaMovimentoMock? forma,
-    String? caixaNome,
-    String? colaborador,
-    String? observacao,
-    String? referencia,
-    DateTime? dataHora,
-    StatusMovimento? status,
-    bool? vinculadoVenda,
-  }) {
-    return MovimentoCaixaMock(
-      id: id ?? this.id,
-      tipo: tipo ?? this.tipo,
-      natureza: natureza ?? this.natureza,
-      valor: valor ?? this.valor,
-      forma: forma ?? this.forma,
-      caixaNome: caixaNome ?? this.caixaNome,
-      colaborador: colaborador ?? this.colaborador,
-      observacao: observacao ?? this.observacao,
-      referencia: referencia ?? this.referencia,
-      dataHora: dataHora ?? this.dataHora,
-      status: status ?? this.status,
-      vinculadoVenda: vinculadoVenda ?? this.vinculadoVenda,
-    );
-  }
-}
-
-class ResumoCaixaMock {
-  final double trocoInicial;
-  final double totalEntradas;
-  final double totalSaidas;
-  final double saldoEsperado;
-  final int quantidadeMovimentos;
-  final double dinheiro;
-  final double pix;
-  final double cartao;
-
-  ResumoCaixaMock({
-    required this.trocoInicial,
-    required this.totalEntradas,
-    required this.totalSaidas,
-    required this.saldoEsperado,
-    required this.quantidadeMovimentos,
-    required this.dinheiro,
-    required this.pix,
-    required this.cartao,
-  });
 }
 
 class _AtalhoOperacaoData {
