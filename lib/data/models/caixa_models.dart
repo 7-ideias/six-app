@@ -1,4 +1,6 @@
 
+import '../../presentation/screens/operacoes_caixa_web_page.dart';
+
 class InformacoesBasicasCaixaResponse {
   final bool possuiSessaoAberta;
   // final SessaoAtual sessaoAtual;
@@ -292,7 +294,7 @@ class AbrirCaixaRequest {
 
 class RegistrarMovimentoRequest {
   final String idSessaoCaixa;
-  final String tipoMovimento;
+  final OperacaoCaixaTipo tipoMovimento;
   final String codigoTipoRecebimento;
   final double valor;
   final String observacao;
@@ -312,7 +314,7 @@ class RegistrarMovimentoRequest {
   Map<String, dynamic> toJson() {
     return {
       'idSessaoCaixa': idSessaoCaixa,
-      'tipoMovimento': tipoMovimento,
+      'tipoMovimento': tipoMovimento.OperacaoCaixaTipoEnum,
       'codigoTipoRecebimento': codigoTipoRecebimento,
       'valor': valor,
       'observacao': observacao,

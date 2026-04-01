@@ -1743,7 +1743,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     try {
       await _caixaService.registrarMovimentacao(RegistrarMovimentoRequest(
         idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
-        tipoMovimento: _tipoSelecionado!.name,
+        tipoMovimento: _tipoSelecionado!,
         codigoTipoRecebimento: 'tipo1', // Placeholder para futura implementação
         valor: 500, // Placeholder para futura implementação
         observacao: _observacaoController.text.trim(),
@@ -1970,21 +1970,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  NaturezaMovimento _naturezaPorTipo(OperacaoCaixaTipo tipo) {
-    switch (tipo) {
-      case OperacaoCaixaTipo.aberturaCaixa:
-      case OperacaoCaixaTipo.suprimento:
-      case OperacaoCaixaTipo.recebimentoAvulso:
-        return NaturezaMovimento.entrada;
-      case OperacaoCaixaTipo.fechamentoCaixa:
-      case OperacaoCaixaTipo.sangria:
-      case OperacaoCaixaTipo.retiradaDespesa:
-      case OperacaoCaixaTipo.ajuste:
-      case OperacaoCaixaTipo.estorno:
-      case OperacaoCaixaTipo.pagamentoAvulso:
-        return NaturezaMovimento.saida;
-    }
-  }
+  // NaturezaMovimento _naturezaPorTipo(OperacaoCaixaTipo tipo) {
+  //   switch (tipo) {
+  //     case OperacaoCaixaTipo.aberturaCaixa:
+  //     case OperacaoCaixaTipo.suprimento:
+  //     case OperacaoCaixaTipo.recebimentoAvulso:
+  //       return NaturezaMovimento.entrada;
+  //     case OperacaoCaixaTipo.fechamentoCaixa:
+  //     case OperacaoCaixaTipo.sangria:
+  //     case OperacaoCaixaTipo.retiradaDespesa:
+  //     case OperacaoCaixaTipo.ajuste:
+  //     case OperacaoCaixaTipo.estorno:
+  //     case OperacaoCaixaTipo.pagamentoAvulso:
+  //       return NaturezaMovimento.saida;
+  //   }
+  // }
 
   Color _corPorNatureza(String? natureza) {
     if (natureza == null) return const Color(0xff7a8394);
@@ -2148,8 +2148,32 @@ enum OperacaoCaixaTipo {
   ajuste,
   estorno,
   recebimentoAvulso,
-  pagamentoAvulso,
+  pagamentoAvulso;
+
+  String get OperacaoCaixaTipoEnum {
+    switch (this) {
+      case OperacaoCaixaTipo.aberturaCaixa:
+        return 'ABERTURA_CAIXA';
+      case OperacaoCaixaTipo.fechamentoCaixa:
+        return 'FECHAMENTO_CAIXA';
+      case OperacaoCaixaTipo.suprimento:
+        return 'SUPRIMENTO';
+      case OperacaoCaixaTipo.sangria:
+        return 'SANGRIA';
+      case OperacaoCaixaTipo.retiradaDespesa:
+        return 'RETIRADA_DESPESA';
+      case OperacaoCaixaTipo.ajuste:
+        return 'AJUSTE';
+      case OperacaoCaixaTipo.estorno:
+        return 'ESTORNO';
+      case OperacaoCaixaTipo.recebimentoAvulso:
+        return 'RECEBIMENTO_AVULSO';
+      case OperacaoCaixaTipo.pagamentoAvulso:
+        return 'PAGAMENTO_AVULSO';
+    }
+  }
 }
+
 
 enum NaturezaMovimento {
   entrada,
