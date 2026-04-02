@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../core/services/auth_service.dart';
+import '../../data/services/aparencia/aparencia_api_client.dart';
+import '../../design_system/helpers/six_theme_resolver.dart';
+import '../../domain/services/aparencia/aparencia_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import 'home_page_mobile_screen.dart';
@@ -46,6 +49,17 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     try {
       await _authService.login(login, senha);
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      
+      // Busca configurações de aparência do backend
+      try {
+        final aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
+        final config = await aparenciaService.buscarAparencia();
+        SixThemeResolver().atualizarConfiguracao(config);
+      } catch (e) {
+        debugPrint('Erro ao carregar aparência no login: $e');
+        // O fallback já é tratado dentro do buscarAparencia() do service
+      }
+
       await TelaInicialWebService().atualizaProviders();
       _navigateToHome();
 

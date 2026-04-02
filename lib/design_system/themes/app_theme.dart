@@ -3,11 +3,7 @@ import 'app_colors.dart';
 import 'app_color_schemes.dart';
 
 class AppTheme {
-  static ThemeData getTheme(AppPalette palette, {required bool isDark}) {
-    final colorScheme = isDark 
-        ? AppColorSchemes.getDarkScheme(palette) 
-        : AppColorSchemes.getLightScheme(palette);
-
+  static ThemeData getThemeWithScheme(ColorScheme colorScheme, {required bool isDark}) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
@@ -90,6 +86,14 @@ class AppTheme {
         endIndent: 16,
       ),
     );
+  }
+
+  static ThemeData getTheme(AppPalette palette, {required bool isDark}) {
+    final colorScheme = isDark 
+        ? AppColorSchemes.getDarkScheme(palette) 
+        : AppColorSchemes.getLightScheme(palette);
+
+    return getThemeWithScheme(colorScheme, isDark: isDark);
   }
 
   // Mantendo as referências antigas para não quebrar o código temporariamente durante a transição

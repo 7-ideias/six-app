@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 
+import '../../data/services/aparencia/aparencia_api_client.dart';
+import '../../domain/models/aparencia_models.dart';
+import '../../domain/services/aparencia/aparencia_service.dart';
+import '../../design_system/helpers/six_theme_resolver.dart';
+
 class ConfiguracoesSixWebPage extends StatefulWidget {
   final bool embedded;
   final VoidCallback? onBack;
@@ -30,7 +35,40 @@ enum SecaoConfiguracaoSix {
 class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
   bool _mostrarResumoLateral = true;
-  bool _possuiAlteracoesNaoSalvas = true;
+  bool _possuiAlteracoesNaoSalvas = false;
+  bool _carregandoAparencia = false;
+
+  late final AparenciaService _aparenciaService;
+
+  @override
+  void initState() {
+    super.initState();
+    _aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
+    _carregarAparencia();
+  }
+
+  Future<void> _carregarAparencia() async {
+    setState(() => _carregandoAparencia = true);
+    try {
+      final config = await _aparenciaService.buscarAparencia();
+      if (config != null) {
+        setState(() {
+          _temaSelecionado = config.tema.label;
+          _corPrimaria = config.paleta.primaria;
+          _corSecundaria = config.paleta.secundaria;
+          _corDestaque = config.paleta.destaque;
+          _corAlerta = config.paleta.alerta;
+          
+          // Atualiza o resolver global para que outras partes do app possam usar
+          SixThemeResolver().atualizarConfiguracao(config);
+        });
+      }
+    } catch (e) {
+      debugPrint('Erro ao carregar aparência: $e');
+    } finally {
+      setState(() => _carregandoAparencia = false);
+    }
+  }
 
   // =========================
   // MOCKS / ESTADO DA TELA
@@ -193,17 +231,60 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     }
   }
 
-  void _salvarConfiguracoes() {
+  Future<void> _salvarConfiguracoes() async {
     setState(() {
-      _possuiAlteracoesNaoSalvas = false;
+      _carregandoAparencia = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Configurações salvas com sucesso.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      // Prepara o objeto de domínio com os dados da tela
+      final configuracao = ConfiguracaoAparenciaSistema(
+        tema: TemaSistema.fromLabel(_temaSelecionado),
+        paleta: PaletaSistema(
+          primaria: _corPrimaria,
+          secundaria: _corSecundaria,
+          destaque: _corDestaque,
+          alerta: _corAlerta,
+          fundo: SixThemeResolver().paleta.fundo,
+          superficie: SixThemeResolver().paleta.superficie,
+          textoPrimario: SixThemeResolver().paleta.textoPrimario,
+          textoSecundario: SixThemeResolver().paleta.textoSecundario,
+        ),
+      );
+
+      await _aparenciaService.salvarAparencia(configuracao);
+      
+      // Atualiza o resolver global
+      SixThemeResolver().atualizarConfiguracao(configuracao);
+
+      setState(() {
+        _possuiAlteracoesNaoSalvas = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Configurações de aparência salvas com sucesso.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar configurações: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _carregandoAparencia = false;
+      });
+    }
   }
 
   void _restaurarPadraoDaSecao() {
@@ -1809,6 +1890,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _temaSelecionado = valor!;
                     });
+                    _marcarAlteracao();
                   },
                 ),
               ),
@@ -1846,10 +1928,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   label: 'Cor primária',
                   color: _corPrimaria,
                   onColorSelected: (valor) {
-                    setState(() {
-                      _corPrimaria = valor;
-                    });
-                  },
+                setState(() {
+                  _corPrimaria = valor;
+                });
+                _marcarAlteracao();
+              },
                 ),
               ),
               SizedBox(
@@ -1861,6 +1944,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _corSecundaria = valor;
                     });
+                    _marcarAlteracao();
                   },
                 ),
               ),
@@ -1873,6 +1957,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _corDestaque = valor;
                     });
+                    _marcarAlteracao();
                   },
                 ),
               ),
@@ -1885,6 +1970,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _corAlerta = valor;
                     });
+                    _marcarAlteracao();
                   },
                 ),
               ),
