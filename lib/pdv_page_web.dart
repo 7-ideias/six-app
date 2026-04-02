@@ -1,5 +1,6 @@
 
 import 'package:appplanilha/presentation/screens/agenda_financeira_web.dart';
+import 'package:appplanilha/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:appplanilha/presentation/screens/operacoes_caixa_web_page.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_web.dart';
 import 'package:appplanilha/presentation/screens/pdv_page_web_orcamento.dart';
@@ -32,6 +33,7 @@ enum ModuloCentralPDV {
   operacoesCaixa,
   ordemServico,
   agendaFinanceira,
+  configuracoes,
 }
 
 class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
@@ -87,6 +89,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       case ModuloCentralPDV.agendaFinanceira:
         return const Expanded(
           child: AgendaFinanceiraWeb(),
+        );
+
+      case ModuloCentralPDV.configuracoes:
+        return Expanded(
+          child: ConfiguracoesSixWebPage(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
         );
 
       case ModuloCentralPDV.seletor:
@@ -1651,6 +1665,21 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
               if (value == 'Produtos List') {
                 _abrirSelecaoProdutoWeb();
+              }
+            },
+          ),
+          TopNavItemData(
+            title: 'Configurações',
+            subItems: const [
+              'Sistema',
+              'Usuários',
+              'Preferências do Six',
+            ],
+            onSelect: (value) {
+              if (value == 'Preferências do Six') {
+                setState(() {
+                  _moduloAtual = ModuloCentralPDV.configuracoes;
+                });
               }
             },
           ),
