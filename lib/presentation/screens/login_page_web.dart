@@ -102,6 +102,37 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     );
   }
 
+  Widget _buildStoreBadge({
+    required String assetPath,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.black12),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Image.asset(
+          assetPath,
+          height: 42,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
@@ -222,6 +253,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Wrap(
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
@@ -237,6 +269,95 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                           child: const Text('Criar conta'),
                         ),
                       ],
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    Divider(
+                      color: Colors.grey.withValues(alpha: 0.25),
+                      thickness: 1,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
+                      'Baixe também nosso app',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      'Disponível para Android e iPhone',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.black54,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _buildStoreBadge(
+                          assetPath: 'assets/images/stores/google_play_badge.png',
+                          label: 'Google Play',
+                          onTap: () {
+                            // abrir link da Play Store
+                          },
+                        ),
+                        _buildStoreBadge(
+                          assetPath: 'assets/images/stores/app_store_badge.png',
+                          label: 'App Store',
+                          onTap: () {
+                            // abrir link da App Store
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F6FB),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD7E0F5)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 1),
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 18,
+                              color: Color(0xFF24479D),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Versões para Android e iOS disponíveis nas lojas.',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
