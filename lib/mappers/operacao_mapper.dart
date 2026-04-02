@@ -31,17 +31,16 @@ class OperacaoRequestMapper {
         )
         .toList();
 
-    final totalDinheiro = _somarPorCodigo(input.formasPagamento, 'DINHEIRO');
-    final totalPix = _somarPorCodigo(input.formasPagamento, 'PIX');
-    final totalCartaoCredito =
-        _somarPorCodigo(input.formasPagamento, 'CARTAO_CREDITO');
-    final totalCartaoDebito =
-        _somarPorCodigo(input.formasPagamento, 'CARTAO_DEBITO');
-    final totalBoletoFiado = _somarPorCodigo(
-      input.formasPagamento,
-      'BOLETO',
-    ) +
-        _somarPorCodigo(input.formasPagamento, 'FIADO');
+    final totalTIPO1 = _somarPorCodigo(input.formasPagamento, 'TIPO1');
+    final totalTIPO2 = _somarPorCodigo(input.formasPagamento, 'TIPO2');
+    final totalTIPO3 = _somarPorCodigo(input.formasPagamento, 'TIPO3');
+    final totalTIPO4 = _somarPorCodigo(input.formasPagamento, 'TIPO4');
+    final totalTIPO5 = _somarPorCodigo(input.formasPagamento, 'TIPO5');
+    final totalTIPO6 = _somarPorCodigo(input.formasPagamento, 'TIPO6');
+    final totalTIPO7 = _somarPorCodigo(input.formasPagamento, 'TIPO7');
+    final totalTIPO8 = _somarPorCodigo(input.formasPagamento, 'TIPO8');
+    final totalTIPO9 = _somarPorCodigo(input.formasPagamento, 'TIPO9');
+    final totalTIPO10 = _somarPorCodigo(input.formasPagamento, 'TIPO10');
 
     return OperacaoInserirRequest(
       descricao: input.descricao,
@@ -57,11 +56,16 @@ class OperacaoRequestMapper {
           localDateTimeDoRecebimento: dataOperacao,
           idUnicoDoColaborador: input.idColaborador,
           objGrana: GranaRequest(
-            tipo1: totalDinheiro,
-            tipo2: totalPix,
-            tipo3: totalCartaoCredito,
-            tipo4: totalCartaoDebito,
-            tipo5: totalBoletoFiado,
+            tipo1: totalTIPO1,
+            tipo2: totalTIPO2,
+            tipo3: totalTIPO3,
+            tipo4: totalTIPO4,
+            tipo5: totalTIPO5,
+            tipo6: totalTIPO6,
+            tipo7: totalTIPO7,
+            tipo8: totalTIPO8,
+            tipo9: totalTIPO9,
+            tipo10: totalTIPO10,
           ),
         ),
       ],

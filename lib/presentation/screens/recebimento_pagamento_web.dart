@@ -45,7 +45,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
 
   final List<Map<String, dynamic>> _formasPagamento = [
     {
-      'codigo': 'DINHEIRO',
+      'codigo': 'TIPO1',
       'titulo': 'Dinheiro',
       'descricao': 'Recebimento no caixa com troco e conferência imediata.',
       'icone': Icons.payments_outlined,
@@ -53,7 +53,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       'valor': 0.0,
     },
     {
-      'codigo': 'PIX',
+      'codigo': 'TIPO2',
       'titulo': 'Pix',
       'descricao': 'Confirmação rápida via chave, QR Code ou copia e cola.',
       'icone': Icons.qr_code_2_outlined,
@@ -61,7 +61,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       'valor': 0.0,
     },
     {
-      'codigo': 'CARTAO_CREDITO',
+      'codigo': 'TIPO3',
       'titulo': 'Cartão de crédito',
       'descricao': 'Recebimento parcelado ou à vista com operadora.',
       'icone': Icons.credit_card_outlined,
@@ -69,7 +69,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       'valor': 0.0,
     },
     {
-      'codigo': 'CARTAO_DEBITO',
+      'codigo': 'TIPO4',
       'titulo': 'Cartão de débito',
       'descricao': 'Liquidação imediata com confirmação de maquininha.',
       'icone': Icons.point_of_sale_outlined,
@@ -77,7 +77,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       'valor': 0.0,
     },
     {
-      'codigo': 'BOLETO',
+      'codigo': 'TIPO5',
       'titulo': 'Boleto',
       'descricao': 'Emissão para pagamento posterior com baixa futura.',
       'icone': Icons.receipt_long_outlined,
@@ -85,9 +85,41 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       'valor': 0.0,
     },
     {
-      'codigo': 'FIADO',
+      'codigo': 'TIPO6',
       'titulo': 'Fiado',
       'descricao': 'Lançamento em aberto para cobrança posterior.',
+      'icone': Icons.history_toggle_off_outlined,
+      'selecionado': false,
+      'valor': 0.0,
+    },
+    {
+      'codigo': 'TIPO7',
+      'titulo': 'Crediário',
+      'descricao': 'Lançamento em aberto para cobrança posterior.',
+      'icone': Icons.history_toggle_off_outlined,
+      'selecionado': false,
+      'valor': 0.0,
+    },
+    {
+      'codigo': 'TIPO8',
+      'titulo': 'Convênio',
+      'descricao': 'Lançamento em aberto para cobrança posterior.',
+      'icone': Icons.history_toggle_off_outlined,
+      'selecionado': false,
+      'valor': 0.0,
+    },
+    {
+      'codigo': 'TIPO9',
+      'titulo': 'Vale',
+      'descricao': 'Lançamento em aberto para cobrança posterior.',
+      'icone': Icons.history_toggle_off_outlined,
+      'selecionado': false,
+      'valor': 0.0,
+    },
+    {
+      'codigo': 'TIPO10',
+      'titulo': 'Outros',
+      'descricao': 'Outros tipos.',
       'icone': Icons.history_toggle_off_outlined,
       'selecionado': false,
       'valor': 0.0,

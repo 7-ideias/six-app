@@ -115,13 +115,18 @@ class RecebimentoRequest {
   }
 }
 
-class GranaRequest {
+class GranaRequest { //TODO ALTERAR ESSE NOME PRA FICAR IGUAL AO BACKEND
   GranaRequest({
     required this.tipo1,
     required this.tipo2,
     required this.tipo3,
     required this.tipo4,
     required this.tipo5,
+    required this.tipo6,
+    required this.tipo7,
+    required this.tipo8,
+    required this.tipo9,
+    required this.tipo10,
   });
 
   final double tipo1;
@@ -129,6 +134,12 @@ class GranaRequest {
   final double tipo3;
   final double tipo4;
   final double tipo5;
+  final double tipo6;
+  final double tipo7;
+  final double tipo8;
+  final double tipo9;
+  final double tipo10;
+
 
   Map<String, dynamic> toJson() {
     return {
@@ -137,6 +148,11 @@ class GranaRequest {
       'tipo3': tipo3,
       'tipo4': tipo4,
       'tipo5': tipo5,
+      'tipo6': tipo6,
+      'tipo7': tipo7,
+      'tipo8': tipo8,
+      'tipo9': tipo9,
+      'tipo10': tipo10,
     };
   }
 }
