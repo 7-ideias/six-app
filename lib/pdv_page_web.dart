@@ -9,6 +9,10 @@ import 'package:appplanilha/presentation/screens/recebimento_pagamento_web.dart'
 import 'package:appplanilha/providers/telainicial_web_provider.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
+import 'package:appplanilha/domain/models/aparencia_models.dart';
+import 'package:appplanilha/domain/models/pdv_visual_theme.dart';
+import 'package:appplanilha/domain/services/aparencia/pdv_visual_theme_resolver.dart';
+import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -45,6 +49,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   late final AnimationController _bellAnimationController;
   late final Animation<double> _bellRotationAnimation;
 
+  final SixThemeResolver _themeResolver = SixThemeResolver();
+  late PdvVisualTheme _pdvTheme;
+
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
 
   bool _mostrarDashboardLateral = true;
@@ -58,6 +65,14 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   TextEditingController(text: '0');
   final TextEditingController _clienteIdentificadoController =
   TextEditingController();
+
+  void _onThemeChanged() {
+    if (mounted) {
+      setState(() {
+        _pdvTheme = PdvVisualThemeResolver.resolve(_themeResolver.paleta);
+      });
+    }
+  }
 
   Widget _buildConteudoCentral(double total) {
     switch (_moduloAtual) {
@@ -134,6 +149,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _pdvTheme = PdvVisualThemeResolver.resolve(_themeResolver.paleta);
+    _themeResolver.addListener(_onThemeChanged);
     _logInfo('PDVWeb iniciado');
     _atualizarCamposDerivados();
 
@@ -160,6 +177,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    _themeResolver.removeListener(_onThemeChanged);
     onMensagemRecebida = null;
     disconnectStomp();
     _bellAnimationController.dispose();
@@ -361,7 +379,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildNotificationBellButton() {
-    final theme = Theme.of(context);
     final badgeTexto = _badgeNotificacaoTexto();
     final temNaoLidas = _quantidadeNotificacoesNaoLidas > 0;
 
@@ -385,15 +402,15 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: _pdvTheme.backgroundSurface,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  border: Border.all(color: _pdvTheme.cardBorder),
                 ),
                 child: Icon(
                   temNaoLidas
                       ? Icons.notifications_active_rounded
                       : Icons.notifications_none_rounded,
-                  color: theme.colorScheme.primary,
+                  color: _pdvTheme.iconColor,
                 ),
               ),
             ),
@@ -406,11 +423,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 padding:
                 const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent,
+                  color: _pdvTheme.warningColor,
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.35),
+                      color: _pdvTheme.warningColor.withOpacity(0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -418,8 +435,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 ),
                 child: Text(
                   badgeTexto,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _pdvTheme.badgeText,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
@@ -695,42 +712,42 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       margin: const EdgeInsets.fromLTRB(4, 0, 4, 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFE89A),
+        color: _pdvTheme.highlightColor.withOpacity(0.12),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: _pdvTheme.cardShadow,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(color: const Color(0xFFE6D89A)),
+        border: Border.all(color: _pdvTheme.highlightColor.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Center(
+          Center(
             child: Text(
               'RESUMO DA VENDA',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.1,
-                color: Color(0xFF5C4B00),
+                color: _pdvTheme.highlightColor,
               ),
             ),
           ),
           const SizedBox(height: 12),
-          const Divider(color: Color(0xFFD8C67A), thickness: 1),
+          Divider(color: _pdvTheme.highlightColor.withOpacity(0.2), thickness: 1),
           const SizedBox(height: 8),
           if (_produtosSelecionados.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Nenhum item adicionado.',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF6B5B1E),
+                  color: _pdvTheme.secondaryText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -749,10 +766,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   children: [
                     Text(
                       nome,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF3E3300),
+                        color: _pdvTheme.primaryText,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -761,17 +778,17 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                       children: [
                         Text(
                           '$quantidade x R\$ ${preco.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF6B5B1E),
+                            color: _pdvTheme.secondaryText,
                           ),
                         ),
                         Text(
                           'R\$ ${subtotal.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF3E3300),
+                            color: _pdvTheme.primaryText,
                           ),
                         ),
                       ],
@@ -780,7 +797,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 ),
               );
             }),
-          const Divider(color: Color(0xFFD8C67A), thickness: 1),
+          Divider(color: _pdvTheme.highlightColor.withOpacity(0.2), thickness: 1),
           const SizedBox(height: 8),
           _buildLinhaResumoWeb(
             'Itens',
@@ -794,10 +811,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           const SizedBox(height: 10),
           Text(
             'Pagamento: ${_formasSelecionadas.isEmpty ? 'Não definido' : _formasSelecionadas.join(', ')}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF5C4B00),
+              color: _pdvTheme.secondaryText,
             ),
           ),
         ],
@@ -823,7 +840,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           style: TextStyle(
             fontSize: destaque ? 15 : 13,
             fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
-            color: const Color(0xFF3E3300),
+            color: destaque ? _pdvTheme.highlightColor : _pdvTheme.primaryText,
           ),
         ),
         Text(
@@ -831,7 +848,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           style: TextStyle(
             fontSize: destaque ? 15 : 13,
             fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
-            color: const Color(0xFF3E3300),
+            color: destaque ? _pdvTheme.highlightColor : _pdvTheme.primaryText,
           ),
         ),
       ],
@@ -861,9 +878,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           side: BorderSide(
             width: 2,
-            color: Theme.of(context).colorScheme.primary,
+            color: _pdvTheme.actionButtonBackground,
           ),
-          foregroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: _pdvTheme.actionButtonBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
           ),
@@ -897,8 +914,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         descricao = 'Controle financeiro ....';
     }
 
-    final theme = Theme.of(context);
-
     return SizedBox(
       width: 300,
       height: 290,
@@ -909,14 +924,14 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           onTap: onPressed,
           child: Ink(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: _pdvTheme.cardBackground,
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: theme.colorScheme.outlineVariant,
+                color: _pdvTheme.cardBorder,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: _pdvTheme.cardShadow,
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -935,10 +950,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
+                          color: _pdvTheme.badgeBackground.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: theme.colorScheme.outlineVariant,
+                            color: _pdvTheme.badgeBackground.withOpacity(0.2),
                           ),
                         ),
                         child: Row(
@@ -951,7 +966,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                                   ? Icons.auto_awesome
                                   : Icons.settings_outlined,
                               size: 16,
-                              color: theme.colorScheme.primary,
+                              color: _pdvTheme.iconColor,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -959,7 +974,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: theme.colorScheme.primary,
+                                color: _pdvTheme.iconColor,
                               ),
                             ),
                           ],
@@ -969,7 +984,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                       Icon(
                         Icons.north_east_rounded,
                         size: 22,
-                        color: theme.colorScheme.primary,
+                        color: _pdvTheme.iconColor,
                       ),
                     ],
                   ),
@@ -978,16 +993,16 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
+                      color: _pdvTheme.iconColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
+                        color: _pdvTheme.iconColor.withOpacity(0.2),
                       ),
                     ),
                     child: Icon(
                       icon,
                       size: 34,
-                      color: theme.colorScheme.primary,
+                      color: _pdvTheme.iconColor,
                     ),
                   ),
                   const SizedBox(height: 22),
@@ -996,7 +1011,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.primary,
+                      color: _pdvTheme.iconColor,
                       height: 1.1,
                     ),
                   ),
@@ -1006,7 +1021,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     style: TextStyle(
                       fontSize: 14,
                       height: 1.45,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: _pdvTheme.secondaryText,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1020,14 +1035,13 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildDashboardCard(String title, String count) {
-    final theme = Theme.of(context);
-
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
+      color: _pdvTheme.cardBackground,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(22),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
+        side: BorderSide(color: _pdvTheme.cardBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -1037,7 +1051,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.10),
+                color: _pdvTheme.iconColor.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
@@ -1046,7 +1060,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.primary,
+                    color: _pdvTheme.iconColor,
                   ),
                 ),
               ),
@@ -1058,7 +1072,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.onSurface,
+                  color: _pdvTheme.primaryText,
                   height: 1.25,
                 ),
               ),
@@ -1070,8 +1084,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildResumoSidebarHeader() {
-    final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
       child: Row(
@@ -1079,9 +1091,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           Expanded(
             child: Text(
               'Resumo',
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: TextStyle(
+                fontSize: 20,
                 fontWeight: FontWeight.w900,
-                color: theme.colorScheme.primary,
+                color: _pdvTheme.iconColor,
               ),
             ),
           ),
@@ -1098,13 +1111,13 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: _pdvTheme.backgroundSurface,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  border: Border.all(color: _pdvTheme.cardBorder),
                 ),
                 child: Icon(
                   Icons.chevron_left_rounded,
-                  color: theme.colorScheme.primary,
+                  color: _pdvTheme.iconColor,
                 ),
               ),
             ),
@@ -1115,13 +1128,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildResumoSidebar() {
-    final theme = Theme.of(context);
-
     return Container(
       width: 320,
       padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+        color: _pdvTheme.backgroundSurface,
         borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
@@ -1134,28 +1145,30 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  theme.colorScheme.primary.withOpacity(0.08),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.70),
+                  _pdvTheme.iconColor.withOpacity(0.08),
+                  _pdvTheme.backgroundPage.withOpacity(0.70),
                 ],
               ),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(color: _pdvTheme.cardBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Painel operacional',
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: TextStyle(
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.primary,
+                    color: _pdvTheme.iconColor,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Acompanhe rapidamente os principais indicadores do balcão e da operação.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _pdvTheme.secondaryText,
                     height: 1.35,
                   ),
                 ),
@@ -1181,8 +1194,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildResumoSidebarCollapsed() {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.only(top: 14, right: 12),
       child: Tooltip(
@@ -1198,12 +1209,12 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             width: 72,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: _pdvTheme.backgroundSurface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(color: _pdvTheme.cardBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: _pdvTheme.cardShadow,
                   blurRadius: 10,
                   offset: const Offset(0, 6),
                 ),
@@ -1213,7 +1224,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               children: [
                 Icon(
                   Icons.dashboard_customize_outlined,
-                  color: theme.colorScheme.primary,
+                  color: _pdvTheme.iconColor,
                 ),
                 const SizedBox(height: 10),
                 RotatedBox(
@@ -1222,14 +1233,14 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     'Resumo',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.primary,
+                      color: _pdvTheme.iconColor,
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: theme.colorScheme.primary,
+                  color: _pdvTheme.iconColor,
                 ),
               ],
             ),
@@ -1504,7 +1515,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                             style: TextStyle(
                               fontSize: fontSize,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: _pdvTheme.iconColor,
                             ),
                           ),
                         ),
@@ -1525,6 +1536,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding: buttonPadding,
+                                foregroundColor: _pdvTheme.actionButtonBackground,
+                                side: BorderSide(color: _pdvTheme.actionButtonBackground, width: 2),
                               ),
                               onPressed: () {
                                 _mostrarDialogMensagem(
@@ -1546,6 +1559,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding: buttonPadding,
+                                backgroundColor: _pdvTheme.actionButtonBackground,
+                                foregroundColor: _pdvTheme.actionButtonForeground,
                               ),
                               onPressed: () {
                                 if (_produtosSelecionados.isEmpty) {
@@ -1584,8 +1599,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding: buttonPadding,
-                                side: const BorderSide(
+                                foregroundColor: _pdvTheme.warningColor,
+                                side: BorderSide(
                                   width: 2,
+                                  color: _pdvTheme.warningColor,
                                 ),
                               ),
                               onPressed: _confirmarCancelamentoVenda,
@@ -1626,6 +1643,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     final total = _calcularTotal();
 
     return Scaffold(
+      backgroundColor: _pdvTheme.backgroundPage,
       appBar: TopNavigationBar(
         items: [
           TopNavItemData(
@@ -1736,8 +1754,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             Expanded(
               child: Card(
                 elevation: 6,
+                color: _pdvTheme.backgroundSurface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: _pdvTheme.cardBorder),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -1774,29 +1794,27 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildCardUltimoEvento() {
-    final theme = Theme.of(context);
-
     if (_ultimoEventoWebSocket == null) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: _pdvTheme.eventCardBackground,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
+          border: Border.all(color: _pdvTheme.eventCardBorder),
         ),
         child: Row(
           children: [
             Icon(
               Icons.notifications_none_rounded,
-              color: theme.colorScheme.primary,
+              color: _pdvTheme.iconColor,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Nenhum evento recebido do backend até agora.',
                 style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: _pdvTheme.secondaryText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1815,9 +1833,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: _pdvTheme.highlightColor.withOpacity(0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: _pdvTheme.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1826,7 +1844,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             children: [
               Icon(
                 Icons.notifications_active_rounded,
-                color: theme.colorScheme.primary,
+                color: _pdvTheme.highlightColor,
               ),
               const SizedBox(width: 10),
               Text(
@@ -1834,7 +1852,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.primary,
+                  color: _pdvTheme.highlightColor,
                 ),
               ),
             ],
@@ -1842,15 +1860,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           const SizedBox(height: 12),
           Text(
             'Ordem: $ordemId',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(fontWeight: FontWeight.w700, color: _pdvTheme.primaryText),
           ),
           const SizedBox(height: 4),
           Text(
             'Status: $status',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(fontWeight: FontWeight.w700, color: _pdvTheme.primaryText),
           ),
           const SizedBox(height: 8),
-          Text(mensagem),
+          Text(
+            mensagem,
+            style: TextStyle(color: _pdvTheme.primaryText),
+          ),
         ],
       ),
     );
