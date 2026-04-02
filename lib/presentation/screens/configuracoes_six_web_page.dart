@@ -386,7 +386,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         children: [
           Expanded(
             child: Text(
-              'Resumo',
+              'Configs',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900,
                 color: theme.colorScheme.primary,
