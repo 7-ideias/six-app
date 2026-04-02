@@ -1552,7 +1552,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                                 size: buttonFontSize,
                               ),
                               label: Text(
-                                "Finalizar",
+                                "Receber",
                                 style: TextStyle(
                                   fontSize: buttonFontSize,
                                 ),
