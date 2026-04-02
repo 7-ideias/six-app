@@ -5,6 +5,7 @@ import 'package:appplanilha/presentation/screens/ordem_servico_web.dart';
 import 'package:appplanilha/presentation/screens/pdv_page_web_orcamento.dart';
 import 'package:appplanilha/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:appplanilha/presentation/screens/recebimento_pagamento_web.dart';
+import 'package:appplanilha/providers/telainicial_web_provider.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
 import 'package:flutter/foundation.dart';
@@ -636,6 +637,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   void _atualizarCamposDerivados() {
     try {
       _itensTotalController.text = _calcularQuantidadeItens().toString();
+
       _logInfo(
         'Campos derivados atualizados. Itens total=${_itensTotalController.text}',
       );
@@ -1596,8 +1598,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   static final List<Map<String, String>> data = [
-    {'title': 'Vendas Abertas', 'count': '2'},
-    {'title': 'Ordens Abertas', 'count': '2'},
+    {'title': 'Vendas Abertas', 'count': TelaInicialWebProvider().telaInicialWeb?.totalVendasAbertas.toString() ?? 'erro'},
+    {'title': 'Ordens Abertas', 'count': TelaInicialWebProvider().telaInicialWeb?.totalOrdensDeServicoAbertas.toString() ?? 'erro'},
     {'title': 'OTs em revisão', 'count': '33'},
     {'title': 'OTs em processo', 'count': '27'},
     {'title': 'OTs finalizadas', 'count': '94'},

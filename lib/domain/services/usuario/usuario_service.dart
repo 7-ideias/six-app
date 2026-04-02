@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'auth_service.dart';
-import '../config/app_config.dart';
-import 'http_client_factory.dart';
-import '../../data/models/usuario_model.dart';
-import '../../providers/usuario_provider.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/config/app_config.dart';
+import '../../../core/services/http_client_factory.dart';
+import '../../../data/models/usuario_model.dart';
+import '../../../providers/usuario_provider.dart';
 
 class UsuarioService {
   static final UsuarioService _instance = UsuarioService._internal();
@@ -14,7 +14,7 @@ class UsuarioService {
 
   http.Client _client() => createHttpClient();
 
-  Future<void> buscarDadosDoUsuario() async {
+  Future<void> buscarDadosDoUsuario_atualizaProviders() async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
     final empresaId = await authService.getEmpresaId();

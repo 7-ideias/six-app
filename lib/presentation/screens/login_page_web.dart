@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../core/services/auth_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
+import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import 'home_page_mobile_screen.dart';
 
 class LoginPageWeb extends StatefulWidget {
@@ -43,7 +45,10 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
     try {
       await _authService.login(login, senha);
+      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      await TelaInicialWebService().atualizaProviders();
       _navigateToHome();
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),

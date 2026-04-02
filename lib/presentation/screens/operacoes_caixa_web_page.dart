@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+
 import '../../core/di/caixa_module.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../data/models/caixa_models.dart';
 import '../../domain/services/caixa/caixa_service.dart';
+import '../../providers/empresa_provider.dart';
+import '../../providers/usuario_provider.dart';
 
 class OperacoesCaixaWebPage extends StatefulWidget {
   final bool embedded;
@@ -71,6 +75,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     try {
       final informacoesBasicasDoCaixa = await _caixaService.buscarInformacoesBasicasDoCaixa();
       final sessao = await _caixaService.buscarSessaoAtual();
+      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
       
       setState(() {
         _caixas = informacoesBasicasDoCaixa.caixas;
@@ -311,7 +316,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildTopInfoChip(
                 icon: Icons.storefront_outlined,
                 label: 'Empresa',
-                value: 'Six Assistência Técnica',
+                value: EmpresaProvider().empresa!.nomeFantasia,
               ),
               _buildTopInfoChip(
                 icon: Icons.person_outline_rounded,
@@ -453,7 +458,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildFieldBox(
                 width: 260,
                 label: 'Colaborador responsável',
-                child: _buildReadOnlyField('Carlos Cartaxo'),
+                child: _buildReadOnlyField(UsuarioProvider().usuario?.nomeDeGuerra ?? '--'),
               ),
             ],
           ),
@@ -1907,7 +1912,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     setState(() => _isLoading = true);
     try {
-      await _caixaService.cancelarMovimentacao(movimento.idSessaoCaixa);
+      await _caixaService.cancelarMovimentacao(movimento.idMovimento);
       await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
 
       ScaffoldMessenger.of(context).showSnackBar(

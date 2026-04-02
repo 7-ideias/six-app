@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/services/usuario_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/usuario_provider.dart';
 import '../../data/models/usuario_model.dart';
 
@@ -39,7 +39,6 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     final provider = UsuarioProvider();
     provider.setLoading(true);
     try {
-      await UsuarioService().buscarDadosDoUsuario();
       final usuario = provider.usuario;
       if (usuario != null) {
         _nomeController.text = usuario.nome;
