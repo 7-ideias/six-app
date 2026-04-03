@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../models/caixa_completo_movimentos_models.dart';
 import '../../models/caixa_models.dart';
 
 abstract class CaixaApiClient {
@@ -11,6 +12,7 @@ abstract class CaixaApiClient {
   Future<void> abrirCaixa(AbrirCaixaRequest request);
   Future<void> registrarMovimento(RegistrarMovimentoRequest request);
   Future<List<MovimentoCaixa>> getMovimentos(String idSessaoCaixa);
+  Future<InformacoesCaixaComSomatorioResponse> getResumoDeMovimentosComSomatorio(String idSessaoCaixa);
   Future<ResumoCaixa> getResumo(String idSessaoCaixa);
   Future<void> cancelarMovimento(String id);
   Future<void> fecharCaixa(FecharCaixaRequest request);
@@ -103,6 +105,19 @@ class HttpCaixaApiClient implements CaixaApiClient {
 
     final List list = jsonDecode(response.body);
     return list.map((item) => MovimentoCaixa.fromJson(item)).toList();
+  }
+
+  @override
+  Future<InformacoesCaixaComSomatorioResponse> getResumoDeMovimentosComSomatorio(String idSessaoCaixa) async {
+    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/completo-movimentos?idSessaoCaixa=${idSessaoCaixa}');
+    final response = await _httpClient.get(uri, headers: await _getHeaders());
+
+    if (response.statusCode != 200) {
+      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+    }
+
+    final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+    return InformacoesCaixaComSomatorioResponse.fromJson(data);
   }
 
   @override

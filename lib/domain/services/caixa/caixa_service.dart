@@ -1,4 +1,5 @@
 
+import '../../../data/models/caixa_completo_movimentos_models.dart';
 import '../../../data/models/caixa_models.dart';
 import '../../../data/services/caixa/caixa_api_client.dart';
 
@@ -11,6 +12,10 @@ class CaixaService {
 
   Future<InformacoesBasicasCaixaResponse> buscarInformacoesBasicasDoCaixa() {
     return _apiClient.getInformacoesBasicasDoCaixa();
+  }
+
+  Future<InformacoesCaixaComSomatorioResponse> buscarResumoDeMovimentosComSomatorio(String idSessaoCaixa) {
+    return _apiClient.getResumoDeMovimentosComSomatorio(idSessaoCaixa);
   }
 
   Future<CaixaSessao?> buscarSessaoAtual() {

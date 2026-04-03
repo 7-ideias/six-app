@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/di/caixa_module.dart';
+import '../../data/models/caixa_completo_movimentos_models.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../data/models/caixa_models.dart';
 import '../../domain/services/caixa/caixa_service.dart';
@@ -51,6 +52,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   late List<String> _caixas;
   late List<FormaMovimento> _formas;
+  late InformacoesCaixaComSomatorioResponse? _movimentosComSomatorio;
   late List<InformacoesBasicasCaixaResponse> _informacoesBasicasDoCaixa;
   late List<MovimentoCaixa> _movimentos;
   ResumoCaixa? _resumo;
@@ -66,6 +68,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     _formaSelecionada = null;
     _sessaoAtual = null;
     _tipoSelecionado = null;
+    _movimentosComSomatorio = null;
     
     _carregarDadosIniciais();
   }
@@ -76,7 +79,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       final informacoesBasicasDoCaixa = await _caixaService.buscarInformacoesBasicasDoCaixa();
       final sessao = await _caixaService.buscarSessaoAtual();
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-      
+
       setState(() {
         _caixas = informacoesBasicasDoCaixa.caixas;
         _formas = informacoesBasicasDoCaixa.formas;
@@ -89,6 +92,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       if (_sessaoAtual != null) {
         await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
       }
+
     } catch (e) {
       _mostrarErro('Erro ao carregar dados do caixa: $e');
     } finally {
@@ -99,9 +103,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Future<void> _carregarMovimentosEResumo(String idCaixaSessao) async {
     try {
       final movimentos = await _caixaService.listarMovimentacoes(idCaixaSessao);
+      final movimentosComSomatorio = await _caixaService.buscarResumoDeMovimentosComSomatorio(idCaixaSessao);
       final resumo = await _caixaService.buscarResumo(idCaixaSessao);
       setState(() {
         _movimentos = movimentos;
+        _movimentosComSomatorio = movimentosComSomatorio;
         _resumo = resumo;
       });
     } catch (e) {
@@ -147,7 +153,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    final resumo = _resumo ?? _calcularResumo();
+    final resumo = _resumo;
+    if (resumo == null) {
+      return const Center(
+        child: Text('Resumo do caixa indisponível.'),
+      );
+    }
     final theme = Theme.of(context);
 
     return Container(
@@ -1192,43 +1203,43 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               const SizedBox(height: 12),
               _buildResumoSecundario(
                 'Dinheiro',
-                _formatCurrency(resumo.totalDinheiro),
+                _formatCurrency(_movimentosComSomatorio?.tipo1 ?? 0)
               ),
               _buildResumoSecundario(
                 'Pix',
-                _formatCurrency(resumo.totalPix),
+                _formatCurrency(_movimentosComSomatorio?.tipo2 ?? 0)
               ),
               _buildResumoSecundario(
                 'Cartão Crédito',
-                _formatCurrency(resumo.totalCartaoCredito),
+                _formatCurrency(_movimentosComSomatorio?.tipo3 ?? 0)
               ),
               _buildResumoSecundario(
                 'Cartão Débito',
-                _formatCurrency(resumo.totalCartaoDebito),
+                _formatCurrency(_movimentosComSomatorio?.tipo4 ?? 0)
               ),
               _buildResumoSecundario(
                 'Boleto',
-                _formatCurrency(resumo.totalBoleto),
+                _formatCurrency(_movimentosComSomatorio?.tipo5 ?? 0)
               ),
               _buildResumoSecundario(
                 'Fiado',
-                _formatCurrency(resumo.totalFiado),
+                _formatCurrency(_movimentosComSomatorio?.tipo6 ?? 0)
               ),
               _buildResumoSecundario(
                 'Crediário',
-                _formatCurrency(resumo.totalCrediario),
+                _formatCurrency(_movimentosComSomatorio?.tipo7 ?? 0)
               ),
               _buildResumoSecundario(
                 'Convênio',
-                _formatCurrency(resumo.totalConvenio),
+                _formatCurrency(_movimentosComSomatorio?.tipo8 ?? 0)
               ),
               _buildResumoSecundario(
                 'Vale',
-                _formatCurrency(resumo.totalVale),
+                _formatCurrency(_movimentosComSomatorio?.tipo9 ?? 0)
               ),
               _buildResumoSecundario(
                 'Outros',
-                _formatCurrency(resumo.totalOutros),
+                _formatCurrency(_movimentosComSomatorio?.tipo10 ?? 0)
               ),
             ],
           ),
@@ -1275,7 +1286,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildPainelFechamento(ThemeData theme) {
-    final resumo = _calcularResumo();
+    final resumo = _resumo;
 
     return Container(
       width: double.infinity,
@@ -1308,7 +1319,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Dinheiro apurado',
                 child: _buildTextField(
                   controller: _fechamentoDinheiroController,
-                  hint: _formatCurrency(resumo.totalDinheiro),
+                  hint: _formatCurrency(resumo!.totalDinheiro),
                   prefix: 'R\$ ',
                 ),
               ),
@@ -1927,82 +1938,82 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
   }
 
-  ResumoCaixa _calcularResumo() {
-    final trocoInicial = _sessaoAtual?.valorAbertura ?? 0;
-
-    double totalEntradas = 0;
-    double totalSaidas = 0;
-
-    double totalDinheiro = 0;
-    double totalPix = 0;
-    double totalCartaoCredito = 0;
-    double totalCartaoDebito = 0;
-    double totalBoleto = 0;
-    double totalFiado = 0;
-    double totalCrediario = 0;
-    double totalConvenio = 0;
-    double totalVale = 0;
-    double totalOutros = 0;
-
-    for (final mov in _movimentos.where((m) => m.status.toLowerCase() != 'cancelada'))
-
-      switch (mov.codigoTipoRecebimento) {
-        case 'tipo1':
-          totalDinheiro += mov.valor;
-          break;
-        case 'tipo2':
-          totalPix += mov.valor;
-          break;
-        case 'tipo3':
-          totalCartaoCredito += mov.valor;
-          break;
-        case 'tipo4':
-          totalCartaoDebito += mov.valor;
-          break;
-        case 'tipo5':
-        case 'tipo10':
-          totalBoleto += mov.valor;
-          break;
-        case 'tipo6':
-          totalFiado += mov.valor;
-          break;
-        case 'tipo7':
-          totalCrediario += mov.valor;
-          break;
-        case 'tipo8':
-          totalConvenio += mov.valor;
-          break;
-        case 'tipo9':
-          totalVale += mov.valor;
-          break;
-        default:
-          totalOutros += mov.valor;
-          break;
-      }
-
-
-    final saldoEsperado = trocoInicial + totalEntradas - totalSaidas;
-    final totalCartao = totalCartaoCredito + totalCartaoDebito;
-
-    return ResumoCaixa(
-      trocoInicial: trocoInicial,
-      totalEntradas: totalEntradas,
-      totalSaidas: totalSaidas,
-      saldoEsperado: saldoEsperado,
-      quantidadeMovimentos: _movimentos.length,
-      totalDinheiro: totalDinheiro,
-      totalPix: totalPix,
-      totalCartao: totalCartao,
-      totalCartaoCredito: totalCartaoCredito,
-      totalCartaoDebito: totalCartaoDebito,
-      totalBoleto: totalBoleto,
-      totalFiado: totalFiado,
-      totalCrediario: totalCrediario,
-      totalConvenio: totalConvenio,
-      totalVale: totalVale,
-      totalOutros: totalOutros,
-    );
-  }
+  // ResumoCaixa _calcularResumo() {
+  //   final trocoInicial = _sessaoAtual?.valorAbertura ?? 0;
+  //
+  //   double totalEntradas = 0;
+  //   double totalSaidas = 0;
+  //
+  //   double totalDinheiro = 0;
+  //   double totalPix = 0;
+  //   double totalCartaoCredito = 0;
+  //   double totalCartaoDebito = 0;
+  //   double totalBoleto = 0;
+  //   double totalFiado = 0;
+  //   double totalCrediario = 0;
+  //   double totalConvenio = 0;
+  //   double totalVale = 0;
+  //   double totalOutros = 0;
+  //
+  //   for (final mov in _movimentos.where((m) => m.status.toLowerCase() != 'cancelada'))
+  //
+  //     switch (mov.codigoTipoRecebimento) {
+  //       case 'tipo1':
+  //         totalDinheiro += mov.valor;
+  //         break;
+  //       case 'tipo2':
+  //         totalPix += mov.valor;
+  //         break;
+  //       case 'tipo3':
+  //         totalCartaoCredito += mov.valor;
+  //         break;
+  //       case 'tipo4':
+  //         totalCartaoDebito += mov.valor;
+  //         break;
+  //       case 'tipo5':
+  //       case 'tipo10':
+  //         totalBoleto += mov.valor;
+  //         break;
+  //       case 'tipo6':
+  //         totalFiado += mov.valor;
+  //         break;
+  //       case 'tipo7':
+  //         totalCrediario += mov.valor;
+  //         break;
+  //       case 'tipo8':
+  //         totalConvenio += mov.valor;
+  //         break;
+  //       case 'tipo9':
+  //         totalVale += mov.valor;
+  //         break;
+  //       default:
+  //         totalOutros += mov.valor;
+  //         break;
+  //     }
+  //
+  //
+  //   final saldoEsperado = trocoInicial + totalEntradas - totalSaidas;
+  //   final totalCartao = totalCartaoCredito + totalCartaoDebito;
+  //
+  //   return ResumoCaixa(
+  //     trocoInicial: trocoInicial,
+  //     totalEntradas: totalEntradas,
+  //     totalSaidas: totalSaidas,
+  //     saldoEsperado: saldoEsperado,
+  //     quantidadeMovimentos: _movimentos.length,
+  //     totalDinheiro: totalDinheiro,
+  //     totalPix: totalPix,
+  //     totalCartao: totalCartao,
+  //     totalCartaoCredito: totalCartaoCredito,
+  //     totalCartaoDebito: totalCartaoDebito,
+  //     totalBoleto: totalBoleto,
+  //     totalFiado: totalFiado,
+  //     totalCrediario: totalCrediario,
+  //     totalConvenio: totalConvenio,
+  //     totalVale: totalVale,
+  //     totalOutros: totalOutros,
+  //   );
+  // }
 
   NaturezaMovimento _naturezaPorTipo(OperacaoCaixaTipo tipo) {
     switch (tipo) {
