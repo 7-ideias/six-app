@@ -1173,69 +1173,62 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(22),
-          decoration: _cardDecoration(),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xfff8fbff),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xffdce5f0)),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Resumo inteligente do caixa',
-                style: theme.textTheme.titleMedium?.copyWith(
+              const Text(
+                'Conferência por forma',
+                style: TextStyle(
+                  color: Color(0xff162033),
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xff14213d),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Visão rápida para operação e conferência do dia.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xff5b6475),
-                ),
+              const SizedBox(height: 12),
+              _buildResumoSecundario(
+                'Dinheiro',
+                _formatCurrency(resumo.totalDinheiro),
               ),
-              const SizedBox(height: 18),
-              _buildResumoLinha('Troco inicial', resumo.trocoInicial),
-              _buildResumoLinha('Entradas operacionais', resumo.totalEntradas),
-              _buildResumoLinha('Saídas operacionais', resumo.totalSaidas),
-              const Divider(height: 28),
-              _buildResumoLinha(
-                'Saldo esperado',
-                resumo.saldoEsperado,
-                destaque: true,
+              _buildResumoSecundario(
+                'Pix',
+                _formatCurrency(resumo.totalPix),
               ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xfff8fbff),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xffdce5f0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Conferência por forma',
-                      style: TextStyle(
-                        color: Color(0xff162033),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildResumoSecundario(
-                      'Dinheiro',
-                      _formatCurrency(resumo.totalDinheiro),
-                    ),
-                    _buildResumoSecundario(
-                      'Pix',
-                      _formatCurrency(resumo.totalPix),
-                    ),
-                    _buildResumoSecundario(
-                      'Cartão',
-                      _formatCurrency(resumo.totalCartao),
-                    ),
-                  ],
-                ),
+              _buildResumoSecundario(
+                'Cartão Crédito',
+                _formatCurrency(resumo.totalCartaoCredito),
+              ),
+              _buildResumoSecundario(
+                'Cartão Débito',
+                _formatCurrency(resumo.totalCartaoDebito),
+              ),
+              _buildResumoSecundario(
+                'Boleto',
+                _formatCurrency(resumo.totalBoleto),
+              ),
+              _buildResumoSecundario(
+                'Fiado',
+                _formatCurrency(resumo.totalFiado),
+              ),
+              _buildResumoSecundario(
+                'Crediário',
+                _formatCurrency(resumo.totalCrediario),
+              ),
+              _buildResumoSecundario(
+                'Convênio',
+                _formatCurrency(resumo.totalConvenio),
+              ),
+              _buildResumoSecundario(
+                'Vale',
+                _formatCurrency(resumo.totalVale),
+              ),
+              _buildResumoSecundario(
+                'Outros',
+                _formatCurrency(resumo.totalOutros),
               ),
             ],
           ),
@@ -1333,7 +1326,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Cartão apurado',
                 child: _buildTextField(
                   controller: _fechamentoCartaoController,
-                  hint: _formatCurrency(resumo.totalCartao),
+                  hint: _formatCurrency(resumo.totalCartaoCredito + resumo.totalCartaoDebito),
                   prefix: 'R\$ ',
                 ),
               ),
@@ -1736,6 +1729,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
+    if (_formaSelecionada == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione a forma relacionada.')),
+      );
+      return;
+    }
+
     final valorDoLancamentoOperacional = _parseCurrency(_valorController.text);
     if (valorDoLancamentoOperacional <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1746,15 +1746,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     setState(() => _isLoading = true);
     try {
-      await _caixaService.registrarMovimentacao(RegistrarMovimentoRequest(
-        idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
-        tipoMovimento: _tipoSelecionado!,
-        codigoTipoRecebimento: 'tipo1', // Placeholder para futura implementação
-        valor: valorDoLancamentoOperacional,
-        observacao: _observacaoController.text.trim(),
-        referencia: _referenciaController.text.trim(),
-        vinculadoVenda: _vincularVenda,
-      ));
+      await _caixaService.registrarMovimentacao(
+        RegistrarMovimentoRequest(
+          idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
+          tipoMovimento: _tipoSelecionado!,
+          codigoTipoRecebimento: _formaSelecionada!.codigo,
+          valor: valorDoLancamentoOperacional,
+          observacao: _observacaoController.text.trim(),
+          referencia: _referenciaController.text.trim(),
+          vinculadoVenda: _vincularVenda,
+        ),
+      );
 
       await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
       _limparFormularioMovimento();
@@ -1793,7 +1795,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         ? (resumo?.totalPix ?? 0)
         : _parseCurrency(_fechamentoPixController.text);
     final cartaoInformado = _fechamentoCartaoController.text.trim().isEmpty
-        ? (resumo?.totalCartao ?? 0)
+        ? ((resumo?.totalCartaoCredito ?? 0) + (resumo?.totalCartaoDebito ?? 0))
         : _parseCurrency(_fechamentoCartaoController.text);
 
     setState(() => _isLoading = true);
@@ -1930,38 +1932,57 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     double totalEntradas = 0;
     double totalSaidas = 0;
+
     double totalDinheiro = 0;
     double totalPix = 0;
-    double totalCartao = 0;
+    double totalCartaoCredito = 0;
+    double totalCartaoDebito = 0;
+    double totalBoleto = 0;
+    double totalFiado = 0;
+    double totalCrediario = 0;
+    double totalConvenio = 0;
+    double totalVale = 0;
+    double totalOutros = 0;
 
-    for (final mov in _movimentos.where(
-          (m) => m.status.toLowerCase() != 'cancelada',
-    )) {
-      if (mov.natureza.toLowerCase() == 'entrada') {
-        totalEntradas += mov.valor;
-      } else {
-        totalSaidas += mov.valor;
+    for (final mov in _movimentos.where((m) => m.status.toLowerCase() != 'cancelada'))
+
+      switch (mov.codigoTipoRecebimento) {
+        case 'tipo1':
+          totalDinheiro += mov.valor;
+          break;
+        case 'tipo2':
+          totalPix += mov.valor;
+          break;
+        case 'tipo3':
+          totalCartaoCredito += mov.valor;
+          break;
+        case 'tipo4':
+          totalCartaoDebito += mov.valor;
+          break;
+        case 'tipo5':
+        case 'tipo10':
+          totalBoleto += mov.valor;
+          break;
+        case 'tipo6':
+          totalFiado += mov.valor;
+          break;
+        case 'tipo7':
+          totalCrediario += mov.valor;
+          break;
+        case 'tipo8':
+          totalConvenio += mov.valor;
+          break;
+        case 'tipo9':
+          totalVale += mov.valor;
+          break;
+        default:
+          totalOutros += mov.valor;
+          break;
       }
 
-      if (mov.natureza.toLowerCase() == 'entrada') {
-        switch (mov.codigoTipoRecebimento) {
-          case 'tipo1':
-            totalDinheiro += mov.valor;
-            break;
-          case 'tipo2':
-            totalPix += mov.valor;
-            break;
-          case 'tipo3':
-          case 'tipo4':
-            totalCartao += mov.valor;
-            break;
-          default:
-            break;
-        }
-      }
-    }
 
     final saldoEsperado = trocoInicial + totalEntradas - totalSaidas;
+    final totalCartao = totalCartaoCredito + totalCartaoDebito;
 
     return ResumoCaixa(
       trocoInicial: trocoInicial,
@@ -1972,6 +1993,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       totalDinheiro: totalDinheiro,
       totalPix: totalPix,
       totalCartao: totalCartao,
+      totalCartaoCredito: totalCartaoCredito,
+      totalCartaoDebito: totalCartaoDebito,
+      totalBoleto: totalBoleto,
+      totalFiado: totalFiado,
+      totalCrediario: totalCrediario,
+      totalConvenio: totalConvenio,
+      totalVale: totalVale,
+      totalOutros: totalOutros,
     );
   }
 

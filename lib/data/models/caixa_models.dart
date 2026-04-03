@@ -263,6 +263,14 @@ class ResumoCaixa {
   final double totalDinheiro;
   final double totalPix;
   final double totalCartao;
+  final double totalCartaoCredito;
+  final double totalCartaoDebito;
+  final double totalBoleto;
+  final double totalFiado;
+  final double totalCrediario;
+  final double totalConvenio;
+  final double totalVale;
+  final double totalOutros;
 
   ResumoCaixa({
     required this.trocoInicial,
@@ -273,9 +281,23 @@ class ResumoCaixa {
     required this.totalDinheiro,
     required this.totalPix,
     required this.totalCartao,
+    required this.totalCartaoCredito,
+    required this.totalCartaoDebito,
+    required this.totalBoleto,
+    required this.totalFiado,
+    required this.totalCrediario,
+    required this.totalConvenio,
+    required this.totalVale,
+    required this.totalOutros,
   });
 
   factory ResumoCaixa.fromJson(Map<String, dynamic> json) {
+    final totalCartaoJson = (json['totalCartao'] as num? ?? 0).toDouble();
+    final totalCartaoCreditoJson =
+    (json['totalCartaoCredito'] as num?)?.toDouble();
+    final totalCartaoDebitoJson =
+    (json['totalCartaoDebito'] as num?)?.toDouble();
+
     return ResumoCaixa(
       trocoInicial: (json['trocoInicial'] as num? ?? 0).toDouble(),
       totalEntradas: (json['totalEntradas'] as num? ?? 0).toDouble(),
@@ -284,7 +306,15 @@ class ResumoCaixa {
       quantidadeMovimentos: (json['quantidadeMovimentos'] as num? ?? 0).toInt(),
       totalDinheiro: (json['totalDinheiro'] as num? ?? 0).toDouble(),
       totalPix: (json['totalPix'] as num? ?? 0).toDouble(),
-      totalCartao: (json['totalCartao'] as num? ?? 0).toDouble(),
+      totalCartao: totalCartaoJson,
+      totalCartaoCredito: totalCartaoCreditoJson ?? totalCartaoJson,
+      totalCartaoDebito: totalCartaoDebitoJson ?? 0,
+      totalBoleto: (json['totalBoleto'] as num? ?? 0).toDouble(),
+      totalFiado: (json['totalFiado'] as num? ?? 0).toDouble(),
+      totalCrediario: (json['totalCrediario'] as num? ?? 0).toDouble(),
+      totalConvenio: (json['totalConvenio'] as num? ?? 0).toDouble(),
+      totalVale: (json['totalVale'] as num? ?? 0).toDouble(),
+      totalOutros: (json['totalOutros'] as num? ?? 0).toDouble(),
     );
   }
 }
