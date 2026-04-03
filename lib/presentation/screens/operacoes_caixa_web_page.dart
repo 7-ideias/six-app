@@ -52,8 +52,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   late List<String> _caixas;
   late List<FormaMovimento> _formas;
+  late List<TiposRecebimento> _tiposRecebimento;
   late InformacoesCaixaComSomatorioResponse? _movimentosComSomatorio;
-  late List<InformacoesBasicasCaixaResponse> _informacoesBasicasDoCaixa;
+  // late List<InformacoesBasicasCaixaResponse> _informacoesBasicasDoCaixa;
   late List<MovimentoCaixa> _movimentos;
   ResumoCaixa? _resumo;
 
@@ -62,8 +63,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     super.initState();
     _caixas = [];
     _formas = [];
+    _tiposRecebimento = [];
     _movimentos = [];
-    _informacoesBasicasDoCaixa = [];
+    // _informacoesBasicasDoCaixa = [];
     _caixaSelecionado = null;
     _formaSelecionada = null;
     _sessaoAtual = null;
@@ -83,7 +85,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       setState(() {
         _caixas = informacoesBasicasDoCaixa.caixas;
         _formas = informacoesBasicasDoCaixa.formas;
-        _informacoesBasicasDoCaixa = [informacoesBasicasDoCaixa];
+        _tiposRecebimento = informacoesBasicasDoCaixa.tiposRecebimento;
+        // _informacoesBasicasDoCaixa = [informacoesBasicasDoCaixa];
         if (_caixas.isNotEmpty) _caixaSelecionado = _caixas.first;
         if (_formas.isNotEmpty) _formaSelecionada = _formas.first;
         _sessaoAtual = sessao;
