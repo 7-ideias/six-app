@@ -259,7 +259,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          'Novo por aqui?',
+                          '[202604022158] Novo por aqui?',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.black87,
                           ),
