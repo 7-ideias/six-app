@@ -643,72 +643,90 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     return Container(
       width: double.infinity,
       decoration: _cardDecoration(),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(36),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 82,
-                height: 82,
-                decoration: BoxDecoration(
-                  color: _softBlue,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Icon(
-                  Icons.search_off_rounded,
-                  size: 40,
-                  color: _primaryBlue,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Nenhum produto encontrado',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: _strongText,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tente ajustar a busca, limpar filtros ou atualizar a lista para carregar novamente os itens.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: _mutedText,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      _controllerBusca.clear();
-                      termoBusca = '';
-                      tipoSelecionado = 'TODOS';
-                      ordenacao = 'nomeAsc';
-                      somenteAtivos = true;
-                      aplicarFiltroOrdenacao();
-                    },
-                    icon: const Icon(Icons.filter_alt_off_rounded),
-                    label: const Text('Limpar filtros'),
-                    style: _secondaryButtonStyle(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final minHeight = constraints.maxHeight > 64
+              ? constraints.maxHeight - 48
+              : constraints.maxHeight;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minHeight),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 82,
+                        height: 82,
+                        decoration: BoxDecoration(
+                          color: _softBlue,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: const Icon(
+                          Icons.search_off_rounded,
+                          size: 40,
+                          color: _primaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Nenhum produto encontrado',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: _strongText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Text(
+                          'Tente ajustar a busca, limpar filtros ou atualizar a lista para carregar novamente os itens.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: _mutedText,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              _controllerBusca.clear();
+                              termoBusca = '';
+                              tipoSelecionado = 'TODOS';
+                              ordenacao = 'nomeAsc';
+                              somenteAtivos = true;
+                              aplicarFiltroOrdenacao();
+                            },
+                            icon: const Icon(Icons.filter_alt_off_rounded),
+                            label: const Text('Limpar filtros'),
+                            style: _secondaryButtonStyle(),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _recarregar,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Atualizar lista'),
+                            style: _primaryButtonStyle(),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  ElevatedButton.icon(
-                    onPressed: _recarregar,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Atualizar lista'),
-                    style: _primaryButtonStyle(),
-                  ),
-                ],
+                ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
