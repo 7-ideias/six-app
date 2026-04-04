@@ -1,15 +1,29 @@
 {
-  "@@locale": "pt",
-  "hello": "Olá!",
-  "welcome": "Bem-vindo ao nosso app",
-  "preferences_title": "Preferências",
-  "preferences_language": "Selecionar Idioma",
-  "preferences_dark_mode": "Ativar Modo Escuro",
-  "teste" : "em portugues",
-  "dashboard_title": "Dashboard",
-  "dashboard_web_title": "WEB -> em portugues",
-  "bemvindo" : "welcome",
-  "login" : "login",
-  "senha" : "password",
-  "entrar" : "entrar"
+  "@@locale": "pt_BR",
+  "appTitle": "Six",
+  "catalogTitle": "Catálogo de {slug}",
+  "@catalogTitle": {
+    "placeholders": {
+      "slug": {}
+    }
+  },
+  "catalogBody": "Exibir catálogo para: {slug}",
+  "@catalogBody": {
+    "placeholders": {
+      "slug": {}
+    }
+  },
+  "languagePortugueseBrazil": "Português (Brasil)",
+  "languageEnglishUs": "English (US)",
+  "languageSpanish": "Español",
+  "regionalizationSectionTitle": "Idioma, região e moeda",
+  "regionalizationSectionDescription": "Idioma, país, moeda, fuso horário, formatos de data e padronização financeira da empresa.",
+  "systemLanguageLabel": "Idioma do sistema",
+  "countryRegionLabel": "País / região",
+  "timeZoneLabel": "Fuso horário",
+  "dateFormatLabel": "Formato de data",
+  "timeFormatLabel": "Formato de hora",
+  "currencyLabel": "Moeda principal",
+  "saveSettingsSuccess": "Configurações regionais salvas com sucesso.",
+  "restoreDefault": "Restaurar padrão"
 }
