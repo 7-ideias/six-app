@@ -44,14 +44,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   CaixaSessao? _sessaoAtual;
   OperacaoCaixaTipo? _tipoSelecionado;
-  FormaMovimento? _formaSelecionada;
+  // FormaMovimento? _formaSelecionada;
+  TiposRecebimento? _tipoRecebimentoSelecionado;
   String? _caixaSelecionado;
   bool _vincularVenda = false;
   bool _mostrarPainelFechamento = false;
   bool _mostrarApenasHoje = true;
 
-  late List<String> _caixas;
-  late List<FormaMovimento> _formas;
+  late List<String> _listaDeCaixasDisponiveisNaEmpresa;
+  // late List<FormaMovimento> _formas;
   late List<TiposRecebimento> _tiposRecebimento;
   late InformacoesCaixaComSomatorioResponse? _movimentosComSomatorio;
   // late List<InformacoesBasicasCaixaResponse> _informacoesBasicasDoCaixa;
@@ -61,13 +62,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   @override
   void initState() {
     super.initState();
-    _caixas = [];
-    _formas = [];
+    _listaDeCaixasDisponiveisNaEmpresa = [];
+    // _formas = [];
     _tiposRecebimento = [];
+    _tipoRecebimentoSelecionado = null;
     _movimentos = [];
     // _informacoesBasicasDoCaixa = [];
     _caixaSelecionado = null;
-    _formaSelecionada = null;
+    // _formaSelecionada = null;
     _sessaoAtual = null;
     _tipoSelecionado = null;
     _movimentosComSomatorio = null;
@@ -83,12 +85,20 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
 
       setState(() {
-        _caixas = informacoesBasicasDoCaixa.caixas;
-        _formas = informacoesBasicasDoCaixa.formas;
+        // _caixas = informacoesBasicasDoCaixa.caixas;
+        // _formas = informacoesBasicasDoCaixa.formas;
         _tiposRecebimento = informacoesBasicasDoCaixa.tiposRecebimento;
-        // _informacoesBasicasDoCaixa = [informacoesBasicasDoCaixa];
-        if (_caixas.isNotEmpty) _caixaSelecionado = _caixas.first;
-        if (_formas.isNotEmpty) _formaSelecionada = _formas.first;
+        if (_listaDeCaixasDisponiveisNaEmpresa.isNotEmpty) _caixaSelecionado = _listaDeCaixasDisponiveisNaEmpresa.first;
+
+        final tiposAtivosOrdenados = _tiposRecebimento
+            .where((item) => item.ativo)
+            .toList()
+          ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+
+        if (tiposAtivosOrdenados.isNotEmpty) {
+          _tipoRecebimentoSelecionado = tiposAtivosOrdenados.first;
+        }
+
         _sessaoAtual = sessao;
       });
 
@@ -453,7 +463,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Caixa / guichê',
                 child: _buildDropdown<String>(
                   value: _caixaSelecionado,
-                  items: _caixas,
+                  items: _listaDeCaixasDisponiveisNaEmpresa,
                   onChanged: (value) {
                     setState(() => _caixaSelecionado = value);
                   },
@@ -824,13 +834,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildFieldBox(
                 width: 240,
                 label: 'Forma relacionada',
-                child: _buildDropdown<FormaMovimento>(
-                  value: _formaSelecionada,
-                  items: _formas,
+                child: _buildDropdown<TiposRecebimento>(
+                  value: _tipoRecebimentoSelecionado,
+                  items: (_tiposRecebimento.where((item) => item.ativo).toList()
+                    ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao))),
                   onChanged: (value) {
-                    setState(() => _formaSelecionada = value);
+                    setState(() => _tipoRecebimentoSelecionado = value);
                   },
-                  itemLabel: (item) => item.descricao,
+                  itemLabel: (item) => item.descricaoExibicao,
+                  hint: 'Selecione',
                 ),
               ),
               _buildFieldBox(
@@ -1743,7 +1755,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
-    if (_formaSelecionada == null) {
+    if (_tipoRecebimentoSelecionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecione a forma relacionada.')),
       );
@@ -1764,7 +1776,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         RegistrarMovimentoRequest(
           idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
           tipoMovimento: _tipoSelecionado!,
-          codigoTipoRecebimento: _formaSelecionada!.codigo,
+          codigoTipoRecebimento: _tipoRecebimentoSelecionado!.codigoTipo,
           valor: valorDoLancamentoOperacional,
           observacao: _observacaoController.text.trim(),
           referencia: _referenciaController.text.trim(),
@@ -1792,6 +1804,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       _observacaoController.clear();
       _referenciaController.clear();
       _vincularVenda = false;
+
+      final tiposAtivosOrdenados = _tiposRecebimento
+          .where((item) => item.ativo)
+          .toList()
+        ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+
+      _tipoRecebimentoSelecionado =
+      tiposAtivosOrdenados.isNotEmpty ? tiposAtivosOrdenados.first : null;
     });
   }
 
