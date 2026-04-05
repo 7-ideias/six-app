@@ -1,6 +1,7 @@
+import '../../../data/models/regionalizacao_models.dart';
+import '../../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../../mappers/configuracao_regionalizacao_mapper.dart';
 import '../../models/regionalizacao_models.dart';
-import '../../../data/services/regionalizacao/regionalizacao_api_client.dart';
 
 class RegionalizacaoService {
   RegionalizacaoService({
@@ -9,21 +10,15 @@ class RegionalizacaoService {
 
   final RegionalizacaoApiClient _apiClient;
 
-  Future<ConfiguracaoRegionalizacaoSistema> buscarRegionalizacao() async {
-    try {
-      final response = await _apiClient.getRegionalizacao();
-      if (response == null) {
-        return ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
-      }
-      return ConfiguracaoRegionalizacaoMapper.fromResponse(response);
-    } catch (_) {
-      return ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
-    }
+  ConfiguracaoRegionalizacaoSistema converterResponseParaDominio(
+      ConfiguracaoRegionalizacaoResponse response,
+      ) {
+    return ConfiguracaoRegionalizacaoMapper.fromResponse(response);
   }
 
   Future<void> salvarRegionalizacao(
-    ConfiguracaoRegionalizacaoSistema dominio,
-  ) async {
+      ConfiguracaoRegionalizacaoSistema dominio,
+      ) async {
     final request = ConfiguracaoRegionalizacaoMapper.toRequest(dominio);
     return _apiClient.salvarRegionalizacao(request);
   }

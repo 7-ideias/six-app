@@ -1,25 +1,26 @@
 
+import 'package:appplanilha/data/models/regionalizacao_models.dart';
+
 import '../../presentation/screens/operacoes_caixa_web_page.dart';
 
 class InformacoesBasicasCaixaResponse {
   final bool possuiSessaoAberta;
-  // final SessaoAtual sessaoAtual;
   final List<TiposRecebimento> tiposRecebimento;
   final List<String> caixas;
   final List<FormaMovimento> formas;
+  final ConfiguracaoRegionalizacaoResponse? regionalizacao;
 
   InformacoesBasicasCaixaResponse({
     required this.possuiSessaoAberta,
-    // required this.sessaoAtual,
     required this.tiposRecebimento,
     required this.caixas,
     required this.formas,
+    this.regionalizacao,
   });
 
   factory InformacoesBasicasCaixaResponse.fromJson(Map<String, dynamic> json) {
     return InformacoesBasicasCaixaResponse(
       possuiSessaoAberta: json['possuiSessaoAberta'] ?? false,
-      // sessaoAtual: SessaoAtual.fromJson(json['sessaoAtual']),
       tiposRecebimento:
       (json['tiposRecebimento'] as List? ?? [])
           .map((item) => TiposRecebimento.fromJson(item))
@@ -28,6 +29,11 @@ class InformacoesBasicasCaixaResponse {
       formas: (json['formas'] as List? ?? [])
           .map((item) => FormaMovimento.fromJson(item))
           .toList(),
+      regionalizacao: json['regionalizacao'] is Map<String, dynamic>
+          ? ConfiguracaoRegionalizacaoResponse.fromJson(
+        json['regionalizacao'] as Map<String, dynamic>,
+      )
+          : null,
     );
   }
 }

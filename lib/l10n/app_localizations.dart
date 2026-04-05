@@ -96,6 +96,7 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('en', 'US'),
     Locale('es'),
     Locale('pt'),
     Locale('pt', 'BR'),
@@ -140,6 +141,14 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when language+country codes are specified.
   switch (locale.languageCode) {
+    case 'en':
+      {
+        switch (locale.countryCode) {
+          case 'US':
+            return AppLocalizationsEnUs();
+        }
+        break;
+      }
     case 'pt':
       {
         switch (locale.countryCode) {

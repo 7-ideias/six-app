@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/models/regionalizacao_models.dart';
 import '../domain/models/regionalizacao_models.dart';
 import '../domain/services/regionalizacao/regionalizacao_service.dart';
 
@@ -21,7 +22,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
   final RegionalizacaoService _regionalizacaoService;
 
   ConfiguracaoRegionalizacaoSistema _companyConfig =
-      ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
+  ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
   Locale? _userOverrideLocale;
   bool _initialized = false;
 
@@ -36,19 +37,31 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
   Future<void> initialize() async {
     await _loadUserOverride();
-    await _loadCompanyConfig();
     _initialized = true;
     notifyListeners();
   }
 
   Future<void> refreshCompanyConfig() async {
-    await _loadCompanyConfig();
+    notifyListeners();
+  }
+
+  Future<void> atualizarConfiguracaoDaEmpresaPorResponse(
+      ConfiguracaoRegionalizacaoResponse response,
+      ) async {
+    _companyConfig = _regionalizacaoService.converterResponseParaDominio(response);
+    notifyListeners();
+  }
+
+  Future<void> atualizarConfiguracaoDaEmpresa(
+      ConfiguracaoRegionalizacaoSistema config,
+      ) async {
+    _companyConfig = config;
     notifyListeners();
   }
 
   Future<void> saveCompanyConfig(
-    ConfiguracaoRegionalizacaoSistema config,
-  ) async {
+      ConfiguracaoRegionalizacaoSistema config,
+      ) async {
     await _regionalizacaoService.salvarRegionalizacao(config);
     _companyConfig = config;
     notifyListeners();
@@ -76,10 +89,6 @@ class LocaleSettingsProvider extends ChangeNotifier {
     await prefs.remove(_countryCodeKey);
 
     notifyListeners();
-  }
-
-  Future<void> _loadCompanyConfig() async {
-    _companyConfig = await _regionalizacaoService.buscarRegionalizacao();
   }
 
   Future<void> _loadUserOverride() async {
