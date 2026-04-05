@@ -390,7 +390,6 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
   bool _isHoveringMenu = false;
   bool _isOpen = false;
   int _highlightedSubIndex = 0;
-  String? _selectedSubItem;
 
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
@@ -471,9 +470,6 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
   }
 
   void _handleSubItemTap(String value) {
-    setState(() {
-      _selectedSubItem = value;
-    });
     widget.data.onSelect?.call(value);
     _closeMenu();
   }
@@ -605,12 +601,10 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
                                 final item = widget.data.subItems[index];
                                 final isHighlighted =
                                     _highlightedSubIndex == index;
-                                final isSelected = _selectedSubItem == item;
 
                                 return _AnimatedSubMenuItem(
                                   label: item,
                                   isHighlighted: isHighlighted,
-                                  isSelected: isSelected,
                                   onHover: () {
                                     if (mounted) {
                                       setState(() {
@@ -799,14 +793,12 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
 class _AnimatedSubMenuItem extends StatefulWidget {
   final String label;
   final bool isHighlighted;
-  final bool isSelected;
   final VoidCallback onHover;
   final VoidCallback onTap;
 
   const _AnimatedSubMenuItem({
     required this.label,
     required this.isHighlighted,
-    required this.isSelected,
     required this.onHover,
     required this.onTap,
   });
@@ -827,7 +819,7 @@ class _AnimatedSubMenuItemState extends State<_AnimatedSubMenuItem> {
         : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
 
-    final active = widget.isSelected || widget.isHighlighted || _hovering;
+    final active = widget.isHighlighted || _hovering;
 
     return MouseRegion(
       onEnter: (_) {
@@ -852,40 +844,17 @@ class _AnimatedSubMenuItemState extends State<_AnimatedSubMenuItem> {
           margin: const EdgeInsets.symmetric(vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: widget.isSelected
-                ? colorScheme.primaryContainer
-                : active
-                ? colorScheme.primary.withOpacity(0.05)
-                : Colors.transparent,
+            color: active ? colorScheme.primary.withOpacity(0.05) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: widget.isSelected
-                  ? colorScheme.primary
-                  : Colors.transparent,
-            ),
+            border: Border.all(color: Colors.transparent),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight:
-                    widget.isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: widget.isSelected
-                        ? colorScheme.primary
-                        : colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              if (widget.isSelected)
-                Icon(
-                  Icons.check,
-                  size: 16,
-                  color: colorScheme.primary,
-                ),
-            ],
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              color: colorScheme.onSurface,
+            ),
           ),
         ),
       ),
