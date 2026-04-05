@@ -32,6 +32,7 @@ class PDVWeb extends StatefulWidget {
 enum ModuloCentralPDV {
   seletor,
   vendas,
+  recebimento,
   orcamento,
   operacoesCaixa,
   ordemServico,
@@ -680,19 +681,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RecebimentoPagamentoWeb(
-          valorTotalVenda: _calcularTotal(),
-          itensResumo: _montarItensResumoPagamento(),
-          clienteNome: _clienteIdentificadoController.text.trim(),
-          numeroVenda: '',
-          idColaborador: 'idUnicoDoColaborador',
-          nomeColaborador: 'Nome do colaborador',
-          operacaoService: _operacaoService,
-        ),
-      ),
-    );
+    setState(() {
+      _moduloAtual = ModuloCentralPDV.recebimento;
+    });
   }
 
   List<Map<String, dynamic>> _montarItensResumoPagamento() {
@@ -740,6 +731,33 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     switch (_moduloAtual) {
       case ModuloCentralPDV.vendas:
         return _buildAreaVenda(total);
+
+      case ModuloCentralPDV.recebimento:
+        return Expanded(
+          child: RecebimentoPagamentoWeb(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.vendas;
+              });
+
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _focarCodigoBarras();
+                }
+              });
+            },
+            onSuccess: _limparVendaAposSucessoRecebimento,
+            valorTotalVenda: _calcularTotal(),
+            itensResumo: _montarItensResumoPagamento(),
+            clienteNome: _clienteIdentificadoController.text.trim(),
+            numeroVenda: '',
+            idColaborador: 'idUnicoDoColaborador',
+            nomeColaborador: 'Nome do colaborador',
+            operacaoService: _operacaoService,
+          ),
+        );
+
       case ModuloCentralPDV.operacoesCaixa:
         return Expanded(
           child: OperacoesCaixaWebPage(
@@ -751,12 +769,16 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             },
           ),
         );
+
       case ModuloCentralPDV.orcamento:
         return const Expanded(child: OrcamentoWeb());
+
       case ModuloCentralPDV.ordemServico:
         return const Expanded(child: OrdemServicoWeb());
+
       case ModuloCentralPDV.agendaFinanceira:
         return const Expanded(child: AgendaFinanceiraWeb());
+
       case ModuloCentralPDV.configuracoes:
         return Expanded(
           child: ConfiguracoesSixWebPage(
@@ -768,6 +790,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             },
           ),
         );
+
       case ModuloCentralPDV.seletor:
         return _buildSeletorModoOperacao();
     }
@@ -2709,4 +2732,22 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       ),
     );
   }
+
+  void _limparVendaAposSucessoRecebimento() {
+    setState(() {
+      _produtosSelecionados.clear();
+      _formasSelecionadas.clear();
+      _codigoBarrasController.clear();
+      _itensTotalController.text = '0';
+      _clienteIdentificadoController.clear();
+      _moduloAtual = ModuloCentralPDV.vendas;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focarCodigoBarras();
+      }
+    });
+  }
+
 }

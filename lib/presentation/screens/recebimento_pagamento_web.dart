@@ -16,6 +16,9 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
     this.clienteNome,
     this.numeroVenda,
     this.operacaoService,
+    this.embedded = false,
+    this.onBack,
+    this.onSuccess,
   });
 
   final double valorTotalVenda;
@@ -25,6 +28,9 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
   final String? clienteNome;
   final String? numeroVenda;
   final OperacaoService? operacaoService;
+  final bool embedded;
+  final VoidCallback? onBack;
+  final VoidCallback? onSuccess;
 
   @override
   State<RecebimentoPagamentoWeb> createState() =>
@@ -157,6 +163,11 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   }
 
   Future<void> _fecharTela() async {
+    if (widget.embedded) {
+      widget.onBack?.call();
+      return;
+    }
+
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();
@@ -330,7 +341,13 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
         sucesso: true,
       );
 
-      await _fecharTela();
+      if (!mounted) return;
+
+      if (widget.embedded) {
+        widget.onSuccess?.call();
+      } else {
+        await _fecharTela();
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -964,6 +981,20 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
 
   @override
   Widget build(BuildContext context) {
+    final Widget conteudo = Column(
+      children: [
+        _buildHeaderPremium(context),
+        const SizedBox(height: 16),
+        Expanded(
+          child: _buildBodyResponsivo(),
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return conteudo;
+    }
+
     return Scaffold(
       appBar: TopNavigationBar(
         items: const [
@@ -1004,16 +1035,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildHeaderPremium(context),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _buildBodyResponsivo(),
-            ),
-          ],
-        ),
+        child: conteudo,
       ),
     );
   }
+
 }
