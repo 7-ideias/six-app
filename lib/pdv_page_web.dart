@@ -13,6 +13,7 @@ import 'package:appplanilha/domain/services/aparencia/pdv_visual_theme_resolver.
 import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:appplanilha/l10n/app_localizations.dart';
 
 import 'data/models/produto_model.dart';
 import 'core/di/operacao_module.dart';
@@ -779,11 +780,13 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }) {
     String badge;
     String descricao;
+    final l10n = AppLocalizations.of(context);
 
     switch (label) {
       case 'Vendas':
         badge = 'Fluxo principal';
-        descricao = 'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
+        descricao = l10n?.pdvQuickServiceDescription ??
+            'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
         break;
       case 'Orçamento':
         badge = 'Assistência comercial';

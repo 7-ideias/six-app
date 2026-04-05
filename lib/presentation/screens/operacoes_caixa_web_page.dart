@@ -7,6 +7,8 @@ import '../../data/models/caixa_models.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/usuario_provider.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_settings_provider.dart';
 
 class OperacoesCaixaWebPage extends StatefulWidget {
   final bool embedded;
@@ -81,6 +83,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     setState(() => _isLoading = true);
     try {
       final informacoesBasicasDoCaixa = await _caixaService.buscarInformacoesBasicasDoCaixa();
+      if (mounted && informacoesBasicasDoCaixa.regionalizacao != null) {
+        await context
+            .read<LocaleSettingsProvider>()
+            .atualizarConfiguracaoDaEmpresaPorResponse(
+          informacoesBasicasDoCaixa.regionalizacao!,
+        );
+      }
       final sessao = await _caixaService.buscarSessaoAtual();
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
 
