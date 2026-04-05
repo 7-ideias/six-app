@@ -1,29 +1,4 @@
 {
-  "@@locale": "en_US",
-  "appTitle": "Six",
-  "catalogTitle": "Catalog of {slug}",
-  "@catalogTitle": {
-    "placeholders": {
-      "slug": {}
-    }
-  },
-  "catalogBody": "Display catalog for: {slug}",
-  "@catalogBody": {
-    "placeholders": {
-      "slug": {}
-    }
-  },
-  "languagePortugueseBrazil": "Portuguese (Brazil)",
-  "languageEnglishUs": "English (US)",
-  "languageSpanish": "Spanish",
-  "regionalizationSectionTitle": "Language, region and currency",
-  "regionalizationSectionDescription": "Language, country, currency, time zone, date formats and financial standardization for the company.",
-  "systemLanguageLabel": "System language",
-  "countryRegionLabel": "Country / region",
-  "timeZoneLabel": "Time zone",
-  "dateFormatLabel": "Date format",
-  "timeFormatLabel": "Time format",
-  "currencyLabel": "Primary currency",
-  "saveSettingsSuccess": "Regional settings saved successfully.",
-  "restoreDefault": "Restore default"
+  "@@locale": "en",
+  "appTitle": "Six"
 }

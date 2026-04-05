@@ -11,7 +11,7 @@ import 'package:appplanilha/providers/produtos_list_provider.dart';
 import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:appplanilha/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,7 +63,8 @@ class MyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleSettingsProvider>();
 
     return MaterialApp(
-      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      onGenerateTitle: (context) =>
+      AppLocalizations.of(context)?.appTitle ?? 'Six',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
@@ -79,8 +80,8 @@ class MyApp extends StatelessWidget {
       home: kIsWeb
           ? const LoginPageWeb()
           : hasSeenOnboarding
-              ? const LoginPageMobile()
-              : const OnboardingScreen(),
+          ? const LoginPageMobile()
+          : OnboardingScreen(),
     );
   }
 }
@@ -96,10 +97,15 @@ class CatalogoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final appTitle = l10n?.appTitle ?? 'Six';
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.catalogTitle(slug))),
-      body: Center(child: Text(l10n.catalogBody(slug))),
+      appBar: AppBar(
+        title: Text('$appTitle - $slug'),
+      ),
+      body: Center(
+        child: Text('Catálogo: $slug'),
+      ),
     );
   }
 }

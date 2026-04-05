@@ -9,38 +9,13 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get hello => 'Hello!';
+  String get appTitle => 'Six';
+}
+
+/// The translations for English, as used in the United States (`en_US`).
+class AppLocalizationsEnUs extends AppLocalizationsEn {
+  AppLocalizationsEnUs() : super('en_US');
 
   @override
-  String get welcome => 'Welcome to our app';
-
-  @override
-  String get preferences_title => 'Preferences';
-
-  @override
-  String get preferences_language => 'Select Language';
-
-  @override
-  String get preferences_dark_mode => 'Enable Dark Mode';
-
-  @override
-  String get teste => 'em default';
-
-  @override
-  String get dashboard_title => 'Dashboard';
-
-  @override
-  String get dashboard_web_title => 'WEB -> em default';
-
-  @override
-  String get bemvindo => 'welcome';
-
-  @override
-  String get login => 'login';
-
-  @override
-  String get senha => 'password';
-
-  @override
-  String get entrar => 'entrar';
+  String get appTitle => 'Six';
 }
