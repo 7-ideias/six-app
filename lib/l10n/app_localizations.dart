@@ -96,7 +96,6 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('en', 'US'),
     Locale('es'),
     Locale('pt'),
     Locale('pt', 'BR'),
@@ -107,6 +106,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Six'**
   String get appTitle;
+
+  /// No description provided for @pdvQuickServiceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast checkout service, item inclusion and sale closing.'**
+  String get pdvQuickServiceDescription;
+
+  /// No description provided for @teste.
+  ///
+  /// In en, this message translates to:
+  /// **'apague '**
+  String get teste;
 }
 
 class _AppLocalizationsDelegate
@@ -129,14 +140,6 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when language+country codes are specified.
   switch (locale.languageCode) {
-    case 'en':
-      {
-        switch (locale.countryCode) {
-          case 'US':
-            return AppLocalizationsEnUs();
-        }
-        break;
-      }
     case 'pt':
       {
         switch (locale.countryCode) {

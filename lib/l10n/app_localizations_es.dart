@@ -10,4 +10,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get appTitle => 'Six';
+
+  @override
+  String get pdvQuickServiceDescription =>
+      'Fast checkout service, item inclusion and sale closing.';
+
+  @override
+  String get teste => 'em espanhol';
 }

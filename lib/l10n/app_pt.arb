@@ -1,4 +1,6 @@
 {
   "@@locale": "pt",
-  "appTitle": "Six"
+  "appTitle": "Six",
+  "pdvQuickServiceDescription": "Atendimento rápido no caixa, inclusão de itens e fechamento da venda.",
+  "teste" : "apague "
 }

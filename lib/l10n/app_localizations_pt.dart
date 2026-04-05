@@ -10,6 +10,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get appTitle => 'Six';
+
+  @override
+  String get pdvQuickServiceDescription =>
+      'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
+
+  @override
+  String get teste => 'apague ';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).

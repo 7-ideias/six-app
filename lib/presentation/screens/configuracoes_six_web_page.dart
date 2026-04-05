@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 
+import 'package:provider/provider.dart';
+import '../../providers/locale_settings_provider.dart';
+
 import '../../data/services/aparencia/aparencia_api_client.dart';
 import '../../domain/models/aparencia_models.dart';
 import '../../domain/services/aparencia/aparencia_service.dart';
@@ -1609,10 +1612,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     'Español',
                     'Polski',
                   ],
-                  onChanged: (valor) {
+                  onChanged: (valor) async {
+                    if (valor == null) return;
+
                     setState(() {
-                      _idiomaSelecionado = valor!;
+                      _idiomaSelecionado = valor;
                     });
+
+                    final locale = _mapIdiomaSelecionadoParaLocale(valor);
+                    await context.read<LocaleSettingsProvider>().setUserLocale(locale);
                   },
                 ),
               ),
@@ -2899,6 +2907,16 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     return Scaffold(
       body: SafeArea(child: contentWithFab),
     );
+  }
+
+  Locale _mapIdiomaSelecionadoParaLocale(String idioma) {
+    switch (idioma) {
+      case 'English (US)':
+        return const Locale('en', 'US');
+      case 'Português (Brasil)':
+      default:
+        return const Locale('pt', 'BR');
+    }
   }
 
 }
