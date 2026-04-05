@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 
+import 'package:provider/provider.dart';
+import '../../domain/models/regionalizacao_models.dart';
+import '../../providers/locale_settings_provider.dart';
+
 import '../../data/services/aparencia/aparencia_api_client.dart';
 import '../../domain/models/aparencia_models.dart';
 import '../../domain/services/aparencia/aparencia_service.dart';
@@ -237,7 +241,35 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     });
 
     try {
-      // Prepara o objeto de domínio com os dados da tela
+      final localeProvider = context.read<LocaleSettingsProvider>();
+      final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
+
+      final configuracaoRegionalizacao = localeProvider.companyConfig.copyWith(
+        languageCode: locale.languageCode,
+        countryCode: locale.countryCode ?? localeProvider.companyConfig.countryCode,
+        formatting: AppRegionalFormatting(
+          currencyCode: _mapMoedaSelecionadaParaCurrencyCode(_moedaSelecionada),
+          timeZone: _fusoSelecionado,
+          dateFormat: _formatoDataSelecionado,
+          timeFormat: _formatoHoraSelecionado == '24 horas' ? '24h' : '12h',
+          decimalSeparator:
+          _separadorDecimalSelecionado == 'Vírgula' ? ',' : '.',
+          thousandSeparator: _mapSeparadorMilhar(_separadorMilharSelecionado),
+          firstDayOfWeek: _primeiroDiaSemanaSelecionado == 'Domingo'
+              ? 'SUNDAY'
+              : 'MONDAY',
+          numberPattern: _formatoNumeroSelecionado == '1,234.56'
+              ? '#,##0.00'
+              : '#.##0,00',
+          decimalPlaces: int.tryParse(_casasDecimaisSelecionadas) ?? 2,
+          allowMultipleCurrencies: _permitirMultiplasMoedas,
+          applyFinancialRounding: _aplicarArredondamentoFinanceiro,
+        ),
+      );
+
+      await localeProvider.saveCompanyConfig(configuracaoRegionalizacao);
+      await localeProvider.setUserLocale(locale);
+
       final configuracao = ConfiguracaoAparenciaSistema(
         tema: TemaSistema.fromLabel(_temaSelecionado),
         paleta: PaletaSistema(
@@ -253,8 +285,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       );
 
       await _aparenciaService.salvarAparencia(configuracao);
-      
-      // Atualiza o resolver global
       SixThemeResolver().atualizarConfiguracao(configuracao);
 
       setState(() {
@@ -264,7 +294,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Configurações de aparência salvas com sucesso.'),
+            content: Text('Configurações salvas com sucesso.'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.green,
           ),
@@ -1609,10 +1639,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     'Español',
                     'Polski',
                   ],
-                  onChanged: (valor) {
+                  onChanged: (valor) async {
+                    if (valor == null) return;
+
                     setState(() {
-                      _idiomaSelecionado = valor!;
+                      _idiomaSelecionado = valor;
                     });
+
+                    _marcarAlteracao();
                   },
                 ),
               ),
@@ -2899,6 +2933,35 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     return Scaffold(
       body: SafeArea(child: contentWithFab),
     );
+  }
+
+  Locale _mapIdiomaSelecionadoParaLocale(String idioma) {
+    switch (idioma) {
+      case 'English (US)':
+        return const Locale('en', 'US');
+      case 'Português (Brasil)':
+      default:
+        return const Locale('pt', 'BR');
+    }
+  }
+
+  String _mapMoedaSelecionadaParaCurrencyCode(String moedaSelecionada) {
+    if (moedaSelecionada.startsWith('USD')) return 'USD';
+    if (moedaSelecionada.startsWith('EUR')) return 'EUR';
+    if (moedaSelecionada.startsWith('PLN')) return 'PLN';
+    return 'BRL';
+  }
+
+  String _mapSeparadorMilhar(String valor) {
+    switch (valor) {
+      case 'Vírgula':
+        return ',';
+      case 'Espaço':
+        return ' ';
+      case 'Ponto':
+      default:
+        return '.';
+    }
   }
 
 }
