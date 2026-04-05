@@ -26,7 +26,7 @@ class ProdutoProvider with ChangeNotifier {
         'idUnicoDaEmpresa': empresaId ?? '',
         'Authorization': 'Bearer ${await _authService.getAccessToken()}',
       };
-      _produtos = (await _service.ProdutosList(headers)) as List<ProdutoModel>;
+      _produtos = (await _service.produtosList(headers)) as List<ProdutoModel>;
     } catch (e) {
       // Tratar erro (pode adicionar um estado de erro aqui também)
       _produtos = [];

@@ -14,7 +14,7 @@ class ProdutoService {
 
   final client = InterceptedClient.build(interceptors: [LoggingInterceptor()]);
 
-  Future<ProdutoResponseModel> ProdutosList(Map<String, String>? headers) async {
+  Future<ProdutoResponseModel> produtosList(Map<String, String>? headers) async {
     final queryParams = <String, String>{};
     if (headers != null && headers.containsKey('tipo')) {
       queryParams['tipo'] = headers['tipo']!;
@@ -43,27 +43,30 @@ class ProdutoService {
     }
   }
 
-  Future<void> cadastrarProduto(ProdutoModel produto) async {
+
+  Future<String?> cadastrarProduto(ProdutoModel produto) async {
     final url = Uri.parse(endpointCadastro);
     final authService = AuthService();
     final token = await authService.getAccessToken();
     final empresaId = await authService.getEmpresaId();
 
-    final headers = {
+    final headers = <String, String>{
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId ?? '',
       'Authorization': 'Bearer $token',
     };
 
     try {
+      final body = jsonEncode(produto.toJson());
+
       print('🌐 POST $url');
       print('🟦 Headers: $headers');
-      print('📦 Body: ${jsonEncode(produto.toJson())}');
+      print('📦 Body: $body');
 
       final response = await client.post(
         url,
         headers: headers,
-        body: jsonEncode(produto.toJson()),
+        body: body,
       );
 
       print('✅ STATUS: ${response.statusCode}');
@@ -72,6 +75,17 @@ class ProdutoService {
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Erro ao cadastrar produto: ${response.statusCode}');
       }
+
+      if (response.body.isEmpty) {
+        return null;
+      }
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['id']?.toString();
+      }
+
+      return null;
     } catch (e) {
       print('❌ Erro no cadastro: $e');
       rethrow;

@@ -29,7 +29,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
           create: (_) => ProdutosListProvider<ProdutoModel>(
-            fetchFunction: ProdutoService().ProdutosList,
+            fetchFunction: ProdutoService().produtosList,
           ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
