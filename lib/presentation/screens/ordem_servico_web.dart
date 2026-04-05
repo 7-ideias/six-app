@@ -8,14 +8,21 @@ import '../../data/models/produto_model.dart';
 import '../../top_navigation_bar.dart';
 
 class OrdemServicoWeb extends StatefulWidget {
-  const OrdemServicoWeb({super.key});
+  const OrdemServicoWeb({
+    super.key,
+    this.embedded = false,
+    this.onBack,
+  });
+
+  final bool embedded;
+  final VoidCallback? onBack;
 
   @override
   State<OrdemServicoWeb> createState() => _OrdemServicoWebState();
 }
 
 class _OrdemServicoWebState extends State<OrdemServicoWeb> {
-  final PageController _pageController = PageController(viewportFraction: 0.94);
+  final PageController _pageController = PageController(viewportFraction: 1.0);
 
   int _etapaAtual = 0;
 
@@ -354,9 +361,15 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
 
   void _voltar() {
     if (_etapaAtual == 0) {
+      if (widget.embedded) {
+        widget.onBack?.call();
+        return;
+      }
+
       Navigator.of(context).maybePop();
       return;
     }
+
     _irParaEtapa(_etapaAtual - 1);
   }
 
@@ -418,7 +431,13 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
+        alignLabelWithHint: maxLines > 1,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
         prefixIcon: Icon(icon),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: maxLines > 1 ? 20 : 18,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -528,20 +547,24 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
             Text(
               titulo,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               subtitulo,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: ClipRect(
-                child: SizedBox(width: double.infinity, child: child),
+              child: SizedBox(
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
+                  child: child,
+                ),
               ),
             ),
           ],
@@ -1625,6 +1648,261 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final Widget conteudo = Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool alturaCurta = constraints.maxHeight < 760;
+
+              return Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(alturaCurta ? 14 : 18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary.withOpacity(0.08),
+                          theme.colorScheme.surfaceContainerHighest
+                              .withOpacity(0.65),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: theme.colorScheme.primary,
+                                  child: const Icon(
+                                    Icons.assignment_turned_in_outlined,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Fluxo de Ordem de Serviço',
+                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            _buildBadgeInformativo(
+                              'Etapa ${_etapaAtual + 1}/${_totalEtapas()}',
+                              Icons.view_carousel_outlined,
+                            ),
+                            _buildBadgeInformativo(
+                              _statusSelecionado,
+                              Icons.flag_outlined,
+                            ),
+                            _buildBadgeInformativo(
+                              _prioridadeSelecionada,
+                              Icons.bolt_outlined,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Tela completa de ordem de serviço inspirada em padrões atuais de gestão operacional: intake organizado, acompanhamento de status, aprovação do cliente, execução por técnico, itens da OS e fechamento com garantia e comunicação.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        SizedBox(height: alturaCurta ? 12 : 18),
+                        SizedBox(
+                          height: alturaCurta ? 96 : 108,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _totalEtapas(),
+                            separatorBuilder: (_, __) => const SizedBox(width: 12),
+                            itemBuilder: (context, index) {
+                              final etapa = _etapas()[index];
+                              final selecionada = index == _etapaAtual;
+                              final concluida = index < _etapaAtual;
+
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(22),
+                                onTap: () => _irParaEtapa(index),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  width: alturaCurta ? 220 : 248,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: alturaCurta ? 12 : 16,
+                                    vertical: alturaCurta ? 10 : 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: selecionada
+                                        ? theme.colorScheme.primary
+                                        : concluida
+                                        ? theme.colorScheme.primaryContainer
+                                        : theme.colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(22),
+                                    border: Border.all(
+                                      color: selecionada
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.outlineVariant,
+                                      width: selecionada ? 2 : 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(
+                                          selecionada ? 0.10 : 0.04,
+                                        ),
+                                        blurRadius: selecionada ? 18 : 8,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: selecionada
+                                            ? Colors.white
+                                            : concluida
+                                            ? theme.colorScheme.primary
+                                            : theme.colorScheme
+                                            .surfaceContainerHighest,
+                                        foregroundColor: selecionada
+                                            ? theme.colorScheme.primary
+                                            : concluida
+                                            ? Colors.white
+                                            : theme.colorScheme
+                                            .onSurfaceVariant,
+                                        child: Icon(
+                                          etapa['icone'] as IconData,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              etapa['titulo'] as String,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.titleSmall
+                                                  ?.copyWith(
+                                                fontSize: 15,
+                                                height: 1.1,
+                                                color: selecionada
+                                                    ? Colors.white
+                                                    : theme.colorScheme.onSurface,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              etapa['descricao'] as String,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                fontSize: 12,
+                                                height: 1.15,
+                                                color: selecionada
+                                                    ? Colors.white.withOpacity(0.90)
+                                                    : theme.colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: alturaCurta ? 12 : 18),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: PageView(
+                            controller: _pageController,
+                            onPageChanged: (index) {
+                              setState(() => _etapaAtual = index);
+                            },
+                            children: [
+                              _buildEtapaAbertura(),
+                              _buildEtapaClienteItem(),
+                              _buildEtapaDiagnostico(),
+                              _buildEtapaExecucao(),
+                              _buildEtapaItensCustos(),
+                              _buildEtapaEntrega(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        SizedBox(
+                          width: 380,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(child: _buildResumoLateral()),
+                              const SizedBox(height: 14),
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  child: _buildHistoricoLateral(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: alturaCurta ? 10 : 16),
+                  _buildBarraNavegacao(),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (widget.embedded) {
+      return Container(
+        color: theme.colorScheme.surfaceContainerLowest,
+        child: conteudo,
+      );
+    }
+
     return Scaffold(
       appBar: TopNavigationBar(
         items: [
@@ -1689,260 +1967,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
         ],
         onNotificationPressed: () {},
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Card(
-          elevation: 6,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final bool alturaCurta = constraints.maxHeight < 760;
-
-                return Column(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(alturaCurta ? 14 : 18),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primary.withOpacity(0.08),
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.65),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            spacing: 16,
-                            runSpacing: 12,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: theme.colorScheme.primary,
-                                    child: const Icon(
-                                      Icons.assignment_turned_in_outlined,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Fluxo de Ordem de Serviço',
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              _buildBadgeInformativo(
-                                'Etapa ${_etapaAtual + 1}/${_totalEtapas()}',
-                                Icons.view_carousel_outlined,
-                              ),
-                              _buildBadgeInformativo(
-                                _statusSelecionado,
-                                Icons.flag_outlined,
-                              ),
-                              _buildBadgeInformativo(
-                                _prioridadeSelecionada,
-                                Icons.bolt_outlined,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            'Tela completa de ordem de serviço inspirada em padrões atuais de gestão operacional: intake organizado, acompanhamento de status, aprovação do cliente, execução por técnico, itens da OS e fechamento com garantia e comunicação.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          SizedBox(height: alturaCurta ? 12 : 18),
-                          SizedBox(
-                            height: alturaCurta ? 96 : 108,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _totalEtapas(),
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(width: 12),
-                              itemBuilder: (context, index) {
-                                final etapa = _etapas()[index];
-                                final selecionada = index == _etapaAtual;
-                                final concluida = index < _etapaAtual;
-
-                                return InkWell(
-                                  borderRadius: BorderRadius.circular(22),
-                                  onTap: () => _irParaEtapa(index),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 250),
-                                    width: alturaCurta ? 220 : 248,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: alturaCurta ? 12 : 16,
-                                      vertical: alturaCurta ? 10 : 14,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: selecionada
-                                          ? theme.colorScheme.primary
-                                          : concluida
-                                              ? theme.colorScheme.primaryContainer
-                                              : theme.colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(22),
-                                      border: Border.all(
-                                        color: selecionada
-                                            ? theme.colorScheme.primary
-                                            : theme.colorScheme.outlineVariant,
-                                        width: selecionada ? 2 : 1,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(
-                                            selecionada ? 0.10 : 0.04,
-                                          ),
-                                          blurRadius: selecionada ? 18 : 8,
-                                          offset: const Offset(0, 6),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 20,
-                                          backgroundColor: selecionada
-                                              ? Colors.white
-                                              : concluida
-                                                  ? theme.colorScheme.primary
-                                                  : theme.colorScheme
-                                                      .surfaceContainerHighest,
-                                          foregroundColor: selecionada
-                                              ? theme.colorScheme.primary
-                                              : concluida
-                                                  ? Colors.white
-                                                  : theme.colorScheme
-                                                      .onSurfaceVariant,
-                                          child: Icon(
-                                            etapa['icone'] as IconData,
-                                            size: 18,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                etapa['titulo'] as String,
-                                                maxLines: 1,
-                                                overflow:
-                                                    TextOverflow.ellipsis,
-                                                style: theme.textTheme.titleSmall
-                                                    ?.copyWith(
-                                                  fontSize: 15,
-                                                  height: 1.1,
-                                                  color: selecionada
-                                                      ? Colors.white
-                                                      : theme.colorScheme
-                                                          .onSurface,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                etapa['descricao'] as String,
-                                                maxLines: 2,
-                                                overflow:
-                                                    TextOverflow.ellipsis,
-                                                style: theme.textTheme.bodySmall
-                                                    ?.copyWith(
-                                                  fontSize: 12,
-                                                  height: 1.15,
-                                                  color: selecionada
-                                                      ? Colors.white
-                                                          .withOpacity(0.90)
-                                                      : theme.colorScheme
-                                                          .onSurfaceVariant,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: alturaCurta ? 12 : 18),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: PageView(
-                              controller: _pageController,
-                              onPageChanged: (index) {
-                                setState(() => _etapaAtual = index);
-                              },
-                              children: [
-                                _buildEtapaAbertura(),
-                                _buildEtapaClienteItem(),
-                                _buildEtapaDiagnostico(),
-                                _buildEtapaExecucao(),
-                                _buildEtapaItensCustos(),
-                                _buildEtapaEntrega(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 18),
-                          SizedBox(
-                            width: 380,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(child: _buildResumoLateral()),
-                                const SizedBox(height: 14),
-                                Flexible(
-                                  child: SingleChildScrollView(
-                                    child: _buildHistoricoLateral(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: alturaCurta ? 10 : 16),
-                    _buildBarraNavegacao(),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
-      ),
+      body: conteudo,
     );
   }
+
 }

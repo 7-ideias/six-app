@@ -774,10 +774,28 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         return const Expanded(child: OrcamentoWeb());
 
       case ModuloCentralPDV.ordemServico:
-        return const Expanded(child: OrdemServicoWeb());
+        return Expanded(
+          child: OrdemServicoWeb(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
+        );
 
       case ModuloCentralPDV.agendaFinanceira:
-        return const Expanded(child: AgendaFinanceiraWeb());
+        return Expanded(
+          child: AgendaFinanceiraWeb(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
+        );
 
       case ModuloCentralPDV.configuracoes:
         return Expanded(
@@ -1263,22 +1281,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     icon: Icons.build_circle_outlined,
                     label: 'Ordem de Serviço',
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const OrdemServicoWeb(),
-                        ),
-                      );
+                      setState(() {
+                        _moduloAtual = ModuloCentralPDV.ordemServico;
+                      });
                     },
                   ),
                   _buildModoOperacaoButton(
                     icon: Icons.monetization_on,
                     label: labelAgendaFinanceira(),
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const AgendaFinanceiraWeb(),
-                        ),
-                      );
+                      setState(() {
+                        _moduloAtual = ModuloCentralPDV.agendaFinanceira;
+                      });
                     },
                   ),
                 ],

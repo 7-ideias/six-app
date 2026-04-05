@@ -2,14 +2,27 @@
 import 'package:flutter/material.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
-  const AgendaFinanceiraWeb({super.key});
+  const AgendaFinanceiraWeb({
+    super.key,
+    this.embedded = false,
+    this.onBack,
+  });
+
+  final bool embedded;
+  final VoidCallback? onBack;
 
   @override
   State<AgendaFinanceiraWeb> createState() => _AgendaFinanceiraWebState();
 }
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+
   void _voltarTelaAnterior() {
+    if (widget.embedded) {
+      widget.onBack?.call();
+      return;
+    }
+
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();
@@ -1464,64 +1477,73 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final Widget conteudo = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildHeader(context),
+          const SizedBox(height: 16),
+          _buildResumoCards(context),
+          const SizedBox(height: 16),
+          _buildToolbarFiltros(context),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildAbas(context),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final larguraEstreita = constraints.maxWidth < 1380;
+
+                if (larguraEstreita) {
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: _buildAreaPrincipal(context),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: constraints.maxHeight * 0.50,
+                        child: _buildPainelDetalheUnificado(context),
+                      ),
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 8,
+                      child: _buildAreaPrincipal(context),
+                    ),
+                    const SizedBox(width: 16),
+                    SizedBox(
+                      width: 420,
+                      child: _buildPainelDetalheUnificado(context),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (widget.embedded) {
+      return Container(
+        color: theme.colorScheme.surfaceContainerLowest,
+        child: SafeArea(child: conteudo),
+      );
+    }
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 16),
-              _buildResumoCards(context),
-              const SizedBox(height: 16),
-              _buildToolbarFiltros(context),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: _buildAbas(context),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final larguraEstreita = constraints.maxWidth < 1380;
-
-                    if (larguraEstreita) {
-                      return Column(
-                        children: [
-                          Expanded(
-                            child: _buildAreaPrincipal(context),
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            height: constraints.maxHeight * 0.50,
-                            child: _buildPainelDetalheUnificado(context),
-                          ),
-                        ],
-                      );
-                    }
-
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 8,
-                          child: _buildAreaPrincipal(context),
-                        ),
-                        const SizedBox(width: 16),
-                        SizedBox(
-                          width: 420,
-                          child: _buildPainelDetalheUnificado(context),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: conteudo,
       ),
     );
   }
