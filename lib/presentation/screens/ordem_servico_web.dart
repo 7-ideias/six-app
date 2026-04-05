@@ -8,11 +8,7 @@ import '../../data/models/produto_model.dart';
 import '../../top_navigation_bar.dart';
 
 class OrdemServicoWeb extends StatefulWidget {
-  const OrdemServicoWeb({
-    super.key,
-    this.embedded = false,
-    this.onBack,
-  });
+  const OrdemServicoWeb({super.key, this.embedded = false, this.onBack});
 
   final bool embedded;
   final VoidCallback? onBack;
@@ -26,27 +22,38 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
 
   int _etapaAtual = 0;
 
-  final TextEditingController _numeroOsController =
-      TextEditingController(text: 'OS-2026-00458');
-  final TextEditingController _nomeClienteController =
-      TextEditingController(text: 'Marina Oliveira');
-  final TextEditingController _telefoneController =
-      TextEditingController(text: '(47) 99999-0001');
-  final TextEditingController _emailController =
-      TextEditingController(text: 'marina.oliveira@email.com');
-  final TextEditingController _documentoController =
-      TextEditingController(text: '123.456.789-00');
-  final TextEditingController _equipamentoController =
-      TextEditingController(text: 'iPhone 13 128GB');
-  final TextEditingController _marcaController =
-      TextEditingController(text: 'Apple');
-  final TextEditingController _modeloController =
-      TextEditingController(text: 'A2633');
-  final TextEditingController _serialController =
-      TextEditingController(text: 'SN-IP13-009988');
-  final TextEditingController _acessoriosController =
-      TextEditingController(text: 'Capa, película e cabo USB-C');
-  final TextEditingController _defeitoRelatadoController = TextEditingController(
+  final TextEditingController _numeroOsController = TextEditingController(
+    text: 'OS-2026-00458',
+  );
+  final TextEditingController _nomeClienteController = TextEditingController(
+    text: 'Marina Oliveira',
+  );
+  final TextEditingController _telefoneController = TextEditingController(
+    text: '(47) 99999-0001',
+  );
+  final TextEditingController _emailController = TextEditingController(
+    text: 'marina.oliveira@email.com',
+  );
+  final TextEditingController _documentoController = TextEditingController(
+    text: '123.456.789-00',
+  );
+  final TextEditingController _equipamentoController = TextEditingController(
+    text: 'iPhone 13 128GB',
+  );
+  final TextEditingController _marcaController = TextEditingController(
+    text: 'Apple',
+  );
+  final TextEditingController _modeloController = TextEditingController(
+    text: 'A2633',
+  );
+  final TextEditingController _serialController = TextEditingController(
+    text: 'SN-IP13-009988',
+  );
+  final TextEditingController _acessoriosController = TextEditingController(
+    text: 'Capa, película e cabo USB-C',
+  );
+  final TextEditingController
+  _defeitoRelatadoController = TextEditingController(
     text:
         'Tela sem imagem após queda. Cliente relata vibração normal e sons de notificações.',
   );
@@ -54,19 +61,21 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
     text:
         'Display comprometido, conector de tela com folga. Recomendado troca de display, testes de face ID, brilho e toque.',
   );
-  final TextEditingController _observacoesInternasController =
-      TextEditingController(
+  final TextEditingController
+  _observacoesInternasController = TextEditingController(
     text:
         'Cliente autorizou contato por WhatsApp. Priorizar fechamento em até 48h e registrar fotos do antes/depois.',
   );
-  final TextEditingController _prazoController =
-      TextEditingController(text: '2 dias úteis');
-  final TextEditingController _garantiaController =
-      TextEditingController(text: '90 dias para peças e serviço');
+  final TextEditingController _prazoController = TextEditingController(
+    text: '2 dias úteis',
+  );
+  final TextEditingController _garantiaController = TextEditingController(
+    text: '90 dias para peças e serviço',
+  );
   final TextEditingController _responsavelTecnicoController =
       TextEditingController(text: 'André Souza');
-  final TextEditingController _checkinObservacoesController =
-      TextEditingController(
+  final TextEditingController
+  _checkinObservacoesController = TextEditingController(
     text:
         'Aparelho recebido ligado, sem imagem, com pequenas marcas na carcaça lateral.',
   );
@@ -374,7 +383,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   }
 
   double _totalSelecionado() {
-    return _itensOs.where((item) => item['selecionado'] == true).fold<double>(
+    return _itensOs
+        .where((item) => item['selecionado'] == true)
+        .fold<double>(
           0,
           (soma, item) =>
               soma +
@@ -386,7 +397,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   double _valorSinal() => _requerSinal ? _totalSelecionado() * 0.30 : 0;
 
   int _quantidadeItensSelecionados() {
-    return _itensOs.where((item) => item['selecionado'] == true).fold<int>(
+    return _itensOs
+        .where((item) => item['selecionado'] == true)
+        .fold<int>(
           0,
           (soma, item) => soma + ((item['quantidade'] ?? 1) as int),
         );
@@ -398,23 +411,14 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icone,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          Icon(icone, size: 18, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
-          Text(
-            texto,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(texto, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -438,9 +442,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
           horizontal: 16,
           vertical: maxLines > 1 ? 20 : 18,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
       onChanged: (_) => setState(() {}),
     );
@@ -457,18 +459,17 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      items: items
-          .map(
-            (item) => DropdownMenuItem<T>(
-              value: item,
-              child: Text(item.toString()),
-            ),
-          )
-          .toList(),
+      items:
+          items
+              .map(
+                (item) => DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(item.toString()),
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -483,13 +484,10 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       child: SwitchListTile(
         value: value,
         onChanged: onChanged,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         title: Text(
           titulo,
@@ -506,23 +504,14 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icone,
-            size: 16,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          Icon(icone, size: 16, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
-          Text(
-            texto,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(texto, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -536,9 +525,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
     return Card(
       elevation: 2,
       shadowColor: Colors.black.withOpacity(0.06),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: Column(
@@ -546,9 +533,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
           children: [
             Text(
               titulo,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
@@ -599,8 +586,11 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
     );
   }
 
-  Widget _buildResumoLinhaValor(String titulo, double valor,
-      {bool destaque = false}) {
+  Widget _buildResumoLinhaValor(
+    String titulo,
+    double valor, {
+    bool destaque = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -618,9 +608,10 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
             style: TextStyle(
               fontSize: destaque ? 18 : 14,
               fontWeight: destaque ? FontWeight.w900 : FontWeight.w700,
-              color: destaque
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface,
+              color:
+                  destaque
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -634,9 +625,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
 
     return Card(
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -644,9 +633,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
           children: [
             Text(
               'Resumo da OS',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -657,21 +646,26 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                     _buildResumoLinha('OS', _numeroOsController.text),
                     _buildResumoLinha('Cliente', _nomeClienteController.text),
                     _buildResumoLinha(
-                        'Equipamento', _equipamentoController.text),
+                      'Equipamento',
+                      _equipamentoController.text,
+                    ),
                     _buildResumoLinha('Status', _statusSelecionado),
-                    _buildResumoLinha('Técnico', _responsavelTecnicoController.text),
+                    _buildResumoLinha(
+                      'Técnico',
+                      _responsavelTecnicoController.text,
+                    ),
                     _buildResumoLinha('Prazo', _prazoController.text),
                     const Divider(height: 28),
                     Text(
                       'Itens selecionados',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    ..._itensOs
-                        .where((item) => item['selecionado'] == true)
-                        .map((item) {
+                    ..._itensOs.where((item) => item['selecionado'] == true).map((
+                      item,
+                    ) {
                       final quantidade = (item['quantidade'] ?? 1) as int;
                       final valor = ((item['valor'] ?? 0) as num).toDouble();
                       return Padding(
@@ -708,8 +702,10 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                     }),
                     const Divider(height: 26),
                     _buildResumoLinhaValor(
-                        'Qtd. itens', _quantidadeItensSelecionados().toDouble(),
-                        destaque: false),
+                      'Qtd. itens',
+                      _quantidadeItensSelecionados().toDouble(),
+                      destaque: false,
+                    ),
                     _buildResumoLinhaValor('Subtotal', total),
                     _buildResumoLinhaValor('Sinal sugerido', sinal),
                     const SizedBox(height: 10),
@@ -745,18 +741,16 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Linha do tempo',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 10),
           ..._historico.map(
@@ -769,10 +763,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.10),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -797,9 +790,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                           item['tempo'] as String,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -895,9 +887,18 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _buildInfoPill('Fluxo de abertura guiado', Icons.auto_awesome),
-                  _buildInfoPill('Aprovação digital prevista', Icons.verified_user),
-                  _buildInfoPill('Comunicação multicanal', Icons.chat_bubble_outline),
+                  _buildInfoPill(
+                    'Fluxo de abertura guiado',
+                    Icons.auto_awesome,
+                  ),
+                  _buildInfoPill(
+                    'Aprovação digital prevista',
+                    Icons.verified_user,
+                  ),
+                  _buildInfoPill(
+                    'Comunicação multicanal',
+                    Icons.chat_bubble_outline,
+                  ),
                 ],
               ),
             ),
@@ -1014,7 +1015,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               children: [
                 _buildChoiceStatus(
                   titulo: 'Cliente autoriza contato',
-                  descricao: 'Permite envio de status e aprovações durante a OS.',
+                  descricao:
+                      'Permite envio de status e aprovações durante a OS.',
                   value: _clienteAutorizaContato,
                   onChanged: (value) {
                     setState(() => _clienteAutorizaContato = value);
@@ -1022,7 +1024,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                 ),
                 _buildChoiceStatus(
                   titulo: 'Equipamento reserva',
-                  descricao: 'Separar unidade reserva enquanto a OS estiver ativa.',
+                  descricao:
+                      'Separar unidade reserva enquanto a OS estiver ativa.',
                   value: _equipamentoReserva,
                   onChanged: (value) {
                     setState(() => _equipamentoReserva = value);
@@ -1069,9 +1072,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Checklist de entrada',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
             const SizedBox(height: 10),
@@ -1087,13 +1090,15 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: ok
-                            ? Colors.green.withOpacity(0.30)
-                            : Theme.of(context).colorScheme.outlineVariant,
+                        color:
+                            ok
+                                ? Colors.green.withOpacity(0.30)
+                                : Theme.of(context).colorScheme.outlineVariant,
                       ),
-                      color: ok
-                          ? Colors.green.withOpacity(0.08)
-                          : Theme.of(context).colorScheme.surface,
+                      color:
+                          ok
+                              ? Colors.green.withOpacity(0.08)
+                              : Theme.of(context).colorScheme.surface,
                     ),
                     child: Row(
                       children: [
@@ -1101,9 +1106,10 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                           ok
                               ? Icons.check_circle
                               : Icons.radio_button_unchecked,
-                          color: ok
-                              ? Colors.green
-                              : Theme.of(context).colorScheme.outline,
+                          color:
+                              ok
+                                  ? Colors.green
+                                  : Theme.of(context).colorScheme.outline,
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -1169,9 +1175,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Tarefas da execução',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
             const SizedBox(height: 10),
@@ -1183,19 +1189,19 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: ok
-                        ? Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.08)
-                        : Theme.of(context).colorScheme.surface,
+                    color:
+                        ok
+                            ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.08)
+                            : Theme.of(context).colorScheme.surface,
                     border: Border.all(
-                      color: ok
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.40)
-                          : Theme.of(context).colorScheme.outlineVariant,
+                      color:
+                          ok
+                              ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.40)
+                              : Theme.of(context).colorScheme.outlineVariant,
                     ),
                   ),
                   child: Row(
@@ -1294,19 +1300,19 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: selecionado
-                        ? Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.08)
-                        : Theme.of(context).colorScheme.surface,
+                    color:
+                        selecionado
+                            ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.08)
+                            : Theme.of(context).colorScheme.surface,
                     border: Border.all(
-                      color: selecionado
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.40)
-                          : Theme.of(context).colorScheme.outlineVariant,
+                      color:
+                          selecionado
+                              ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.40)
+                              : Theme.of(context).colorScheme.outlineVariant,
                     ),
                   ),
                   child: Row(
@@ -1329,8 +1335,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                       ? Icons.inventory_2_outlined
                                       : Icons.build_circle_outlined,
                                   size: 18,
-                                  color:
-                                      Theme.of(context).colorScheme.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -1356,7 +1361,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                           IconButton(
                             onPressed: () {
                               setState(() {
-                                if (quantidade > 1) item['quantidade'] = quantidade - 1;
+                                if (quantidade > 1) {
+                                  item['quantidade'] = quantidade - 1;
+                                }
                               });
                             },
                             icon: const Icon(Icons.remove_circle_outline),
@@ -1367,7 +1374,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                           ),
                           IconButton(
                             onPressed: () {
-                              setState(() => item['quantidade'] = quantidade + 1);
+                              setState(
+                                () => item['quantidade'] = quantidade + 1,
+                              );
                             },
                             icon: const Icon(Icons.add_circle_outline),
                           ),
@@ -1406,7 +1415,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               ),
               _buildChoiceStatus(
                 titulo: 'Solicitar sinal',
-                descricao: 'Reserva de peça e início do serviço após pagamento parcial.',
+                descricao:
+                    'Reserva de peça e início do serviço após pagamento parcial.',
                 value: _requerSinal,
                 onChanged: (value) {
                   setState(() => _requerSinal = value);
@@ -1451,32 +1461,34 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Canais de comunicação',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: _canaisComunicacao.map((canal) {
-                final selecionado = canal['selecionado'] == true;
-                return FilterChip(
-                  selected: selecionado,
-                  avatar: Icon(
-                    canal['icone'] as IconData,
-                    size: 18,
-                    color: selecionado
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.primary,
-                  ),
-                  label: Text(canal['titulo'] as String),
-                  onSelected: (value) {
-                    setState(() => canal['selecionado'] = value);
-                  },
-                );
-              }).toList(),
+              children:
+                  _canaisComunicacao.map((canal) {
+                    final selecionado = canal['selecionado'] == true;
+                    return FilterChip(
+                      selected: selecionado,
+                      avatar: Icon(
+                        canal['icone'] as IconData,
+                        size: 18,
+                        color:
+                            selecionado
+                                ? Theme.of(context).colorScheme.onPrimary
+                                : Theme.of(context).colorScheme.primary,
+                      ),
+                      label: Text(canal['titulo'] as String),
+                      onSelected: (value) {
+                        setState(() => canal['selecionado'] = value);
+                      },
+                    );
+                  }).toList(),
             ),
             const SizedBox(height: 18),
             Wrap(
@@ -1485,7 +1497,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               children: [
                 _buildChoiceStatus(
                   titulo: 'Entrega em domicílio',
-                  descricao: 'Preparar rota, taxa e confirmação de recebimento.',
+                  descricao:
+                      'Preparar rota, taxa e confirmação de recebimento.',
                   value: _entregaDomicilio,
                   onChanged: (value) {
                     setState(() => _entregaDomicilio = value);
@@ -1493,7 +1506,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                 ),
                 _buildChoiceStatus(
                   titulo: 'Autorizar contato automático',
-                  descricao: 'Preparar futuras notificações por WhatsApp, e-mail e Telegram.',
+                  descricao:
+                      'Preparar futuras notificações por WhatsApp, e-mail e Telegram.',
                   value: _clienteAutorizaContato,
                   onChanged: (value) {
                     setState(() => _clienteAutorizaContato = value);
@@ -1506,9 +1520,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerLowest,
+                color: Theme.of(context).colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: Theme.of(context).colorScheme.outlineVariant,
@@ -1520,14 +1532,22 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                   Text(
                     'Próximos passos recomendados',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  _buildBulletPasso('Persistir OS com status e histórico operacional'),
-                  _buildBulletPasso('Gerar PDF da OS para compartilhamento e impressão'),
-                  _buildBulletPasso('Converter itens aprovados em cobrança/faturamento'),
-                  _buildBulletPasso('Notificar cliente sobre conclusão e retirada'),
+                  _buildBulletPasso(
+                    'Persistir OS com status e histórico operacional',
+                  ),
+                  _buildBulletPasso(
+                    'Gerar PDF da OS para compartilhamento e impressão',
+                  ),
+                  _buildBulletPasso(
+                    'Converter itens aprovados em cobrança/faturamento',
+                  ),
+                  _buildBulletPasso(
+                    'Notificar cliente sobre conclusão e retirada',
+                  ),
                 ],
               ),
             ),
@@ -1562,9 +1582,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Wrap(
         spacing: 12,
@@ -1615,9 +1633,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                 label: Text(
                   _estaNaUltimaEtapa() ? 'Concluir' : 'Próxima etapa',
                 ),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(180, 48),
-                ),
+                style: FilledButton.styleFrom(minimumSize: const Size(180, 48)),
               ),
             ],
           ),
@@ -1652,9 +1668,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       padding: const EdgeInsets.all(16.0),
       child: Card(
         elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: LayoutBuilder(
@@ -1670,8 +1684,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                       gradient: LinearGradient(
                         colors: [
                           theme.colorScheme.primary.withOpacity(0.08),
-                          theme.colorScheme.surfaceContainerHighest
-                              .withOpacity(0.65),
+                          theme.colorScheme.surfaceContainerHighest.withOpacity(
+                            0.65,
+                          ),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -1701,9 +1716,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                 const SizedBox(width: 12),
                                 Text(
                                   'Fluxo de Ordem de Serviço',
-                                  style: theme.textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.w800),
                                 ),
                               ],
                             ),
@@ -1734,7 +1748,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: _totalEtapas(),
-                            separatorBuilder: (_, __) => const SizedBox(width: 12),
+                            separatorBuilder:
+                                (_, __) => const SizedBox(width: 12),
                             itemBuilder: (context, index) {
                               final etapa = _etapas()[index];
                               final selecionada = index == _etapaAtual;
@@ -1751,16 +1766,20 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                     vertical: alturaCurta ? 10 : 14,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: selecionada
-                                        ? theme.colorScheme.primary
-                                        : concluida
-                                        ? theme.colorScheme.primaryContainer
-                                        : theme.colorScheme.surface,
+                                    color:
+                                        selecionada
+                                            ? theme.colorScheme.primary
+                                            : concluida
+                                            ? theme.colorScheme.primaryContainer
+                                            : theme.colorScheme.surface,
                                     borderRadius: BorderRadius.circular(22),
                                     border: Border.all(
-                                      color: selecionada
-                                          ? theme.colorScheme.primary
-                                          : theme.colorScheme.outlineVariant,
+                                      color:
+                                          selecionada
+                                              ? theme.colorScheme.primary
+                                              : theme
+                                                  .colorScheme
+                                                  .outlineVariant,
                                       width: selecionada ? 2 : 1,
                                     ),
                                     boxShadow: [
@@ -1774,22 +1793,27 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                     ],
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       CircleAvatar(
                                         radius: 20,
-                                        backgroundColor: selecionada
-                                            ? Colors.white
-                                            : concluida
-                                            ? theme.colorScheme.primary
-                                            : theme.colorScheme
-                                            .surfaceContainerHighest,
-                                        foregroundColor: selecionada
-                                            ? theme.colorScheme.primary
-                                            : concluida
-                                            ? Colors.white
-                                            : theme.colorScheme
-                                            .onSurfaceVariant,
+                                        backgroundColor:
+                                            selecionada
+                                                ? Colors.white
+                                                : concluida
+                                                ? theme.colorScheme.primary
+                                                : theme
+                                                    .colorScheme
+                                                    .surfaceContainerHighest,
+                                        foregroundColor:
+                                            selecionada
+                                                ? theme.colorScheme.primary
+                                                : concluida
+                                                ? Colors.white
+                                                : theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                         child: Icon(
                                           etapa['icone'] as IconData,
                                           size: 18,
@@ -1800,9 +1824,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                              CrossAxisAlignment.start,
                                           mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                              MainAxisAlignment.center,
                                           children: [
                                             Text(
                                               etapa['titulo'] as String,
@@ -1810,13 +1834,16 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                               overflow: TextOverflow.ellipsis,
                                               style: theme.textTheme.titleSmall
                                                   ?.copyWith(
-                                                fontSize: 15,
-                                                height: 1.1,
-                                                color: selecionada
-                                                    ? Colors.white
-                                                    : theme.colorScheme.onSurface,
-                                                fontWeight: FontWeight.w800,
-                                              ),
+                                                    fontSize: 15,
+                                                    height: 1.1,
+                                                    color:
+                                                        selecionada
+                                                            ? Colors.white
+                                                            : theme
+                                                                .colorScheme
+                                                                .onSurface,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
@@ -1825,13 +1852,18 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                               overflow: TextOverflow.ellipsis,
                                               style: theme.textTheme.bodySmall
                                                   ?.copyWith(
-                                                fontSize: 12,
-                                                height: 1.15,
-                                                color: selecionada
-                                                    ? Colors.white.withOpacity(0.90)
-                                                    : theme.colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
+                                                    fontSize: 12,
+                                                    height: 1.15,
+                                                    color:
+                                                        selecionada
+                                                            ? Colors.white
+                                                                .withOpacity(
+                                                                  0.90,
+                                                                )
+                                                            : theme
+                                                                .colorScheme
+                                                                .onSurfaceVariant,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -1920,18 +1952,11 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
           ),
           const TopNavItemData(
             title: 'Permitir',
-            subItems: [
-              'Gerenciar Permissões',
-              'Alterar Configurações',
-            ],
+            subItems: ['Gerenciar Permissões', 'Alterar Configurações'],
           ),
           TopNavItemData(
             title: 'Cadastros',
-            subItems: const [
-              'Clientes',
-              'Produtos',
-              'Fornecedores',
-            ],
+            subItems: const ['Clientes', 'Produtos', 'Fornecedores'],
             onSelect: (value) {
               if (value == 'Produtos') {
                 showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
@@ -1940,35 +1965,21 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
           ),
           const TopNavItemData(
             title: 'Relatórios',
-            subItems: [
-              'Vendas',
-              'Estoque',
-              'Financeiro',
-            ],
+            subItems: ['Vendas', 'Estoque', 'Financeiro'],
           ),
           const TopNavItemData(
             title: 'Executar',
-            subItems: [
-              'Processar Pagamentos',
-              'Fechar Caixa',
-            ],
+            subItems: ['Processar Pagamentos', 'Fechar Caixa'],
           ),
           const TopNavItemData(
             title: 'Configurações',
-            subItems: [
-              'Sistema',
-              'Usuários',
-            ],
+            subItems: ['Sistema', 'Usuários'],
           ),
-          const TopNavItemData(
-            title: 'Ajuda',
-            subItems: ['Suporte', 'Sobre'],
-          ),
+          const TopNavItemData(title: 'Ajuda', subItems: ['Suporte', 'Sobre']),
         ],
         onNotificationPressed: () {},
       ),
       body: conteudo,
     );
   }
-
 }
