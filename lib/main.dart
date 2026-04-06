@@ -5,6 +5,7 @@ import 'package:appplanilha/domain/services/regionalizacao/regionalizacao_servic
 import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
+import 'package:appplanilha/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:appplanilha/providers/locale_settings_provider.dart';
 import 'package:appplanilha/providers/produtos_list_provider.dart';
@@ -57,6 +58,30 @@ class MyApp extends StatelessWidget {
 
   final bool hasSeenOnboarding;
 
+  Widget _resolveInitialPage() {
+    if (kIsWeb) {
+      final Uri currentUri = Uri.base;
+      final bool isPublicOsRoute =
+          currentUri.pathSegments.isNotEmpty &&
+              currentUri.pathSegments.first == 'ordem-servico';
+
+      if (isPublicOsRoute) {
+        final String ordemId = currentUri.pathSegments.length > 1
+            ? currentUri.pathSegments[1]
+            : 'os-sem-id';
+
+        return OrdemServicoPublicaPage(
+          ordemId: ordemId,
+          initialUri: currentUri,
+        );
+      }
+
+      return const LoginPageWeb();
+    }
+
+    return hasSeenOnboarding ? const LoginPageMobile() : OnboardingScreen();
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
@@ -77,11 +102,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: kIsWeb
-          ? const LoginPageWeb()
-          : hasSeenOnboarding
-          ? const LoginPageMobile()
-          : OnboardingScreen(),
+      home: _resolveInitialPage(),
     );
   }
 }

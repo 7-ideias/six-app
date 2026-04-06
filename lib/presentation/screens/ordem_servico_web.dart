@@ -270,7 +270,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   String _money(double v) => 'R\$ ${v.toStringAsFixed(2)}';
 
   String _link() =>
-      'https://sixapp.mock/ordem-servico/${_os.text.trim().toLowerCase().replaceAll(' ', '-').ifEmpty('os-demo')}';
+      'http://localhost:39441/ordem-servico/${_os.text.trim().toLowerCase().replaceAll(' ', '-').ifEmpty('os-demo')}';
 
   double _total() => _itens
       .where((e) => e['sel'] == true)
