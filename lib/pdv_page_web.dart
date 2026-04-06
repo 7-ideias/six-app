@@ -619,11 +619,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   void _abrirOrcamento() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const OrcamentoWeb(),
-      ),
-    );
+    setState(() {
+      _moduloAtual = ModuloCentralPDV.orcamento;
+    });
   }
 
   void _adicionarServicoRapido() {
@@ -773,9 +771,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       case ModuloCentralPDV.orcamento:
         return const Expanded(child: OrcamentoWeb());
 
-      case ModuloCentralPDV.ordemServico:
+      case ModuloCentralPDV.orcamento:
         return Expanded(
-          child: OrdemServicoWeb(
+          child: OrcamentoWeb(
             embedded: true,
             onBack: () {
               setState(() {
