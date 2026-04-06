@@ -769,11 +769,20 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         );
 
       case ModuloCentralPDV.orcamento:
-        return const Expanded(child: OrcamentoWeb());
-
-      case ModuloCentralPDV.orcamento:
         return Expanded(
           child: OrcamentoWeb(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
+        );
+
+      case ModuloCentralPDV.ordemServico:
+        return Expanded(
+          child: OrdemServicoWeb(
             embedded: true,
             onBack: () {
               setState(() {

@@ -10,7 +10,10 @@ import '../../mock_cadastros_store.dart';
 import '../../top_navigation_bar.dart';
 
 class OrcamentoWeb extends StatefulWidget {
-  const OrcamentoWeb({super.key});
+  const OrcamentoWeb({super.key, this.embedded = false, this.onBack});
+
+  final bool embedded;
+  final VoidCallback? onBack;
 
   @override
   State<OrcamentoWeb> createState() => _OrcamentoWebState();
@@ -704,6 +707,43 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
     );
   }
 
+
+  void _voltarParaOrigem() {
+    if (widget.embedded) {
+      widget.onBack?.call();
+      return;
+    }
+    Navigator.of(context).maybePop();
+  }
+
+  Future<void> _confirmarCancelamentoOrcamento() async {
+    final bool? confirmar = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cancelar orçamento'),
+          content: const Text(
+            'Deseja realmente sair do fluxo de orçamento e voltar para a tela anterior?',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Continuar editando'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).pop(true),
+              icon: const Icon(Icons.close),
+              label: const Text('Cancelar orçamento'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar == true && mounted) {
+      _voltarParaOrigem();
+    }
+  }
   Widget _navBar() {
     final bool last = _step == _steps.length - 1;
     return Container(
@@ -722,7 +762,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
               OutlinedButton.icon(
                 onPressed: () {
                   if (_step == 0) {
-                    Navigator.of(context).maybePop();
+                    _voltarParaOrigem();
                     return;
                   }
                   _irParaEtapa(_step - 1);
@@ -731,7 +771,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                 label: Text(_step == 0 ? 'Sair' : 'Voltar'),
               ),
               OutlinedButton.icon(
-                onPressed: () => _showInfo('Cancelar orçamento', 'O orçamento pode ser cancelado sem contaminar a OS, reforçando a separação de domínio recomendada.'),
+                onPressed: _confirmarCancelamentoOrcamento,
                 icon: const Icon(Icons.close),
                 label: const Text('Cancelar'),
               ),
@@ -802,42 +842,52 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
   Widget build(BuildContext context) {
     final List<Widget> pages = <Widget>[_stepCliente(), _stepEquipamento(), _stepDiagnostico(), _stepItens(), _stepCondicoes()];
 
-    return Scaffold(
-      appBar: TopNavigationBar(items: _navItems(), onNotificationPressed: () {}),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          elevation: 6,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: <Widget>[
-                _header(),
-                const SizedBox(height: 18),
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Expanded(
-                        child: PageView(
-                          controller: _pageController,
-                          onPageChanged: (int index) => setState(() => _step = index),
-                          children: pages,
-                        ),
+    final Widget body = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: <Widget>[
+              _header(),
+              const SizedBox(height: 18),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (int index) => setState(() => _step = index),
+                        children: pages,
                       ),
-                      const SizedBox(width: 18),
-                      SizedBox(width: 380, child: _resumo()),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 18),
+                    SizedBox(width: 380, child: _resumo()),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _navBar(),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              _navBar(),
+            ],
           ),
         ),
       ),
     );
+
+    if (widget.embedded) {
+      return Container(
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
+        child: body,
+      );
+    }
+
+    return Scaffold(
+      appBar: TopNavigationBar(items: _navItems(), onNotificationPressed: () {}),
+      body: body,
+    );
   }
 }
+
