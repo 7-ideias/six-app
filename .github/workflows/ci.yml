@@ -6,7 +6,6 @@ on:
       - main
 
 jobs:
-
   build-flutter:
     runs-on: ubuntu-latest
     steps:
@@ -15,7 +14,11 @@ jobs:
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.2'
+          flutter-version: '3.41.4'
+          channel: stable
+
+      - name: Exibir versão do Flutter
+        run: flutter --version
 
       - name: Instalar dependências
         run: flutter pub get
@@ -35,7 +38,8 @@ jobs:
 #      - name: Setup Flutter
 #        uses: subosito/flutter-action@v2
 #        with:
-#          flutter-version: '3.19.3'
+#          flutter-version: '3.41.4'
+#          channel: stable
 #
 #      - name: Build App Bundle
 #        run: flutter build appbundle
@@ -46,7 +50,7 @@ jobs:
 #          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_JSON }}
 #          packageName: com.seu.pacote
 #          releaseFiles: build/app/outputs/bundle/release/app-release.aab
-#          track: internal  # ou beta, production...
+#          track: internal
 
 #  deploy-ios:
 #    needs: build-flutter
@@ -57,7 +61,8 @@ jobs:
 #      - name: Setup Flutter
 #        uses: subosito/flutter-action@v2
 #        with:
-#          flutter-version: '3.19.3'
+#          flutter-version: '3.41.4'
+#          channel: stable
 #
 #      - name: Instalar dependências
 #        run: flutter pub get
