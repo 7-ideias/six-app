@@ -14,6 +14,7 @@ import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:appplanilha/l10n/app_localizations.dart';
+import 'package:appplanilha/sub_painel_cadastro_colaborador.dart';
 
 import 'data/models/produto_model.dart';
 import 'core/di/operacao_module.dart';
@@ -2677,10 +2678,23 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           ),
           TopNavItemData(
             title: 'Cadastros',
-            subItems: const <String>['Clientes', 'Produtos', 'Fornecedores', 'Produtos List'],
+            subItems: const <String>[
+              'Clientes',
+              'Produtos',
+              'Colaboradores',
+              'Fornecedores',
+              'Produtos List',
+            ],
             onSelect: (String value) {
               if (value == 'Produtos') {
                 showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+              }
+
+              if (value == 'Colaboradores') {
+                showSubPainelCadastroColaborador(
+                  context,
+                  'Cadastro de Colaboradores',
+                );
               }
 
               if (value == 'Produtos List') {
