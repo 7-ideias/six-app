@@ -176,11 +176,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return const Center(child: CircularProgressIndicator());
     }
     final resumo = _resumo;
-    if (resumo == null) {
-      return const Center(
-        child: Text('Resumo do caixa indisponível.'),
-      );
-    }
     final theme = Theme.of(context);
 
     return Container(
@@ -225,6 +220,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   const SizedBox(height: 20),
                   if (!_temCaixaAberto)
                     _buildPainelAbertura(theme)
+                  else if (resumo == null)
+                    _buildResumoIndisponivel(theme)
                   else
                     isWide
                         ? Row(
@@ -292,7 +289,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _buildHeader(
     ThemeData theme,
-    dynamic resumo,
+    ResumoCaixa? resumo,
     bool isMedium,
   ) {
     return Container(
@@ -359,7 +356,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildTopInfoChip(
                 icon: Icons.calendar_today_outlined,
                 label: 'Movimentos',
-                value: '${resumo.quantidadeMovimentos}',
+                value: '${resumo?.quantidadeMovimentos ?? 0}',
               ),
             ],
         ],
@@ -412,6 +409,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildResumoIndisponivel(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(26),
+      decoration: _cardDecoration(),
+      child: Text(
+        'Resumo do caixa indisponível.',
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: const Color(0xff475569),
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
