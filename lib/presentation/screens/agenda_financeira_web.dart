@@ -74,6 +74,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _empresaSelecionada = 'Matriz Centro';
   bool _mostrarSomenteCriticos = false;
   bool _modoCompacto = true;
+  bool _menuAcoesAberto = false;
+  bool _ocultarValores = false;
 
   int _abaSelecionada = 0;
   Map<String, dynamic>? _lancamentoSelecionado;
@@ -92,37 +94,37 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final List<Map<String, dynamic>> _cardsResumo = const [
     {
       'titulo': 'Receber hoje',
-      'valor': 'R\$ 4.580,00',
+      'valor': 4580.00,
       'icone': Icons.south_west_rounded,
       'ajuda': '3 lançamentos previstos para entrada no dia.',
     },
     {
       'titulo': 'Pagar hoje',
-      'valor': 'R\$ 2.145,00',
+      'valor': 2145.00,
       'icone': Icons.north_east_rounded,
       'ajuda': '2 contas com vencimento no dia.',
     },
     {
       'titulo': 'Vencidos a receber',
-      'valor': 'R\$ 1.790,00',
+      'valor': 1790.00,
       'icone': Icons.warning_amber_rounded,
       'ajuda': 'Clientes com cobrança pendente.',
     },
     {
       'titulo': 'Vencidos a pagar',
-      'valor': 'R\$ 930,00',
+      'valor': 930.00,
       'icone': Icons.error_outline_rounded,
       'ajuda': 'Compromissos atrasados com fornecedores.',
     },
     {
       'titulo': 'Saldo previsto da semana',
-      'valor': 'R\$ 6.215,00',
+      'valor': 6215.00,
       'icone': Icons.query_stats_rounded,
       'ajuda': 'Entradas previstas menos saídas previstas.',
     },
     {
       'titulo': 'Saldo previsto do mês',
-      'valor': 'R\$ 18.940,00',
+      'valor': 18940.00,
       'icone': Icons.account_balance_wallet_outlined,
       'ajuda': 'Indicador consolidado do período atual.',
     },
@@ -310,6 +312,25 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
+  String _formatarMoeda(double valor) {
+    if (_ocultarValores) return 'R\$ •••••';
+
+    final partes = valor.toStringAsFixed(2).split('.');
+    final inteiro = partes[0];
+    final decimal = partes[1];
+    final resultado = StringBuffer();
+
+    for (int i = 0; i < inteiro.length; i++) {
+      final posicao = inteiro.length - i;
+      resultado.write(inteiro[i]);
+      if (posicao > 1 && posicao % 3 == 1) {
+        resultado.write('.');
+      }
+    }
+
+    return 'R\$ ${resultado.toString()},$decimal';
+  }
+
   List<Map<String, dynamic>> get _itensFiltrados {
     return _gruposAgenda
         .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
@@ -363,7 +384,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
+        alignment: WrapAlignment.start,
         runSpacing: 16,
         spacing: 20,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -414,38 +435,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               ],
             ),
           ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _voltarTelaAnterior,
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Voltar'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(140, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-              _buildHeaderAction(
-                context,
-                icon: Icons.add_card_rounded,
-                label: 'Novo lançamento',
-              ),
-              _buildHeaderAction(
-                context,
-                icon: Icons.picture_as_pdf_outlined,
-                label: 'Exportar PDF',
-              ),
-              _buildHeaderAction(
-                context,
-                icon: Icons.notifications_active_outlined,
-                label: 'Cobranças',
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -472,19 +461,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderAction(BuildContext context,
-      {required IconData icon, required String label}) {
-    return OutlinedButton.icon(
-      onPressed: () {},
-      icon: Icon(icon),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(170, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }
@@ -537,7 +513,28 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(
+              child: cardCompacto
+                  ? Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      card['titulo'] as String,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _formatarMoeda(card['valor'] as double),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              )
+                  : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -548,7 +545,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    card['valor'] as String,
+                    _formatarMoeda(card['valor'] as double),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: theme.colorScheme.primary,
@@ -642,12 +639,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       setState(() => _mostrarSomenteCriticos = value),
                   label: const Text('Somente críticos'),
                   avatar: const Icon(Icons.priority_high_rounded, size: 18),
-                ),
-                FilterChip(
-                  selected: _modoCompacto,
-                  onSelected: (value) => setState(() => _modoCompacto = value),
-                  label: const Text('Modo compacto'),
-                  avatar: const Icon(Icons.compress_rounded, size: 18),
                 ),
                 OutlinedButton.icon(
                   onPressed: () {},
@@ -1005,7 +996,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          'R\$ ${(item['valor'] as double).toStringAsFixed(2)}',
+          _formatarMoeda(item['valor'] as double),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w900,
             color: corTipo,
@@ -1219,7 +1210,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        'Saldo previsto: R\$ ${saldo.toStringAsFixed(2)}',
+                        'Saldo previsto: ${_formatarMoeda(saldo)}',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           color: saldo >= 0
@@ -1250,7 +1241,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label • R\$ ${valor.toStringAsFixed(2)}'),
+        Text('$label • ${_formatarMoeda(valor)}'),
         const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
@@ -1315,7 +1306,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
             const SizedBox(height: 12),
             Text(
-              'R\$ ${(item['valor'] as double).toStringAsFixed(2)}',
+              _formatarMoeda(item['valor'] as double),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
                 color: corTipo,
@@ -1467,7 +1458,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
           ),
           Text(
-            'R\$ ${valor.toStringAsFixed(2)}',
+            _formatarMoeda(valor),
             style: TextStyle(
               fontWeight: FontWeight.w900,
               color: color,
@@ -1495,6 +1486,84 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAcaoRapida({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: FloatingActionButton.extended(
+        heroTag: label,
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      ),
+    );
+  }
+
+  Widget _buildMenuFlutuante() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (_menuAcoesAberto) ...[
+          _buildAcaoRapida(
+            icon: Icons.arrow_back_rounded,
+            label: 'Voltar',
+            onPressed: () {
+              setState(() => _menuAcoesAberto = false);
+              _voltarTelaAnterior();
+            },
+          ),
+          _buildAcaoRapida(
+            icon: Icons.refresh_rounded,
+            label: 'Atualizar informações',
+            onPressed: () => setState(() => _menuAcoesAberto = false),
+          ),
+          _buildAcaoRapida(
+            icon: Icons.add_card_rounded,
+            label: 'Novo lançamento',
+            onPressed: () => setState(() => _menuAcoesAberto = false),
+          ),
+          _buildAcaoRapida(
+            icon: Icons.picture_as_pdf_outlined,
+            label: 'Exportar PDF',
+            onPressed: () => setState(() => _menuAcoesAberto = false),
+          ),
+          _buildAcaoRapida(
+            icon: _ocultarValores
+                ? Icons.visibility_rounded
+                : Icons.visibility_off_rounded,
+            label: _ocultarValores ? 'Mostrar números' : 'Esconder números',
+            onPressed: () {
+              setState(() {
+                _ocultarValores = !_ocultarValores;
+              });
+            },
+          ),
+          _buildAcaoRapida(
+            icon: _modoCompacto ? Icons.expand_rounded : Icons.compress_rounded,
+            label: _modoCompacto ? 'Desativar compacto' : 'Ativar compacto',
+            onPressed: () {
+              setState(() {
+                _modoCompacto = !_modoCompacto;
+              });
+            },
+          ),
+        ],
+        FloatingActionButton.extended(
+          heroTag: 'menu-flutuante',
+          onPressed: () {
+            setState(() => _menuAcoesAberto = !_menuAcoesAberto);
+          },
+          icon: Icon(_menuAcoesAberto ? Icons.close_rounded : Icons.menu_rounded),
+          label: Text(_menuAcoesAberto ? 'Fechar ações' : 'Ações rápidas'),
+        ),
+      ],
     );
   }
 
@@ -1567,6 +1636,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
+      floatingActionButton: _buildMenuFlutuante(),
       body: SafeArea(
         child: conteudo,
       ),
