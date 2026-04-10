@@ -1,5 +1,6 @@
 import 'package:appplanilha/presentation/screens/agenda_financeira_web.dart';
 import 'package:appplanilha/presentation/screens/configuracoes_six_web_page.dart';
+import 'package:appplanilha/presentation/screens/meu_perfil_web_screen.dart';
 import 'package:appplanilha/presentation/screens/operacoes_caixa_web_page.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_web.dart';
 import 'package:appplanilha/presentation/screens/pdv_page_web_orcamento.dart';
@@ -2665,8 +2666,16 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         items: <TopNavItemData>[
           TopNavItemData(
             title: 'Início',
-            subItems: const <String>['Preferências do Sistema', 'Painel Administrativo'],
+            subItems: const <String>[
+              'Meu Perfil',
+              'Preferências do Sistema',
+              'Painel Administrativo',
+            ],
             onSelect: (String value) {
+              if (value == 'Meu Perfil') {
+                showMeuPerfilWebDialog(context);
+              }
+
               if (value == 'Painel Administrativo') {
                 showSubPainelConfiguracoes(context, 'Configurações');
               }
