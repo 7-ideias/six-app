@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:appplanilha/core/services/produto_service.dart';
@@ -7,6 +6,8 @@ import 'package:appplanilha/core/utils/produto_helper.dart';
 import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:flutter/foundation.dart';
+
+import 'package:appplanilha/core/utils/pdf_download.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -240,18 +241,24 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       }
 
       final Uint8List bytes = base64Decode(response.arquivoBase64);
-      final html.Blob blob = html.Blob(<dynamic>[bytes], response.mimeType);
-      final String url = html.Url.createObjectUrlFromBlob(blob);
-      final html.AnchorElement anchor = html.AnchorElement(href: url)
-        ..download = response.nomeArquivo
-        ..style.display = 'none';
-
-      html.document.body?.children.add(anchor);
-      anchor.click();
-      anchor.remove();
-      html.Url.revokeObjectUrl(url);
+      final bool downloadIniciado = iniciarDownloadPdf(
+        bytes: bytes,
+        nomeArquivo: response.nomeArquivo,
+        mimeType: response.mimeType,
+      );
 
       if (!mounted) {
+        return;
+      }
+
+      if (!downloadIniciado) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Download de PDF disponível apenas na versão web.',
+            ),
+          ),
+        );
         return;
       }
 
