@@ -222,7 +222,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       modoEdicao: true,
     );
   }
-
   Future<void> _imprimirRelatorioProdutos() async {
     if (_isGerandoRelatorio) {
       return;
