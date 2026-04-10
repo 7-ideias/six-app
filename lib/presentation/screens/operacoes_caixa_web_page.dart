@@ -48,12 +48,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   OperacaoCaixaTipo? _tipoSelecionado;
   // FormaMovimento? _formaSelecionada;
   TiposRecebimento? _tipoRecebimentoSelecionado;
-  String? _caixaSelecionado;
+  CaixaOuGuiche? _caixaSelecionado;
   bool _vincularVenda = false;
   bool _mostrarPainelFechamento = false;
   bool _mostrarApenasHoje = true;
 
-  late List<String> _listaDeCaixasDisponiveisNaEmpresa;
+  late List<CaixaOuGuiche> _listaDeCaixasDisponiveisNaEmpresa;
   // late List<FormaMovimento> _formas;
   late List<TiposRecebimento> _tiposRecebimento;
   late InformacoesCaixaComSomatorioResponse? _movimentosComSomatorio;
@@ -94,10 +94,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
 
       setState(() {
-        // _caixas = informacoesBasicasDoCaixa.caixas;
+        _listaDeCaixasDisponiveisNaEmpresa = informacoesBasicasDoCaixa.caixaOuGuiche.isNotEmpty
+            ? informacoesBasicasDoCaixa.caixaOuGuiche
+            : informacoesBasicasDoCaixa.caixas
+            .map(
+              (nomeCaixa) => CaixaOuGuiche(
+            id: nomeCaixa,
+            nome: nomeCaixa,
+          ),
+        )
+            .toList();
         // _formas = informacoesBasicasDoCaixa.formas;
         _tiposRecebimento = informacoesBasicasDoCaixa.tiposRecebimento;
-        if (_listaDeCaixasDisponiveisNaEmpresa.isNotEmpty) _caixaSelecionado = _listaDeCaixasDisponiveisNaEmpresa.first;
+        if (_listaDeCaixasDisponiveisNaEmpresa.isNotEmpty) {
+          _caixaSelecionado = _listaDeCaixasDisponiveisNaEmpresa.first;
+        }
 
         final tiposAtivosOrdenados = _tiposRecebimento
             .where((item) => item.ativo)
@@ -482,13 +493,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildFieldBox(
                 width: 260,
                 label: 'Caixa / guichê',
-                child: _buildDropdown<String>(
+                child: _buildDropdown<CaixaOuGuiche>(
                   value: _caixaSelecionado,
                   items: _listaDeCaixasDisponiveisNaEmpresa,
                   onChanged: (value) {
                     setState(() => _caixaSelecionado = value);
                   },
-                  itemLabel: (item) => item,
+                  itemLabel: (item) => item.nome,
                 ),
               ),
               _buildFieldBox(
@@ -1742,12 +1753,20 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Future<void> _abrirCaixa() async {
+    if (_caixaSelecionado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione um caixa / guichê.')),
+      );
+      return;
+    }
+
     final valor = _parseCurrency(_trocoInicialController.text);
     
     setState(() => _isLoading = true);
     try {
       await _caixaService.abrirCaixa(AbrirCaixaRequest(
-        nomeCaixa: _caixaSelecionado ?? 'Caixa principal',
+        idCaixaOuGuiche: _caixaSelecionado!.id,
+        nomeCaixa: _caixaSelecionado!.nome,
         valorAbertura: valor,
       ));
       

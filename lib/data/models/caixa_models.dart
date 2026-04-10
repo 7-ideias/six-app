@@ -7,6 +7,7 @@ class InformacoesBasicasCaixaResponse {
   final bool possuiSessaoAberta;
   final List<TiposRecebimento> tiposRecebimento;
   final List<String> caixas;
+  final List<CaixaOuGuiche> caixaOuGuiche;
   final List<FormaMovimento> formas;
   final ConfiguracaoRegionalizacaoResponse? regionalizacao;
 
@@ -14,6 +15,7 @@ class InformacoesBasicasCaixaResponse {
     required this.possuiSessaoAberta,
     required this.tiposRecebimento,
     required this.caixas,
+    required this.caixaOuGuiche,
     required this.formas,
     this.regionalizacao,
   });
@@ -26,6 +28,7 @@ class InformacoesBasicasCaixaResponse {
           .map((item) => TiposRecebimento.fromJson(item))
           .toList(),
       caixas: List<String>.from(json['caixas'] ?? []),
+      caixaOuGuiche: _parseCaixaOuGuiche(json['caixaOuGuiche']),
       formas: (json['formas'] as List? ?? [])
           .map((item) => FormaMovimento.fromJson(item))
           .toList(),
@@ -36,6 +39,30 @@ class InformacoesBasicasCaixaResponse {
           : null,
     );
   }
+
+  static List<CaixaOuGuiche> _parseCaixaOuGuiche(dynamic value) {
+    if (value is! Map) return [];
+
+    return value.entries
+        .where((entry) => entry.key != null && entry.value != null)
+        .map(
+          (entry) => CaixaOuGuiche(
+        id: entry.key.toString(),
+        nome: entry.value.toString(),
+      ),
+    )
+        .toList();
+  }
+}
+
+class CaixaOuGuiche {
+  final String id;
+  final String nome;
+
+  CaixaOuGuiche({
+    required this.id,
+    required this.nome,
+  });
 }
 
 class TiposRecebimento {
@@ -326,13 +353,22 @@ class ResumoCaixa {
 }
 
 class AbrirCaixaRequest {
+  final String idCaixaOuGuiche;
   final String nomeCaixa;
   final double valorAbertura;
 
-  AbrirCaixaRequest({required this.nomeCaixa, required this.valorAbertura});
+  AbrirCaixaRequest({
+    required this.idCaixaOuGuiche,
+    required this.nomeCaixa,
+    required this.valorAbertura,
+  });
 
   Map<String, dynamic> toJson() {
-    return {'caixaNome': nomeCaixa, 'valorAbertura': valorAbertura};
+    return {
+      'idCaixaOuGuiche': idCaixaOuGuiche,
+      'caixaNome': nomeCaixa,
+      'valorAbertura': valorAbertura,
+    };
   }
 }
 
