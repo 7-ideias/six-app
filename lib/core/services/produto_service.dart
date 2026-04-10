@@ -13,8 +13,10 @@ class ProdutoService {
       '${AppConfig.baseUrl}/private/api/produto/cadastro';
   final String endpointAtualizacao =
       '${AppConfig.baseUrl}/private/api/produto/atualizacao';
+
   final String endpointRelatorioListagemPdf =
       '${AppConfig.baseUrl}/private/api/produto/relatorio/listagem/pdf';
+
 
   final client = InterceptedClient.build(interceptors: [LoggingInterceptor()]);
 
