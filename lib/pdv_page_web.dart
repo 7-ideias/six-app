@@ -411,6 +411,24 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     }
   }
 
+  Future<void> _abrirListaProdutosParaEdicao() async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.92,
+            height: MediaQuery.of(context).size.height * 0.9,
+            child: SubPainelWebProdutoLista(
+              isSelecao: false,
+              modoEdicao: true,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _iniciarVenda() {
     setState(() {
       _moduloAtual = ModuloCentralPDV.vendas;
@@ -2707,7 +2725,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               }
 
               if (value == 'Produtos List') {
-                _abrirSelecaoProdutoWeb();
+                _abrirListaProdutosParaEdicao();
               }
             },
           ),

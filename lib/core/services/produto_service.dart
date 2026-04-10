@@ -11,6 +11,8 @@ class ProdutoService {
   final String endpointList = '${AppConfig.baseUrl}/private/api/produto/lista';
   final String endpointCadastro =
       '${AppConfig.baseUrl}/private/api/produto/cadastro';
+  final String endpointAtualizacao =
+      '${AppConfig.baseUrl}/private/api/produto/atualizacao';
 
   final client = InterceptedClient.build(interceptors: [LoggingInterceptor()]);
 
@@ -88,6 +90,47 @@ class ProdutoService {
       return null;
     } catch (e) {
       print('❌ Erro no cadastro: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> atualizarProduto(ProdutoModel produto) async {
+    final url = Uri.parse(endpointAtualizacao);
+    final authService = AuthService();
+    final token = await authService.getAccessToken();
+    final empresaId = await authService.getEmpresaId();
+
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'idUnicoDaEmpresa': empresaId ?? '',
+      'Authorization': 'Bearer $token',
+    };
+
+    if (produto.id == null || produto.id!.isEmpty) {
+      throw Exception('Produto sem ID para atualização.');
+    }
+
+    try {
+      final body = jsonEncode(produto.toJson());
+
+      print('🌐 PUT $url');
+      print('🟦 Headers: $headers');
+      print('📦 Body: $body');
+
+      final response = await client.put(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      print('✅ STATUS: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Erro ao atualizar produto: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Erro na atualização: $e');
       rethrow;
     }
   }
