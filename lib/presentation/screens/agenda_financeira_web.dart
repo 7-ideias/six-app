@@ -73,6 +73,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _origemSelecionada = 'Todas';
   String _empresaSelecionada = 'Matriz Centro';
   bool _mostrarSomenteCriticos = false;
+  bool _modoCompacto = true;
 
   int _abaSelecionada = 0;
   Map<String, dynamic>? _lancamentoSelecionado;
@@ -402,13 +403,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Text(
-                  'Central operacional para acompanhar recebimentos, pagamentos, atrasos, previsões de caixa e ações imediatas do financeiro.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    height: 1.45,
+                if (!_modoCompacto)
+                  Text(
+                    'Central operacional para acompanhar recebimentos, pagamentos, atrasos, previsões de caixa e ações imediatas do financeiro.',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -513,18 +515,19 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildResumoCard(BuildContext context, Map<String, dynamic> card) {
     final theme = Theme.of(context);
+    final cardCompacto = _modoCompacto;
 
     return Card(
       elevation: 2,
       shadowColor: Colors.black.withOpacity(0.04),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(cardCompacto ? 14 : 18),
         child: Row(
           children: [
             Container(
-              width: 58,
-              height: 58,
+              width: cardCompacto ? 48 : 58,
+              height: cardCompacto ? 48 : 58,
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(18),
@@ -551,13 +554,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    card['ajuda'] as String,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  if (!cardCompacto) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      card['ajuda'] as String,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -637,6 +642,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       setState(() => _mostrarSomenteCriticos = value),
                   label: const Text('Somente críticos'),
                   avatar: const Icon(Icons.priority_high_rounded, size: 18),
+                ),
+                FilterChip(
+                  selected: _modoCompacto,
+                  onSelected: (value) => setState(() => _modoCompacto = value),
+                  label: const Text('Modo compacto'),
+                  avatar: const Icon(Icons.compress_rounded, size: 18),
                 ),
                 OutlinedButton.icon(
                   onPressed: () {},
@@ -791,13 +802,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final corTipo = _corTipo(item['tipo'] as String);
     final corStatus = _corStatus(item['status'] as String);
     final selecionado = _lancamentoSelecionado?['id'] == item['id'];
+    final cardCompacto = _modoCompacto;
 
     return InkWell(
       onTap: () => setState(() => _lancamentoSelecionado = item),
       borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(cardCompacto ? 14 : 18),
         decoration: BoxDecoration(
           color: selecionado
               ? theme.colorScheme.primary.withOpacity(0.05)
@@ -819,9 +831,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildLancamentoBadges(context, item, corTipo, corStatus),
-                  const SizedBox(height: 14),
+                  SizedBox(height: cardCompacto ? 10 : 14),
                   _buildLancamentoConteudo(context, item),
-                  const SizedBox(height: 14),
+                  SizedBox(height: cardCompacto ? 10 : 14),
                   _buildLancamentoValorEAcoes(context, item, corTipo),
                 ],
               );
@@ -830,16 +842,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             return Column(
               children: [
                 _buildLancamentoBadges(context, item, corTipo, corStatus),
-                const SizedBox(height: 14),
+                SizedBox(height: cardCompacto ? 10 : 14),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: _buildLancamentoConteudo(context, item),
                     ),
-                    const SizedBox(width: 18),
+                    SizedBox(width: cardCompacto ? 12 : 18),
                     SizedBox(
-                      width: 280,
+                      width: cardCompacto ? 240 : 280,
                       child: _buildLancamentoValorEAcoes(context, item, corTipo),
                     ),
                   ],
@@ -859,14 +871,18 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       Color corStatus,
       ) {
     final theme = Theme.of(context);
+    final cardCompacto = _modoCompacto;
 
     return Wrap(
-      spacing: 12,
-      runSpacing: 10,
+      spacing: cardCompacto ? 8 : 12,
+      runSpacing: cardCompacto ? 8 : 10,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: cardCompacto ? 10 : 12,
+            vertical: cardCompacto ? 6 : 8,
+          ),
           decoration: BoxDecoration(
             color: corTipo.withOpacity(0.10),
             borderRadius: BorderRadius.circular(999),
@@ -893,7 +909,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: cardCompacto ? 10 : 12,
+            vertical: cardCompacto ? 6 : 8,
+          ),
           decoration: BoxDecoration(
             color: corStatus.withOpacity(0.10),
             borderRadius: BorderRadius.circular(999),
@@ -906,20 +925,21 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            item['origem'] as String,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurfaceVariant,
+        if (!cardCompacto)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              item['origem'] as String,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -927,6 +947,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Widget _buildLancamentoConteudo(
       BuildContext context, Map<String, dynamic> item) {
     final theme = Theme.of(context);
+    final cardCompacto = _modoCompacto;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -937,10 +958,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: cardCompacto ? 8 : 10),
         Wrap(
-          spacing: 16,
-          runSpacing: 10,
+          spacing: cardCompacto ? 12 : 16,
+          runSpacing: cardCompacto ? 8 : 10,
           children: [
             _buildMiniInfo(context, Icons.person_outline, item['contato'] as String),
             _buildMiniInfo(
@@ -948,26 +969,30 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               Icons.event_outlined,
               'Vence em ${item['vencimento']}',
             ),
-            _buildMiniInfo(
-              context,
-              Icons.credit_card_outlined,
-              item['formaPagamento'] as String,
-            ),
-            _buildMiniInfo(
-              context,
-              Icons.category_outlined,
-              item['categoria'] as String,
-            ),
+            if (!cardCompacto)
+              _buildMiniInfo(
+                context,
+                Icons.credit_card_outlined,
+                item['formaPagamento'] as String,
+              ),
+            if (!cardCompacto)
+              _buildMiniInfo(
+                context,
+                Icons.category_outlined,
+                item['categoria'] as String,
+              ),
           ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          item['observacoes'] as String,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.4,
+        if (!cardCompacto) ...[
+          const SizedBox(height: 12),
+          Text(
+            item['observacoes'] as String,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -991,7 +1016,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           alignment: WrapAlignment.end,
           spacing: 8,
           runSpacing: 8,
-          children: (item['acoes'] as List).take(3).map((acao) {
+          children: (item['acoes'] as List).take(_modoCompacto ? 1 : 3).map((acao) {
             return OutlinedButton(
               onPressed: () {},
               child: Text(acao.toString()),
