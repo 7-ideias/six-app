@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:typed_data';
+
+import 'package:appplanilha/core/services/produto_service.dart';
 import 'package:appplanilha/core/utils/produto_helper.dart';
 import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
+import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,21 +17,28 @@ class SubPainelWebProdutoLista extends SubPainelWebGeneral {
   SubPainelWebProdutoLista({
     super.key,
     this.isSelecao = false,
+    this.modoEdicao = false,
   }) : super(
-    body: ProdutoListaBody(isSelecao: isSelecao),
+    body: ProdutoListaBody(
+      isSelecao: isSelecao,
+      modoEdicao: modoEdicao,
+    ),
     textoDaAppBar: 'Lista de Produtos',
   );
 
   final bool isSelecao;
+  final bool modoEdicao;
 }
 
 class ProdutoListaBody extends StatefulWidget {
   const ProdutoListaBody({
     super.key,
     this.isSelecao = false,
+    this.modoEdicao = false,
   });
 
   final bool isSelecao;
+  final bool modoEdicao;
 
   @override
   State<ProdutoListaBody> createState() => _ProdutoListaBodyState();
@@ -33,6 +46,7 @@ class ProdutoListaBody extends StatefulWidget {
 
 class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final TextEditingController _controllerBusca = TextEditingController();
+  final ProdutoService _produtoService = ProdutoService();
 
   List<ProdutoModel> todosProdutos = [];
   List<ProdutoModel> produtosFiltrados = [];
@@ -40,6 +54,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   String termoBusca = '';
   String tipoSelecionado = 'PRODUTO';
   String ordenacao = 'nome';
+  bool _isGerandoRelatorio = false;
 
   void _logInfo(String message) {
     debugPrint('[SubPainelWebProdutoLista][INFO] $message');
@@ -180,6 +195,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         _logInfo('Fechando subpainel e retornando produto via Navigator.pop');
         Navigator.pop(context, produto);
       } else {
+        if (widget.modoEdicao) {
+          _abrirCadastroParaEdicao(produto);
+          return;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Clicou em ${produto.nomeProduto}')),
         );
@@ -191,6 +211,70 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           content: Text('Erro ao selecionar produto. Veja os logs.'),
         ),
       );
+    }
+  }
+
+  void _abrirCadastroParaEdicao(ProdutoModel produto) {
+    showSubPainelCadastroProduto(
+      context,
+      'Editar Produto',
+      produtoParaEdicao: produto,
+      modoEdicao: true,
+    );
+  }
+
+  Future<void> _imprimirRelatorioProdutos() async {
+    if (_isGerandoRelatorio) {
+      return;
+    }
+
+    setState(() {
+      _isGerandoRelatorio = true;
+    });
+
+    try {
+      final RelatorioProdutoPdfResponse response =
+          await _produtoService.gerarRelatorioListagemPdf();
+
+      if (response.arquivoBase64.trim().isEmpty) {
+        throw Exception('O backend retornou o PDF vazio.');
+      }
+
+      final Uint8List bytes = base64Decode(response.arquivoBase64);
+      final html.Blob blob = html.Blob(<dynamic>[bytes], response.mimeType);
+      final String url = html.Url.createObjectUrlFromBlob(blob);
+      final html.AnchorElement anchor = html.AnchorElement(href: url)
+        ..download = response.nomeArquivo
+        ..style.display = 'none';
+
+      html.document.body?.children.add(anchor);
+      anchor.click();
+      anchor.remove();
+      html.Url.revokeObjectUrl(url);
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Relatório salvo: ${response.nomeArquivo}')),
+      );
+    } catch (error, stackTrace) {
+      _logError('Erro ao imprimir relatório de produtos', error, stackTrace);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Não foi possível gerar o PDF: $error'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGerandoRelatorio = false;
+        });
+      }
     }
   }
 
@@ -212,6 +296,29 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
       return Column(
         children: [
+          if (widget.modoEdicao && !widget.isSelecao)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.edit_note, color: Colors.orange),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Modo edição ativo: clique em um produto para abrir o cadastro em edição.',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -355,10 +462,30 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     ),
                   ),
                 ),
-                FloatingActionButton(
-                  onPressed: _recarregar,
-                  backgroundColor: Colors.blueAccent,
-                  child: const Icon(Icons.refresh),
+                Wrap(
+                  spacing: 12,
+                  children: <Widget>[
+                    FloatingActionButton(
+                      onPressed: _recarregar,
+                      backgroundColor: Colors.blueAccent,
+                      child: const Icon(Icons.refresh),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _isGerandoRelatorio
+                          ? null
+                          : _imprimirRelatorioProdutos,
+                      icon: _isGerandoRelatorio
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.print_outlined),
+                      label: Text(
+                        _isGerandoRelatorio ? 'Gerando PDF...' : 'Imprimir',
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -426,6 +553,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       onPressed: () => _selecionarProduto(produto),
                       icon: const Icon(Icons.add_shopping_cart),
                       label: const Text('Adicionar'),
+                    ),
+                  )
+                else if (widget.modoEdicao)
+                  SizedBox(
+                    width: 140,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _abrirCadastroParaEdicao(produto),
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Editar'),
                     ),
                   )
                 else
