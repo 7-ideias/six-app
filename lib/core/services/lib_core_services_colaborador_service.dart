@@ -10,6 +10,8 @@ import 'auth_service.dart';
 class ColaboradorService {
   final String endpointCadastro =
       '${AppConfig.baseUrl}/private/api/colaborador/novo';
+  final String endpointAtualizacao =
+      '${AppConfig.baseUrl}/private/api/colaborador/atualizar';
 
   final client = InterceptedClient.build(
     interceptors: <InterceptorContract>[LoggingInterceptor()],
@@ -18,7 +20,28 @@ class ColaboradorService {
   Future<ColaboradorCadastroResponse> cadastrarColaborador(
     ColaboradorCadastroRequest request,
   ) async {
-    final url = Uri.parse(endpointCadastro);
+    return _sendRequest(
+      url: Uri.parse(endpointCadastro),
+      method: 'POST',
+      body: request.toJson(),
+    );
+  }
+
+  Future<ColaboradorCadastroResponse> atualizarColaborador(
+    ColaboradorAtualizacaoRequest request,
+  ) async {
+    return _sendRequest(
+      url: Uri.parse(endpointAtualizacao),
+      method: 'PUT',
+      body: request.toJson(),
+    );
+  }
+
+  Future<ColaboradorCadastroResponse> _sendRequest({
+    required Uri url,
+    required String method,
+    required Map<String, dynamic> body,
+  }) async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
     final empresaId = await authService.getEmpresaId();
@@ -30,24 +53,22 @@ class ColaboradorService {
     };
 
     try {
-      final body = jsonEncode(request.toJson());
+      final bodyJson = jsonEncode(body);
 
-      print('🌐 POST $url');
+      print('🌐 $method $url');
       print('🟦 Headers: $headers');
-      print('📦 Body: $body');
+      print('📦 Body: $bodyJson');
 
-      final response = await client.post(
-        url,
-        headers: headers,
-        body: body,
-      );
+      final response = method == 'PUT'
+          ? await client.put(url, headers: headers, body: bodyJson)
+          : await client.post(url, headers: headers, body: bodyJson);
 
       print('✅ STATUS: ${response.statusCode}');
       print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception(
-          'Erro ao cadastrar colaborador: ${response.statusCode}\n${response.body}',
+          'Erro na operação de colaborador: ${response.statusCode}\n${response.body}',
         );
       }
 
@@ -56,7 +77,7 @@ class ColaboradorService {
         body: response.body,
       );
     } catch (e) {
-      print('❌ Erro no cadastro de colaborador: $e');
+      print('❌ Erro na operação de colaborador: $e');
       rethrow;
     }
   }

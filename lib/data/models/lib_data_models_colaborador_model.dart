@@ -7,6 +7,10 @@ class ColaboradorCadastroRequest {
     required this.objDadosFuncionais,
     required this.objPessoa,
     required this.objAutorizacoes,
+    required this.objIdentidadeGlobal,
+    required this.objFotoRegistro,
+    required this.objDadosPagamento,
+    required this.objPermissoesAplicacao,
   });
 
   final String foto;
@@ -16,6 +20,10 @@ class ColaboradorCadastroRequest {
   final ColaboradorDadosFuncionais objDadosFuncionais;
   final ColaboradorPessoa objPessoa;
   final ColaboradorAutorizacoes objAutorizacoes;
+  final ColaboradorIdentidadeGlobal objIdentidadeGlobal;
+  final ColaboradorFotoRegistro objFotoRegistro;
+  final ColaboradorDadosPagamento objDadosPagamento;
+  final ColaboradorPermissoesAplicacao objPermissoesAplicacao;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -27,7 +35,59 @@ class ColaboradorCadastroRequest {
       'objDadosFuncionais': objDadosFuncionais.toJson(),
       'objPessoa': objPessoa.toJson(),
       'objAutorizacoes': objAutorizacoes.toJson(),
+      'objIdentidadeGlobal': objIdentidadeGlobal.toJson(),
+      'objFotoRegistro': objFotoRegistro.toJson(),
+      'objDadosPagamento': objDadosPagamento.toJson(),
+      'objPermissoesAplicacao': objPermissoesAplicacao.toJson(),
     };
+  }
+}
+
+class ColaboradorAtualizacaoRequest {
+  const ColaboradorAtualizacaoRequest({
+    required this.idColaborador,
+    required this.objInformacoesDoCadastro,
+    required this.objDadosFuncionais,
+    required this.objPessoa,
+    required this.objAutorizacoes,
+    required this.objIdentidadeGlobal,
+    required this.objFotoRegistro,
+    required this.objDadosPagamento,
+    required this.objPermissoesAplicacao,
+    this.foto,
+    this.celularDeAcesso,
+    this.senhaParaPermitirOAcessoDoColaborador,
+  });
+
+  final String idColaborador;
+  final String? foto;
+  final String? celularDeAcesso;
+  final String? senhaParaPermitirOAcessoDoColaborador;
+  final ColaboradorInformacoesCadastro objInformacoesDoCadastro;
+  final ColaboradorDadosFuncionais objDadosFuncionais;
+  final ColaboradorPessoa objPessoa;
+  final ColaboradorAutorizacoes objAutorizacoes;
+  final ColaboradorIdentidadeGlobal objIdentidadeGlobal;
+  final ColaboradorFotoRegistro objFotoRegistro;
+  final ColaboradorDadosPagamento objDadosPagamento;
+  final ColaboradorPermissoesAplicacao objPermissoesAplicacao;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'idColaborador': idColaborador,
+      'foto': foto,
+      'celularDeAcesso': celularDeAcesso,
+      'senhaParaPermitirOAcessoDoColaborador':
+          senhaParaPermitirOAcessoDoColaborador,
+      'objInformacoesDoCadastro': objInformacoesDoCadastro.toJson(),
+      'objDadosFuncionais': objDadosFuncionais.toJson(),
+      'objPessoa': objPessoa.toJson(),
+      'objAutorizacoes': objAutorizacoes.toJson(),
+      'objIdentidadeGlobal': objIdentidadeGlobal.toJson(),
+      'objFotoRegistro': objFotoRegistro.toJson(),
+      'objDadosPagamento': objDadosPagamento.toJson(),
+      'objPermissoesAplicacao': objPermissoesAplicacao.toJson(),
+    }..removeWhere((String _, dynamic value) => value == null);
   }
 }
 
@@ -35,15 +95,24 @@ class ColaboradorInformacoesCadastro {
   const ColaboradorInformacoesCadastro({
     required this.idUnicoDoUsuario,
     required this.dataCadastro,
+    required this.idiomaPreferencial,
+    required this.fusoHorario,
+    required this.status,
   });
 
   final String idUnicoDoUsuario;
   final String dataCadastro;
+  final String idiomaPreferencial;
+  final String fusoHorario;
+  final String status;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'idUnicoDoUsuario': idUnicoDoUsuario,
       'dataCadastro': dataCadastro,
+      'idiomaPreferencial': idiomaPreferencial,
+      'fusoHorario': fusoHorario,
+      'status': status,
     };
   }
 }
@@ -52,15 +121,27 @@ class ColaboradorDadosFuncionais {
   const ColaboradorDadosFuncionais({
     required this.dataDeContratacao,
     required this.salario,
+    required this.cargo,
+    required this.departamento,
+    required this.tipoContrato,
+    required this.centroDeCusto,
   });
 
   final String dataDeContratacao;
   final double salario;
+  final String cargo;
+  final String departamento;
+  final String tipoContrato;
+  final String centroDeCusto;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'dataDeContratacao': dataDeContratacao,
       'salario': salario,
+      'cargo': cargo,
+      'departamento': departamento,
+      'tipoContrato': tipoContrato,
+      'centroDeCusto': centroDeCusto,
     };
   }
 }
@@ -114,6 +195,7 @@ class ColaboradorEndereco {
     required this.bairro,
     required this.localidade,
     required this.uf,
+    required this.pais,
   });
 
   final String cep;
@@ -122,6 +204,7 @@ class ColaboradorEndereco {
   final String bairro;
   final String localidade;
   final String uf;
+  final String pais;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -131,6 +214,7 @@ class ColaboradorEndereco {
       'bairro': bairro,
       'localidade': localidade,
       'uf': uf,
+      'pais': pais,
     };
   }
 }
@@ -269,6 +353,134 @@ class ColaboradorLancamentosFinanceirosPode {
     return <String, dynamic>{
       'podeReceberNoCaixa': podeReceberNoCaixa,
       'podeVerQuantoVendeu': podeVerQuantoVendeu,
+    };
+  }
+}
+
+class ColaboradorIdentidadeGlobal {
+  const ColaboradorIdentidadeGlobal({
+    required this.tipoDocumento,
+    required this.numeroDocumento,
+    required this.paisDoDocumento,
+    required this.nacionalidade,
+    required this.paisResidencia,
+  });
+
+  final String tipoDocumento;
+  final String numeroDocumento;
+  final String paisDoDocumento;
+  final String nacionalidade;
+  final String paisResidencia;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'tipoDocumento': tipoDocumento,
+      'numeroDocumento': numeroDocumento,
+      'paisDoDocumento': paisDoDocumento,
+      'nacionalidade': nacionalidade,
+      'paisResidencia': paisResidencia,
+    };
+  }
+}
+
+class ColaboradorFotoRegistro {
+  const ColaboradorFotoRegistro({
+    required this.modoCaptura,
+    required this.urlFoto,
+    required this.hashArquivo,
+    required this.dataCaptura,
+    required this.consentimentoUsoImagem,
+  });
+
+  final String modoCaptura;
+  final String urlFoto;
+  final String hashArquivo;
+  final String dataCaptura;
+  final bool consentimentoUsoImagem;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'modoCaptura': modoCaptura,
+      'urlFoto': urlFoto,
+      'hashArquivo': hashArquivo,
+      'dataCaptura': dataCaptura,
+      'consentimentoUsoImagem': consentimentoUsoImagem,
+    };
+  }
+}
+
+class ColaboradorDadosPagamento {
+  const ColaboradorDadosPagamento({
+    required this.moeda,
+    required this.periodicidadePagamento,
+    required this.valorBase,
+    required this.metodoPagamentoPreferencial,
+    required this.banco,
+    required this.agencia,
+    required this.conta,
+    required this.iban,
+    required this.swiftBic,
+    required this.chavePix,
+    required this.diaDePagamento,
+    required this.incluirNaAgendaFinanceira,
+  });
+
+  final String moeda;
+  final String periodicidadePagamento;
+  final double valorBase;
+  final String metodoPagamentoPreferencial;
+  final String banco;
+  final String agencia;
+  final String conta;
+  final String iban;
+  final String swiftBic;
+  final String chavePix;
+  final int diaDePagamento;
+  final bool incluirNaAgendaFinanceira;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'moeda': moeda,
+      'periodicidadePagamento': periodicidadePagamento,
+      'valorBase': valorBase,
+      'metodoPagamentoPreferencial': metodoPagamentoPreferencial,
+      'banco': banco,
+      'agencia': agencia,
+      'conta': conta,
+      'iban': iban,
+      'swiftBic': swiftBic,
+      'chavePix': chavePix,
+      'diaDePagamento': diaDePagamento,
+      'incluirNaAgendaFinanceira': incluirNaAgendaFinanceira,
+    };
+  }
+}
+
+class ColaboradorPermissoesAplicacao {
+  const ColaboradorPermissoesAplicacao({
+    required this.podeAcessarAgendaFinanceira,
+    required this.podeEditarDadosPagamento,
+    required this.podeExportarRelatorios,
+    required this.podeGerenciarPermissoes,
+    required this.escopoDeDados,
+    required this.modulosPermitidos,
+  });
+
+  final bool podeAcessarAgendaFinanceira;
+  final bool podeEditarDadosPagamento;
+  final bool podeExportarRelatorios;
+  final bool podeGerenciarPermissoes;
+  final String escopoDeDados;
+  final List<String> modulosPermitidos;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'podeAcessarAgendaFinanceira': podeAcessarAgendaFinanceira,
+      'podeEditarDadosPagamento': podeEditarDadosPagamento,
+      'podeExportarRelatorios': podeExportarRelatorios,
+      'podeGerenciarPermissoes': podeGerenciarPermissoes,
+      'escopoDeDados': escopoDeDados,
+      'modulosPermitidos': modulosPermitidos,
     };
   }
 }

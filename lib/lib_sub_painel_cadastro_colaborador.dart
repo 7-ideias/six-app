@@ -54,10 +54,25 @@ class _CadastroColaboradorWebBodyState
     text: _formatDateTime(DateTime.now()),
   );
 
+  final TextEditingController _idiomaPreferencialController =
+      TextEditingController(text: 'pt-BR');
+  final TextEditingController _fusoHorarioController =
+      TextEditingController(text: 'America/Sao_Paulo');
+  final TextEditingController _statusController = TextEditingController(text: 'ATIVO');
+  final TextEditingController _idColaboradorAtualizacaoController =
+      TextEditingController(text: 'COLAB-0001');
+
   final TextEditingController _dataDeContratacaoController =
       TextEditingController(text: _formatDate(DateTime.now()));
   final TextEditingController _salarioController =
       TextEditingController(text: '0,00');
+
+  final TextEditingController _departamentoController =
+      TextEditingController(text: 'Operações');
+  final TextEditingController _tipoContratoController =
+      TextEditingController(text: 'CLT');
+  final TextEditingController _centroDeCustoController =
+      TextEditingController(text: 'Assistência Técnica');
 
   final TextEditingController _atencaoController = TextEditingController();
   final TextEditingController _nomeController = TextEditingController();
@@ -79,6 +94,7 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _bairroController = TextEditingController();
   final TextEditingController _localidadeController = TextEditingController();
   final TextEditingController _ufController = TextEditingController();
+  final TextEditingController _paisController = TextEditingController(text: 'BR');
 
   final TextEditingController _cargoController =
       TextEditingController(text: 'Técnico');
@@ -88,6 +104,44 @@ class _CadastroColaboradorWebBodyState
       TextEditingController(text: '0,00');
   final TextEditingController _comissaoAssistenciaController =
       TextEditingController(text: '0,00');
+
+
+  final TextEditingController _tipoDocumentoGlobalController =
+      TextEditingController(text: 'CPF');
+  final TextEditingController _numeroDocumentoGlobalController =
+      TextEditingController();
+  final TextEditingController _paisDocumentoController =
+      TextEditingController(text: 'BR');
+  final TextEditingController _nacionalidadeController =
+      TextEditingController(text: 'Brasileira');
+  final TextEditingController _paisResidenciaController =
+      TextEditingController(text: 'BR');
+
+  final TextEditingController _modoCapturaFotoController =
+      TextEditingController(text: 'upload');
+  final TextEditingController _hashFotoController = TextEditingController();
+  final TextEditingController _dataCapturaFotoController =
+      TextEditingController(text: _formatDateTime(DateTime.now()));
+
+  final TextEditingController _moedaPagamentoController =
+      TextEditingController(text: 'BRL');
+  final TextEditingController _periodicidadePagamentoController =
+      TextEditingController(text: 'mensal');
+  final TextEditingController _valorBasePagamentoController =
+      TextEditingController(text: '0,00');
+  final TextEditingController _metodoPagamentoController =
+      TextEditingController(text: 'transferencia_bancaria');
+  final TextEditingController _bancoController = TextEditingController();
+  final TextEditingController _agenciaController = TextEditingController();
+  final TextEditingController _contaController = TextEditingController();
+  final TextEditingController _ibanController = TextEditingController();
+  final TextEditingController _swiftController = TextEditingController();
+  final TextEditingController _pixController = TextEditingController();
+  final TextEditingController _diaPagamentoController =
+      TextEditingController(text: '5');
+
+  final TextEditingController _escopoDadosController =
+      TextEditingController(text: 'empresa');
 
   bool _colaboradorAtivo = true;
   bool _podeFazerDevolucao = true;
@@ -103,6 +157,12 @@ class _CadastroColaboradorWebBodyState
   bool _geraRelatorioDeVendas = true;
   bool _podeReceberNoCaixa = true;
   bool _podeVerQuantoVendeu = true;
+  bool _consentimentoUsoImagem = true;
+  bool _incluirNaAgendaFinanceira = true;
+  bool _podeAcessarAgendaFinanceira = true;
+  bool _podeEditarDadosPagamento = false;
+  bool _podeExportarRelatorios = true;
+  bool _podeGerenciarPermissoes = false;
 
   bool _isLoading = false;
   String _perfilSelecionado = 'TÉCNICO';
@@ -159,6 +219,34 @@ class _CadastroColaboradorWebBodyState
       _comissaoProdutosController,
       _comissaoVendasController,
       _comissaoAssistenciaController,
+      _idiomaPreferencialController,
+      _fusoHorarioController,
+      _statusController,
+      _idColaboradorAtualizacaoController,
+      _departamentoController,
+      _tipoContratoController,
+      _centroDeCustoController,
+      _paisController,
+      _tipoDocumentoGlobalController,
+      _numeroDocumentoGlobalController,
+      _paisDocumentoController,
+      _nacionalidadeController,
+      _paisResidenciaController,
+      _modoCapturaFotoController,
+      _hashFotoController,
+      _dataCapturaFotoController,
+      _moedaPagamentoController,
+      _periodicidadePagamentoController,
+      _valorBasePagamentoController,
+      _metodoPagamentoController,
+      _bancoController,
+      _agenciaController,
+      _contaController,
+      _ibanController,
+      _swiftController,
+      _pixController,
+      _diaPagamentoController,
+      _escopoDadosController,
     ]) {
       controller.dispose();
     }
@@ -639,10 +727,17 @@ class _CadastroColaboradorWebBodyState
       objInformacoesDoCadastro: ColaboradorInformacoesCadastro(
         idUnicoDoUsuario: _idUnicoDoUsuarioController.text.trim(),
         dataCadastro: _dataCadastroController.text.trim(),
+        idiomaPreferencial: _idiomaPreferencialController.text.trim(),
+        fusoHorario: _fusoHorarioController.text.trim(),
+        status: _statusController.text.trim(),
       ),
       objDadosFuncionais: ColaboradorDadosFuncionais(
         dataDeContratacao: _dataDeContratacaoController.text.trim(),
         salario: _toDouble(_salarioController),
+        cargo: _cargoController.text.trim(),
+        departamento: _departamentoController.text.trim(),
+        tipoContrato: _tipoContratoController.text.trim(),
+        centroDeCusto: _centroDeCustoController.text.trim(),
       ),
       objPessoa: ColaboradorPessoa(
         atencao: _atencaoController.text.trim(),
@@ -661,6 +756,7 @@ class _CadastroColaboradorWebBodyState
           bairro: _bairroController.text.trim(),
           localidade: _localidadeController.text.trim(),
           uf: _ufController.text.trim(),
+          pais: _paisController.text.trim(),
         ),
       ),
       objAutorizacoes: ColaboradorAutorizacoes(
@@ -691,6 +787,69 @@ class _CadastroColaboradorWebBodyState
           podeVerQuantoVendeu: _podeVerQuantoVendeu,
         ),
       ),
+      objIdentidadeGlobal: ColaboradorIdentidadeGlobal(
+        tipoDocumento: _tipoDocumentoGlobalController.text.trim(),
+        numeroDocumento: _numeroDocumentoGlobalController.text.trim(),
+        paisDoDocumento: _paisDocumentoController.text.trim(),
+        nacionalidade: _nacionalidadeController.text.trim(),
+        paisResidencia: _paisResidenciaController.text.trim(),
+      ),
+      objFotoRegistro: ColaboradorFotoRegistro(
+        modoCaptura: _modoCapturaFotoController.text.trim(),
+        urlFoto: _fotoController.text.trim(),
+        hashArquivo: _hashFotoController.text.trim(),
+        dataCaptura: _dataCapturaFotoController.text.trim(),
+        consentimentoUsoImagem: _consentimentoUsoImagem,
+      ),
+      objDadosPagamento: ColaboradorDadosPagamento(
+        moeda: _moedaPagamentoController.text.trim().toUpperCase(),
+        periodicidadePagamento: _periodicidadePagamentoController.text.trim(),
+        valorBase: _toDouble(_valorBasePagamentoController),
+        metodoPagamentoPreferencial: _metodoPagamentoController.text.trim(),
+        banco: _bancoController.text.trim(),
+        agencia: _agenciaController.text.trim(),
+        conta: _contaController.text.trim(),
+        iban: _ibanController.text.trim(),
+        swiftBic: _swiftController.text.trim(),
+        chavePix: _pixController.text.trim(),
+        diaDePagamento: int.tryParse(_diaPagamentoController.text.trim()) ?? 5,
+        incluirNaAgendaFinanceira: _incluirNaAgendaFinanceira,
+      ),
+      objPermissoesAplicacao: ColaboradorPermissoesAplicacao(
+        podeAcessarAgendaFinanceira: _podeAcessarAgendaFinanceira,
+        podeEditarDadosPagamento: _podeEditarDadosPagamento,
+        podeExportarRelatorios: _podeExportarRelatorios,
+        podeGerenciarPermissoes: _podeGerenciarPermissoes,
+        escopoDeDados: _escopoDadosController.text.trim(),
+        modulosPermitidos: <String>[
+          if (_fazVenda) 'vendas',
+          if (_lancaServico) 'assistencia_tecnica',
+          if (_podeReceberNoCaixa) 'caixa',
+          if (_podeAcessarAgendaFinanceira) 'agenda_financeira',
+          if (_podeCadastrarProduto) 'produtos',
+          if (_podeEditarCliente) 'clientes',
+        ],
+      ),
+    );
+  }
+
+  ColaboradorAtualizacaoRequest _montarAtualizacaoRequest() {
+    final ColaboradorCadastroRequest base = _montarRequest();
+
+    return ColaboradorAtualizacaoRequest(
+      idColaborador: _idColaboradorAtualizacaoController.text.trim(),
+      foto: base.foto,
+      celularDeAcesso: base.celularDeAcesso,
+      senhaParaPermitirOAcessoDoColaborador:
+          base.senhaParaPermitirOAcessoDoColaborador,
+      objInformacoesDoCadastro: base.objInformacoesDoCadastro,
+      objDadosFuncionais: base.objDadosFuncionais,
+      objPessoa: base.objPessoa,
+      objAutorizacoes: base.objAutorizacoes,
+      objIdentidadeGlobal: base.objIdentidadeGlobal,
+      objFotoRegistro: base.objFotoRegistro,
+      objDadosPagamento: base.objDadosPagamento,
+      objPermissoesAplicacao: base.objPermissoesAplicacao,
     );
   }
 
@@ -712,17 +871,20 @@ class _CadastroColaboradorWebBodyState
         return;
       }
 
-      String message = 'Colaborador cadastrado com sucesso!';
+      const JsonEncoder encoder = JsonEncoder.withIndent('  ');
+      final ColaboradorAtualizacaoRequest updateRequest =
+          _montarAtualizacaoRequest();
+
+      String message = 'Colaborador cadastrado com sucesso!\n\n'
+          'Payload POST sugerido:\n${encoder.convert(request.toJson())}\n\n'
+          'Payload PUT sugerido:\n${encoder.convert(updateRequest.toJson())}';
 
       if (response.body.trim().isNotEmpty) {
         try {
           final Object decoded = jsonDecode(response.body);
-          const JsonEncoder encoder = JsonEncoder.withIndent('  ');
-          message = 'Colaborador cadastrado com sucesso!\n\n'
-              'Resposta do backend:\n${encoder.convert(decoded)}';
+          message = '$message\n\nResposta do backend:\n${encoder.convert(decoded)}';
         } catch (_) {
-          message = 'Colaborador cadastrado com sucesso!\n\n'
-              'Resposta do backend:\n${response.body}';
+          message = '$message\n\nResposta do backend:\n${response.body}';
         }
       }
 
@@ -843,6 +1005,52 @@ class _CadastroColaboradorWebBodyState
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: <Widget>[
+              SizedBox(
+                width: 210,
+                child: _buildTextField(
+                  context: context,
+                  controller: _modoCapturaFotoController,
+                  label: 'Modo captura',
+                  icon: Icons.camera_alt_outlined,
+                  hintText: 'upload/camera',
+                ),
+              ),
+              SizedBox(
+                width: 270,
+                child: _buildTextField(
+                  context: context,
+                  controller: _hashFotoController,
+                  label: 'Hash arquivo foto',
+                  icon: Icons.fingerprint_outlined,
+                ),
+              ),
+              SizedBox(
+                width: 260,
+                child: _buildDateField(
+                  context: context,
+                  controller: _dataCapturaFotoController,
+                  label: 'Data da captura',
+                  icon: Icons.timelapse_outlined,
+                  includeTime: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildSwitchTile(
+            context: context,
+            title: 'Consentimento para uso da imagem',
+            subtitle: 'Autoriza utilização da foto em perfis e documentos internos.',
+            value: _consentimentoUsoImagem,
+            onChanged: (bool value) {
+              _consentimentoUsoImagem = value;
+            },
           ),
         ],
       ),
@@ -1016,6 +1224,50 @@ class _CadastroColaboradorWebBodyState
                   includeTime: true,
                 ),
               ),
+              SizedBox(
+                width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _idiomaPreferencialController,
+                  label: 'Idioma (locale)',
+                  icon: Icons.language_outlined,
+                  hintText: 'pt-BR / en-US',
+                  requiredField: true,
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _fusoHorarioController,
+                  label: 'Fuso horário',
+                  icon: Icons.public_outlined,
+                  hintText: 'America/Sao_Paulo',
+                  requiredField: true,
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 200 : (telaMedia ? 200 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _statusController,
+                  label: 'Status',
+                  icon: Icons.toggle_on_outlined,
+                  hintText: 'ATIVO',
+                  requiredField: true,
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _idColaboradorAtualizacaoController,
+                  label: 'ID colaborador (PUT)',
+                  icon: Icons.edit_note_outlined,
+                  hintText: 'COLAB-0001',
+                  requiredField: true,
+                ),
+              ),
             ],
           ),
         );
@@ -1187,6 +1439,16 @@ class _CadastroColaboradorWebBodyState
                   icon: Icons.flag_outlined,
                 ),
               ),
+              SizedBox(
+                width: telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _paisController,
+                  label: 'País',
+                  icon: Icons.flag_circle_outlined,
+                  hintText: 'BR',
+                ),
+              ),
             ],
           ),
         );
@@ -1261,6 +1523,36 @@ class _CadastroColaboradorWebBodyState
                         }
                         _aplicarPerfil(value);
                       },
+                    ),
+                  ),
+                  SizedBox(
+                    width:
+                        telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _departamentoController,
+                      label: 'Departamento',
+                      icon: Icons.account_tree_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width:
+                        telaGrande ? 180 : (telaMedia ? 180 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _tipoContratoController,
+                      label: 'Tipo contrato',
+                      icon: Icons.assignment_ind_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width:
+                        telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _centroDeCustoController,
+                      label: 'Centro de custo',
+                      icon: Icons.account_balance_wallet_outlined,
                     ),
                   ),
                 ],
@@ -1482,6 +1774,242 @@ class _CadastroColaboradorWebBodyState
           ),
         );
 
+
+
+        final Widget dadosGlobaisPagamento = _buildSectionCard(
+          context: context,
+          title: 'Identidade global, pagamento e governança',
+          subtitle:
+              'Campos para operação internacional, foto auditável e agenda financeira.',
+          icon: Icons.language_outlined,
+          child: Column(
+            children: <Widget>[
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: <Widget>[
+                  SizedBox(
+                    width: telaGrande ? 180 : (telaMedia ? 180 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _tipoDocumentoGlobalController,
+                      label: 'Tipo documento',
+                      icon: Icons.badge_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _numeroDocumentoGlobalController,
+                      label: 'Documento global',
+                      icon: Icons.pin_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _paisDocumentoController,
+                      label: 'País doc.',
+                      icon: Icons.flag_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _nacionalidadeController,
+                      label: 'Nacionalidade',
+                      icon: Icons.public_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _paisResidenciaController,
+                      label: 'País residência',
+                      icon: Icons.home_work_outlined,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: <Widget>[
+                  SizedBox(
+                    width: telaGrande ? 140 : (telaMedia ? 140 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _moedaPagamentoController,
+                      label: 'Moeda',
+                      icon: Icons.currency_exchange_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 180 : (telaMedia ? 180 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _periodicidadePagamentoController,
+                      label: 'Periodicidade',
+                      icon: Icons.repeat_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 170 : (telaMedia ? 170 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _valorBasePagamentoController,
+                      label: 'Valor base',
+                      icon: Icons.monetization_on_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _metodoPagamentoController,
+                      label: 'Método pagamento',
+                      icon: Icons.payments_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _diaPagamentoController,
+                      label: 'Dia pgto',
+                      icon: Icons.calendar_month_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _bancoController,
+                      label: 'Banco',
+                      icon: Icons.account_balance_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 160 : (telaMedia ? 160 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _agenciaController,
+                      label: 'Agência',
+                      icon: Icons.numbers_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 200 : (telaMedia ? 200 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _contaController,
+                      label: 'Conta',
+                      icon: Icons.credit_card_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _ibanController,
+                      label: 'IBAN',
+                      icon: Icons.travel_explore_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _swiftController,
+                      label: 'SWIFT/BIC',
+                      icon: Icons.swap_horiz_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _pixController,
+                      label: 'Chave PIX',
+                      icon: Icons.pix_outlined,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 200 : (telaMedia ? 200 : double.infinity),
+                    child: _buildTextField(
+                      context: context,
+                      controller: _escopoDadosController,
+                      label: 'Escopo de dados',
+                      icon: Icons.security_outlined,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: <Widget>[
+                  SizedBox(
+                    width: telaGrande ? 320 : double.infinity,
+                    child: _buildSwitchTile(
+                      context: context,
+                      title: 'Incluir na agenda financeira',
+                      subtitle: 'Registra eventos de pagamento automaticamente.',
+                      value: _incluirNaAgendaFinanceira,
+                      onChanged: (bool value) => _incluirNaAgendaFinanceira = value,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 320 : double.infinity,
+                    child: _buildSwitchTile(
+                      context: context,
+                      title: 'Acessar agenda financeira',
+                      subtitle: 'Permite visualização de eventos e títulos da agenda.',
+                      value: _podeAcessarAgendaFinanceira,
+                      onChanged: (bool value) => _podeAcessarAgendaFinanceira = value,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 320 : double.infinity,
+                    child: _buildSwitchTile(
+                      context: context,
+                      title: 'Editar dados de pagamento',
+                      subtitle: 'Permite alterar banco, conta e política de pagamento.',
+                      value: _podeEditarDadosPagamento,
+                      onChanged: (bool value) => _podeEditarDadosPagamento = value,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 320 : double.infinity,
+                    child: _buildSwitchTile(
+                      context: context,
+                      title: 'Exportar relatórios',
+                      subtitle: 'Permite exportação de dados em massa.',
+                      value: _podeExportarRelatorios,
+                      onChanged: (bool value) => _podeExportarRelatorios = value,
+                    ),
+                  ),
+                  SizedBox(
+                    width: telaGrande ? 320 : double.infinity,
+                    child: _buildSwitchTile(
+                      context: context,
+                      title: 'Gerenciar permissões',
+                      subtitle: 'Concede autonomia para controlar acessos de outros usuários.',
+                      value: _podeGerenciarPermissoes,
+                      onChanged: (bool value) => _podeGerenciarPermissoes = value,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
         final Widget conteudoEsquerdo = Column(
           children: <Widget>[
             identidadeAcesso,
@@ -1491,6 +2019,8 @@ class _CadastroColaboradorWebBodyState
             endereco,
             const SizedBox(height: 20),
             dadosFuncionais,
+            const SizedBox(height: 20),
+            dadosGlobaisPagamento,
             const SizedBox(height: 20),
             autorizacoesGerais,
             const SizedBox(height: 20),
