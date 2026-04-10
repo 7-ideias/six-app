@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:typed_data';
+
+import 'package:appplanilha/core/services/produto_service.dart';
 import 'package:appplanilha/core/utils/produto_helper.dart';
 import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
@@ -41,6 +46,7 @@ class ProdutoListaBody extends StatefulWidget {
 
 class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final TextEditingController _controllerBusca = TextEditingController();
+  final ProdutoService _produtoService = ProdutoService();
 
   List<ProdutoModel> todosProdutos = [];
   List<ProdutoModel> produtosFiltrados = [];
@@ -48,6 +54,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   String termoBusca = '';
   String tipoSelecionado = 'PRODUTO';
   String ordenacao = 'nome';
+  bool _isGerandoRelatorio = false;
 
   void _logInfo(String message) {
     debugPrint('[SubPainelWebProdutoLista][INFO] $message');
@@ -214,6 +221,60 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       produtoParaEdicao: produto,
       modoEdicao: true,
     );
+  }
+  Future<void> _imprimirRelatorioProdutos() async {
+    if (_isGerandoRelatorio) {
+      return;
+    }
+
+    setState(() {
+      _isGerandoRelatorio = true;
+    });
+
+    try {
+      final RelatorioProdutoPdfResponse response =
+          await _produtoService.gerarRelatorioListagemPdf();
+
+      if (response.arquivoBase64.trim().isEmpty) {
+        throw Exception('O backend retornou o PDF vazio.');
+      }
+
+      final Uint8List bytes = base64Decode(response.arquivoBase64);
+      final html.Blob blob = html.Blob(<dynamic>[bytes], response.mimeType);
+      final String url = html.Url.createObjectUrlFromBlob(blob);
+      final html.AnchorElement anchor = html.AnchorElement(href: url)
+        ..download = response.nomeArquivo
+        ..style.display = 'none';
+
+      html.document.body?.children.add(anchor);
+      anchor.click();
+      anchor.remove();
+      html.Url.revokeObjectUrl(url);
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Relatório salvo: ${response.nomeArquivo}')),
+      );
+    } catch (error, stackTrace) {
+      _logError('Erro ao imprimir relatório de produtos', error, stackTrace);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Não foi possível gerar o PDF: $error'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGerandoRelatorio = false;
+        });
+      }
+    }
   }
 
   @override
@@ -400,10 +461,30 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     ),
                   ),
                 ),
-                FloatingActionButton(
-                  onPressed: _recarregar,
-                  backgroundColor: Colors.blueAccent,
-                  child: const Icon(Icons.refresh),
+                Wrap(
+                  spacing: 12,
+                  children: <Widget>[
+                    FloatingActionButton(
+                      onPressed: _recarregar,
+                      backgroundColor: Colors.blueAccent,
+                      child: const Icon(Icons.refresh),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _isGerandoRelatorio
+                          ? null
+                          : _imprimirRelatorioProdutos,
+                      icon: _isGerandoRelatorio
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.print_outlined),
+                      label: Text(
+                        _isGerandoRelatorio ? 'Gerando PDF...' : 'Imprimir',
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
