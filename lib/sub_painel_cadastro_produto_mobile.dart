@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:appplanilha/data/models/produto_model.dart';
 
 class SubPainelCadastroProduto extends StatelessWidget {
   const SubPainelCadastroProduto({
@@ -16,7 +17,12 @@ class SubPainelCadastroProduto extends StatelessWidget {
   }
 }
 
-void showSubPainelCadastroProduto(BuildContext context, String textoDaAppBar) {
+void showSubPainelCadastroProduto(
+  BuildContext context,
+  String textoDaAppBar, {
+  ProdutoModel? produtoParaEdicao,
+  bool modoEdicao = false,
+}) {
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(
       content: Text('Cadastro de produto disponível apenas na versão web.'),

@@ -15,21 +15,36 @@ class SubPainelCadastroProduto extends SubPainelWebGeneral {
   });
 }
 
-void showSubPainelCadastroProduto(BuildContext context, String textoDaAppBar) {
+void showSubPainelCadastroProduto(
+  BuildContext context,
+  String textoDaAppBar, {
+  ProdutoModel? produtoParaEdicao,
+  bool modoEdicao = false,
+}) {
   showDialog(
     context: context,
     barrierDismissible: true,
     builder: (BuildContext dialogContext) {
       return SubPainelCadastroProduto(
         textoDaAppBar: textoDaAppBar,
-        body: const CadastroProdutoWebBody(),
+        body: CadastroProdutoWebBody(
+          produtoParaEdicao: produtoParaEdicao,
+          modoEdicao: modoEdicao,
+        ),
       );
     },
   );
 }
 
 class CadastroProdutoWebBody extends StatefulWidget {
-  const CadastroProdutoWebBody({super.key});
+  const CadastroProdutoWebBody({
+    super.key,
+    this.produtoParaEdicao,
+    this.modoEdicao = false,
+  });
+
+  final ProdutoModel? produtoParaEdicao;
+  final bool modoEdicao;
 
   @override
   State<CadastroProdutoWebBody> createState() => _CadastroProdutoWebBodyState();
@@ -67,6 +82,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   Uint8List? _fotoBytes;
   String? _nomeArquivoFoto;
+  String? _produtoEmEdicaoId;
+
+  bool get _isModoEdicao => widget.modoEdicao && widget.produtoParaEdicao != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _preencherCamposSeModoEdicao();
+  }
 
   @override
   void dispose() {
@@ -152,8 +176,43 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     return int.tryParse(controller.text.trim()) ?? 0;
   }
 
+  void _preencherCamposSeModoEdicao() {
+    if (!_isModoEdicao) {
+      return;
+    }
+
+    final ProdutoModel produto = widget.produtoParaEdicao!;
+    _produtoEmEdicaoId = produto.id;
+    _codigoBarrasController.text = produto.codigoDeBarras;
+    _nomeProdutoController.text = produto.nomeProduto;
+    _tipoSelecionado = produto.tipoProduto.isEmpty ? 'PRODUTO' : produto.tipoProduto;
+    _grupoProdutoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
+    _modeloProdutoController.text = produto.modeloProduto;
+    _estoqueMaximoController.text = produto.estoqueMaximo.toString();
+    _estoqueMinimoController.text = produto.estoqueMinimo.toString();
+    _precoVendaController.text = produto.precoVenda.toString();
+    _valorComissaoController.text =
+        produto.objComissao.valorFixoDeComissaoParaEsseProduto.toString();
+    _produtoTemComissaoEspecial = produto.objComissao.produtoTemComissaoEspecial;
+    _ativo = produto.ativo;
+
+    if (produto.objetoServico != null) {
+      _tempoGarantiaController.text = produto.objetoServico!.tempoDaGarantia;
+      _podeAlterarValorNaHora = produto.objetoServico!.podeAlterarOValorNaHora;
+    }
+
+    if (produto.objEntradaSaidaProduto != null &&
+        produto.objEntradaSaidaProduto!.isNotEmpty) {
+      final ObjEntradaSaidaProduto entrada = produto.objEntradaSaidaProduto!.first;
+      _quantidadeEntradaController.text = entrada.quantidade.toString();
+      _valorCustoController.text = entrada.valorCusto.toString();
+      _valorVendaEntradaController.text = entrada.valorDaVenda.toString();
+    }
+  }
+
   ProdutoModel _montarProduto() {
     return ProdutoModel(
+      id: _produtoEmEdicaoId,
       ativo: _ativo,
       codigoDeBarras: _codigoBarrasController.text.trim(),
       nomeProduto: _nomeProdutoController.text.trim(),
@@ -247,7 +306,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
     try {
       final produto = _montarProduto();
-      final String? idCriado = await _produtoService.cadastrarProduto(produto);
+      if (_isModoEdicao) {
+        await _produtoService.atualizarProduto(produto);
+      } else {
+        await _produtoService.cadastrarProduto(produto);
+      }
 
       if (!mounted) return;
 
@@ -257,8 +320,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           return AlertDialog(
             title: const Text('Sucesso'),
             content: Text(
-              idCriado != null
-                  ? 'Produto cadastrado com sucesso!\n\nID: $idCriado'
+              _isModoEdicao
+                  ? 'Produto atualizado com sucesso!'
                   : 'Produto cadastrado com sucesso!',
             ),
             actions: <Widget>[
@@ -280,7 +343,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Erro ao cadastrar'),
+            title: Text(_isModoEdicao ? 'Erro ao atualizar' : 'Erro ao cadastrar'),
             content: Text(e.toString()),
             actions: <Widget>[
               TextButton(
@@ -347,9 +410,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               const SizedBox(width: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const <Widget>[
+                children: <Widget>[
                   Text(
-                    'Cadastro de produto',
+                    _isModoEdicao ? 'Edição de produto' : 'Cadastro de produto',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -358,7 +421,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Visual mais alinhado ao SixApp, com destaque para foto e ações principais.',
+                    _isModoEdicao
+                        ? 'Modo edição: revise os dados já cadastrados e salve as alterações.'
+                        : 'Visual mais alinhado ao SixApp, com destaque para foto e ações principais.',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
@@ -381,7 +446,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 const Icon(Icons.wifi_tethering, size: 16, color: Colors.white),
                 const SizedBox(width: 8),
                 Text(
-                  _isLoading ? 'Salvando...' : 'Pronto para envio',
+                  _isLoading
+                      ? (_isModoEdicao ? 'Salvando alteração...' : 'Salvando...')
+                      : (_isModoEdicao ? 'Pronto para editar' : 'Pronto para envio'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -717,8 +784,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         spacing: 16,
         runSpacing: 16,
         children: <Widget>[
-          const Text(
-            'Revise os dados e conclua o cadastro.',
+          Text(
+            _isModoEdicao
+                ? 'Revise os dados e conclua a alteração.'
+                : 'Revise os dados e conclua o cadastro.',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 14,
@@ -741,7 +810,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
                     : const Icon(Icons.save_outlined),
-                label: Text(_isLoading ? 'Salvando...' : 'Salvar produto'),
+                label: Text(
+                  _isLoading
+                      ? (_isModoEdicao ? 'Salvando alteração...' : 'Salvando...')
+                      : (_isModoEdicao ? 'Salvar alteração' : 'Salvar produto'),
+                ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
                 ),
