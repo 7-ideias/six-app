@@ -410,7 +410,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               const SizedBox(width: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const <Widget>[
+                children: <Widget>[
                   Text(
                     _isModoEdicao ? 'Edição de produto' : 'Cadastro de produto',
                     style: TextStyle(
