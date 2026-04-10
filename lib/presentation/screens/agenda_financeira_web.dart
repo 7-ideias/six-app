@@ -29,6 +29,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
+  void _onAtualizarPressed() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Atualização manual acionada. Integre com o backend aqui.'),
+      ),
+    );
+  }
+
+  void _onNovoLancamentoPressed() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Ação de novo lançamento acionada. Integre com o backend aqui.'),
+      ),
+    );
+  }
+
   final ScrollController _mainScrollController = ScrollController();
 
   final List<String> _periodos = const [
@@ -76,6 +92,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   int _abaSelecionada = 0;
   Map<String, dynamic>? _lancamentoSelecionado;
+  double _resumoCardsProgress = 0.0;
 
   final List<String> _abas = const [
     'Agenda',
@@ -277,12 +294,25 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     super.initState();
     _lancamentoSelecionado =
     _gruposAgenda.first['itens'].first as Map<String, dynamic>;
+    _mainScrollController.addListener(_onMainScroll);
   }
 
   @override
   void dispose() {
+    _mainScrollController.removeListener(_onMainScroll);
     _mainScrollController.dispose();
     super.dispose();
+  }
+
+  void _onMainScroll() {
+    if (!_mainScrollController.hasClients) return;
+    if (_mainScrollController.positions.length != 1) return;
+
+    final novoProgresso =
+    (_mainScrollController.offset / 180).clamp(0.0, 1.0);
+
+    if ((novoProgresso - _resumoCardsProgress).abs() < 0.02) return;
+    setState(() => _resumoCardsProgress = novoProgresso);
   }
 
   Color _corTipo(String tipo) {
@@ -488,7 +518,47 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildResumoCards(BuildContext context) {
+    final mostrarLinhaUnica = _resumoCardsProgress > 0.30;
+    final double alturaReservada = mostrarLinhaUnica ? 126 : 220;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      constraints: BoxConstraints(minHeight: alturaReservada),
+      padding: const EdgeInsets.only(bottom: 14),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 320),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        layoutBuilder: (currentChild, previousChildren) {
+          return Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          );
+        },
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SizeTransition(
+              sizeFactor: animation,
+              axisAlignment: -1,
+              child: child,
+            ),
+          );
+        },
+        child: mostrarLinhaUnica
+            ? _buildResumoCardsLinhaUnica(context)
+            : _buildResumoCardsGrade(context),
+      ),
+    );
+  }
+
+  Widget _buildResumoCardsGrade(BuildContext context) {
     return LayoutBuilder(
+      key: const ValueKey('resumo-cards-grade'),
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final cardWidth = width > 1500
@@ -506,6 +576,36 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               child: _buildResumoCard(context, card),
             );
           }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildResumoCardsLinhaUnica(BuildContext context) {
+    return LayoutBuilder(
+      key: const ValueKey('resumo-cards-linha-unica'),
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final cardWidth = width > 1600
+            ? 250.0
+            : width > 1200
+            ? 220.0
+            : 200.0;
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(_cardsResumo.length, (index) {
+              final card = _cardsResumo[index];
+              return Padding(
+                padding: EdgeInsets.only(right: index == _cardsResumo.length - 1 ? 0 : 12),
+                child: SizedBox(
+                  width: cardWidth,
+                  child: _buildResumoCard(context, card),
+                ),
+              );
+            }),
+          ),
         );
       },
     );
@@ -747,7 +847,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           child: Text('Nenhum lançamento encontrado com os filtros atuais.'),
         )
             : ListView.separated(
-          controller: _mainScrollController,
           itemCount: gruposVisiveis.length,
           separatorBuilder: (_, __) => const SizedBox(height: 20),
           itemBuilder: (context, index) {
@@ -1477,74 +1576,123 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final Widget conteudo = Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildHeader(context),
-          const SizedBox(height: 16),
-          _buildResumoCards(context),
-          const SizedBox(height: 16),
-          _buildToolbarFiltros(context),
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: _buildAbas(context),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final larguraEstreita = constraints.maxWidth < 1380;
+    final Widget conteudo = LayoutBuilder(
+      builder: (context, viewportConstraints) {
+        final alturaDisponivelArea = viewportConstraints.maxHeight - 360;
+        final alturaArea = alturaDisponivelArea < 420 ? 420.0 : alturaDisponivelArea;
 
-                if (larguraEstreita) {
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: _buildAreaPrincipal(context),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: constraints.maxHeight * 0.50,
-                        child: _buildPainelDetalheUnificado(context),
-                      ),
-                    ],
-                  );
-                }
+        return SingleChildScrollView(
+          controller: _mainScrollController,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: viewportConstraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildHeader(context),
+                  const SizedBox(height: 16),
+                  _buildResumoCards(context),
+                  const SizedBox(height: 22),
+                  _buildToolbarFiltros(context),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildAbas(context),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: alturaArea,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final larguraEstreita = constraints.maxWidth < 1380;
 
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 8,
-                      child: _buildAreaPrincipal(context),
+                        if (larguraEstreita) {
+                          return Column(
+                            children: [
+                              Expanded(
+                                child: _buildAreaPrincipal(context),
+                              ),
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                height: constraints.maxHeight * 0.50,
+                                child: _buildPainelDetalheUnificado(context),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              flex: 8,
+                              child: _buildAreaPrincipal(context),
+                            ),
+                            const SizedBox(width: 16),
+                            SizedBox(
+                              width: 420,
+                              child: _buildPainelDetalheUnificado(context),
+                            ),
+                          ],
+                        );
+                      },
                     ),
-                    const SizedBox(width: 16),
-                    SizedBox(
-                      width: 420,
-                      child: _buildPainelDetalheUnificado(context),
-                    ),
-                  ],
-                );
-              },
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
 
     if (widget.embedded) {
-      return Container(
-        color: theme.colorScheme.surfaceContainerLowest,
-        child: SafeArea(child: conteudo),
+      return Scaffold(
+        backgroundColor: theme.colorScheme.surfaceContainerLowest,
+        floatingActionButton: _buildFloatingActions(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        body: SafeArea(
+          child: conteudo,
+        ),
       );
     }
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
+      floatingActionButton: _buildFloatingActions(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: conteudo,
       ),
+    );
+  }
+
+  Widget _buildFloatingActions() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FloatingActionButton.extended(
+          heroTag: 'fab-voltar-agenda-financeira',
+          onPressed: _voltarTelaAnterior,
+          icon: const Icon(Icons.arrow_back_rounded),
+          label: const Text('Voltar'),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton.extended(
+          heroTag: 'fab-novo-lancamento-agenda-financeira',
+          onPressed: _onNovoLancamentoPressed,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Novo lançamento'),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton.extended(
+          heroTag: 'fab-atualizar-agenda-financeira',
+          onPressed: _onAtualizarPressed,
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Atualizar'),
+        ),
+      ],
     );
   }
 }
