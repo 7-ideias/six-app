@@ -1,5 +1,6 @@
 import 'package:appplanilha/core/utils/produto_helper.dart';
 import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
+import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,21 +12,28 @@ class SubPainelWebProdutoLista extends SubPainelWebGeneral {
   SubPainelWebProdutoLista({
     super.key,
     this.isSelecao = false,
+    this.modoEdicao = false,
   }) : super(
-    body: ProdutoListaBody(isSelecao: isSelecao),
+    body: ProdutoListaBody(
+      isSelecao: isSelecao,
+      modoEdicao: modoEdicao,
+    ),
     textoDaAppBar: 'Lista de Produtos',
   );
 
   final bool isSelecao;
+  final bool modoEdicao;
 }
 
 class ProdutoListaBody extends StatefulWidget {
   const ProdutoListaBody({
     super.key,
     this.isSelecao = false,
+    this.modoEdicao = false,
   });
 
   final bool isSelecao;
+  final bool modoEdicao;
 
   @override
   State<ProdutoListaBody> createState() => _ProdutoListaBodyState();
@@ -180,6 +188,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         _logInfo('Fechando subpainel e retornando produto via Navigator.pop');
         Navigator.pop(context, produto);
       } else {
+        if (widget.modoEdicao) {
+          _abrirCadastroParaEdicao(produto);
+          return;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Clicou em ${produto.nomeProduto}')),
         );
@@ -192,6 +205,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         ),
       );
     }
+  }
+
+  void _abrirCadastroParaEdicao(ProdutoModel produto) {
+    showSubPainelCadastroProduto(
+      context,
+      'Editar Produto',
+      produtoParaEdicao: produto,
+      modoEdicao: true,
+    );
   }
 
   @override
@@ -212,6 +234,29 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
       return Column(
         children: [
+          if (widget.modoEdicao && !widget.isSelecao)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.edit_note, color: Colors.orange),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Modo edição ativo: clique em um produto para abrir o cadastro em edição.',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -426,6 +471,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       onPressed: () => _selecionarProduto(produto),
                       icon: const Icon(Icons.add_shopping_cart),
                       label: const Text('Adicionar'),
+                    ),
+                  )
+                else if (widget.modoEdicao)
+                  SizedBox(
+                    width: 140,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _abrirCadastroParaEdicao(produto),
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Editar'),
                     ),
                   )
                 else
