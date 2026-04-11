@@ -15,7 +15,8 @@ class AgendaFinanceiraWeb extends StatefulWidget {
   State<AgendaFinanceiraWeb> createState() => _AgendaFinanceiraWebState();
 }
 
-class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
+    with SingleTickerProviderStateMixin {
 
   void _voltarTelaAnterior() {
     if (widget.embedded) {
@@ -46,6 +47,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   final ScrollController _mainScrollController = ScrollController();
+  late final AnimationController _fabMenuController;
 
   final List<String> _periodos = const [
     'Hoje',
@@ -295,13 +297,31 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     _lancamentoSelecionado =
     _gruposAgenda.first['itens'].first as Map<String, dynamic>;
     _mainScrollController.addListener(_onMainScroll);
+    _fabMenuController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
   }
 
   @override
   void dispose() {
+    _fabMenuController.dispose();
     _mainScrollController.removeListener(_onMainScroll);
     _mainScrollController.dispose();
     super.dispose();
+  }
+
+  void _alternarMenuFab() {
+    if (_fabMenuController.isCompleted) {
+      _fabMenuController.reverse();
+      return;
+    }
+    _fabMenuController.forward();
+  }
+
+  void _executarAcaoFab(VoidCallback acao) {
+    acao();
+    _fabMenuController.reverse();
   }
 
   void _onMainScroll() {
@@ -668,8 +688,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildToolbarFiltros(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
@@ -1668,31 +1686,94 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildFloatingActions() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        FloatingActionButton.extended(
-          heroTag: 'fab-voltar-agenda-financeira',
-          onPressed: _voltarTelaAnterior,
-          icon: const Icon(Icons.arrow_back_rounded),
-          label: const Text('Voltar'),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton.extended(
-          heroTag: 'fab-novo-lancamento-agenda-financeira',
-          onPressed: _onNovoLancamentoPressed,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Novo lançamento'),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton.extended(
-          heroTag: 'fab-atualizar-agenda-financeira',
-          onPressed: _onAtualizarPressed,
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Atualizar'),
-        ),
-      ],
+    final itens = <({String heroTag, IconData icon, String label, VoidCallback onPressed})>[
+      (
+        heroTag: 'fab-voltar-agenda-financeira',
+        icon: Icons.arrow_back_rounded,
+        label: 'Voltar',
+        onPressed: _voltarTelaAnterior,
+      ),
+      (
+        heroTag: 'fab-novo-lancamento-agenda-financeira',
+        icon: Icons.add_rounded,
+        label: 'Novo lançamento',
+        onPressed: _onNovoLancamentoPressed,
+      ),
+      (
+        heroTag: 'fab-atualizar-agenda-financeira',
+        icon: Icons.refresh_rounded,
+        label: 'Atualizar',
+        onPressed: _onAtualizarPressed,
+      ),
+    ];
+
+    const double espacoVertical = 72;
+    const double alturaBase = 56;
+
+    return SizedBox(
+      width: 260,
+      height: alturaBase + (itens.length * espacoVertical) + 12,
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          ...List<Widget>.generate(itens.length, (index) {
+            final item = itens[index];
+            final inicio = index * 0.12;
+            final fim = (inicio + 0.60).clamp(0.0, 1.0);
+            final animacao = CurvedAnimation(
+              parent: _fabMenuController,
+              curve: Interval(inicio, fim, curve: Curves.easeOutCubic),
+              reverseCurve: Curves.easeInCubic,
+            );
+
+            final deslocamentoBase = (index + 1) * espacoVertical;
+
+            return AnimatedBuilder(
+              animation: _fabMenuController,
+              builder: (context, _) {
+                final visivel = _fabMenuController.value > 0.01;
+                return Positioned(
+                  right: 0,
+                  bottom: deslocamentoBase * animacao.value,
+                  child: IgnorePointer(
+                    ignoring: !visivel,
+                    child: Opacity(
+                      opacity: animacao.value,
+                      child: Transform.scale(
+                        scale: 0.92 + (0.08 * animacao.value),
+                        alignment: Alignment.bottomRight,
+                        child: FloatingActionButton.extended(
+                          heroTag: item.heroTag,
+                          onPressed: () => _executarAcaoFab(item.onPressed),
+                          icon: Icon(item.icon),
+                          label: Text(item.label),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: FloatingActionButton(
+              heroTag: 'fab-menu-agenda-financeira',
+              onPressed: _alternarMenuFab,
+              child: RotationTransition(
+                turns: Tween<double>(begin: 0.0, end: 0.125).animate(
+                  CurvedAnimation(
+                    parent: _fabMenuController,
+                    curve: Curves.easeInOut,
+                  ),
+                ),
+                child: const Icon(Icons.add_rounded),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

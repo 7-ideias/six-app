@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../design_system/helpers/six_theme_resolver.dart';
-import '../design_system/themes/app_colors.dart';
 import '../design_system/themes/app_theme.dart';
 
 class ThemeProvider extends ChangeNotifier {
@@ -23,6 +22,7 @@ class ThemeProvider extends ChangeNotifier {
     return AppTheme.getThemeWithScheme(
       resolver.getLightScheme(),
       isDark: false,
+      visualDensity: resolver.visualDensity,
     );
   }
 
@@ -31,6 +31,7 @@ class ThemeProvider extends ChangeNotifier {
     return AppTheme.getThemeWithScheme(
       resolver.getDarkScheme(),
       isDark: true,
+      visualDensity: resolver.visualDensity,
     );
   }
 

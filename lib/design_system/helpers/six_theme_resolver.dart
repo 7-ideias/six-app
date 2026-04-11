@@ -1,6 +1,36 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/aparencia_models.dart';
 
+enum DensidadeVisualSistema {
+  compacta,
+  confortavel,
+  expandida;
+
+  String get label {
+    switch (this) {
+      case DensidadeVisualSistema.compacta:
+        return 'Compacta';
+      case DensidadeVisualSistema.confortavel:
+        return 'Confortável';
+      case DensidadeVisualSistema.expandida:
+        return 'Expandida';
+    }
+  }
+
+  static DensidadeVisualSistema fromLabel(String label) {
+    switch (label.toLowerCase()) {
+      case 'compacta':
+        return DensidadeVisualSistema.compacta;
+      case 'expandida':
+        return DensidadeVisualSistema.expandida;
+      case 'confortavel':
+      case 'confortável':
+      default:
+        return DensidadeVisualSistema.confortavel;
+    }
+  }
+}
+
 /// Classe responsável por centralizar a lógica de resolução do tema e paleta.
 /// Atua como um ChangeNotifier para notificar a UI sobre mudanças globais.
 class SixThemeResolver extends ChangeNotifier {
@@ -10,6 +40,7 @@ class SixThemeResolver extends ChangeNotifier {
 
   PaletaSistema _paletaAtual = PaletaSistema.defaultPalette();
   TemaSistema _temaAtual = TemaSistema.claro;
+  DensidadeVisualSistema _densidadeAtual = DensidadeVisualSistema.confortavel;
 
   void atualizarConfiguracao(ConfiguracaoAparenciaSistema configuracao) {
     _paletaAtual = configuracao.paleta;
@@ -19,6 +50,26 @@ class SixThemeResolver extends ChangeNotifier {
 
   PaletaSistema get paleta => _paletaAtual;
   TemaSistema get tema => _temaAtual;
+  DensidadeVisualSistema get densidade => _densidadeAtual;
+
+  void atualizarDensidade(DensidadeVisualSistema densidade) {
+    if (_densidadeAtual == densidade) {
+      return;
+    }
+    _densidadeAtual = densidade;
+    notifyListeners();
+  }
+
+  VisualDensity get visualDensity {
+    switch (_densidadeAtual) {
+      case DensidadeVisualSistema.compacta:
+        return const VisualDensity(horizontal: -1.0, vertical: -1.0);
+      case DensidadeVisualSistema.expandida:
+        return const VisualDensity(horizontal: 1.0, vertical: 1.0);
+      case DensidadeVisualSistema.confortavel:
+        return VisualDensity.standard;
+    }
+  }
 
   /// Retorna as cores principais de forma fácil de consumir
   Color get primary => _paletaAtual.primaria;

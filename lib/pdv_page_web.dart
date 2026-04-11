@@ -81,14 +81,20 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     }
 
     setState(() {
-      _pdvTheme = PdvVisualThemeResolver.resolve(_themeResolver.paleta);
+      _pdvTheme = PdvVisualThemeResolver.resolve(
+        _themeResolver.paleta,
+        tema: _themeResolver.tema,
+      );
     });
   }
 
   @override
   void initState() {
     super.initState();
-    _pdvTheme = PdvVisualThemeResolver.resolve(_themeResolver.paleta);
+    _pdvTheme = PdvVisualThemeResolver.resolve(
+      _themeResolver.paleta,
+      tema: _themeResolver.tema,
+    );
     _themeResolver.addListener(_onThemeChanged);
     _atualizarCamposDerivados();
 

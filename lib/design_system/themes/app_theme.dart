@@ -3,12 +3,19 @@ import 'app_colors.dart';
 import 'app_color_schemes.dart';
 
 class AppTheme {
-  static ThemeData getThemeWithScheme(ColorScheme colorScheme, {required bool isDark}) {
+  static ThemeData getThemeWithScheme(
+    ColorScheme colorScheme, {
+    required bool isDark,
+    VisualDensity visualDensity = VisualDensity.standard,
+  }) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       brightness: colorScheme.brightness,
-      scaffoldBackgroundColor: colorScheme.surface,
+      scaffoldBackgroundColor: isDark
+          ? colorScheme.surfaceContainerLowest
+          : colorScheme.surface,
+      visualDensity: visualDensity,
       
       // AppBar Theme
       appBarTheme: AppBarTheme(
@@ -20,7 +27,9 @@ class AppTheme {
 
       // Card Theme
       cardTheme: CardThemeData(
-        color: isDark ? AppColors.darkSurface : Colors.white,
+        color: isDark
+            ? colorScheme.surfaceContainerLow
+            : colorScheme.surface,
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -46,7 +55,9 @@ class AppTheme {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+        fillColor: isDark
+            ? colorScheme.surfaceContainerHigh
+            : colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

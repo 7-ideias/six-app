@@ -55,18 +55,17 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     setState(() => _carregandoAparencia = true);
     try {
       final config = await _aparenciaService.buscarAparencia();
-      if (config != null) {
-        setState(() {
-          _temaSelecionado = config.tema.label;
-          _corPrimaria = config.paleta.primaria;
-          _corSecundaria = config.paleta.secundaria;
-          _corDestaque = config.paleta.destaque;
-          _corAlerta = config.paleta.alerta;
-          
-          // Atualiza o resolver global para que outras partes do app possam usar
-          SixThemeResolver().atualizarConfiguracao(config);
-        });
-      }
+      setState(() {
+        _temaSelecionado = config.tema.label;
+        _densidadeSelecionada = SixThemeResolver().densidade.label;
+        _corPrimaria = config.paleta.primaria;
+        _corSecundaria = config.paleta.secundaria;
+        _corDestaque = config.paleta.destaque;
+        _corAlerta = config.paleta.alerta;
+
+        // Atualiza o resolver global para que outras partes do app possam usar
+        SixThemeResolver().atualizarConfiguracao(config);
+      });
     } catch (e) {
       debugPrint('Erro ao carregar aparência: $e');
     } finally {
@@ -235,6 +234,29 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     }
   }
 
+  void _aplicarAparenciaPreview() {
+    final resolver = SixThemeResolver();
+    final paletaAtual = resolver.paleta;
+    resolver.atualizarConfiguracao(
+      ConfiguracaoAparenciaSistema(
+        tema: TemaSistema.fromLabel(_temaSelecionado),
+        paleta: PaletaSistema(
+          primaria: _corPrimaria,
+          secundaria: _corSecundaria,
+          destaque: _corDestaque,
+          alerta: _corAlerta,
+          fundo: paletaAtual.fundo,
+          superficie: paletaAtual.superficie,
+          textoPrimario: paletaAtual.textoPrimario,
+          textoSecundario: paletaAtual.textoSecundario,
+        ),
+      ),
+    );
+    resolver.atualizarDensidade(
+      DensidadeVisualSistema.fromLabel(_densidadeSelecionada),
+    );
+  }
+
   Future<void> _salvarConfiguracoes() async {
     setState(() {
       _carregandoAparencia = true;
@@ -286,6 +308,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
       await _aparenciaService.salvarAparencia(configuracao);
       SixThemeResolver().atualizarConfiguracao(configuracao);
+      SixThemeResolver().atualizarDensidade(
+        DensidadeVisualSistema.fromLabel(_densidadeSelecionada),
+      );
 
       setState(() {
         _possuiAlteracoesNaoSalvas = false;
@@ -1924,6 +1949,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _temaSelecionado = valor!;
                     });
+                    _aplicarAparenciaPreview();
                     _marcarAlteracao();
                   },
                 ),
@@ -1936,11 +1962,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   items: const [
                     'Confortável',
                     'Compacta',
+                    'Expandida',
                   ],
                   onChanged: (valor) {
                     setState(() {
                       _densidadeSelecionada = valor!;
                     });
+                    _aplicarAparenciaPreview();
+                    _marcarAlteracao();
                   },
                 ),
               ),
@@ -1965,6 +1994,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 setState(() {
                   _corPrimaria = valor;
                 });
+                _aplicarAparenciaPreview();
                 _marcarAlteracao();
               },
                 ),
@@ -1978,6 +2008,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _corSecundaria = valor;
                     });
+                    _aplicarAparenciaPreview();
                     _marcarAlteracao();
                   },
                 ),
@@ -1991,6 +2022,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _corDestaque = valor;
                     });
+                    _aplicarAparenciaPreview();
                     _marcarAlteracao();
                   },
                 ),
@@ -2004,6 +2036,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     setState(() {
                       _corAlerta = valor;
                     });
+                    _aplicarAparenciaPreview();
                     _marcarAlteracao();
                   },
                 ),

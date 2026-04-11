@@ -149,8 +149,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   void _mostrarErro(String mensagem) {
+    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: theme.colorScheme.error,
+      ),
     );
   }
 
@@ -177,7 +181,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xfff4f7fb),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: SafeArea(child: content),
     );
   }
@@ -190,7 +194,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     final theme = Theme.of(context);
 
     return Container(
-      color: const Color(0xfff4f7fb),
+      color: theme.colorScheme.surfaceContainerLowest,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 1260;
@@ -219,7 +223,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                         Text(
                           'Retornar para os módulos',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xff64748b),
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -335,7 +339,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   'Operações de caixa',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xff14213d),
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -344,7 +348,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                       ? 'Controle operacional do caixa com visão de entradas, saídas, conferência e fechamento.'
                       : 'Antes de registrar operações, faça a abertura do caixa e defina o troco inicial do dia.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xff5b6475),
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.45,
                   ),
                 ),
@@ -355,16 +359,19 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           if (isMedium)
             ...[
               _buildTopInfoChip(
+                theme: theme,
                 icon: Icons.storefront_outlined,
                 label: 'Empresa',
                 value: EmpresaProvider().empresa!.nomeFantasia,
               ),
               _buildTopInfoChip(
+                theme: theme,
                 icon: Icons.person_outline_rounded,
                 label: 'Operador',
                 value: _sessaoAtual?.idColaboradorAbertura ?? 'Aguardando abertura',
               ),
               _buildTopInfoChip(
+                theme: theme,
                 icon: Icons.calendar_today_outlined,
                 label: 'Movimentos',
                 value: '${resumo?.quantidadeMovimentos ?? 0}',
@@ -376,6 +383,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildTopInfoChip({
+    required ThemeData theme,
     required IconData icon,
     required String label,
     required String value,
@@ -384,14 +392,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       constraints: const BoxConstraints(minWidth: 180),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xfff8fbff),
+        color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xffd9e4f2)),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: const Color(0xff2563eb)),
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
           const SizedBox(width: 10),
           Flexible(
             child: Column(
@@ -400,8 +408,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff7a8394),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -410,8 +418,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 Text(
                   value,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff18243d),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1686,19 +1694,20 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required String? hint,
     String? prefixText,
   }) {
+    final theme = Theme.of(context);
     return InputDecoration(
       hintText: hint,
       prefixText: prefixText,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: theme.colorScheme.surfaceContainerLow,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xffdbe4ef)),
+        borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xff2563eb), width: 1.4),
+        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.4),
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1707,13 +1716,16 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   BoxDecoration _cardDecoration() {
+    final theme = Theme.of(context);
     return BoxDecoration(
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: const Color(0xffdde6f0)),
+      border: Border.all(color: theme.colorScheme.outlineVariant),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(.04),
+          color: Colors.black.withOpacity(
+            theme.brightness == Brightness.dark ? .22 : .04,
+          ),
           blurRadius: 26,
           offset: const Offset(0, 10),
         ),
@@ -1722,9 +1734,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   ButtonStyle _primaryButtonStyle() {
+    final theme = Theme.of(context);
     return ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xff1d4ed8),
-      foregroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: theme.colorScheme.onPrimary,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       textStyle: const TextStyle(fontWeight: FontWeight.w700),
@@ -1733,20 +1746,22 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   ButtonStyle _secondaryButtonStyle() {
+    final theme = Theme.of(context);
     return OutlinedButton.styleFrom(
-      foregroundColor: const Color(0xff1e293b),
+      foregroundColor: theme.colorScheme.onSurface,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      side: const BorderSide(color: Color(0xffd3deea)),
+      side: BorderSide(color: theme.colorScheme.outlineVariant),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       textStyle: const TextStyle(fontWeight: FontWeight.w700),
     );
   }
 
   ButtonStyle _dangerButtonStyle() {
+    final theme = Theme.of(context);
     return OutlinedButton.styleFrom(
-      foregroundColor: const Color(0xffb91c1c),
+      foregroundColor: theme.colorScheme.error,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      side: const BorderSide(color: Color(0xfffecaca)),
+      side: BorderSide(color: theme.colorScheme.error.withOpacity(.35)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       textStyle: const TextStyle(fontWeight: FontWeight.w700),
     );

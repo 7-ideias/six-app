@@ -107,18 +107,19 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     required String label,
     VoidCallback? onTap,
   }) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black12),
-          boxShadow: const [
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: Colors.black.withOpacity(0.08),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),
@@ -135,6 +136,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final Size screenSize = MediaQuery.of(context).size;
     final double formWidth = kIsWeb
         ? (screenSize.width * 0.28).clamp(320.0, 460.0)
@@ -170,11 +173,13 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                 width: formWidth,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: isDark
+                      ? theme.colorScheme.surface.withValues(alpha: 0.92)
+                      : theme.colorScheme.surface.withValues(alpha: 0.90),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: const <BoxShadow>[
+                  boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: Colors.black26,
+                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.26),
                       blurRadius: 24,
                       offset: Offset(0, 12),
                     ),
@@ -186,42 +191,42 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                   children: <Widget>[
                     Text(
                       'Bem-vindo',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Acesse sua conta para continuar',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.black54,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _loginController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'login',
                         labelText: 'login',
                         border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
+                        prefixIcon: const Icon(Icons.person),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: theme.colorScheme.surfaceContainerHigh,
                       ),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'senha',
                         labelText: 'senha',
                         border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock),
+                        prefixIcon: const Icon(Icons.lock),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: theme.colorScheme.surfaceContainerHigh,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -260,8 +265,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                       children: [
                         Text(
                           '[202604061649] Novo por aqui?',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black87,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         TextButton(
@@ -274,7 +279,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                     const SizedBox(height: 18),
 
                     Divider(
-                      color: Colors.grey.withValues(alpha: 0.25),
+                      color: theme.colorScheme.outlineVariant,
                       thickness: 1,
                     ),
 
@@ -282,9 +287,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
                     Text(
                       'Baixe também nosso app',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -293,8 +298,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
                     Text(
                       'Disponível para Android e iPhone',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.black54,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -329,9 +334,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3F6FB),
+                        color: theme.colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFD7E0F5)),
+                        border: Border.all(color: theme.colorScheme.outlineVariant),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -342,15 +347,15 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                             child: Icon(
                               Icons.info_outline,
                               size: 18,
-                              color: Color(0xFF24479D),
+                              color: Colors.blue,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Versões para Android e iOS disponíveis nas lojas.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.black87,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface,
                                 fontWeight: FontWeight.w500,
                               ),
                               textAlign: TextAlign.center,

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:appplanilha/core/services/produto_service.dart';
 import 'package:appplanilha/core/utils/produto_helper.dart';
@@ -287,6 +286,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   @override
   Widget build(BuildContext context) {
     try {
+      final theme = Theme.of(context);
       final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
 
       final itensDaLista =
@@ -308,15 +308,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.amber.shade50,
+                color: theme.colorScheme.tertiary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.amber.shade300),
+                border: Border.all(color: theme.colorScheme.tertiary.withOpacity(0.32)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.edit_note, color: Colors.orange),
-                  SizedBox(width: 10),
-                  Expanded(
+                  Icon(Icons.edit_note, color: theme.colorScheme.tertiary),
+                  const SizedBox(width: 10),
+                  const Expanded(
                     child: Text(
                       'Modo edição ativo: clique em um produto para abrir o cadastro em edição.',
                       style: TextStyle(fontWeight: FontWeight.w600),
@@ -443,7 +443,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 Material(
                   elevation: 3,
                   borderRadius: BorderRadius.circular(30),
-                  color: Colors.white,
+                  color: theme.colorScheme.surface,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -452,16 +452,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.format_list_numbered,
-                          color: Colors.blueAccent,
+                          color: theme.colorScheme.primary,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '${itensDaLista.length} itens encontrados',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -473,7 +473,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   children: <Widget>[
                     FloatingActionButton(
                       onPressed: _recarregar,
-                      backgroundColor: Colors.blueAccent,
+                      backgroundColor: theme.colorScheme.primary,
                       child: const Icon(Icons.refresh),
                     ),
                     OutlinedButton.icon(
@@ -508,6 +508,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _buildProdutoCard(ProdutoModel produto) {
     try {
+      final theme = Theme.of(context);
       return Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
         shape: RoundedRectangleBorder(
@@ -522,9 +523,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const CircleAvatar(
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(Icons.shopping_cart, color: Colors.white),
+                CircleAvatar(
+                  backgroundColor: theme.colorScheme.primary,
+                  child: Icon(Icons.shopping_cart, color: theme.colorScheme.onPrimary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -535,9 +536,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         produto.nomeProduto,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -545,7 +547,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         'Preço: R\$ ${produto.precoVenda.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey[700],
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -573,10 +575,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 else
                   Text(
                     'R\$ ${produto.precoVenda.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: theme.colorScheme.tertiary,
                     ),
                   ),
               ],
