@@ -1,12 +1,8 @@
-
 import 'package:flutter/material.dart';
+import 'package:appplanilha/sub_painel_lancamento_agenda_financeira_web.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
-  const AgendaFinanceiraWeb({
-    super.key,
-    this.embedded = false,
-    this.onBack,
-  });
+  const AgendaFinanceiraWeb({super.key, this.embedded = false, this.onBack});
 
   final bool embedded;
   final VoidCallback? onBack;
@@ -17,7 +13,6 @@ class AgendaFinanceiraWeb extends StatefulWidget {
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     with SingleTickerProviderStateMixin {
-
   void _voltarTelaAnterior() {
     if (widget.embedded) {
       widget.onBack?.call();
@@ -33,17 +28,25 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   void _onAtualizarPressed() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Atualização manual acionada. Integre com o backend aqui.'),
+        content: Text(
+          'Atualização manual acionada. Integre com o backend aqui.',
+        ),
       ),
     );
   }
 
-  void _onNovoLancamentoPressed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ação de novo lançamento acionada. Integre com o backend aqui.'),
-      ),
+  Future<void> _onNovoLancamentoPressed() async {
+    final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
+      context,
+      empresaSelecionada: _empresaSelecionada,
+      empresas: _empresas.map((e) => e['nome'] as String).toList(),
     );
+
+    if (!mounted || item == null) {
+      return;
+    }
+
+    _adicionarLancamentoCriado(item);
   }
 
   final ScrollController _mainScrollController = ScrollController();
@@ -57,11 +60,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     'Personalizado',
   ];
 
-  final List<String> _tipos = const [
-    'Todos',
-    'Receber',
-    'Pagar',
-  ];
+  final List<String> _tipos = const ['Todos', 'Receber', 'Pagar'];
 
   final List<String> _statusDisponiveis = const [
     'Todos',
@@ -96,11 +95,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   Map<String, dynamic>? _lancamentoSelecionado;
   double _resumoCardsProgress = 0.0;
 
-  final List<String> _abas = const [
-    'Agenda',
-    'Calendário',
-    'Fluxo previsto',
-  ];
+  final List<String> _abas = const ['Agenda', 'Calendário', 'Fluxo previsto'];
 
   final List<Map<String, dynamic>> _empresas = const [
     {'id': 'emp-001', 'nome': 'Matriz Centro'},
@@ -150,7 +145,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     {
       'grupo': 'Atrasados',
       'descricao':
-      'Compromissos que já passaram do vencimento e precisam de ação imediata.',
+          'Compromissos que já passaram do vencimento e precisam de ação imediata.',
       'itens': [
         {
           'id': 'fin-1001',
@@ -171,7 +166,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             'Cobrança enviada em 27/03/2026',
             'Sem confirmação de pagamento até o momento',
           ],
-          'acoes': ['Receber', 'Enviar cobrança', 'Registrar parcial', 'Detalhes'],
+          'acoes': [
+            'Receber',
+            'Enviar cobrança',
+            'Registrar parcial',
+            'Detalhes',
+          ],
         },
         {
           'id': 'fin-1002',
@@ -187,7 +187,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           'categoria': 'Reposição de estoque',
           'responsavel': 'Aline Costa',
           'observacoes':
-          'Prioridade alta para evitar bloqueio de fornecimento.',
+              'Prioridade alta para evitar bloqueio de fornecimento.',
           'historico': [
             'Compra lançada em 21/03/2026',
             'Boleto anexado em 22/03/2026',
@@ -280,8 +280,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           'empresa': 'Filial Norte',
           'categoria': 'Terceiros',
           'responsavel': 'Renata Alves',
-          'observacoes':
-          'Pagamento vinculado a serviços concluídos da semana.',
+          'observacoes': 'Pagamento vinculado a serviços concluídos da semana.',
           'historico': [
             'Apuração criada automaticamente pelo módulo operacional',
           ],
@@ -295,7 +294,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   void initState() {
     super.initState();
     _lancamentoSelecionado =
-    _gruposAgenda.first['itens'].first as Map<String, dynamic>;
+        _gruposAgenda.first['itens'].first as Map<String, dynamic>;
     _mainScrollController.addListener(_onMainScroll);
     _fabMenuController = AnimationController(
       vsync: this,
@@ -328,8 +327,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     if (!_mainScrollController.hasClients) return;
     if (_mainScrollController.positions.length != 1) return;
 
-    final novoProgresso =
-    (_mainScrollController.offset / 180).clamp(0.0, 1.0);
+    final novoProgresso = (_mainScrollController.offset / 180).clamp(0.0, 1.0);
 
     if ((novoProgresso - _resumoCardsProgress).abs() < 0.02) return;
     setState(() => _resumoCardsProgress = novoProgresso);
@@ -361,38 +359,115 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
 
   List<Map<String, dynamic>> get _itensFiltrados {
     return _gruposAgenda
-        .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
+        .expand(
+          (grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>(),
+        )
         .where((item) {
-      final bateTipo = _tipoSelecionado == 'Todos' ||
-          (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
-          (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
+          final bateTipo =
+              _tipoSelecionado == 'Todos' ||
+              (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
+              (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
 
-      final bateStatus =
-          _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
+          final bateStatus =
+              _statusSelecionado == 'Todos' ||
+              item['status'] == _statusSelecionado;
 
-      final bateOrigem =
-          _origemSelecionada == 'Todas' || item['origem'] == _origemSelecionada;
+          final bateOrigem =
+              _origemSelecionada == 'Todas' ||
+              item['origem'] == _origemSelecionada;
 
-      final bateEmpresa = item['empresa'] == _empresaSelecionada;
+          final bateEmpresa = item['empresa'] == _empresaSelecionada;
 
-      final bateCritico = !_mostrarSomenteCriticos ||
-          item['status'] == 'Vencido' ||
-          item['status'] == 'Vence hoje';
+          final bateCritico =
+              !_mostrarSomenteCriticos ||
+              item['status'] == 'Vencido' ||
+              item['status'] == 'Vence hoje';
 
-      return bateTipo && bateStatus && bateOrigem && bateEmpresa && bateCritico;
-    }).toList();
+          return bateTipo &&
+              bateStatus &&
+              bateOrigem &&
+              bateEmpresa &&
+              bateCritico;
+        })
+        .toList();
   }
 
   List<Map<String, dynamic>> _itensPorGrupo(String grupo) {
     final grupoEncontrado = _gruposAgenda.firstWhere(
-          (g) => g['grupo'] == grupo,
+      (g) => g['grupo'] == grupo,
       orElse: () => {'itens': <Map<String, dynamic>>[]},
     );
 
     return (grupoEncontrado['itens'] as List)
         .cast<Map<String, dynamic>>()
-        .where((item) => _itensFiltrados.any((filtrado) => filtrado['id'] == item['id']))
+        .where(
+          (item) =>
+              _itensFiltrados.any((filtrado) => filtrado['id'] == item['id']),
+        )
         .toList();
+  }
+
+  void _adicionarLancamentoCriado(Map<String, dynamic> item) {
+    final DateTime dataVencimento = _dataFromVencimentoBr(
+      item['vencimento']?.toString(),
+    );
+    final DateTime hoje = DateTime.now();
+    final DateTime hojeSemHorario = DateTime(hoje.year, hoje.month, hoje.day);
+    final DateTime vencimentoSemHorario = DateTime(
+      dataVencimento.year,
+      dataVencimento.month,
+      dataVencimento.day,
+    );
+    final int diferencaDias =
+        vencimentoSemHorario.difference(hojeSemHorario).inDays;
+
+    final String grupoDestino =
+        diferencaDias < 0
+            ? 'Atrasados'
+            : (diferencaDias == 0 ? 'Hoje' : 'Próximos dias');
+
+    final Map<String, dynamic> grupo = _gruposAgenda.firstWhere(
+      (g) => g['grupo'] == grupoDestino,
+      orElse:
+          () => <String, dynamic>{
+            'grupo': grupoDestino,
+            'descricao': 'Lançamentos adicionados manualmente.',
+            'itens': <Map<String, dynamic>>[],
+          },
+    );
+
+    final List<Map<String, dynamic>> itensGrupo =
+        (grupo['itens'] as List).cast<Map<String, dynamic>>();
+    itensGrupo.insert(0, item);
+
+    if (!_gruposAgenda.any((g) => g['grupo'] == grupoDestino)) {
+      _gruposAgenda.add(grupo);
+    }
+
+    setState(() {
+      _lancamentoSelecionado = item;
+    });
+  }
+
+  DateTime _dataFromVencimentoBr(String? vencimento) {
+    if (vencimento == null || vencimento.trim().isEmpty) {
+      return DateTime.now();
+    }
+
+    final partes = vencimento.split('/');
+    if (partes.length != 3) {
+      return DateTime.now();
+    }
+
+    final int? dia = int.tryParse(partes[0]);
+    final int? mes = int.tryParse(partes[1]);
+    final int? ano = int.tryParse(partes[2]);
+
+    if (dia == null || mes == null || ano == null) {
+      return DateTime.now();
+    }
+
+    return DateTime(ano, mes, dia);
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -430,8 +505,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                     CircleAvatar(
                       radius: 26,
                       backgroundColor: theme.colorScheme.primary,
-                      child: const Icon(Icons.calendar_month_rounded,
-                          color: Colors.white),
+                      child: const Icon(
+                        Icons.calendar_month_rounded,
+                        color: Colors.white,
+                      ),
                     ),
                     Text(
                       'Agenda Financeira',
@@ -481,6 +558,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                 context,
                 icon: Icons.add_card_rounded,
                 label: 'Novo lançamento',
+                onPressed: _onNovoLancamentoPressed,
               ),
               _buildHeaderAction(
                 context,
@@ -499,8 +577,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     );
   }
 
-  Widget _buildChipInfo(BuildContext context,
-      {required IconData icon, required String text}) {
+  Widget _buildChipInfo(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+  }) {
     final theme = Theme.of(context);
 
     return Container(
@@ -515,19 +596,20 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
         children: [
           Icon(icon, size: 18, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(text, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderAction(BuildContext context,
-      {required IconData icon, required String label}) {
+  Widget _buildHeaderAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    VoidCallback? onPressed,
+  }) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: onPressed ?? () {},
       icon: Icon(icon),
       label: Text(label),
       style: OutlinedButton.styleFrom(
@@ -569,9 +651,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             ),
           );
         },
-        child: mostrarLinhaUnica
-            ? _buildResumoCardsLinhaUnica(context)
-            : _buildResumoCardsGrade(context),
+        child:
+            mostrarLinhaUnica
+                ? _buildResumoCardsLinhaUnica(context)
+                : _buildResumoCardsGrade(context),
       ),
     );
   }
@@ -581,21 +664,23 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       key: const ValueKey('resumo-cards-grade'),
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final cardWidth = width > 1500
-            ? (width - 40) / 3
-            : width > 1000
-            ? (width - 24) / 2
-            : width;
+        final cardWidth =
+            width > 1500
+                ? (width - 40) / 3
+                : width > 1000
+                ? (width - 24) / 2
+                : width;
 
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: _cardsResumo.map((card) {
-            return SizedBox(
-              width: cardWidth,
-              child: _buildResumoCard(context, card),
-            );
-          }).toList(),
+          children:
+              _cardsResumo.map((card) {
+                return SizedBox(
+                  width: cardWidth,
+                  child: _buildResumoCard(context, card),
+                );
+              }).toList(),
         );
       },
     );
@@ -606,11 +691,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       key: const ValueKey('resumo-cards-linha-unica'),
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final cardWidth = width > 1600
-            ? 250.0
-            : width > 1200
-            ? 220.0
-            : 200.0;
+        final cardWidth =
+            width > 1600
+                ? 250.0
+                : width > 1200
+                ? 220.0
+                : 200.0;
 
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -618,7 +704,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             children: List.generate(_cardsResumo.length, (index) {
               final card = _cardsResumo[index];
               return Padding(
-                padding: EdgeInsets.only(right: index == _cardsResumo.length - 1 ? 0 : 12),
+                padding: EdgeInsets.only(
+                  right: index == _cardsResumo.length - 1 ? 0 : 12,
+                ),
                 child: SizedBox(
                   width: cardWidth,
                   child: _buildResumoCard(context, card),
@@ -649,8 +737,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                 color: theme.colorScheme.primary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child:
-              Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
+              child: Icon(
+                card['icone'] as IconData,
+                color: theme.colorScheme.primary,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -709,8 +799,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   label: 'Período',
                   value: _periodoSelecionado,
                   items: _periodos,
-                  onChanged: (value) =>
-                      setState(() => _periodoSelecionado = value!),
+                  onChanged:
+                      (value) => setState(() => _periodoSelecionado = value!),
                   width: campoLargo,
                 ),
                 _buildDropdownBox(
@@ -718,8 +808,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   label: 'Tipo',
                   value: _tipoSelecionado,
                   items: _tipos,
-                  onChanged: (value) =>
-                      setState(() => _tipoSelecionado = value!),
+                  onChanged:
+                      (value) => setState(() => _tipoSelecionado = value!),
                   width: campoMedio,
                 ),
                 _buildDropdownBox(
@@ -727,8 +817,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   label: 'Status',
                   value: _statusSelecionado,
                   items: _statusDisponiveis,
-                  onChanged: (value) =>
-                      setState(() => _statusSelecionado = value!),
+                  onChanged:
+                      (value) => setState(() => _statusSelecionado = value!),
                   width: campoMedio,
                 ),
                 _buildDropdownBox(
@@ -736,8 +826,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   label: 'Origem',
                   value: _origemSelecionada,
                   items: _origens,
-                  onChanged: (value) =>
-                      setState(() => _origemSelecionada = value!),
+                  onChanged:
+                      (value) => setState(() => _origemSelecionada = value!),
                   width: campoLargo,
                 ),
                 _buildDropdownBox(
@@ -745,14 +835,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   label: 'Empresa',
                   value: _empresaSelecionada,
                   items: _empresas.map((e) => e['nome'] as String).toList(),
-                  onChanged: (value) =>
-                      setState(() => _empresaSelecionada = value!),
+                  onChanged:
+                      (value) => setState(() => _empresaSelecionada = value!),
                   width: campoLargo,
                 ),
                 FilterChip(
                   selected: _mostrarSomenteCriticos,
-                  onSelected: (value) =>
-                      setState(() => _mostrarSomenteCriticos = value),
+                  onSelected:
+                      (value) =>
+                          setState(() => _mostrarSomenteCriticos = value),
                   label: const Text('Somente críticos'),
                   avatar: const Icon(Icons.priority_high_rounded, size: 18),
                 ),
@@ -776,13 +867,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildDropdownBox(
-      BuildContext context, {
-        required String label,
-        required String value,
-        required List<String> items,
-        required ValueChanged<String?> onChanged,
-        required double width,
-      }) {
+    BuildContext context, {
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+    required double width,
+  }) {
     return SizedBox(
       width: width,
       child: DropdownButtonFormField<String>(
@@ -792,24 +883,25 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
         decoration: InputDecoration(
           labelText: label,
           isDense: true,
-          contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
           ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        items: items
-            .map(
-              (item) => DropdownMenuItem<String>(
-            value: item,
-            child: Text(
-              item,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        )
-            .toList(),
+        items:
+            items
+                .map(
+                  (item) => DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                )
+                .toList(),
       ),
     );
   }
@@ -851,54 +943,62 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildListaAgenda(BuildContext context) {
-    final gruposVisiveis = _gruposAgenda
-        .where((grupo) => _itensPorGrupo(grupo['grupo'] as String).isNotEmpty)
-        .toList();
+    final gruposVisiveis =
+        _gruposAgenda
+            .where(
+              (grupo) => _itensPorGrupo(grupo['grupo'] as String).isNotEmpty,
+            )
+            .toList();
 
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: gruposVisiveis.isEmpty
-            ? const Center(
-          child: Text('Nenhum lançamento encontrado com os filtros atuais.'),
-        )
-            : ListView.separated(
-          itemCount: gruposVisiveis.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 20),
-          itemBuilder: (context, index) {
-            final grupo = gruposVisiveis[index];
-            final nome = grupo['grupo'] as String;
-            final itens = _itensPorGrupo(nome);
+        child:
+            gruposVisiveis.isEmpty
+                ? const Center(
+                  child: Text(
+                    'Nenhum lançamento encontrado com os filtros atuais.',
+                  ),
+                )
+                : ListView.separated(
+                  itemCount: gruposVisiveis.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 20),
+                  itemBuilder: (context, index) {
+                    final grupo = gruposVisiveis[index];
+                    final nome = grupo['grupo'] as String;
+                    final itens = _itensPorGrupo(nome);
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nome,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nome,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          grupo['descricao'] as String,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        ...itens.map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildLancamentoCard(context, item),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  grupo['descricao'] as String,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ...itens.map(
-                      (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildLancamentoCard(context, item),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
       ),
     );
   }
@@ -916,14 +1016,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: selecionado
-              ? theme.colorScheme.primary.withOpacity(0.05)
-              : theme.colorScheme.surface,
+          color:
+              selecionado
+                  ? theme.colorScheme.primary.withOpacity(0.05)
+                  : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selecionado
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+            color:
+                selecionado
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outlineVariant,
             width: selecionado ? 1.6 : 1,
           ),
         ),
@@ -951,13 +1053,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _buildLancamentoConteudo(context, item),
-                    ),
+                    Expanded(child: _buildLancamentoConteudo(context, item)),
                     const SizedBox(width: 18),
                     SizedBox(
                       width: 280,
-                      child: _buildLancamentoValorEAcoes(context, item, corTipo),
+                      child: _buildLancamentoValorEAcoes(
+                        context,
+                        item,
+                        corTipo,
+                      ),
                     ),
                   ],
                 ),
@@ -970,11 +1074,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildLancamentoBadges(
-      BuildContext context,
-      Map<String, dynamic> item,
-      Color corTipo,
-      Color corStatus,
-      ) {
+    BuildContext context,
+    Map<String, dynamic> item,
+    Color corTipo,
+    Color corStatus,
+  ) {
     final theme = Theme.of(context);
 
     return Wrap(
@@ -1001,10 +1105,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
               const SizedBox(width: 8),
               Text(
                 item['tipo'] == 'receber' ? 'Receber' : 'Pagar',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: corTipo,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w800, color: corTipo),
               ),
             ],
           ),
@@ -1017,10 +1118,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           ),
           child: Text(
             item['status'] as String,
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: corStatus,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w800, color: corStatus),
           ),
         ),
         Container(
@@ -1042,7 +1140,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildLancamentoConteudo(
-      BuildContext context, Map<String, dynamic> item) {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) {
     final theme = Theme.of(context);
 
     return Column(
@@ -1059,7 +1159,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           spacing: 16,
           runSpacing: 10,
           children: [
-            _buildMiniInfo(context, Icons.person_outline, item['contato'] as String),
+            _buildMiniInfo(
+              context,
+              Icons.person_outline,
+              item['contato'] as String,
+            ),
             _buildMiniInfo(
               context,
               Icons.event_outlined,
@@ -1090,7 +1194,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildLancamentoValorEAcoes(
-      BuildContext context, Map<String, dynamic> item, Color corTipo) {
+    BuildContext context,
+    Map<String, dynamic> item,
+    Color corTipo,
+  ) {
     final theme = Theme.of(context);
 
     return Column(
@@ -1108,12 +1215,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           alignment: WrapAlignment.end,
           spacing: 8,
           runSpacing: 8,
-          children: (item['acoes'] as List).take(3).map((acao) {
-            return OutlinedButton(
-              onPressed: () {},
-              child: Text(acao.toString()),
-            );
-          }).toList(),
+          children:
+              (item['acoes'] as List).take(3).map((acao) {
+                return OutlinedButton(
+                  onPressed: () {},
+                  child: Text(acao.toString()),
+                );
+              }).toList(),
         ),
       ],
     );
@@ -1149,9 +1257,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           children: [
             Text(
               'Calendário financeiro',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             Text(
@@ -1178,14 +1286,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   return Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: critico
-                          ? const Color(0xFFFFF2F0)
-                          : Theme.of(context).colorScheme.surface,
+                      color:
+                          critico
+                              ? const Color(0xFFFFF2F0)
+                              : Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: critico
-                            ? const Color(0xFFE57373)
-                            : Theme.of(context).colorScheme.outlineVariant,
+                        color:
+                            critico
+                                ? const Color(0xFFE57373)
+                                : Theme.of(context).colorScheme.outlineVariant,
                       ),
                     ),
                     child: Column(
@@ -1202,18 +1312,21 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                         if (movimento)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.10),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.10),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: const Text(
                               '3 lançamentos',
                               style: TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.w700),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         if (critico) ...[
@@ -1256,9 +1369,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           children: [
             Text(
               'Fluxo previsto',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             Text(
@@ -1289,9 +1402,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                     children: [
                       Text(
                         barra['mes'] as String,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 12),
                       _buildBarraFluxo(
@@ -1314,9 +1426,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                         'Saldo previsto: R\$ ${saldo.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
-                          color: saldo >= 0
-                              ? const Color(0xFF0F9D58)
-                              : const Color(0xFFC62828),
+                          color:
+                              saldo >= 0
+                                  ? const Color(0xFF0F9D58)
+                                  : const Color(0xFFC62828),
                         ),
                       ),
                     ],
@@ -1331,12 +1444,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildBarraFluxo(
-      BuildContext context, {
-        required String label,
-        required double valor,
-        required double maxValor,
-        required Color color,
-      }) {
+    BuildContext context, {
+    required String label,
+    required double valor,
+    required double maxValor,
+    required Color color,
+  }) {
     final double ratio = (valor / maxValor).clamp(0.0, 1.0).toDouble();
 
     return Column(
@@ -1350,7 +1463,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             value: ratio,
             minHeight: 14,
             backgroundColor:
-            Theme.of(context).colorScheme.surfaceContainerHighest,
+                Theme.of(context).colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -1364,7 +1477,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildDetalheLancamento(
-      BuildContext context, Map<String, dynamic>? item) {
+    BuildContext context,
+    Map<String, dynamic>? item,
+  ) {
     final theme = Theme.of(context);
 
     if (item == null) {
@@ -1419,7 +1534,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             _buildLinhaDetalhe('Status', item['status'] as String),
             _buildLinhaDetalhe('Origem', item['origem'] as String),
             _buildLinhaDetalhe(
-                'Forma de pagamento', item['formaPagamento'] as String),
+              'Forma de pagamento',
+              item['formaPagamento'] as String,
+            ),
             _buildLinhaDetalhe('Empresa', item['empresa'] as String),
             _buildLinhaDetalhe('Categoria', item['categoria'] as String),
             _buildLinhaDetalhe('Responsável', item['responsavel'] as String),
@@ -1434,12 +1551,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: (item['acoes'] as List).map((acao) {
-                return OutlinedButton(
-                  onPressed: () {},
-                  child: Text(acao.toString()),
-                );
-              }).toList(),
+              children:
+                  (item['acoes'] as List).map((acao) {
+                    return OutlinedButton(
+                      onPressed: () {},
+                      child: Text(acao.toString()),
+                    );
+                  }).toList(),
             ),
             const Divider(height: 28),
             Text(
@@ -1474,7 +1592,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             ),
             const SizedBox(height: 10),
             ...((item['historico'] as List).map(
-                  (evento) => Padding(
+              (evento) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1540,11 +1658,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     );
   }
 
-  Widget _buildIndicadorLateral(String label, double valor,
-      {bool destaque = false}) {
-    final color = destaque
-        ? (valor >= 0 ? const Color(0xFF0F9D58) : const Color(0xFFC62828))
-        : Theme.of(context).colorScheme.onSurface;
+  Widget _buildIndicadorLateral(
+    String label,
+    double valor, {
+    bool destaque = false,
+  }) {
+    final color =
+        destaque
+            ? (valor >= 0 ? const Color(0xFF0F9D58) : const Color(0xFFC62828))
+            : Theme.of(context).colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1560,10 +1682,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           ),
           Text(
             'R\$ ${valor.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w900, color: color),
           ),
         ],
       ),
@@ -1581,10 +1700,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -1597,12 +1713,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     final Widget conteudo = LayoutBuilder(
       builder: (context, viewportConstraints) {
         final alturaDisponivelArea = viewportConstraints.maxHeight - 360;
-        final alturaArea = alturaDisponivelArea < 420 ? 420.0 : alturaDisponivelArea;
+        final alturaArea =
+            alturaDisponivelArea < 420 ? 420.0 : alturaDisponivelArea;
 
         return SingleChildScrollView(
           controller: _mainScrollController,
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: viewportConstraints.maxHeight),
+            constraints: BoxConstraints(
+              minHeight: viewportConstraints.maxHeight,
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1627,9 +1746,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                         if (larguraEstreita) {
                           return Column(
                             children: [
-                              Expanded(
-                                child: _buildAreaPrincipal(context),
-                              ),
+                              Expanded(child: _buildAreaPrincipal(context)),
                               const SizedBox(height: 14),
                               SizedBox(
                                 height: constraints.maxHeight * 0.50,
@@ -1669,9 +1786,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
         backgroundColor: theme.colorScheme.surfaceContainerLowest,
         floatingActionButton: _buildFloatingActions(),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        body: SafeArea(
-          child: conteudo,
-        ),
+        body: SafeArea(child: conteudo),
       );
     }
 
@@ -1679,14 +1794,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
       floatingActionButton: _buildFloatingActions(),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: SafeArea(
-        child: conteudo,
-      ),
+      body: SafeArea(child: conteudo),
     );
   }
 
   Widget _buildFloatingActions() {
-    final itens = <({String heroTag, IconData icon, String label, VoidCallback onPressed})>[
+    final itens = <
+      ({String heroTag, IconData icon, String label, VoidCallback onPressed})
+    >[
       (
         heroTag: 'fab-voltar-agenda-financeira',
         icon: Icons.arrow_back_rounded,
