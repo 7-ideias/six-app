@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:appplanilha/presentation/screens/agenda_financeira_web.dart';
 import 'package:appplanilha/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:appplanilha/presentation/screens/meu_perfil_web_screen.dart';
@@ -42,10 +44,17 @@ enum ModuloCentralPDV {
   configuracoes,
 }
 
+enum StatusComunicacaoBackend { conectando, conectado, desconectado }
+
 class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _ultimoEventoWebSocket;
   final List<Map<String, dynamic>> _notificacoes = <Map<String, dynamic>>[];
   int _quantidadeNotificacoesNaoLidas = 0;
+  StatusComunicacaoBackend _statusComunicacaoBackend =
+      StatusComunicacaoBackend.conectando;
+  DateTime? _ultimaValidacaoBackend;
+  Timer? _monitoramentoComunicacaoTimer;
+  DateTime? _ultimaTentativaReconexao;
 
   late final AnimationController _bellAnimationController;
   late final Animation<double> _bellRotationAnimation;
@@ -58,15 +67,21 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   bool _mostrarDashboardLateral = true;
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
 
-  final List<Map<String, dynamic>> _produtosSelecionados = <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> _produtosSelecionados =
+      <Map<String, dynamic>>[];
   final Set<String> _formasSelecionadas = <String>{};
 
   final TextEditingController _codigoBarrasController = TextEditingController();
-  final TextEditingController _itensTotalController = TextEditingController(text: '0');
-  final TextEditingController _clienteIdentificadoController = TextEditingController();
+  final TextEditingController _itensTotalController = TextEditingController(
+    text: '0',
+  );
+  final TextEditingController _clienteIdentificadoController =
+      TextEditingController();
 
   final FocusNode _atalhosFocusNode = FocusNode(debugLabel: 'pdv-shortcuts');
-  final FocusNode _codigoBarrasFocusNode = FocusNode(debugLabel: 'barcode-field');
+  final FocusNode _codigoBarrasFocusNode = FocusNode(
+    debugLabel: 'barcode-field',
+  );
 
   final ScrollController _notificacoesScrollController = ScrollController();
   final ScrollController _sidebarScrollController = ScrollController();
@@ -104,11 +119,26 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     );
 
     _bellRotationAnimation = TweenSequence<double>([
-      TweenSequenceItem<double>(tween: Tween<double>(begin: 0, end: -0.10), weight: 1),
-      TweenSequenceItem<double>(tween: Tween<double>(begin: -0.10, end: 0.10), weight: 2),
-      TweenSequenceItem<double>(tween: Tween<double>(begin: 0.10, end: -0.08), weight: 2),
-      TweenSequenceItem<double>(tween: Tween<double>(begin: -0.08, end: 0.08), weight: 2),
-      TweenSequenceItem<double>(tween: Tween<double>(begin: 0.08, end: 0), weight: 1),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0, end: -0.10),
+        weight: 1,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: -0.10, end: 0.10),
+        weight: 2,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0.10, end: -0.08),
+        weight: 2,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: -0.08, end: 0.08),
+        weight: 2,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0.08, end: 0),
+        weight: 1,
+      ),
     ]).animate(
       CurvedAnimation(
         parent: _bellAnimationController,
@@ -123,6 +153,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   void dispose() {
     _themeResolver.removeListener(_onThemeChanged);
     onMensagemRecebida = null;
+    onStompConectado = null;
+    onStompDesconectado = null;
+    onStompErro = null;
+    _monitoramentoComunicacaoTimer?.cancel();
     disconnectStomp();
     _bellAnimationController.dispose();
     _atalhosFocusNode.dispose();
@@ -140,6 +174,34 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   void _configurarWebSocket() {
+    onStompConectado = () {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
+        _ultimaValidacaoBackend = DateTime.now();
+      });
+    };
+
+    onStompDesconectado = () {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _statusComunicacaoBackend = StatusComunicacaoBackend.desconectado;
+      });
+    };
+
+    onStompErro = (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _statusComunicacaoBackend = StatusComunicacaoBackend.desconectado;
+      });
+    };
+
     onMensagemRecebida = (json) {
       if (!mounted) {
         return;
@@ -153,22 +215,154 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       setState(() {
         _ultimoEventoWebSocket = notificacao;
         _notificacoes.insert(0, notificacao);
-        _quantidadeNotificacoesNaoLidas = (_quantidadeNotificacoesNaoLidas + 1).clamp(0, 9);
+        _quantidadeNotificacoesNaoLidas = (_quantidadeNotificacoesNaoLidas + 1)
+            .clamp(0, 9);
+        _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
+        _ultimaValidacaoBackend = DateTime.now();
       });
 
       _bellAnimationController.forward(from: 0);
 
-      final String mensagem = json['mensagem']?.toString() ?? 'Evento recebido do backend';
+      final String mensagem =
+          json['mensagem']?.toString() ?? 'Evento recebido do backend';
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(mensagem),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
       );
     };
 
     connectStomp();
+    _iniciarMonitoramentoComunicacaoBackend();
+  }
+
+  void _iniciarMonitoramentoComunicacaoBackend() {
+    _monitoramentoComunicacaoTimer?.cancel();
+    _monitoramentoComunicacaoTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _validarComunicacaoBackend(),
+    );
+  }
+
+  void _validarComunicacaoBackend() {
+    if (!mounted) {
+      return;
+    }
+
+    final bool conectado = isStompConnected();
+
+    if (conectado) {
+      if (_statusComunicacaoBackend != StatusComunicacaoBackend.conectado) {
+        setState(() {
+          _statusComunicacaoBackend = StatusComunicacaoBackend.conectado;
+        });
+      }
+      _ultimaValidacaoBackend = DateTime.now();
+      return;
+    }
+
+    final DateTime agora = DateTime.now();
+    final bool podeReconectar =
+        _ultimaTentativaReconexao == null ||
+        agora.difference(_ultimaTentativaReconexao!) >=
+            const Duration(seconds: 20);
+
+    if (podeReconectar) {
+      _ultimaTentativaReconexao = agora;
+      setState(() {
+        _statusComunicacaoBackend = StatusComunicacaoBackend.conectando;
+      });
+      connectStomp();
+      return;
+    }
+
+    if (_statusComunicacaoBackend != StatusComunicacaoBackend.desconectado) {
+      setState(() {
+        _statusComunicacaoBackend = StatusComunicacaoBackend.desconectado;
+      });
+    }
+  }
+
+  Color _corStatusBackend() {
+    switch (_statusComunicacaoBackend) {
+      case StatusComunicacaoBackend.conectado:
+        return Colors.green.shade500;
+      case StatusComunicacaoBackend.conectando:
+        return Colors.orange.shade500;
+      case StatusComunicacaoBackend.desconectado:
+        return Colors.red.shade500;
+    }
+  }
+
+  String _textoStatusBackend() {
+    switch (_statusComunicacaoBackend) {
+      case StatusComunicacaoBackend.conectado:
+        return 'Backend online';
+      case StatusComunicacaoBackend.conectando:
+        return 'Validando conexão...';
+      case StatusComunicacaoBackend.desconectado:
+        return 'Backend offline';
+    }
+  }
+
+  Widget _buildIndicadorComunicacaoBackend() {
+    final Color corStatus = _corStatusBackend();
+    final String tooltip =
+        _ultimaValidacaoBackend == null
+            ? _textoStatusBackend()
+            : '${_textoStatusBackend()} • última validação: ${_ultimaValidacaoBackend!.toIso8601String()}';
+
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: _pdvTheme.backgroundSurface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: _pdvTheme.cardBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: corStatus,
+                shape: BoxShape.circle,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: corStatus.withValues(alpha: 0.30),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'online',
+              style: TextStyle(
+                color: _pdvTheme.primaryText,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAreaNotificacoesEConexao() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        _buildIndicadorComunicacaoBackend(),
+        const SizedBox(width: 10),
+        _buildNotificationBellButton(),
+      ],
+    );
   }
 
   String _badgeNotificacaoTexto() {
@@ -190,7 +384,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         final ThemeData theme = Theme.of(context);
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
@@ -203,7 +400,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    Icon(Icons.notifications_active_rounded, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.notifications_active_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -234,83 +434,99 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: _notificacoes.isEmpty
-                      ? Center(
-                    child: Text(
-                      'Nenhuma notificação recebida.',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )
-                      : ListView.separated(
-                    controller: _notificacoesScrollController,
-                    primary: false,
-                    itemCount: _notificacoes.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (BuildContext context, int index) {
-                      final Map<String, dynamic> item = _notificacoes[index];
-                      final String ordemId = item['ordemId']?.toString() ?? '-';
-                      final String status = item['status']?.toString() ?? '-';
-                      final String mensagem = item['mensagem']?.toString() ?? 'Sem mensagem';
-                      final String recebidoEm = item['recebidoEm']?.toString() ?? '';
-
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: theme.colorScheme.outlineVariant),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary.withOpacity(0.10),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.campaign_rounded,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    mensagem,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text('Ordem: $ordemId'),
-                            const SizedBox(height: 4),
-                            Text('Status: $status'),
-                            if (recebidoEm.isNotEmpty) ...<Widget>[
-                              const SizedBox(height: 8),
-                              Text(
-                                'Recebido em: $recebidoEm',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                  child:
+                      _notificacoes.isEmpty
+                          ? Center(
+                            child: Text(
+                              'Nenhuma notificação recebida.',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
                               ),
-                            ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                            ),
+                          )
+                          : ListView.separated(
+                            controller: _notificacoesScrollController,
+                            primary: false,
+                            itemCount: _notificacoes.length,
+                            separatorBuilder:
+                                (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (BuildContext context, int index) {
+                              final Map<String, dynamic> item =
+                                  _notificacoes[index];
+                              final String ordemId =
+                                  item['ordemId']?.toString() ?? '-';
+                              final String status =
+                                  item['status']?.toString() ?? '-';
+                              final String mensagem =
+                                  item['mensagem']?.toString() ??
+                                  'Sem mensagem';
+                              final String recebidoEm =
+                                  item['recebidoEm']?.toString() ?? '';
+
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Row(
+                                      children: <Widget>[
+                                        Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primary
+                                                .withOpacity(0.10),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.campaign_rounded,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            mensagem,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text('Ordem: $ordemId'),
+                                    const SizedBox(height: 4),
+                                    Text('Status: $status'),
+                                    if (recebidoEm.isNotEmpty) ...<Widget>[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Recebido em: $recebidoEm',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                 ),
               ],
             ),
@@ -357,7 +573,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   border: Border.all(color: _pdvTheme.cardBorder),
                 ),
                 child: Icon(
-                  temNaoLidas ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+                  temNaoLidas
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
                   color: _pdvTheme.iconColor,
                 ),
               ),
@@ -425,10 +643,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.92,
             height: MediaQuery.of(context).size.height * 0.9,
-            child: SubPainelWebProdutoLista(
-              isSelecao: false,
-              modoEdicao: true,
-            ),
+            child: SubPainelWebProdutoLista(isSelecao: false, modoEdicao: true),
           ),
         );
       },
@@ -487,11 +702,12 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
     setState(() {
       final int indexExistente = _produtosSelecionados.indexWhere(
-            (Map<String, dynamic> item) => _mesmoProduto(item, produto),
+        (Map<String, dynamic> item) => _mesmoProduto(item, produto),
       );
 
       if (indexExistente >= 0) {
-        _produtosSelecionados[indexExistente]['quantidade'] = (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) + 1;
+        _produtosSelecionados[indexExistente]['quantidade'] =
+            (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) + 1;
       } else {
         _produtosSelecionados.add(<String, dynamic>{
           'id': _extrairIdProduto(produto),
@@ -518,7 +734,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     final String? codigoItem = item['codigo']?.toString();
     final String? codigoProduto = produto.codigoDeBarras.toString();
 
-    if (codigoItem != null && codigoItem.isNotEmpty && codigoProduto!.isNotEmpty) {
+    if (codigoItem != null &&
+        codigoItem.isNotEmpty &&
+        codigoProduto!.isNotEmpty) {
       return codigoItem == codigoProduto;
     }
 
@@ -557,18 +775,21 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   double _calcularTotal() {
-    return _produtosSelecionados.fold<double>(
-      0,
-          (double soma, Map<String, dynamic> item) {
-        return soma + (((item['preco'] ?? 0) as num).toDouble() * ((item['quantidade'] ?? 1) as int));
-      },
-    );
+    return _produtosSelecionados.fold<double>(0, (
+      double soma,
+      Map<String, dynamic> item,
+    ) {
+      return soma +
+          (((item['preco'] ?? 0) as num).toDouble() *
+              ((item['quantidade'] ?? 1) as int));
+    });
   }
 
   int _calcularQuantidadeItens() {
     return _produtosSelecionados.fold<int>(
       0,
-          (int soma, Map<String, dynamic> item) => soma + ((item['quantidade'] ?? 1) as int),
+      (int soma, Map<String, dynamic> item) =>
+          soma + ((item['quantidade'] ?? 1) as int),
     );
   }
 
@@ -627,7 +848,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               child: const Text('Cancelar'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              onPressed:
+                  () => Navigator.of(context).pop(controller.text.trim()),
               child: const Text('Salvar'),
             ),
           ],
@@ -676,7 +898,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.f8 && _produtosSelecionados.isNotEmpty) {
+    if (event.logicalKey == LogicalKeyboardKey.f8 &&
+        _produtosSelecionados.isNotEmpty) {
       _abrirTelaRecebimento();
       return KeyEventResult.handled;
     }
@@ -739,11 +962,17 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   List<Map<String, String>> get _dashboardData => <Map<String, String>>[
     <String, String>{
       'title': 'Vendas Abertas',
-      'count': TelaInicialWebProvider().telaInicialWeb?.totalVendasAbertas.toString() ?? '0',
+      'count':
+          TelaInicialWebProvider().telaInicialWeb?.totalVendasAbertas
+              .toString() ??
+          '0',
     },
     <String, String>{
       'title': 'Ordens Abertas',
-      'count': TelaInicialWebProvider().telaInicialWeb?.totalOrdensDeServicoAbertas.toString() ?? '0',
+      'count':
+          TelaInicialWebProvider().telaInicialWeb?.totalOrdensDeServicoAbertas
+              .toString() ??
+          '0',
     },
     <String, String>{'title': 'OTs em revisão', 'count': '33'},
     <String, String>{'title': 'OTs em processo', 'count': '27'},
@@ -859,12 +1088,14 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     switch (label) {
       case 'Vendas':
         badge = 'Fluxo principal';
-        descricao = l10n?.pdvQuickServiceDescription ??
+        descricao =
+            l10n?.pdvQuickServiceDescription ??
             'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
         break;
       case 'Orçamento':
         badge = 'Assistência comercial';
-        descricao = 'Monte propostas com organização, clareza e continuidade do atendimento.';
+        descricao =
+            'Monte propostas com organização, clareza e continuidade do atendimento.';
         break;
       default:
         badge = 'Operação interna';
@@ -900,7 +1131,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   Row(
                     children: <Widget>[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: _pdvTheme.badgeBackground.withOpacity(0.10),
                           borderRadius: BorderRadius.circular(999),
@@ -951,11 +1185,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                         color: _pdvTheme.iconColor.withOpacity(0.20),
                       ),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 34,
-                      color: _pdvTheme.iconColor,
-                    ),
+                    child: Icon(icon, size: 34, color: _pdvTheme.iconColor),
                   ),
                   const SizedBox(height: 22),
                   Text(
@@ -1180,7 +1410,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             ),
             child: Column(
               children: <Widget>[
-                Icon(Icons.dashboard_customize_outlined, color: _pdvTheme.iconColor),
+                Icon(
+                  Icons.dashboard_customize_outlined,
+                  color: _pdvTheme.iconColor,
+                ),
                 const SizedBox(height: 10),
                 RotatedBox(
                   quarterTurns: 3,
@@ -1230,9 +1463,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       );
     }
 
-    final String ordemId = _ultimoEventoWebSocket!['ordemId']?.toString() ?? '-';
+    final String ordemId =
+        _ultimoEventoWebSocket!['ordemId']?.toString() ?? '-';
     final String status = _ultimoEventoWebSocket!['status']?.toString() ?? '-';
-    final String mensagem = _ultimoEventoWebSocket!['mensagem']?.toString() ?? 'Sem mensagem';
+    final String mensagem =
+        _ultimoEventoWebSocket!['mensagem']?.toString() ?? 'Sem mensagem';
 
     return Container(
       width: double.infinity,
@@ -1247,7 +1482,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.notifications_active_rounded, color: _pdvTheme.highlightColor),
+              Icon(
+                Icons.notifications_active_rounded,
+                color: _pdvTheme.highlightColor,
+              ),
               const SizedBox(width: 10),
               Text(
                 'Último evento do backend',
@@ -1262,12 +1500,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           const SizedBox(height: 12),
           Text(
             'Ordem: $ordemId',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _pdvTheme.primaryText),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: _pdvTheme.primaryText,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Status: $status',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _pdvTheme.primaryText),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: _pdvTheme.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           Text(mensagem, style: TextStyle(color: _pdvTheme.primaryText)),
@@ -1459,7 +1703,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: destaque ? Colors.white.withOpacity(0.18) : _pdvTheme.iconColor.withOpacity(0.10),
+              color:
+                  destaque
+                      ? Colors.white.withOpacity(0.18)
+                      : _pdvTheme.iconColor.withOpacity(0.10),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -1478,7 +1725,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: destaque ? Colors.white.withOpacity(0.85) : _pdvTheme.secondaryText,
+                    color:
+                        destaque
+                            ? Colors.white.withOpacity(0.85)
+                            : _pdvTheme.secondaryText,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1573,7 +1823,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                               decoration: InputDecoration(
                                 hintText: 'Passe um item ou digite um código',
                                 labelText: 'Código de barras',
-                                prefixIcon: const Icon(Icons.qr_code_scanner_rounded),
+                                prefixIcon: const Icon(
+                                  Icons.qr_code_scanner_rounded,
+                                ),
                                 suffixIcon: IconButton(
                                   tooltip: 'Focar leitura',
                                   onPressed: _focarCodigoBarras,
@@ -1586,7 +1838,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(18),
-                                  borderSide: BorderSide(color: _pdvTheme.cardBorder),
+                                  borderSide: BorderSide(
+                                    color: _pdvTheme.cardBorder,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1599,12 +1853,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                               icon: const Icon(Icons.search_rounded),
                               label: const Text('Buscar produto'),
                               style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: _pdvTheme.actionButtonBackground, width: 1.6),
-                                foregroundColor: _pdvTheme.actionButtonBackground,
+                                side: BorderSide(
+                                  color: _pdvTheme.actionButtonBackground,
+                                  width: 1.6,
+                                ),
+                                foregroundColor:
+                                    _pdvTheme.actionButtonBackground,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 22),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 22,
+                                ),
                               ),
                             ),
                           ),
@@ -1689,7 +1949,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeaderCell(String label, {required int flex, bool alignEnd = false}) {
+  Widget _buildHeaderCell(
+    String label, {
+    required int flex,
+    bool alignEnd = false,
+  }) {
     return Expanded(
       flex: flex,
       child: Align(
@@ -1720,7 +1984,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _pdvTheme.cardBorder),
-          color: index.isEven ? _pdvTheme.backgroundSurface : _pdvTheme.backgroundPage,
+          color:
+              index.isEven
+                  ? _pdvTheme.backgroundSurface
+                  : _pdvTheme.backgroundPage,
         ),
         child: Row(
           children: <Widget>[
@@ -1832,7 +2099,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     IconButton(
                       tooltip: 'Remover',
                       onPressed: () => _removerProduto(produto),
-                      icon: Icon(Icons.delete_outline_rounded, color: _pdvTheme.warningColor),
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        color: _pdvTheme.warningColor,
+                      ),
                     ),
                   ],
                 ),
@@ -1962,9 +2232,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         foregroundColor: _pdvTheme.actionButtonBackground,
         side: BorderSide(color: _pdvTheme.actionButtonBackground),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }
@@ -2023,29 +2291,36 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   ],
                 ),
               ),
-              _buildTopBadge('${_calcularQuantidadeItens()} item(ns)', Icons.shopping_basket_outlined),
+              _buildTopBadge(
+                '${_calcularQuantidadeItens()} item(ns)',
+                Icons.shopping_basket_outlined,
+              ),
             ],
           ),
           const SizedBox(height: 18),
           Expanded(
-            child: _produtosSelecionados.isEmpty
-                ? _buildEstadoVazioGuiado()
-                : Column(
-              children: <Widget>[
-                _buildHeaderTabelaItens(),
-                const SizedBox(height: 2),
-                Expanded(
-                  child: ListView.builder(
-                    controller: _gradeItensScrollController,
-                    primary: false,
-                    itemCount: _produtosSelecionados.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return _buildLinhaTabelaItem(_produtosSelecionados[index], index);
-                    },
-                  ),
-                ),
-              ],
-            ),
+            child:
+                _produtosSelecionados.isEmpty
+                    ? _buildEstadoVazioGuiado()
+                    : Column(
+                      children: <Widget>[
+                        _buildHeaderTabelaItens(),
+                        const SizedBox(height: 2),
+                        Expanded(
+                          child: ListView.builder(
+                            controller: _gradeItensScrollController,
+                            primary: false,
+                            itemCount: _produtosSelecionados.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              return _buildLinhaTabelaItem(
+                                _produtosSelecionados[index],
+                                index,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
           ),
         ],
       ),
@@ -2079,7 +2354,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 ),
                 Flexible(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: _pdvTheme.successColor.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(999),
@@ -2099,11 +2377,25 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               ],
             ),
             const SizedBox(height: 16),
-            _buildResumoInfoTile(Icons.person_outline_rounded, 'Cliente', _clienteAtualLabel()),
+            _buildResumoInfoTile(
+              Icons.person_outline_rounded,
+              'Cliente',
+              _clienteAtualLabel(),
+            ),
             const SizedBox(height: 10),
-            _buildResumoInfoTile(Icons.payments_outlined, 'Pagamento', _formasSelecionadas.isEmpty ? 'Não definido' : _formasSelecionadas.join(', ')),
+            _buildResumoInfoTile(
+              Icons.payments_outlined,
+              'Pagamento',
+              _formasSelecionadas.isEmpty
+                  ? 'Não definido'
+                  : _formasSelecionadas.join(', '),
+            ),
             const SizedBox(height: 10),
-            _buildResumoInfoTile(Icons.receipt_long_outlined, 'Itens', '$quantidadeItens item(ns)'),
+            _buildResumoInfoTile(
+              Icons.receipt_long_outlined,
+              'Itens',
+              '$quantidadeItens item(ns)',
+            ),
           ],
         ),
       );
@@ -2160,11 +2452,26 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                       spacing: 8,
                       runSpacing: 8,
                       children: <Widget>[
-                        _buildMiniAction('Trocar cliente', Icons.person_search_rounded, _abrirDialogClienteRapido),
-                        _buildMiniAction('Aplicar desconto', Icons.percent_rounded, () {
-                          _mostrarDialogMensagem('Aplicar desconto', 'Aqui você pode conectar a regra real de desconto.');
-                        }),
-                        _buildMiniAction('Buscar produto', Icons.search_rounded, _abrirSelecaoProdutoWeb),
+                        _buildMiniAction(
+                          'Trocar cliente',
+                          Icons.person_search_rounded,
+                          _abrirDialogClienteRapido,
+                        ),
+                        _buildMiniAction(
+                          'Aplicar desconto',
+                          Icons.percent_rounded,
+                          () {
+                            _mostrarDialogMensagem(
+                              'Aplicar desconto',
+                              'Aqui você pode conectar a regra real de desconto.',
+                            );
+                          },
+                        ),
+                        _buildMiniAction(
+                          'Buscar produto',
+                          Icons.search_rounded,
+                          _abrirSelecaoProdutoWeb,
+                        ),
                       ],
                     ),
                   ],
@@ -2233,7 +2540,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: _pdvTheme.backgroundPage,
-          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(24),
+          ),
           border: Border(top: BorderSide(color: _pdvTheme.cardBorder)),
         ),
         child: Column(
@@ -2270,7 +2579,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                           child: TweenAnimationBuilder<double>(
                             tween: Tween<double>(begin: 0, end: total),
                             duration: const Duration(milliseconds: 350),
-                            builder: (BuildContext context, double value, Widget? child) {
+                            builder: (
+                              BuildContext context,
+                              double value,
+                              Widget? child,
+                            ) {
                               return Text(
                                 _formatCurrency(value),
                                 style: const TextStyle(
@@ -2330,11 +2643,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               primary: false,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  buildHeader(),
-                  buildBody(),
-                  buildFooter(),
-                ],
+                children: <Widget>[buildHeader(), buildBody(), buildFooter()],
               ),
             );
           }
@@ -2402,9 +2711,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       label: Text(label),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
@@ -2474,7 +2781,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(begin: 0, end: total),
                     duration: const Duration(milliseconds: 350),
-                    builder: (BuildContext context, double value, Widget? child) {
+                    builder: (
+                      BuildContext context,
+                      double value,
+                      Widget? child,
+                    ) {
                       return Text(
                         _formatCurrency(value),
                         style: TextStyle(
@@ -2503,7 +2814,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(150, 54),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  side: BorderSide(color: _pdvTheme.actionButtonBackground, width: 1.5),
+                  side: BorderSide(
+                    color: _pdvTheme.actionButtonBackground,
+                    width: 1.5,
+                  ),
                   foregroundColor: _pdvTheme.actionButtonBackground,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
@@ -2511,7 +2825,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 ),
               ),
               FilledButton.icon(
-                onPressed: _produtosSelecionados.isEmpty ? null : _abrirTelaRecebimento,
+                onPressed:
+                    _produtosSelecionados.isEmpty
+                        ? null
+                        : _abrirTelaRecebimento,
                 icon: const Icon(Icons.payments_rounded),
                 label: const Text('Receber'),
                 style: FilledButton.styleFrom(
@@ -2594,15 +2911,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Expanded(
-                  flex: 7,
-                  child: _buildGradeOperacional(),
-                ),
+                Expanded(flex: 7, child: _buildGradeOperacional()),
                 const SizedBox(width: 18),
-                SizedBox(
-                  width: 380,
-                  child: _buildResumoVendaLateral(),
-                ),
+                SizedBox(width: 380, child: _buildResumoVendaLateral()),
               ],
             ),
           ),
@@ -2624,12 +2935,16 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
             if (compactHeight || compactWidth) {
               return ScrollConfiguration(
-                behavior: const MaterialScrollBehavior().copyWith(scrollbars: false),
+                behavior: const MaterialScrollBehavior().copyWith(
+                  scrollbars: false,
+                ),
                 child: SingleChildScrollView(
                   controller: _areaVendaScrollController,
                   primary: false,
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: compactHeight ? 920 : constraints.maxHeight),
+                    constraints: BoxConstraints(
+                      minHeight: compactHeight ? 920 : constraints.maxHeight,
+                    ),
                     child: Column(
                       children: <Widget>[
                         _buildVendaHero(),
@@ -2637,32 +2952,35 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                         _buildBarraOperacional(),
                         const SizedBox(height: 18),
                         SizedBox(
-                          height: compactHeight ? 560 : constraints.maxHeight - 280,
-                          child: compactWidth
-                              ? Column(
-                            children: <Widget>[
-                              Expanded(child: _buildGradeOperacional()),
-                              const SizedBox(height: 18),
-                              SizedBox(
-                                height: 420,
-                                child: _buildResumoVendaLateral(),
-                              ),
-                            ],
-                          )
-                              : Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              Expanded(
-                                flex: 7,
-                                child: _buildGradeOperacional(),
-                              ),
-                              const SizedBox(width: 18),
-                              SizedBox(
-                                width: 380,
-                                child: _buildResumoVendaLateral(),
-                              ),
-                            ],
-                          ),
+                          height:
+                              compactHeight ? 560 : constraints.maxHeight - 280,
+                          child:
+                              compactWidth
+                                  ? Column(
+                                    children: <Widget>[
+                                      Expanded(child: _buildGradeOperacional()),
+                                      const SizedBox(height: 18),
+                                      SizedBox(
+                                        height: 420,
+                                        child: _buildResumoVendaLateral(),
+                                      ),
+                                    ],
+                                  )
+                                  : Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: <Widget>[
+                                      Expanded(
+                                        flex: 7,
+                                        child: _buildGradeOperacional(),
+                                      ),
+                                      const SizedBox(width: 18),
+                                      SizedBox(
+                                        width: 380,
+                                        child: _buildResumoVendaLateral(),
+                                      ),
+                                    ],
+                                  ),
                         ),
                         const SizedBox(height: 18),
                         _buildBarraFechamento(total),
@@ -2737,7 +3055,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           ),
           TopNavItemData(
             title: 'Configurações',
-            subItems: const <String>['Sistema', 'Usuários', 'Preferências do Six'],
+            subItems: const <String>[
+              'Sistema',
+              'Usuários',
+              'Preferências do Six',
+            ],
             onSelect: (String value) {
               if (value == 'Preferências do Six') {
                 setState(() {
@@ -2763,7 +3085,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             subItems: <String>['Suporte', 'Sobre'],
           ),
         ],
-        notificationWidget: _buildNotificationBellButton(),
+        notificationWidget: _buildAreaNotificacoesEConexao(),
         onNotificationPressed: _abrirPainelNotificacoes,
       ),
       body: Padding(
@@ -2774,9 +3096,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             if (_mostrarDashboardLateral) ...<Widget>[
               _buildResumoSidebar(),
               const SizedBox(width: 20),
-            ] else ...<Widget>[
-              _buildResumoSidebarCollapsed(),
-            ],
+            ] else ...<Widget>[_buildResumoSidebarCollapsed()],
             Expanded(
               child: Card(
                 elevation: 6,
@@ -2788,9 +3108,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 child: Padding(
                   padding: const EdgeInsets.all(18),
                   child: Column(
-                    children: <Widget>[
-                      _buildConteudoCentral(total),
-                    ],
+                    children: <Widget>[_buildConteudoCentral(total)],
                   ),
                 ),
               ),
@@ -2817,5 +3135,4 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       }
     });
   }
-
 }
