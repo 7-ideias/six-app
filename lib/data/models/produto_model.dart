@@ -68,7 +68,7 @@ class ProdutoModel {
       'estoqueMaximo': estoqueMaximo,
       'estoqueMinimo': estoqueMinimo,
       'precoVenda': precoVenda,
-      'objComissao': objComissao?.toJson(),
+      'objComissao': objComissao.toJson(),
       'objEntradaSaidaProduto':
           objEntradaSaidaProduto?.map((e) => e.toJson()).toList(),
     };

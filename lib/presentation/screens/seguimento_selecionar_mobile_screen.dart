@@ -216,7 +216,7 @@ class _SeguimentoSelecionarMobileScreenState
                               },
                               controlAffinity: ListTileControlAffinity.leading,
                             );
-                          }).toList(),
+                          }),
                       ],
                     );
                   }).toList(),

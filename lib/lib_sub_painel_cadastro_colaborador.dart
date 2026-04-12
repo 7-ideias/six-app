@@ -1503,7 +1503,7 @@ class _CadastroColaboradorWebBodyState
                     width:
                         telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
                     child: DropdownButtonFormField<String>(
-                      value: _perfilSelecionado,
+                      initialValue: _perfilSelecionado,
                       decoration: _inputDecoration(
                         context,
                         'Perfil operacional',

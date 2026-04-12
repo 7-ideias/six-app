@@ -9,6 +9,8 @@ import '../components/custom_nav_bar.dart';
 import '../components/escolha_card_grid.dart';
 
 class CadastroMobileScreen extends StatefulWidget {
+  const CadastroMobileScreen({super.key});
+
   @override
   State<CadastroMobileScreen> createState() => _CadastroMobileScreenState();
 }

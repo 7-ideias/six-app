@@ -1,4 +1,3 @@
-import 'package:appplanilha/core/services/auth_service.dart';
 import 'package:appplanilha/core/services/empresa_service.dart';
 import 'package:appplanilha/data/models/empresa_model.dart';
 import 'package:appplanilha/presentation/screens/assinatura_mobile_screen.dart';
@@ -7,7 +6,7 @@ import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:flutter/material.dart';
 
 class PerfilDoMeuNegocioMobileScreen extends StatefulWidget {
-  const PerfilDoMeuNegocioMobileScreen({Key? key}) : super(key: key);
+  const PerfilDoMeuNegocioMobileScreen({super.key});
 
   @override
   _PerfilDoMeuNegocioMobileScreenState createState() =>

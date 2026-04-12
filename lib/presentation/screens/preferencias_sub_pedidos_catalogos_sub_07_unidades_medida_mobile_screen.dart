@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UnidadesMedidaMobileScreen extends StatefulWidget {
-  const UnidadesMedidaMobileScreen({Key? key}) : super(key: key);
+  const UnidadesMedidaMobileScreen({super.key});
 
   @override
   State<UnidadesMedidaMobileScreen> createState() =>
@@ -82,11 +82,11 @@ class _UnidadesMedidaMobileScreenState
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
                   );
-                }).toList(),
+                }),
                 const Divider(),
               ],
             );
-          }).toList(),
+          }),
           const SizedBox(height: 80),
         ],
       ),
@@ -127,6 +127,6 @@ class _UnidadeItem {
   _UnidadeItem({
     required this.sigla,
     required this.descricao,
-    this.selecionado = true,
+    this.selecionado = false,
   });
 }

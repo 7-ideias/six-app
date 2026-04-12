@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class MateriaisMobileScreen extends StatefulWidget {
-  const MateriaisMobileScreen({Key? key}) : super(key: key);
+  const MateriaisMobileScreen({super.key});
 
   @override
   State<MateriaisMobileScreen> createState() => _MateriaisMobileScreenState();

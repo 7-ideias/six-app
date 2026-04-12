@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CertezaMobileScreen extends StatelessWidget {
-  const CertezaMobileScreen({Key? key}) : super(key: key);
+  const CertezaMobileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

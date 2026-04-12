@@ -95,7 +95,7 @@ class HttpCaixaApiClient implements CaixaApiClient {
 
   @override
   Future<List<MovimentoCaixa>> getMovimentos(String idSessaoCaixa) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/movimentos?idSessaoCaixa=${idSessaoCaixa}');
+    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/movimentos?idSessaoCaixa=$idSessaoCaixa');
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {
@@ -108,7 +108,7 @@ class HttpCaixaApiClient implements CaixaApiClient {
 
   @override
   Future<InformacoesCaixaComSomatorioResponse> getResumoDeMovimentosComSomatorio(String idSessaoCaixa) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/completo-movimentos?idSessaoCaixa=${idSessaoCaixa}');
+    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/completo-movimentos?idSessaoCaixa=$idSessaoCaixa');
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {
@@ -121,7 +121,7 @@ class HttpCaixaApiClient implements CaixaApiClient {
 
   @override
   Future<ResumoCaixa> getResumo(String idSessaoCaixa) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/resumo?idSessaoCaixa=${idSessaoCaixa}');
+    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/resumo?idSessaoCaixa=$idSessaoCaixa');
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {

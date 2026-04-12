@@ -6,6 +6,8 @@ import 'package:appplanilha/presentation/screens/precos_e_planos_mobile_screen.d
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/services/auth_service.dart';
+import '../screens/login_mobile.dart';
 import '../screens/meu_perfil_mobile_screen.dart';
 import '../screens/preferencias_mobile_screen.dart';
 
@@ -13,8 +15,7 @@ class AppDrawerDoMobile extends StatelessWidget {
   final File? image;
   final void Function(ImageSource source) onPickImage;
 
-  const AppDrawerDoMobile({Key? key, required this.image, required this.onPickImage})
-    : super(key: key);
+  const AppDrawerDoMobile({super.key, required this.image, required this.onPickImage});
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +44,11 @@ class AppDrawerDoMobile extends StatelessWidget {
             currentAccountPicture: CircleAvatar(
               radius: 36,
               backgroundImage: image != null ? FileImage(image!) : null,
+              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               child: image == null
                   ? Icon(
                   Icons.camera_alt, size: 28.0, color: Theme.of(context).colorScheme.onPrimary)
                   : null,
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             ),
             otherAccountsPictures: const [
               CircleAvatar(
@@ -132,7 +133,15 @@ class AppDrawerDoMobile extends StatelessWidget {
             );
           }),
           Divider(),
-          _buildItem(context, Icons.logout, 'Sair da conta', () {}),
+          _buildItem(context, Icons.logout, 'Sair da conta', () async {
+            await AuthService().logout();
+            if (context.mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginPageMobile()),
+                (route) => false,
+              );
+            }
+          }),
           const Padding(
             padding: EdgeInsets.only(bottom: 16.0),
             child: Center(

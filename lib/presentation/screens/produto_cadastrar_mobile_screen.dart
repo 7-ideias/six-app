@@ -159,7 +159,7 @@ class _CadastroProdutoMobileScreenState
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: _tipoSelecionado,
+                    initialValue: _tipoSelecionado,
                     decoration: InputDecoration(
                       labelText: 'Tipo do Produto',
                       border: OutlineInputBorder(

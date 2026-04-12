@@ -735,11 +735,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     }
 
     final String? codigoItem = item['codigo']?.toString();
-    final String? codigoProduto = produto.codigoDeBarras.toString();
+    final String codigoProduto = produto.codigoDeBarras.toString();
 
     if (codigoItem != null &&
         codigoItem.isNotEmpty &&
-        codigoProduto!.isNotEmpty) {
+        codigoProduto.isNotEmpty) {
       return codigoItem == codigoProduto;
     }
 

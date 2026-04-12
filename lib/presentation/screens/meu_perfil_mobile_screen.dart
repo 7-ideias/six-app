@@ -4,7 +4,7 @@ import '../../providers/usuario_provider.dart';
 import '../../data/models/usuario_model.dart';
 
 class MeuPerfilMobileScreen extends StatefulWidget {
-  const MeuPerfilMobileScreen({Key? key}) : super(key: key);
+  const MeuPerfilMobileScreen({super.key});
 
   @override
   State<MeuPerfilMobileScreen> createState() => _MeuPerfilMobileScreenState();

@@ -23,7 +23,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   final Map<String, TextEditingController> _valorPorForma = {};
   final Set<String> _formasSelecionadas = {};
   String? _clienteSelecionado;
-  bool _oferecerGarantia = false;
+  final bool _oferecerGarantia = false;
 
   @override
   void dispose() {
@@ -450,7 +450,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       );
                     }).toList(),
               ),
-              ..._formasSelecionadas.map(_buildPagamentoField).toList(),
+              ..._formasSelecionadas.map(_buildPagamentoField),
               const SizedBox(height: 36),
               _produtosSelecionados.isEmpty? Container() : ElevatedButton.icon(
                     onPressed: _finalizarVenda,

@@ -865,7 +865,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               SizedBox(
                 width: telaGrande ? 190 : (telaMedia ? 180 : double.infinity),
                 child: DropdownButtonFormField<String>(
-                  value: _tipoSelecionado,
+                  initialValue: _tipoSelecionado,
                   decoration: _inputDecoration(context, 'Tipo'),
                   items: const <DropdownMenuItem<String>>[
                     DropdownMenuItem(value: 'PRODUTO', child: Text('PRODUTO')),

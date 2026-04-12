@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class CatalogoDisponivelMobileScreen extends StatefulWidget {
+  const CatalogoDisponivelMobileScreen({super.key});
+
   @override
   State<StatefulWidget> createState() => _CatalogoDisponivelMobileScreenState();
 }

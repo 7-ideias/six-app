@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SituacaoDoPedidoMobileScreen extends StatefulWidget {
-  const SituacaoDoPedidoMobileScreen({Key? key}) : super(key: key);
+  const SituacaoDoPedidoMobileScreen({super.key});
 
   @override
   State<SituacaoDoPedidoMobileScreen> createState() =>
@@ -62,7 +62,7 @@ class _SituacaoDoPedidoMobileScreenState
               controlAffinity: ListTileControlAffinity.leading,
               activeColor: Colors.deepPurple,
             );
-          }).toList(),
+          }),
           const SizedBox(height: 80),
         ],
       ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 
 class AssinaturaMobileScreen extends StatefulWidget {
-  const AssinaturaMobileScreen({Key? key}) : super(key: key);
+  const AssinaturaMobileScreen({super.key});
 
   @override
   State<AssinaturaMobileScreen> createState() => _AssinaturaMobileScreenState();
@@ -110,7 +110,7 @@ class _AssinaturaMobileScreenState extends State<AssinaturaMobileScreen> {
                                         : null,
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
