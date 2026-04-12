@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appplanilha/presentation/screens/agenda_financeira_web.dart';
+import 'package:appplanilha/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:appplanilha/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:appplanilha/presentation/screens/meu_perfil_web_screen.dart';
 import 'package:appplanilha/presentation/screens/operacoes_caixa_web_page.dart';
@@ -38,6 +39,7 @@ enum ModuloCentralPDV {
   seletor,
   vendas,
   recebimento,
+  clientesList,
   orcamento,
   operacoesCaixa,
   ordemServico,
@@ -1009,6 +1011,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             idColaborador: 'idUnicoDoColaborador',
             nomeColaborador: 'Nome do colaborador',
             operacaoService: _operacaoService,
+          ),
+        );
+
+      case ModuloCentralPDV.clientesList:
+        return Expanded(
+          child: ClientesUsuarioListPage(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
           ),
         );
 
@@ -3032,6 +3046,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             title: 'Cadastros',
             subItems: const <String>[
               'Clientes',
+              'Clientes List',
               'Produtos',
               'Colaboradores',
               'Fornecedores',
@@ -3044,6 +3059,12 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
               if (value == 'Clientes') {
                 showSubPainelCadastroCliente(context, 'Cadastro de Clientes');
+              }
+
+              if (value == 'Clientes List') {
+                setState(() {
+                  _moduloAtual = ModuloCentralPDV.clientesList;
+                });
               }
 
               if (value == 'Colaboradores') {
