@@ -5,6 +5,7 @@ import 'package:appplanilha/domain/services/regionalizacao/regionalizacao_servic
 import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
+import 'package:appplanilha/presentation/screens/cliente_auto_cadastro_publico_page.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:appplanilha/providers/locale_settings_provider.dart';
@@ -29,18 +30,20 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
-          create: (_) => ProdutosListProvider<ProdutoModel>(
-            fetchFunction: ProdutoService().produtosList,
-          ),
+          create:
+              (_) => ProdutosListProvider<ProdutoModel>(
+                fetchFunction: ProdutoService().produtosList,
+              ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
         ChangeNotifierProvider(
           lazy: false,
-          create: (_) => LocaleSettingsProvider(
-            regionalizacaoService: RegionalizacaoService(
-              apiClient: HttpRegionalizacaoApiClient(),
-            ),
-          )..initialize(),
+          create:
+              (_) => LocaleSettingsProvider(
+                regionalizacaoService: RegionalizacaoService(
+                  apiClient: HttpRegionalizacaoApiClient(),
+                ),
+              )..initialize(),
         ),
       ],
       child: MyApp(hasSeenOnboarding: hasSeenOnboarding),
@@ -51,10 +54,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({
-    super.key,
-    required this.hasSeenOnboarding,
-  });
+  const MyApp({super.key, required this.hasSeenOnboarding});
 
   final bool hasSeenOnboarding;
 
@@ -63,12 +63,21 @@ class MyApp extends StatelessWidget {
       final Uri currentUri = Uri.base;
       final bool isPublicOsRoute =
           currentUri.pathSegments.isNotEmpty &&
-              currentUri.pathSegments.first == 'ordem-servico';
+          currentUri.pathSegments.first == 'ordem-servico';
+      final bool isPublicClienteAutoCadastroRoute =
+          currentUri.pathSegments.length >= 2 &&
+          currentUri.pathSegments[0] == 'cliente' &&
+          currentUri.pathSegments[1] == 'auto-cadastro';
+
+      if (isPublicClienteAutoCadastroRoute) {
+        return ClienteAutoCadastroPublicoPage(initialUri: currentUri);
+      }
 
       if (isPublicOsRoute) {
-        final String ordemId = currentUri.pathSegments.length > 1
-            ? currentUri.pathSegments[1]
-            : 'os-sem-id';
+        final String ordemId =
+            currentUri.pathSegments.length > 1
+                ? currentUri.pathSegments[1]
+                : 'os-sem-id';
 
         return OrdemServicoPublicaPage(
           ordemId: ordemId,
@@ -88,8 +97,8 @@ class MyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleSettingsProvider>();
 
     return MaterialApp(
-      onGenerateTitle: (context) =>
-      AppLocalizations.of(context)?.appTitle ?? 'Six',
+      onGenerateTitle:
+          (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
@@ -108,10 +117,7 @@ class MyApp extends StatelessWidget {
 }
 
 class CatalogoPage extends StatelessWidget {
-  const CatalogoPage({
-    super.key,
-    required this.slug,
-  });
+  const CatalogoPage({super.key, required this.slug});
 
   final String slug;
 
@@ -121,12 +127,8 @@ class CatalogoPage extends StatelessWidget {
     final appTitle = l10n?.appTitle ?? 'Six';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('$appTitle - $slug'),
-      ),
-      body: Center(
-        child: Text('Catálogo: $slug'),
-      ),
+      appBar: AppBar(title: Text('$appTitle - $slug')),
+      body: Center(child: Text('Catálogo: $slug')),
     );
   }
 }

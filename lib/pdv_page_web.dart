@@ -9,6 +9,7 @@ import 'package:appplanilha/presentation/screens/pdv_page_web_orcamento.dart';
 import 'package:appplanilha/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:appplanilha/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:appplanilha/providers/telainicial_web_provider.dart';
+import 'package:appplanilha/sub_painel_cadastro_cliente.dart';
 import 'package:appplanilha/sub_painel_cadastro_produto.dart';
 import 'package:appplanilha/sub_painel_configuracoes.dart';
 import 'package:appplanilha/domain/models/pdv_visual_theme.dart';
@@ -3039,6 +3040,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             onSelect: (String value) {
               if (value == 'Produtos') {
                 showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+              }
+
+              if (value == 'Clientes') {
+                showSubPainelCadastroCliente(context, 'Cadastro de Clientes');
               }
 
               if (value == 'Colaboradores') {
