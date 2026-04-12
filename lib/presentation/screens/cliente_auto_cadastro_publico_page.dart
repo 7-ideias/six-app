@@ -30,6 +30,9 @@ class _ClienteAutoCadastroPublicoPageState
   bool _aceitaTermos = false;
   bool _isSending = false;
   bool _linkJaUtilizado = false;
+  bool _cadastroEnviadoComSucesso = false;
+  String _mensagemSucesso =
+      'Recebemos seu auto-cadastro com sucesso. Nossa equipe vai validar os dados.';
 
   @override
   void initState() {
@@ -183,33 +186,17 @@ class _ClienteAutoCadastroPublicoPageState
         return;
       }
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode == 201) {
         await _marcarTokenComoUtilizado();
         setState(() {
           _linkJaUtilizado = true;
+          _cadastroEnviadoComSucesso = true;
+          _mensagemSucesso = _mensagemDoBody(
+            response.body,
+            fallback:
+                'Recebemos seu auto-cadastro com sucesso. Nossa equipe vai validar os dados.',
+          );
         });
-
-        await showDialog<void>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Cadastro enviado'),
-              content: Text(
-                _mensagemDoBody(
-                  response.body,
-                  fallback:
-                      'Recebemos seu auto-cadastro com sucesso. Nossa equipe vai validar os dados.',
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Fechar'),
-                ),
-              ],
-            );
-          },
-        );
         return;
       }
 
@@ -273,157 +260,211 @@ class _ClienteAutoCadastroPublicoPageState
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Auto-cadastro de cliente',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Página pública sem login. Complete seus dados para liberar atendimento e compras.',
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: <Widget>[
-                          Chip(label: Text('Token: $token')),
-                          Chip(label: Text('Empresa: $idUnicoDaEmpresa')),
-                          Chip(label: Text('Tipo: $tipo')),
-                        ],
-                      ),
-                      if (_linkJaUtilizado) ...<Widget>[
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.errorContainer,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: theme.colorScheme.error),
-                          ),
-                          child: Text(
-                            'Link já atualizado/utilizado. Solicite um novo link para novo envio.',
-                            style: TextStyle(
-                              color: theme.colorScheme.onErrorContainer,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: _nomeController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nome completo / Razão social',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (String? value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Campo obrigatório';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _documentoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Documento (CPF/CNPJ)',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (String? value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Campo obrigatório';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _telefoneController,
-                        decoration: const InputDecoration(
-                          labelText: 'Telefone / WhatsApp',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (String? value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Campo obrigatório';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'E-mail',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _enderecoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Endereço completo',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _observacoesController,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Observações',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      CheckboxListTile(
-                        value: _aceitaTermos,
-                        contentPadding: EdgeInsets.zero,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _aceitaTermos = value ?? false;
-                          });
-                        },
-                        title: const Text(
-                          'Confirmo que os dados informados são verdadeiros.',
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                      ),
-                      const SizedBox(height: 8),
-                      FilledButton.icon(
-                        onPressed:
-                            _isSending || _linkJaUtilizado
-                                ? null
-                                : _enviarCadastro,
-                        icon:
-                            _isSending
-                                ? const SizedBox(
-                                  height: 16,
-                                  width: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                child:
+                    _cadastroEnviadoComSucesso
+                        ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                Icon(
+                                  Icons.verified_outlined,
+                                  color: theme.colorScheme.primary,
+                                  size: 32,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Dados enviados com sucesso',
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(fontWeight: FontWeight.w900),
                                   ),
-                                )
-                                : const Icon(Icons.check_circle_outline),
-                        label: Text(
-                          _isSending ? 'Enviando...' : 'Concluir auto-cadastro',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(_mensagemSucesso),
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              child: Text(
+                                'Pode fechar esta guia do navegador.',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                        : Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'Auto-cadastro de cliente',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Página pública sem login. Complete seus dados para liberar atendimento e compras.',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: <Widget>[
+                                  Chip(label: Text('Token: $token')),
+                                  Chip(
+                                    label: Text('Empresa: $idUnicoDaEmpresa'),
+                                  ),
+                                  Chip(label: Text('Tipo: $tipo')),
+                                ],
+                              ),
+                              if (_linkJaUtilizado) ...<Widget>[
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.errorContainer,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: theme.colorScheme.error,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Link já atualizado/utilizado. Solicite um novo link para novo envio.',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onErrorContainer,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: _nomeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nome completo / Razão social',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (String? value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Campo obrigatório';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _documentoController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Documento (CPF/CNPJ)',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (String? value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Campo obrigatório';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _telefoneController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Telefone / WhatsApp',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (String? value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Campo obrigatório';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: const InputDecoration(
+                                  labelText: 'E-mail',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _enderecoController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Endereço completo',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _observacoesController,
+                                maxLines: 3,
+                                decoration: const InputDecoration(
+                                  labelText: 'Observações',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              CheckboxListTile(
+                                value: _aceitaTermos,
+                                contentPadding: EdgeInsets.zero,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    _aceitaTermos = value ?? false;
+                                  });
+                                },
+                                title: const Text(
+                                  'Confirmo que os dados informados são verdadeiros.',
+                                ),
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
+                              ),
+                              const SizedBox(height: 8),
+                              FilledButton.icon(
+                                onPressed:
+                                    _isSending || _linkJaUtilizado
+                                        ? null
+                                        : _enviarCadastro,
+                                icon:
+                                    _isSending
+                                        ? const SizedBox(
+                                          height: 16,
+                                          width: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : const Icon(
+                                          Icons.check_circle_outline,
+                                        ),
+                                label: Text(
+                                  _isSending
+                                      ? 'Enviando...'
+                                      : 'Concluir auto-cadastro',
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
           ),

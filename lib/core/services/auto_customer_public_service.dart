@@ -40,7 +40,7 @@ class AutoCustomerPublicService {
       'idUnicoDaEmpresa': idUnicoDaEmpresa,
       'token': token,
       'tipoPessoa': tipoPessoa,
-      'documento': '????? - DOCUMENTO',
+      'documento': documento,
       'nome': nome,
       'telefone': telefone,
       'email': email,
