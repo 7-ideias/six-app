@@ -5,4 +5,5 @@
 /build/
 /.dart_tool/
 /assets/translations/
-!/pubspec.lock
+pubspec.lock
+.DS_Store
