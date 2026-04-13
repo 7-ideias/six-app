@@ -7,8 +7,6 @@ import 'login_mobile.dart';
 import 'login_page_web.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
-
   @override
   _OnboardingScreenState createState() => _OnboardingScreenState();
 }

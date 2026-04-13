@@ -15,8 +15,6 @@ import '../components/custom_nav_bar.dart';
 import '../components/drawer_mobile.dart';
 
 class OperacaoMobileScreen extends StatefulWidget {
-  const OperacaoMobileScreen({super.key});
-
   @override
   State<OperacaoMobileScreen> createState() => _OperacaoMobileScreenState();
 }

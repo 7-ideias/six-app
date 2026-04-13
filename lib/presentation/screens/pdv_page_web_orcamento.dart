@@ -258,7 +258,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
             Row(children: <Widget>[
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue: _origemSelecionada,
+                  value: _origemSelecionada,
                   decoration: InputDecoration(labelText: 'Origem', border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))),
                   items: _origens.map((String item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
                   onChanged: (String? value) => setState(() => _origemSelecionada = value ?? _origemSelecionada),
@@ -267,7 +267,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
               const SizedBox(width: 14),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue: _prioridadeSelecionada,
+                  value: _prioridadeSelecionada,
                   decoration: InputDecoration(labelText: 'Prioridade', border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))),
                   items: _prioridades.map((String item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
                   onChanged: (String? value) => setState(() => _prioridadeSelecionada = value ?? _prioridadeSelecionada),
@@ -461,7 +461,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
             Row(children: <Widget>[Expanded(child: _tf(_prazoController, 'Prazo estimado', Icons.schedule_outlined)), const SizedBox(width: 14), Expanded(child: _tf(_garantiaController, 'Garantia', Icons.verified_outlined))]),
             const SizedBox(height: 14),
             DropdownButtonFormField<String>(
-              initialValue: _statusSelecionado,
+              value: _statusSelecionado,
               decoration: InputDecoration(labelText: 'Status do orçamento', border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))),
               items: _statusDisponiveis.map((String item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
               onChanged: (String? value) => setState(() => _statusSelecionado = value ?? _statusSelecionado),

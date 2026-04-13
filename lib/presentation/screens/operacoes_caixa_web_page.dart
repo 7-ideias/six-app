@@ -1673,7 +1673,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     String? hint,
   }) {
     return DropdownButtonFormField<T>(
-      initialValue: value,
+      value: value,
       decoration: _inputDecoration(hint: hint),
       items: items
           .map(

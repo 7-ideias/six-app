@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class EstoqueMobileScreen extends StatefulWidget {
-  const EstoqueMobileScreen({super.key});
+  const EstoqueMobileScreen({Key? key}) : super(key: key);
 
   @override
   State<EstoqueMobileScreen> createState() => _EstoqueMobileScreenState();
@@ -36,7 +36,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           SwitchListTile(
             title: const Text("Controle de estoque"),
             value: controleEstoque,
-            activeThumbColor: Colors.deepPurple,
+            activeColor: Colors.deepPurple,
             onChanged: (value) {
               setState(() {
                 controleEstoque = value;
@@ -75,7 +75,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                 });
               },
             );
-          }),
+          }).toList(),
           const SizedBox(height: 80),
         ],
       ),

@@ -7,12 +7,12 @@ class ZebraListItem extends StatelessWidget {
   final Color? oddColor;
 
   const ZebraListItem({
-    super.key,
+    Key? key,
     required this.child,
     required this.index,
     this.evenColor,
     this.oddColor,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

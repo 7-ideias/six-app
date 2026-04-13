@@ -34,7 +34,7 @@ class HttpOperacaoApiClient implements OperacaoApiClient {
     final response = await _httpClient.post(
       uri,
       headers: {
-        'idUnicoDaEmpresa': idUnicoDaEmpresa!,
+        'idUnicoDaEmpresa': idUnicoDaEmpresa!!,
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $jwtToken',
       },

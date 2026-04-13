@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class WidgetCatalog extends StatefulWidget {
-  const WidgetCatalog({super.key});
+  const WidgetCatalog({Key? key}) : super(key: key);
 
   @override
   _WidgetCatalogState createState() => _WidgetCatalogState();
@@ -58,8 +58,6 @@ class _WidgetCatalogState extends State<WidgetCatalog> {
 // 1. GRÁFICO DE LINHAS ANIMADO
 // ============================
 class AnimatedLineChart extends StatelessWidget {
-  const AnimatedLineChart({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -92,8 +90,6 @@ class AnimatedLineChart extends StatelessWidget {
 // 2. GRÁFICO DE BARRAS HORIZONTAIS
 // ============================
 class HorizontalBarChart extends StatelessWidget {
-  const HorizontalBarChart({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -120,8 +116,6 @@ class HorizontalBarChart extends StatelessWidget {
 // 3. GRÁFICO DE DISPERSÃO (SCATTER PLOT)
 // ============================
 class ScatterChartWidget extends StatelessWidget {
-  const ScatterChartWidget({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -143,8 +137,6 @@ class ScatterChartWidget extends StatelessWidget {
 // 4. GRÁFICO DE LINHAS COM SOMBRAS
 // ============================
 class LineChartWithShadow extends StatelessWidget {
-  const LineChartWithShadow({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -179,8 +171,6 @@ class LineChartWithShadow extends StatelessWidget {
 // 5. GRÁFICO DE ÁREA COM GRADIENTE
 // ============================
 class GradientAreaChart extends StatelessWidget {
-  const GradientAreaChart({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -216,8 +206,6 @@ class GradientAreaChart extends StatelessWidget {
 // 6. GRÁFICO DE BARRAS ANIMADAS
 // ============================
 class AnimatedBarChart extends StatefulWidget {
-  const AnimatedBarChart({super.key});
-
   @override
   _AnimatedBarChartState createState() => _AnimatedBarChartState();
 }
@@ -255,8 +243,6 @@ class _AnimatedBarChartState extends State<AnimatedBarChart> {
 // 7. GRÁFICO DE LINHA INTERATIVO
 // ============================
 class InteractiveLineChart extends StatelessWidget {
-  const InteractiveLineChart({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -290,8 +276,6 @@ class InteractiveLineChart extends StatelessWidget {
 // 8. GRÁFICO DE PIZZA EXPANSÍVEL
 // ============================
 class ExpandingPieChart extends StatefulWidget {
-  const ExpandingPieChart({super.key});
-
   @override
   _ExpandingPieChartState createState() => _ExpandingPieChartState();
 }
@@ -342,8 +326,6 @@ class _ExpandingPieChartState extends State<ExpandingPieChart> {
 // 9. GRÁFICO GAUGE (MEDIDOR CIRCULAR)
 // ============================
 class GaugeChartWidget extends StatelessWidget {
-  const GaugeChartWidget({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -374,8 +356,6 @@ class GaugeChartWidget extends StatelessWidget {
 // 10. GRÁFICO DE RADAR (Radar Chart)
 // ============================
 class RadarChartWidget extends StatelessWidget {
-  const RadarChartWidget({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(

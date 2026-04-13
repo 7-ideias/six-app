@@ -4,8 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class MeuCatalogoMobileScreen extends StatefulWidget {
-  const MeuCatalogoMobileScreen({super.key});
-
   @override
   State<StatefulWidget> createState() => _MeuCatalogoMobileScreenState();
 }

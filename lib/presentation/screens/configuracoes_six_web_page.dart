@@ -1176,7 +1176,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       onChanged: (novo) {
         onChanged(novo);
         _marcarAlteracao();
