@@ -2,7 +2,7 @@ import 'package:appplanilha/presentation/screens/preferencias_sub_pedidos_catalo
 import 'package:flutter/material.dart';
 
 class PreferencesMobileScreen extends StatefulWidget {
-  const PreferencesMobileScreen({super.key});
+  const PreferencesMobileScreen({Key? key}) : super(key: key);
 
   @override
   State<PreferencesMobileScreen> createState() =>

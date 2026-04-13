@@ -4,6 +4,7 @@ import 'package:appplanilha/data/services/regionalizacao/regionalizacao_api_clie
 import 'package:appplanilha/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
+import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/presentation/screens/cliente_auto_cadastro_publico_page.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_publica_page.dart';

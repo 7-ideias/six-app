@@ -4,8 +4,12 @@ import 'dart:typed_data';
 
 import 'package:appplanilha/core/services/produto_service.dart';
 import 'package:appplanilha/data/models/produto_model.dart';
+import 'package:appplanilha/data/models/imagem_sugestao_model.dart';
+import 'package:appplanilha/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
 import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
+import 'package:appplanilha/presentation/components/imagem_sugestoes_section.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class SubPainelCadastroProduto extends SubPainelWebGeneral {
   const SubPainelCadastroProduto({
@@ -53,26 +57,34 @@ class CadastroProdutoWebBody extends StatefulWidget {
 class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ProdutoService _produtoService = ProdutoService();
+  final ImagemSugestaoApiClient _imagemSugestaoApiClient =
+      HttpImagemSugestaoApiClient();
 
   final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _nomeProdutoController = TextEditingController();
   final TextEditingController _grupoProdutoController = TextEditingController();
-  final TextEditingController _tempoGarantiaController = TextEditingController();
-  final TextEditingController _modeloProdutoController =
-  TextEditingController(text: 'UNIDADE');
-  final TextEditingController _estoqueMaximoController =
-  TextEditingController(text: '1000');
-  final TextEditingController _estoqueMinimoController =
-  TextEditingController(text: '1');
+  final TextEditingController _tempoGarantiaController =
+      TextEditingController();
+  final TextEditingController _modeloProdutoController = TextEditingController(
+    text: 'UNIDADE',
+  );
+  final TextEditingController _estoqueMaximoController = TextEditingController(
+    text: '1000',
+  );
+  final TextEditingController _estoqueMinimoController = TextEditingController(
+    text: '1',
+  );
   final TextEditingController _precoVendaController = TextEditingController();
-  final TextEditingController _valorComissaoController =
-  TextEditingController(text: '0');
+  final TextEditingController _valorComissaoController = TextEditingController(
+    text: '0',
+  );
   final TextEditingController _quantidadeEntradaController =
-  TextEditingController(text: '1');
-  final TextEditingController _valorCustoController =
-  TextEditingController(text: '0');
+      TextEditingController(text: '1');
+  final TextEditingController _valorCustoController = TextEditingController(
+    text: '0',
+  );
   final TextEditingController _valorVendaEntradaController =
-  TextEditingController(text: '0');
+      TextEditingController(text: '0');
 
   bool _ativo = true;
   bool _podeAlterarValorNaHora = false;
@@ -82,18 +94,40 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   Uint8List? _fotoBytes;
   String? _nomeArquivoFoto;
+  ImagemSugestao? _sugestaoSelecionada;
+  String? _imagemPrincipalUrlAlta;
+
+  bool _isSugestoesLoading = false;
+  bool _jaBuscouSugestoes = false;
+  String? _erroSugestoes;
+  List<ImagemSugestao> _imagensSugeridas = const <ImagemSugestao>[];
+  Timer? _debounceSugestoesTimer;
+  http.Client? _sugestoesHttpClient;
+  int _sugestoesRequestId = 0;
   String? _produtoEmEdicaoId;
 
-  bool get _isModoEdicao => widget.modoEdicao && widget.produtoParaEdicao != null;
+  bool get _isModoEdicao =>
+      widget.modoEdicao && widget.produtoParaEdicao != null;
 
   @override
   void initState() {
     super.initState();
     _preencherCamposSeModoEdicao();
+    _nomeProdutoController.addListener(_onCamposSugestoesAlterados);
+    _grupoProdutoController.addListener(_onCamposSugestoesAlterados);
+    _tempoGarantiaController.addListener(_onCamposSugestoesAlterados);
+    if (_camposMinimosParaSugestao) {
+      _onCamposSugestoesAlterados();
+    }
   }
 
   @override
   void dispose() {
+    _debounceSugestoesTimer?.cancel();
+    _sugestoesHttpClient?.close();
+    _nomeProdutoController.removeListener(_onCamposSugestoesAlterados);
+    _grupoProdutoController.removeListener(_onCamposSugestoesAlterados);
+    _tempoGarantiaController.removeListener(_onCamposSugestoesAlterados);
     _codigoBarrasController.dispose();
     _nomeProdutoController.dispose();
     _grupoProdutoController.dispose();
@@ -110,11 +144,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   InputDecoration _inputDecoration(
-      BuildContext context,
-      String label, {
-        String? hintText,
-        Widget? suffixIcon,
-      }) {
+    BuildContext context,
+    String label, {
+    String? hintText,
+    Widget? suffixIcon,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return InputDecoration(
@@ -157,14 +191,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       decoration: _inputDecoration(context, label, hintText: hintText),
-      validator: requiredField
-          ? (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Campo obrigatório';
-        }
-        return null;
-      }
-          : null,
+      validator:
+          requiredField
+              ? (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Campo obrigatório';
+                }
+                return null;
+              }
+              : null,
     );
   }
 
@@ -176,6 +211,126 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     return int.tryParse(controller.text.trim()) ?? 0;
   }
 
+  bool get _camposMinimosParaSugestao {
+    return _nomeProdutoController.text.trim().isNotEmpty &&
+        (_tipoSelecionado == 'PRODUTO' || _tipoSelecionado == 'SERVICO');
+  }
+
+  void _onCamposSugestoesAlterados() {
+    _debounceSugestoesTimer?.cancel();
+
+    if (!_camposMinimosParaSugestao) {
+      _sugestoesRequestId++;
+      _sugestoesHttpClient?.close();
+      _sugestoesHttpClient = null;
+      setState(() {
+        _isSugestoesLoading = false;
+        _jaBuscouSugestoes = false;
+        _erroSugestoes = null;
+        _imagensSugeridas = const <ImagemSugestao>[];
+      });
+      return;
+    }
+
+    _debounceSugestoesTimer = Timer(
+      const Duration(milliseconds: 600),
+      () => _buscarSugestoesImagem(),
+    );
+  }
+
+  ImagemSugestaoRequest? _montarRequisicaoSugestao() {
+    if (!_camposMinimosParaSugestao) {
+      return null;
+    }
+
+    final String descricao = <String>[
+      _tempoGarantiaController.text.trim(),
+      _modeloProdutoController.text.trim(),
+      _grupoProdutoController.text.trim(),
+    ].where((String value) => value.isNotEmpty).join(' | ');
+
+    return ImagemSugestaoRequest(
+      titulo: _nomeProdutoController.text.trim(),
+      descricao: descricao,
+      categoria: _grupoProdutoController.text.trim(),
+      tipo: _tipoSelecionado == 'SERVICO' ? 'servico' : 'produto',
+      quantidade: 6,
+    );
+  }
+
+  Future<void> _buscarSugestoesImagem({bool manual = false}) async {
+    final ImagemSugestaoRequest? request = _montarRequisicaoSugestao();
+    if (request == null) {
+      if (manual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Preencha título e tipo para gerar sugestões.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    final int requestId = ++_sugestoesRequestId;
+
+    _sugestoesHttpClient?.close();
+    final http.Client currentClient = http.Client();
+    _sugestoesHttpClient = currentClient;
+
+    setState(() {
+      _isSugestoesLoading = true;
+      _jaBuscouSugestoes = true;
+      _erroSugestoes = null;
+    });
+
+    try {
+      final ImagemSugestaoResponse response = await _imagemSugestaoApiClient
+          .buscarSugestoes(request, httpClient: currentClient);
+
+      if (!mounted || requestId != _sugestoesRequestId) {
+        return;
+      }
+
+      setState(() {
+        _imagensSugeridas = response.imagens;
+        _isSugestoesLoading = false;
+      });
+    } on ImagemSugestaoApiException catch (e) {
+      if (!mounted || requestId != _sugestoesRequestId) {
+        return;
+      }
+      setState(() {
+        _isSugestoesLoading = false;
+        _imagensSugeridas = const <ImagemSugestao>[];
+        _erroSugestoes =
+            'Não foi possível gerar sugestões no momento (HTTP ${e.statusCode}).';
+      });
+    } catch (_) {
+      if (!mounted || requestId != _sugestoesRequestId) {
+        return;
+      }
+      setState(() {
+        _isSugestoesLoading = false;
+        _imagensSugeridas = const <ImagemSugestao>[];
+        _erroSugestoes = 'Falha ao gerar sugestões. Tente novamente.';
+      });
+    } finally {
+      if (_sugestoesHttpClient == currentClient) {
+        _sugestoesHttpClient = null;
+      }
+      currentClient.close();
+    }
+  }
+
+  void _selecionarSugestaoImagem(ImagemSugestao sugestao) {
+    setState(() {
+      _sugestaoSelecionada = sugestao;
+      _imagemPrincipalUrlAlta = sugestao.urlAlta;
+      _fotoBytes = null;
+      _nomeArquivoFoto = 'Imagem sugerida por IA';
+    });
+  }
+
   void _preencherCamposSeModoEdicao() {
     if (!_isModoEdicao) {
       return;
@@ -185,7 +340,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _produtoEmEdicaoId = produto.id;
     _codigoBarrasController.text = produto.codigoDeBarras;
     _nomeProdutoController.text = produto.nomeProduto;
-    _tipoSelecionado = produto.tipoProduto.isEmpty ? 'PRODUTO' : produto.tipoProduto;
+    _tipoSelecionado =
+        produto.tipoProduto.isEmpty ? 'PRODUTO' : produto.tipoProduto;
     _grupoProdutoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
     _modeloProdutoController.text = produto.modeloProduto;
     _estoqueMaximoController.text = produto.estoqueMaximo.toString();
@@ -193,7 +349,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _precoVendaController.text = produto.precoVenda.toString();
     _valorComissaoController.text =
         produto.objComissao.valorFixoDeComissaoParaEsseProduto.toString();
-    _produtoTemComissaoEspecial = produto.objComissao.produtoTemComissaoEspecial;
+    _produtoTemComissaoEspecial =
+        produto.objComissao.produtoTemComissaoEspecial;
     _ativo = produto.ativo;
 
     if (produto.objetoServico != null) {
@@ -203,7 +360,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
     if (produto.objEntradaSaidaProduto != null &&
         produto.objEntradaSaidaProduto!.isNotEmpty) {
-      final ObjEntradaSaidaProduto entrada = produto.objEntradaSaidaProduto!.first;
+      final ObjEntradaSaidaProduto entrada =
+          produto.objEntradaSaidaProduto!.first;
       _quantidadeEntradaController.text = entrada.quantidade.toString();
       _valorCustoController.text = entrada.valorCusto.toString();
       _valorVendaEntradaController.text = entrada.valorDaVenda.toString();
@@ -218,19 +376,22 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       nomeProduto: _nomeProdutoController.text.trim(),
       tipoProduto: _tipoSelecionado,
       objAgrupamento: ObjAgrupamento(
-        grupoDoProduto: _grupoProdutoController.text.trim().isEmpty
-            ? 'Sem grupo'
-            : _grupoProdutoController.text.trim(),
+        grupoDoProduto:
+            _grupoProdutoController.text.trim().isEmpty
+                ? 'Sem grupo'
+                : _grupoProdutoController.text.trim(),
       ),
       objetoServico: ObjetoServico(
-        tempoDaGarantia: _tempoGarantiaController.text.trim().isEmpty
-            ? 'Sem garantia'
-            : _tempoGarantiaController.text.trim(),
+        tempoDaGarantia:
+            _tempoGarantiaController.text.trim().isEmpty
+                ? 'Sem garantia'
+                : _tempoGarantiaController.text.trim(),
         podeAlterarOValorNaHora: _podeAlterarValorNaHora,
       ),
-      modeloProduto: _modeloProdutoController.text.trim().isEmpty
-          ? 'UNIDADE'
-          : _modeloProdutoController.text.trim(),
+      modeloProduto:
+          _modeloProdutoController.text.trim().isEmpty
+              ? 'UNIDADE'
+              : _modeloProdutoController.text.trim(),
       estoqueMaximo: _toInt(_estoqueMaximoController),
       estoqueMinimo: _toInt(_estoqueMinimoController),
       precoVenda: _toDouble(_precoVendaController),
@@ -254,7 +415,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
     await input.onChange.first;
 
-    final html.File? file = input.files?.isNotEmpty == true ? input.files!.first : null;
+    final html.File? file =
+        input.files?.isNotEmpty == true ? input.files!.first : null;
     if (file == null) return;
 
     final reader = html.FileReader();
@@ -278,6 +440,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         setState(() {
           _fotoBytes = Uint8List.view(result);
           _nomeArquivoFoto = file.name;
+          _sugestaoSelecionada = null;
+          _imagemPrincipalUrlAlta = null;
         });
       }
     } catch (_) {
@@ -292,6 +456,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     setState(() {
       _fotoBytes = null;
       _nomeArquivoFoto = null;
+      _sugestaoSelecionada = null;
+      _imagemPrincipalUrlAlta = null;
     });
   }
 
@@ -343,7 +509,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text(_isModoEdicao ? 'Erro ao atualizar' : 'Erro ao cadastrar'),
+            title: Text(
+              _isModoEdicao ? 'Erro ao atualizar' : 'Erro ao cadastrar',
+            ),
             content: Text(e.toString()),
             actions: <Widget>[
               TextButton(
@@ -405,7 +573,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: Colors.white.withOpacity(0.18)),
                 ),
-                child: const Icon(Icons.inventory_2_outlined, color: Colors.white),
+                child: const Icon(
+                  Icons.inventory_2_outlined,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(width: 16),
               Column(
@@ -424,10 +595,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     _isModoEdicao
                         ? 'Modo edição: revise os dados já cadastrados e salve as alterações.'
                         : 'Visual mais alinhado ao SixApp, com destaque para foto e ações principais.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
@@ -447,8 +615,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 const SizedBox(width: 8),
                 Text(
                   _isLoading
-                      ? (_isModoEdicao ? 'Salvando alteração...' : 'Salvando...')
-                      : (_isModoEdicao ? 'Pronto para editar' : 'Pronto para envio'),
+                      ? (_isModoEdicao
+                          ? 'Salvando alteração...'
+                          : 'Salvando...')
+                      : (_isModoEdicao
+                          ? 'Pronto para editar'
+                          : 'Pronto para envio'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -598,43 +770,53 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               color: colorScheme.primary.withOpacity(0.04),
             ),
             clipBehavior: Clip.antiAlias,
-            child: _fotoBytes != null
-                ? Image.memory(_fotoBytes!, fit: BoxFit.cover)
-                : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.add_a_photo_outlined,
-                    color: colorScheme.primary,
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'Adicione uma imagem do produto',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Ajuda no reconhecimento rápido no atendimento e no estoque.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: colorScheme.onSurface.withOpacity(0.62),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+            child:
+                _fotoBytes != null
+                    ? Image.memory(_fotoBytes!, fit: BoxFit.cover)
+                    : (_imagemPrincipalUrlAlta != null
+                        ? Image.network(
+                          _imagemPrincipalUrlAlta!,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (_, __, ___) => const Center(
+                                child: Icon(Icons.broken_image_outlined),
+                              ),
+                        )
+                        : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withOpacity(0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.add_a_photo_outlined,
+                                color: colorScheme.primary,
+                                size: 30,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'Adicione uma imagem do produto',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Ajuda no reconhecimento rápido no atendimento e no estoque.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withOpacity(0.62),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        )),
           ),
           const SizedBox(height: 14),
           if (_nomeArquivoFoto != null)
@@ -655,10 +837,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               FilledButton.icon(
                 onPressed: _isLoading ? null : _selecionarFoto,
                 icon: const Icon(Icons.upload_file_outlined),
-                label: Text(_fotoBytes == null ? 'Selecionar foto' : 'Trocar foto'),
+                label: Text(
+                  _fotoBytes == null ? 'Selecionar foto' : 'Trocar foto',
+                ),
               ),
               OutlinedButton.icon(
-                onPressed: _isLoading || _fotoBytes == null ? null : _removerFoto,
+                onPressed:
+                    _isLoading || _fotoBytes == null ? null : _removerFoto,
                 icon: const Icon(Icons.delete_outline),
                 label: const Text('Remover'),
               ),
@@ -666,7 +851,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           ),
           const SizedBox(height: 12),
           Text(
-            'A UI da foto já fica pronta. Para persistir no backend, basta ligar este fluxo ao upload do produto.',
+            _sugestaoSelecionada != null
+                ? 'Imagem principal definida por sugestão de IA.'
+                : 'Você pode usar upload manual ou selecionar uma sugestão por IA.',
             style: TextStyle(
               fontSize: 12,
               color: colorScheme.onSurface.withOpacity(0.62),
@@ -680,9 +867,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Widget _buildResumoCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    final String preco = _precoVendaController.text.trim().isEmpty
-        ? 'R\$ 0,00'
-        : 'R\$ ${_precoVendaController.text.trim()}';
+    final String preco =
+        _precoVendaController.text.trim().isEmpty
+            ? 'R\$ 0,00'
+            : 'R\$ ${_precoVendaController.text.trim()}';
 
     return _buildSectionCard(
       context: context,
@@ -691,11 +879,26 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       icon: Icons.summarize_outlined,
       child: Column(
         children: <Widget>[
-          _buildInfoRow('Nome', _nomeProdutoController.text.trim().isEmpty ? '-' : _nomeProdutoController.text.trim()),
+          _buildInfoRow(
+            'Nome',
+            _nomeProdutoController.text.trim().isEmpty
+                ? '-'
+                : _nomeProdutoController.text.trim(),
+          ),
           _buildInfoRow('Tipo', _tipoSelecionado),
-          _buildInfoRow('Modelo', _modeloProdutoController.text.trim().isEmpty ? '-' : _modeloProdutoController.text.trim()),
+          _buildInfoRow(
+            'Modelo',
+            _modeloProdutoController.text.trim().isEmpty
+                ? '-'
+                : _modeloProdutoController.text.trim(),
+          ),
           _buildInfoRow('Preço', preco),
-          _buildInfoRow('Grupo', _grupoProdutoController.text.trim().isEmpty ? '-' : _grupoProdutoController.text.trim()),
+          _buildInfoRow(
+            'Grupo',
+            _grupoProdutoController.text.trim().isEmpty
+                ? '-'
+                : _grupoProdutoController.text.trim(),
+          ),
           _buildInfoRow('Status', _ativo ? 'Ativo' : 'Inativo', isLast: true),
           const SizedBox(height: 14),
           Container(
@@ -720,15 +923,35 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     );
   }
 
+  Widget _buildSugestoesImagemCard(BuildContext context) {
+    return _buildSectionCard(
+      context: context,
+      title: 'Sugestões por IA',
+      subtitle: 'Sugestões automáticas com base no título e tipo do cadastro.',
+      icon: Icons.auto_awesome_outlined,
+      child: ImagemSugestoesSection(
+        isLoading: _isSugestoesLoading,
+        hasSearched: _jaBuscouSugestoes,
+        canGenerate: _camposMinimosParaSugestao && !_isLoading,
+        sugestoes: _imagensSugeridas,
+        errorMessage: _erroSugestoes,
+        selectedImageId: _sugestaoSelecionada?.id,
+        onGerarSugestoes: () => _buscarSugestoesImagem(manual: true),
+        onSelecionarSugestao: _selecionarSugestaoImagem,
+      ),
+    );
+  }
+
   Widget _buildInfoRow(String label, String value, {bool isLast = false}) {
     return Container(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12, top: 12),
       decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-          bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
-        ),
+        border:
+            isLast
+                ? null
+                : Border(
+                  bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
+                ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -748,10 +971,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -788,35 +1008,39 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             _isModoEdicao
                 ? 'Revise os dados e conclua a alteração.'
                 : 'Revise os dados e conclua o cadastro.',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: <Widget>[
               OutlinedButton(
-                onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                onPressed:
+                    _isLoading ? null : () => Navigator.of(context).pop(),
                 child: const Text('Cancelar'),
               ),
               FilledButton.icon(
                 onPressed: _isLoading ? null : _salvarProduto,
-                icon: _isLoading
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : const Icon(Icons.save_outlined),
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.save_outlined),
                 label: Text(
                   _isLoading
-                      ? (_isModoEdicao ? 'Salvando alteração...' : 'Salvando...')
+                      ? (_isModoEdicao
+                          ? 'Salvando alteração...'
+                          : 'Salvando...')
                       : (_isModoEdicao ? 'Salvar alteração' : 'Salvar produto'),
                 ),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 16,
+                  ),
                 ),
               ),
             ],
@@ -858,14 +1082,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   context: context,
                   controller: _nomeProdutoController,
                   label: 'Nome do produto',
-                  hintText: 'Ex.: Tela premium iPhone 13',
+                  hintText: 'descreva seu produto aqui',
                   requiredField: true,
                 ),
               ),
               SizedBox(
                 width: telaGrande ? 190 : (telaMedia ? 180 : double.infinity),
                 child: DropdownButtonFormField<String>(
-                  initialValue: _tipoSelecionado,
+                  value: _tipoSelecionado,
                   decoration: _inputDecoration(context, 'Tipo'),
                   items: const <DropdownMenuItem<String>>[
                     DropdownMenuItem(value: 'PRODUTO', child: Text('PRODUTO')),
@@ -876,6 +1100,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     setState(() {
                       _tipoSelecionado = value;
                     });
+                    _onCamposSugestoesAlterados();
                   },
                 ),
               ),
@@ -928,7 +1153,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   context: context,
                   controller: _precoVendaController,
                   label: 'Preço de venda',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   hintText: '0,00',
                   requiredField: true,
                 ),
@@ -959,7 +1186,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 runSpacing: 16,
                 children: <Widget>[
                   SizedBox(
-                    width: telaGrande ? 250 : (telaMedia ? 240 : double.infinity),
+                    width:
+                        telaGrande ? 250 : (telaMedia ? 240 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _tempoGarantiaController,
@@ -969,12 +1197,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    width:
+                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _valorComissaoController,
                       label: 'Valor fixo da comissão',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       hintText: '0,00',
                       requiredField: true,
                     ),
@@ -1001,9 +1232,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     child: _buildSwitchTile(
                       context: context,
                       title: 'Alterar valor na hora',
-                      subtitle: 'Permite ajustar o valor durante o atendimento.',
+                      subtitle:
+                          'Permite ajustar o valor durante o atendimento.',
                       value: _podeAlterarValorNaHora,
-                      onChanged: (value) => setState(() => _podeAlterarValorNaHora = value),
+                      onChanged:
+                          (value) =>
+                              setState(() => _podeAlterarValorNaHora = value),
                     ),
                   ),
                   SizedBox(
@@ -1013,7 +1247,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                       title: 'Comissão especial',
                       subtitle: 'Aplica comissão específica para este item.',
                       value: _produtoTemComissaoEspecial,
-                      onChanged: (value) => setState(() => _produtoTemComissaoEspecial = value),
+                      onChanged:
+                          (value) => setState(
+                            () => _produtoTemComissaoEspecial = value,
+                          ),
                     ),
                   ),
                 ],
@@ -1037,7 +1274,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   context: context,
                   controller: _quantidadeEntradaController,
                   label: 'Quantidade',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   requiredField: true,
                 ),
               ),
@@ -1047,7 +1286,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   context: context,
                   controller: _valorCustoController,
                   label: 'Valor de custo',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   requiredField: true,
                 ),
               ),
@@ -1057,7 +1298,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   context: context,
                   controller: _valorVendaEntradaController,
                   label: 'Valor da venda',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   requiredField: true,
                 ),
               ),
@@ -1080,6 +1323,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         final Widget conteudoDireito = Column(
           children: <Widget>[
             _buildFotoCard(context),
+            const SizedBox(height: 20),
+            _buildSugestoesImagemCard(context),
             const SizedBox(height: 20),
             _buildResumoCard(context),
           ],
@@ -1108,6 +1353,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                       )
                     else ...<Widget>[
                       _buildFotoCard(context),
+                      const SizedBox(height: 20),
+                      _buildSugestoesImagemCard(context),
                       const SizedBox(height: 20),
                       _buildResumoCard(context),
                       const SizedBox(height: 20),

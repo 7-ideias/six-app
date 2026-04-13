@@ -877,7 +877,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     return SizedBox(
       width: width,
       child: DropdownButtonFormField<String>(
-        initialValue: value,
+        value: value,
         isExpanded: true,
         onChanged: onChanged,
         decoration: InputDecoration(

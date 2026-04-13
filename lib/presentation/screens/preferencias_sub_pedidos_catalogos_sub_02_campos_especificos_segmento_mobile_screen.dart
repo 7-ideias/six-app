@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CamposEspecificosSegmentoScreen extends StatefulWidget {
-  const CamposEspecificosSegmentoScreen({super.key});
+  const CamposEspecificosSegmentoScreen({Key? key}) : super(key: key);
 
   @override
   State<CamposEspecificosSegmentoScreen> createState() =>
@@ -70,7 +70,7 @@ class _CamposEspecificosSegmentoScreenState
               controlAffinity: ListTileControlAffinity.leading,
               activeColor: Colors.deepPurple,
             );
-          }),
+          }).toList(),
           const SizedBox(height: 80),
         ],
       ),

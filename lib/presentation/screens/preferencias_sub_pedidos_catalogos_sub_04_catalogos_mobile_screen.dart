@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CatalogosMobileScreen extends StatefulWidget {
-  const CatalogosMobileScreen({super.key});
+  const CatalogosMobileScreen({Key? key}) : super(key: key);
 
   @override
   State<CatalogosMobileScreen> createState() => _CatalogosMobileScreenState();
@@ -31,7 +31,7 @@ class _CatalogosMobileScreenState extends State<CatalogosMobileScreen> {
           SwitchListTile(
             title: const Text("Sempre selecionar serviços do catálogo"),
             value: selecionarServicos,
-            activeThumbColor: Colors.deepPurple,
+            activeColor: Colors.deepPurple,
             onChanged: (value) {
               setState(() {
                 selecionarServicos = value;
@@ -41,7 +41,7 @@ class _CatalogosMobileScreenState extends State<CatalogosMobileScreen> {
           SwitchListTile(
             title: const Text("Sempre selecionar peças do catálogo"),
             value: selecionarPecas,
-            activeThumbColor: Colors.deepPurple,
+            activeColor: Colors.deepPurple,
             onChanged: (value) {
               setState(() {
                 selecionarPecas = value;

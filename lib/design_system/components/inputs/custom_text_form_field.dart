@@ -10,12 +10,12 @@ class CustomTextFormField extends StatelessWidget {
   final bool isPassword;
 
   const CustomTextFormField({
-    super.key,
+    Key? key,
     required this.controller,
     required this.label,
     required this.icon,
     this.isPassword = false,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

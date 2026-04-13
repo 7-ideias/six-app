@@ -2,7 +2,7 @@ import 'package:appplanilha/presentation/screens/certeza_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class ProtecaoDeDadosScreen extends StatelessWidget {
-  const ProtecaoDeDadosScreen({super.key});
+  const ProtecaoDeDadosScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

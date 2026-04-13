@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 
 class ConfiguracoesMobileScreen extends StatelessWidget {
-  const ConfiguracoesMobileScreen({super.key});
+  const ConfiguracoesMobileScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

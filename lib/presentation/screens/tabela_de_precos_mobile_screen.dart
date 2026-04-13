@@ -16,8 +16,6 @@ class TabelaDePrecosMobileScreen extends MobileGeneralScreen {
 }
 
 class CadastroListaBody extends StatefulWidget {
-  const CadastroListaBody({super.key});
-
   @override
   State<CadastroListaBody> createState() => _CadastroListaBodyState();
 }
@@ -27,7 +25,7 @@ class _CadastroListaBodyState extends State<CadastroListaBody> {
   List<DescontoModel> descontosFiltrados = [];
   String termoBusca = '';
   String ordenacao = 'nome';
-  final TextEditingController _controllerBusca = TextEditingController();
+  TextEditingController _controllerBusca = TextEditingController();
   final List<String> descontos = List.generate(
     20,
     (index) => 'Produto ${index + 1}',
@@ -45,7 +43,7 @@ class _CadastroListaBodyState extends State<CadastroListaBody> {
     List<DescontoModel> resultado = [...todosOsDescontos];
 
     // Filtro por nome a partir da 3ª letra
-    if (termoBusca.isNotEmpty) {
+    if (termoBusca.length >= 1) {
       resultado =
           resultado
               .where(
@@ -108,9 +106,9 @@ class _CadastroListaBodyState extends State<CadastroListaBody> {
           ),
           child: ListTile(
             leading: CircleAvatar(
+              child: Text('${index + 1}'),
               backgroundColor: Colors.blue.shade200,
               foregroundColor: Colors.white,
-              child: Text('${index + 1}'),
             ),
             title: Text(
               'produto',

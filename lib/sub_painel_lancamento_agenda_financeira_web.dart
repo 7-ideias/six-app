@@ -261,7 +261,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       onChanged: onChanged,
       decoration: _inputDecoration(label),
       items:

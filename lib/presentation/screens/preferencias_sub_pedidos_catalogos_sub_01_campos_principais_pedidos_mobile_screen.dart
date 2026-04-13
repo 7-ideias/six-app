@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CamposPrincipaisPedidosScreen extends StatefulWidget {
-  const CamposPrincipaisPedidosScreen({super.key});
+  const CamposPrincipaisPedidosScreen({Key? key}) : super(key: key);
 
   @override
   State<CamposPrincipaisPedidosScreen> createState() =>
@@ -70,7 +70,7 @@ class _CamposPrincipaisPedidosScreenState
               controlAffinity: ListTileControlAffinity.leading,
               activeColor: Colors.deepPurple,
             );
-          }),
+          }).toList(),
           const SizedBox(height: 80),
         ],
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class PlanosCarrosselScreen extends StatefulWidget {
-  const PlanosCarrosselScreen({super.key});
+  const PlanosCarrosselScreen({Key? key}) : super(key: key);
 
   @override
   State<PlanosCarrosselScreen> createState() => _PlanosCarrosselScreenState();

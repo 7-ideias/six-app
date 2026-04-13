@@ -192,10 +192,10 @@ class CaixaSessao {
     String? status,
   }) {
     return CaixaSessao(
-      idSessaoCaixa: id ?? idSessaoCaixa,
-      nomeCaixa: caixaNome ?? nomeCaixa,
-      idColaboradorAbertura: colaborador ?? idColaboradorAbertura,
-      dataHoraAbertura: dataAbertura ?? dataHoraAbertura,
+      idSessaoCaixa: id ?? this.idSessaoCaixa,
+      nomeCaixa: caixaNome ?? this.nomeCaixa,
+      idColaboradorAbertura: colaborador ?? this.idColaboradorAbertura,
+      dataHoraAbertura: dataAbertura ?? this.dataHoraAbertura,
       valorAbertura: valorAbertura ?? this.valorAbertura,
       status: status ?? this.status,
     );
@@ -250,9 +250,9 @@ class MovimentoCaixa {
     bool? vinculadoVenda,
   }) {
     return MovimentoCaixa(
-      idMovimento: id ?? idMovimento,
+      idMovimento: id ?? this.idMovimento,
       idSessaoCaixa: idSessaoCaixa,
-      tipoMovimento: tipo ?? tipoMovimento,
+      tipoMovimento: tipo ?? this.tipoMovimento,
       natureza: natureza ?? this.natureza,
       codigoTipoRecebimento: codigoTipoRecebimento,
       descricaoTipoRecebimento: descricaoTipoRecebimento,
@@ -261,8 +261,8 @@ class MovimentoCaixa {
       observacao: observacao ?? this.observacao,
       referencia: referencia ?? this.referencia,
       idColaborador: idColaborador,
-      nomeColaborador: colaborador ?? nomeColaborador,
-      dataHoraMovimento: dataHora ?? dataHoraMovimento,
+      nomeColaborador: colaborador ?? this.nomeColaborador,
+      dataHoraMovimento: dataHora ?? this.dataHoraMovimento,
       status: status ?? this.status,
     );
   }

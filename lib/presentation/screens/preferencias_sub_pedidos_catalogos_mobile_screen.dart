@@ -8,7 +8,7 @@ import 'package:appplanilha/presentation/screens/preferencias_sub_pedidos_catalo
 import 'package:flutter/material.dart';
 
 class PersonalizarPedidosCatalogosScreen extends StatefulWidget {
-  const PersonalizarPedidosCatalogosScreen({super.key});
+  const PersonalizarPedidosCatalogosScreen({Key? key}) : super(key: key);
 
   @override
   State<PersonalizarPedidosCatalogosScreen> createState() =>
