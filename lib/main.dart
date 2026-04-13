@@ -5,6 +5,7 @@ import 'package:appplanilha/domain/services/regionalizacao/regionalizacao_servic
 import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/cliente_auto_cadastro_publico_page.dart';
+import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:appplanilha/providers/locale_settings_provider.dart';
@@ -87,7 +88,7 @@ class MyApp extends StatelessWidget {
       return const LoginPageWeb();
     }
 
-    return const LoginPageMobile();
+    return hasSeenOnboarding ? const LoginPageMobile() : OnboardingScreen();
   }
 
   @override
