@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:appplanilha/core/services/produto_service.dart';
-import 'package:appplanilha/data/models/produto_model.dart';
 import 'package:appplanilha/data/models/imagem_sugestao_model.dart';
+import 'package:appplanilha/data/models/produto_imagem_model.dart';
+import 'package:appplanilha/data/models/produto_model.dart';
 import 'package:appplanilha/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
 import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
 import 'package:appplanilha/presentation/components/imagem_sugestoes_section.dart';
@@ -54,6 +56,20 @@ class CadastroProdutoWebBody extends StatefulWidget {
   State<CadastroProdutoWebBody> createState() => _CadastroProdutoWebBodyState();
 }
 
+class _ProdutoImagemSlot {
+  _ProdutoImagemSlot();
+
+  ProdutoImagemModel? image;
+  Uint8List? previewBytes;
+  bool isLoading = false;
+
+  void reset() {
+    image = null;
+    previewBytes = null;
+    isLoading = false;
+  }
+}
+
 class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ProdutoService _produtoService = ProdutoService();
@@ -92,10 +108,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   bool _isLoading = false;
   String _tipoSelecionado = 'PRODUTO';
 
-  Uint8List? _fotoBytes;
-  String? _nomeArquivoFoto;
-  ImagemSugestao? _sugestaoSelecionada;
-  String? _imagemPrincipalUrlAlta;
+  static const int _maxImageSlots = 5;
+  final List<_ProdutoImagemSlot> _imagemSlots =
+      List<_ProdutoImagemSlot>.generate(
+    _maxImageSlots,
+    (_) => _ProdutoImagemSlot(),
+    growable: false,
+  );
 
   bool _isSugestoesLoading = false;
   bool _jaBuscouSugestoes = false;
@@ -105,6 +124,29 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   http.Client? _sugestoesHttpClient;
   int _sugestoesRequestId = 0;
   String? _produtoEmEdicaoId;
+  int _slotSelecionadoIndex = 0;
+
+  int get _totalImagensSelecionadas =>
+      _imagemSlots.where((slot) => slot.image != null).length;
+
+  List<ProdutoImagemModel> get _imagensParaEnvio =>
+      _imagemSlots
+          .map((slot) => slot.image)
+          .whereType<ProdutoImagemModel>()
+          .toList(growable: false);
+
+  Set<int> get _sugestoesAplicadasIds =>
+      _imagemSlots
+          .map((slot) => slot.image?.sugestaoId)
+          .whereType<int>()
+          .toSet();
+
+  int get _indicePrimeiroSlotLivre =>
+      _imagemSlots.indexWhere((slot) => slot.image == null);
+
+  bool get _temSlotLivre => _indicePrimeiroSlotLivre != -1;
+
+  _ProdutoImagemSlot get _slotSelecionado => _imagemSlots[_slotSelecionadoIndex];
 
   bool get _isModoEdicao =>
       widget.modoEdicao && widget.produtoParaEdicao != null;
@@ -322,12 +364,32 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     }
   }
 
-  void _selecionarSugestaoImagem(ImagemSugestao sugestao) {
+  void _aplicarSugestaoEmSlot(ImagemSugestao sugestao) {
+    if (!_temSlotLivre && _slotSelecionado.image != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Você já atingiu o limite de 5 imagens. Remova uma para adicionar outra.'),
+        ),
+      );
+      return;
+    }
+
+    final bool slotAtivoLivre = _slotSelecionado.image == null;
+    final int slotIndex = slotAtivoLivre
+        ? _slotSelecionadoIndex
+        : _indicePrimeiroSlotLivre;
     setState(() {
-      _sugestaoSelecionada = sugestao;
-      _imagemPrincipalUrlAlta = sugestao.urlAlta;
-      _fotoBytes = null;
-      _nomeArquivoFoto = 'Imagem sugerida por IA';
+      final slot = _imagemSlots[slotIndex];
+      slot.image = ProdutoImagemModel(
+        origem: 'SUGESTAO',
+        nomeArquivo: 'Sugestão por IA',
+        url: sugestao.urlAlta,
+        urlMiniatura: sugestao.urlMiniatura,
+        sugestaoId: sugestao.id,
+      );
+      slot.previewBytes = null;
+      _slotSelecionadoIndex = slotIndex;
     });
   }
 
@@ -365,6 +427,19 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       _quantidadeEntradaController.text = entrada.quantidade.toString();
       _valorCustoController.text = entrada.valorCusto.toString();
       _valorVendaEntradaController.text = entrada.valorDaVenda.toString();
+    }
+
+    for (final slot in _imagemSlots) {
+      slot.reset();
+    }
+
+    final List<ProdutoImagemModel> imagensDoProduto =
+        produto.imagens ?? const <ProdutoImagemModel>[];
+
+    for (int i = 0;
+        i < imagensDoProduto.length && i < _imagemSlots.length;
+        i++) {
+      _imagemSlots[i].image = imagensDoProduto[i];
     }
   }
 
@@ -406,10 +481,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           valorDaVenda: _toDouble(_valorVendaEntradaController),
         ),
       ],
+      imagens: _imagensParaEnvio,
     );
   }
 
-  Future<void> _selecionarFoto() async {
+  Future<void> _selecionarFotoParaSlot(int slotIndex) async {
+    if (_isLoading || slotIndex < 0 || slotIndex >= _maxImageSlots) {
+      return;
+    }
+
     final input = html.FileUploadInputElement()..accept = 'image/*';
     input.click();
 
@@ -431,33 +511,57 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
     reader.readAsArrayBuffer(file);
 
+    setState(() {
+      _imagemSlots[slotIndex].isLoading = true;
+    });
+
     try {
       await completer.future;
       final result = reader.result;
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (result is ByteBuffer) {
+        final Uint8List bytes = Uint8List.view(result);
+        final ProdutoImagemModel imageModel = ProdutoImagemModel(
+          origem: 'UPLOAD',
+          nomeArquivo: file.name,
+          imagemBase64: base64Encode(bytes),
+        );
+
         setState(() {
-          _fotoBytes = Uint8List.view(result);
-          _nomeArquivoFoto = file.name;
-          _sugestaoSelecionada = null;
-          _imagemPrincipalUrlAlta = null;
+          final slot = _imagemSlots[slotIndex];
+          slot.previewBytes = bytes;
+          slot.image = imageModel;
+          slot.isLoading = false;
+        });
+      } else {
+        setState(() {
+          _imagemSlots[slotIndex].isLoading = false;
         });
       }
     } catch (_) {
       if (!mounted) return;
+      setState(() {
+        _imagemSlots[slotIndex].isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Não foi possível carregar a imagem.')),
       );
     }
   }
 
-  void _removerFoto() {
+  void _removerImagemDoSlot(int slotIndex) {
+    if (_isLoading || slotIndex < 0 || slotIndex >= _maxImageSlots) {
+      return;
+    }
+
     setState(() {
-      _fotoBytes = null;
-      _nomeArquivoFoto = null;
-      _sugestaoSelecionada = null;
-      _imagemPrincipalUrlAlta = null;
+      _imagemSlots[slotIndex].reset();
+      if (_slotSelecionadoIndex >= _maxImageSlots) {
+        _slotSelecionadoIndex = 0;
+      }
     });
   }
 
@@ -752,114 +856,284 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   Widget _buildFotoCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final _ProdutoImagemSlot slotAtivo = _slotSelecionado;
 
     return _buildSectionCard(
       context: context,
-      title: 'Foto do produto',
-      subtitle: 'Área dedicada para dar mais identidade ao cadastro.',
+      title: 'Fotos do produto',
+      subtitle:
+          'Fluxo de galeria: selecione um slot e adicione a imagem.',
       icon: Icons.photo_camera_back_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: double.infinity,
-            height: 220,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.16)),
-              color: colorScheme.primary.withOpacity(0.04),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child:
-                _fotoBytes != null
-                    ? Image.memory(_fotoBytes!, fit: BoxFit.cover)
-                    : (_imagemPrincipalUrlAlta != null
-                        ? Image.network(
-                          _imagemPrincipalUrlAlta!,
-                          fit: BoxFit.cover,
-                          errorBuilder:
-                              (_, __, ___) => const Center(
-                                child: Icon(Icons.broken_image_outlined),
-                              ),
-                        )
-                        : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withOpacity(0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.add_a_photo_outlined,
-                                color: colorScheme.primary,
-                                size: 30,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Adicione uma imagem do produto',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Ajuda no reconhecimento rápido no atendimento e no estoque.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: colorScheme.onSurface.withOpacity(0.62),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        )),
-          ),
-          const SizedBox(height: 14),
-          if (_nomeArquivoFoto != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Arquivo: $_nomeArquivoFoto',
+          Row(
+            children: <Widget>[
+              Text(
+                'Selecionadas: $_totalImagensSelecionadas / $_maxImageSlots',
                 style: TextStyle(
                   fontSize: 12,
-                  color: colorScheme.onSurface.withOpacity(0.68),
+                  color: colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
-            ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _selecionarFoto,
-                icon: const Icon(Icons.upload_file_outlined),
-                label: Text(
-                  _fotoBytes == null ? 'Selecionar foto' : 'Trocar foto',
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-              ),
-              OutlinedButton.icon(
-                onPressed:
-                    _isLoading || _fotoBytes == null ? null : _removerFoto,
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Remover'),
+                child: Text(
+                  'Slot ativo: ${_slotSelecionadoIndex + 1}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.primary,
+                  ),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          _buildImagemAtiva(context, slotAtivo),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              FilledButton.icon(
+                onPressed: _isLoading || slotAtivo.isLoading
+                    ? null
+                    : () => _selecionarFotoParaSlot(_slotSelecionadoIndex),
+                icon: const Icon(Icons.upload_file_outlined),
+                label: Text(
+                  slotAtivo.image == null ? 'Adicionar no slot ativo' : 'Trocar imagem',
+                ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: _isLoading || slotAtivo.image == null
+                    ? null
+                    : () => _removerImagemDoSlot(_slotSelecionadoIndex),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remover do slot ativo'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Slots',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface.withOpacity(0.78),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List<Widget>.generate(
+                _maxImageSlots,
+                (int index) => Padding(
+                  padding: EdgeInsets.only(right: index == _maxImageSlots - 1 ? 0 : 10),
+                  child: _buildMiniaturaSlot(context, index),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           Text(
-            _sugestaoSelecionada != null
-                ? 'Imagem principal definida por sugestão de IA.'
-                : 'Você pode usar upload manual ou selecionar uma sugestão por IA.',
+            _temSlotLivre
+                ? 'Você pode aplicar sugestões de IA no slot ativo (se estiver vazio) ou no próximo slot livre.'
+                : 'Limite de imagens atingido. Remova uma miniatura para continuar.',
             style: TextStyle(
               fontSize: 12,
               color: colorScheme.onSurface.withOpacity(0.62),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImagemAtiva(BuildContext context, _ProdutoImagemSlot slotAtivo) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool hasImage = slotAtivo.image != null;
+    final bool isSugestao = slotAtivo.image?.origem == 'SUGESTAO';
+
+    Widget imageContent;
+    if (slotAtivo.previewBytes != null) {
+      imageContent = Image.memory(slotAtivo.previewBytes!, fit: BoxFit.cover);
+    } else if (slotAtivo.image?.url != null) {
+      imageContent = Image.network(
+        slotAtivo.image!.url!,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            return child;
+          }
+          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+        },
+        errorBuilder: (_, __, ___) => const Center(
+          child: Icon(Icons.broken_image_outlined),
+        ),
+      );
+    } else {
+      imageContent = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            Icons.photo_camera_back_outlined,
+            size: 38,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface.withOpacity(0.72),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Use o botão de upload ou escolha uma sugestão por IA.',
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onSurface.withOpacity(0.58),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      height: 220,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSugestao ? colorScheme.primary : colorScheme.outline.withOpacity(0.2),
+          width: isSugestao ? 2 : 1,
+        ),
+        color: colorScheme.surfaceVariant,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: <Widget>[
+          Positioned.fill(child: imageContent),
+          if (slotAtivo.isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.28),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          if (hasImage)
+            Positioned(
+              left: 10,
+              bottom: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.55),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  isSugestao ? 'Origem: IA' : 'Origem: Upload',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniaturaSlot(BuildContext context, int index) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final _ProdutoImagemSlot slot = _imagemSlots[index];
+    final bool hasImage = slot.image != null;
+    final bool isAtivo = index == _slotSelecionadoIndex;
+
+    Widget thumb;
+    if (slot.previewBytes != null) {
+      thumb = Image.memory(slot.previewBytes!, fit: BoxFit.cover);
+    } else if (slot.image?.url != null) {
+      thumb = Image.network(
+        slot.image!.url!,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+      );
+    } else {
+      thumb = Icon(
+        Icons.add_photo_alternate_outlined,
+        color: colorScheme.onSurface.withOpacity(0.46),
+      );
+    }
+
+    return InkWell(
+      onTap: () => setState(() => _slotSelecionadoIndex = index),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 90,
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isAtivo ? colorScheme.primary : colorScheme.outline.withOpacity(0.24),
+            width: isAtivo ? 2 : 1,
+          ),
+          color: isAtivo ? colorScheme.primary.withOpacity(0.05) : colorScheme.surface,
+        ),
+        child: Column(
+          children: <Widget>[
+            Container(
+              width: 78,
+              height: 66,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: colorScheme.surfaceVariant,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: slot.isLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : Center(child: thumb),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Slot ${index + 1}',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+            Text(
+              hasImage ? 'OK' : 'Vazio',
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -935,9 +1209,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         canGenerate: _camposMinimosParaSugestao && !_isLoading,
         sugestoes: _imagensSugeridas,
         errorMessage: _erroSugestoes,
-        selectedImageId: _sugestaoSelecionada?.id,
+        usedSuggestionIds: _sugestoesAplicadasIds,
         onGerarSugestoes: () => _buscarSugestoesImagem(manual: true),
-        onSelecionarSugestao: _selecionarSugestaoImagem,
+        onSelecionarSugestao: _aplicarSugestaoEmSlot,
       ),
     );
   }
@@ -1052,10 +1326,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool telaGrande = constraints.maxWidth >= 1080;
-        final bool telaMedia = constraints.maxWidth >= 760;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final bool telaGrande = constraints.maxWidth >= 1080;
+            final bool telaMedia = constraints.maxWidth >= 760;
 
         final Widget dadosPrincipais = _buildSectionCard(
           context: context,

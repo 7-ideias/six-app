@@ -6,8 +6,10 @@ import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/presentation/screens/cliente_auto_cadastro_publico_page.dart';
-import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_publica_page.dart';
+import 'package:appplanilha/presentation/screens/web_checkout_page.dart';
+import 'package:appplanilha/presentation/screens/web_home_page.dart';
+import 'package:appplanilha/presentation/screens/web_trial_onboarding_page.dart';
 import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:appplanilha/providers/locale_settings_provider.dart';
 import 'package:appplanilha/providers/produtos_list_provider.dart';
@@ -16,6 +18,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:appplanilha/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,6 +26,9 @@ import 'core/services/produto_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
   final prefs = await SharedPreferences.getInstance();
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
@@ -59,37 +65,78 @@ class MyApp extends StatelessWidget {
 
   final bool hasSeenOnboarding;
 
-  Widget _resolveInitialPage() {
-    if (kIsWeb) {
-      final Uri currentUri = Uri.base;
-      final bool isPublicOsRoute =
-          currentUri.pathSegments.isNotEmpty &&
-          currentUri.pathSegments.first == 'ordem-servico';
-      final bool isPublicClienteAutoCadastroRoute =
-          currentUri.pathSegments.length >= 2 &&
-          currentUri.pathSegments[0] == 'cliente' &&
-          currentUri.pathSegments[1] == 'auto-cadastro';
+  String _resolveInitialWebRoute() {
+    final Uri currentUri = Uri.base;
+    final String path = currentUri.path.isEmpty ? '/' : currentUri.path;
+    final String query = currentUri.hasQuery ? '?${currentUri.query}' : '';
+    return '$path$query';
+  }
 
-      if (isPublicClienteAutoCadastroRoute) {
-        return ClienteAutoCadastroPublicoPage(initialUri: currentUri);
-      }
+  Route<dynamic> _onGenerateWebRoute(RouteSettings settings) {
+    final String routeName = settings.name ?? '/';
+    final Uri routeUri = Uri.parse(routeName);
 
-      if (isPublicOsRoute) {
-        final String ordemId =
-            currentUri.pathSegments.length > 1
-                ? currentUri.pathSegments[1]
-                : 'os-sem-id';
-
-        return OrdemServicoPublicaPage(
-          ordemId: ordemId,
-          initialUri: currentUri,
-        );
-      }
-
-      return const LoginPageWeb();
+    if (routeUri.path == '/' || routeUri.path == '/home') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const WebHomePage(),
+      );
     }
 
-    return hasSeenOnboarding ? const LoginPageMobile() : OnboardingScreen();
+    if (routeUri.path == '/login') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const LoginPageWeb(),
+      );
+    }
+
+    if (routeUri.path == '/onboarding') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => WebTrialOnboardingPage(initialUri: routeUri),
+      );
+    }
+
+    if (routeUri.path == '/checkout') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => WebCheckoutPage(initialUri: routeUri),
+      );
+    }
+
+    final bool isPublicOsRoute =
+        routeUri.pathSegments.isNotEmpty &&
+        routeUri.pathSegments.first == 'ordem-servico';
+    final bool isPublicClienteAutoCadastroRoute =
+        routeUri.pathSegments.length >= 2 &&
+        routeUri.pathSegments[0] == 'cliente' &&
+        routeUri.pathSegments[1] == 'auto-cadastro';
+
+    if (isPublicClienteAutoCadastroRoute) {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => ClienteAutoCadastroPublicoPage(initialUri: routeUri),
+      );
+    }
+
+    if (isPublicOsRoute) {
+      final String ordemId =
+          routeUri.pathSegments.length > 1
+              ? routeUri.pathSegments[1]
+              : 'os-sem-id';
+
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder:
+            (_) =>
+                OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
+      );
+    }
+
+    return MaterialPageRoute<void>(
+      settings: settings,
+      builder: (_) => const WebHomePage(),
+    );
   }
 
   @override
@@ -112,7 +159,14 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: _resolveInitialPage(),
+      home:
+          kIsWeb
+              ? null
+              : (hasSeenOnboarding
+                  ? const LoginPageMobile()
+                  : OnboardingScreen()),
+      initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
+      onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'produto_imagem_model.dart';
+
 class ProdutoModel {
   final String? id;
   final bool ativo;
@@ -12,6 +14,7 @@ class ProdutoModel {
   final double precoVenda;
   final ObjComissao objComissao;
   final List<ObjEntradaSaidaProduto>? objEntradaSaidaProduto;
+  final List<ProdutoImagemModel>? imagens;
 
   ProdutoModel({
     this.id,
@@ -26,7 +29,7 @@ class ProdutoModel {
     required this.estoqueMinimo,
     required this.precoVenda,
     required this.objComissao,
-    this.objEntradaSaidaProduto,
+    this.objEntradaSaidaProduto, this.imagens,
   });
 
   factory ProdutoModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +55,12 @@ class ProdutoModel {
               .map((i) => ObjEntradaSaidaProduto.fromJson(i))
               .toList()
           : null,
+      imagens: json['imagens'] != null
+          ? (json['imagens'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(ProdutoImagemModel.fromJson)
+              .toList()
+          : null,
     );
   }
 
@@ -71,6 +80,7 @@ class ProdutoModel {
       'objComissao': objComissao?.toJson(),
       'objEntradaSaidaProduto':
           objEntradaSaidaProduto?.map((e) => e.toJson()).toList(),
+      'imagens': imagens?.map((e) => e.toJson()).toList(),
     };
   }
 }

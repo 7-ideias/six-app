@@ -6,13 +6,13 @@ import '../domain/models/regionalizacao_models.dart';
 import '../domain/services/regionalizacao/regionalizacao_service.dart';
 
 class LocaleSettingsProvider extends ChangeNotifier {
-  LocaleSettingsProvider({
-    required RegionalizacaoService regionalizacaoService,
-  }) : _regionalizacaoService = regionalizacaoService;
+  LocaleSettingsProvider({required RegionalizacaoService regionalizacaoService})
+    : _regionalizacaoService = regionalizacaoService;
 
   static const List<Locale> supportedLocales = <Locale>[
     Locale('pt', 'BR'),
     Locale('en', 'US'),
+    Locale('es', 'ES'),
   ];
 
   static const Locale _systemFallbackLocale = Locale('pt', 'BR');
@@ -22,7 +22,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
   final RegionalizacaoService _regionalizacaoService;
 
   ConfiguracaoRegionalizacaoSistema _companyConfig =
-  ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
+      ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
   Locale? _userOverrideLocale;
   bool _initialized = false;
 
@@ -37,6 +37,14 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
   Future<void> initialize() async {
     await _loadUserOverride();
+    if (_userOverrideLocale == null) {
+      final browserLocale = _detectSystemLocale();
+      _companyConfig = _companyConfig.copyWith(
+        languageCode: browserLocale.languageCode,
+        countryCode:
+            browserLocale.countryCode ?? _systemFallbackLocale.countryCode!,
+      );
+    }
     _initialized = true;
     notifyListeners();
   }
@@ -46,22 +54,24 @@ class LocaleSettingsProvider extends ChangeNotifier {
   }
 
   Future<void> atualizarConfiguracaoDaEmpresaPorResponse(
-      ConfiguracaoRegionalizacaoResponse response,
-      ) async {
-    _companyConfig = _regionalizacaoService.converterResponseParaDominio(response);
+    ConfiguracaoRegionalizacaoResponse response,
+  ) async {
+    _companyConfig = _regionalizacaoService.converterResponseParaDominio(
+      response,
+    );
     notifyListeners();
   }
 
   Future<void> atualizarConfiguracaoDaEmpresa(
-      ConfiguracaoRegionalizacaoSistema config,
-      ) async {
+    ConfiguracaoRegionalizacaoSistema config,
+  ) async {
     _companyConfig = config;
     notifyListeners();
   }
 
   Future<void> saveCompanyConfig(
-      ConfiguracaoRegionalizacaoSistema config,
-      ) async {
+    ConfiguracaoRegionalizacaoSistema config,
+  ) async {
     await _regionalizacaoService.salvarRegionalizacao(config);
     _companyConfig = config;
     notifyListeners();
@@ -115,6 +125,19 @@ class LocaleSettingsProvider extends ChangeNotifier {
     for (final supported in supportedLocales) {
       if (supported.languageCode == locale.languageCode) {
         return supported;
+      }
+    }
+
+    return _systemFallbackLocale;
+  }
+
+  Locale _detectSystemLocale() {
+    final locales = WidgetsBinding.instance.platformDispatcher.locales;
+    for (final locale in locales) {
+      for (final supported in supportedLocales) {
+        if (supported.languageCode == locale.languageCode) {
+          return supported;
+        }
       }
     }
 
