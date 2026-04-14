@@ -1,48 +1,104 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import 'login_mobile.dart';
 
+// ── Widget de efeito "digitando" ────────────────────────────────────────────
+class _TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const _TypewriterText({super.key, required this.text, required this.style});
+
+  @override
+  State<_TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<_TypewriterText> {
+  String _displayed = '';
+  Timer? _charTimer;
+
+  // Velocidade: ~30ms por caractere → texto de ~55 chars termina em ~1.7s
+  static const Duration _charInterval = Duration(milliseconds: 28);
+
+  @override
+  void initState() {
+    super.initState();
+    _startTyping();
+  }
+
+  @override
+  void didUpdateWidget(_TypewriterText old) {
+    super.didUpdateWidget(old);
+    if (old.text != widget.text) {
+      _charTimer?.cancel();
+      _displayed = '';
+      _startTyping();
+    }
+  }
+
+  void _startTyping() {
+    int index = 0;
+    _charTimer = Timer.periodic(_charInterval, (t) {
+      if (!mounted) { t.cancel(); return; }
+      if (index >= widget.text.length) { t.cancel(); return; }
+      setState(() => _displayed = widget.text.substring(0, ++index));
+    });
+  }
+
+  @override
+  void dispose() {
+    _charTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(_displayed, style: widget.style);
+  }
+}
+
+// ── Tela de onboarding ──────────────────────────────────────────────────────
 class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
+
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final PageController _controller = PageController();
   Timer? _timer;
   int _currentPage = 0;
   bool _showVamosLa = false;
+  double _dragStartX = 0;
 
   static const int _totalPages = 4;
-  static const Duration _pageInterval = Duration(seconds: 4);
+  static const Duration _pageInterval = Duration(seconds: 6);
+  static const Duration _fadeDuration = Duration(milliseconds: 1100);
 
-  /// Para adicionar ou trocar animações, basta alterar o campo 'lottie'
-  /// com o path do arquivo .json dentro de assets/lottie/onboarding/images/
   static const List<Map<String, String>> _pages = [
     {
       'title': 'Bem-vindo ao Six!',
       'subtitle': 'Gerencie suas ordens de serviço com facilidade e agilidade.',
-      'lottie': 'assets/lottie/onboarding/images/bem-vindo.json',
+      'image': 'assets/images/onboading/1-bem-vindo.jpg',
     },
     {
       'title': 'Cadastro Rápido',
       'subtitle': 'Entre em segundos e comece a trabalhar imediatamente.',
-      'lottie': 'assets/lottie/onboarding/images/cadastro-rapido.json',
+      'image': 'assets/images/onboading/2-cadastro-rapido.jpg',
     },
     {
       'title': 'Gestão Técnica',
       'subtitle': 'Acompanhe seus serviços e notificações em tempo real.',
-      'lottie': 'assets/lottie/onboarding/images/gestao-tecnica.json',
+      'image': 'assets/images/onboading/3-gestao-tecnica.jpg',
     },
     {
       'title': 'Controle Financeiro',
       'subtitle': 'Gerencie suas contas a pagar e a receber com precisão.',
-      'lottie': 'assets/lottie/onboarding/images/controle-financeiro.json',
+      'image': 'assets/images/onboading/4-controle-financeiro.jpg',
     },
   ];
 
@@ -52,33 +108,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _startTimer();
   }
 
-  /// Inicia (ou reinicia) o timer de avanço automático.
-  /// Chamado após cada troca de página — manual ou automática —
-  /// para que o intervalo seja contado a partir da página atual.
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(_pageInterval, (_) => _advance());
-  }
-
-  void _advance() {
-    if (!mounted) return;
-    final nextPage = (_currentPage + 1) % _totalPages;
-    _controller.animateToPage(
-      nextPage,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
+    _timer = Timer.periodic(
+      _pageInterval,
+      (_) => _goToPage((_currentPage + 1) % _totalPages),
     );
   }
 
-  void _onPageChanged(int index) {
+  void _goToPage(int index) {
+    if (!mounted) return;
     setState(() {
       _currentPage = index;
-      // Botão aparece ao chegar na última página e permanece para sempre
-      if (index == _totalPages - 1) {
-        _showVamosLa = true;
-      }
+      if (index == _totalPages - 1) _showVamosLa = true;
     });
-    // Reinicia o timer para que cada página tenha o intervalo completo
     _startTimer();
   }
 
@@ -96,146 +139,185 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final page = _pages[_currentPage];
 
     return Scaffold(
-      body: Stack(
-        children: [
-          // Carrossel de páginas
-          PageView.builder(
-            controller: _controller,
-            onPageChanged: _onPageChanged,
-            itemCount: _totalPages,
-            itemBuilder: (context, index) {
-              final page = _pages[index];
-              return _buildPage(
-                theme,
-                page['title']!,
-                page['subtitle']!,
-                page['lottie']!,
-              );
-            },
-          ),
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onHorizontalDragStart: (d) => _dragStartX = d.globalPosition.dx,
+        onHorizontalDragEnd: (d) {
+          final diff = d.globalPosition.dx - _dragStartX;
+          if (diff < -40) {
+            _goToPage((_currentPage + 1) % _totalPages);
+          } else if (diff > 40) {
+            _goToPage((_currentPage - 1 + _totalPages) % _totalPages);
+          }
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Imagem de fundo com crossfade suave ─────────────────────
+            AnimatedSwitcher(
+              duration: _fadeDuration,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+              child: SizedBox.expand(
+                key: ValueKey(_currentPage),
+                child: Image.asset(page['image']!, fit: BoxFit.cover),
+              ),
+            ),
 
-          // Indicador de progresso — centro inferior
-          Positioned(
-            bottom: 44,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: SmoothPageIndicator(
-                controller: _controller,
-                count: _totalPages,
-                effect: ExpandingDotsEffect(
-                  activeDotColor: theme.colorScheme.primary,
-                  dotColor: theme.colorScheme.primary.withValues(alpha: 0.25),
-                  dotHeight: 8,
-                  dotWidth: 8,
-                  expansionFactor: 3,
+            // ── Gradiente inferior ───────────────────────────────────────
+            const Positioned(
+              bottom: 0, left: 0, right: 0, height: 380,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    stops: [0.0, 0.6, 1.0],
+                    colors: [Color(0xCC000000), Color(0x99000000), Colors.transparent],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Botão "Vamos lá" — canto inferior direito
-          Positioned(
-            bottom: 28,
-            right: 20,
-            child: AnimatedOpacity(
-              opacity: _showVamosLa ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 400),
-              child: IgnorePointer(
-                ignoring: !_showVamosLa,
-                child: TextButton(
-                  onPressed: _goToLogin,
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 8,
-                    ),
-                    overlayColor: theme.colorScheme.primary.withValues(alpha: 0.08),
+            // ── Gradiente superior ───────────────────────────────────────
+            const Positioned(
+              top: 0, left: 0, right: 0, height: 120,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x88000000), Colors.transparent],
                   ),
-                  child: Row(
+                ),
+              ),
+            ),
+
+            // ── Textos ───────────────────────────────────────────────────
+            Positioned(
+              left: 0, right: 0, bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 110),
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Vamos lá',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
+                      // Título: fade + slide (igual antes)
+                      AnimatedSwitcher(
+                        duration: _fadeDuration,
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.06),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOut,
+                            )),
+                            child: child,
+                          ),
+                        ),
+                        child: Align(
+                          key: ValueKey(_currentPage),
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            page['title']!,
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              height: 1.2,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: theme.colorScheme.primary,
+                      const SizedBox(height: 10),
+                      // Subtítulo: efeito digitando
+                      _TypewriterText(
+                        key: ValueKey('sub_$_currentPage'),
+                        text: page['subtitle']!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xCCFFFFFF),
+                          height: 1.55,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildPage(
-    ThemeData theme,
-    String title,
-    String subtitle,
-    String lottiePath,
-  ) {
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 32),
-          // Título no topo
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+            // ── Indicador de páginas ─────────────────────────────────────
+            Positioned(
+              bottom: 44, left: 0, right: 0,
+              child: Center(
+                child: AnimatedSmoothIndicator(
+                  activeIndex: _currentPage,
+                  count: _totalPages,
+                  effect: const ExpandingDotsEffect(
+                    activeDotColor: Colors.white,
+                    dotColor: Color(0x66FFFFFF),
+                    dotHeight: 7,
+                    dotWidth: 7,
+                    expansionFactor: 3,
+                  ),
+                ),
               ),
             ),
-          ),
-          // Animação ocupa o espaço disponível no meio
-          Expanded(
-            child: Lottie.asset(
-              lottiePath,
-              fit: BoxFit.contain,
-              repeat: true,
-            ),
-          ),
-          // Descrição abaixo da animação
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                height: 1.5,
-                fontSize: 21
+
+            // ── Botão "Vamos lá" ─────────────────────────────────────────
+            Positioned(
+              bottom: 28, right: 24,
+              child: AnimatedOpacity(
+                opacity: _showVamosLa ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 400),
+                child: IgnorePointer(
+                  ignoring: !_showVamosLa,
+                  child: TextButton(
+                    onPressed: _goToLogin,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      overlayColor: Colors.white.withValues(alpha: 0.12),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Vamos lá',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 80), // espaço para os controles inferiores
-        ],
+          ],
+        ),
       ),
     );
   }
