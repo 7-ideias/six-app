@@ -26,17 +26,12 @@ class AuthService {
     final String pathLogin = kIsWeb ? 'web' : 'mobile';
     final uri = Uri.parse('${AppConfig.baseUrl}/auth/$pathLogin/login');
 
-    final requestBody = jsonEncode({
-      'login': login,
-      'senha': senha,
-    });
+    final requestBody = jsonEncode({'login': login, 'senha': senha});
 
     final client = _client();
     final response = await client.post(
       uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
       body: requestBody,
     );
 
@@ -70,9 +65,7 @@ class AuthService {
     if (kIsWeb) {
       response = await client.post(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
     } else {
       final String? refreshTokenStr = await getRefreshToken();
@@ -83,12 +76,8 @@ class AuthService {
 
       response = await client.post(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'refreshToken': refreshTokenStr,
-        }),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshTokenStr}),
       );
     }
 
@@ -152,5 +141,23 @@ class AuthService {
   Future<String?> getEmpresaId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_empresaIdKey);
+  }
+
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString(_userDataKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+      return decoded['id']?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 }

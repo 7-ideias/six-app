@@ -11,7 +11,7 @@ class ColaboradorService {
   final String endpointCadastro =
       '${AppConfig.baseUrl}/private/api/colaborador/novo';
   final String endpointAtualizacao =
-      '${AppConfig.baseUrl}/private/api/colaborador/atualizar';
+      '${AppConfig.baseUrl}/private/api/colaborador/editar';
 
   final client = InterceptedClient.build(
     interceptors: <InterceptorContract>[LoggingInterceptor()],
@@ -32,7 +32,7 @@ class ColaboradorService {
   ) async {
     return _sendRequest(
       url: Uri.parse(endpointAtualizacao),
-      method: 'PUT',
+      method: 'POST',
       body: request.toJson(),
     );
   }
@@ -59,9 +59,10 @@ class ColaboradorService {
       print('🟦 Headers: $headers');
       print('📦 Body: $bodyJson');
 
-      final response = method == 'PUT'
-          ? await client.put(url, headers: headers, body: bodyJson)
-          : await client.post(url, headers: headers, body: bodyJson);
+      final response = switch (method) {
+        'PUT' => await client.put(url, headers: headers, body: bodyJson),
+        _ => await client.post(url, headers: headers, body: bodyJson),
+      };
 
       print('✅ STATUS: ${response.statusCode}');
       print('📥 Response body: ${response.body}');

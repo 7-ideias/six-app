@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
 
+import 'core/services/auth_service.dart';
 import 'core/services/lib_core_services_colaborador_service.dart';
 import 'data/models/lib_data_models_colaborador_model.dart';
 
@@ -46,47 +47,63 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _fotoController = TextEditingController();
   final TextEditingController _celularDeAcessoController =
       TextEditingController(text: '+55');
-  final TextEditingController _senhaAcessoController =
-      TextEditingController(text: '123456');
+  final TextEditingController _senhaAcessoController = TextEditingController(
+    text: '123456',
+  );
   final TextEditingController _idUnicoDoUsuarioController =
       TextEditingController(text: 'USR-');
   final TextEditingController _dataCadastroController = TextEditingController(
     text: _formatDateTime(DateTime.now()),
   );
+  final TextEditingController _idUnicoDaEmpresaController =
+      TextEditingController();
+  final TextEditingController _idDeQuemCadastrouController =
+      TextEditingController();
 
   final TextEditingController _idiomaPreferencialController =
       TextEditingController(text: 'pt-BR');
-  final TextEditingController _fusoHorarioController =
-      TextEditingController(text: 'America/Sao_Paulo');
-  final TextEditingController _statusController = TextEditingController(text: 'ATIVO');
+  final TextEditingController _fusoHorarioController = TextEditingController(
+    text: 'America/Sao_Paulo',
+  );
+  final TextEditingController _statusController = TextEditingController(
+    text: 'ATIVO',
+  );
   final TextEditingController _idColaboradorAtualizacaoController =
       TextEditingController(text: 'COLAB-0001');
 
   final TextEditingController _dataDeContratacaoController =
       TextEditingController(text: _formatDate(DateTime.now()));
-  final TextEditingController _salarioController =
-      TextEditingController(text: '0,00');
+  final TextEditingController _salarioController = TextEditingController(
+    text: '0,00',
+  );
 
-  final TextEditingController _departamentoController =
-      TextEditingController(text: 'Operações');
-  final TextEditingController _tipoContratoController =
-      TextEditingController(text: 'CLT');
-  final TextEditingController _centroDeCustoController =
-      TextEditingController(text: 'Assistência Técnica');
+  final TextEditingController _departamentoController = TextEditingController(
+    text: 'Operações',
+  );
+  final TextEditingController _tipoContratoController = TextEditingController(
+    text: 'CLT',
+  );
+  final TextEditingController _centroDeCustoController = TextEditingController(
+    text: 'Assistência Técnica',
+  );
 
   final TextEditingController _atencaoController = TextEditingController();
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _nomeDeGuerraController = TextEditingController();
-  final TextEditingController _celularController =
-      TextEditingController(text: '+55');
-  final TextEditingController _senhaPessoaController =
-      TextEditingController(text: '000000');
+  final TextEditingController _celularController = TextEditingController(
+    text: '+55',
+  );
+  final TextEditingController _senhaPessoaController = TextEditingController(
+    text: '000000',
+  );
   final TextEditingController _cpfController = TextEditingController();
   final TextEditingController _rgController = TextEditingController();
   final TextEditingController _dataNascimentoController = TextEditingController(
     text: '1990-01-01',
   );
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _documentoUnicoEmpresaController =
+      TextEditingController();
 
   final TextEditingController _cepController = TextEditingController();
   final TextEditingController _logradouroController = TextEditingController();
@@ -94,28 +111,34 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _bairroController = TextEditingController();
   final TextEditingController _localidadeController = TextEditingController();
   final TextEditingController _ufController = TextEditingController();
-  final TextEditingController _paisController = TextEditingController(text: 'BR');
+  final TextEditingController _paisController = TextEditingController(
+    text: 'BR',
+  );
 
-  final TextEditingController _cargoController =
-      TextEditingController(text: 'Técnico');
+  final TextEditingController _cargoController = TextEditingController(
+    text: 'Técnico',
+  );
   final TextEditingController _comissaoProdutosController =
       TextEditingController(text: '0,00');
-  final TextEditingController _comissaoVendasController =
-      TextEditingController(text: '0,00');
+  final TextEditingController _comissaoVendasController = TextEditingController(
+    text: '0,00',
+  );
   final TextEditingController _comissaoAssistenciaController =
       TextEditingController(text: '0,00');
-
 
   final TextEditingController _tipoDocumentoGlobalController =
       TextEditingController(text: 'CPF');
   final TextEditingController _numeroDocumentoGlobalController =
       TextEditingController();
-  final TextEditingController _paisDocumentoController =
-      TextEditingController(text: 'BR');
-  final TextEditingController _nacionalidadeController =
-      TextEditingController(text: 'Brasileira');
-  final TextEditingController _paisResidenciaController =
-      TextEditingController(text: 'BR');
+  final TextEditingController _paisDocumentoController = TextEditingController(
+    text: 'BR',
+  );
+  final TextEditingController _nacionalidadeController = TextEditingController(
+    text: 'Brasileira',
+  );
+  final TextEditingController _paisResidenciaController = TextEditingController(
+    text: 'BR',
+  );
 
   final TextEditingController _modoCapturaFotoController =
       TextEditingController(text: 'upload');
@@ -123,8 +146,9 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _dataCapturaFotoController =
       TextEditingController(text: _formatDateTime(DateTime.now()));
 
-  final TextEditingController _moedaPagamentoController =
-      TextEditingController(text: 'BRL');
+  final TextEditingController _moedaPagamentoController = TextEditingController(
+    text: 'BRL',
+  );
   final TextEditingController _periodicidadePagamentoController =
       TextEditingController(text: 'mensal');
   final TextEditingController _valorBasePagamentoController =
@@ -137,11 +161,13 @@ class _CadastroColaboradorWebBodyState
   final TextEditingController _ibanController = TextEditingController();
   final TextEditingController _swiftController = TextEditingController();
   final TextEditingController _pixController = TextEditingController();
-  final TextEditingController _diaPagamentoController =
-      TextEditingController(text: '5');
+  final TextEditingController _diaPagamentoController = TextEditingController(
+    text: '5',
+  );
 
-  final TextEditingController _escopoDadosController =
-      TextEditingController(text: 'empresa');
+  final TextEditingController _escopoDadosController = TextEditingController(
+    text: 'empresa',
+  );
 
   bool _colaboradorAtivo = true;
   bool _podeFazerDevolucao = true;
@@ -191,6 +217,33 @@ class _CadastroColaboradorWebBodyState
   }
 
   @override
+  void initState() {
+    super.initState();
+    _carregarContextoDaSessao();
+  }
+
+  Future<void> _carregarContextoDaSessao() async {
+    final AuthService authService = AuthService();
+    final String empresaId = (await authService.getEmpresaId())?.trim() ?? '';
+    final String userId = (await authService.getUserId())?.trim() ?? '';
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      if (empresaId.isNotEmpty) {
+        _idUnicoDaEmpresaController.text = empresaId;
+        if (_documentoUnicoEmpresaController.text.trim().isEmpty) {
+          _documentoUnicoEmpresaController.text = empresaId;
+        }
+      }
+      if (userId.isNotEmpty) {
+        _idDeQuemCadastrouController.text = userId;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     for (final TextEditingController controller in <TextEditingController>[
       _fotoController,
@@ -198,6 +251,8 @@ class _CadastroColaboradorWebBodyState
       _senhaAcessoController,
       _idUnicoDoUsuarioController,
       _dataCadastroController,
+      _idUnicoDaEmpresaController,
+      _idDeQuemCadastrouController,
       _dataDeContratacaoController,
       _salarioController,
       _atencaoController,
@@ -209,6 +264,7 @@ class _CadastroColaboradorWebBodyState
       _rgController,
       _dataNascimentoController,
       _emailController,
+      _documentoUnicoEmpresaController,
       _cepController,
       _logradouroController,
       _complementoController,
@@ -312,14 +368,15 @@ class _CadastroColaboradorWebBodyState
         icon: icon,
         hintText: hintText,
       ),
-      validator: requiredField
-          ? (String? value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Campo obrigatório';
+      validator:
+          requiredField
+              ? (String? value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Campo obrigatório';
+                }
+                return null;
               }
-              return null;
-            }
-          : null,
+              : null,
       onTap: onTap,
       onChanged: (_) => setState(() {}),
     );
@@ -340,7 +397,8 @@ class _CadastroColaboradorWebBodyState
         label,
         icon: icon,
         suffixIcon: IconButton(
-          onPressed: () => _selecionarData(controller, includeTime: includeTime),
+          onPressed:
+              () => _selecionarData(controller, includeTime: includeTime),
           icon: const Icon(Icons.calendar_today_outlined),
         ),
       ),
@@ -528,10 +586,7 @@ class _CadastroColaboradorWebBodyState
                   SizedBox(height: 6),
                   Text(
                     'Conectado ao backend do SixBack para cadastrar técnicos e equipe operacional.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
@@ -620,11 +675,12 @@ class _CadastroColaboradorWebBodyState
     return Container(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12, top: 12),
       decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
-              ),
+        border:
+            isLast
+                ? null
+                : Border(
+                  bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
+                ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -644,10 +700,7 @@ class _CadastroColaboradorWebBodyState
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -721,6 +774,8 @@ class _CadastroColaboradorWebBodyState
 
   ColaboradorCadastroRequest _montarRequest() {
     return ColaboradorCadastroRequest(
+      idUnicoDaEmpresa: _idUnicoDaEmpresaController.text.trim(),
+      idDeQuemCadastrou: _idDeQuemCadastrouController.text.trim(),
       foto: _fotoController.text.trim(),
       celularDeAcesso: _celularDeAcessoController.text.trim(),
       senhaParaPermitirOAcessoDoColaborador: _senhaAcessoController.text.trim(),
@@ -758,6 +813,8 @@ class _CadastroColaboradorWebBodyState
           uf: _ufController.text.trim(),
           pais: _paisController.text.trim(),
         ),
+        documentoIdentificacaoUnicoDaEmpresa:
+            _documentoUnicoEmpresaController.text.trim(),
       ),
       objAutorizacoes: ColaboradorAutorizacoes(
         podeFazerDevolucao: _podeFazerDevolucao,
@@ -837,6 +894,8 @@ class _CadastroColaboradorWebBodyState
     final ColaboradorCadastroRequest base = _montarRequest();
 
     return ColaboradorAtualizacaoRequest(
+      idUnicoDaEmpresa: base.idUnicoDaEmpresa,
+      idDeQuemCadastrou: base.idDeQuemCadastrou,
       idColaborador: _idColaboradorAtualizacaoController.text.trim(),
       foto: base.foto,
       celularDeAcesso: base.celularDeAcesso,
@@ -864,8 +923,8 @@ class _CadastroColaboradorWebBodyState
 
     try {
       final ColaboradorCadastroRequest request = _montarRequest();
-      final ColaboradorCadastroResponse response =
-          await _colaboradorService.cadastrarColaborador(request);
+      final ColaboradorCadastroResponse response = await _colaboradorService
+          .cadastrarColaborador(request);
 
       if (!mounted) {
         return;
@@ -875,14 +934,16 @@ class _CadastroColaboradorWebBodyState
       final ColaboradorAtualizacaoRequest updateRequest =
           _montarAtualizacaoRequest();
 
-      String message = 'Colaborador cadastrado com sucesso!\n\n'
+      String message =
+          'Colaborador cadastrado com sucesso!\n\n'
           'Payload POST sugerido:\n${encoder.convert(request.toJson())}\n\n'
           'Payload PUT sugerido:\n${encoder.convert(updateRequest.toJson())}';
 
       if (response.body.trim().isNotEmpty) {
         try {
           final Object decoded = jsonDecode(response.body);
-          message = '$message\n\nResposta do backend:\n${encoder.convert(decoded)}';
+          message =
+              '$message\n\nResposta do backend:\n${encoder.convert(decoded)}';
         } catch (_) {
           message = '$message\n\nResposta do backend:\n${response.body}';
         }
@@ -959,15 +1020,16 @@ class _CadastroColaboradorWebBodyState
               color: colorScheme.primary.withOpacity(0.04),
             ),
             clipBehavior: Clip.antiAlias,
-            child: url.isNotEmpty
-                ? Image.network(
-                    url,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) {
-                      return _buildFotoPlaceholder(context);
-                    },
-                  )
-                : _buildFotoPlaceholder(context),
+            child:
+                url.isNotEmpty
+                    ? Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        return _buildFotoPlaceholder(context);
+                      },
+                    )
+                    : _buildFotoPlaceholder(context),
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1046,7 +1108,8 @@ class _CadastroColaboradorWebBodyState
           _buildSwitchTile(
             context: context,
             title: 'Consentimento para uso da imagem',
-            subtitle: 'Autoriza utilização da foto em perfis e documentos internos.',
+            subtitle:
+                'Autoriza utilização da foto em perfis e documentos internos.',
             value: _consentimentoUsoImagem,
             onChanged: (bool value) {
               _consentimentoUsoImagem = value;
@@ -1079,10 +1142,7 @@ class _CadastroColaboradorWebBodyState
         const SizedBox(height: 14),
         const Text(
           'Informe uma URL para foto do colaborador',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
         ),
         const SizedBox(height: 6),
         Text(
@@ -1109,9 +1169,12 @@ class _CadastroColaboradorWebBodyState
       child: Column(
         children: <Widget>[
           _buildInfoRow('Nome', nome),
-          _buildInfoRow('Cargo', _cargoController.text.trim().isEmpty
-              ? '-'
-              : _cargoController.text.trim()),
+          _buildInfoRow(
+            'Cargo',
+            _cargoController.text.trim().isEmpty
+                ? '-'
+                : _cargoController.text.trim(),
+          ),
           _buildInfoRow('Perfil', _perfilSelecionado),
           _buildInfoRow('Status', _colaboradorAtivo ? 'Ativo' : 'Inativo'),
           _buildInfoRow('Uso esperado', _usoEsperado(), isLast: true),
@@ -1147,10 +1210,7 @@ class _CadastroColaboradorWebBodyState
         children: <Widget>[
           const Text(
             'Revise os dados e conclua o cadastro do colaborador.',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
           Wrap(
             spacing: 12,
@@ -1163,16 +1223,15 @@ class _CadastroColaboradorWebBodyState
               ),
               FilledButton.icon(
                 onPressed: _isLoading ? null : _salvarColaborador,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: Text(
-                  _isLoading ? 'Salvando...' : 'Salvar colaborador',
-                ),
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.save_outlined),
+                label: Text(_isLoading ? 'Salvando...' : 'Salvar colaborador'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 22,
@@ -1211,6 +1270,26 @@ class _CadastroColaboradorWebBodyState
                   label: 'ID único do usuário',
                   icon: Icons.vpn_key_outlined,
                   hintText: 'USR-0001',
+                  requiredField: true,
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 280 : (telaMedia ? 280 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _idUnicoDaEmpresaController,
+                  label: 'ID único da empresa',
+                  icon: Icons.apartment_outlined,
+                  requiredField: true,
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 300 : (telaMedia ? 300 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _idDeQuemCadastrouController,
+                  label: 'ID de quem cadastrou',
+                  icon: Icons.person_pin_circle_outlined,
                   requiredField: true,
                 ),
               ),
@@ -1339,6 +1418,16 @@ class _CadastroColaboradorWebBodyState
                   controller: _cpfController,
                   label: 'CPF',
                   icon: Icons.badge_outlined,
+                  requiredField: true,
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 320 : (telaMedia ? 320 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _documentoUnicoEmpresaController,
+                  label: 'Documento único da empresa',
+                  icon: Icons.business_center_outlined,
                   requiredField: true,
                 ),
               ),
@@ -1509,14 +1598,15 @@ class _CadastroColaboradorWebBodyState
                         'Perfil operacional',
                         icon: Icons.verified_user_outlined,
                       ),
-                      items: _perfis
-                          .map(
-                            (String perfil) => DropdownMenuItem<String>(
-                              value: perfil,
-                              child: Text(perfil),
-                            ),
-                          )
-                          .toList(),
+                      items:
+                          _perfis
+                              .map(
+                                (String perfil) => DropdownMenuItem<String>(
+                                  value: perfil,
+                                  child: Text(perfil),
+                                ),
+                              )
+                              .toList(),
                       onChanged: (String? value) {
                         if (value == null) {
                           return;
@@ -1697,7 +1787,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
+                    width:
+                        telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _comissaoProdutosController,
@@ -1721,7 +1812,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
+                    width:
+                        telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _comissaoVendasController,
@@ -1757,7 +1849,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
+                    width:
+                        telaGrande ? 260 : (telaMedia ? 260 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _comissaoAssistenciaController,
@@ -1774,8 +1867,6 @@ class _CadastroColaboradorWebBodyState
           ),
         );
 
-
-
         final Widget dadosGlobaisPagamento = _buildSectionCard(
           context: context,
           title: 'Identidade global, pagamento e governança',
@@ -1789,7 +1880,8 @@ class _CadastroColaboradorWebBodyState
                 runSpacing: 16,
                 children: <Widget>[
                   SizedBox(
-                    width: telaGrande ? 180 : (telaMedia ? 180 : double.infinity),
+                    width:
+                        telaGrande ? 180 : (telaMedia ? 180 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _tipoDocumentoGlobalController,
@@ -1798,7 +1890,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
+                    width:
+                        telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _numeroDocumentoGlobalController,
@@ -1807,7 +1900,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
+                    width:
+                        telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _paisDocumentoController,
@@ -1816,7 +1910,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    width:
+                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _nacionalidadeController,
@@ -1825,7 +1920,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
+                    width:
+                        telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _paisResidenciaController,
@@ -1841,7 +1937,8 @@ class _CadastroColaboradorWebBodyState
                 runSpacing: 16,
                 children: <Widget>[
                   SizedBox(
-                    width: telaGrande ? 140 : (telaMedia ? 140 : double.infinity),
+                    width:
+                        telaGrande ? 140 : (telaMedia ? 140 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _moedaPagamentoController,
@@ -1850,7 +1947,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 180 : (telaMedia ? 180 : double.infinity),
+                    width:
+                        telaGrande ? 180 : (telaMedia ? 180 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _periodicidadePagamentoController,
@@ -1859,7 +1957,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 170 : (telaMedia ? 170 : double.infinity),
+                    width:
+                        telaGrande ? 170 : (telaMedia ? 170 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _valorBasePagamentoController,
@@ -1868,7 +1967,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    width:
+                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _metodoPagamentoController,
@@ -1877,7 +1977,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
+                    width:
+                        telaGrande ? 120 : (telaMedia ? 120 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _diaPagamentoController,
@@ -1886,7 +1987,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    width:
+                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _bancoController,
@@ -1895,7 +1997,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 160 : (telaMedia ? 160 : double.infinity),
+                    width:
+                        telaGrande ? 160 : (telaMedia ? 160 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _agenciaController,
@@ -1904,7 +2007,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 200 : (telaMedia ? 200 : double.infinity),
+                    width:
+                        telaGrande ? 200 : (telaMedia ? 200 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _contaController,
@@ -1913,7 +2017,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
+                    width:
+                        telaGrande ? 240 : (telaMedia ? 240 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _ibanController,
@@ -1922,7 +2027,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    width:
+                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _swiftController,
@@ -1931,7 +2037,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    width:
+                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _pixController,
@@ -1940,7 +2047,8 @@ class _CadastroColaboradorWebBodyState
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande ? 200 : (telaMedia ? 200 : double.infinity),
+                    width:
+                        telaGrande ? 200 : (telaMedia ? 200 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _escopoDadosController,
@@ -1960,9 +2068,11 @@ class _CadastroColaboradorWebBodyState
                     child: _buildSwitchTile(
                       context: context,
                       title: 'Incluir na agenda financeira',
-                      subtitle: 'Registra eventos de pagamento automaticamente.',
+                      subtitle:
+                          'Registra eventos de pagamento automaticamente.',
                       value: _incluirNaAgendaFinanceira,
-                      onChanged: (bool value) => _incluirNaAgendaFinanceira = value,
+                      onChanged:
+                          (bool value) => _incluirNaAgendaFinanceira = value,
                     ),
                   ),
                   SizedBox(
@@ -1970,9 +2080,11 @@ class _CadastroColaboradorWebBodyState
                     child: _buildSwitchTile(
                       context: context,
                       title: 'Acessar agenda financeira',
-                      subtitle: 'Permite visualização de eventos e títulos da agenda.',
+                      subtitle:
+                          'Permite visualização de eventos e títulos da agenda.',
                       value: _podeAcessarAgendaFinanceira,
-                      onChanged: (bool value) => _podeAcessarAgendaFinanceira = value,
+                      onChanged:
+                          (bool value) => _podeAcessarAgendaFinanceira = value,
                     ),
                   ),
                   SizedBox(
@@ -1980,9 +2092,11 @@ class _CadastroColaboradorWebBodyState
                     child: _buildSwitchTile(
                       context: context,
                       title: 'Editar dados de pagamento',
-                      subtitle: 'Permite alterar banco, conta e política de pagamento.',
+                      subtitle:
+                          'Permite alterar banco, conta e política de pagamento.',
                       value: _podeEditarDadosPagamento,
-                      onChanged: (bool value) => _podeEditarDadosPagamento = value,
+                      onChanged:
+                          (bool value) => _podeEditarDadosPagamento = value,
                     ),
                   ),
                   SizedBox(
@@ -1992,7 +2106,8 @@ class _CadastroColaboradorWebBodyState
                       title: 'Exportar relatórios',
                       subtitle: 'Permite exportação de dados em massa.',
                       value: _podeExportarRelatorios,
-                      onChanged: (bool value) => _podeExportarRelatorios = value,
+                      onChanged:
+                          (bool value) => _podeExportarRelatorios = value,
                     ),
                   ),
                   SizedBox(
@@ -2000,9 +2115,11 @@ class _CadastroColaboradorWebBodyState
                     child: _buildSwitchTile(
                       context: context,
                       title: 'Gerenciar permissões',
-                      subtitle: 'Concede autonomia para controlar acessos de outros usuários.',
+                      subtitle:
+                          'Concede autonomia para controlar acessos de outros usuários.',
                       value: _podeGerenciarPermissoes,
-                      onChanged: (bool value) => _podeGerenciarPermissoes = value,
+                      onChanged:
+                          (bool value) => _podeGerenciarPermissoes = value,
                     ),
                   ),
                 ],
