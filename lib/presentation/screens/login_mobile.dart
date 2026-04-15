@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/enums/tipo_usuario_enum.dart';
 import '../../core/services/auth_service.dart';
+import 'create_account_mobile.dart';
 import 'home_page_mobile_screen.dart';
 
 class LoginPageMobile extends StatefulWidget {
@@ -82,7 +83,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   }
 
   void _createAccount() {
-    _showSnack('Criar nova conta (mocked)');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CreateAccountMobile()),
+    );
   }
 
   @override
