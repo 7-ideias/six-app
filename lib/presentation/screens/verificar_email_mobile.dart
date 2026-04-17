@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/exceptions/registro_otp_exception.dart';
 import '../../core/services/nova_empresa_service.dart';
 import '../../core/services/registro_otp_service.dart';
-import 'login_mobile.dart';
+import 'conta_criada_mobile.dart';
 
 class VerificarEmailMobile extends StatefulWidget {
   final String nome;
@@ -157,9 +157,8 @@ class _VerificarEmailMobileState extends State<VerificarEmailMobile> {
         celular: widget.celular,
       );
       if (!mounted) return;
-      _showSnack('Conta criada com sucesso! Faça login para continuar.');
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginPageMobile()),
+        MaterialPageRoute(builder: (_) => const ContaCriadaMobile()),
         (route) => false,
       );
     } on RegistroOtpException catch (e) {
