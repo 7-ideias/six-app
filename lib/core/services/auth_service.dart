@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'google_auth_service.dart';
 import 'http_client_factory.dart';
 import 'empresa_service.dart';
 import '../config/app_config.dart';
@@ -58,6 +59,20 @@ class AuthService {
     }
 
     throw Exception('Falha ao realizar login');
+  }
+
+  Future<AuthResponseModel> loginWithGoogle() async {
+    final authData = await GoogleAuthService().signIn();
+    await _saveAuthData(authData);
+    _startRefreshTimer();
+
+    try {
+      await EmpresaService().buscarDadosDaEmpresa();
+    } catch (e) {
+      debugPrint('Erro ao buscar dados da empresa: $e');
+    }
+
+    return authData;
   }
 
   Future<void> refreshToken() async {
@@ -147,6 +162,10 @@ class AuthService {
     await prefs.remove(_refreshTokenKey);
     await prefs.remove(_userDataKey);
     await prefs.remove(_empresaIdKey);
+
+    try {
+      await GoogleAuthService().signOut();
+    } catch (_) {}
   }
 
   Future<String?> getEmpresaId() async {

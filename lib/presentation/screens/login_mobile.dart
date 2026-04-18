@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/enums/tipo_usuario_enum.dart';
+import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
 import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
@@ -69,9 +70,23 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  void _loginWithGoogle() {
-    _showSnack('Login com Google (mocked)');
-    _navigateToHome();
+  Future<void> _loginWithGoogle() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.loginWithGoogle();
+      if (!mounted) return;
+      _navigateToHome();
+    } on GoogleAuthException catch (e) {
+      if (e.code == GoogleAuthErrorCode.cancelledByUser) return;
+      _showSnack(e.message);
+    } catch (_) {
+      _showSnack('Não foi possível concluir o login com Google.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _loginWithApple() {
@@ -120,15 +135,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                         child: Container(
                           width: 56,
                           height: 56,
-                          decoration: BoxDecoration(
-                            color: primary,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(
-                            Icons.wb_sunny_outlined,
-                            color: Colors.white,
-                            size: 30,
-                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
