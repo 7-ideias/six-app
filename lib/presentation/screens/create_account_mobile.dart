@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/exceptions/registro_otp_exception.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/services/registro_otp_service.dart';
+import 'home_page_mobile_screen.dart';
 import 'verificar_email_mobile.dart';
 
 class CreateAccountMobile extends StatefulWidget {
@@ -18,6 +21,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
   final RegistroOtpService _otpService = RegistroOtpService();
+  final AuthService _authService = AuthService();
 
   bool _obscurePassword = true;
   bool _agreeTerms = false;
@@ -86,7 +90,29 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   void _goToLogin() => Navigator.pop(context);
 
   void _signUpWithApple() => _showSnack('Cadastro com Apple (mocked)');
-  void _signUpWithGoogle() => _showSnack('Cadastro com Google (mocked)');
+
+  Future<void> _signUpWithGoogle() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _authService.loginWithGoogle();
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePageMobile(title: 'Home')),
+        (route) => false,
+      );
+    } on GoogleAuthException catch (e) {
+      if (e.code == GoogleAuthErrorCode.cancelledByUser) return;
+      _showSnack(e.message);
+    } catch (_) {
+      _showSnack('Não foi possível concluir o cadastro com Google.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   void _signUpWithFacebook() => _showSnack('Cadastro com Facebook (mocked)');
 
   @override
