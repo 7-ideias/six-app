@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appplanilha/presentation/screens/agenda_financeira_web.dart';
+import 'package:appplanilha/presentation/screens/colaboradores_usuario_list_page.dart';
 import 'package:appplanilha/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:appplanilha/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:appplanilha/presentation/screens/meu_perfil_web_screen.dart';
@@ -44,6 +45,7 @@ enum ModuloCentralPDV {
   vendas,
   recebimento,
   clientesList,
+  colaboradoresList,
   orcamento,
   operacoesCaixa,
   ordemServico,
@@ -1116,6 +1118,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           ),
         );
 
+      case ModuloCentralPDV.colaboradoresList:
+        return Expanded(
+          child: ColaboradoresUsuarioListPage(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
+        );
+
       case ModuloCentralPDV.operacoesCaixa:
         return Expanded(
           child: OperacoesCaixaWebPage(
@@ -1803,47 +1817,48 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     return Wrap(
       spacing: 14,
       runSpacing: 14,
-      children: kpis.map((Map<String, String> kpi) {
-        return Container(
-          width: 270,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _pdvTheme.cardBackground,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _pdvTheme.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                kpi['titulo'] ?? '',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: _pdvTheme.secondaryText,
-                ),
+      children:
+          kpis.map((Map<String, String> kpi) {
+            return Container(
+              width: 270,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _pdvTheme.cardBackground,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _pdvTheme.cardBorder),
               ),
-              const SizedBox(height: 6),
-              Text(
-                kpi['valor'] ?? '',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: _pdvTheme.primaryText,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    kpi['titulo'] ?? '',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _pdvTheme.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    kpi['valor'] ?? '',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: _pdvTheme.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    kpi['delta'] ?? '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _pdvTheme.iconColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                kpi['delta'] ?? '',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _pdvTheme.iconColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -3757,6 +3772,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
               'Clientes List',
               'Produtos',
               'Colaboradores',
+              'Colaboradores List',
               'Fornecedores',
               'Produtos List',
             ],
@@ -3780,6 +3796,12 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   context,
                   'Cadastro de Colaboradores',
                 );
+              }
+
+              if (value == 'Colaboradores List') {
+                setState(() {
+                  _moduloAtual = ModuloCentralPDV.colaboradoresList;
+                });
               }
 
               if (value == 'Produtos List') {

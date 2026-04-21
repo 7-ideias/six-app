@@ -11,7 +11,7 @@ class ImagemSugestoesSection extends StatelessWidget {
     required this.onGerarSugestoes,
     required this.onSelecionarSugestao,
     this.errorMessage,
-    this.selectedImageId,
+    this.usedSuggestionIds = const <int>{},
   });
 
   final bool isLoading;
@@ -21,7 +21,7 @@ class ImagemSugestoesSection extends StatelessWidget {
   final VoidCallback onGerarSugestoes;
   final ValueChanged<ImagemSugestao> onSelecionarSugestao;
   final String? errorMessage;
-  final int? selectedImageId;
+  final Set<int> usedSuggestionIds;
 
   @override
   Widget build(BuildContext context) {
@@ -110,73 +110,98 @@ class ImagemSugestoesSection extends StatelessWidget {
             ),
             itemBuilder: (BuildContext context, int index) {
               final ImagemSugestao sugestao = sugestoes[index];
-              final bool isSelected = sugestao.id == selectedImageId;
+              final bool isSelected = usedSuggestionIds.contains(sugestao.id);
 
               return InkWell(
                 key: Key('sugestao-card-${sugestao.id}'),
                 onTap: () => onSelecionarSugestao(sugestao),
                 borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color:
-                          isSelected
+                child: Stack(
+                  children: <Widget>[
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isSelected
                               ? colorScheme.primary
                               : colorScheme.outline.withOpacity(0.2),
-                      width: isSelected ? 2 : 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(13),
-                          ),
-                          child: Image.network(
-                            sugestao.urlMiniatura,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder:
-                                (_, __, ___) => Container(
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(13),
+                              ),
+                              child: Image.network(
+                                sugestao.urlMiniatura,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => Container(
                                   color: colorScheme.surfaceVariant,
                                   alignment: Alignment.center,
                                   child: const Icon(
                                     Icons.broken_image_outlined,
                                   ),
                                 ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  'Score: ${(sugestao.score * 100).toStringAsFixed(0)}%',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  sugestao.motivo,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: colorScheme.onSurface
+                                        .withOpacity(0.72),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isSelected)
+                      Positioned(
+                        right: 10,
+                        top: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Usada',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              'Score: ${(sugestao.score * 100).toStringAsFixed(0)}%',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              sugestao.motivo,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: colorScheme.onSurface.withOpacity(0.72),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               );
             },

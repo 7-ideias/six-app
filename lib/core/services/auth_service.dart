@@ -144,12 +144,8 @@ class AuthService {
 
       response = await client.post(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'refreshToken': refreshTokenStr,
-        }),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshTokenStr}),
       );
     }
 
@@ -231,5 +227,23 @@ class AuthService {
   Future<String?> getEmpresaId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_empresaIdKey);
+  }
+
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString(_userDataKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+      return decoded['id']?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 }

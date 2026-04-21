@@ -1,5 +1,7 @@
 class ColaboradorCadastroRequest {
   const ColaboradorCadastroRequest({
+    required this.idUnicoDaEmpresa,
+    required this.idDeQuemCadastrou,
     required this.foto,
     required this.celularDeAcesso,
     required this.senhaParaPermitirOAcessoDoColaborador,
@@ -13,6 +15,8 @@ class ColaboradorCadastroRequest {
     required this.objPermissoesAplicacao,
   });
 
+  final String idUnicoDaEmpresa;
+  final String idDeQuemCadastrou;
   final String foto;
   final String celularDeAcesso;
   final String senhaParaPermitirOAcessoDoColaborador;
@@ -27,6 +31,8 @@ class ColaboradorCadastroRequest {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
+      'idUnicoDaEmpresa': idUnicoDaEmpresa,
+      'idDeQuemCadastrou': idDeQuemCadastrou,
       'foto': foto,
       'celularDeAcesso': celularDeAcesso,
       'senhaParaPermitirOAcessoDoColaborador':
@@ -45,6 +51,8 @@ class ColaboradorCadastroRequest {
 
 class ColaboradorAtualizacaoRequest {
   const ColaboradorAtualizacaoRequest({
+    required this.idUnicoDaEmpresa,
+    required this.idDeQuemCadastrou,
     required this.idColaborador,
     required this.objInformacoesDoCadastro,
     required this.objDadosFuncionais,
@@ -59,6 +67,8 @@ class ColaboradorAtualizacaoRequest {
     this.senhaParaPermitirOAcessoDoColaborador,
   });
 
+  final String idUnicoDaEmpresa;
+  final String idDeQuemCadastrou;
   final String idColaborador;
   final String? foto;
   final String? celularDeAcesso;
@@ -74,6 +84,8 @@ class ColaboradorAtualizacaoRequest {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
+      'idUnicoDaEmpresa': idUnicoDaEmpresa,
+      'idDeQuemCadastrou': idDeQuemCadastrou,
       'idColaborador': idColaborador,
       'foto': foto,
       'celularDeAcesso': celularDeAcesso,
@@ -158,6 +170,7 @@ class ColaboradorPessoa {
     required this.dataDeNascimento,
     required this.email,
     required this.objEndereco,
+    required this.documentoIdentificacaoUnicoDaEmpresa,
   });
 
   final String atencao;
@@ -170,6 +183,7 @@ class ColaboradorPessoa {
   final String dataDeNascimento;
   final String email;
   final ColaboradorEndereco objEndereco;
+  final String documentoIdentificacaoUnicoDaEmpresa;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -183,6 +197,8 @@ class ColaboradorPessoa {
       'dataDeNascimento': dataDeNascimento,
       'email': email,
       'objEndereco': objEndereco.toJson(),
+      'documento_DE_IDENTIFICACAO_UNICO_DA_EMPRESA':
+          documentoIdentificacaoUnicoDaEmpresa,
     };
   }
 }
@@ -305,38 +321,29 @@ class ColaboradorAssistenciaTecnicaPode {
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'lancaServico': lancaServico,
-      'ehUmTecnicoEFazAssistenciaTecnica':
-          ehUmTecnicoEFazAssistenciaTecnica,
+      'ehUmTecnicoEFazAssistenciaTecnica': ehUmTecnicoEFazAssistenciaTecnica,
       'comissaoDeAssistencia': comissaoDeAssistencia,
     };
   }
 }
 
 class ColaboradorClientesPode {
-  const ColaboradorClientesPode({
-    required this.podeEditarCliente,
-  });
+  const ColaboradorClientesPode({required this.podeEditarCliente});
 
   final bool podeEditarCliente;
 
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'podeEditarCliente': podeEditarCliente,
-    };
+    return <String, dynamic>{'podeEditarCliente': podeEditarCliente};
   }
 }
 
 class ColaboradorRelatoriosPode {
-  const ColaboradorRelatoriosPode({
-    required this.geraRelatorioDeVendas,
-  });
+  const ColaboradorRelatoriosPode({required this.geraRelatorioDeVendas});
 
   final bool geraRelatorioDeVendas;
 
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'geraRelatorioDeVendas': geraRelatorioDeVendas,
-    };
+    return <String, dynamic>{'geraRelatorioDeVendas': geraRelatorioDeVendas};
   }
 }
 
