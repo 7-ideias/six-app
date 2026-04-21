@@ -25,20 +25,45 @@ class AuthService {
 
   Future<AuthResponseModel?> login(String login, String senha) async {
     final String pathLogin = kIsWeb ? 'web' : 'mobile';
-    final uri = Uri.parse('${AppConfig.baseUrl}/auth/$pathLogin/login');
+    final baseUrl = AppConfig.baseUrl;
+    if (baseUrl.isEmpty) {
+      throw Exception(
+        'API_BASE_URL não configurado. Rode com --dart-define=API_BASE_URL=http://localhost:8082.',
+      );
+    }
+    final uri = Uri.parse('$baseUrl/auth/$pathLogin/login');
 
     final requestBody = jsonEncode({
       'login': login,
       'senha': senha,
     });
 
+    debugPrint('[AuthService] POST $uri');
+
     final client = _client();
-    final response = await client.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: requestBody,
+    final http.Response response;
+    try {
+      response = await client.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestBody,
+      );
+    } on http.ClientException catch (e) {
+      debugPrint('[AuthService] ClientException no POST $uri: $e');
+      throw Exception(
+        'Não foi possível contatar o servidor em $baseUrl. '
+        'Verifique CORS, se o backend está no ar e se o endereço está correto.',
+      );
+    } catch (e) {
+      debugPrint('[AuthService] Erro inesperado no POST $uri: $e');
+      rethrow;
+    }
+
+    debugPrint(
+      '[AuthService] resposta ${response.statusCode} de $uri '
+      '(${response.body.length} bytes)',
     );
 
     if (response.statusCode == 200) {
@@ -47,10 +72,9 @@ class AuthService {
       await _saveAuthData(authData);
       _startRefreshTimer();
 
-      // Buscar dados da empresa após o login bem-sucedido
       try {
         await EmpresaService().buscarDadosDaEmpresa();
-        print('Dados da empresa buscados e armazenados com sucesso');
+        debugPrint('Dados da empresa buscados e armazenados com sucesso');
       } catch (e) {
         debugPrint('Erro ao buscar dados da empresa: $e');
       }
@@ -58,11 +82,33 @@ class AuthService {
       return authData;
     }
 
-    throw Exception('Falha ao realizar login');
+    throw Exception(
+      'Falha ao realizar login (${response.statusCode}): ${response.body}',
+    );
   }
 
   Future<AuthResponseModel> loginWithGoogle() async {
     final authData = await GoogleAuthService().signIn();
+    await _saveAuthData(authData);
+    _startRefreshTimer();
+
+    try {
+      await EmpresaService().buscarDadosDaEmpresa();
+    } catch (e) {
+      debugPrint('Erro ao buscar dados da empresa: $e');
+    }
+
+    return authData;
+  }
+
+  void cancelPendingWebGoogleLogin() {
+    GoogleAuthService().cancelWebSignIn();
+  }
+
+  /// Web-only entry point. Awaits the result of the rendered Google button
+  /// and persists the backend auth response.
+  Future<AuthResponseModel> awaitWebGoogleLogin() async {
+    final authData = await GoogleAuthService().awaitWebSignIn();
     await _saveAuthData(authData);
     _startRefreshTimer();
 
@@ -156,6 +202,20 @@ class AuthService {
   Future<void> logout() async {
     _refreshTimer?.cancel();
     _refreshTimer = null;
+
+    final baseUrl = AppConfig.baseUrl;
+    if (baseUrl.isNotEmpty) {
+      final pathLogout = kIsWeb ? 'web' : 'mobile';
+      final uri = Uri.parse('$baseUrl/auth/$pathLogout/logout');
+      try {
+        await _client().post(
+          uri,
+          headers: const {'Content-Type': 'application/json'},
+        );
+      } catch (e) {
+        debugPrint('[AuthService] logout remoto falhou: $e');
+      }
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);

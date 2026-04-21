@@ -130,15 +130,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── Logo ──────────────────────────────────────────
-                      Center(
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
                       // ── Título ────────────────────────────────────────
                       const Text(
                         'Entrar',

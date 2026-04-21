@@ -27,6 +27,7 @@ dependencies:
   http_interceptor: ^1.0.2
   lottie: ^2.7.0
   google_sign_in: ^6.2.1
+  google_sign_in_web: ^0.12.4
 
 dev_dependencies:
   flutter_test:
@@ -39,8 +40,6 @@ flutter:
   assets:
     - assets/images/placeholder.png
     - assets/images/moca-tela-login.png
-    - assets/images/six-logo.png
     - assets/images/web/
     - assets/images/stores/
-    - assets/lottie/onboarding/images/
     - assets/images/onboading/
