@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:appplanilha/core/services/auth_service.dart';
 import 'package:appplanilha/presentation/screens/configuracoes_mobile_screen.dart';
+import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/perfil_do_meu_negocio_mobile_screen.dart';
 import 'package:appplanilha/presentation/screens/precos_e_planos_mobile_screen.dart';
 import 'package:flutter/material.dart';
@@ -132,7 +134,14 @@ class AppDrawerDoMobile extends StatelessWidget {
             );
           }),
           Divider(),
-          _buildItem(context, Icons.logout, 'Sair da conta', () {}),
+          _buildItem(context, Icons.logout, 'Sair da conta', () async {
+            await AuthService().logout();
+            if (!context.mounted) return;
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginPageMobile()),
+              (route) => false,
+            );
+          }),
           const Padding(
             padding: EdgeInsets.only(bottom: 16.0),
             child: Center(

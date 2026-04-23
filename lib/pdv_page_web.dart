@@ -25,7 +25,9 @@ import 'package:appplanilha/sub_painel_cadastro_colaborador.dart';
 
 import 'data/models/produto_model.dart';
 import 'core/di/operacao_module.dart';
+import 'core/services/auth_service.dart';
 import 'core/services/websocket_service.dart';
+import 'presentation/screens/login_page_web.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'top_navigation_bar.dart';
@@ -369,7 +371,89 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         _buildIndicadorComunicacaoBackend(),
         const SizedBox(width: 10),
         _buildNotificationBellButton(),
+        const SizedBox(width: 10),
+        _buildLogoutButton(),
       ],
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Tooltip(
+      message: 'Sair da conta',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: _confirmarLogout,
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: _pdvTheme.backgroundSurface,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: _pdvTheme.cardBorder),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.logout_rounded,
+                  size: 16,
+                  color: _pdvTheme.iconColor,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Sair',
+                  style: TextStyle(
+                    color: _pdvTheme.primaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmarLogout() async {
+    final bool confirmar = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              title: const Text('Sair da conta'),
+              content: const Text('Deseja encerrar a sessão atual?'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Sair'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!confirmar) return;
+    await _executarLogout();
+  }
+
+  Future<void> _executarLogout() async {
+    try {
+      await AuthService().logout();
+    } catch (e) {
+      debugPrint('Falha no logout: $e');
+    }
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const LoginPageWeb()),
+      (route) => false,
     );
   }
 

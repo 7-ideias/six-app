@@ -1,13 +1,16 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
 import '../../data/services/aparencia/aparencia_api_client.dart';
 import '../../design_system/helpers/six_theme_resolver.dart';
 import '../../domain/services/aparencia/aparencia_service.dart';
-import '../../domain/services/usuario/usuario_service.dart';
 import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
+import '../components/web_auth_shell.dart';
+import '../components/web_google_sign_in_button.dart';
+import 'create_account_web.dart';
+import 'esqueceu_senha_web.dart';
 import 'home_page_mobile_screen.dart';
 
 class LoginPageWeb extends StatefulWidget {
@@ -23,345 +26,209 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenGoogleSignIn();
+  }
 
   @override
   void dispose() {
     _loginController.dispose();
     _passwordController.dispose();
+    _authService.cancelPendingWebGoogleLogin();
     super.dispose();
   }
 
+  void _listenGoogleSignIn() {
+    _authService.awaitWebGoogleLogin().then((_) async {
+      if (!mounted) return;
+      await _afterLoginBootstrap();
+      if (!mounted) return;
+      _navigateToHome();
+    }).catchError((error) {
+      if (!mounted) return;
+      if (error is GoogleAuthException &&
+          error.code == GoogleAuthErrorCode.cancelledByUser) {
+        return;
+      }
+      final msg = error is GoogleAuthException
+          ? error.message
+          : 'Não foi possível concluir o login com Google.';
+      _showSnack(msg);
+    });
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _afterLoginBootstrap() async {
+    await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+
+    try {
+      final aparenciaService = AparenciaService(
+        apiClient: HttpAparenciaApiClient(),
+      );
+      final config = await aparenciaService.buscarAparencia();
+      SixThemeResolver().atualizarConfiguracao(config);
+    } catch (e) {
+      debugPrint('Erro ao carregar aparência no login: $e');
+    }
+
+    await TelaInicialWebService().atualizaProviders();
+  }
+
   Future<void> _login() async {
-    final String login = _loginController.text.trim();
-    final String senha = _passwordController.text.trim();
+    final login = _loginController.text.trim();
+    final senha = _passwordController.text.trim();
 
     if (login.isEmpty || senha.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Por favor, preencha o login e a senha")),
-      );
+      _showSnack('Preencha o e-mail e a senha');
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       await _authService.login(login, senha);
-      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-      
-      // Busca configurações de aparência do backend
-      try {
-        final aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
-        final config = await aparenciaService.buscarAparencia();
-        SixThemeResolver().atualizarConfiguracao(config);
-      } catch (e) {
-        debugPrint('Erro ao carregar aparência no login: $e');
-        // O fallback já é tratado dentro do buscarAparencia() do service
-      }
-
-      await TelaInicialWebService().atualizaProviders();
+      await _afterLoginBootstrap();
+      if (!mounted) return;
       _navigateToHome();
-
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-      );
+      _showSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _navigateToHome() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) =>
-        const HomePageMobile(title: 'Flutter Demo Home Page'),
-      ),
+      MaterialPageRoute(builder: (_) => const HomePageMobile(title: 'Home')),
     );
   }
 
-  void _onForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fluxo de recuperação de senha ainda não implementado.'),
-      ),
+  void _forgotPassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EsqueceuSenhaWeb()),
     );
   }
 
-  void _onCreateNewUser() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fluxo de cadastro de novo usuário ainda não implementado.'),
-      ),
-    );
-  }
-
-  Widget _buildStoreBadge({
-    required String assetPath,
-    required String label,
-    VoidCallback? onTap,
-  }) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Image.asset(
-          assetPath,
-          height: 42,
-          fit: BoxFit.contain,
-        ),
-      ),
+  void _createAccount() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CreateAccountWeb()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final Size screenSize = MediaQuery.of(context).size;
-    final double formWidth = kIsWeb
-        ? (screenSize.width * 0.28).clamp(320.0, 460.0)
-        : (screenSize.width * 0.9).clamp(280.0, 420.0);
+    final primary = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Login"),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/web/atendente_login_web.png',
-              fit: BoxFit.cover,
-            ),
+    return WebAuthShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const WebAuthTitle(
+            title: 'Entrar na sua conta',
+            subtitle: 'Informe seu e-mail e senha para acessar o painel.',
           ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.35),
+          const SizedBox(height: 32),
+          WebAuthTextField(
+            controller: _loginController,
+            hint: 'seu@email.com',
+            label: 'E-mail',
+            prefixIcon: Icons.mail_outline_rounded,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 16),
+          WebAuthTextField(
+            controller: _passwordController,
+            hint: 'Sua senha',
+            label: 'Senha',
+            prefixIcon: Icons.shield_outlined,
+            obscure: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _login(),
+            suffix: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: WebAuthShell.labelGrey(),
+                size: 20,
+              ),
+              onPressed: () => setState(
+                () => _obscurePassword = !_obscurePassword,
               ),
             ),
           ),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              child: Container(
-                width: formWidth,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? theme.colorScheme.surface.withValues(alpha: 0.92)
-                      : theme.colorScheme.surface.withValues(alpha: 0.90),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.26),
-                      blurRadius: 24,
-                      offset: Offset(0, 12),
-                    ),
-                  ],
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _forgotPassword,
+              child: Text(
+                'Esqueceu a senha?',
+                style: TextStyle(
+                  color: primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      'Bem-vindo',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Acesse sua conta para continuar',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _loginController,
-                      decoration: InputDecoration(
-                        hintText: 'login',
-                        labelText: 'login',
-                        border: OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.person),
-                        filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHigh,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'senha',
-                        labelText: 'senha',
-                        border: OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.lock),
-                        filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHigh,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: _onForgotPassword,
-                        child: const Text('Esqueci a senha'),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _login,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                            : const Text(
-                          'entrar',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          '[202604061649] Novo por aqui?',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _onCreateNewUser,
-                          child: const Text('Criar conta'),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    Divider(
-                      color: theme.colorScheme.outlineVariant,
-                      thickness: 1,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    Text(
-                      'Baixe também nosso app',
-                      style: theme.textTheme.titleMedium?.copyWith(
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          WebAuthPrimaryButton(
+            label: 'Entrar',
+            onPressed: _login,
+            isLoading: _isLoading,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              const Expanded(
+                child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'ou continue com',
+                  style: TextStyle(
+                    color: WebAuthShell.labelGrey(),
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const Expanded(
+                child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const WebGoogleSignInButton(),
+          const SizedBox(height: 28),
+          Center(
+            child: GestureDetector(
+              onTap: _createAccount,
+              behavior: HitTestBehavior.opaque,
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: WebAuthShell.labelGrey(),
+                  ),
+                  children: [
+                    const TextSpan(text: 'Ainda não tem uma conta? '),
+                    TextSpan(
+                      text: 'Criar conta',
+                      style: TextStyle(
+                        color: primary,
                         fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Text(
-                      'Disponível para Android e iPhone',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        _buildStoreBadge(
-                          assetPath: 'assets/images/stores/google_play_badge.png',
-                          label: 'Google Play',
-                          onTap: () {
-                            // abrir link da Play Store
-                          },
-                        ),
-                        _buildStoreBadge(
-                          assetPath: 'assets/images/stores/app_store_badge.png',
-                          label: 'App Store',
-                          onTap: () {
-                            // abrir link da App Store
-                          },
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: theme.colorScheme.outlineVariant),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 1),
-                            child: Icon(
-                              Icons.info_outline,
-                              size: 18,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Versões para Android e iOS disponíveis nas lojas.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],
