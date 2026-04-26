@@ -1,4 +1,3 @@
-
 import 'package:appplanilha/data/models/regionalizacao_models.dart';
 
 import '../../presentation/screens/operacoes_caixa_web_page.dart';
@@ -24,19 +23,21 @@ class InformacoesBasicasCaixaResponse {
     return InformacoesBasicasCaixaResponse(
       possuiSessaoAberta: json['possuiSessaoAberta'] ?? false,
       tiposRecebimento:
-      (json['tiposRecebimento'] as List? ?? [])
-          .map((item) => TiposRecebimento.fromJson(item))
-          .toList(),
+          (json['tiposRecebimento'] as List? ?? [])
+              .map((item) => TiposRecebimento.fromJson(item))
+              .toList(),
       caixas: List<String>.from(json['caixas'] ?? []),
       caixaOuGuiche: _parseCaixaOuGuiche(json['caixaOuGuiche']),
-      formas: (json['formas'] as List? ?? [])
-          .map((item) => FormaMovimento.fromJson(item))
-          .toList(),
-      regionalizacao: json['regionalizacao'] is Map<String, dynamic>
-          ? ConfiguracaoRegionalizacaoResponse.fromJson(
-        json['regionalizacao'] as Map<String, dynamic>,
-      )
-          : null,
+      formas:
+          (json['formas'] as List? ?? [])
+              .map((item) => FormaMovimento.fromJson(item))
+              .toList(),
+      regionalizacao:
+          json['regionalizacao'] is Map<String, dynamic>
+              ? ConfiguracaoRegionalizacaoResponse.fromJson(
+                json['regionalizacao'] as Map<String, dynamic>,
+              )
+              : null,
     );
   }
 
@@ -47,10 +48,10 @@ class InformacoesBasicasCaixaResponse {
         .where((entry) => entry.key != null && entry.value != null)
         .map(
           (entry) => CaixaOuGuiche(
-        id: entry.key.toString(),
-        nome: entry.value.toString(),
-      ),
-    )
+            id: entry.key.toString(),
+            nome: entry.value.toString(),
+          ),
+        )
         .toList();
   }
 }
@@ -59,10 +60,15 @@ class CaixaOuGuiche {
   final String id;
   final String nome;
 
-  CaixaOuGuiche({
-    required this.id,
-    required this.nome,
-  });
+  CaixaOuGuiche({required this.id, required this.nome});
+
+  factory CaixaOuGuiche.fromJson(Map<String, dynamic> json) {
+    final dynamic idRaw =
+        json['id'] ?? json['idCaixaOuGuiche'] ?? json['uuid'] ?? '';
+    final dynamic nomeRaw = json['nome'] ?? json['descricao'] ?? '';
+
+    return CaixaOuGuiche(id: idRaw.toString(), nome: nomeRaw.toString());
+  }
 }
 
 class TiposRecebimento {
@@ -327,9 +333,9 @@ class ResumoCaixa {
   factory ResumoCaixa.fromJson(Map<String, dynamic> json) {
     final totalCartaoJson = (json['totalCartao'] as num? ?? 0).toDouble();
     final totalCartaoCreditoJson =
-    (json['totalCartaoCredito'] as num?)?.toDouble();
+        (json['totalCartaoCredito'] as num?)?.toDouble();
     final totalCartaoDebitoJson =
-    (json['totalCartaoDebito'] as num?)?.toDouble();
+        (json['totalCartaoDebito'] as num?)?.toDouble();
 
     return ResumoCaixa(
       trocoInicial: (json['trocoInicial'] as num? ?? 0).toDouble(),

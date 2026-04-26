@@ -1,12 +1,9 @@
-
 import '../../../data/models/caixa_completo_movimentos_models.dart';
 import '../../../data/models/caixa_models.dart';
 import '../../../data/services/caixa/caixa_api_client.dart';
 
 class CaixaService {
-  CaixaService({
-    required CaixaApiClient apiClient,
-  }) : _apiClient = apiClient;
+  CaixaService({required CaixaApiClient apiClient}) : _apiClient = apiClient;
 
   final CaixaApiClient _apiClient;
 
@@ -14,12 +11,24 @@ class CaixaService {
     return _apiClient.getInformacoesBasicasDoCaixa();
   }
 
-  Future<InformacoesCaixaComSomatorioResponse> buscarResumoDeMovimentosComSomatorio(String idSessaoCaixa) {
+  Future<InformacoesCaixaComSomatorioResponse>
+  buscarResumoDeMovimentosComSomatorio(String idSessaoCaixa) {
     return _apiClient.getResumoDeMovimentosComSomatorio(idSessaoCaixa);
   }
 
   Future<CaixaSessao?> buscarSessaoAtual() {
     return _apiClient.getSessaoAtual();
+  }
+
+  Future<CaixaOuGuiche> criarCaixaOuGuiche(String nome) {
+    return _apiClient.criarCaixaOuGuiche(nome);
+  }
+
+  Future<CaixaOuGuiche> editarCaixaOuGuiche({
+    required String id,
+    required String nome,
+  }) {
+    return _apiClient.editarCaixaOuGuiche(id: id, nome: nome);
   }
 
   Future<void> abrirCaixa(AbrirCaixaRequest request) {

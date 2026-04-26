@@ -8,10 +8,16 @@ import '../../models/caixa_models.dart';
 abstract class CaixaApiClient {
   Future<InformacoesBasicasCaixaResponse> getInformacoesBasicasDoCaixa();
   Future<CaixaSessao?> getSessaoAtual();
+  Future<CaixaOuGuiche> criarCaixaOuGuiche(String nome);
+  Future<CaixaOuGuiche> editarCaixaOuGuiche({
+    required String id,
+    required String nome,
+  });
   Future<void> abrirCaixa(AbrirCaixaRequest request);
   Future<void> registrarMovimento(RegistrarMovimentoRequest request);
   Future<List<MovimentoCaixa>> getMovimentos(String idSessaoCaixa);
-  Future<InformacoesCaixaComSomatorioResponse> getResumoDeMovimentosComSomatorio(String idSessaoCaixa);
+  Future<InformacoesCaixaComSomatorioResponse>
+  getResumoDeMovimentosComSomatorio(String idSessaoCaixa);
   Future<ResumoCaixa> getResumo(String idSessaoCaixa);
   Future<void> cancelarMovimento(String id);
   Future<void> fecharCaixa(FecharCaixaRequest request);
@@ -19,9 +25,8 @@ abstract class CaixaApiClient {
 }
 
 class HttpCaixaApiClient implements CaixaApiClient {
-  HttpCaixaApiClient({
-    http.Client? httpClient,
-  }) : _httpClient = httpClient ?? http.Client();
+  HttpCaixaApiClient({http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -39,11 +44,16 @@ class HttpCaixaApiClient implements CaixaApiClient {
 
   @override
   Future<InformacoesBasicasCaixaResponse> getInformacoesBasicasDoCaixa() async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/informacoes-basicas');
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/informacoes-basicas',
+    );
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
 
     return InformacoesBasicasCaixaResponse.fromJson(jsonDecode(response.body));
@@ -51,7 +61,9 @@ class HttpCaixaApiClient implements CaixaApiClient {
 
   @override
   Future<CaixaSessao?> getSessaoAtual() async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/sessao-atual');
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/sessao-atual',
+    );
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode == 404 || response.body.isEmpty) {
@@ -59,10 +71,70 @@ class HttpCaixaApiClient implements CaixaApiClient {
     }
 
     if (response.statusCode != 200) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
 
     return CaixaSessao.fromJson(jsonDecode(response.body));
+  }
+
+  @override
+  Future<CaixaOuGuiche> criarCaixaOuGuiche(String nome) async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/personalizacao/caixa-ou-guiche',
+    );
+    final response = await _httpClient.post(
+      uri,
+      headers: await _getHeaders(),
+      body: jsonEncode({'nome': nome}),
+    );
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 201 &&
+        response.statusCode != 204) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    return _parseCaixaOuGuicheResponse(
+      response.body,
+      fallbackId: '',
+      fallbackNome: nome,
+    );
+  }
+
+  @override
+  Future<CaixaOuGuiche> editarCaixaOuGuiche({
+    required String id,
+    required String nome,
+  }) async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/personalizacao/caixa-ou-guiche/$id',
+    );
+    final response = await _httpClient.put(
+      uri,
+      headers: await _getHeaders(),
+      body: jsonEncode({'nome': nome}),
+    );
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 201 &&
+        response.statusCode != 204) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    return _parseCaixaOuGuicheResponse(
+      response.body,
+      fallbackId: id,
+      fallbackNome: nome,
+    );
   }
 
   @override
@@ -75,7 +147,10 @@ class HttpCaixaApiClient implements CaixaApiClient {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
   }
 
@@ -89,17 +164,25 @@ class HttpCaixaApiClient implements CaixaApiClient {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
   }
 
   @override
   Future<List<MovimentoCaixa>> getMovimentos(String idSessaoCaixa) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/movimentos?idSessaoCaixa=${idSessaoCaixa}');
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/movimentos?idSessaoCaixa=$idSessaoCaixa',
+    );
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
 
     final List list = jsonDecode(response.body);
@@ -107,25 +190,37 @@ class HttpCaixaApiClient implements CaixaApiClient {
   }
 
   @override
-  Future<InformacoesCaixaComSomatorioResponse> getResumoDeMovimentosComSomatorio(String idSessaoCaixa) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/completo-movimentos?idSessaoCaixa=${idSessaoCaixa}');
+  Future<InformacoesCaixaComSomatorioResponse>
+  getResumoDeMovimentosComSomatorio(String idSessaoCaixa) async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/completo-movimentos?idSessaoCaixa=$idSessaoCaixa',
+    );
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
 
-    final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
     return InformacoesCaixaComSomatorioResponse.fromJson(data);
   }
 
   @override
   Future<ResumoCaixa> getResumo(String idSessaoCaixa) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/resumo?idSessaoCaixa=${idSessaoCaixa}');
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/resumo?idSessaoCaixa=$idSessaoCaixa',
+    );
     final response = await _httpClient.get(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
 
     return ResumoCaixa.fromJson(jsonDecode(response.body));
@@ -133,11 +228,16 @@ class HttpCaixaApiClient implements CaixaApiClient {
 
   @override
   Future<void> cancelarMovimento(String id) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/movimentos/$id/cancelar');
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/movimentos/$id/cancelar',
+    );
     final response = await _httpClient.post(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
   }
 
@@ -151,26 +251,64 @@ class HttpCaixaApiClient implements CaixaApiClient {
     );
 
     if (response.statusCode != 200) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
   }
 
   @override
   Future<void> encerrarSessao() async {
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/caixa/encerrar-sessao');
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/encerrar-sessao',
+    );
     final response = await _httpClient.post(uri, headers: await _getHeaders());
 
     if (response.statusCode != 200 && response.statusCode != 404) {
-      throw CaixaApiException(statusCode: response.statusCode, body: response.body);
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
+  }
+
+  CaixaOuGuiche _parseCaixaOuGuicheResponse(
+    String responseBody, {
+    required String fallbackId,
+    required String fallbackNome,
+  }) {
+    if (responseBody.trim().isEmpty) {
+      return CaixaOuGuiche(id: fallbackId, nome: fallbackNome);
+    }
+
+    try {
+      final dynamic data = jsonDecode(responseBody);
+      if (data is Map<String, dynamic>) {
+        final parsed = CaixaOuGuiche.fromJson(data);
+        return CaixaOuGuiche(
+          id: parsed.id.isNotEmpty ? parsed.id : fallbackId,
+          nome: parsed.nome.isNotEmpty ? parsed.nome : fallbackNome,
+        );
+      }
+
+      if (data is Map) {
+        final parsed = CaixaOuGuiche.fromJson(data.cast<String, dynamic>());
+        return CaixaOuGuiche(
+          id: parsed.id.isNotEmpty ? parsed.id : fallbackId,
+          nome: parsed.nome.isNotEmpty ? parsed.nome : fallbackNome,
+        );
+      }
+    } catch (_) {
+      // Se a API não retornar JSON, ainda seguimos com os dados enviados.
+    }
+
+    return CaixaOuGuiche(id: fallbackId, nome: fallbackNome);
   }
 }
 
 class CaixaApiException implements Exception {
-  CaixaApiException({
-    required this.statusCode,
-    required this.body,
-  });
+  CaixaApiException({required this.statusCode, required this.body});
 
   final int statusCode;
   final String body;

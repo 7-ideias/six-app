@@ -14,11 +14,7 @@ class OperacoesCaixaWebPage extends StatefulWidget {
   final bool embedded;
   final VoidCallback? onBack;
 
-  const OperacoesCaixaWebPage({
-    super.key,
-    this.embedded = false,
-    this.onBack,
-  });
+  const OperacoesCaixaWebPage({super.key, this.embedded = false, this.onBack});
 
   @override
   State<OperacoesCaixaWebPage> createState() => _OperacoesCaixaWebPageState();
@@ -30,16 +26,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _observacaoController = TextEditingController();
   final TextEditingController _referenciaController = TextEditingController();
-  final TextEditingController _trocoInicialController =
-  TextEditingController(text: '200,00');
+  final TextEditingController _trocoInicialController = TextEditingController(
+    text: '200,00',
+  );
   final TextEditingController _fechamentoDinheiroController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _fechamentoPixController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _fechamentoCartaoController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _fechamentoObservacaoController =
-  TextEditingController();
+      TextEditingController();
 
   final CaixaService _caixaService = CaixaModule.caixaService;
   bool _isLoading = false;
@@ -75,48 +72,79 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     _sessaoAtual = null;
     _tipoSelecionado = null;
     _movimentosComSomatorio = null;
-    
+
     _carregarDadosIniciais();
   }
 
-  Future<void> _carregarDadosIniciais() async {
+  Future<void> _carregarDadosIniciais({
+    String? idCaixaSelecionadoPreferencial,
+  }) async {
     setState(() => _isLoading = true);
     try {
-      final informacoesBasicasDoCaixa = await _caixaService.buscarInformacoesBasicasDoCaixa();
+      final informacoesBasicasDoCaixa =
+          await _caixaService.buscarInformacoesBasicasDoCaixa();
       if (mounted && informacoesBasicasDoCaixa.regionalizacao != null) {
         await context
             .read<LocaleSettingsProvider>()
             .atualizarConfiguracaoDaEmpresaPorResponse(
-          informacoesBasicasDoCaixa.regionalizacao!,
-        );
+              informacoesBasicasDoCaixa.regionalizacao!,
+            );
       }
       final sessao = await _caixaService.buscarSessaoAtual();
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      final idPreferencial =
+          idCaixaSelecionadoPreferencial ?? _caixaSelecionado?.id;
+      final codigoTipoRecebimentoPreferencial =
+          _tipoRecebimentoSelecionado?.codigoTipo;
 
       setState(() {
-        _listaDeCaixasDisponiveisNaEmpresa = informacoesBasicasDoCaixa.caixaOuGuiche.isNotEmpty
-            ? informacoesBasicasDoCaixa.caixaOuGuiche
-            : informacoesBasicasDoCaixa.caixas
-            .map(
-              (nomeCaixa) => CaixaOuGuiche(
-            id: nomeCaixa,
-            nome: nomeCaixa,
-          ),
-        )
-            .toList();
+        _listaDeCaixasDisponiveisNaEmpresa =
+            informacoesBasicasDoCaixa.caixaOuGuiche.isNotEmpty
+                ? informacoesBasicasDoCaixa.caixaOuGuiche
+                : informacoesBasicasDoCaixa.caixas
+                    .map(
+                      (nomeCaixa) =>
+                          CaixaOuGuiche(id: nomeCaixa, nome: nomeCaixa),
+                    )
+                    .toList();
         // _formas = informacoesBasicasDoCaixa.formas;
         _tiposRecebimento = informacoesBasicasDoCaixa.tiposRecebimento;
-        if (_listaDeCaixasDisponiveisNaEmpresa.isNotEmpty) {
+        if (_listaDeCaixasDisponiveisNaEmpresa.isNotEmpty &&
+            idPreferencial != null) {
+          CaixaOuGuiche? caixaEncontrado;
+          for (final caixa in _listaDeCaixasDisponiveisNaEmpresa) {
+            if (caixa.id == idPreferencial) {
+              caixaEncontrado = caixa;
+              break;
+            }
+          }
+          _caixaSelecionado =
+              caixaEncontrado ?? _listaDeCaixasDisponiveisNaEmpresa.first;
+        } else if (_listaDeCaixasDisponiveisNaEmpresa.isNotEmpty) {
           _caixaSelecionado = _listaDeCaixasDisponiveisNaEmpresa.first;
+        } else {
+          _caixaSelecionado = null;
         }
 
-        final tiposAtivosOrdenados = _tiposRecebimento
-            .where((item) => item.ativo)
-            .toList()
-          ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+        final tiposAtivosOrdenados =
+            _tiposRecebimento.where((item) => item.ativo).toList()
+              ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
 
-        if (tiposAtivosOrdenados.isNotEmpty) {
+        if (tiposAtivosOrdenados.isNotEmpty &&
+            codigoTipoRecebimentoPreferencial != null) {
+          TiposRecebimento? tipoEncontrado;
+          for (final tipo in tiposAtivosOrdenados) {
+            if (tipo.codigoTipo == codigoTipoRecebimentoPreferencial) {
+              tipoEncontrado = tipo;
+              break;
+            }
+          }
+          _tipoRecebimentoSelecionado =
+              tipoEncontrado ?? tiposAtivosOrdenados.first;
+        } else if (tiposAtivosOrdenados.isNotEmpty) {
           _tipoRecebimentoSelecionado = tiposAtivosOrdenados.first;
+        } else {
+          _tipoRecebimentoSelecionado = null;
         }
 
         _sessaoAtual = sessao;
@@ -125,7 +153,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       if (_sessaoAtual != null) {
         await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
       }
-
     } catch (e) {
       _mostrarErro('Erro ao carregar dados do caixa: $e');
     } finally {
@@ -136,7 +163,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Future<void> _carregarMovimentosEResumo(String idCaixaSessao) async {
     try {
       final movimentos = await _caixaService.listarMovimentacoes(idCaixaSessao);
-      final movimentosComSomatorio = await _caixaService.buscarResumoDeMovimentosComSomatorio(idCaixaSessao);
+      final movimentosComSomatorio = await _caixaService
+          .buscarResumoDeMovimentosComSomatorio(idCaixaSessao);
       final resumo = await _caixaService.buscarResumo(idCaixaSessao);
       setState(() {
         _movimentos = movimentos;
@@ -240,48 +268,48 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   else
                     isWide
                         ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 7,
-                          child: Column(
-                            children: [
-                              _buildContextoOperacao(theme),
-                              const SizedBox(height: 20),
-                              _buildAtalhosOperacao(theme),
-                              const SizedBox(height: 20),
-                              _buildFormularioMovimento(theme),
-                              const SizedBox(height: 20),
-                              _buildHistorico(theme),
-                              const SizedBox(height: 20),
-                              if (_mostrarPainelFechamento)
-                                _buildPainelFechamento(theme),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          flex: 3,
-                          child: _buildResumoLateral(theme, resumo),
-                        ),
-                      ],
-                    )
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 7,
+                              child: Column(
+                                children: [
+                                  _buildContextoOperacao(theme),
+                                  const SizedBox(height: 20),
+                                  _buildAtalhosOperacao(theme),
+                                  const SizedBox(height: 20),
+                                  _buildFormularioMovimento(theme),
+                                  const SizedBox(height: 20),
+                                  _buildHistorico(theme),
+                                  const SizedBox(height: 20),
+                                  if (_mostrarPainelFechamento)
+                                    _buildPainelFechamento(theme),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              flex: 3,
+                              child: _buildResumoLateral(theme, resumo),
+                            ),
+                          ],
+                        )
                         : Column(
-                      children: [
-                        _buildContextoOperacao(theme),
-                        const SizedBox(height: 20),
-                        _buildResumoLateral(theme, resumo),
-                        const SizedBox(height: 20),
-                        _buildAtalhosOperacao(theme),
-                        const SizedBox(height: 20),
-                        _buildFormularioMovimento(theme),
-                        const SizedBox(height: 20),
-                        _buildHistorico(theme),
-                        const SizedBox(height: 20),
-                        if (_mostrarPainelFechamento)
-                          _buildPainelFechamento(theme),
-                      ],
-                    ),
+                          children: [
+                            _buildContextoOperacao(theme),
+                            const SizedBox(height: 20),
+                            _buildResumoLateral(theme, resumo),
+                            const SizedBox(height: 20),
+                            _buildAtalhosOperacao(theme),
+                            const SizedBox(height: 20),
+                            _buildFormularioMovimento(theme),
+                            const SizedBox(height: 20),
+                            _buildHistorico(theme),
+                            const SizedBox(height: 20),
+                            if (_mostrarPainelFechamento)
+                              _buildPainelFechamento(theme),
+                          ],
+                        ),
                 ],
               ),
             ),
@@ -302,11 +330,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildHeader(
-    ThemeData theme,
-    ResumoCaixa? resumo,
-    bool isMedium,
-  ) {
+  Widget _buildHeader(ThemeData theme, ResumoCaixa? resumo, bool isMedium) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: _cardDecoration(),
@@ -356,27 +380,27 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             ),
           ),
           const SizedBox(width: 4),
-          if (isMedium)
-            ...[
-              _buildTopInfoChip(
-                theme: theme,
-                icon: Icons.storefront_outlined,
-                label: 'Empresa',
-                value: EmpresaProvider().empresa!.nomeFantasia,
-              ),
-              _buildTopInfoChip(
-                theme: theme,
-                icon: Icons.person_outline_rounded,
-                label: 'Operador',
-                value: _sessaoAtual?.idColaboradorAbertura ?? 'Aguardando abertura',
-              ),
-              _buildTopInfoChip(
-                theme: theme,
-                icon: Icons.calendar_today_outlined,
-                label: 'Movimentos',
-                value: '${resumo?.quantidadeMovimentos ?? 0}',
-              ),
-            ],
+          if (isMedium) ...[
+            _buildTopInfoChip(
+              theme: theme,
+              icon: Icons.storefront_outlined,
+              label: 'Empresa',
+              value: EmpresaProvider().empresa!.nomeFantasia,
+            ),
+            _buildTopInfoChip(
+              theme: theme,
+              icon: Icons.person_outline_rounded,
+              label: 'Operador',
+              value:
+                  _sessaoAtual?.idColaboradorAbertura ?? 'Aguardando abertura',
+            ),
+            _buildTopInfoChip(
+              theme: theme,
+              icon: Icons.calendar_today_outlined,
+              label: 'Movimentos',
+              value: '${resumo?.quantidadeMovimentos ?? 0}',
+            ),
+          ],
         ],
       ),
     );
@@ -498,18 +522,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             spacing: 18,
             runSpacing: 18,
             children: [
-              _buildFieldBox(
-                width: 260,
-                label: 'Caixa / guichê',
-                child: _buildDropdown<CaixaOuGuiche>(
-                  value: _caixaSelecionado,
-                  items: _listaDeCaixasDisponiveisNaEmpresa,
-                  onChanged: (value) {
-                    setState(() => _caixaSelecionado = value);
-                  },
-                  itemLabel: (item) => item.nome,
-                ),
-              ),
+              _buildSeletorCaixaOuGuiche(),
               _buildFieldBox(
                 width: 220,
                 label: 'Troco inicial',
@@ -522,7 +535,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               _buildFieldBox(
                 width: 260,
                 label: 'Colaborador responsável',
-                child: _buildReadOnlyField(UsuarioProvider().usuario?.nomeDeGuerra ?? '--'),
+                child: _buildReadOnlyField(
+                  UsuarioProvider().usuario?.nomeDeGuerra ?? '--',
+                ),
               ),
             ],
           ),
@@ -711,75 +726,78 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           Wrap(
             spacing: 16,
             runSpacing: 16,
-            children: cards.map((item) {
-              final selecionado = _tipoSelecionado == item.tipo;
-              return InkWell(
-                borderRadius: BorderRadius.circular(22),
-                onTap: () {
-                  setState(() {
-                    _tipoSelecionado = item.tipo;
-                    _mostrarPainelFechamento = false;
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 280,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color:
-                    selecionado ? item.cor.withOpacity(.10) : Colors.white,
+            children:
+                cards.map((item) {
+                  final selecionado = _tipoSelecionado == item.tipo;
+                  return InkWell(
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: selecionado
-                          ? item.cor
-                          : const Color(0xffdbe4ef),
-                      width: selecionado ? 1.6 : 1.0,
+                    onTap: () {
+                      setState(() {
+                        _tipoSelecionado = item.tipo;
+                        _mostrarPainelFechamento = false;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 280,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color:
+                            selecionado
+                                ? item.cor.withOpacity(.10)
+                                : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color:
+                              selecionado ? item.cor : const Color(0xffdbe4ef),
+                          width: selecionado ? 1.6 : 1.0,
+                        ),
+                        boxShadow:
+                            selecionado
+                                ? [
+                                  BoxShadow(
+                                    color: item.cor.withOpacity(.08),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ]
+                                : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: item.cor.withOpacity(.12),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(item.icone, color: item.cor, size: 26),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            item.titulo,
+                            style: const TextStyle(
+                              color: Color(0xff162033),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            item.descricao,
+                            style: const TextStyle(
+                              color: Color(0xff5f6878),
+                              fontSize: 13.4,
+                              height: 1.42,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    boxShadow: selecionado
-                        ? [
-                      BoxShadow(
-                        color: item.cor.withOpacity(.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ]
-                        : null,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: item.cor.withOpacity(.12),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(item.icone, color: item.cor, size: 26),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        item.titulo,
-                        style: const TextStyle(
-                          color: Color(0xff162033),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        item.descricao,
-                        style: const TextStyle(
-                          color: Color(0xff5f6878),
-                          fontSize: 13.4,
-                          height: 1.42,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
           ),
           const SizedBox(height: 18),
           Wrap(
@@ -852,9 +870,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Tipo da operação',
                 child: _buildDropdown<OperacaoCaixaTipo>(
                   value: _tipoSelecionado,
-                  items: OperacaoCaixaTipo.values
-                      .where((e) => e != OperacaoCaixaTipo.fechamentoCaixa)
-                      .toList(),
+                  items:
+                      OperacaoCaixaTipo.values
+                          .where((e) => e != OperacaoCaixaTipo.fechamentoCaixa)
+                          .toList(),
                   onChanged: (value) {
                     setState(() => _tipoSelecionado = value);
                   },
@@ -876,8 +895,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Forma relacionada',
                 child: _buildDropdown<TiposRecebimento>(
                   value: _tipoRecebimentoSelecionado,
-                  items: (_tiposRecebimento.where((item) => item.ativo).toList()
-                    ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao))),
+                  items:
+                      (_tiposRecebimento.where((item) => item.ativo).toList()
+                        ..sort(
+                          (a, b) => a.ordemExibicao.compareTo(b.ordemExibicao),
+                        )),
                   onChanged: (value) {
                     setState(() => _tipoRecebimentoSelecionado = value);
                   },
@@ -990,11 +1012,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildHistorico(ThemeData theme) {
-    final movimentosVisiveis = _mostrarApenasHoje
-        ? _movimentos
-        .where((m) => _isSameDay(m.dataHoraMovimento, DateTime.now()))
-        .toList()
-        : _movimentos;
+    final movimentosVisiveis =
+        _mostrarApenasHoje
+            ? _movimentos
+                .where((m) => _isSameDay(m.dataHoraMovimento, DateTime.now()))
+                .toList()
+            : _movimentos;
 
     return Container(
       width: double.infinity,
@@ -1016,8 +1039,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 ),
               ),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xffeef5ff),
                   borderRadius: BorderRadius.circular(999),
@@ -1060,12 +1085,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             )
           else
             Column(
-              children: movimentosVisiveis.map((movimento) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: _buildMovimentoCard(movimento),
-                );
-              }).toList(),
+              children:
+                  movimentosVisiveis.map((movimento) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _buildMovimentoCard(movimento),
+                    );
+                  }).toList(),
             ),
         ],
       ),
@@ -1258,43 +1284,43 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               const SizedBox(height: 12),
               _buildResumoSecundario(
                 'Dinheiro',
-                _formatCurrency(_movimentosComSomatorio?.tipo1 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo1 ?? 0),
               ),
               _buildResumoSecundario(
                 'Pix',
-                _formatCurrency(_movimentosComSomatorio?.tipo2 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo2 ?? 0),
               ),
               _buildResumoSecundario(
                 'Cartão Crédito',
-                _formatCurrency(_movimentosComSomatorio?.tipo3 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo3 ?? 0),
               ),
               _buildResumoSecundario(
                 'Cartão Débito',
-                _formatCurrency(_movimentosComSomatorio?.tipo4 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo4 ?? 0),
               ),
               _buildResumoSecundario(
                 'Boleto',
-                _formatCurrency(_movimentosComSomatorio?.tipo5 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo5 ?? 0),
               ),
               _buildResumoSecundario(
                 'Fiado',
-                _formatCurrency(_movimentosComSomatorio?.tipo6 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo6 ?? 0),
               ),
               _buildResumoSecundario(
                 'Crediário',
-                _formatCurrency(_movimentosComSomatorio?.tipo7 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo7 ?? 0),
               ),
               _buildResumoSecundario(
                 'Convênio',
-                _formatCurrency(_movimentosComSomatorio?.tipo8 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo8 ?? 0),
               ),
               _buildResumoSecundario(
                 'Vale',
-                _formatCurrency(_movimentosComSomatorio?.tipo9 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo9 ?? 0),
               ),
               _buildResumoSecundario(
                 'Outros',
-                _formatCurrency(_movimentosComSomatorio?.tipo10 ?? 0)
+                _formatCurrency(_movimentosComSomatorio?.tipo10 ?? 0),
               ),
             ],
           ),
@@ -1325,7 +1351,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               ),
               _buildChecklistItem(
                 checked: _movimentos.any(
-                      (m) => m.status == StatusMovimento.pendenteConferencia,
+                  (m) => m.status == StatusMovimento.pendenteConferencia,
                 ),
                 title: 'Há pendências para conferência',
               ),
@@ -1392,7 +1418,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 label: 'Cartão apurado',
                 child: _buildTextField(
                   controller: _fechamentoCartaoController,
-                  hint: _formatCurrency(resumo.totalCartaoCredito + resumo.totalCartaoDebito),
+                  hint: _formatCurrency(
+                    resumo.totalCartaoCredito + resumo.totalCartaoDebito,
+                  ),
                   prefix: 'R\$ ',
                 ),
               ),
@@ -1436,7 +1464,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               controller: _fechamentoObservacaoController,
               maxLines: 3,
               decoration: _inputDecoration(
-                hint: 'Detalhe divergências, conferências e observações finais.',
+                hint:
+                    'Detalhe divergências, conferências e observações finais.',
               ),
             ),
           ),
@@ -1466,10 +1495,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildChecklistItem({
-    required bool checked,
-    required String title,
-  }) {
+  Widget _buildChecklistItem({required bool checked, required String title}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -1494,7 +1520,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildResumoLinha(String label, double valor, {bool destaque = false}) {
+  Widget _buildResumoLinha(
+    String label,
+    double valor, {
+    bool destaque = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -1504,7 +1534,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               label,
               style: TextStyle(
                 color:
-                destaque ? const Color(0xff0f172a) : const Color(0xff64748b),
+                    destaque
+                        ? const Color(0xff0f172a)
+                        : const Color(0xff64748b),
                 fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
@@ -1513,7 +1545,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             _formatCurrency(valor),
             style: TextStyle(
               color:
-              destaque ? const Color(0xff0f172a) : const Color(0xff1e293b),
+                  destaque ? const Color(0xff0f172a) : const Color(0xff1e293b),
               fontWeight: destaque ? FontWeight.w900 : FontWeight.w800,
               fontSize: destaque ? 18 : 15,
             ),
@@ -1595,35 +1627,83 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }) {
     return width == double.infinity
         ? Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xff4b5563),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        child,
-      ],
-    )
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xff4b5563),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            child,
+          ],
+        )
         : SizedBox(
-      width: width,
+          width: width,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xff4b5563),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              child,
+            ],
+          ),
+        );
+  }
+
+  Widget _buildSeletorCaixaOuGuiche() {
+    return SizedBox(
+      width: 320,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
+          const Text(
+            'Caixa / guichê',
+            style: TextStyle(
               color: Color(0xff4b5563),
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
-          child,
+          _buildDropdown<CaixaOuGuiche>(
+            value: _caixaSelecionado,
+            items: _listaDeCaixasDisponiveisNaEmpresa,
+            onChanged: (value) {
+              setState(() => _caixaSelecionado = value);
+            },
+            itemLabel: (item) => item.nome,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _abrirDialogoCriacaoCaixaOuGuiche,
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Novo'),
+              ),
+              OutlinedButton.icon(
+                onPressed:
+                    _caixaSelecionado == null
+                        ? null
+                        : _abrirDialogoEdicaoCaixaOuGuicheSelecionado,
+                icon: const Icon(Icons.edit_rounded, size: 16),
+                label: const Text('Editar'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1658,10 +1738,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }) {
     return TextField(
       controller: controller,
-      decoration: _inputDecoration(
-        hint: hint,
-        prefixText: prefix,
-      ),
+      decoration: _inputDecoration(hint: hint, prefixText: prefix),
     );
   }
 
@@ -1675,17 +1752,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     return DropdownButtonFormField<T>(
       value: value,
       decoration: _inputDecoration(hint: hint),
-      items: items
-          .map(
-            (item) => DropdownMenuItem<T>(
-          value: item,
-          child: Text(
-            itemLabel(item),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      )
-          .toList(),
+      items:
+          items
+              .map(
+                (item) => DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(itemLabel(item), overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
       onChanged: onChanged,
     );
   }
@@ -1709,9 +1784,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.4),
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 
@@ -1767,6 +1840,190 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
+  Future<void> _abrirDialogoCriacaoCaixaOuGuiche() async {
+    await _abrirDialogoSalvarCaixaOuGuiche();
+  }
+
+  Future<void> _abrirDialogoEdicaoCaixaOuGuicheSelecionado() async {
+    final caixaSelecionado = _caixaSelecionado;
+    if (caixaSelecionado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione um caixa / guichê para editar.'),
+        ),
+      );
+      return;
+    }
+
+    await _abrirDialogoSalvarCaixaOuGuiche(caixaParaEditar: caixaSelecionado);
+  }
+
+  Future<void> _abrirDialogoSalvarCaixaOuGuiche({
+    CaixaOuGuiche? caixaParaEditar,
+  }) async {
+    final bool emEdicao = caixaParaEditar != null;
+    final TextEditingController nomeController = TextEditingController(
+      text: caixaParaEditar?.nome ?? '',
+    );
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+    try {
+      final CaixaOuGuiche? caixaSalvo = await showDialog<CaixaOuGuiche>(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          bool salvando = false;
+          String? mensagemErro;
+
+          return StatefulBuilder(
+            builder: (
+              BuildContext builderContext,
+              void Function(void Function()) setDialogState,
+            ) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                title: Text(
+                  emEdicao ? 'Editar caixa / guichê' : 'Novo caixa / guichê',
+                ),
+                content: SizedBox(
+                  width: 420,
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: nomeController,
+                          autofocus: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Nome',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (String? value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Informe o nome do caixa / guichê.';
+                            }
+                            return null;
+                          },
+                        ),
+                        if (mensagemErro != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            mensagemErro!,
+                            style: TextStyle(
+                              color: Theme.of(builderContext).colorScheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed:
+                        salvando
+                            ? null
+                            : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                  FilledButton.icon(
+                    onPressed:
+                        salvando
+                            ? null
+                            : () async {
+                              if (!(formKey.currentState?.validate() ??
+                                  false)) {
+                                return;
+                              }
+
+                              final nome = nomeController.text.trim();
+                              setDialogState(() {
+                                salvando = true;
+                                mensagemErro = null;
+                              });
+
+                              try {
+                                final CaixaOuGuiche response =
+                                    emEdicao
+                                        ? await _caixaService
+                                            .editarCaixaOuGuiche(
+                                              id: caixaParaEditar.id,
+                                              nome: nome,
+                                            )
+                                        : await _caixaService
+                                            .criarCaixaOuGuiche(nome);
+
+                                if (!dialogContext.mounted) return;
+                                Navigator.of(dialogContext).pop(response);
+                              } catch (e) {
+                                if (!dialogContext.mounted) return;
+                                setDialogState(() {
+                                  salvando = false;
+                                  mensagemErro = 'Erro ao salvar: $e';
+                                });
+                              }
+                            },
+                    icon:
+                        salvando
+                            ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : Icon(
+                              emEdicao ? Icons.save_rounded : Icons.add_rounded,
+                            ),
+                    label: Text(emEdicao ? 'Salvar' : 'Cadastrar'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (caixaSalvo == null || !mounted) return;
+
+      await _carregarDadosIniciais(
+        idCaixaSelecionadoPreferencial:
+            caixaSalvo.id.isNotEmpty ? caixaSalvo.id : caixaParaEditar?.id,
+      );
+
+      if (!mounted) return;
+
+      if (caixaSalvo.id.isEmpty) {
+        final nomeSalvo = caixaSalvo.nome.trim().toLowerCase();
+        if (nomeSalvo.isNotEmpty) {
+          CaixaOuGuiche? encontradoPorNome;
+          for (final item in _listaDeCaixasDisponiveisNaEmpresa) {
+            if (item.nome.trim().toLowerCase() == nomeSalvo) {
+              encontradoPorNome = item;
+            }
+          }
+          if (encontradoPorNome != null) {
+            setState(() => _caixaSelecionado = encontradoPorNome);
+          }
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            emEdicao
+                ? 'Caixa / guichê atualizado com sucesso.'
+                : 'Caixa / guichê cadastrado com sucesso.',
+          ),
+        ),
+      );
+    } finally {
+      nomeController.dispose();
+    }
+  }
+
   Future<void> _abrirCaixa() async {
     if (_caixaSelecionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1776,17 +2033,19 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
 
     final valor = _parseCurrency(_trocoInicialController.text);
-    
+
     setState(() => _isLoading = true);
     try {
-      await _caixaService.abrirCaixa(AbrirCaixaRequest(
-        idCaixaOuGuiche: _caixaSelecionado!.id,
-        nomeCaixa: _caixaSelecionado!.nome,
-        valorAbertura: valor,
-      ));
-      
+      await _caixaService.abrirCaixa(
+        AbrirCaixaRequest(
+          idCaixaOuGuiche: _caixaSelecionado!.id,
+          nomeCaixa: _caixaSelecionado!.nome,
+          valorAbertura: valor,
+        ),
+      );
+
       await _carregarDadosIniciais();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Caixa aberto com sucesso.')),
       );
@@ -1819,9 +2078,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     final valorDoLancamentoOperacional = _parseCurrency(_valorController.text);
     if (valorDoLancamentoOperacional <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe um valor válido.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Informe um valor válido.')));
       return;
     }
 
@@ -1860,13 +2119,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       _referenciaController.clear();
       _vincularVenda = false;
 
-      final tiposAtivosOrdenados = _tiposRecebimento
-          .where((item) => item.ativo)
-          .toList()
-        ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+      final tiposAtivosOrdenados =
+          _tiposRecebimento.where((item) => item.ativo).toList()
+            ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
 
       _tipoRecebimentoSelecionado =
-      tiposAtivosOrdenados.isNotEmpty ? tiposAtivosOrdenados.first : null;
+          tiposAtivosOrdenados.isNotEmpty ? tiposAtivosOrdenados.first : null;
     });
   }
 
@@ -1877,25 +2135,31 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
 
     final resumo = _resumo;
-    final dinheiroInformado = _fechamentoDinheiroController.text.trim().isEmpty
-        ? (resumo?.totalDinheiro ?? 0)
-        : _parseCurrency(_fechamentoDinheiroController.text);
-    final pixInformado = _fechamentoPixController.text.trim().isEmpty
-        ? (resumo?.totalPix ?? 0)
-        : _parseCurrency(_fechamentoPixController.text);
-    final cartaoInformado = _fechamentoCartaoController.text.trim().isEmpty
-        ? ((resumo?.totalCartaoCredito ?? 0) + (resumo?.totalCartaoDebito ?? 0))
-        : _parseCurrency(_fechamentoCartaoController.text);
+    final dinheiroInformado =
+        _fechamentoDinheiroController.text.trim().isEmpty
+            ? (resumo?.totalDinheiro ?? 0)
+            : _parseCurrency(_fechamentoDinheiroController.text);
+    final pixInformado =
+        _fechamentoPixController.text.trim().isEmpty
+            ? (resumo?.totalPix ?? 0)
+            : _parseCurrency(_fechamentoPixController.text);
+    final cartaoInformado =
+        _fechamentoCartaoController.text.trim().isEmpty
+            ? ((resumo?.totalCartaoCredito ?? 0) +
+                (resumo?.totalCartaoDebito ?? 0))
+            : _parseCurrency(_fechamentoCartaoController.text);
 
     setState(() => _isLoading = true);
     try {
-      await _caixaService.fecharCaixa(FecharCaixaRequest(
-        idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
-        valorDinheiroApurado: dinheiroInformado,
-        valorPixApurado: pixInformado,
-        valorCartaoApurado: cartaoInformado,
-        observacaoFechamento: _fechamentoObservacaoController.text.trim(),
-      ));
+      await _caixaService.fecharCaixa(
+        FecharCaixaRequest(
+          idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
+          valorDinheiroApurado: dinheiroInformado,
+          valorPixApurado: pixInformado,
+          valorCartaoApurado: cartaoInformado,
+          observacaoFechamento: _fechamentoObservacaoController.text.trim(),
+        ),
+      );
       await _carregarDadosIniciais();
 
       setState(() {
@@ -1922,7 +2186,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
-    final confirmou = await showDialog<bool>(
+    final confirmou =
+        await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
@@ -1959,9 +2224,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         _mostrarPainelFechamento = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sessão encerrada.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Sessão encerrada.')));
     } catch (e) {
       _mostrarErro('Erro ao encerrar sessão: $e');
     } finally {
@@ -1970,7 +2235,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Future<void> _cancelarMovimento(MovimentoCaixa movimento) async {
-    final confirmou = await showDialog<bool>(
+    final confirmou =
+        await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
@@ -2006,9 +2272,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       await _caixaService.cancelarMovimentacao(movimento.idMovimento);
       await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Movimentação cancelada.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Movimentação cancelada.')));
     } catch (e) {
       _mostrarErro('Erro ao cancelar movimentação: $e');
     } finally {
@@ -2225,12 +2491,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   double _parseCurrency(String text) {
-    final cleaned = text
-        .replaceAll('R\$', '')
-        .replaceAll('.', '')
-        .replaceAll(' ', '')
-        .replaceAll(',', '.')
-        .trim();
+    final cleaned =
+        text
+            .replaceAll('R\$', '')
+            .replaceAll('.', '')
+            .replaceAll(' ', '')
+            .replaceAll(',', '.')
+            .trim();
     return double.tryParse(cleaned) ?? 0;
   }
 
@@ -2297,28 +2564,13 @@ enum OperacaoCaixaTipo {
   }
 }
 
+enum NaturezaMovimento { entrada, saida }
 
-enum NaturezaMovimento {
-  entrada,
-  saida,
-}
+enum NaturezaRecebimento { imediato, futuro }
 
-enum NaturezaRecebimento {
-  imediato,
-  futuro,
-}
+enum StatusMovimento { aberta, concluida, cancelada, pendenteConferencia }
 
-enum StatusMovimento {
-  aberta,
-  concluida,
-  cancelada,
-  pendenteConferencia,
-}
-
-enum StatusSessaoCaixa {
-  aberta,
-  fechada,
-}
+enum StatusSessaoCaixa { aberta, fechada }
 
 class _AtalhoOperacaoData {
   final OperacaoCaixaTipo tipo;
