@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -11,12 +10,16 @@ abstract class OperacaoApiClient {
   Future<OperacaoInserirResponse> inserirOperacao({
     required OperacaoInserirRequest request,
   });
+  Future<void> imprimirComprovanteOperacao({
+    required String idOperacao,
+    required FormatoImpressaoOperacao formato,
+    required OperacaoInserirRequest request,
+  });
 }
 
 class HttpOperacaoApiClient implements OperacaoApiClient {
-  HttpOperacaoApiClient({
-    http.Client? httpClient,
-  }) : _httpClient = httpClient ?? http.Client();
+  HttpOperacaoApiClient({http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -24,7 +27,6 @@ class HttpOperacaoApiClient implements OperacaoApiClient {
   Future<OperacaoInserirResponse> inserirOperacao({
     required OperacaoInserirRequest request,
   }) async {
-
     final authService = AuthService();
     final jwtToken = await authService.getAccessToken();
     final idUnicoDaEmpresa = await authService.getEmpresaId();
@@ -34,7 +36,7 @@ class HttpOperacaoApiClient implements OperacaoApiClient {
     final response = await _httpClient.post(
       uri,
       headers: {
-        'idUnicoDaEmpresa': idUnicoDaEmpresa!!,
+        'idUnicoDaEmpresa': idUnicoDaEmpresa ?? '',
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $jwtToken',
       },
@@ -51,13 +53,46 @@ class HttpOperacaoApiClient implements OperacaoApiClient {
     final Map<String, dynamic> json = jsonDecode(response.body);
     return OperacaoInserirResponse.fromJson(json);
   }
+
+  @override
+  Future<void> imprimirComprovanteOperacao({
+    required String idOperacao,
+    required FormatoImpressaoOperacao formato,
+    required OperacaoInserirRequest request,
+  }) async {
+    final authService = AuthService();
+    final jwtToken = await authService.getAccessToken();
+    final idUnicoDaEmpresa = await authService.getEmpresaId();
+
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/operacao/impressao/comprovante/$idOperacao?formato=${formato.apiValue}',
+    );
+
+    final httpRequest =
+        http.Request('GET', uri)
+          ..headers.addAll({
+            'idUnicoDaEmpresa': idUnicoDaEmpresa ?? '',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $jwtToken',
+          })
+          ..body = jsonEncode(request.toJson());
+
+    final streamedResponse = await _httpClient.send(httpRequest);
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 201 &&
+        response.statusCode != 204) {
+      throw OperacaoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+  }
 }
 
 class OperacaoApiException implements Exception {
-  OperacaoApiException({
-    required this.statusCode,
-    required this.body,
-  });
+  OperacaoApiException({required this.statusCode, required this.body});
 
   final int statusCode;
   final String body;

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../core/di/operacao_module.dart';
@@ -36,6 +35,8 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
   State<RecebimentoPagamentoWeb> createState() =>
       _RecebimentoPagamentoWebState();
 }
+
+enum _DecisaoImpressao { naoImprimir, imprimirA4, imprimirCupomTermico }
 
 class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   late final List<Map<String, dynamic>> _itensResumo;
@@ -179,21 +180,22 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
         .where((forma) => forma['selecionado'] == true)
         .map(
           (forma) => FormaPagamentoSelecionada(
-        codigo: (forma['codigo'] ?? '').toString(),
-        valor: ((forma['valor'] ?? 0.0) as num).toDouble(),
-      ),
-    )
+            codigo: (forma['codigo'] ?? '').toString(),
+            valor: ((forma['valor'] ?? 0.0) as num).toDouble(),
+          ),
+        )
         .toList();
   }
 
   List<ItemVendaAtual> _montarItensDaVenda() {
     return _itensResumo.map((item) {
-      final idProduto = (item['id'] ??
-          item['codigo'] ??
-          item['idSKU'] ??
-          item['idCodigoUnicoDoProduto'] ??
-          '')
-          .toString();
+      final idProduto =
+          (item['id'] ??
+                  item['codigo'] ??
+                  item['idSKU'] ??
+                  item['idCodigoUnicoDoProduto'] ??
+                  '')
+              .toString();
 
       return ItemVendaAtual(
         idProduto: idProduto,
@@ -248,9 +250,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
         return AlertDialog(
           icon: Icon(
             sucesso ? Icons.check_circle_outline : Icons.info_outline,
-            color: sucesso
-                ? const Color(0xFF2E7D32)
-                : Theme.of(context).colorScheme.primary,
+            color:
+                sucesso
+                    ? const Color(0xFF2E7D32)
+                    : Theme.of(context).colorScheme.primary,
             size: 34,
           ),
           title: Text(titulo),
@@ -266,13 +269,77 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     );
   }
 
-  Future<void> _confirmarOperacao() async {
+  Future<_DecisaoImpressao> _perguntarImpressaoAposConclusao({
+    required String uuidOperacao,
+  }) async {
+    final _DecisaoImpressao? resposta = await showDialog<_DecisaoImpressao>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          icon: Icon(
+            Icons.check_circle_outline,
+            color: Theme.of(context).colorScheme.primary,
+            size: 34,
+          ),
+          title: const Text('Operação concluída'),
+          content: Text(
+            'Venda enviada com sucesso.\nUUID: $uuidOperacao\n\nDeseja imprimir o comprovante agora?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(_DecisaoImpressao.naoImprimir);
+              },
+              child: const Text('Não imprimir'),
+            ),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).pop(_DecisaoImpressao.imprimirA4);
+              },
+              child: const Text('Imprimir A4'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(
+                  context,
+                ).pop(_DecisaoImpressao.imprimirCupomTermico);
+              },
+              child: const Text('Imprimir cupom'),
+            ),
+          ],
+        );
+      },
+    );
 
+    return resposta ?? _DecisaoImpressao.naoImprimir;
+  }
+
+  FormatoImpressaoOperacao? _mapearFormatoImpressao(_DecisaoImpressao decisao) {
+    switch (decisao) {
+      case _DecisaoImpressao.naoImprimir:
+        return null;
+      case _DecisaoImpressao.imprimirA4:
+        return FormatoImpressaoOperacao.a4;
+      case _DecisaoImpressao.imprimirCupomTermico:
+        return FormatoImpressaoOperacao.cupomTermico;
+    }
+  }
+
+  String _rotuloFormatoImpressao(FormatoImpressaoOperacao formato) {
+    switch (formato) {
+      case FormatoImpressaoOperacao.a4:
+        return 'A4';
+      case FormatoImpressaoOperacao.cupomTermico:
+        return 'Cupom térmico';
+    }
+  }
+
+  Future<void> _confirmarOperacao() async {
     if (_quantidadeFormasSelecionadas() == 0) {
       await _mostrarDialogMensagem(
         titulo: 'Selecione uma forma de pagamento',
         mensagem:
-        'Para confirmar a operação, escolha pelo menos uma forma de pagamento.',
+            'Para confirmar a operação, escolha pelo menos uma forma de pagamento.',
       );
       return;
     }
@@ -282,7 +349,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       await _mostrarDialogMensagem(
         titulo: 'Ajuste os valores para finalizar',
         mensagem:
-        'A soma das formas selecionadas deve ser exatamente igual ao total da venda.',
+            'A soma das formas selecionadas deve ser exatamente igual ao total da venda.',
       );
       return;
     }
@@ -323,23 +390,61 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     });
 
     try {
-      final response = await _operacaoService.finalizarVenda(
-        OperacaoVendaInput(
-          descricao: 'Venda ${widget.numeroVenda ?? 'em andamento'}',
-          idColaborador: widget.idColaborador,
-          nomeColaborador: widget.nomeColaborador,
-          itens: _montarItensDaVenda(),
-          formasPagamento: _montarFormasSelecionadas(),
-        ),
+      final DateTime dataOperacao = DateTime.now();
+      final OperacaoVendaInput input = OperacaoVendaInput(
+        descricao: 'Venda ${widget.numeroVenda ?? 'em andamento'}',
+        idColaborador: widget.idColaborador,
+        nomeColaborador: widget.nomeColaborador,
+        itens: _montarItensDaVenda(),
+        formasPagamento: _montarFormasSelecionadas(),
+        dataOperacao: dataOperacao,
       );
+
+      final response = await _operacaoService.finalizarVenda(input);
 
       if (!mounted) return;
 
-      await _mostrarDialogMensagem(
-        titulo: 'Operação concluída',
-        mensagem: 'Venda enviada com sucesso. UUID: ${response.uuid}',
-        sucesso: true,
-      );
+      final String uuidOperacao = response.uuid.trim();
+      if (uuidOperacao.isNotEmpty) {
+        final _DecisaoImpressao decisao =
+            await _perguntarImpressaoAposConclusao(uuidOperacao: uuidOperacao);
+
+        if (!mounted) return;
+
+        final FormatoImpressaoOperacao? formato = _mapearFormatoImpressao(
+          decisao,
+        );
+        if (formato != null) {
+          try {
+            await _operacaoService.imprimirComprovanteDaOperacao(
+              idOperacao: uuidOperacao,
+              formato: formato,
+              input: input,
+            );
+
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Solicitação de impressão enviada (${_rotuloFormatoImpressao(formato)}).',
+                ),
+              ),
+            );
+          } catch (e) {
+            if (!mounted) return;
+            await _mostrarDialogMensagem(
+              titulo: 'Operação salva, falha na impressão',
+              mensagem: e.toString(),
+            );
+          }
+        }
+      } else {
+        await _mostrarDialogMensagem(
+          titulo: 'Operação concluída',
+          mensagem: 'Venda enviada com sucesso.',
+          sucesso: true,
+        );
+      }
 
       if (!mounted) return;
 
@@ -377,16 +482,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icone,
-            size: 18,
-            color: theme.colorScheme.primary,
-          ),
+          Icon(icone, size: 18, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
-          Text(
-            texto,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(texto, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -475,14 +573,16 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       duration: const Duration(milliseconds: 220),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: selecionado
-            ? theme.colorScheme.primary.withOpacity(0.07)
-            : theme.colorScheme.surface,
+        color:
+            selecionado
+                ? theme.colorScheme.primary.withOpacity(0.07)
+                : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: selecionado
-              ? theme.colorScheme.primary
-              : theme.colorScheme.outlineVariant,
+          color:
+              selecionado
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
           width: selecionado ? 1.6 : 1,
         ),
         boxShadow: [
@@ -584,9 +684,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(26),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -620,99 +718,105 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: _formasPagamento.map((forma) {
-                final selecionado = forma['selecionado'] == true;
+              children:
+                  _formasPagamento.map((forma) {
+                    final selecionado = forma['selecionado'] == true;
 
-                return FilterChip(
-                  label: Text(forma['titulo'] as String),
-                  selected: selecionado,
-                  avatar: Icon(
-                    forma['icone'] as IconData,
-                    size: 18,
-                    color: selecionado
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.primary,
-                  ),
-                  onSelected: (selected) => _alternarForma(forma, selected),
-                  selectedColor: theme.colorScheme.primary,
-                  checkmarkColor: theme.colorScheme.onPrimary,
-                  labelStyle: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: selecionado
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onSurface,
-                  ),
-                  side: BorderSide(
-                    color: selecionado
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outlineVariant,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                );
-              }).toList(),
+                    return FilterChip(
+                      label: Text(forma['titulo'] as String),
+                      selected: selecionado,
+                      avatar: Icon(
+                        forma['icone'] as IconData,
+                        size: 18,
+                        color:
+                            selecionado
+                                ? theme.colorScheme.onPrimary
+                                : theme.colorScheme.primary,
+                      ),
+                      onSelected: (selected) => _alternarForma(forma, selected),
+                      selectedColor: theme.colorScheme.primary,
+                      checkmarkColor: theme.colorScheme.onPrimary,
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color:
+                            selecionado
+                                ? theme.colorScheme.onPrimary
+                                : theme.colorScheme.onSurface,
+                      ),
+                      side: BorderSide(
+                        color:
+                            selecionado
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outlineVariant,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                    );
+                  }).toList(),
             ),
 
             const SizedBox(height: 18),
 
             Expanded(
-              child: formasVisiveis.isEmpty
-                  ? Center(
-                child: Container(
-                  width: 420,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.touch_app_outlined,
-                        size: 38,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Nenhuma forma aberta',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+              child:
+                  formasVisiveis.isEmpty
+                      ? Center(
+                        child: Container(
+                          width: 420,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLowest,
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.touch_app_outlined,
+                                size: 38,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Nenhuma forma aberta',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Selecione uma forma de pagamento acima para exibir o card e preencher o valor.',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      : SingleChildScrollView(
+                        child: Wrap(
+                          spacing: 14,
+                          runSpacing: 14,
+                          children:
+                              formasVisiveis.map((forma) {
+                                return SizedBox(
+                                  width: 520,
+                                  child: _buildPainelFormaPagamento(forma),
+                                );
+                              }).toList(),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Selecione uma forma de pagamento acima para exibir o card e preencher o valor.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-                  : SingleChildScrollView(
-                child: Wrap(
-                  spacing: 14,
-                  runSpacing: 14,
-                  children: formasVisiveis.map((forma) {
-                    return SizedBox(
-                      width: 520,
-                      child: _buildPainelFormaPagamento(forma),
-                    );
-                  }).toList(),
-                ),
-              ),
             ),
           ],
         ),
@@ -720,7 +824,11 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     );
   }
 
-  Widget _buildLinhaResumo(String titulo, String valor, {bool destaque = false}) {
+  Widget _buildLinhaResumo(
+    String titulo,
+    String valor, {
+    bool destaque = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -753,9 +861,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
 
     return Card(
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(26),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -795,14 +901,17 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
                 itemBuilder: (context, index) {
                   final item = _itensResumo[index];
                   final int quantidade = (item['quantidade'] ?? 1) as int;
-                  final double valor = ((item['valor'] ?? 0.0) as num).toDouble();
+                  final double valor =
+                      ((item['valor'] ?? 0.0) as num).toDouble();
 
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,9 +956,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: restante.abs() < 0.009
-                    ? const Color(0xFFE9F6EC)
-                    : const Color(0xFFFFF4E5),
+                color:
+                    restante.abs() < 0.009
+                        ? const Color(0xFFE9F6EC)
+                        : const Color(0xFFFFF4E5),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
@@ -858,9 +968,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
                     : 'Ajuste a soma das formas de pagamento até alcançar o valor total da venda.',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: restante.abs() < 0.009
-                      ? const Color(0xFF2E7D32)
-                      : const Color(0xFFB26A00),
+                  color:
+                      restante.abs() < 0.009
+                          ? const Color(0xFF2E7D32)
+                          : const Color(0xFFB26A00),
                 ),
               ),
             ),
@@ -877,9 +988,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Wrap(
         spacing: 12,
@@ -915,15 +1024,16 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
               ),
               FilledButton.icon(
                 onPressed: _salvandoOperacao ? null : _confirmarOperacao,
-                icon: _salvandoOperacao
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : const Icon(Icons.check_circle_outline),
+                icon:
+                    _salvandoOperacao
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.check_circle_outline),
                 label: Text(_salvandoOperacao ? 'Enviando...' : 'Confirmar'),
-              )
+              ),
             ],
           ),
         ],
@@ -939,14 +1049,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
         if (larguraEstreita) {
           return Column(
             children: [
-              Expanded(
-                child: _buildPainelEsquerdo(),
-              ),
+              Expanded(child: _buildPainelEsquerdo()),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 420,
-                child: _buildResumoDaVenda(),
-              ),
+              SizedBox(height: 420, child: _buildResumoDaVenda()),
               const SizedBox(height: 16),
               _buildBarraAcoes(),
             ],
@@ -959,15 +1064,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    flex: 7,
-                    child: _buildPainelEsquerdo(),
-                  ),
+                  Expanded(flex: 7, child: _buildPainelEsquerdo()),
                   const SizedBox(width: 18),
-                  SizedBox(
-                    width: 420,
-                    child: _buildResumoDaVenda(),
-                  ),
+                  SizedBox(width: 420, child: _buildResumoDaVenda()),
                 ],
               ),
             ),
@@ -985,9 +1084,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       children: [
         _buildHeaderPremium(context),
         const SizedBox(height: 16),
-        Expanded(
-          child: _buildBodyResponsivo(),
-        ),
+        Expanded(child: _buildBodyResponsivo()),
       ],
     );
 
@@ -1022,22 +1119,12 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
             title: 'Configurações',
             subItems: ['Sistema', 'Usuários'],
           ),
-          TopNavItemData(
-            title: 'Automações',
-            subItems: ['Tarefas Agendadas'],
-          ),
-          TopNavItemData(
-            title: 'Ajuda',
-            subItems: ['Suporte', 'Sobre'],
-          ),
+          TopNavItemData(title: 'Automações', subItems: ['Tarefas Agendadas']),
+          TopNavItemData(title: 'Ajuda', subItems: ['Suporte', 'Sobre']),
         ],
         onNotificationPressed: () {},
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: conteudo,
-      ),
+      body: Padding(padding: const EdgeInsets.all(16), child: conteudo),
     );
   }
-
 }

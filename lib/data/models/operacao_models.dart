@@ -1,4 +1,3 @@
-
 class OperacaoInserirRequest {
   OperacaoInserirRequest({
     required this.descricao,
@@ -30,7 +29,8 @@ class OperacaoInserirRequest {
       'dataOperacao': dataOperacao,
       'tipoDeOperacaoEnum': tipoDeOperacaoEnum,
       'statusQuitada': statusQuitada,
-      'operacaoFinalizadaEProntaParaOCaixa': operacaoFinalizadaEProntaParaOCaixa,
+      'operacaoFinalizadaEProntaParaOCaixa':
+          operacaoFinalizadaEProntaParaOCaixa,
       'clientePediuParaApagar': clientePediuParaApagar,
       'vendaList': vendaList.map((item) => item.toJson()).toList(),
       'servicoList': servicoList.map((item) => item.toJson()).toList(),
@@ -115,7 +115,8 @@ class RecebimentoRequest {
   }
 }
 
-class GranaRequest { //TODO ALTERAR ESSE NOME PRA FICAR IGUAL AO BACKEND
+class GranaRequest {
+  //TODO ALTERAR ESSE NOME PRA FICAR IGUAL AO BACKEND
   GranaRequest({
     required this.tipo1,
     required this.tipo2,
@@ -139,7 +140,6 @@ class GranaRequest { //TODO ALTERAR ESSE NOME PRA FICAR IGUAL AO BACKEND
   final double tipo8;
   final double tipo9;
   final double tipo10;
-
 
   Map<String, dynamic> toJson() {
     return {
@@ -192,24 +192,17 @@ class InformacoesCadastroRequest {
 }
 
 class OperacaoInserirResponse {
-  OperacaoInserirResponse({
-    required this.uuid,
-  });
+  OperacaoInserirResponse({required this.uuid});
 
   final String uuid;
 
   factory OperacaoInserirResponse.fromJson(Map<String, dynamic> json) {
-    return OperacaoInserirResponse(
-      uuid: (json['uuid'] ?? '').toString(),
-    );
+    return OperacaoInserirResponse(uuid: (json['uuid'] ?? '').toString());
   }
 }
 
 class FormaPagamentoSelecionada {
-  FormaPagamentoSelecionada({
-    required this.codigo,
-    required this.valor,
-  });
+  FormaPagamentoSelecionada({required this.codigo, required this.valor});
 
   final String codigo;
   final double valor;
@@ -247,4 +240,13 @@ class OperacaoVendaInput {
   final List<ItemVendaAtual> itens;
   final List<FormaPagamentoSelecionada> formasPagamento;
   final DateTime? dataOperacao;
+}
+
+enum FormatoImpressaoOperacao {
+  a4('A4'),
+  cupomTermico('CUPOM_TERMICO');
+
+  const FormatoImpressaoOperacao(this.apiValue);
+
+  final String apiValue;
 }
