@@ -419,7 +419,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _confirmarLogout() async {
-    final bool confirmar = await showDialog<bool>(
+    final bool confirmar =
+        await showDialog<bool>(
           context: context,
           builder: (BuildContext dialogContext) {
             return AlertDialog(
@@ -3740,138 +3741,144 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final double total = _calcularTotal();
 
-    return Scaffold(
-      backgroundColor: _pdvTheme.backgroundPage,
-      appBar: TopNavigationBar(
-        items: <TopNavItemData>[
-          TopNavItemData(
-            title: 'Início',
-            subItems: const <String>[
-              'Meu Perfil',
-              'Preferências do Sistema',
-              'Painel Administrativo',
-            ],
-            onSelect: (String value) {
-              if (value == 'Meu Perfil') {
-                showMeuPerfilWebDialog(context);
-              }
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: _pdvTheme.backgroundPage,
+        appBar: TopNavigationBar(
+          items: <TopNavItemData>[
+            TopNavItemData(
+              title: 'Início',
+              subItems: const <String>[
+                'Meu Perfil',
+                'Preferências do Sistema',
+                'Painel Administrativo',
+              ],
+              onSelect: (String value) {
+                if (value == 'Meu Perfil') {
+                  showMeuPerfilWebDialog(context);
+                }
 
-              if (value == 'Painel Administrativo') {
-                showSubPainelConfiguracoes(context, 'Configurações');
-              }
-            },
-          ),
-          const TopNavItemData(
-            title: 'Permitir',
-            subItems: <String>['Gerenciar Permissões', 'Alterar Configurações'],
-          ),
-          TopNavItemData(
-            title: 'Cadastros',
-            subItems: const <String>[
-              'Clientes',
-              'Clientes List',
-              'Produtos',
-              'Colaboradores',
-              'Colaboradores List',
-              'Fornecedores',
-              'Produtos List',
-            ],
-            onSelect: (String value) {
-              if (value == 'Produtos') {
-                showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
-              }
+                if (value == 'Painel Administrativo') {
+                  showSubPainelConfiguracoes(context, 'Configurações');
+                }
+              },
+            ),
+            const TopNavItemData(
+              title: 'Permitir',
+              subItems: <String>[
+                'Gerenciar Permissões',
+                'Alterar Configurações',
+              ],
+            ),
+            TopNavItemData(
+              title: 'Cadastros',
+              subItems: const <String>[
+                'Clientes',
+                'Clientes List',
+                'Produtos',
+                'Colaboradores',
+                'Colaboradores List',
+                'Fornecedores',
+                'Produtos List',
+              ],
+              onSelect: (String value) {
+                if (value == 'Produtos') {
+                  showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+                }
 
-              if (value == 'Clientes') {
-                showSubPainelCadastroCliente(context, 'Cadastro de Clientes');
-              }
+                if (value == 'Clientes') {
+                  showSubPainelCadastroCliente(context, 'Cadastro de Clientes');
+                }
 
-              if (value == 'Clientes List') {
-                setState(() {
-                  _moduloAtual = ModuloCentralPDV.clientesList;
-                });
-              }
+                if (value == 'Clientes List') {
+                  setState(() {
+                    _moduloAtual = ModuloCentralPDV.clientesList;
+                  });
+                }
 
-              if (value == 'Colaboradores') {
-                showSubPainelCadastroColaborador(
-                  context,
-                  'Cadastro de Colaboradores',
-                );
-              }
+                if (value == 'Colaboradores') {
+                  showSubPainelCadastroColaborador(
+                    context,
+                    'Cadastro de Colaboradores',
+                  );
+                }
 
-              if (value == 'Colaboradores List') {
-                setState(() {
-                  _moduloAtual = ModuloCentralPDV.colaboradoresList;
-                });
-              }
+                if (value == 'Colaboradores List') {
+                  setState(() {
+                    _moduloAtual = ModuloCentralPDV.colaboradoresList;
+                  });
+                }
 
-              if (value == 'Produtos List') {
-                _abrirListaProdutosParaEdicao();
-              }
-            },
-          ),
-          TopNavItemData(
-            title: 'Configurações',
-            subItems: const <String>[
-              'formas de recebimentos',
-              'exibição aos colaboradores (ex.: habilita so o pdv e esconde o administrativo)',
-              'Sistema',
-              'Usuários',
-              'Preferências do Six',
-            ],
-            onSelect: (String value) {
-              if (value == 'Preferências do Six') {
-                setState(() {
-                  _moduloAtual = ModuloCentralPDV.configuracoes;
-                });
-              }
-            },
-          ),
-          const TopNavItemData(
-            title: 'Relatórios',
-            subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
-          ),
-          const TopNavItemData(
-            title: 'Executar',
-            subItems: <String>['Processar Pagamentos', 'Fechar Caixa'],
-          ),
-          const TopNavItemData(
-            title: 'Automações',
-            subItems: <String>['Tarefas Agendadas'],
-          ),
-          const TopNavItemData(
-            title: 'Ajuda',
-            subItems: <String>['Suporte', 'Sobre'],
-          ),
-        ],
-        notificationWidget: _buildAreaNotificacoesEConexao(),
-        onNotificationPressed: _abrirPainelNotificacoes,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            if (_mostrarDashboardLateral) ...<Widget>[
-              _buildResumoSidebar(),
-              const SizedBox(width: 20),
-            ] else ...<Widget>[_buildResumoSidebarCollapsed()],
-            Expanded(
-              child: Card(
-                elevation: 6,
-                color: _pdvTheme.backgroundSurface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  side: BorderSide(color: _pdvTheme.cardBorder),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    children: <Widget>[_buildConteudoCentral(total)],
+                if (value == 'Produtos List') {
+                  _abrirListaProdutosParaEdicao();
+                }
+              },
+            ),
+            TopNavItemData(
+              title: 'Configurações',
+              subItems: const <String>[
+                'formas de recebimentos',
+                'exibição aos colaboradores (ex.: habilita so o pdv e esconde o administrativo)',
+                'Sistema',
+                'Usuários',
+                'Preferências do Six',
+              ],
+              onSelect: (String value) {
+                if (value == 'Preferências do Six') {
+                  setState(() {
+                    _moduloAtual = ModuloCentralPDV.configuracoes;
+                  });
+                }
+              },
+            ),
+            const TopNavItemData(
+              title: 'Relatórios',
+              subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
+            ),
+            const TopNavItemData(
+              title: 'Executar',
+              subItems: <String>['Processar Pagamentos', 'Fechar Caixa'],
+            ),
+            const TopNavItemData(
+              title: 'Automações',
+              subItems: <String>['Tarefas Agendadas'],
+            ),
+            const TopNavItemData(
+              title: 'Ajuda',
+              subItems: <String>['Suporte', 'Sobre'],
+            ),
+          ],
+          notificationWidget: _buildAreaNotificacoesEConexao(),
+          onNotificationPressed: _abrirPainelNotificacoes,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (_mostrarDashboardLateral) ...<Widget>[
+                _buildResumoSidebar(),
+                const SizedBox(width: 20),
+              ] else ...<Widget>[_buildResumoSidebarCollapsed()],
+              Expanded(
+                child: Card(
+                  elevation: 6,
+                  color: _pdvTheme.backgroundSurface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    side: BorderSide(color: _pdvTheme.cardBorder),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      children: <Widget>[_buildConteudoCentral(total)],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

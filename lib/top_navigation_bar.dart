@@ -111,7 +111,8 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
 
     if (key == LogicalKeyboardKey.arrowLeft) {
       final prev =
-          (_keyboardFocusedIndex - 1 + widget.items.length) % widget.items.length;
+          (_keyboardFocusedIndex - 1 + widget.items.length) %
+          widget.items.length;
       _setKeyboardFocus(prev);
       return KeyEventResult.handled;
     }
@@ -135,9 +136,10 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
-    final currentTheme = brightness == Brightness.dark
-        ? themeProvider.darkTheme
-        : themeProvider.lightTheme;
+    final currentTheme =
+        brightness == Brightness.dark
+            ? themeProvider.darkTheme
+            : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
 
     return Material(
@@ -153,61 +155,64 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
             return AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
+              automaticallyImplyLeading: false,
               titleSpacing: compact ? 12 : 24,
-              title: compact
-                  ? _ResponsiveHeader(
-                items: widget.items,
-                itemKeys: _itemKeys,
-                openMenuIndex: _openMenuIndex,
-                keyboardFocusedIndex: _keyboardFocusedIndex,
-                onKeyboardFocusChanged: _setKeyboardFocus,
-                onMenuOpened: _requestOpenMenu,
-                onMenuClosed: (index) {
-                  if (_openMenuIndex == index) {
-                    setState(() {
-                      _openMenuIndex = null;
-                    });
-                  }
-                },
-                onNotificationPressed: widget.onNotificationPressed,
-                notificationWidget: widget.notificationWidget,
-              )
-                  : Row(
-                children: [
-                  ...List.generate(widget.items.length, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 2),
-                      child: _TopNavigationMenuItem(
-                        key: _itemKeys[index],
-                        index: index,
-                        data: widget.items[index],
-                        compactMode: false,
-                        isKeyboardFocused: _keyboardFocusedIndex == index,
-                        shouldBeOpen: _openMenuIndex == index,
-                        onHoverOrFocus: () => _setKeyboardFocus(index),
-                        onMenuOpened: () => _requestOpenMenu(index),
-                        onMenuClosed: () {
+              title:
+                  compact
+                      ? _ResponsiveHeader(
+                        items: widget.items,
+                        itemKeys: _itemKeys,
+                        openMenuIndex: _openMenuIndex,
+                        keyboardFocusedIndex: _keyboardFocusedIndex,
+                        onKeyboardFocusChanged: _setKeyboardFocus,
+                        onMenuOpened: _requestOpenMenu,
+                        onMenuClosed: (index) {
                           if (_openMenuIndex == index) {
                             setState(() {
                               _openMenuIndex = null;
                             });
                           }
                         },
+                        onNotificationPressed: widget.onNotificationPressed,
+                        notificationWidget: widget.notificationWidget,
+                      )
+                      : Row(
+                        children: [
+                          ...List.generate(widget.items.length, (index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 2),
+                              child: _TopNavigationMenuItem(
+                                key: _itemKeys[index],
+                                index: index,
+                                data: widget.items[index],
+                                compactMode: false,
+                                isKeyboardFocused:
+                                    _keyboardFocusedIndex == index,
+                                shouldBeOpen: _openMenuIndex == index,
+                                onHoverOrFocus: () => _setKeyboardFocus(index),
+                                onMenuOpened: () => _requestOpenMenu(index),
+                                onMenuClosed: () {
+                                  if (_openMenuIndex == index) {
+                                    setState(() {
+                                      _openMenuIndex = null;
+                                    });
+                                  }
+                                },
+                              ),
+                            );
+                          }),
+                          const Spacer(),
+                          widget.notificationWidget ??
+                              IconButton(
+                                onPressed: widget.onNotificationPressed,
+                                icon: Icon(
+                                  Icons.notifications_none,
+                                  color: colorScheme.onPrimary,
+                                ),
+                                tooltip: 'Notificações',
+                              ),
+                        ],
                       ),
-                    );
-                  }),
-                  const Spacer(),
-                  widget.notificationWidget ??
-                      IconButton(
-                        onPressed: widget.onNotificationPressed,
-                        icon: Icon(
-                          Icons.notifications_none,
-                          color: colorScheme.onPrimary,
-                        ),
-                        tooltip: 'Notificações',
-                      ),
-                ],
-              ),
             );
           },
         ),
@@ -248,9 +253,10 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
-    final currentTheme = brightness == Brightness.dark
-        ? themeProvider.darkTheme
-        : themeProvider.lightTheme;
+    final currentTheme =
+        brightness == Brightness.dark
+            ? themeProvider.darkTheme
+            : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
 
     final veryCompact = MediaQuery.of(context).size.width < 760;
@@ -272,8 +278,8 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
                       compactMode: true,
                       isKeyboardFocused: widget.keyboardFocusedIndex == index,
                       shouldBeOpen: widget.openMenuIndex == index,
-                      onHoverOrFocus: () =>
-                          widget.onKeyboardFocusChanged(index),
+                      onHoverOrFocus:
+                          () => widget.onKeyboardFocusChanged(index),
                       onMenuOpened: () => widget.onMenuOpened(index),
                       onMenuClosed: () => widget.onMenuClosed(index),
                     ),
@@ -411,24 +417,15 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
       curve: Curves.easeOutCubic,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.96,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
+    _scaleAnimation = Tween<double>(begin: 0.96, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -0.04),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
   }
 
@@ -536,9 +533,10 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
   OverlayEntry _buildOverlayEntry() {
     final themeProvider = context.read<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
-    final currentTheme = brightness == Brightness.dark
-        ? themeProvider.darkTheme
-        : themeProvider.lightTheme;
+    final currentTheme =
+        brightness == Brightness.dark
+            ? themeProvider.darkTheme
+            : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
 
     final width = widget.compactMode ? 210.0 : 230.0;
@@ -583,9 +581,9 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Theme.of(context)
-                                .dividerColor
-                                .withOpacity(0.1),
+                            color: Theme.of(
+                              context,
+                            ).dividerColor.withOpacity(0.1),
                           ),
                         ),
                         child: Padding(
@@ -597,7 +595,7 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(
                               widget.data.subItems.length,
-                                  (index) {
+                              (index) {
                                 final item = widget.data.subItems[index];
                                 final isHighlighted =
                                     _highlightedSubIndex == index;
@@ -656,15 +654,14 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
         setState(() {
           _highlightedSubIndex =
               (_highlightedSubIndex - 1 + widget.data.subItems.length) %
-                  widget.data.subItems.length;
+              widget.data.subItems.length;
         });
       }
       return KeyEventResult.handled;
     }
 
     if ((widget.isKeyboardFocused || _isOpen) &&
-        (key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.space)) {
+        (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space)) {
       if (!_isOpen) {
         _openMenu();
       } else {
@@ -685,13 +682,17 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
-    final currentTheme = brightness == Brightness.dark
-        ? themeProvider.darkTheme
-        : themeProvider.lightTheme;
+    final currentTheme =
+        brightness == Brightness.dark
+            ? themeProvider.darkTheme
+            : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
 
     final isActive =
-        _isOpen || _isHoveringTrigger || _isHoveringMenu || widget.isKeyboardFocused;
+        _isOpen ||
+        _isHoveringTrigger ||
+        _isHoveringMenu ||
+        widget.isKeyboardFocused;
 
     final horizontalPadding = widget.compactMode ? 10.0 : 12.0;
     final fontSize = widget.compactMode ? 16.0 : 17.0;
@@ -743,13 +744,15 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
                 vertical: 8,
               ),
               decoration: BoxDecoration(
-                color: isActive
-                    ? colorScheme.onPrimary.withOpacity(0.12)
-                    : Colors.transparent,
+                color:
+                    isActive
+                        ? colorScheme.onPrimary.withOpacity(0.12)
+                        : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 border: Border(
                   bottom: BorderSide(
-                    color: isActive ? colorScheme.onPrimary : Colors.transparent,
+                    color:
+                        isActive ? colorScheme.onPrimary : Colors.transparent,
                     width: 3,
                   ),
                 ),
@@ -814,9 +817,10 @@ class _AnimatedSubMenuItemState extends State<_AnimatedSubMenuItem> {
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
-    final currentTheme = brightness == Brightness.dark
-        ? themeProvider.darkTheme
-        : themeProvider.lightTheme;
+    final currentTheme =
+        brightness == Brightness.dark
+            ? themeProvider.darkTheme
+            : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
 
     final active = widget.isHighlighted || _hovering;
@@ -844,7 +848,10 @@ class _AnimatedSubMenuItemState extends State<_AnimatedSubMenuItem> {
           margin: const EdgeInsets.symmetric(vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: active ? colorScheme.primary.withOpacity(0.05) : Colors.transparent,
+            color:
+                active
+                    ? colorScheme.primary.withOpacity(0.05)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.transparent),
           ),

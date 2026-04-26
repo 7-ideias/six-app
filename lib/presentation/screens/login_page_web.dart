@@ -43,22 +43,26 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _listenGoogleSignIn() {
-    _authService.awaitWebGoogleLogin().then((_) async {
-      if (!mounted) return;
-      await _afterLoginBootstrap();
-      if (!mounted) return;
-      _navigateToHome();
-    }).catchError((error) {
-      if (!mounted) return;
-      if (error is GoogleAuthException &&
-          error.code == GoogleAuthErrorCode.cancelledByUser) {
-        return;
-      }
-      final msg = error is GoogleAuthException
-          ? error.message
-          : 'Não foi possível concluir o login com Google.';
-      _showSnack(msg);
-    });
+    _authService
+        .awaitWebGoogleLogin()
+        .then((_) async {
+          if (!mounted) return;
+          await _afterLoginBootstrap();
+          if (!mounted) return;
+          _navigateToHome();
+        })
+        .catchError((error) {
+          if (!mounted) return;
+          if (error is GoogleAuthException &&
+              error.code == GoogleAuthErrorCode.cancelledByUser) {
+            return;
+          }
+          final msg =
+              error is GoogleAuthException
+                  ? error.message
+                  : 'Não foi possível concluir o login com Google.';
+          _showSnack(msg);
+        });
   }
 
   void _showSnack(String msg) {
@@ -104,9 +108,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _navigateToHome() {
-    Navigator.pushReplacement(
-      context,
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomePageMobile(title: 'Home')),
+      (route) => false,
     );
   }
 
@@ -162,9 +166,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                 color: WebAuthShell.labelGrey(),
                 size: 20,
               ),
-              onPressed: () => setState(
-                () => _obscurePassword = !_obscurePassword,
-              ),
+              onPressed:
+                  () => setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
           const SizedBox(height: 10),
