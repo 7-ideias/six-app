@@ -194,6 +194,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       'icone': Icons.account_balance_wallet_outlined,
       'ajuda': 'Sem dados carregados.',
     },
+    <String, dynamic>{
+      'titulo': 'Apenas Confirmados',
+      'valor': 'R\$ 0,00',
+      'valorNumerico': 0.0,
+      'icone': Icons.verified_rounded,
+      'ajuda': 'Sem dados carregados.',
+    },
   ];
 
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
@@ -428,6 +435,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       payload['resumo'] is Map<String, dynamic>
           ? payload['resumo'] as Map<String, dynamic>
           : null,
+      payload['confirmados'] is Map<String, dynamic>
+          ? payload['confirmados'] as Map<String, dynamic>
+          : null,
     );
     final novosGruposAgenda = _mapearGruposAgenda(payload['gruposAgenda']);
     final novoCalendario = _mapearCalendario(payload['calendario']);
@@ -476,8 +486,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     });
   }
 
-  List<Map<String, dynamic>> _mapearResumoCards(Map<String, dynamic>? resumo) {
+  List<Map<String, dynamic>> _mapearResumoCards(
+    Map<String, dynamic>? resumo,
+    Map<String, dynamic>? confirmados,
+  ) {
     final dados = resumo ?? <String, dynamic>{};
+    final dadosConfirmados = confirmados ?? <String, dynamic>{};
 
     final receberHoje = _toDoubleDynamic(dados['receberHoje']);
     final pagarHoje = _toDoubleDynamic(dados['pagarHoje']);
@@ -487,6 +501,18 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     final saldoMes = _toDoubleDynamic(dados['saldoPrevistoMes']);
     final qtdHoje = _toIntDynamic(dados['quantidadeLancamentosHoje']);
     final qtdVencidos = _toIntDynamic(dados['quantidadeVencidos']);
+    final qtdConfirmados = _toIntDynamic(
+      dadosConfirmados['quantidadeOperacoes'],
+    );
+    final saldoConfirmado = _toDoubleDynamic(
+      dadosConfirmados['saldoConfirmado'],
+    );
+    final totalRecebidoConfirmado = _toDoubleDynamic(
+      dadosConfirmados['totalRecebidoConfirmado'],
+    );
+    final totalPagoConfirmado = _toDoubleDynamic(
+      dadosConfirmados['totalPagoConfirmado'],
+    );
 
     return <Map<String, dynamic>>[
       {
@@ -530,6 +556,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
         'valorNumerico': saldoMes,
         'icone': Icons.account_balance_wallet_outlined,
         'ajuda': 'Indicador consolidado do período atual.',
+      },
+      {
+        'titulo': 'Apenas Confirmados',
+        'valor': _formatarMoeda(saldoConfirmado),
+        'valorNumerico': saldoConfirmado,
+        'icone': Icons.verified_rounded,
+        'ajuda':
+            '$qtdConfirmados operação(ões) quitada(s). '
+            'Recebido: ${_formatarMoeda(totalRecebidoConfirmado)} | '
+            'Pago: ${_formatarMoeda(totalPagoConfirmado)}',
       },
     ];
   }
