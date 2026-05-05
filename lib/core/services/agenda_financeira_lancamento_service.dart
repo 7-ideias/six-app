@@ -17,6 +17,9 @@ class AgendaFinanceiraLancamentoService {
   String get _endpointConsulta =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/consultar';
 
+  String _endpointEdicao(String idLancamento) =>
+      '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos/$idLancamento';
+
   Future<Map<String, String>> _buildHeaders() async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
@@ -93,6 +96,43 @@ class AgendaFinanceiraLancamentoService {
     }
 
     return decoded;
+  }
+
+  Future<LancamentoAgendaFinanceiraResponse> editarLancamento(
+    String idLancamento,
+    LancamentoAgendaFinanceiraRequest request,
+  ) async {
+    final uri = Uri.parse(_endpointEdicao(idLancamento));
+
+    final response = await _httpClient.put(
+      uri,
+      headers: await _buildHeaders(),
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return LancamentoAgendaFinanceiraResponse(
+        id: idLancamento,
+        status: 'ATUALIZADO',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      return LancamentoAgendaFinanceiraResponse(
+        id: idLancamento,
+        status: 'ATUALIZADO',
+      );
+    }
+
+    return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
   }
 }
 

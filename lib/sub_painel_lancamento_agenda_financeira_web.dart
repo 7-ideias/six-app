@@ -15,16 +15,23 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
   BuildContext context, {
   required String empresaSelecionada,
   required List<String> empresas,
+  bool modoEdicao = false,
+  Map<String, dynamic>? lancamentoInicial,
 }) {
   return showDialog<Map<String, dynamic>>(
     context: context,
     barrierDismissible: true,
     builder: (BuildContext dialogContext) {
       return SubPainelLancamentoAgendaFinanceiraWeb(
-        textoDaAppBar: 'Novo lançamento financeiro',
+        textoDaAppBar:
+            modoEdicao
+                ? 'Editar lançamento financeiro'
+                : 'Novo lançamento financeiro',
         body: _LancamentoAgendaFinanceiraWebBody(
           empresaSelecionada: empresaSelecionada,
           empresas: empresas,
+          modoEdicao: modoEdicao,
+          lancamentoInicial: lancamentoInicial,
         ),
       );
     },
@@ -35,10 +42,14 @@ class _LancamentoAgendaFinanceiraWebBody extends StatefulWidget {
   const _LancamentoAgendaFinanceiraWebBody({
     required this.empresaSelecionada,
     required this.empresas,
+    required this.modoEdicao,
+    this.lancamentoInicial,
   });
 
   final String empresaSelecionada;
   final List<String> empresas;
+  final bool modoEdicao;
+  final Map<String, dynamic>? lancamentoInicial;
 
   @override
   State<_LancamentoAgendaFinanceiraWebBody> createState() =>
@@ -76,6 +87,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
   bool _isLoading = false;
   bool _recorrente = false;
   bool _statusQuitada = false;
+  String? _idLancamentoEdicao;
+  String? _uuidOperacaoAppEdicao;
 
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
@@ -135,7 +148,132 @@ class _LancamentoAgendaFinanceiraWebBodyState
         widget.empresas.contains(widget.empresaSelecionada)
             ? widget.empresaSelecionada
             : widget.empresas.first;
+
+    if (widget.modoEdicao && widget.lancamentoInicial != null) {
+      _preencherCamposEdicao(widget.lancamentoInicial!);
+    }
+
     _sincronizarTextosData();
+  }
+
+  void _preencherCamposEdicao(Map<String, dynamic> item) {
+    _idLancamentoEdicao = item['id']?.toString();
+    _uuidOperacaoAppEdicao =
+        item['uuidOperacaoApp']?.toString() ?? item['id']?.toString();
+
+    final tipoItem = item['tipo']?.toString().toLowerCase() ?? '';
+    if (tipoItem == 'receber') {
+      _tipoSelecionado = 'Receber';
+    } else if (tipoItem == 'pagar') {
+      _tipoSelecionado = 'Pagar';
+    }
+
+    final status = item['status']?.toString() ?? '';
+    if (_status.contains(status)) {
+      _statusSelecionado = status;
+    }
+    _statusQuitada = status == 'Pago' || status == 'Recebido';
+
+    final origem = item['origem']?.toString() ?? '';
+    if (_origens.contains(origem)) {
+      _origemSelecionada = origem;
+    }
+
+    final formaPagamento = item['formaPagamento']?.toString() ?? '';
+    if (_formasPagamento.contains(formaPagamento)) {
+      _formaPagamentoSelecionada = formaPagamento;
+    }
+
+    final empresa = item['empresa']?.toString() ?? '';
+    if (widget.empresas.contains(empresa)) {
+      _empresaSelecionada = empresa;
+    }
+
+    _descricaoController.text = item['descricao']?.toString() ?? '';
+    _contatoController.text = item['contato']?.toString() ?? '';
+    _idContatoController.text = item['idContato']?.toString() ?? '';
+    _categoriaController.text = item['categoria']?.toString() ?? '';
+    _valorController.text = _formatarValorParaCampo(item['valor']);
+    _responsavelController.text = item['responsavel']?.toString() ?? '';
+    _observacoesController.text = item['observacoes']?.toString() ?? '';
+    _referenciaController.text = item['referenciaExterna']?.toString() ?? '';
+    _documentoFiscalController.text = item['documentoFiscal']?.toString() ?? '';
+    _centroCustoController.text = item['centroDeCusto']?.toString() ?? '';
+
+    _dataVencimento = _parseData(item['vencimento'], fallback: _dataVencimento);
+    _dataOperacao = _parseData(item['dataOperacao'], fallback: _dataVencimento);
+    _dataCompetencia = _parseData(
+      item['dataCompetencia'],
+      fallback: _dataVencimento,
+    );
+
+    _recorrente = item['recorrente'] == true;
+    final frequencia = item['frequenciaRecorrencia']?.toString();
+    if (frequencia != null && _frequencias.contains(frequencia)) {
+      _frequenciaRecorrencia = frequencia;
+    }
+    _inicioRecorrencia = _parseData(
+      item['recorrenciaInicio'],
+      fallback: _dataOperacao,
+    );
+    _fimRecorrencia =
+        item['recorrenciaFim'] != null
+            ? _parseData(item['recorrenciaFim'], fallback: _dataVencimento)
+            : null;
+
+    final quantidadeParcelas = item['quantidadeParcelas'];
+    if (quantidadeParcelas is num && quantidadeParcelas > 0) {
+      _quantidadeParcelasController.text =
+          quantidadeParcelas.toInt().toString();
+    }
+  }
+
+  DateTime _parseData(dynamic value, {required DateTime fallback}) {
+    if (value == null) {
+      return fallback;
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    final texto = value.toString().trim();
+    if (texto.isEmpty) {
+      return fallback;
+    }
+
+    if (texto.contains('/')) {
+      final partes = texto.split('/');
+      if (partes.length == 3) {
+        final dia = int.tryParse(partes[0]);
+        final mes = int.tryParse(partes[1]);
+        final ano = int.tryParse(partes[2]);
+        if (dia != null && mes != null && ano != null) {
+          return DateTime(ano, mes, dia);
+        }
+      }
+    }
+
+    final iso = DateTime.tryParse(texto);
+    return iso ?? fallback;
+  }
+
+  String _formatarValorParaCampo(dynamic valor) {
+    if (valor is num) {
+      return valor.toStringAsFixed(2).replaceAll('.', ',');
+    }
+
+    final texto = valor?.toString().trim() ?? '';
+    if (texto.isEmpty) {
+      return '';
+    }
+
+    final numero = double.tryParse(texto);
+    if (numero != null) {
+      return numero.toStringAsFixed(2).replaceAll('.', ',');
+    }
+
+    return texto;
   }
 
   @override
@@ -393,19 +531,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
               const SizedBox(width: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const <Widget>[
+                children: <Widget>[
                   Text(
-                    'Novo lançamento de despesa',
+                    widget.modoEdicao
+                        ? 'Editar lançamento financeiro'
+                        : 'Novo lançamento financeiro',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
-                    'Cadastro completo com suporte a recorrência e payload preparado para backend.',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    widget.modoEdicao
+                        ? 'Atualize os campos e envie para persistir alterações no backend.'
+                        : 'Cadastro completo com suporte a recorrência e payload preparado para backend.',
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
@@ -419,7 +561,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
               border: Border.all(color: Colors.white.withOpacity(0.18)),
             ),
             child: Text(
-              _isLoading ? 'Enviando...' : 'Pronto para salvar',
+              _isLoading
+                  ? (widget.modoEdicao ? 'Atualizando...' : 'Enviando...')
+                  : 'Pronto para salvar',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -493,7 +637,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   LancamentoAgendaFinanceiraRequest _buildRequest() {
     final valorTotal = _toDouble(_valorController.text);
-    final idLocal = DateTime.now().millisecondsSinceEpoch.toString();
+    final idLocal =
+        _uuidOperacaoAppEdicao ??
+        DateTime.now().millisecondsSinceEpoch.toString();
     final tipoOperacao = _tipoOperacaoParaBackend();
     final origem = _origemParaBackend();
     final formaPagamento = _formaPagamentoParaBackend();
@@ -612,23 +758,39 @@ class _LancamentoAgendaFinanceiraWebBodyState
     String? aviso;
 
     try {
-      final response = await _service.cadastrarLancamento(request);
+      final response =
+          widget.modoEdicao
+              ? await _service.editarLancamento(
+                _idLancamentoEdicao ?? request.uuidOperacaoApp,
+                request,
+              )
+              : await _service.cadastrarLancamento(request);
       idGerado = response.id;
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (e.statusCode == 404 || e.statusCode == 405 || e.statusCode == 501) {
         aviso =
-            'Endpoint de lançamento financeiro ainda não publicado. Payload foi montado e mantido localmente.';
+            widget.modoEdicao
+                ? 'Endpoint de edição ainda não publicado. Alterações mantidas localmente.'
+                : 'Endpoint de lançamento financeiro ainda não publicado. Payload foi montado e mantido localmente.';
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar lançamento: ${e.statusCode}')),
+          SnackBar(
+            content: Text(
+              widget.modoEdicao
+                  ? 'Erro ao atualizar lançamento: ${e.statusCode}'
+                  : 'Erro ao salvar lançamento: ${e.statusCode}',
+            ),
+          ),
         );
         setState(() => _isLoading = false);
         return;
       }
     } catch (_) {
       aviso =
-          'Não foi possível confirmar a API no momento. Payload foi montado e mantido localmente.';
+          widget.modoEdicao
+              ? 'Não foi possível confirmar a API no momento. Alterações mantidas localmente.'
+              : 'Não foi possível confirmar a API no momento. Payload foi montado e mantido localmente.';
     }
 
     if (!mounted) {
@@ -641,11 +803,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
       ).showSnackBar(SnackBar(content: Text(aviso)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lançamento salvo com sucesso.')),
+        SnackBar(
+          content: Text(
+            widget.modoEdicao
+                ? 'Lançamento atualizado com sucesso.'
+                : 'Lançamento salvo com sucesso.',
+          ),
+        ),
       );
     }
 
-    Navigator.of(context).pop(request.toAgendaItem(idFallback: idGerado));
+    final idRetorno =
+        idGerado ?? _idLancamentoEdicao ?? request.uuidOperacaoApp;
+    Navigator.of(context).pop(request.toAgendaItem(idFallback: idRetorno));
   }
 
   String _formatarDataBr(DateTime data) {
@@ -702,7 +872,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                         : const Icon(Icons.save_outlined),
-                label: Text(_isLoading ? 'Salvando...' : 'Salvar lançamento'),
+                label: Text(
+                  _isLoading
+                      ? (widget.modoEdicao ? 'Atualizando...' : 'Salvando...')
+                      : (widget.modoEdicao
+                          ? 'Atualizar lançamento'
+                          : 'Salvar lançamento'),
+                ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 22,

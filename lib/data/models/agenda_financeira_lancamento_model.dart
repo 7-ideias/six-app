@@ -130,6 +130,18 @@ class LancamentoAgendaFinanceiraRequest {
       'categoria': categoria,
       'responsavel': nomeColaborador,
       'observacoes': observacoes ?? '',
+      'uuidOperacaoApp': uuidOperacaoApp,
+      'idContato': idCliente ?? idFornecedor,
+      'referenciaExterna': referenciaExterna,
+      'documentoFiscal': documentoFiscal,
+      'centroDeCusto': centroDeCusto,
+      'dataOperacao': dataOperacao.toIso8601String(),
+      'dataCompetencia': dataCompetencia.toIso8601String(),
+      'recorrente': recorrente,
+      'frequenciaRecorrencia': frequenciaRecorrencia,
+      'recorrenciaInicio': recorrenciaInicio.toIso8601String(),
+      'recorrenciaFim': recorrenciaFim.toIso8601String(),
+      'quantidadeParcelas': quantidadeParcelas,
       'historico': [
         'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
         if (recorrente)

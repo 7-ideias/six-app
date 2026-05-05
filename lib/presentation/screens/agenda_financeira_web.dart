@@ -54,6 +54,46 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     await _consultarLancamentos();
   }
 
+  Future<void> _onEditarLancamentoPressed({
+    Map<String, dynamic>? itemBase,
+  }) async {
+    final item =
+        itemBase ?? _lancamentoSelecionado ?? _itensFiltrados.firstOrNull;
+    if (item == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione um lançamento para editar.')),
+      );
+      return;
+    }
+
+    final empresasLancamento =
+        _empresas
+            .map((e) => e['nome'] as String)
+            .where((nome) => nome != 'Todas')
+            .toList();
+    final empresaAtual = item['empresa']?.toString().trim() ?? '';
+    if (empresaAtual.isNotEmpty && !empresasLancamento.contains(empresaAtual)) {
+      empresasLancamento.add(empresaAtual);
+    }
+    final empresas =
+        empresasLancamento.isEmpty ? <String>['Empresa'] : empresasLancamento;
+
+    final itemAtualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
+      context,
+      empresaSelecionada:
+          empresaAtual.isNotEmpty ? empresaAtual : empresas.first,
+      empresas: empresas,
+      modoEdicao: true,
+      lancamentoInicial: item,
+    );
+
+    if (!mounted || itemAtualizado == null) {
+      return;
+    }
+
+    await _consultarLancamentos(mostrarFeedback: true);
+  }
+
   final ScrollController _mainScrollController = ScrollController();
   final AgendaFinanceiraLancamentoService _consultaService =
       AgendaFinanceiraLancamentoService();
@@ -1614,12 +1654,31 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           children:
               (item['acoes'] as List).take(3).map((acao) {
                 return OutlinedButton(
-                  onPressed: () {},
+                  onPressed:
+                      () => _executarAcaoLancamento(acao.toString(), item),
                   child: Text(acao.toString()),
                 );
               }).toList(),
         ),
       ],
+    );
+  }
+
+  void _executarAcaoLancamento(String acao, Map<String, dynamic> item) {
+    final comando = acao.trim().toLowerCase();
+
+    if (comando == 'detalhes' || comando == 'detalhar') {
+      setState(() => _lancamentoSelecionado = item);
+      return;
+    }
+
+    if (comando == 'editar' || comando == 'editar lançamento') {
+      _onEditarLancamentoPressed(itemBase: item);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ação "$acao" será integrada no backend.')),
     );
   }
 
@@ -1925,6 +1984,26 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                 color: corTipo,
               ),
             ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilledButton.icon(
+                  onPressed:
+                      _isConsultando
+                          ? null
+                          : () => _onEditarLancamentoPressed(itemBase: item),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar lançamento'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Excluir (em breve)'),
+                ),
+              ],
+            ),
             const SizedBox(height: 18),
             _buildLinhaDetalhe('Contato', item['contato'] as String),
             _buildLinhaDetalhe('Vencimento', item['vencimento'] as String),
@@ -1951,7 +2030,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
               children:
                   (item['acoes'] as List).map((acao) {
                     return OutlinedButton(
-                      onPressed: () {},
+                      onPressed:
+                          () => _executarAcaoLancamento(acao.toString(), item),
                       child: Text(acao.toString()),
                     );
                   }).toList(),
