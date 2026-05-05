@@ -447,35 +447,95 @@ class _LancamentoAgendaFinanceiraWebBodyState
     return _statusSelecionado;
   }
 
+  String _tipoOperacaoParaBackend() {
+    return _tipoSelecionado.toUpperCase();
+  }
+
+  String _origemParaBackend() {
+    switch (_origemSelecionada) {
+      case 'Venda':
+        return 'VENDA';
+      case 'Ordem de serviço':
+        return 'ORDEM_SERVICO';
+      case 'Despesa manual':
+        return 'DESPESA_MANUAL';
+      case 'Compra':
+        return 'COMPRA';
+      case 'Parcela':
+        return 'PARCELA';
+      case 'Movimentação de caixa':
+        return 'MOVIMENTACAO_CAIXA';
+      default:
+        return 'DESPESA_MANUAL';
+    }
+  }
+
+  String _formaPagamentoParaBackend() {
+    switch (_formaPagamentoSelecionada) {
+      case 'Pix':
+        return 'PIX';
+      case 'Boleto':
+        return 'BOLETO';
+      case 'Transferência':
+        return 'TRANSFERENCIA';
+      case 'Cartão de crédito':
+        return 'CARTAO_CREDITO';
+      case 'Cartão de débito':
+        return 'CARTAO_DEBITO';
+      case 'Débito automático':
+        return 'DEBITO_AUTOMATICO';
+      case 'Dinheiro':
+        return 'DINHEIRO';
+      default:
+        return 'PIX';
+    }
+  }
+
   LancamentoAgendaFinanceiraRequest _buildRequest() {
     final valorTotal = _toDouble(_valorController.text);
     final idLocal = DateTime.now().millisecondsSinceEpoch.toString();
+    final tipoOperacao = _tipoOperacaoParaBackend();
+    final origem = _origemParaBackend();
+    final formaPagamento = _formaPagamentoParaBackend();
+    final contatoIdDigitado = _idContatoController.text.trim();
+    final contatoNome = _contatoController.text.trim();
+    final contatoIdPayload =
+        contatoIdDigitado.isEmpty ? 'contato-$idLocal' : contatoIdDigitado;
+    final quantidadeParcelasDigitada = _toInt(
+      _quantidadeParcelasController.text,
+    );
+    final quantidadeParcelas =
+        _recorrente
+            ? (quantidadeParcelasDigitada > 0 ? quantidadeParcelasDigitada : 1)
+            : 1;
+    final recorrenciaInicio = _recorrente ? _inicioRecorrencia : _dataOperacao;
+    final recorrenciaFim =
+        _recorrente ? (_fimRecorrencia ?? _inicioRecorrencia) : _dataVencimento;
+    final frequenciaRecorrencia =
+        _recorrente ? _frequenciaRecorrencia : 'Nao recorrente';
+    final diaVencimentoRecorrencia = _dataVencimento.day;
 
     final payload = <String, dynamic>{
       'agendaFinanceira': {
-        'tipoFiltro': _tipoSelecionado,
+        'tipoFiltro': tipoOperacao,
         'statusFiltro': _statusPadraoPorTipo(),
-        'origemFiltro': _origemSelecionada,
+        'origemFiltro': origem,
         'empresaFiltro': _empresaSelecionada,
       },
-      'contato': {
-        'id': _idContatoController.text.trim(),
-        'nome': _contatoController.text.trim(),
-      },
+      'contato': {'id': contatoIdPayload, 'nome': contatoNome},
       'recorrencia': {
         'recorrente': _recorrente,
-        'frequencia': _recorrente ? _frequenciaRecorrencia : null,
-        'inicio': _recorrente ? _inicioRecorrencia.toIso8601String() : null,
-        'fim': _recorrente ? _fimRecorrencia?.toIso8601String() : null,
-        'quantidadeParcelas':
-            _recorrente ? _toInt(_quantidadeParcelasController.text) : null,
+        'frequencia': frequenciaRecorrencia,
+        'inicio': recorrenciaInicio.toIso8601String(),
+        'fim': recorrenciaFim.toIso8601String(),
+        'quantidadeParcelas': quantidadeParcelas,
       },
     };
 
     return LancamentoAgendaFinanceiraRequest(
       uuidOperacaoApp: idLocal,
       descricao: _descricaoController.text.trim(),
-      tipoOperacao: _tipoSelecionado.toLowerCase(),
+      tipoOperacao: tipoOperacao,
       statusOperacao: _statusPadraoPorTipo(),
       dataOperacao: _dataOperacao,
       dataVencimento: _dataVencimento,
@@ -484,28 +544,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
       statusQuitada: _statusQuitada,
       operacaoFinalizadaProntaCaixa: _statusQuitada,
       clientePediuParaApagar: false,
-      origem: _origemSelecionada,
-      formaPagamento: _formaPagamentoSelecionada,
+      origem: origem,
+      formaPagamento: formaPagamento,
       empresa: _empresaSelecionada,
       categoria: _categoriaController.text.trim(),
       idColaborador: 'web-user',
       nomeColaborador: _responsavelController.text.trim(),
-      idCliente:
-          _idContatoController.text.trim().isEmpty
-              ? null
-              : _idContatoController.text.trim(),
-      nomeCliente:
-          _contatoController.text.trim().isEmpty
-              ? null
-              : _contatoController.text.trim(),
-      idFornecedor:
-          _idContatoController.text.trim().isEmpty
-              ? null
-              : _idContatoController.text.trim(),
-      nomeFornecedor:
-          _contatoController.text.trim().isEmpty
-              ? null
-              : _contatoController.text.trim(),
+      idCliente: contatoIdDigitado.isEmpty ? null : contatoIdDigitado,
+      nomeCliente: contatoNome.isEmpty ? null : contatoNome,
+      idFornecedor: contatoIdDigitado.isEmpty ? null : contatoIdDigitado,
+      nomeFornecedor: contatoNome.isEmpty ? null : contatoNome,
       referenciaExterna:
           _referenciaController.text.trim().isEmpty
               ? null
@@ -526,12 +574,11 @@ class _LancamentoAgendaFinanceiraWebBodyState
               ? null
               : _observacoesController.text.trim(),
       recorrente: _recorrente,
-      frequenciaRecorrencia: _recorrente ? _frequenciaRecorrencia : null,
-      recorrenciaInicio: _recorrente ? _inicioRecorrencia : null,
-      recorrenciaFim: _recorrente ? _fimRecorrencia : null,
-      quantidadeParcelas:
-          _recorrente ? _toInt(_quantidadeParcelasController.text) : null,
-      diaVencimentoRecorrencia: _recorrente ? _dataVencimento.day : null,
+      frequenciaRecorrencia: frequenciaRecorrencia,
+      recorrenciaInicio: recorrenciaInicio,
+      recorrenciaFim: recorrenciaFim,
+      quantidadeParcelas: quantidadeParcelas,
+      diaVencimentoRecorrencia: diaVencimentoRecorrencia,
       payloadOriginalJson: payload,
     );
   }

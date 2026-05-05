@@ -1,12 +1,12 @@
 class LancamentoAgendaFinanceiraRequest {
   LancamentoAgendaFinanceiraRequest({
-    this.uuidOperacaoApp,
+    required this.uuidOperacaoApp,
     required this.descricao,
     required this.tipoOperacao,
     required this.statusOperacao,
     required this.dataOperacao,
     required this.dataVencimento,
-    this.dataCompetencia,
+    required this.dataCompetencia,
     this.dataQuitacao,
     required this.statusQuitada,
     required this.operacaoFinalizadaProntaCaixa,
@@ -29,21 +29,21 @@ class LancamentoAgendaFinanceiraRequest {
     required this.valorTotalOperacao,
     this.observacoes,
     required this.recorrente,
-    this.frequenciaRecorrencia,
-    this.recorrenciaInicio,
-    this.recorrenciaFim,
-    this.quantidadeParcelas,
-    this.diaVencimentoRecorrencia,
-    this.payloadOriginalJson,
+    required this.frequenciaRecorrencia,
+    required this.recorrenciaInicio,
+    required this.recorrenciaFim,
+    required this.quantidadeParcelas,
+    required this.diaVencimentoRecorrencia,
+    required this.payloadOriginalJson,
   });
 
-  final String? uuidOperacaoApp;
+  final String uuidOperacaoApp;
   final String descricao;
   final String tipoOperacao;
   final String statusOperacao;
   final DateTime dataOperacao;
   final DateTime dataVencimento;
-  final DateTime? dataCompetencia;
+  final DateTime dataCompetencia;
   final DateTime? dataQuitacao;
   final bool statusQuitada;
   final bool operacaoFinalizadaProntaCaixa;
@@ -66,12 +66,12 @@ class LancamentoAgendaFinanceiraRequest {
   final double valorTotalOperacao;
   final String? observacoes;
   final bool recorrente;
-  final String? frequenciaRecorrencia;
-  final DateTime? recorrenciaInicio;
-  final DateTime? recorrenciaFim;
-  final int? quantidadeParcelas;
-  final int? diaVencimentoRecorrencia;
-  final Map<String, dynamic>? payloadOriginalJson;
+  final String frequenciaRecorrencia;
+  final DateTime recorrenciaInicio;
+  final DateTime recorrenciaFim;
+  final int quantidadeParcelas;
+  final int diaVencimentoRecorrencia;
+  final Map<String, dynamic> payloadOriginalJson;
 
   Map<String, dynamic> toJson() {
     return {
@@ -84,7 +84,7 @@ class LancamentoAgendaFinanceiraRequest {
       'clientePediuParaApagar': clientePediuParaApagar,
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataVencimento': dataVencimento.toIso8601String(),
-      'dataCompetencia': dataCompetencia?.toIso8601String(),
+      'dataCompetencia': dataCompetencia.toIso8601String(),
       'dataQuitacao': dataQuitacao?.toIso8601String(),
       'origem': origem,
       'formaPagamento': formaPagamento,
@@ -105,8 +105,8 @@ class LancamentoAgendaFinanceiraRequest {
       'observacoes': observacoes,
       'recorrente': recorrente,
       'frequenciaRecorrencia': frequenciaRecorrencia,
-      'recorrenciaInicio': recorrenciaInicio?.toIso8601String(),
-      'recorrenciaFim': recorrenciaFim?.toIso8601String(),
+      'recorrenciaInicio': recorrenciaInicio.toIso8601String(),
+      'recorrenciaFim': recorrenciaFim.toIso8601String(),
       'quantidadeParcelas': quantidadeParcelas,
       'diaVencimentoRecorrencia': diaVencimentoRecorrencia,
       'payloadOriginalJson': payloadOriginalJson,
@@ -117,10 +117,7 @@ class LancamentoAgendaFinanceiraRequest {
     final tipoRecebimento = tipoOperacao.toLowerCase() == 'receber';
 
     return {
-      'id':
-          idFallback ??
-          uuidOperacaoApp ??
-          DateTime.now().millisecondsSinceEpoch.toString(),
+      'id': idFallback ?? uuidOperacaoApp,
       'tipo': tipoRecebimento ? 'receber' : 'pagar',
       'descricao': descricao,
       'contato': nomeCliente ?? nomeFornecedor ?? 'Não informado',
@@ -136,7 +133,7 @@ class LancamentoAgendaFinanceiraRequest {
       'historico': [
         'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
         if (recorrente)
-          'Recorrência ${frequenciaRecorrencia ?? 'configurada'} iniciada em ${_formatarDataBr(recorrenciaInicio ?? dataOperacao)}',
+          'Recorrência $frequenciaRecorrencia iniciada em ${_formatarDataBr(recorrenciaInicio)}',
       ],
       'acoes':
           tipoRecebimento
@@ -180,4 +177,83 @@ class LancamentoAgendaFinanceiraResponse {
       mensagem: json['mensagem']?.toString(),
     );
   }
+}
+
+class AgendaFinanceiraConsultaRequest {
+  AgendaFinanceiraConsultaRequest({
+    required this.periodo,
+    required this.filtros,
+    required this.visaoSelecionada,
+  });
+
+  final AgendaFinanceiraPeriodoRequest periodo;
+  final AgendaFinanceiraFiltrosRequest filtros;
+  final String visaoSelecionada;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'periodo': periodo.toJson(),
+      'filtros': filtros.toJson(),
+      'visaoSelecionada': visaoSelecionada,
+    };
+  }
+}
+
+class AgendaFinanceiraPeriodoRequest {
+  AgendaFinanceiraPeriodoRequest({
+    required this.modo,
+    required this.dataInicio,
+    required this.dataFim,
+  });
+
+  final String modo;
+  final DateTime dataInicio;
+  final DateTime dataFim;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'modo': modo,
+      'dataInicio': _toIsoDate(dataInicio),
+      'dataFim': _toIsoDate(dataFim),
+    };
+  }
+}
+
+class AgendaFinanceiraFiltrosRequest {
+  AgendaFinanceiraFiltrosRequest({
+    required this.tipo,
+    required this.status,
+    required this.origens,
+    required this.categorias,
+    required this.formasPagamento,
+    this.clienteFornecedor,
+    required this.somenteCriticos,
+  });
+
+  final String tipo;
+  final List<String> status;
+  final List<String> origens;
+  final List<String> categorias;
+  final List<String> formasPagamento;
+  final String? clienteFornecedor;
+  final bool somenteCriticos;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'tipo': tipo,
+      'status': status,
+      'origens': origens,
+      'categorias': categorias,
+      'formasPagamento': formasPagamento,
+      'clienteFornecedor': clienteFornecedor,
+      'somenteCriticos': somenteCriticos,
+    };
+  }
+}
+
+String _toIsoDate(DateTime data) {
+  final ano = data.year.toString().padLeft(4, '0');
+  final mes = data.month.toString().padLeft(2, '0');
+  final dia = data.day.toString().padLeft(2, '0');
+  return '$ano-$mes-$dia';
 }

@@ -14,6 +14,9 @@ class AgendaFinanceiraLancamentoService {
   String get _endpointCadastro =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos2';
 
+  String get _endpointConsulta =>
+      '${AppConfig.baseUrl}/private/api/agenda-financeira/consultar';
+
   Future<Map<String, String>> _buildHeaders() async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
@@ -46,7 +49,7 @@ class AgendaFinanceiraLancamentoService {
 
     if (response.body.trim().isEmpty) {
       return LancamentoAgendaFinanceiraResponse(
-        id: request.uuidOperacaoApp ?? '',
+        id: request.uuidOperacaoApp,
         status: 'CRIADO',
       );
     }
@@ -54,12 +57,42 @@ class AgendaFinanceiraLancamentoService {
     final dynamic decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) {
       return LancamentoAgendaFinanceiraResponse(
-        id: request.uuidOperacaoApp ?? '',
+        id: request.uuidOperacaoApp,
         status: 'CRIADO',
       );
     }
 
     return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
+  }
+
+  Future<Map<String, dynamic>> consultarLancamentos(
+    AgendaFinanceiraConsultaRequest request,
+  ) async {
+    final uri = Uri.parse(_endpointConsulta);
+
+    final response = await _httpClient.post(
+      uri,
+      headers: await _buildHeaders(),
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      return <String, dynamic>{};
+    }
+
+    return decoded;
   }
 }
 

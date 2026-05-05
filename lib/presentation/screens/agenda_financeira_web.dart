@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:appplanilha/core/services/agenda_financeira_lancamento_service.dart';
+import 'package:appplanilha/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:appplanilha/sub_painel_lancamento_agenda_financeira_web.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
@@ -26,30 +28,35 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   void _onAtualizarPressed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Atualização manual acionada. Integre com o backend aqui.',
-        ),
-      ),
-    );
+    _consultarLancamentos(mostrarFeedback: true);
   }
 
   Future<void> _onNovoLancamentoPressed() async {
+    final empresasLancamento =
+        _empresas
+            .map((e) => e['nome'] as String)
+            .where((nome) => nome != 'Todas')
+            .toList();
+    final empresas =
+        empresasLancamento.isEmpty ? <String>['Empresa'] : empresasLancamento;
+
     final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
-      empresaSelecionada: _empresaSelecionada,
-      empresas: _empresas.map((e) => e['nome'] as String).toList(),
+      empresaSelecionada:
+          _empresaSelecionada == 'Todas' ? empresas.first : _empresaSelecionada,
+      empresas: empresas,
     );
 
     if (!mounted || item == null) {
       return;
     }
 
-    _adicionarLancamentoCriado(item);
+    await _consultarLancamentos();
   }
 
   final ScrollController _mainScrollController = ScrollController();
+  final AgendaFinanceiraLancamentoService _consultaService =
+      AgendaFinanceiraLancamentoService();
   late final AnimationController _fabMenuController;
 
   final List<String> _periodos = const [
@@ -88,218 +95,76 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   String _tipoSelecionado = 'Todos';
   String _statusSelecionado = 'Todos';
   String _origemSelecionada = 'Todas';
-  String _empresaSelecionada = 'Matriz Centro';
+  String _empresaSelecionada = 'Todas';
   bool _mostrarSomenteCriticos = false;
 
   int _abaSelecionada = 0;
   Map<String, dynamic>? _lancamentoSelecionado;
   double _resumoCardsProgress = 0.0;
+  bool _isConsultando = false;
 
   final List<String> _abas = const ['Agenda', 'Calendário', 'Fluxo previsto'];
 
-  final List<Map<String, dynamic>> _empresas = const [
-    {'id': 'emp-001', 'nome': 'Matriz Centro'},
-    {'id': 'emp-002', 'nome': 'Filial Norte'},
+  final List<Map<String, dynamic>> _empresas = <Map<String, dynamic>>[
+    <String, dynamic>{'id': 'all', 'nome': 'Todas'},
   ];
 
-  final List<Map<String, dynamic>> _cardsResumo = const [
-    {
+  final List<Map<String, dynamic>> _cardsResumo = <Map<String, dynamic>>[
+    <String, dynamic>{
       'titulo': 'Receber hoje',
-      'valor': 'R\$ 4.580,00',
+      'valor': 'R\$ 0,00',
       'icone': Icons.south_west_rounded,
-      'ajuda': '3 lançamentos previstos para entrada no dia.',
+      'ajuda': 'Sem dados carregados.',
     },
-    {
+    <String, dynamic>{
       'titulo': 'Pagar hoje',
-      'valor': 'R\$ 2.145,00',
+      'valor': 'R\$ 0,00',
       'icone': Icons.north_east_rounded,
-      'ajuda': '2 contas com vencimento no dia.',
+      'ajuda': 'Sem dados carregados.',
     },
-    {
+    <String, dynamic>{
       'titulo': 'Vencidos a receber',
-      'valor': 'R\$ 1.790,00',
+      'valor': 'R\$ 0,00',
       'icone': Icons.warning_amber_rounded,
-      'ajuda': 'Clientes com cobrança pendente.',
+      'ajuda': 'Sem dados carregados.',
     },
-    {
+    <String, dynamic>{
       'titulo': 'Vencidos a pagar',
-      'valor': 'R\$ 930,00',
+      'valor': 'R\$ 0,00',
       'icone': Icons.error_outline_rounded,
-      'ajuda': 'Compromissos atrasados com fornecedores.',
+      'ajuda': 'Sem dados carregados.',
     },
-    {
+    <String, dynamic>{
       'titulo': 'Saldo previsto da semana',
-      'valor': 'R\$ 6.215,00',
+      'valor': 'R\$ 0,00',
       'icone': Icons.query_stats_rounded,
-      'ajuda': 'Entradas previstas menos saídas previstas.',
+      'ajuda': 'Sem dados carregados.',
     },
-    {
+    <String, dynamic>{
       'titulo': 'Saldo previsto do mês',
-      'valor': 'R\$ 18.940,00',
+      'valor': 'R\$ 0,00',
       'icone': Icons.account_balance_wallet_outlined,
-      'ajuda': 'Indicador consolidado do período atual.',
+      'ajuda': 'Sem dados carregados.',
     },
   ];
 
-  final List<Map<String, dynamic>> _gruposAgenda = [
-    {
-      'grupo': 'Atrasados',
-      'descricao':
-          'Compromissos que já passaram do vencimento e precisam de ação imediata.',
-      'itens': [
-        {
-          'id': 'fin-1001',
-          'tipo': 'receber',
-          'descricao': 'OS #2481 - Troca de display',
-          'contato': 'Marina Oliveira',
-          'valor': 790.00,
-          'vencimento': '28/03/2026',
-          'status': 'Vencido',
-          'origem': 'Ordem de serviço',
-          'formaPagamento': 'Pix',
-          'empresa': 'Matriz Centro',
-          'categoria': 'Serviços técnicos',
-          'responsavel': 'Carlos Lima',
-          'observacoes': 'Cliente pediu reenvio do link de pagamento.',
-          'historico': [
-            'OS concluída em 26/03/2026',
-            'Cobrança enviada em 27/03/2026',
-            'Sem confirmação de pagamento até o momento',
-          ],
-          'acoes': [
-            'Receber',
-            'Enviar cobrança',
-            'Registrar parcial',
-            'Detalhes',
-          ],
-        },
-        {
-          'id': 'fin-1002',
-          'tipo': 'pagar',
-          'descricao': 'Fornecedor Atlas Peças - NF 5561',
-          'contato': 'Atlas Importadora',
-          'valor': 930.00,
-          'vencimento': '29/03/2026',
-          'status': 'Vencido',
-          'origem': 'Compra',
-          'formaPagamento': 'Boleto',
-          'empresa': 'Matriz Centro',
-          'categoria': 'Reposição de estoque',
-          'responsavel': 'Aline Costa',
-          'observacoes':
-              'Prioridade alta para evitar bloqueio de fornecimento.',
-          'historico': [
-            'Compra lançada em 21/03/2026',
-            'Boleto anexado em 22/03/2026',
-            'Fornecedor cobrou retorno comercial',
-          ],
-          'acoes': ['Pagar', 'Reagendar', 'Cancelar', 'Detalhes'],
-        },
-      ],
-    },
-    {
-      'grupo': 'Hoje',
-      'descricao': 'Compromissos financeiros que vencem no dia.',
-      'itens': [
-        {
-          'id': 'fin-1003',
-          'tipo': 'receber',
-          'descricao': 'Venda balcão #PV-9201',
-          'contato': 'Lucas Fernandes',
-          'valor': 245.90,
-          'vencimento': '30/03/2026',
-          'status': 'Vence hoje',
-          'origem': 'Venda',
-          'formaPagamento': 'Cartão de crédito',
-          'empresa': 'Matriz Centro',
-          'categoria': 'Venda de acessórios',
-          'responsavel': 'Bruna Neri',
-          'observacoes': 'Cliente confirmou pagamento no fim da tarde.',
-          'historico': [
-            'Venda registrada hoje às 09:12',
-            'Pagamento agendado para captura às 18:00',
-          ],
-          'acoes': ['Receber', 'Detalhes'],
-        },
-        {
-          'id': 'fin-1004',
-          'tipo': 'pagar',
-          'descricao': 'Conta de internet da loja',
-          'contato': 'Connect Fibra',
-          'valor': 329.00,
-          'vencimento': '30/03/2026',
-          'status': 'Vence hoje',
-          'origem': 'Despesa manual',
-          'formaPagamento': 'Débito automático',
-          'empresa': 'Matriz Centro',
-          'categoria': 'Infraestrutura',
-          'responsavel': 'Carlos Lima',
-          'observacoes': 'Confirmar se o débito foi processado.',
-          'historico': [
-            'Despesa recorrente lançada automaticamente',
-            'Débito previsto para hoje',
-          ],
-          'acoes': ['Pagar', 'Detalhes'],
-        },
-      ],
-    },
-    {
-      'grupo': 'Próximos dias',
-      'descricao': 'Previsão operacional para os próximos vencimentos.',
-      'itens': [
-        {
-          'id': 'fin-1005',
-          'tipo': 'receber',
-          'descricao': 'Plano fidelidade empresas - parcela 03/06',
-          'contato': 'Clínica Vida Plena',
-          'valor': 1250.00,
-          'vencimento': '02/04/2026',
-          'status': 'Pendente',
-          'origem': 'Parcela',
-          'formaPagamento': 'Transferência',
-          'empresa': 'Filial Norte',
-          'categoria': 'Contrato recorrente',
-          'responsavel': 'Andréia Souza',
-          'observacoes': 'Cliente costuma pagar até o vencimento.',
-          'historico': [
-            'Contrato recorrente ativo',
-            'Parcela gerada automaticamente',
-          ],
-          'acoes': ['Enviar lembrete', 'Detalhes'],
-        },
-        {
-          'id': 'fin-1006',
-          'tipo': 'pagar',
-          'descricao': 'Folha técnica terceirizada',
-          'contato': 'Equipe Fast Repair',
-          'valor': 1780.00,
-          'vencimento': '03/04/2026',
-          'status': 'Previsto',
-          'origem': 'Ordem de serviço',
-          'formaPagamento': 'Pix',
-          'empresa': 'Filial Norte',
-          'categoria': 'Terceiros',
-          'responsavel': 'Renata Alves',
-          'observacoes': 'Pagamento vinculado a serviços concluídos da semana.',
-          'historico': [
-            'Apuração criada automaticamente pelo módulo operacional',
-          ],
-          'acoes': ['Pagar', 'Detalhes'],
-        },
-      ],
-    },
-  ];
+  final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> _calendarioAgenda = <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> _fluxoPrevistoAgenda =
+      <Map<String, dynamic>>[];
 
   @override
   void initState() {
     super.initState();
-    _lancamentoSelecionado =
-        _gruposAgenda.first['itens'].first as Map<String, dynamic>;
+    _sincronizarLancamentoSelecionado();
     _mainScrollController.addListener(_onMainScroll);
     _fabMenuController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consultarLancamentos();
+    });
   }
 
   @override
@@ -308,6 +173,593 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     _mainScrollController.removeListener(_onMainScroll);
     _mainScrollController.dispose();
     super.dispose();
+  }
+
+  void _sincronizarLancamentoSelecionado() {
+    final String? idSelecionadoAtual =
+        _lancamentoSelecionado?['id']?.toString();
+
+    if (idSelecionadoAtual != null && idSelecionadoAtual.isNotEmpty) {
+      for (final grupo in _gruposAgenda) {
+        final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
+        final encontrado = itens.firstWhere(
+          (item) => item['id']?.toString() == idSelecionadoAtual,
+          orElse: () => <String, dynamic>{},
+        );
+        if (encontrado.isNotEmpty) {
+          _lancamentoSelecionado = encontrado;
+          return;
+        }
+      }
+    }
+
+    for (final grupo in _gruposAgenda) {
+      final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
+      if (itens.isNotEmpty) {
+        _lancamentoSelecionado = itens.first;
+        return;
+      }
+    }
+
+    _lancamentoSelecionado = null;
+  }
+
+  Future<void> _consultarLancamentos({bool mostrarFeedback = false}) async {
+    if (_isConsultando) {
+      return;
+    }
+
+    setState(() => _isConsultando = true);
+
+    try {
+      final request = _buildConsultaRequest();
+      final payload = await _consultaService.consultarLancamentos(request);
+
+      if (!mounted) return;
+
+      _aplicarConsultaBackend(payload);
+
+      if (mostrarFeedback) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Consulta atualizada: ${_itensFiltrados.length} lançamento(s).',
+            ),
+          ),
+        );
+      }
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (!mounted) return;
+
+      if (mostrarFeedback) {
+        final bool endpointNaoPublicado =
+            e.statusCode == 404 || e.statusCode == 405 || e.statusCode == 501;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              endpointNaoPublicado
+                  ? 'Endpoint de consulta ainda não publicado. Exibindo dados locais.'
+                  : 'Falha ao consultar lançamentos (${e.statusCode}). Exibindo dados locais.',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      if (mostrarFeedback) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível consultar agora. Exibindo dados locais.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isConsultando = false);
+      }
+    }
+  }
+
+  AgendaFinanceiraConsultaRequest _buildConsultaRequest() {
+    final periodo = _periodoParaRequest(_periodoSelecionado);
+
+    return AgendaFinanceiraConsultaRequest(
+      periodo: periodo,
+      filtros: AgendaFinanceiraFiltrosRequest(
+        tipo:
+            _tipoSelecionado == 'Todos'
+                ? 'TODOS'
+                : _tipoSelecionado.toUpperCase(),
+        status: _statusFiltroParaBackend(),
+        origens: _origensFiltroParaBackend(),
+        categorias: <String>[],
+        formasPagamento: <String>[],
+        clienteFornecedor: null,
+        somenteCriticos: _mostrarSomenteCriticos,
+      ),
+      visaoSelecionada: _visaoSelecionadaParaBackend(),
+    );
+  }
+
+  AgendaFinanceiraPeriodoRequest _periodoParaRequest(String periodo) {
+    final agora = DateTime.now();
+    final hoje = DateTime(agora.year, agora.month, agora.day);
+
+    switch (periodo) {
+      case 'Hoje':
+        return AgendaFinanceiraPeriodoRequest(
+          modo: 'HOJE',
+          dataInicio: hoje,
+          dataFim: hoje,
+        );
+      case 'Este mês':
+        return AgendaFinanceiraPeriodoRequest(
+          modo: 'ESTE_MES',
+          dataInicio: DateTime(hoje.year, hoje.month, 1),
+          dataFim: DateTime(hoje.year, hoje.month + 1, 0),
+        );
+      case 'Próximo mês':
+        return AgendaFinanceiraPeriodoRequest(
+          modo: 'PROXIMO_MES',
+          dataInicio: DateTime(hoje.year, hoje.month + 1, 1),
+          dataFim: DateTime(hoje.year, hoje.month + 2, 0),
+        );
+      case 'Personalizado':
+        return AgendaFinanceiraPeriodoRequest(
+          modo: 'PERSONALIZADO',
+          dataInicio: hoje,
+          dataFim: hoje.add(const Duration(days: 7)),
+        );
+      default:
+        return AgendaFinanceiraPeriodoRequest(
+          modo: 'PROXIMOS_7_DIAS',
+          dataInicio: hoje,
+          dataFim: hoje.add(const Duration(days: 7)),
+        );
+    }
+  }
+
+  List<String> _statusFiltroParaBackend() {
+    switch (_statusSelecionado) {
+      case 'Previsto':
+        return <String>['PREVISTO'];
+      case 'Pendente':
+        return <String>['PENDENTE'];
+      case 'Vence hoje':
+        return <String>['VENCE_HOJE'];
+      case 'Vencido':
+        return <String>['VENCIDO'];
+      case 'Pago':
+        return <String>['PAGO'];
+      case 'Recebido':
+        return <String>['RECEBIDO'];
+      case 'Parcial':
+        return <String>['PARCIAL'];
+      case 'Cancelado':
+        return <String>['CANCELADO'];
+      default:
+        return <String>[];
+    }
+  }
+
+  List<String> _origensFiltroParaBackend() {
+    switch (_origemSelecionada) {
+      case 'Venda':
+        return <String>['VENDA'];
+      case 'Ordem de serviço':
+        return <String>['ORDEM_SERVICO'];
+      case 'Despesa manual':
+        return <String>['DESPESA_MANUAL'];
+      case 'Compra':
+        return <String>['COMPRA'];
+      case 'Parcela':
+        return <String>['PARCELA'];
+      case 'Movimentação de caixa':
+        return <String>['MOVIMENTACAO_CAIXA'];
+      default:
+        return <String>[];
+    }
+  }
+
+  String _visaoSelecionadaParaBackend() {
+    switch (_abaSelecionada) {
+      case 1:
+        return 'CALENDARIO';
+      case 2:
+        return 'FLUXO_PREVISTO';
+      default:
+        return 'AGENDA';
+    }
+  }
+
+  void _aplicarConsultaBackend(Map<String, dynamic> payload) {
+    final novosCardsResumo = _mapearResumoCards(
+      payload['resumo'] is Map<String, dynamic>
+          ? payload['resumo'] as Map<String, dynamic>
+          : null,
+    );
+    final novosGruposAgenda = _mapearGruposAgenda(payload['gruposAgenda']);
+    final novoCalendario = _mapearCalendario(payload['calendario']);
+    final novoFluxo = _mapearFluxoPrevisto(payload['fluxoPrevisto']);
+    final empresasResposta = _extrairEmpresas(novosGruposAgenda);
+
+    setState(() {
+      _cardsResumo
+        ..clear()
+        ..addAll(novosCardsResumo);
+
+      _gruposAgenda
+        ..clear()
+        ..addAll(novosGruposAgenda);
+
+      _calendarioAgenda
+        ..clear()
+        ..addAll(novoCalendario);
+
+      _fluxoPrevistoAgenda
+        ..clear()
+        ..addAll(novoFluxo);
+
+      _empresas
+        ..clear()
+        ..add(<String, dynamic>{'id': 'all', 'nome': 'Todas'})
+        ..addAll(
+          empresasResposta
+              .map(
+                (nome) => <String, dynamic>{
+                  'id': nome.toLowerCase().replaceAll(' ', '-'),
+                  'nome': nome,
+                },
+              )
+              .toList(),
+        );
+
+      if (!_empresas.any((e) => e['nome'] == _empresaSelecionada)) {
+        _empresaSelecionada = 'Todas';
+      }
+
+      _sincronizarLancamentoSelecionado();
+    });
+  }
+
+  List<Map<String, dynamic>> _mapearResumoCards(Map<String, dynamic>? resumo) {
+    final dados = resumo ?? <String, dynamic>{};
+
+    final receberHoje = _toDoubleDynamic(dados['receberHoje']);
+    final pagarHoje = _toDoubleDynamic(dados['pagarHoje']);
+    final vencidosReceber = _toDoubleDynamic(dados['vencidosReceber']);
+    final vencidosPagar = _toDoubleDynamic(dados['vencidosPagar']);
+    final saldoSemana = _toDoubleDynamic(dados['saldoPrevistoSemana']);
+    final saldoMes = _toDoubleDynamic(dados['saldoPrevistoMes']);
+    final qtdHoje = _toIntDynamic(dados['quantidadeLancamentosHoje']);
+    final qtdVencidos = _toIntDynamic(dados['quantidadeVencidos']);
+
+    return <Map<String, dynamic>>[
+      {
+        'titulo': 'Receber hoje',
+        'valor': _formatarMoeda(receberHoje),
+        'icone': Icons.south_west_rounded,
+        'ajuda': '$qtdHoje lançamento(s) previstos para entrada no dia.',
+      },
+      {
+        'titulo': 'Pagar hoje',
+        'valor': _formatarMoeda(pagarHoje),
+        'icone': Icons.north_east_rounded,
+        'ajuda': '$qtdHoje lançamento(s) previstos para saída no dia.',
+      },
+      {
+        'titulo': 'Vencidos a receber',
+        'valor': _formatarMoeda(vencidosReceber),
+        'icone': Icons.warning_amber_rounded,
+        'ajuda': '$qtdVencidos lançamento(s) em atraso para cobrança.',
+      },
+      {
+        'titulo': 'Vencidos a pagar',
+        'valor': _formatarMoeda(vencidosPagar),
+        'icone': Icons.error_outline_rounded,
+        'ajuda': '$qtdVencidos lançamento(s) em atraso para pagamento.',
+      },
+      {
+        'titulo': 'Saldo previsto da semana',
+        'valor': _formatarMoeda(saldoSemana),
+        'icone': Icons.query_stats_rounded,
+        'ajuda': 'Entradas previstas menos saídas previstas.',
+      },
+      {
+        'titulo': 'Saldo previsto do mês',
+        'valor': _formatarMoeda(saldoMes),
+        'icone': Icons.account_balance_wallet_outlined,
+        'ajuda': 'Indicador consolidado do período atual.',
+      },
+    ];
+  }
+
+  List<Map<String, dynamic>> _mapearGruposAgenda(dynamic gruposRaw) {
+    if (gruposRaw is! List) {
+      return <Map<String, dynamic>>[];
+    }
+
+    final List<Map<String, dynamic>> grupos = <Map<String, dynamic>>[];
+
+    for (final grupo in gruposRaw) {
+      if (grupo is! Map<String, dynamic>) {
+        continue;
+      }
+
+      final itensRaw = grupo['itens'];
+      final List<Map<String, dynamic>> itens =
+          itensRaw is List
+              ? itensRaw
+                  .whereType<Map<String, dynamic>>()
+                  .map(_mapearItemResumo)
+                  .toList()
+              : <Map<String, dynamic>>[];
+
+      grupos.add(<String, dynamic>{
+        'grupo': grupo['titulo']?.toString() ?? 'Lançamentos',
+        'descricao':
+            grupo['descricao']?.toString() ??
+            'Lançamentos financeiros do período.',
+        'itens': itens,
+      });
+    }
+
+    return grupos;
+  }
+
+  List<Map<String, dynamic>> _mapearCalendario(dynamic calendarioRaw) {
+    if (calendarioRaw is! List) {
+      return <Map<String, dynamic>>[];
+    }
+
+    return calendarioRaw.whereType<Map<String, dynamic>>().map((dia) {
+      return <String, dynamic>{
+        'data': _formatarDataIsoParaBr(dia['data']?.toString()),
+        'quantidadeLancamentos': _toIntDynamic(dia['quantidadeLancamentos']),
+        'quantidadeCriticos': _toIntDynamic(dia['quantidadeCriticos']),
+        'totalReceber': _toDoubleDynamic(dia['totalReceber']),
+        'totalPagar': _toDoubleDynamic(dia['totalPagar']),
+      };
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _mapearFluxoPrevisto(dynamic fluxoRaw) {
+    if (fluxoRaw is! List) {
+      return <Map<String, dynamic>>[];
+    }
+
+    return fluxoRaw.whereType<Map<String, dynamic>>().map((item) {
+      return <String, dynamic>{
+        'competencia': item['competencia']?.toString() ?? '',
+        'totalEntradas': _toDoubleDynamic(item['totalEntradas']),
+        'totalSaidas': _toDoubleDynamic(item['totalSaidas']),
+        'saldoPrevisto': _toDoubleDynamic(item['saldoPrevisto']),
+      };
+    }).toList();
+  }
+
+  List<String> _extrairEmpresas(List<Map<String, dynamic>> grupos) {
+    final Set<String> nomes = <String>{};
+
+    for (final grupo in grupos) {
+      final itens =
+          (grupo['itens'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      for (final item in itens) {
+        final nome = item['empresa']?.toString() ?? '';
+        if (nome.trim().isNotEmpty) {
+          nomes.add(nome.trim());
+        }
+      }
+    }
+
+    final lista = nomes.toList()..sort();
+    return lista;
+  }
+
+  Map<String, dynamic> _mapearItemResumo(Map<String, dynamic> item) {
+    final tipoBackend = item['tipo']?.toString().toUpperCase() ?? '';
+    final empresa = item['empresa'];
+    final nomeEmpresa =
+        empresa is Map<String, dynamic>
+            ? empresa['nome']?.toString() ?? ''
+            : '';
+
+    final acoesRaw = item['acoesDisponiveis'];
+    final List<String> acoes =
+        acoesRaw is List
+            ? acoesRaw
+                .map((acao) => _acaoBackendParaLabel(acao?.toString()))
+                .where((acao) => acao.isNotEmpty)
+                .toList()
+            : <String>[];
+
+    return <String, dynamic>{
+      'id': item['idLancamento']?.toString() ?? '',
+      'tipo': tipoBackend == 'RECEBER' ? 'receber' : 'pagar',
+      'descricao': item['descricao']?.toString() ?? 'Sem descrição',
+      'contato': item['nomeContato']?.toString() ?? 'Não informado',
+      'valor': _toDoubleDynamic(item['valor']),
+      'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
+      'status': _statusBackendParaLabel(item['status']?.toString()),
+      'origem': _origemBackendParaLabel(item['origem']?.toString()),
+      'formaPagamento': _formaPagamentoBackendParaLabel(
+        item['formaPagamento']?.toString(),
+      ),
+      'empresa': nomeEmpresa,
+      'categoria': item['categoria']?.toString() ?? '',
+      'responsavel': item['responsavel']?.toString() ?? '',
+      'observacoes': item['observacaoResumida']?.toString() ?? '',
+      'historico': <String>['Lançamento consultado na agenda financeira.'],
+      'acoes':
+          acoes.isNotEmpty
+              ? acoes
+              : (tipoBackend == 'RECEBER'
+                  ? <String>['Receber', 'Detalhes']
+                  : <String>['Pagar', 'Detalhes']),
+    };
+  }
+
+  String _statusBackendParaLabel(String? status) {
+    switch ((status ?? '').toUpperCase()) {
+      case 'PREVISTO':
+        return 'Previsto';
+      case 'PENDENTE':
+        return 'Pendente';
+      case 'VENCE_HOJE':
+        return 'Vence hoje';
+      case 'VENCIDO':
+        return 'Vencido';
+      case 'PAGO':
+        return 'Pago';
+      case 'RECEBIDO':
+        return 'Recebido';
+      case 'PARCIAL':
+        return 'Parcial';
+      case 'CANCELADO':
+        return 'Cancelado';
+      default:
+        return 'Pendente';
+    }
+  }
+
+  String _origemBackendParaLabel(String? origem) {
+    switch ((origem ?? '').toUpperCase()) {
+      case 'VENDA':
+        return 'Venda';
+      case 'ORDEM_SERVICO':
+        return 'Ordem de serviço';
+      case 'DESPESA_MANUAL':
+        return 'Despesa manual';
+      case 'COMPRA':
+        return 'Compra';
+      case 'PARCELA':
+        return 'Parcela';
+      case 'MOVIMENTACAO_CAIXA':
+        return 'Movimentação de caixa';
+      default:
+        return 'Despesa manual';
+    }
+  }
+
+  String _formaPagamentoBackendParaLabel(String? formaPagamento) {
+    switch ((formaPagamento ?? '').toUpperCase()) {
+      case 'PIX':
+        return 'Pix';
+      case 'BOLETO':
+        return 'Boleto';
+      case 'TRANSFERENCIA':
+        return 'Transferência';
+      case 'CARTAO_CREDITO':
+        return 'Cartão de crédito';
+      case 'CARTAO_DEBITO':
+        return 'Cartão de débito';
+      case 'DEBITO_AUTOMATICO':
+        return 'Débito automático';
+      case 'DINHEIRO':
+        return 'Dinheiro';
+      default:
+        return 'Pix';
+    }
+  }
+
+  String _acaoBackendParaLabel(String? acao) {
+    switch ((acao ?? '').toUpperCase()) {
+      case 'REGISTRAR_RECEBIMENTO':
+      case 'RECEBER':
+        return 'Receber';
+      case 'REGISTRAR_PAGAMENTO':
+      case 'PAGAR':
+        return 'Pagar';
+      case 'ENVIAR_COBRANCA':
+        return 'Enviar cobrança';
+      case 'REGISTRAR_PARCIAL':
+        return 'Registrar parcial';
+      case 'REAGENDAR_VENCIMENTO':
+        return 'Reagendar';
+      case 'CANCELAR':
+        return 'Cancelar';
+      case 'DETALHAR':
+      case 'DETALHES':
+        return 'Detalhes';
+      default:
+        return '';
+    }
+  }
+
+  String _formatarDataIsoParaBr(String? dataIso) {
+    if (dataIso == null || dataIso.trim().isEmpty) {
+      return _formatarDataBr(DateTime.now());
+    }
+
+    try {
+      final data = DateTime.parse(dataIso);
+      return _formatarDataBr(data);
+    } catch (_) {
+      return _formatarDataBr(DateTime.now());
+    }
+  }
+
+  String _formatarDataBr(DateTime data) {
+    final dia = data.day.toString().padLeft(2, '0');
+    final mes = data.month.toString().padLeft(2, '0');
+    return '$dia/$mes/${data.year}';
+  }
+
+  double _toDoubleDynamic(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    if (value is String) {
+      final texto = value.trim();
+      final normalizado =
+          texto.contains(',') && texto.contains('.')
+              ? texto.replaceAll('.', '').replaceAll(',', '.')
+              : texto.contains(',')
+              ? texto.replaceAll(',', '.')
+              : texto;
+      return double.tryParse(normalizado) ?? 0;
+    }
+
+    return 0;
+  }
+
+  int _toIntDynamic(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    if (value is String) {
+      return int.tryParse(value.trim()) ?? 0;
+    }
+
+    return 0;
+  }
+
+  String _formatarMoeda(double valor) {
+    final negativo = valor < 0;
+    final absoluto = valor.abs();
+    final partes = absoluto.toStringAsFixed(2).split('.');
+    final inteiro = partes[0];
+    final decimal = partes[1];
+
+    final buffer = StringBuffer();
+    for (int i = 0; i < inteiro.length; i++) {
+      final indexInvertido = inteiro.length - i;
+      buffer.write(inteiro[i]);
+      if (indexInvertido > 1 && indexInvertido % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+
+    final prefixo = negativo ? '-R\$ ' : 'R\$ ';
+    return '$prefixo${buffer.toString()},$decimal';
   }
 
   void _alternarMenuFab() {
@@ -376,7 +828,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
               _origemSelecionada == 'Todas' ||
               item['origem'] == _origemSelecionada;
 
-          final bateEmpresa = item['empresa'] == _empresaSelecionada;
+          final empresaDoItem = item['empresa']?.toString() ?? '';
+          final bateEmpresa =
+              _empresaSelecionada == 'Todas' ||
+              empresaDoItem.isEmpty ||
+              empresaDoItem == _empresaSelecionada;
 
           final bateCritico =
               !_mostrarSomenteCriticos ||
@@ -405,69 +861,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
               _itensFiltrados.any((filtrado) => filtrado['id'] == item['id']),
         )
         .toList();
-  }
-
-  void _adicionarLancamentoCriado(Map<String, dynamic> item) {
-    final DateTime dataVencimento = _dataFromVencimentoBr(
-      item['vencimento']?.toString(),
-    );
-    final DateTime hoje = DateTime.now();
-    final DateTime hojeSemHorario = DateTime(hoje.year, hoje.month, hoje.day);
-    final DateTime vencimentoSemHorario = DateTime(
-      dataVencimento.year,
-      dataVencimento.month,
-      dataVencimento.day,
-    );
-    final int diferencaDias =
-        vencimentoSemHorario.difference(hojeSemHorario).inDays;
-
-    final String grupoDestino =
-        diferencaDias < 0
-            ? 'Atrasados'
-            : (diferencaDias == 0 ? 'Hoje' : 'Próximos dias');
-
-    final Map<String, dynamic> grupo = _gruposAgenda.firstWhere(
-      (g) => g['grupo'] == grupoDestino,
-      orElse:
-          () => <String, dynamic>{
-            'grupo': grupoDestino,
-            'descricao': 'Lançamentos adicionados manualmente.',
-            'itens': <Map<String, dynamic>>[],
-          },
-    );
-
-    final List<Map<String, dynamic>> itensGrupo =
-        (grupo['itens'] as List).cast<Map<String, dynamic>>();
-    itensGrupo.insert(0, item);
-
-    if (!_gruposAgenda.any((g) => g['grupo'] == grupoDestino)) {
-      _gruposAgenda.add(grupo);
-    }
-
-    setState(() {
-      _lancamentoSelecionado = item;
-    });
-  }
-
-  DateTime _dataFromVencimentoBr(String? vencimento) {
-    if (vencimento == null || vencimento.trim().isEmpty) {
-      return DateTime.now();
-    }
-
-    final partes = vencimento.split('/');
-    if (partes.length != 3) {
-      return DateTime.now();
-    }
-
-    final int? dia = int.tryParse(partes[0]);
-    final int? mes = int.tryParse(partes[1]);
-    final int? ano = int.tryParse(partes[2]);
-
-    if (dia == null || mes == null || ano == null) {
-      return DateTime.now();
-    }
-
-    return DateTime(ano, mes, dia);
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -848,7 +1241,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   avatar: const Icon(Icons.priority_high_rounded, size: 18),
                 ),
                 OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed:
+                      _isConsultando
+                          ? null
+                          : () => _consultarLancamentos(mostrarFeedback: true),
                   icon: const Icon(Icons.search_rounded),
                   label: const Text('Buscar'),
                   style: OutlinedButton.styleFrom(
@@ -934,7 +1330,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   Widget _buildAreaPrincipal(BuildContext context) {
     switch (_abaSelecionada) {
       case 1:
-        return _buildCalendarioMock(context);
+        return _buildCalendario(context);
       case 2:
         return _buildFluxoPrevisto(context);
       default:
@@ -1244,9 +1640,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     );
   }
 
-  Widget _buildCalendarioMock(BuildContext context) {
-    final dias = List.generate(30, (index) => index + 1);
-
+  Widget _buildCalendario(BuildContext context) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -1263,88 +1657,79 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             ),
             const SizedBox(height: 8),
             Text(
-              'Visão mensal com densidade de compromissos, vencidos e dias críticos.',
+              'Resumo por dia com volume de lançamentos e criticidade.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: GridView.builder(
-                itemCount: dias.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.15,
-                ),
-                itemBuilder: (context, index) {
-                  final dia = dias[index];
-                  final critico = {2, 5, 12, 19, 26}.contains(dia);
-                  final movimento = {1, 4, 9, 15, 21, 30}.contains(dia);
+              child:
+                  _calendarioAgenda.isEmpty
+                      ? const Center(
+                        child: Text('Nenhum dado de calendário no período.'),
+                      )
+                      : ListView.separated(
+                        itemCount: _calendarioAgenda.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final dia = _calendarioAgenda[index];
+                          final bool critico =
+                              (dia['quantidadeCriticos'] as int? ?? 0) > 0;
 
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color:
-                          critico
-                              ? const Color(0xFFFFF2F0)
-                              : Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color:
-                            critico
-                                ? const Color(0xFFE57373)
-                                : Theme.of(context).colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$dia',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (movimento)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
+                          return Container(
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: const Text(
-                              '3 lançamentos',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                              color:
+                                  critico
+                                      ? const Color(0xFFFFF2F0)
+                                      : Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color:
+                                    critico
+                                        ? const Color(0xFFE57373)
+                                        : Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                               ),
                             ),
-                          ),
-                        if (critico) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Dia crítico',
-                            style: TextStyle(
-                              color: Color(0xFFC62828),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 110,
+                                  child: Text(
+                                    dia['data']?.toString() ?? '-',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    '${dia['quantidadeLancamentos']} lançamento(s)',
+                                  ),
+                                ),
+                                Text(
+                                  _formatarMoeda(dia['totalReceber'] as double),
+                                  style: const TextStyle(
+                                    color: Color(0xFF0F9D58),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _formatarMoeda(dia['totalPagar'] as double),
+                                  style: const TextStyle(
+                                    color: Color(0xFFC66A00),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              ),
+                          );
+                        },
+                      ),
             ),
           ],
         ),
@@ -1353,12 +1738,18 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildFluxoPrevisto(BuildContext context) {
-    final barras = [
-      {'mes': 'Abr', 'entra': 12600.0, 'sai': 8900.0},
-      {'mes': 'Mai', 'entra': 14150.0, 'sai': 9720.0},
-      {'mes': 'Jun', 'entra': 13400.0, 'sai': 10110.0},
-      {'mes': 'Jul', 'entra': 15220.0, 'sai': 10850.0},
-    ];
+    final barras = _fluxoPrevistoAgenda;
+    final double maxValor =
+        barras.isEmpty
+            ? 1
+            : barras.fold<double>(
+              0,
+              (maxAtual, barra) => [
+                maxAtual,
+                (barra['totalEntradas'] as double? ?? 0),
+                (barra['totalSaidas'] as double? ?? 0),
+              ].reduce((a, b) => a > b ? a : b),
+            );
 
     return Card(
       elevation: 2,
@@ -1381,11 +1772,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
               ),
             ),
             const SizedBox(height: 18),
+            if (barras.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 24),
+                child: Center(
+                  child: Text('Nenhum dado de fluxo previsto no período.'),
+                ),
+              ),
             ...barras.map((barra) {
-              final entra = barra['entra'] as double;
-              final sai = barra['sai'] as double;
-              final saldo = entra - sai;
-              final maxValor = 16000.0;
+              final entra = barra['totalEntradas'] as double? ?? 0;
+              final sai = barra['totalSaidas'] as double? ?? 0;
+              final saldo = barra['saldoPrevisto'] as double? ?? (entra - sai);
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 18),
@@ -1401,7 +1798,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        barra['mes'] as String,
+                        barra['competencia']?.toString() ?? '-',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w800),
                       ),
@@ -1731,6 +2128,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   _buildResumoCards(context),
                   const SizedBox(height: 22),
                   _buildToolbarFiltros(context),
+                  if (_isConsultando) ...[
+                    const SizedBox(height: 10),
+                    const LinearProgressIndicator(minHeight: 3),
+                  ],
                   const SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerLeft,
