@@ -11,7 +11,6 @@ import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
 import 'create_account_web.dart';
 import 'esqueceu_senha_web.dart';
-import 'home_page_mobile_screen.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -108,10 +107,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _navigateToHome() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomePageMobile(title: 'Home')),
-      (route) => false,
-    );
+    Navigator.of(context).pushNamedAndRemoveUntil('/app', (route) => false);
   }
 
   void _forgotPassword() {

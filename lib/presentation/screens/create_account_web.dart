@@ -6,7 +6,6 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/registro_otp_service.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
-import 'home_page_mobile_screen.dart';
 import 'verificar_email_web.dart';
 
 class CreateAccountWeb extends StatefulWidget {
@@ -49,11 +48,7 @@ class _CreateAccountWebState extends State<CreateAccountWeb> {
   void _listenGoogleSignIn() {
     _authService.awaitWebGoogleLogin().then((_) {
       if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePageMobile(title: 'Home')),
-        (route) => false,
-      );
+      Navigator.of(context).pushNamedAndRemoveUntil('/app', (route) => false);
     }).catchError((error) {
       if (!mounted) return;
       if (error is GoogleAuthException &&

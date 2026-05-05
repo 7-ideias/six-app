@@ -1,7 +1,7 @@
-import 'package:appplanilha/core/services/websocket_service.dart';
 import 'package:appplanilha/data/models/produto_model.dart';
 import 'package:appplanilha/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:appplanilha/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:appplanilha/pdv_page_web.dart';
 import 'package:appplanilha/presentation/screens/login_mobile.dart';
 import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
@@ -56,8 +56,6 @@ void main() async {
       child: MyApp(hasSeenOnboarding: hasSeenOnboarding),
     ),
   );
-
-  connectStomp();
 }
 
 class MyApp extends StatelessWidget {
@@ -87,6 +85,13 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const LoginPageWeb(),
+      );
+    }
+
+    if (routeUri.path == '/app') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const PDVWeb(),
       );
     }
 

@@ -1,5 +1,11 @@
 {
   "installCommand": "bash install_flutter.sh",
   "buildCommand": "export PATH=\"$PWD/flutter/bin:$PATH\" && flutter build web --release",
-  "outputDirectory": "build/web"
+  "outputDirectory": "build/web",
+  "rewrites": [
+    {
+      "source": "/((?!.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
