@@ -141,7 +141,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   int _abaSelecionada = 0;
   Map<String, dynamic>? _lancamentoSelecionado;
   double _resumoCardsProgress = 0.0;
+  int _resumoAtualizacaoVersao = 0;
   bool _isConsultando = false;
+  Map<String, double> _resumoValoresBaseAnimacao = <String, double>{};
 
   final List<String> _abas = const ['Agenda', 'Calendário', 'Fluxo previsto'];
 
@@ -153,36 +155,42 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     <String, dynamic>{
       'titulo': 'Receber hoje',
       'valor': 'R\$ 0,00',
+      'valorNumerico': 0.0,
       'icone': Icons.south_west_rounded,
       'ajuda': 'Sem dados carregados.',
     },
     <String, dynamic>{
       'titulo': 'Pagar hoje',
       'valor': 'R\$ 0,00',
+      'valorNumerico': 0.0,
       'icone': Icons.north_east_rounded,
       'ajuda': 'Sem dados carregados.',
     },
     <String, dynamic>{
       'titulo': 'Vencidos a receber',
       'valor': 'R\$ 0,00',
+      'valorNumerico': 0.0,
       'icone': Icons.warning_amber_rounded,
       'ajuda': 'Sem dados carregados.',
     },
     <String, dynamic>{
       'titulo': 'Vencidos a pagar',
       'valor': 'R\$ 0,00',
+      'valorNumerico': 0.0,
       'icone': Icons.error_outline_rounded,
       'ajuda': 'Sem dados carregados.',
     },
     <String, dynamic>{
       'titulo': 'Saldo previsto da semana',
       'valor': 'R\$ 0,00',
+      'valorNumerico': 0.0,
       'icone': Icons.query_stats_rounded,
       'ajuda': 'Sem dados carregados.',
     },
     <String, dynamic>{
       'titulo': 'Saldo previsto do mês',
       'valor': 'R\$ 0,00',
+      'valorNumerico': 0.0,
       'icone': Icons.account_balance_wallet_outlined,
       'ajuda': 'Sem dados carregados.',
     },
@@ -415,6 +423,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   void _aplicarConsultaBackend(Map<String, dynamic> payload) {
+    final valoresBaseAnimacao = _mapaValoresResumo(_cardsResumo);
     final novosCardsResumo = _mapearResumoCards(
       payload['resumo'] is Map<String, dynamic>
           ? payload['resumo'] as Map<String, dynamic>
@@ -426,6 +435,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     final empresasResposta = _extrairEmpresas(novosGruposAgenda);
 
     setState(() {
+      _resumoValoresBaseAnimacao = valoresBaseAnimacao;
+      _resumoAtualizacaoVersao++;
+
       _cardsResumo
         ..clear()
         ..addAll(novosCardsResumo);
@@ -480,40 +492,58 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       {
         'titulo': 'Receber hoje',
         'valor': _formatarMoeda(receberHoje),
+        'valorNumerico': receberHoje,
         'icone': Icons.south_west_rounded,
         'ajuda': '$qtdHoje lançamento(s) previstos para entrada no dia.',
       },
       {
         'titulo': 'Pagar hoje',
         'valor': _formatarMoeda(pagarHoje),
+        'valorNumerico': pagarHoje,
         'icone': Icons.north_east_rounded,
         'ajuda': '$qtdHoje lançamento(s) previstos para saída no dia.',
       },
       {
         'titulo': 'Vencidos a receber',
         'valor': _formatarMoeda(vencidosReceber),
+        'valorNumerico': vencidosReceber,
         'icone': Icons.warning_amber_rounded,
         'ajuda': '$qtdVencidos lançamento(s) em atraso para cobrança.',
       },
       {
         'titulo': 'Vencidos a pagar',
         'valor': _formatarMoeda(vencidosPagar),
+        'valorNumerico': vencidosPagar,
         'icone': Icons.error_outline_rounded,
         'ajuda': '$qtdVencidos lançamento(s) em atraso para pagamento.',
       },
       {
         'titulo': 'Saldo previsto da semana',
         'valor': _formatarMoeda(saldoSemana),
+        'valorNumerico': saldoSemana,
         'icone': Icons.query_stats_rounded,
         'ajuda': 'Entradas previstas menos saídas previstas.',
       },
       {
         'titulo': 'Saldo previsto do mês',
         'valor': _formatarMoeda(saldoMes),
+        'valorNumerico': saldoMes,
         'icone': Icons.account_balance_wallet_outlined,
         'ajuda': 'Indicador consolidado do período atual.',
       },
     ];
+  }
+
+  Map<String, double> _mapaValoresResumo(List<Map<String, dynamic>> cards) {
+    final mapa = <String, double>{};
+    for (final card in cards) {
+      final titulo = card['titulo']?.toString().trim() ?? '';
+      if (titulo.isEmpty) {
+        continue;
+      }
+      mapa[titulo] = _toDoubleDynamic(card['valorNumerico'] ?? card['valor']);
+    }
+    return mapa;
   }
 
   List<Map<String, dynamic>> _mapearGruposAgenda(dynamic gruposRaw) {
@@ -1154,59 +1184,100 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
 
   Widget _buildResumoCard(BuildContext context, Map<String, dynamic> card) {
     final theme = Theme.of(context);
+    final titulo = card['titulo'] as String;
+    final valorAtual = _toDoubleDynamic(card['valorNumerico'] ?? card['valor']);
+    final valorInicial = _resumoValoresBaseAnimacao[titulo] ?? valorAtual;
+    final ajuda = card['ajuda']?.toString() ?? '';
 
-    return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.04),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(
-                card['icone'] as IconData,
-                color: theme.colorScheme.primary,
-              ),
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('resumo-card-pulse-$titulo-$_resumoAtualizacaoVersao'),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      builder: (context, progresso, _) {
+        final destaque = (1 - progresso).clamp(0.0, 1.0);
+        final escala = 1 + (0.012 * destaque);
+        final elevacao = 2 + (2.2 * destaque);
+        final corBorda = theme.colorScheme.primary.withValues(
+          alpha: 0.08 + (0.14 * destaque),
+        );
+        final corSombra = theme.colorScheme.primary.withValues(
+          alpha: 0.04 + (0.10 * destaque),
+        );
+
+        return Transform.scale(
+          scale: escala,
+          child: Card(
+            elevation: elevacao,
+            shadowColor: corSombra,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+              side: BorderSide(color: corBorda),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
                 children: [
-                  Text(
-                    card['titulo'] as String,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    card['valor'] as String,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
+                    child: Icon(
+                      card['icone'] as IconData,
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    card['ajuda'] as String,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          titulo,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TweenAnimationBuilder<double>(
+                          key: ValueKey(
+                            'resumo-card-valor-$titulo-$_resumoAtualizacaoVersao',
+                          ),
+                          tween: Tween<double>(
+                            begin: valorInicial,
+                            end: valorAtual,
+                          ),
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, valorAnimado, _) {
+                            return Text(
+                              _formatarMoeda(valorAnimado),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: theme.colorScheme.primary,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          ajuda,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
