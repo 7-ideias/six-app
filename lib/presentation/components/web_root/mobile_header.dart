@@ -68,16 +68,19 @@ class MobileHeader extends StatelessWidget {
     // Asset oficial: o PNG tem aspect 1668x2388 com folga grande em volta.
     // Usamos OverflowBox + altura grande pra "puxar" o logo pra cima da topbar
     // sem aumentar a altura real do header (mantemos 56px).
+    // Logo mobile um pouco maior — antes height: 60 / box 110x32.
+    // Agora 130x36 com asset em 80px (ainda contido no header de 56px via
+    // OverflowBox).
     return SizedBox(
-      width: 110,
-      height: 32,
+      width: 130,
+      height: 36,
       child: OverflowBox(
-        maxWidth: 140,
-        maxHeight: 80,
+        maxWidth: 170,
+        maxHeight: 100,
         alignment: Alignment.centerLeft,
         child: Image.asset(
           'assets/images/six-logo-flecha.png',
-          height: 60,
+          height: 80,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.high,
         ),

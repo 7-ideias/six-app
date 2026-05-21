@@ -33,8 +33,9 @@ class MobileFooter extends StatelessWidget {
         children: [
           // Mesma técnica do desktop footer — inverte para clarear o logo
           // sobre o fundo ink-deep.
+          // Logo footer mobile maior — antes 36h/56 asset, agora 48h/80 asset.
           SizedBox(
-            height: 36,
+            height: 48,
             child: ColorFiltered(
               colorFilter: const ColorFilter.matrix(<double>[
                 -1.5,  0,   0,   0, 255,
@@ -44,7 +45,7 @@ class MobileFooter extends StatelessWidget {
               ]),
               child: Image.asset(
                 'assets/images/six-logo-flecha.png',
-                height: 56,
+                height: 80,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 alignment: Alignment.centerLeft,

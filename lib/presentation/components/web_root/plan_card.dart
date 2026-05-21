@@ -30,11 +30,17 @@ class PlanCard extends StatelessWidget {
     required this.plan,
     required this.isDesktop,
     this.onChoose,
+    this.emphasizeFeatured = true,
   });
 
   final PlanData plan;
   final bool isDesktop;
   final VoidCallback? onChoose;
+
+  /// Quando true (default), aplica o translateY(-8) no card featured do
+  /// desktop. No mobile-perspective desligamos isso para não conflitar
+  /// com o transform do PageView.
+  final bool emphasizeFeatured;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +51,9 @@ class PlanCard extends StatelessWidget {
         : 20.0; // mobile usa 20 no plan (CSS)
 
     return Transform.translate(
-      offset: featured && isDesktop ? const Offset(0, -8) : Offset.zero,
+      offset: (emphasizeFeatured && featured && isDesktop)
+          ? const Offset(0, -8)
+          : Offset.zero,
       child: Container(
         decoration: BoxDecoration(
           color: bg,

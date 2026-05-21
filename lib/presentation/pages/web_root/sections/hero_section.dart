@@ -3,7 +3,16 @@ import 'package:appplanilha/presentation/components/web_root/eyebrow.dart';
 import 'package:appplanilha/presentation/components/web_root/responsive_button.dart';
 import 'package:appplanilha/presentation/components/web_root/responsive_container.dart';
 import 'package:appplanilha/presentation/components/web_root/store_badge.dart';
+import 'package:appplanilha/presentation/components/web_root/typewriter_text.dart';
 import 'package:flutter/material.dart';
+
+/// Palavras cicladas no h1 do hero — tunáveis aqui.
+const List<String> kHeroDynamicWords = <String>[
+  'vender',
+  'gerenciar caixa',
+  'financeiro',
+  'clientes',
+];
 
 // Hero: copy + visual.
 // Desktop: 2-col grid 1.05fr/1fr, h1 56px, "Começar agora" + "Ver demonstração".
@@ -73,36 +82,30 @@ class HeroSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Eyebrow(
-          text: 'PDV para pequenos negócios',
+          // Copy "média" do SIX_COPY (hero.badge.medio).
+          text: isDesktop
+              ? 'Gestão inteligente para pequenos e médios negócios'
+              : 'Gestão inteligente para PMEs',
           isDesktop: isDesktop,
         ),
         SizedBox(height: isDesktop ? 20 : 18),
-        // O design usa "resultados reais." em accent no mobile — usamos
-        // RichText pra reproduzir essa quebra.
-        RichText(
-          text: TextSpan(
-            style: titleStyle,
-            children: [
-              const TextSpan(text: 'Gestão simples,\n'),
-              TextSpan(
-                text: 'resultados reais.',
-                style: titleStyle.copyWith(color: WebRootTokens.accent),
-              ),
-            ],
-          ),
-        ),
+        // H1 com prefixo estático + typewriter cycling.
+        // Prefixo em ink, palavra dinâmica em accent.
+        // Altura fixa via SizedBox evita layout shift quando a palavra muda.
+        _heroTitle(isDesktop: isDesktop, titleStyle: titleStyle),
         SizedBox(height: isDesktop ? 18 : 14),
         ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktop ? 520 : double.infinity),
           child: Text(
-            // Lead matches design exactly:
-            //   desktop hero__copy <p> + mobile hero__sub
+            // Copy "média" do SIX_COPY_PROFISSIONALIZADA.json (hero.subtitle.medio):
+            //   "Implante seu sistema de PDV, Financeiro e CRM sem esperar meses..."
+            // Variante mobile usa versão um pouco mais curta.
             isDesktop
-                ? 'Controle financeiro, frente de caixa, ordens de serviço e estoque '
-                    '— tudo em um só lugar, com IA para cadastrar produtos, recomendar '
-                    'preços, prever caixa e gerar relatórios em segundos.'
-                : 'Frente de caixa, estoque, ordens de serviço e financeiro preditivo '
-                    '— tudo em um só app, com IA para cadastrar produtos e prever caixa.',
+                ? 'Implante seu sistema de PDV, Financeiro e CRM sem esperar meses. '
+                    'Use IA para cadastro automático de produtos, previsão de caixa '
+                    'e recomendações comerciais.'
+                : 'PDV, Financeiro e CRM em um só app. Use IA para cadastrar '
+                    'produtos, prever caixa e receber recomendações comerciais.',
             style: leadStyle,
           ),
         ),
@@ -131,6 +134,26 @@ class HeroSection extends StatelessWidget {
           // a strip com 5 estrelas + reviews.
           _trustStripChecks(),
         ],
+      ],
+    );
+  }
+
+  /// Hero h1 com prefixo "Uma única plataforma para" + typewriter ciclando
+  /// por [kHeroDynamicWords]. Column com mainAxisSize.min se ajusta à altura
+  /// natural do conteúdo (prefixo + linha dinâmica), sem reflow horizontal
+  /// porque a palavra dinâmica é sempre 1 linha.
+  Widget _heroTitle({required bool isDesktop, required TextStyle titleStyle}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Uma única plataforma para', style: titleStyle),
+        TypewriterText(
+          words: kHeroDynamicWords,
+          style: titleStyle.copyWith(color: WebRootTokens.accent),
+          cursorColor: WebRootTokens.accent,
+          cursorWidth: isDesktop ? 3 : 2,
+        ),
       ],
     );
   }

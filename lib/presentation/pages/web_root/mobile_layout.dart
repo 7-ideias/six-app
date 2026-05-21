@@ -35,6 +35,10 @@ class _MobileLayoutState extends State<MobileLayout> {
   static const double _dockThreshold = 600;
   bool _dockVisible = false;
 
+  // Keys de scroll — usadas para smooth scroll a partir do header/CTAs.
+  final GlobalKey _pricingKey = GlobalKey();
+  final GlobalKey _ctaKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +57,20 @@ class _MobileLayoutState extends State<MobileLayout> {
     if (next != _dockVisible && mounted) {
       setState(() => _dockVisible = next);
     }
+  }
+
+  void _scrollToPricing() => _scrollTo(_pricingKey);
+  void _scrollToCta() => _scrollTo(_ctaKey);
+
+  void _scrollTo(GlobalKey k) {
+    final ctx = k.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.04,
+    );
   }
 
   @override
@@ -80,28 +98,34 @@ class _MobileLayoutState extends State<MobileLayout> {
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: _PinnedHeaderDelegate(
-                        child: MobileHeader(onCta: widget.onSignup),
+                        child: MobileHeader(onCta: _scrollToPricing),
                       ),
                     ),
                     SliverList(
                       delegate: SliverChildListDelegate.fixed([
                         HeroSection(
                           isDesktop: false,
-                          onStart: widget.onSignup,
+                          onStart: _scrollToPricing,
                         ),
                         const RepaintBoundary(
                           child: FeaturesSection(isDesktop: false),
                         ),
                         const SegmentsSection(),
                         RepaintBoundary(
-                          child: PricingSection(
-                            isDesktop: false,
-                            onChoose: widget.onChoosePlan,
+                          child: KeyedSubtree(
+                            key: _pricingKey,
+                            child: PricingSection(
+                              isDesktop: false,
+                              onChoose: widget.onChoosePlan,
+                            ),
                           ),
                         ),
-                        CtaSection(
-                          isDesktop: false,
-                          onTalk: widget.onSignup,
+                        KeyedSubtree(
+                          key: _ctaKey,
+                          child: CtaSection(
+                            isDesktop: false,
+                            onTalk: _scrollToCta,
+                          ),
                         ),
                         const MobileFooter(),
                         // Padding extra pra deixar espaço pra dock fixo sem

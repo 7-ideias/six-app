@@ -77,8 +77,9 @@ class DesktopFooter extends StatelessWidget {
       children: [
         // CSS do design: `filter: invert(1) brightness(1.5)` — inverte o logo
         // pra clarear em cima do bg ink-deep. ColorFiltered replica o mesmo.
+        // Logo footer maior — antes 40h/60 asset, agora 56h/96 asset.
         SizedBox(
-          height: 40,
+          height: 56,
           child: ColorFiltered(
             colorFilter: const ColorFilter.matrix(<double>[
               -1.5,  0,   0,   0, 255,
@@ -88,7 +89,7 @@ class DesktopFooter extends StatelessWidget {
             ]),
             child: Image.asset(
               'assets/images/six-logo-flecha.png',
-              height: 60,
+              height: 96,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
               alignment: Alignment.centerLeft,
