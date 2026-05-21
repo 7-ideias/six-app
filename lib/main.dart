@@ -7,8 +7,8 @@ import 'package:appplanilha/presentation/screens/login_page_web.dart';
 import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
 import 'package:appplanilha/presentation/screens/cliente_auto_cadastro_publico_page.dart';
 import 'package:appplanilha/presentation/screens/ordem_servico_publica_page.dart';
+import 'package:appplanilha/presentation/pages/web_root/web_root_page.dart';
 import 'package:appplanilha/presentation/screens/web_checkout_page.dart';
-import 'package:appplanilha/presentation/screens/web_home_page.dart';
 import 'package:appplanilha/presentation/screens/web_trial_onboarding_page.dart';
 import 'package:appplanilha/providers/empresa_provider.dart';
 import 'package:appplanilha/providers/locale_settings_provider.dart';
@@ -77,7 +77,7 @@ class MyApp extends StatelessWidget {
     if (routeUri.path == '/' || routeUri.path == '/home') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const WebHomePage(),
+        builder: (_) => const WebRootPage(),
       );
     }
 
@@ -140,7 +140,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialPageRoute<void>(
       settings: settings,
-      builder: (_) => const WebHomePage(),
+      builder: (_) => const WebRootPage(),
     );
   }
 

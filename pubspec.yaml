@@ -42,6 +42,7 @@ flutter:
   assets:
     - assets/images/placeholder.png
     - assets/images/moca-tela-login.png
+    - assets/images/six-logo-flecha.png
     - assets/images/web/
     - assets/images/stores/
     - assets/images/onboading/
