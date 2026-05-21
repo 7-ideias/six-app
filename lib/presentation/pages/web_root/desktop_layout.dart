@@ -95,42 +95,50 @@ class _DesktopLayoutState extends State<DesktopLayout> {
             activeId: _activeNav,
           ),
           Expanded(
-            child: ListView(
+            // SingleChildScrollView + Column (em vez de ListView lazy) garante
+            // que TODAS as sections estejam renderizadas e seus GlobalKeys
+            // tenham currentContext válido — sem isso, Scrollable.ensureVisible
+            // falha em pulos não-lineares (ex.: home → about direto).
+            // RepaintBoundary nas sections preserva a perf de paint isolado.
+            child: SingleChildScrollView(
               controller: _scroll,
               padding: EdgeInsets.zero,
-              children: [
-                KeyedSubtree(
-                  key: _heroKey,
-                  child: HeroSection(
-                    isDesktop: true,
-                    onStart: () => _scrollTo('pricing'),
-                    onWatch: () => _scrollTo('about'),
-                  ),
-                ),
-                RepaintBoundary(
-                  child: KeyedSubtree(
-                    key: _featuresKey,
-                    child: const FeaturesSection(isDesktop: true),
-                  ),
-                ),
-                RepaintBoundary(
-                  child: KeyedSubtree(
-                    key: _pricingKey,
-                    child: PricingSection(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  KeyedSubtree(
+                    key: _heroKey,
+                    child: HeroSection(
                       isDesktop: true,
-                      onChoose: widget.onChoosePlan,
+                      onStart: () => _scrollTo('pricing'),
+                      onWatch: () => _scrollTo('about'),
                     ),
                   ),
-                ),
-                KeyedSubtree(
-                  key: _ctaKey,
-                  child: CtaSection(
-                    isDesktop: true,
-                    onTalk: widget.onSignup,
+                  RepaintBoundary(
+                    child: KeyedSubtree(
+                      key: _featuresKey,
+                      child: const FeaturesSection(isDesktop: true),
+                    ),
                   ),
-                ),
-                const DesktopFooter(),
-              ],
+                  RepaintBoundary(
+                    child: KeyedSubtree(
+                      key: _pricingKey,
+                      child: PricingSection(
+                        isDesktop: true,
+                        onChoose: widget.onChoosePlan,
+                      ),
+                    ),
+                  ),
+                  KeyedSubtree(
+                    key: _ctaKey,
+                    child: CtaSection(
+                      isDesktop: true,
+                      onTalk: widget.onSignup,
+                    ),
+                  ),
+                  const DesktopFooter(),
+                ],
+              ),
             ),
           ),
         ],

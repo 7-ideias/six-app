@@ -60,12 +60,17 @@ class PricingSection extends StatefulWidget {
 }
 
 class _PricingSectionState extends State<PricingSection> {
-  // Tunables do perspective stack
-  static const double _centerScale = 1.04;
-  static const double _sideScale = 0.92;
-  static const double _sideTranslateY = 10;
-  static const double _sideOpacity = 0.62;
-  static const double _viewportFraction = 0.82;
+  // Tunables do perspective stack — calibrados pra:
+  //   - Os 3 cards ficarem PRÓXIMOS (viewportFraction baixo mostra ombros largos)
+  //   - O centro ficar destacado MAS os laterais permanecerem legíveis
+  //     (opacity 0.92, não apagados como antes em 0.62)
+  //   - A diferença de scale (centro 1.08 vs lateral 0.88) cria profundidade
+  //     clara de "carrossel 3D" sem precisar de translateY grande.
+  static const double _centerScale = 1.08;
+  static const double _sideScale = 0.88;
+  static const double _sideTranslateY = 6;
+  static const double _sideOpacity = 0.92;
+  static const double _viewportFraction = 0.74;
 
   late final PageController _page = PageController(
     initialPage: 1, // Profissional (featured) começa centrado

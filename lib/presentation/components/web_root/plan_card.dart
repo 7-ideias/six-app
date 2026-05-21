@@ -24,7 +24,10 @@ class PlanData {
 
 // Card de plano da seção "Planos". O featured fica elevado (translateY -8 no
 // desktop) e tem fundo ink + CTA accent. Os demais são brancos com borda.
-class PlanCard extends StatelessWidget {
+//
+// Stateful pra suportar hover no desktop: scale 1.02 + lift extra de 4px
+// + sombra mais densa nos não-featured (featured já vem com a sombra forte).
+class PlanCard extends StatefulWidget {
   const PlanCard({
     super.key,
     required this.plan,
@@ -43,6 +46,20 @@ class PlanCard extends StatelessWidget {
   final bool emphasizeFeatured;
 
   @override
+  State<PlanCard> createState() => _PlanCardState();
+}
+
+class _PlanCardState extends State<PlanCard> {
+  bool _hover = false;
+
+  // Aliases pra reduzir verbosidade — todos os helpers continuam usando
+  // os mesmos nomes sem se preocupar com widget.x.
+  PlanData get plan => widget.plan;
+  bool get isDesktop => widget.isDesktop;
+  VoidCallback? get onChoose => widget.onChoose;
+  bool get emphasizeFeatured => widget.emphasizeFeatured;
+
+  @override
   Widget build(BuildContext context) {
     final featured = plan.featured;
     final bg = featured ? WebRootTokens.ink : WebRootTokens.surface;
@@ -50,20 +67,34 @@ class PlanCard extends StatelessWidget {
         ? WebRootTokens.radiusBig
         : 20.0; // mobile usa 20 no plan (CSS)
 
-    return Transform.translate(
-      offset: (emphasizeFeatured && featured && isDesktop)
-          ? const Offset(0, -8)
-          : Offset.zero,
-      child: Container(
+    // Base translateY: featured no desktop começa -8 (elevado no grid).
+    final baseDy =
+        (emphasizeFeatured && featured && isDesktop) ? -8.0 : 0.0;
+    // Hover (só desktop): +4px de lift sobre o base.
+    final hoverDy = (isDesktop && _hover) ? -4.0 : 0.0;
+    // Hover scale: sutil pra não brigar com layout/grid.
+    final hoverScale = (isDesktop && _hover) ? 1.02 : 1.0;
+
+    // Hover sobe a sombra nos não-featured pra um nível "featured".
+    final boxShadow = featured
+        ? WebRootTokens.featuredPlanShadow
+        : (isDesktop && _hover
+            ? WebRootTokens.featuredPlanShadow
+            : WebRootTokens.cardShadow);
+
+    final card = AnimatedScale(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      scale: hoverScale,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        transform: Matrix4.translationValues(0, baseDy + hoverDy, 0),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(radius),
-          border: featured
-              ? null
-              : Border.all(color: WebRootTokens.line),
-          boxShadow: featured
-              ? WebRootTokens.featuredPlanShadow
-              : WebRootTokens.cardShadow,
+          border: featured ? null : Border.all(color: WebRootTokens.line),
+          boxShadow: boxShadow,
         ),
         padding: EdgeInsets.all(isDesktop ? 28 : 22),
         child: Column(
@@ -95,6 +126,16 @@ class PlanCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    // Hover só faz sentido no desktop (web). No mobile não envolve MouseRegion.
+    if (!isDesktop) return card;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: card,
     );
   }
 
