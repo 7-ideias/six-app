@@ -1,8 +1,15 @@
+import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
+import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
 import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
+import 'package:appplanilha/l10n/web_root_l10n.dart';
+import 'package:appplanilha/presentation/components/web_root/web_dark_toggle.dart';
+import 'package:appplanilha/presentation/components/web_root/web_language_switcher.dart';
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 // Topbar mobile sticky com logo + CTA pill "Baixar app".
-// Equivalente a .topbar do mobile/index.html.
+// Suporta dark mode e l10n.
 class MobileHeader extends StatelessWidget {
   const MobileHeader({super.key, this.onCta});
 
@@ -10,11 +17,15 @@ class MobileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
+    final l10n = WebRootL10n.of(context);
+    final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xEBFFFFFF), // 0.92
-        border: const Border(
-          bottom: BorderSide(color: WebRootTokens.line),
+        color: scheme.headerBgMobile,
+        border: Border(
+          bottom: BorderSide(color: scheme.border),
         ),
       ),
       padding: const EdgeInsets.symmetric(
@@ -25,6 +36,13 @@ class MobileHeader extends StatelessWidget {
         children: [
           _logo(),
           const Spacer(),
+          // Idioma
+          const WebLanguageSwitcher(),
+          const SizedBox(width: 6),
+          // Dark mode toggle
+          const WebDarkToggle(),
+          const SizedBox(width: 10),
+          // CTA "Baixar app"
           GestureDetector(
             onTap: onCta,
             child: MouseRegion(
@@ -39,12 +57,12 @@ class MobileHeader extends StatelessWidget {
                   borderRadius:
                       BorderRadius.circular(WebRootTokens.radiusPill),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Baixar app',
-                      style: TextStyle(
+                      l10n.mobileDownloadCta,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -52,8 +70,12 @@ class MobileHeader extends StatelessWidget {
                         fontFamilyFallback: WebRootTokens.fontFamilyFallback,
                       ),
                     ),
-                    SizedBox(width: 6),
-                    Icon(Icons.arrow_downward, size: 14, color: Colors.white),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.arrow_downward,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ],
                 ),
               ),
@@ -65,12 +87,6 @@ class MobileHeader extends StatelessWidget {
   }
 
   Widget _logo() {
-    // Asset oficial: o PNG tem aspect 1668x2388 com folga grande em volta.
-    // Usamos OverflowBox + altura grande pra "puxar" o logo pra cima da topbar
-    // sem aumentar a altura real do header (mantemos 56px).
-    // Logo mobile um pouco maior — antes height: 60 / box 110x32.
-    // Agora 130x36 com asset em 80px (ainda contido no header de 56px via
-    // OverflowBox).
     return SizedBox(
       width: 130,
       height: 36,

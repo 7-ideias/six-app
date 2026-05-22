@@ -1,13 +1,17 @@
+import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
+import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
 import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
+import 'package:appplanilha/l10n/web_root_l10n.dart';
 import 'package:appplanilha/presentation/components/web_root/responsive_button.dart';
+import 'package:appplanilha/presentation/components/web_root/web_dark_toggle.dart';
+import 'package:appplanilha/presentation/components/web_root/web_language_switcher.dart';
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-// Nav desktop sticky 80px:
+// Nav desktop sticky 96px:
 //   [LOGO maior, esquerda]  ─ flex spacer ─  [NAV CENTRALIZADA com indicator]
-//                                            ─ flex spacer ─  [Entrar | CTA]
-// O indicator é uma pill animada que segue o item ativo (rastreado por
-// _active). Implementação via Stack + AnimatedPositioned (cada item tem
-// largura fixa pré-medida).
+//                                            ─ flex spacer ─  [Idioma | Dark | Entrar | CTA]
 class DesktopHeader extends StatefulWidget {
   const DesktopHeader({
     super.key,
@@ -19,8 +23,6 @@ class DesktopHeader extends StatefulWidget {
 
   final VoidCallback? onLogin;
   final VoidCallback? onSignup;
-  // Recebe um id ∈ {home, features, pricing, about}. O layout que decide
-  // pra onde scrollar.
   final ValueChanged<String>? onNavTap;
   final String activeId;
 
@@ -31,13 +33,6 @@ class DesktopHeader extends StatefulWidget {
 class _DesktopHeaderState extends State<DesktopHeader> {
   late String _active = widget.activeId;
 
-  static const _items = <_NavItem>[
-    _NavItem('home', 'Início'),
-    _NavItem('features', 'Recursos'),
-    _NavItem('pricing', 'Planos'),
-    _NavItem('about', 'Sobre'),
-  ];
-
   @override
   void didUpdateWidget(covariant DesktopHeader old) {
     super.didUpdateWidget(old);
@@ -46,47 +41,62 @@ class _DesktopHeaderState extends State<DesktopHeader> {
     }
   }
 
+  List<_NavItem> _navItems(WebRootL10n l10n) => [
+    _NavItem('home', l10n.navHome),
+    _NavItem('features', l10n.navFeatures),
+    _NavItem('pricing', l10n.navPricing),
+    _NavItem('about', l10n.navAbout),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
+    final l10n = WebRootL10n.of(context);
+    final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
+    final items = _navItems(l10n);
+
     return Container(
       height: 96,
-      color: WebRootTokens.surface,
+      color: scheme.headerBgDesktop,
       child: Row(
         children: [
-          // Logo à esquerda — 200w fixo, não participa do flex/centering.
-          // OverflowBox permite que a imagem sangre visualmente sem crescer a container.
+          // Logo à esquerda — fora do flex/centering.
           _logo(),
-          // Conteúdo centralizado (nav + buttons) — área expandida com borda inferior.
+          // Conteúdo centralizado (nav + buttons) com borda inferior.
           Expanded(
             child: Container(
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: WebRootTokens.line)),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: scheme.border),
+                ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 56),
               child: Row(
                 children: [
-                  // Espaço elástico esquerdo: empurra a nav até o centro real.
                   const Expanded(child: SizedBox()),
                   _CenteredNav(
-                    items: _items,
+                    items: items,
                     active: _active,
+                    scheme: scheme,
                     onTap: (id) {
                       setState(() => _active = id);
                       widget.onNavTap?.call(id);
                     },
                   ),
-                  // Espaço elástico direito (espelha o da esquerda).
                   const Expanded(child: SizedBox()),
-                  // CTA à direita.
+                  const WebLanguageSwitcher(),
+                  const SizedBox(width: 8),
+                  const WebDarkToggle(),
+                  const SizedBox(width: 16),
                   ResponsiveButton(
-                    label: 'Entrar',
+                    label: l10n.navLogin,
                     onPressed: widget.onLogin,
                     variant: WebButtonVariant.ghost,
                     size: WebButtonSize.sm,
                   ),
                   const SizedBox(width: 10),
                   ResponsiveButton(
-                    label: 'Começar agora',
+                    label: l10n.navSignup,
                     onPressed: widget.onSignup,
                     variant: WebButtonVariant.primary,
                     size: WebButtonSize.sm,
@@ -101,11 +111,6 @@ class _DesktopHeaderState extends State<DesktopHeader> {
   }
 
   Widget _logo() {
-    // Logo grande mas controlado: clamp visual via SizedBox(width: 220)
-    // + OverflowBox que sangra verticalmente sem aumentar a altura do header.
-    // O asset tem aspect 1668x2388 (vertical) — a flecha+texto sai dos limites
-    // pro alinhamento ficar visualmente equilibrado.
-    // padding-left 32 alinha com o gutter visual do site (sem afetar o flex).
     return Padding(
       padding: const EdgeInsets.only(left: 32),
       child: SizedBox(
@@ -134,16 +139,17 @@ class _NavItem {
 }
 
 // Nav centralizada com indicador animado (pill + underline).
-// Mede a largura de cada item usando GlobalKey post-frame.
 class _CenteredNav extends StatefulWidget {
   const _CenteredNav({
     required this.items,
     required this.active,
+    required this.scheme,
     required this.onTap,
   });
 
   final List<_NavItem> items;
   final String active;
+  final WebRootScheme scheme;
   final ValueChanged<String> onTap;
 
   @override
@@ -161,6 +167,14 @@ class _CenteredNavState extends State<_CenteredNav> {
     for (final it in widget.items) {
       _keys[it.id] = GlobalKey();
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+  }
+
+  @override
+  void didUpdateWidget(covariant _CenteredNav old) {
+    super.didUpdateWidget(old);
+    // Re-cria keys quando os itens mudam (ex: troca de idioma muda labels
+    // mas não IDs, então a estrutura é a mesma — apenas re-mede).
     WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
   }
 
@@ -183,7 +197,6 @@ class _CenteredNavState extends State<_CenteredNav> {
 
     return LayoutBuilder(
       builder: (context, _) {
-        // Re-mede em cada layout pra acompanhar resize.
         WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
 
         return SizedBox(
@@ -191,7 +204,6 @@ class _CenteredNavState extends State<_CenteredNav> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Pill indicator animado (atrás dos itens).
               if (_measured && activeRect != null)
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 280),
@@ -202,12 +214,11 @@ class _CenteredNavState extends State<_CenteredNav> {
                   height: activeRect.height,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0x140F2D3A),
+                      color: widget.scheme.borderSoft,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
-              // Underline animado embaixo do pill (mais sutil — 2px).
               if (_measured && activeRect != null)
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 320),
@@ -223,7 +234,6 @@ class _CenteredNavState extends State<_CenteredNav> {
                     ),
                   ),
                 ),
-              // Itens (acima do indicator).
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -232,6 +242,7 @@ class _CenteredNavState extends State<_CenteredNav> {
                       key: _keys[it.id],
                       item: it,
                       active: widget.active == it.id,
+                      scheme: widget.scheme,
                       onTap: () => widget.onTap(it.id),
                     ),
                 ],
@@ -249,11 +260,13 @@ class _NavButton extends StatefulWidget {
     super.key,
     required this.item,
     required this.active,
+    required this.scheme,
     required this.onTap,
   });
 
   final _NavItem item;
   final bool active;
+  final WebRootScheme scheme;
   final VoidCallback onTap;
 
   @override
@@ -265,9 +278,9 @@ class _NavButtonState extends State<_NavButton> {
 
   @override
   Widget build(BuildContext context) {
-    final Color color = widget.active
-        ? WebRootTokens.ink
-        : (_hover ? WebRootTokens.ink : WebRootTokens.fgMuted);
+    final color = widget.active
+        ? widget.scheme.textPrimary
+        : (_hover ? widget.scheme.textPrimary : widget.scheme.textMuted);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),

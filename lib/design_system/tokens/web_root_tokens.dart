@@ -18,6 +18,8 @@ class WebRootTokens {
   static const Color line = Color(0xFFE3E6E5);
   static const Color lineSoft = Color(0x140F2D3A); // rgba(15,45,58,0.08)
   static const Color success = Color(0xFF16A34A);
+  // Hover bg leve para botões/triggers no header (equivalent a hsl(210 8% 95%))
+  static const Color surfaceAlt = Color(0xFFF0F2F3);
 
   // Cores auxiliares dos cards de features
   static const Color featureTeal = Color(0xFF0F766E);

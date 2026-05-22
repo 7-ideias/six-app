@@ -1,3 +1,5 @@
+import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
+import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
 import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
 import 'package:appplanilha/presentation/components/web_root/mobile_bottom_dock.dart';
 import 'package:appplanilha/presentation/components/web_root/mobile_footer.dart';
@@ -7,7 +9,9 @@ import 'package:appplanilha/presentation/pages/web_root/sections/features_sectio
 import 'package:appplanilha/presentation/pages/web_root/sections/hero_section.dart';
 import 'package:appplanilha/presentation/pages/web_root/sections/pricing_section.dart';
 import 'package:appplanilha/presentation/pages/web_root/sections/segments_section.dart';
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 // Layout para viewports < 1024px (mobile + tablet).
 // Ordem do design oficial (mobile/index.html):
@@ -75,20 +79,23 @@ class _MobileLayoutState extends State<MobileLayout> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
+    final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
+
     return Scaffold(
-      backgroundColor: WebRootTokens.surface,
+      backgroundColor: scheme.surfacePage,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             maxWidth: WebRootTokens.mobileContentMaxWidth,
           ),
           child: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                left: BorderSide(color: WebRootTokens.line),
-                right: BorderSide(color: WebRootTokens.line),
+                left: BorderSide(color: scheme.border),
+                right: BorderSide(color: scheme.border),
               ),
-              color: WebRootTokens.surface,
+              color: scheme.surfacePage,
             ),
             child: Stack(
               children: [

@@ -1,6 +1,10 @@
+import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
+import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
 import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
 import 'package:appplanilha/presentation/components/web_root/responsive_button.dart';
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class PlanData {
   const PlanData({
@@ -61,8 +65,11 @@ class _PlanCardState extends State<PlanCard> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
+    final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
+
     final featured = plan.featured;
-    final bg = featured ? WebRootTokens.ink : WebRootTokens.surface;
+    final bg = featured ? WebRootTokens.ink : scheme.cardBg;
     final radius = isDesktop
         ? WebRootTokens.radiusBig
         : 20.0; // mobile usa 20 no plan (CSS)
@@ -93,7 +100,7 @@ class _PlanCardState extends State<PlanCard> {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(radius),
-          border: featured ? null : Border.all(color: WebRootTokens.line),
+          border: featured ? null : Border.all(color: scheme.border),
           boxShadow: boxShadow,
         ),
         padding: EdgeInsets.all(isDesktop ? 28 : 22),
@@ -101,26 +108,26 @@ class _PlanCardState extends State<PlanCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _header(featured),
+            _header(featured, scheme),
             const SizedBox(height: 16),
-            _price(featured),
+            _price(featured, scheme),
             const SizedBox(height: 12),
             Text(
               plan.pitch,
               style: WebRootTokens.featureBody.copyWith(
                 color: featured
                     ? const Color(0xBFFFFFFF) // 0.75
-                    : WebRootTokens.fgSoft,
+                    : scheme.textSoft,
                 fontSize: isDesktop ? 14 : 13,
               ),
             ),
             const SizedBox(height: 20),
             Container(
               height: 1,
-              color: featured ? const Color(0x1AFFFFFF) : WebRootTokens.line,
+              color: featured ? const Color(0x1AFFFFFF) : scheme.border,
             ),
             const SizedBox(height: 20),
-            ...plan.features.map((f) => _featureRow(f, featured)),
+            ...plan.features.map((f) => _featureRow(f, featured, scheme)),
             const SizedBox(height: 20),
             _cta(featured),
           ],
@@ -139,7 +146,7 @@ class _PlanCardState extends State<PlanCard> {
     );
   }
 
-  Widget _header(bool featured) {
+  Widget _header(bool featured, WebRootScheme scheme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -147,7 +154,7 @@ class _PlanCardState extends State<PlanCard> {
           child: Text(
             plan.name,
             style: WebRootTokens.planName.copyWith(
-              color: featured ? WebRootTokens.accent : WebRootTokens.ink,
+              color: featured ? WebRootTokens.accent : scheme.textPrimary,
             ),
           ),
         ),
@@ -174,7 +181,7 @@ class _PlanCardState extends State<PlanCard> {
     );
   }
 
-  Widget _price(bool featured) {
+  Widget _price(bool featured, WebRootScheme scheme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
@@ -185,7 +192,7 @@ class _PlanCardState extends State<PlanCard> {
           style: (isDesktop
                   ? WebRootTokens.planPriceDesktop
                   : WebRootTokens.planPriceMobile)
-              .copyWith(color: featured ? Colors.white : WebRootTokens.ink),
+              .copyWith(color: featured ? Colors.white : scheme.textPrimary),
         ),
         const SizedBox(width: 8),
         Flexible(
@@ -197,7 +204,7 @@ class _PlanCardState extends State<PlanCard> {
               fontSize: 13,
               color: featured
                   ? const Color(0xA6FFFFFF)
-                  : WebRootTokens.fgMuted,
+                  : scheme.textMuted,
             ),
           ),
         ),
@@ -205,7 +212,7 @@ class _PlanCardState extends State<PlanCard> {
     );
   }
 
-  Widget _featureRow(String text, bool featured) {
+  Widget _featureRow(String text, bool featured, WebRootScheme scheme) {
     final checkColor =
         featured ? WebRootTokens.accent : WebRootTokens.success;
     return Padding(
@@ -228,7 +235,7 @@ class _PlanCardState extends State<PlanCard> {
                 height: 1.45,
                 color: featured
                     ? const Color(0xEBFFFFFF) // 0.92
-                    : WebRootTokens.fg,
+                    : scheme.textSoft,
               ),
             ),
           ),

@@ -129,6 +129,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     final primary = Theme.of(context).colorScheme.primary;
 
     return WebAuthShell(
+      showBack: Navigator.of(context).canPop(),
+      onBack: () => Navigator.of(context).maybePop(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

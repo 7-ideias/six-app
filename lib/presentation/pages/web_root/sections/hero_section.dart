@@ -1,18 +1,15 @@
+import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
+import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
 import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
+import 'package:appplanilha/l10n/web_root_l10n.dart';
 import 'package:appplanilha/presentation/components/web_root/eyebrow.dart';
 import 'package:appplanilha/presentation/components/web_root/responsive_button.dart';
 import 'package:appplanilha/presentation/components/web_root/responsive_container.dart';
 import 'package:appplanilha/presentation/components/web_root/store_badge.dart';
 import 'package:appplanilha/presentation/components/web_root/typewriter_text.dart';
+import 'package:appplanilha/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
-
-/// Palavras cicladas no h1 do hero — tunáveis aqui.
-const List<String> kHeroDynamicWords = <String>[
-  'vender',
-  'gerenciar caixa',
-  'financeiro',
-  'clientes',
-];
+import 'package:provider/provider.dart';
 
 // Hero: copy + visual.
 // Desktop: 2-col grid 1.05fr/1fr, h1 56px, "Começar agora" + "Ver demonstração".
@@ -31,46 +28,54 @@ class HeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
+    final l10n = WebRootL10n.of(context);
+    final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
+
     return Container(
-      color: WebRootTokens.surface,
+      color: scheme.surfacePage,
       padding: EdgeInsets.symmetric(vertical: isDesktop ? 88 : 0),
       child: ResponsiveContainer(
         isDesktop: isDesktop,
-        child: isDesktop ? _desktop() : _mobile(),
+        child: isDesktop ? _desktop(l10n, scheme) : _mobile(l10n, scheme),
       ),
     );
   }
 
-  Widget _desktop() {
+  Widget _desktop(WebRootL10n l10n, WebRootScheme scheme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(flex: 105, child: _copy(isDesktop: true)),
+        Expanded(flex: 105, child: _copy(isDesktop: true, l10n: l10n, scheme: scheme)),
         const SizedBox(width: 56),
-        const Expanded(flex: 100, child: _PhoneVisual(isDesktop: true)),
+        Expanded(flex: 100, child: _PhoneVisual(isDesktop: true, l10n: l10n)),
       ],
     );
   }
 
-  Widget _mobile() {
+  Widget _mobile(WebRootL10n l10n, WebRootScheme scheme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 28, 0, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _copy(isDesktop: false),
+          _copy(isDesktop: false, l10n: l10n, scheme: scheme),
           const SizedBox(height: 16),
-          _stores(),
+          _stores(l10n),
           const SizedBox(height: 16),
-          _trustStrip(),
+          _trustStrip(l10n, scheme),
           const SizedBox(height: 8),
-          const _PhoneVisual(isDesktop: false),
+          _PhoneVisual(isDesktop: false, l10n: l10n),
         ],
       ),
     );
   }
 
-  Widget _copy({required bool isDesktop}) {
+  Widget _copy({
+    required bool isDesktop,
+    required WebRootL10n l10n,
+    required WebRootScheme scheme,
+  }) {
     final titleStyle = isDesktop
         ? WebRootTokens.heroTitleDesktop
         : WebRootTokens.heroTitleMobile;
@@ -82,31 +87,17 @@ class HeroSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Eyebrow(
-          // Copy "média" do SIX_COPY (hero.badge.medio).
-          text: isDesktop
-              ? 'Gestão inteligente para pequenos e médios negócios'
-              : 'Gestão inteligente para PMEs',
+          text: isDesktop ? l10n.heroEyebrowDesktop : l10n.heroEyebrowMobile,
           isDesktop: isDesktop,
         ),
         SizedBox(height: isDesktop ? 20 : 18),
-        // H1 com prefixo estático + typewriter cycling.
-        // Prefixo em ink, palavra dinâmica em accent.
-        // Altura fixa via SizedBox evita layout shift quando a palavra muda.
-        _heroTitle(isDesktop: isDesktop, titleStyle: titleStyle),
+        _heroTitle(isDesktop: isDesktop, titleStyle: titleStyle, l10n: l10n, scheme: scheme),
         SizedBox(height: isDesktop ? 18 : 14),
         ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktop ? 520 : double.infinity),
           child: Text(
-            // Copy "média" do SIX_COPY_PROFISSIONALIZADA.json (hero.subtitle.medio):
-            //   "Implante seu sistema de PDV, Financeiro e CRM sem esperar meses..."
-            // Variante mobile usa versão um pouco mais curta.
-            isDesktop
-                ? 'Implante seu sistema de PDV, Financeiro e CRM sem esperar meses. '
-                    'Use IA para cadastro automático de produtos, previsão de caixa '
-                    'e recomendações comerciais.'
-                : 'PDV, Financeiro e CRM em um só app. Use IA para cadastrar '
-                    'produtos, prever caixa e receber recomendações comerciais.',
-            style: leadStyle,
+            isDesktop ? l10n.heroLeadDesktop : l10n.heroLeadMobile,
+            style: leadStyle.copyWith(color: scheme.textSoft),
           ),
         ),
         SizedBox(height: isDesktop ? 32 : 24),
@@ -115,14 +106,14 @@ class HeroSection extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ResponsiveButton(
-                label: 'Começar agora',
+                label: l10n.heroCtaPrimary,
                 onPressed: onStart,
                 size: WebButtonSize.lg,
                 trailing: const Icon(Icons.arrow_forward, size: 18),
               ),
               const SizedBox(width: 12),
               ResponsiveButton(
-                label: 'Ver demonstração',
+                label: l10n.heroCtaSecondary,
                 onPressed: onWatch,
                 variant: WebButtonVariant.secondary,
                 size: WebButtonSize.md,
@@ -130,26 +121,28 @@ class HeroSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 28),
-          // Desktop usa a versão "3 checks" (CSS .hero__trust), mobile usa
-          // a strip com 5 estrelas + reviews.
-          _trustStripChecks(),
+          _trustStripChecks(l10n, scheme),
         ],
       ],
     );
   }
 
-  /// Hero h1 com prefixo "Uma única plataforma para" + typewriter ciclando
-  /// por [kHeroDynamicWords]. Column com mainAxisSize.min se ajusta à altura
-  /// natural do conteúdo (prefixo + linha dinâmica), sem reflow horizontal
-  /// porque a palavra dinâmica é sempre 1 linha.
-  Widget _heroTitle({required bool isDesktop, required TextStyle titleStyle}) {
+  Widget _heroTitle({
+    required bool isDesktop,
+    required TextStyle titleStyle,
+    required WebRootL10n l10n,
+    required WebRootScheme scheme,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Uma única plataforma para', style: titleStyle),
+        Text(
+          l10n.heroTitlePrefix,
+          style: titleStyle.copyWith(color: scheme.textPrimary),
+        ),
         TypewriterText(
-          words: kHeroDynamicWords,
+          words: l10n.heroWords,
           style: titleStyle.copyWith(color: WebRootTokens.accent),
           cursorColor: WebRootTokens.accent,
           cursorWidth: isDesktop ? 3 : 2,
@@ -158,34 +151,29 @@ class HeroSection extends StatelessWidget {
     );
   }
 
-  Widget _stores() {
+  Widget _stores(WebRootL10n l10n) {
     return Row(
       children: [
-        Expanded(
-          child: StoreBadge(store: AppStore.apple, onTap: onStart),
-        ),
+        Expanded(child: StoreBadge(store: AppStore.apple, onTap: onStart)),
         const SizedBox(width: 10),
-        Expanded(
-          child: StoreBadge(store: AppStore.google, onTap: onStart),
-        ),
+        Expanded(child: StoreBadge(store: AppStore.google, onTap: onStart)),
       ],
     );
   }
 
-  // 3-checks horizontal — desktop hero
-  Widget _trustStripChecks() {
+  Widget _trustStripChecks(WebRootL10n l10n, WebRootScheme scheme) {
     Widget item(String label) => Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.star, size: 16, color: WebRootTokens.accent),
+            Icon(Icons.star, size: 16, color: WebRootTokens.accent),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: WebRootTokens.fontFamily,
                 fontFamilyFallback: WebRootTokens.fontFamilyFallback,
                 fontSize: 13,
-                color: WebRootTokens.fgMuted,
+                color: scheme.textMuted,
               ),
             ),
           ],
@@ -194,49 +182,48 @@ class HeroSection extends StatelessWidget {
       spacing: 24,
       runSpacing: 12,
       children: [
-        // Copy matches CSS .hero__trust > .trust__item (web standalone)
-        item('14 dias grátis'),
-        item('Sem cartão'),
-        item('Suporte pt-BR'),
+        item(l10n.trustFree),
+        item(l10n.trustNoCard),
+        item(l10n.trustSupport),
       ],
     );
   }
 
-  Widget _trustStrip() {
+  Widget _trustStrip(WebRootL10n l10n, WebRootScheme scheme) {
     return Row(
       children: [
-        const Icon(Icons.star, size: 14, color: WebRootTokens.accent),
-        const Icon(Icons.star, size: 14, color: WebRootTokens.accent),
-        const Icon(Icons.star, size: 14, color: WebRootTokens.accent),
-        const Icon(Icons.star, size: 14, color: WebRootTokens.accent),
-        const Icon(Icons.star, size: 14, color: WebRootTokens.accent),
+        Icon(Icons.star, size: 14, color: WebRootTokens.accent),
+        Icon(Icons.star, size: 14, color: WebRootTokens.accent),
+        Icon(Icons.star, size: 14, color: WebRootTokens.accent),
+        Icon(Icons.star, size: 14, color: WebRootTokens.accent),
+        Icon(Icons.star, size: 14, color: WebRootTokens.accent),
         const SizedBox(width: 8),
-        const Text(
-          '4,9',
+        Text(
+          l10n.trustRating,
           style: TextStyle(
-            color: WebRootTokens.ink,
+            color: scheme.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 13,
             fontFamily: WebRootTokens.fontFamily,
             fontFamilyFallback: WebRootTokens.fontFamilyFallback,
           ),
         ),
-        const Text(
-          ' · 2.348 avaliações',
+        Text(
+          ' ${l10n.trustReviews}',
           style: TextStyle(
-            color: WebRootTokens.fgMuted,
+            color: scheme.textMuted,
             fontSize: 12,
             fontFamily: WebRootTokens.fontFamily,
             fontFamilyFallback: WebRootTokens.fontFamilyFallback,
           ),
         ),
         const SizedBox(width: 12),
-        Container(width: 1, height: 14, color: WebRootTokens.line),
+        Container(width: 1, height: 14, color: scheme.border),
         const SizedBox(width: 12),
-        const Text(
-          '14 dias grátis',
+        Text(
+          l10n.trustFree,
           style: TextStyle(
-            color: WebRootTokens.fgMuted,
+            color: scheme.textMuted,
             fontSize: 12,
             fontFamily: WebRootTokens.fontFamily,
             fontFamilyFallback: WebRootTokens.fontFamilyFallback,
@@ -248,8 +235,9 @@ class HeroSection extends StatelessWidget {
 }
 
 class _PhoneVisual extends StatelessWidget {
-  const _PhoneVisual({required this.isDesktop});
+  const _PhoneVisual({required this.isDesktop, required this.l10n});
   final bool isDesktop;
+  final WebRootL10n l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -278,19 +266,14 @@ class _PhoneVisual extends StatelessWidget {
                 child: _phoneScreen(isDesktop),
               ),
             ),
-            // Chips flutuantes — espelha exatamente o CSS:
-            //   .chip--ia     { top: 100; right: -8;  rotate( 4deg) } (desktop)
-            //                 { top:  64; left: -2;  rotate(-4deg) } (mobile)
-            //   .chip--rating { bottom: 60; left: -10; rotate(-4deg) } (desktop)
-            //                 { bottom: 60; right: -4; rotate( 4deg) } (mobile)
             if (isDesktop)
-              const Positioned(top: 100, right: -8, child: _LightChip())
+              Positioned(top: 100, right: -8, child: _LightChip(l10n: l10n))
             else
-              const Positioned(top: 64, left: -2, child: _LightChip()),
+              Positioned(top: 64, left: -2, child: _LightChip(l10n: l10n)),
             if (isDesktop)
-              const Positioned(bottom: 60, left: -10, child: _RatingChip())
+              Positioned(bottom: 60, left: -10, child: _RatingChip(l10n: l10n))
             else
-              const Positioned(bottom: 60, right: -4, child: _RatingChip()),
+              Positioned(bottom: 60, right: -4, child: _RatingChip(l10n: l10n)),
           ],
         ),
       ),
@@ -322,7 +305,6 @@ class _PhoneVisual extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Foto (asset opcional — fallback gradient se asset não existir)
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -335,7 +317,6 @@ class _PhoneVisual extends StatelessWidget {
                 ),
               ),
             ),
-            // Scrim inferior
             const Positioned(
               left: 0,
               right: 0,
@@ -356,7 +337,6 @@ class _PhoneVisual extends StatelessWidget {
                 ),
               ),
             ),
-            // Dynamic island / notch
             Positioned(
               top: 10,
               left: 0,
@@ -372,7 +352,6 @@ class _PhoneVisual extends StatelessWidget {
                 ),
               ),
             ),
-            // Copy
             Positioned(
               left: 18,
               right: 18,
@@ -381,9 +360,9 @@ class _PhoneVisual extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Gerencie suas vendas em tempo real',
-                    style: TextStyle(
+                  Text(
+                    l10n.phoneScreenTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontFamily: WebRootTokens.fontFamily,
                       fontFamilyFallback: WebRootTokens.fontFamilyFallback,
@@ -395,7 +374,7 @@ class _PhoneVisual extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Use IA para cadastrar produtos, recomendar preços e prever caixa.',
+                    l10n.phoneScreenBody,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.82),
                       fontFamily: WebRootTokens.fontFamily,
@@ -417,7 +396,6 @@ class _PhoneVisual extends StatelessWidget {
                 ],
               ),
             ),
-            // Home indicator
             Positioned(
               bottom: 6,
               left: 0,
@@ -452,12 +430,10 @@ class _PhoneVisual extends StatelessWidget {
       );
 }
 
-// _DarkChip (TEMPO DE VENDA / 14s -62%) foi removido em prol de fidelidade
-// com o design web — onde apenas dois chips aparecem: chip--ia (claro) e
-// chip--rating (claro). Mantida apenas a definição abaixo.
-
 class _LightChip extends StatelessWidget {
-  const _LightChip();
+  const _LightChip({required this.l10n});
+  final WebRootL10n l10n;
+
   @override
   Widget build(BuildContext context) {
     return Transform.rotate(
@@ -493,10 +469,10 @@ class _LightChip extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'IA CADASTROU',
-                  style: TextStyle(
+                  l10n.chipIaLabel,
+                  style: const TextStyle(
                     color: WebRootTokens.fgMuted,
                     fontFamily: WebRootTokens.fontFamily,
                     fontFamilyFallback: WebRootTokens.fontFamilyFallback,
@@ -505,11 +481,10 @@ class _LightChip extends StatelessWidget {
                     letterSpacing: 1,
                   ),
                 ),
-                SizedBox(height: 1),
-                // Design (.chip--ia): só label + value, sem delta extra.
+                const SizedBox(height: 1),
                 Text(
-                  '12 produtos',
-                  style: TextStyle(
+                  l10n.chipIaValue,
+                  style: const TextStyle(
                     color: WebRootTokens.ink,
                     fontFamily: WebRootTokens.fontFamily,
                     fontFamilyFallback: WebRootTokens.fontFamilyFallback,
@@ -528,10 +503,11 @@ class _LightChip extends StatelessWidget {
 }
 
 class _RatingChip extends StatelessWidget {
-  const _RatingChip();
+  const _RatingChip({required this.l10n});
+  final WebRootL10n l10n;
+
   @override
   Widget build(BuildContext context) {
-    // Design: .chip--rating no desktop tem rotate(-4deg) e fica bottom-left.
     return Transform.rotate(
       angle: -0.07,
       child: Container(
@@ -559,19 +535,16 @@ class _RatingChip extends StatelessWidget {
                 color: WebRootTokens.accent.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.star,
-                  color: WebRootTokens.accent, size: 20),
+              child: const Icon(Icons.star, color: WebRootTokens.accent, size: 20),
             ),
             const SizedBox(width: 10),
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                // Design (.chip--rating): label "App Store Brasil" +
-                // value "4,9 ★ · top finanças".
+              children: [
                 Text(
-                  'APP STORE BRASIL',
-                  style: TextStyle(
+                  l10n.chipRatingStore,
+                  style: const TextStyle(
                     color: WebRootTokens.fgMuted,
                     fontFamily: WebRootTokens.fontFamily,
                     fontFamilyFallback: WebRootTokens.fontFamilyFallback,
@@ -580,10 +553,10 @@ class _RatingChip extends StatelessWidget {
                     letterSpacing: 1,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  '4,9 ★ · top finanças',
-                  style: TextStyle(
+                  l10n.chipRatingValue,
+                  style: const TextStyle(
                     color: WebRootTokens.ink,
                     fontFamily: WebRootTokens.fontFamily,
                     fontFamilyFallback: WebRootTokens.fontFamilyFallback,
