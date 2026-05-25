@@ -9,8 +9,6 @@ import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
-import 'create_account_web.dart';
-import 'esqueceu_senha_web.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -111,17 +109,11 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _forgotPassword() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const EsqueceuSenhaWeb()),
-    );
+    Navigator.pushNamed(context, '/forgot-password');
   }
 
   void _createAccount() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CreateAccountWeb()),
-    );
+    Navigator.pushNamed(context, '/register');
   }
 
   @override

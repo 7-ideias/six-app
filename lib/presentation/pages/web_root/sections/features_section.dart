@@ -99,27 +99,58 @@ class FeaturesSection extends StatelessWidget {
   }
 
   Widget _gridDesktop(List<(String, String)> cards) {
+    // Cards organizados em linhas de 3 colunas. Cada linha usa IntrinsicHeight
+    // para que todos os cards estiquem até a altura do mais alto, garantindo
+    // uniformidade visual independentemente do tamanho do título/descrição.
     return LayoutBuilder(
       builder: (context, c) {
         const cols = 3;
         const gap = 20.0;
         final cardW = (c.maxWidth - gap * (cols - 1)) / cols;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: List.generate(cards.length, (i) {
-            final (title, body) = cards[i];
-            return SizedBox(
-              width: cardW,
-              child: FeatureCard(
-                icon: _iconData[i],
-                iconColor: _iconColors[i],
-                title: title,
-                description: body,
-                isDesktop: true,
+        final rows = <Widget>[];
+
+        for (int row = 0; row * cols < cards.length; row++) {
+          final rowItems = <Widget>[];
+          for (int col = 0; col < cols; col++) {
+            final i = row * cols + col;
+            if (i >= cards.length) {
+              // Slot vazio para manter a grade alinhada caso o número de
+              // cards não seja múltiplo do número de colunas.
+              rowItems.add(SizedBox(width: cardW));
+            } else {
+              final (title, body) = cards[i];
+              rowItems.add(
+                SizedBox(
+                  width: cardW,
+                  // stretch: estica o card até a altura do IntrinsicHeight da linha.
+                  child: FeatureCard(
+                    icon: _iconData[i],
+                    iconColor: _iconColors[i],
+                    title: title,
+                    description: body,
+                    isDesktop: true,
+                  ),
+                ),
+              );
+            }
+            if (col < cols - 1) rowItems.add(const SizedBox(width: gap));
+          }
+          rows.add(
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: rowItems,
               ),
-            );
-          }),
+            ),
+          );
+          if ((row + 1) * cols < cards.length) {
+            rows.add(const SizedBox(height: gap));
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: rows,
         );
       },
     );

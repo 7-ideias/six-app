@@ -5,6 +5,10 @@ import '../../core/services/recuperacao_senha_service.dart';
 import '../components/web_auth_shell.dart';
 import 'verificar_codigo_recuperacao_web.dart';
 
+/// Tela "Esqueceu a senha?" mapeada para a rota `/forgot-password`.
+///
+/// "Voltar" usa `pushReplacementNamed('/login')` quando não há histórico,
+/// garantindo URL correta no browser.
 class EsqueceuSenhaWeb extends StatefulWidget {
   const EsqueceuSenhaWeb({super.key});
 
@@ -26,6 +30,14 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  void _goToLogin() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
   }
 
   Future<void> _enviarCodigo() async {
@@ -58,6 +70,7 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
   Widget build(BuildContext context) {
     return WebAuthShell(
       showBack: true,
+      onBack: _goToLogin,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -71,7 +84,6 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
             controller: _emailCtrl,
             hint: 'seu@email.com',
             label: 'E-mail',
-            prefixIcon: Icons.mail_outline_rounded,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _enviarCodigo(),

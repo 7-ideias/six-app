@@ -63,46 +63,57 @@ class _DesktopHeaderState extends State<DesktopHeader> {
           // Logo à esquerda — fora do flex/centering.
           _logo(),
           // Conteúdo centralizado (nav + buttons) com borda inferior.
+          // LayoutBuilder detecta largura disponível e adapta padding e
+          // visibilidade do botão "Entrar" para evitar overflow em desktops
+          // estreitos (1024-1130px). O CTA principal sempre permanece visível.
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: scheme.border),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 56),
-              child: Row(
-                children: [
-                  const Expanded(child: SizedBox()),
-                  _CenteredNav(
-                    items: items,
-                    active: _active,
-                    scheme: scheme,
-                    onTap: (id) {
-                      setState(() => _active = id);
-                      widget.onNavTap?.call(id);
-                    },
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final narrow = constraints.maxWidth < 880;
+                final hPad = narrow ? 24.0 : 40.0;
+                return Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: scheme.border),
+                    ),
                   ),
-                  const Expanded(child: SizedBox()),
-                  const WebLanguageSwitcher(),
-                  const SizedBox(width: 8),
-                  const WebDarkToggle(),
-                  const SizedBox(width: 16),
-                  ResponsiveButton(
-                    label: l10n.navLogin,
-                    onPressed: widget.onLogin,
-                    variant: WebButtonVariant.ghost,
-                    size: WebButtonSize.sm,
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: Row(
+                    children: [
+                      const Expanded(child: SizedBox()),
+                      _CenteredNav(
+                        items: items,
+                        active: _active,
+                        scheme: scheme,
+                        onTap: (id) {
+                          setState(() => _active = id);
+                          widget.onNavTap?.call(id);
+                        },
+                      ),
+                      const Expanded(child: SizedBox()),
+                      const WebLanguageSwitcher(),
+                      const SizedBox(width: 8),
+                      const WebDarkToggle(),
+                      const SizedBox(width: 16),
+                      if (!narrow) ...[
+                        ResponsiveButton(
+                          label: l10n.navLogin,
+                          onPressed: widget.onLogin,
+                          variant: WebButtonVariant.ghost,
+                          size: WebButtonSize.sm,
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      ResponsiveButton(
+                        label: l10n.navSignup,
+                        onPressed: widget.onSignup,
+                        variant: WebButtonVariant.primary,
+                        size: WebButtonSize.sm,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  ResponsiveButton(
-                    label: l10n.navSignup,
-                    onPressed: widget.onSignup,
-                    variant: WebButtonVariant.primary,
-                    size: WebButtonSize.sm,
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
