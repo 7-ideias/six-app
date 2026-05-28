@@ -22,8 +22,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   ];
   final Map<String, TextEditingController> _valorPorForma = {};
   final Set<String> _formasSelecionadas = {};
-  String? _clienteSelecionado;
-  bool _oferecerGarantia = false;
 
   @override
   void dispose() {
@@ -32,16 +30,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       controller.dispose();
     }
     super.dispose();
-  }
-
-  void _buscarProduto(String query) {
-    setState(() {
-      _produtosSelecionados.add({
-        'nome': query,
-        'preco': 0.0,
-        'quantidade': 1,
-      });
-    });
   }
 
   Future<void> _abrirSelecaoProduto() async {

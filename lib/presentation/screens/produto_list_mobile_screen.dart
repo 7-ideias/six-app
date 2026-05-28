@@ -160,7 +160,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildSearchField() {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(

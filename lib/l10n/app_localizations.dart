@@ -113,12 +113,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fast checkout service, item inclusion and sale closing.'**
   String get pdvQuickServiceDescription;
-
-  /// No description provided for @teste.
-  ///
-  /// In en, this message translates to:
-  /// **'apague '**
-  String get teste;
 }
 
 class _AppLocalizationsDelegate

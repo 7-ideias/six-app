@@ -25,7 +25,6 @@ class _CadastroListaBodyState extends State<CadastroListaBody> {
   List<DescontoModel> descontosFiltrados = [];
   String termoBusca = '';
   String ordenacao = 'nome';
-  TextEditingController _controllerBusca = TextEditingController();
   final List<String> descontos = List.generate(
     20,
     (index) => 'Produto ${index + 1}',

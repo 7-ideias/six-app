@@ -30,7 +30,7 @@ class HttpResumoDaEmpresaApiClient implements TelaInicialWebApiClient {
     final response = await _httpClient.get(
       uri,
       headers: {
-        'idUnicoDaEmpresa': idUnicoDaEmpresa!!,
+        'idUnicoDaEmpresa': idUnicoDaEmpresa!,
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $jwtToken',
       },
