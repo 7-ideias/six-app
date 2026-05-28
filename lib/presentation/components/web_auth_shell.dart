@@ -5,6 +5,8 @@ import 'package:sixpos/design_system/components/auth/six_auth_or_divider.dart';
 import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dart';
 import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
 import 'package:sixpos/design_system/tokens/auth_tokens.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/web_language_switcher.dart';
 import 'package:flutter/material.dart';
 
 // Shell web de autenticação: painel de marca (lado esq.) + painel de formulário.
@@ -339,48 +341,64 @@ class _FormPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = WebRootL10n.of(context);
     return SafeArea(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: SixAuthTokens.formPanePaddingWeb,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: SixAuthTokens.formPaneMaxWidth,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (showBack)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: onBack ?? () => Navigator.maybePop(context),
-                      icon: const Icon(
-                        Icons.arrow_back_rounded,
-                        size: 18,
-                        color: SixAuthTokens.colorTextPrimary,
-                      ),
-                      label: const Text(
-                        'Voltar',
-                        style: TextStyle(
-                          color: SixAuthTokens.colorTextPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                      ),
-                    ),
-                  ),
-                if (showBack) const SizedBox(height: 8),
-                child,
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Barra superior com seletor de idioma alinhado à direita.
+          Padding(
+            padding: const EdgeInsets.only(top: 12, right: 16),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: const WebLanguageSwitcher(),
             ),
           ),
-        ),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: SixAuthTokens.formPanePaddingWeb,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: SixAuthTokens.formPaneMaxWidth,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (showBack)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: onBack ?? () => Navigator.maybePop(context),
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              size: 18,
+                              color: SixAuthTokens.colorTextPrimary,
+                            ),
+                            label: Text(
+                              l10n.authBack,
+                              style: const TextStyle(
+                                color: SixAuthTokens.colorTextPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (showBack) const SizedBox(height: 8),
+                      child,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

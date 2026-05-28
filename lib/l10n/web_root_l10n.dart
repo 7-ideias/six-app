@@ -547,4 +547,122 @@ class WebRootL10n {
     en: 'Made in Brazil 🇧🇷',
     es: 'Hecho en Brasil 🇧🇷',
   );
+
+  // ── Auth screens (login / register / forgot-password) ─────────────────────
+
+  String get authBack => _t(pt: 'Voltar', en: 'Back', es: 'Volver');
+
+  // Login
+  String get authLoginTitle =>
+      _t(pt: 'Entrar na sua conta', en: 'Sign in to your account', es: 'Iniciar sesión');
+
+  String get authLoginSubtitle => _t(
+    pt: 'Informe seu e-mail e senha para acessar o painel.',
+    en: 'Enter your email and password to access the panel.',
+    es: 'Ingresa tu correo y contraseña para acceder al panel.',
+  );
+
+  String get authEmailHint => _t(pt: 'seu@email.com', en: 'your@email.com', es: 'tu@email.com');
+
+  String get authEmailLabel => _t(pt: 'E-mail', en: 'Email', es: 'Correo');
+
+  String get authPasswordHint =>
+      _t(pt: 'Sua senha', en: 'Your password', es: 'Tu contraseña');
+
+  String get authPasswordLabel =>
+      _t(pt: 'Senha', en: 'Password', es: 'Contraseña');
+
+  String get authForgotPassword =>
+      _t(pt: 'Esqueceu a senha?', en: 'Forgot password?', es: '¿Olvidaste tu contraseña?');
+
+  String get authSignInButton => _t(pt: 'Entrar', en: 'Sign in', es: 'Entrar');
+
+  String get authOrContinueWith =>
+      _t(pt: 'ou continue com', en: 'or continue with', es: 'o continúa con');
+
+  String get authNoAccount =>
+      _t(pt: 'Ainda não tem uma conta? ', en: "Don't have an account? ", es: '¿No tienes una cuenta? ');
+
+  String get authCreateAccountLink =>
+      _t(pt: 'Criar conta', en: 'Sign up', es: 'Crear cuenta');
+
+  // Snackbars — login
+  String get authErrFillEmailPassword =>
+      _t(pt: 'Preencha o e-mail e a senha', en: 'Fill in your email and password', es: 'Completa el correo y la contraseña');
+
+  String get authErrGoogleLogin =>
+      _t(pt: 'Não foi possível concluir o login com Google.', en: 'Could not complete Google sign-in.', es: 'No se pudo completar el inicio de sesión con Google.');
+
+  // Register
+  String get authRegisterTitle =>
+      _t(pt: 'Crie sua conta Six', en: 'Create your Six account', es: 'Crea tu cuenta Six');
+
+  String get authRegisterSubtitle => _t(
+    pt: 'Você terá sete dias de avaliação gratuita.',
+    en: 'You will have seven days of free trial.',
+    es: 'Tendrás siete días de prueba gratuita.',
+  );
+
+  String get authPasswordMinHint =>
+      _t(pt: 'Mínimo 8 caracteres', en: 'Minimum 8 characters', es: 'Mínimo 8 caracteres');
+
+  String get authConfirmPasswordHint =>
+      _t(pt: 'Repita sua senha', en: 'Repeat your password', es: 'Repite tu contraseña');
+
+  String get authConfirmPasswordLabel =>
+      _t(pt: 'Confirme a senha', en: 'Confirm password', es: 'Confirma la contraseña');
+
+  String get authPasswordMismatch =>
+      _t(pt: 'As senhas não coincidem.', en: 'Passwords do not match.', es: 'Las contraseñas no coinciden.');
+
+  String get authAgreeWith => _t(pt: 'Concordo com os ', en: 'I agree with the ', es: 'Acepto los ');
+
+  String get authTermsAndConditions =>
+      _t(pt: 'Termos e Condições', en: 'Terms and Conditions', es: 'Términos y Condiciones');
+
+  String get authCreateAccountButton =>
+      _t(pt: 'Criar conta', en: 'Create account', es: 'Crear cuenta');
+
+  String get authOrSignUpWith =>
+      _t(pt: 'ou cadastre-se com', en: 'or sign up with', es: 'o regístrate con');
+
+  // Snackbars — register
+  String get authErrAcceptTerms =>
+      _t(pt: 'Aceite os Termos e Condições para continuar', en: 'Accept the Terms and Conditions to continue', es: 'Acepta los Términos y Condiciones para continuar');
+
+  String get authErrFillAllFields =>
+      _t(pt: 'Preencha e-mail, senha e confirmação de senha', en: 'Fill in email, password and confirmation', es: 'Completa correo, contraseña y confirmación');
+
+  String get authErrPasswordTooShort =>
+      _t(pt: 'A senha precisa ter ao menos 8 caracteres', en: 'Password must be at least 8 characters', es: 'La contraseña debe tener al menos 8 caracteres');
+
+  String get authErrPasswordsNotEqual =>
+      _t(pt: 'As senhas informadas não são iguais. Verifique e tente novamente.', en: 'The passwords entered do not match. Please check and try again.', es: 'Las contraseñas ingresadas no son iguales. Verifica e intenta de nuevo.');
+
+  String get authErrGoogleRegister =>
+      _t(pt: 'Não foi possível concluir o cadastro com Google.', en: 'Could not complete Google sign-up.', es: 'No se pudo completar el registro con Google.');
+
+  String get authErrSendCode =>
+      _t(pt: 'Não foi possível enviar o código. Tente novamente.', en: 'Could not send the code. Please try again.', es: 'No se pudo enviar el código. Inténtalo de nuevo.');
+
+  // Forgot password
+  String get authForgotTitle =>
+      _t(pt: 'Esqueceu a senha?', en: 'Forgot your password?', es: '¿Olvidaste tu contraseña?');
+
+  String get authForgotSubtitle => _t(
+    pt: 'Informe seu e-mail e enviaremos um código para redefinir sua senha.',
+    en: 'Enter your email and we\'ll send a code to reset your password.',
+    es: 'Ingresa tu correo y te enviaremos un código para restablecer tu contraseña.',
+  );
+
+  String get authSendVerificationCode =>
+      _t(pt: 'Enviar código de verificação', en: 'Send verification code', es: 'Enviar código de verificación');
+
+  String get authErrEnterEmail =>
+      _t(pt: 'Informe seu e-mail', en: 'Please enter your email', es: 'Ingresa tu correo');
+
+  String get authAlreadyHaveAccount =>
+      _t(pt: 'Já tem uma conta? ', en: 'Already have an account? ', es: '¿Ya tienes una cuenta? ');
+
+  String get authSignInLink => _t(pt: 'Entrar', en: 'Sign in', es: 'Entrar');
 }

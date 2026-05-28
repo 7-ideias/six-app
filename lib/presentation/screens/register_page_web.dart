@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/exceptions/registro_otp_exception.dart';
@@ -40,6 +41,16 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
   // Erro inline mostrado abaixo do campo "Confirmar senha".
   String? _passwordMismatchError;
 
+  // Strings l10n — inicializado em didChangeDependencies (antes do build
+  // e atualizado automaticamente quando o locale muda).
+  late WebRootL10n _l10n;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _l10n = WebRootL10n.of(context);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -70,7 +81,7 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       }
       final msg = error is GoogleAuthException
           ? error.message
-          : 'Não foi possível concluir o cadastro com Google.';
+          : _l10n.authErrGoogleRegister;
       _showSnack(msg);
     });
   }
@@ -88,7 +99,8 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       return;
     }
     final equal = _passwordCtrl.text == _confirmPasswordCtrl.text;
-    final next = equal ? null : 'As senhas não coincidem.';
+    // _l10n pode não estar inicializado ainda antes do primeiro build.
+    final next = equal ? null : (_l10n.authPasswordMismatch);
     if (next != _passwordMismatchError) {
       setState(() => _passwordMismatchError = next);
     }
@@ -105,7 +117,7 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
 
   Future<void> _signUp() async {
     if (!_agreeTerms) {
-      _showSnack('Aceite os Termos e Condições para continuar');
+      _showSnack(_l10n.authErrAcceptTerms);
       return;
     }
 
@@ -114,19 +126,19 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
     final confirmSenha = _confirmPasswordCtrl.text;
 
     if (email.isEmpty || senha.isEmpty || confirmSenha.isEmpty) {
-      _showSnack('Preencha e-mail, senha e confirmação de senha');
+      _showSnack(_l10n.authErrFillAllFields);
       return;
     }
 
     if (senha.length < 8) {
-      _showSnack('A senha precisa ter ao menos 8 caracteres');
+      _showSnack(_l10n.authErrPasswordTooShort);
       return;
     }
 
     // Validação obrigatória: não dispara request se as senhas divergem.
     if (senha != confirmSenha) {
-      setState(() => _passwordMismatchError = 'As senhas não coincidem.');
-      _showSnack('As senhas informadas não são iguais. Verifique e tente novamente.');
+      setState(() => _passwordMismatchError = _l10n.authPasswordMismatch);
+      _showSnack(_l10n.authErrPasswordsNotEqual);
       return;
     }
 
@@ -146,7 +158,7 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
     } on RegistroOtpException catch (e) {
       _showSnack(e.message);
     } catch (_) {
-      _showSnack('Não foi possível enviar o código. Tente novamente.');
+      _showSnack(_l10n.authErrSendCode);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -162,17 +174,17 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const WebAuthTitle(
-            title: 'Crie sua conta Six',
-            subtitle: 'Você terá sete dias de avaliação gratuita.',
+          WebAuthTitle(
+            title: _l10n.authRegisterTitle,
+            subtitle: _l10n.authRegisterSubtitle,
           ),
           const SizedBox(height: 28),
 
           // ── E-mail ──────────────────────────────────────────────────────
           WebAuthTextField(
             controller: _emailCtrl,
-            hint: 'seu@email.com',
-            label: 'E-mail',
+            hint: _l10n.authEmailHint,
+            label: _l10n.authEmailLabel,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
           ),
@@ -181,8 +193,8 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
           // ── Senha ───────────────────────────────────────────────────────
           WebAuthTextField(
             controller: _passwordCtrl,
-            hint: 'Mínimo 8 caracteres',
-            label: 'Senha',
+            hint: _l10n.authPasswordMinHint,
+            label: _l10n.authPasswordLabel,
             obscure: _obscurePassword,
             textInputAction: TextInputAction.next,
             suffix: IconButton(
@@ -203,8 +215,8 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
           // ── Confirmar senha ─────────────────────────────────────────────
           WebAuthTextField(
             controller: _confirmPasswordCtrl,
-            hint: 'Repita sua senha',
-            label: 'Confirme a senha',
+            hint: _l10n.authConfirmPasswordHint,
+            label: _l10n.authConfirmPasswordLabel,
             obscure: _obscureConfirmPassword,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _signUp(),
@@ -269,9 +281,9 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                           height: 1.4,
                         ),
                         children: [
-                          const TextSpan(text: 'Concordo com os '),
+                          TextSpan(text: _l10n.authAgreeWith),
                           TextSpan(
-                            text: 'Termos e Condições',
+                            text: _l10n.authTermsAndConditions,
                             style: TextStyle(
                               color: primary,
                               fontWeight: FontWeight.w600,
@@ -289,7 +301,7 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
           const SizedBox(height: 20),
 
           WebAuthPrimaryButton(
-            label: 'Criar conta',
+            label: _l10n.authCreateAccountButton,
             onPressed: _signUp,
             isLoading: _isLoading,
           ),
@@ -303,7 +315,7 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  'ou cadastre-se com',
+                  _l10n.authOrSignUpWith,
                   style: TextStyle(
                     color: WebAuthShell.labelGrey(),
                     fontSize: 13,
@@ -330,9 +342,9 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                     color: WebAuthShell.labelGrey(),
                   ),
                   children: [
-                    const TextSpan(text: 'Já tem uma conta? '),
+                    TextSpan(text: _l10n.authAlreadyHaveAccount),
                     TextSpan(
-                      text: 'Entrar',
+                      text: _l10n.authSignInLink,
                       style: TextStyle(
                         color: primary,
                         fontWeight: FontWeight.w700,

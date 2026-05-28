@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/exceptions/recuperacao_senha_exception.dart';
 import '../../core/services/recuperacao_senha_service.dart';
@@ -22,6 +23,9 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
   bool _isLoading = false;
 
+  // Strings l10n capturadas no build para uso em callbacks assíncronos.
+  late WebRootL10n _l10n;
+
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -43,7 +47,7 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
   Future<void> _enviarCodigo() async {
     final email = _emailCtrl.text.trim();
     if (email.isEmpty) {
-      _showSnack('Informe seu e-mail');
+      _showSnack(_l10n.authErrEnterEmail);
       return;
     }
 
@@ -60,7 +64,7 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
     } on RecuperacaoSenhaException catch (e) {
       _showSnack(e.message);
     } catch (_) {
-      _showSnack('Não foi possível enviar o código. Tente novamente.');
+      _showSnack(_l10n.authErrSendCode);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -68,29 +72,30 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
   @override
   Widget build(BuildContext context) {
+    _l10n = WebRootL10n.of(context);
+
     return WebAuthShell(
       showBack: true,
       onBack: _goToLogin,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const WebAuthTitle(
-            title: 'Esqueceu a senha?',
-            subtitle:
-                'Informe seu e-mail e enviaremos um código para redefinir sua senha.',
+          WebAuthTitle(
+            title: _l10n.authForgotTitle,
+            subtitle: _l10n.authForgotSubtitle,
           ),
           const SizedBox(height: 32),
           WebAuthTextField(
             controller: _emailCtrl,
-            hint: 'seu@email.com',
-            label: 'E-mail',
+            hint: _l10n.authEmailHint,
+            label: _l10n.authEmailLabel,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _enviarCodigo(),
           ),
           const SizedBox(height: 28),
           WebAuthPrimaryButton(
-            label: 'Enviar código de verificação',
+            label: _l10n.authSendVerificationCode,
             onPressed: _enviarCodigo,
             isLoading: _isLoading,
           ),
