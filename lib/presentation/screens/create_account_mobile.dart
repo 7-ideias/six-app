@@ -1,7 +1,7 @@
-import 'package:appplanilha/design_system/components/auth/six_auth_input.dart';
-import 'package:appplanilha/design_system/components/auth/six_auth_primary_button.dart';
-import 'package:appplanilha/design_system/components/auth/six_auth_title.dart';
-import 'package:appplanilha/design_system/tokens/auth_tokens.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_input.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
+import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
@@ -24,12 +24,15 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
+  final TextEditingController _confirmPasswordCtrl = TextEditingController();
   final RegistroOtpService _otpService = RegistroOtpService();
   final AuthService _authService = AuthService();
 
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
   bool _isLoading = false;
+  String? _passwordMismatchError;
 
   @override
   void dispose() {
@@ -38,6 +41,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -55,16 +59,31 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     final sobrenome = _surnameCtrl.text.trim();
     final celular = _phoneCtrl.text.trim();
     final email = _emailCtrl.text.trim();
-    final password = _passwordCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    final confirmPassword = _confirmPasswordCtrl.text;
 
     if (nome.isEmpty ||
         sobrenome.isEmpty ||
         celular.isEmpty ||
         email.isEmpty ||
-        password.isEmpty) {
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showSnack('Preencha todos os campos');
       return;
     }
+
+    if (password.length < 8) {
+      _showSnack('A senha precisa ter ao menos 8 caracteres');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() => _passwordMismatchError = 'As senhas não coincidem.');
+      _showSnack('As senhas informadas não são iguais. Verifique e tente novamente.');
+      return;
+    }
+
+    setState(() => _passwordMismatchError = null);
 
     setState(() => _isLoading = true);
     try {
@@ -206,8 +225,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                         hint: 'Mínimo 8 caracteres',
                         controller: _passwordCtrl,
                         obscure: _obscurePassword,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _signUp(),
+                        textInputAction: TextInputAction.next,
                         suffix: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -221,6 +239,43 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 14),
+
+                      // ── Confirmar senha ─────────────────────────────────
+                      SixAuthInput(
+                        label: 'Confirme a senha',
+                        hint: 'Repita sua senha',
+                        controller: _confirmPasswordCtrl,
+                        obscure: _obscureConfirmPassword,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _signUp(),
+                        suffix: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: SixAuthTokens.colorDividerText,
+                            size: 20,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscureConfirmPassword =
+                                !_obscureConfirmPassword,
+                          ),
+                        ),
+                      ),
+                      if (_passwordMismatchError != null) ...[
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            _passwordMismatchError!,
+                            style: const TextStyle(
+                              color: Color(0xFFD32F2F),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 18),
 
                       // ── Termos ──────────────────────────────────────────

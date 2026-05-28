@@ -1,5 +1,5 @@
-import 'package:appplanilha/core/services/desconto_service.dart';
-import 'package:appplanilha/data/models/desconto_model.dart';
+import 'package:sixpos/core/services/desconto_service.dart';
+import 'package:sixpos/data/models/desconto_model.dart';
 import 'package:flutter/material.dart';
 
 class DescontoProvider with ChangeNotifier {

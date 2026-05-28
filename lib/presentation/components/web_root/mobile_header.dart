@@ -1,10 +1,10 @@
-import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
-import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/l10n/web_root_l10n.dart';
-import 'package:appplanilha/presentation/components/web_root/web_dark_toggle.dart';
-import 'package:appplanilha/presentation/components/web_root/web_language_switcher.dart';
-import 'package:appplanilha/providers/theme_provider.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/web_dark_toggle.dart';
+import 'package:sixpos/presentation/components/web_root/web_language_switcher.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -87,6 +87,7 @@ class MobileHeader extends StatelessWidget {
   }
 
   Widget _logo() {
+    final isDark = SixThemeResolver().isDark;
     return SizedBox(
       width: 130,
       height: 36,
@@ -99,6 +100,8 @@ class MobileHeader extends StatelessWidget {
           height: 80,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.high,
+          color: isDark ? Colors.white : null,
+          colorBlendMode: isDark ? BlendMode.srcIn : null,
         ),
       ),
     );

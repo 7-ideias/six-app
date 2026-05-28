@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:appplanilha/design_system/components/auth/six_auth_input.dart';
-import 'package:appplanilha/design_system/components/auth/six_auth_or_divider.dart';
-import 'package:appplanilha/design_system/components/auth/six_auth_primary_button.dart';
-import 'package:appplanilha/design_system/components/auth/six_auth_title.dart';
-import 'package:appplanilha/design_system/tokens/auth_tokens.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_input.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_or_divider.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
+import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 import 'package:flutter/material.dart';
 
 // Shell web de autenticação: painel de marca (lado esq.) + painel de formulário.

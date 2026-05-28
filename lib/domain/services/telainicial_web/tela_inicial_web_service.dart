@@ -1,7 +1,7 @@
 
 import 'dart:convert';
 
-import 'package:appplanilha/providers/telainicial_web_provider.dart';
+import 'package:sixpos/providers/telainicial_web_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 

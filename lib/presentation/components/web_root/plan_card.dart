@@ -1,8 +1,8 @@
-import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
-import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/presentation/components/web_root/responsive_button.dart';
-import 'package:appplanilha/providers/theme_provider.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/presentation/components/web_root/responsive_button.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -106,7 +106,7 @@ class _PlanCardState extends State<PlanCard> {
         padding: EdgeInsets.all(isDesktop ? 28 : 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: isDesktop ? MainAxisSize.max : MainAxisSize.min,
           children: [
             _header(featured, scheme),
             const SizedBox(height: 16),
@@ -128,7 +128,8 @@ class _PlanCardState extends State<PlanCard> {
             ),
             const SizedBox(height: 20),
             ...plan.features.map((f) => _featureRow(f, featured, scheme)),
-            const SizedBox(height: 20),
+            if (isDesktop) const Spacer(),
+            if (!isDesktop) const SizedBox(height: 20),
             _cta(featured),
           ],
         ),

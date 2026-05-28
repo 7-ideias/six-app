@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:appplanilha/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';

@@ -1,4 +1,4 @@
-import 'package:appplanilha/presentation/screens/preferencias_sub_pedidos_catalogos_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/preferencias_sub_pedidos_catalogos_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class PreferencesMobileScreen extends StatefulWidget {

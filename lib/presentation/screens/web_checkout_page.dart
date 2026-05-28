@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:appplanilha/presentation/screens/web_marketing_localization.dart';
-import 'package:appplanilha/providers/locale_settings_provider.dart';
+import 'package:sixpos/presentation/screens/web_marketing_localization.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';

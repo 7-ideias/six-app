@@ -1,4 +1,4 @@
-import 'package:appplanilha/presentation/screens/seguimento_selecionar_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/seguimento_selecionar_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class SeguimentoMobileScreen extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:appplanilha/core/services/auto_customer_public_service.dart';
+import 'package:sixpos/core/services/auto_customer_public_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

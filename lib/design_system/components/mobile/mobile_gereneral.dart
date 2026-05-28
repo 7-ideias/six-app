@@ -1,5 +1,5 @@
-import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
-import 'package:appplanilha/presentation/screens/produto_cadastrar_mobile_screen.dart';
+import 'package:sixpos/core/enums/tipo_cadastro_enum.dart';
+import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
 import 'package:flutter/material.dart';
 
 class MobileGeneralScreen extends StatefulWidget {

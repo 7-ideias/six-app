@@ -1,11 +1,11 @@
-import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
-import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/l10n/web_root_l10n.dart';
-import 'package:appplanilha/presentation/components/web_root/eyebrow.dart';
-import 'package:appplanilha/presentation/components/web_root/plan_card.dart';
-import 'package:appplanilha/presentation/components/web_root/responsive_container.dart';
-import 'package:appplanilha/providers/theme_provider.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/eyebrow.dart';
+import 'package:sixpos/presentation/components/web_root/plan_card.dart';
+import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -122,8 +122,9 @@ class _PricingSectionState extends State<PricingSection> {
         const cols = 3;
         const gap = 20.0;
         final cardW = (c.maxWidth - gap * (cols - 1)) / cols;
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return IntrinsicHeight(
+          child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < plans.length; i++) ...[
               if (i > 0) const SizedBox(width: gap),
@@ -138,6 +139,7 @@ class _PricingSectionState extends State<PricingSection> {
               ),
             ],
           ],
+        ),
         );
       },
     );

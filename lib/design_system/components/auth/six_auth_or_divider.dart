@@ -1,4 +1,4 @@
-import 'package:appplanilha/design_system/tokens/auth_tokens.dart';
+import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 import 'package:flutter/material.dart';
 
 /// Divisor "ou continue com" entre o formulário e o botão Google.

@@ -27,32 +27,33 @@ class RegisterPageWeb extends StatefulWidget {
 
 class _RegisterPageWebState extends State<RegisterPageWeb> {
   final TextEditingController _emailCtrl = TextEditingController();
-  final TextEditingController _confirmEmailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
+  final TextEditingController _confirmPasswordCtrl = TextEditingController();
   final RegistroOtpService _otpService = RegistroOtpService();
   final AuthService _authService = AuthService();
 
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
   bool _isLoading = false;
 
-  // Erro inline mostrado abaixo do campo "Confirmar e-mail".
-  String? _emailMismatchError;
+  // Erro inline mostrado abaixo do campo "Confirmar senha".
+  String? _passwordMismatchError;
 
   @override
   void initState() {
     super.initState();
     _listenGoogleSignIn();
     // Re-valida em tempo real conforme o usuário digita.
-    _confirmEmailCtrl.addListener(_validateEmailsMatch);
-    _emailCtrl.addListener(_validateEmailsMatch);
+    _passwordCtrl.addListener(_validatePasswordsMatch);
+    _confirmPasswordCtrl.addListener(_validatePasswordsMatch);
   }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
-    _confirmEmailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     _authService.cancelPendingWebGoogleLogin();
     super.dispose();
   }
@@ -78,19 +79,18 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  void _validateEmailsMatch() {
+  void _validatePasswordsMatch() {
     // Só mostra o erro quando o usuário começou a digitar a confirmação.
-    if (_confirmEmailCtrl.text.isEmpty) {
-      if (_emailMismatchError != null) {
-        setState(() => _emailMismatchError = null);
+    if (_confirmPasswordCtrl.text.isEmpty) {
+      if (_passwordMismatchError != null) {
+        setState(() => _passwordMismatchError = null);
       }
       return;
     }
-    final equal = _emailCtrl.text.trim().toLowerCase() ==
-        _confirmEmailCtrl.text.trim().toLowerCase();
-    final next = equal ? null : 'Os e-mails não coincidem.';
-    if (next != _emailMismatchError) {
-      setState(() => _emailMismatchError = next);
+    final equal = _passwordCtrl.text == _confirmPasswordCtrl.text;
+    final next = equal ? null : 'As senhas não coincidem.';
+    if (next != _passwordMismatchError) {
+      setState(() => _passwordMismatchError = next);
     }
   }
 
@@ -110,23 +110,23 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
     }
 
     final email = _emailCtrl.text.trim();
-    final confirmEmail = _confirmEmailCtrl.text.trim();
-    final senha = _passwordCtrl.text.trim();
+    final senha = _passwordCtrl.text;
+    final confirmSenha = _confirmPasswordCtrl.text;
 
-    if (email.isEmpty || confirmEmail.isEmpty || senha.isEmpty) {
-      _showSnack('Preencha e-mail, confirmação de e-mail e senha');
-      return;
-    }
-
-    // Validação obrigatória: não dispara request se os e-mails divergem.
-    if (email.toLowerCase() != confirmEmail.toLowerCase()) {
-      setState(() => _emailMismatchError = 'Os e-mails não coincidem.');
-      _showSnack('Os e-mails informados não são iguais. Verifique e tente novamente.');
+    if (email.isEmpty || senha.isEmpty || confirmSenha.isEmpty) {
+      _showSnack('Preencha e-mail, senha e confirmação de senha');
       return;
     }
 
     if (senha.length < 8) {
       _showSnack('A senha precisa ter ao menos 8 caracteres');
+      return;
+    }
+
+    // Validação obrigatória: não dispara request se as senhas divergem.
+    if (senha != confirmSenha) {
+      setState(() => _passwordMismatchError = 'As senhas não coincidem.');
+      _showSnack('As senhas informadas não são iguais. Verifique e tente novamente.');
       return;
     }
 
@@ -178,37 +178,13 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
           ),
           const SizedBox(height: 14),
 
-          // ── Confirmar e-mail ────────────────────────────────────────────
-          WebAuthTextField(
-            controller: _confirmEmailCtrl,
-            hint: 'Repita seu e-mail',
-            label: 'Confirme o e-mail',
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-          ),
-          if (_emailMismatchError != null) ...[
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Text(
-                _emailMismatchError!,
-                style: const TextStyle(
-                  color: Color(0xFFD32F2F),
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-
           // ── Senha ───────────────────────────────────────────────────────
           WebAuthTextField(
             controller: _passwordCtrl,
             hint: 'Mínimo 8 caracteres',
             label: 'Senha',
             obscure: _obscurePassword,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _signUp(),
+            textInputAction: TextInputAction.next,
             suffix: IconButton(
               icon: Icon(
                 _obscurePassword
@@ -222,6 +198,42 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
               ),
             ),
           ),
+          const SizedBox(height: 14),
+
+          // ── Confirmar senha ─────────────────────────────────────────────
+          WebAuthTextField(
+            controller: _confirmPasswordCtrl,
+            hint: 'Repita sua senha',
+            label: 'Confirme a senha',
+            obscure: _obscureConfirmPassword,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _signUp(),
+            suffix: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: WebAuthShell.labelGrey(),
+                size: 20,
+              ),
+              onPressed: () => setState(
+                () => _obscureConfirmPassword = !_obscureConfirmPassword,
+              ),
+            ),
+          ),
+          if (_passwordMismatchError != null) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                _passwordMismatchError!,
+                style: const TextStyle(
+                  color: Color(0xFFD32F2F),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
 
           // ── Termos ──────────────────────────────────────────────────────

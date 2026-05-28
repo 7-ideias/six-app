@@ -1,8 +1,8 @@
-import 'package:appplanilha/presentation/screens/produto_lista_sub_painel_web.dart';
-import 'package:appplanilha/sub_painel_cadastro_cliente.dart';
-import 'package:appplanilha/sub_painel_cadastro_colaborador.dart';
-import 'package:appplanilha/sub_painel_cadastro_produto.dart';
-import 'package:appplanilha/sub_painel_configuracoes.dart';
+import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
+import 'package:sixpos/sub_painel_cadastro_cliente.dart';
+import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
+import 'package:sixpos/sub_painel_cadastro_produto.dart';
+import 'package:sixpos/sub_painel_configuracoes.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/produto_model.dart';

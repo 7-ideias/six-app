@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:appplanilha/presentation/screens/pdv_mobile_screen.dart';
-import 'package:appplanilha/presentation/screens/produto_list_mobile_screen.dart';
-import 'package:appplanilha/presentation/screens/tabela_de_precos_mobile_screen.dart';
-import 'package:appplanilha/core/utils/produto_helper.dart';
-import 'package:appplanilha/data/models/produto_model.dart';
-import 'package:appplanilha/providers/produtos_list_provider.dart';
+import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/tabela_de_precos_mobile_screen.dart';
+import 'package:sixpos/core/utils/produto_helper.dart';
+import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';

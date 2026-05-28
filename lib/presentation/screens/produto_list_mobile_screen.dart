@@ -1,5 +1,5 @@
-import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
-import 'package:appplanilha/core/utils/produto_helper.dart';
+import 'package:sixpos/core/enums/tipo_cadastro_enum.dart';
+import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

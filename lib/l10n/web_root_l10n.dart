@@ -168,15 +168,15 @@ class WebRootL10n {
       _t(pt: 'Recursos', en: 'Features', es: 'Recursos');
 
   String get featuresSectionTitle => _t(
-    pt: 'Tudo que sua loja precisa, sem a planilha do tio.',
-    en: 'Everything your store needs, no more spreadsheets.',
-    es: 'Todo lo que tu tienda necesita, sin hojas de cálculo.',
+    pt: 'Módulos integrados para toda a sua operação.',
+    en: 'Integrated modules for your entire operation.',
+    es: 'Módulos integrados para toda su operación.',
   );
 
   String get featuresSectionLeadDesktop => _t(
     pt:
-        'Pet shop, papelaria, assistência técnica, loja de roupas — o Six '
-        'atende o mesmo dia-a-dia que você já vive, só que organizado.',
+        'Acompanhe todas as movimentações de caixa, previsualize fluxo de caixa por período,'
+        'receba alertas de vencimento e tenha relatórios executivos diários.',
     en:
         'Pet shop, stationery, tech repair, clothing store — Six handles '
         'the same day-to-day you already live, just organized.',

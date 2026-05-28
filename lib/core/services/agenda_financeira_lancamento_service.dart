@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:appplanilha/core/config/app_config.dart';
-import 'package:appplanilha/core/services/auth_service.dart';
-import 'package:appplanilha/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/core/config/app_config.dart';
+import 'package:sixpos/core/services/auth_service.dart';
+import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:http/http.dart' as http;
 
 class AgendaFinanceiraLancamentoService {

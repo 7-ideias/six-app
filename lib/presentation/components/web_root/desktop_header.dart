@@ -1,11 +1,11 @@
-import 'package:appplanilha/design_system/helpers/six_theme_resolver.dart';
-import 'package:appplanilha/design_system/tokens/web_root_scheme.dart';
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/l10n/web_root_l10n.dart';
-import 'package:appplanilha/presentation/components/web_root/responsive_button.dart';
-import 'package:appplanilha/presentation/components/web_root/web_dark_toggle.dart';
-import 'package:appplanilha/presentation/components/web_root/web_language_switcher.dart';
-import 'package:appplanilha/providers/theme_provider.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/responsive_button.dart';
+import 'package:sixpos/presentation/components/web_root/web_dark_toggle.dart';
+import 'package:sixpos/presentation/components/web_root/web_language_switcher.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -122,6 +122,7 @@ class _DesktopHeaderState extends State<DesktopHeader> {
   }
 
   Widget _logo() {
+    final isDark = SixThemeResolver().isDark;
     return Padding(
       padding: const EdgeInsets.only(left: 32),
       child: SizedBox(
@@ -136,6 +137,8 @@ class _DesktopHeaderState extends State<DesktopHeader> {
             height: 150,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
+            color: isDark ? Colors.white : null,
+            colorBlendMode: isDark ? BlendMode.srcIn : null,
           ),
         ),
       ),

@@ -1,6 +1,6 @@
-import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
-import 'package:appplanilha/data/models/desconto_model.dart';
-import 'package:appplanilha/design_system/components/mobile/mobile_gereneral.dart';
+import 'package:sixpos/core/enums/tipo_cadastro_enum.dart';
+import 'package:sixpos/data/models/desconto_model.dart';
+import 'package:sixpos/design_system/components/mobile/mobile_gereneral.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,6 +1,6 @@
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/l10n/web_root_l10n.dart';
-import 'package:appplanilha/presentation/components/web_root/responsive_container.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
 import 'package:flutter/material.dart';
 
 // Footer desktop: 5 colunas (1.4fr + 4*1fr), ink-deep bg.
