@@ -10,19 +10,15 @@ import '../components/web_auth_shell.dart';
 import 'conta_criada_web.dart';
 
 class VerificarEmailWeb extends StatefulWidget {
-  final String nome;
-  final String sobrenome;
+  // Fluxo simplificado: só email + senha. Demais campos (nome/sobrenome/celular)
+  // são derivados no backend a partir do e-mail.
   final String email;
   final String senha;
-  final String celular;
 
   const VerificarEmailWeb({
     super.key,
-    required this.nome,
-    required this.sobrenome,
     required this.email,
     required this.senha,
-    this.celular = '',
   });
 
   @override
@@ -150,11 +146,8 @@ class _VerificarEmailWebState extends State<VerificarEmailWeb> {
     try {
       await _otpService.validarCodigo(email: widget.email, codigo: code);
       await _novaEmpresaService.criarNovaEmpresa(
-        nome: widget.nome,
-        sobrenome: widget.sobrenome,
         email: widget.email,
         senha: widget.senha,
-        celular: widget.celular,
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(

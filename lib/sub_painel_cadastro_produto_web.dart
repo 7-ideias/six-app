@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:typed_data';
 
-import 'package:appplanilha/core/services/produto_service.dart';
-import 'package:appplanilha/data/models/imagem_sugestao_model.dart';
-import 'package:appplanilha/data/models/produto_imagem_model.dart';
-import 'package:appplanilha/data/models/produto_model.dart';
-import 'package:appplanilha/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
-import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
-import 'package:appplanilha/presentation/components/imagem_sugestoes_section.dart';
+import 'package:sixpos/core/services/produto_service.dart';
+import 'package:sixpos/data/models/imagem_sugestao_model.dart';
+import 'package:sixpos/data/models/produto_imagem_model.dart';
+import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
+import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
+import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 

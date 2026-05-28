@@ -1,5 +1,5 @@
-name: appplanilha
-description: "A new Flutter project."
+name: sixpos
+description: "Six Point of Sale"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -27,7 +27,6 @@ dependencies:
   signature: ^5.3.0
   flutter_animate: ^4.2.0
   http_interceptor: ^1.0.2
-  lottie: ^2.7.0
   google_sign_in: ^6.2.1
   google_sign_in_web: ^0.12.4
 
@@ -46,3 +45,4 @@ flutter:
     - assets/images/web/
     - assets/images/stores/
     - assets/images/onboading/
+    - assets/images/unsplash-1.jpg

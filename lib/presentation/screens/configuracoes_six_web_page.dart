@@ -40,8 +40,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
   bool _mostrarResumoLateral = true;
   bool _possuiAlteracoesNaoSalvas = false;
+  // ignore: unused_field — estado de loading da aparência (ainda não exibido na UI)
   bool _carregandoAparencia = false;
-
   late final AparenciaService _aparenciaService;
 
   @override
@@ -393,124 +393,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       case SecaoConfiguracaoSix.preferenciasUsuario:
         return 'Ajustes pessoais do operador para melhorar produtividade e experiência no dia a dia.';
     }
-  }
-
-  int _quantidadeConfiguracoesAtivas() {
-    int total = 0;
-    final booleanos = [
-      _permitirMultiplasMoedas,
-      _aplicarArredondamentoFinanceiro,
-      _notificarPorEmail,
-      _notificarPorWhatsApp,
-      _notificarPorTelegram,
-      _envioAutomaticoStatus,
-      _envioManualPermitido,
-      _exibirLogoNoPdf,
-      _exibirAssinaturaCliente,
-      _exibirQrCode,
-      _controlarEstoque,
-      _exigirClienteNaVenda,
-      _exigirSerialImei,
-      _exigirTecnicoResponsavel,
-      _abrirCaixaObrigatorio,
-      _permitirVendaSemEstoque,
-      _gerarComissaoColaborador,
-      _permitirEdicaoAposFechamento,
-      _descontoManualPermitido,
-      _mfaHabilitado,
-      _encerrarSessoesInativas,
-      _permitirLoginMultiplo,
-      _exigirTrocaSenhaPeriodica,
-      _receberSomNotificacao,
-      _receberNotificacoesDesktop,
-      _mostrarDicasContextuais,
-    ];
-
-    for (final item in booleanos) {
-      if (item) total++;
-    }
-
-    return total;
-  }
-
-  int _quantidadeCamposObrigatoriosPreenchidos() {
-    final campos = [
-      _nomeEmpresaController.text.trim(),
-      _nomeFantasiaController.text.trim(),
-      _telefoneController.text.trim(),
-      _emailController.text.trim(),
-      _idiomaSelecionado.trim(),
-      _moedaSelecionada.trim(),
-    ];
-
-    return campos.where((item) => item.isNotEmpty).length;
-  }
-
-  Widget _buildHeaderTag({
-    required IconData icon,
-    required String label,
-  }) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniIndicator({
-    required String title,
-    required String value,
-  }) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            value,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildResumoSidebarHeader() {

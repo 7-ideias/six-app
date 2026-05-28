@@ -1,5 +1,9 @@
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 enum WebButtonSize { sm, md, lg }
 enum WebButtonVariant { primary, secondary, ghost }
@@ -57,6 +61,9 @@ class _ResponsiveButtonState extends State<ResponsiveButton> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
+    final isDark = SixThemeResolver().isDark;
+    final scheme = WebRootScheme(isDark: isDark);
     final s = _sizing();
     final ink = WebRootTokens.ink;
     final radius = BorderRadius.circular(WebRootTokens.radiusBtn);
@@ -65,26 +72,30 @@ class _ResponsiveButtonState extends State<ResponsiveButton> {
     Color textColor;
     switch (widget.variant) {
       case WebButtonVariant.primary:
+        // Dark: accent (âmbar) com texto escuro — visível sobre qualquer fundo dark.
+        // Light: ink escuro com texto branco — comportamento original.
         decoration = BoxDecoration(
-          color: _hover ? const Color(0xFF0A212C) : ink,
+          color: isDark
+              ? (_hover ? const Color(0xFFE69423) : WebRootTokens.accent)
+              : (_hover ? const Color(0xFF0A212C) : ink),
           borderRadius: radius,
         );
-        textColor = Colors.white;
+        textColor = isDark ? ink : Colors.white;
         break;
       case WebButtonVariant.secondary:
         decoration = BoxDecoration(
-          color: _hover ? WebRootTokens.field : WebRootTokens.surface,
+          color: _hover ? scheme.hoverBg : scheme.cardBg,
           borderRadius: radius,
-          border: Border.all(color: WebRootTokens.line),
+          border: Border.all(color: scheme.border),
         );
-        textColor = WebRootTokens.fg;
+        textColor = scheme.textPrimary;
         break;
       case WebButtonVariant.ghost:
         decoration = BoxDecoration(
-          color: _hover ? WebRootTokens.lineSoft : Colors.transparent,
+          color: _hover ? scheme.hoverBg : Colors.transparent,
           borderRadius: radius,
         );
-        textColor = WebRootTokens.ink;
+        textColor = scheme.textPrimary;
         break;
     }
 

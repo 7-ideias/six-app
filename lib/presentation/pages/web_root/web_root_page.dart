@@ -1,8 +1,8 @@
-import 'package:appplanilha/core/platform_detector.dart';
-import 'package:appplanilha/presentation/pages/web_root/desktop_layout.dart';
-import 'package:appplanilha/presentation/pages/web_root/mobile_layout.dart';
-import 'package:appplanilha/presentation/pages/web_root/web_root_provider.dart';
-import 'package:appplanilha/presentation/screens/login_page_web.dart';
+import 'package:sixpos/core/platform_detector.dart';
+import 'package:sixpos/presentation/pages/web_root/desktop_layout.dart';
+import 'package:sixpos/presentation/pages/web_root/mobile_layout.dart';
+import 'package:sixpos/presentation/pages/web_root/web_root_provider.dart';
+import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

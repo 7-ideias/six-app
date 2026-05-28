@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:appplanilha/core/network/logging_interceptor.dart';
+import 'package:sixpos/core/network/logging_interceptor.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../../data/models/lib_data_models_colaborador_model.dart';

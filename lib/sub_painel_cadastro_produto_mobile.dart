@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:appplanilha/data/models/produto_model.dart';
+import 'package:sixpos/data/models/produto_model.dart';
 
 class SubPainelCadastroProduto extends StatelessWidget {
   const SubPainelCadastroProduto({

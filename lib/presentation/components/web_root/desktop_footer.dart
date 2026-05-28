@@ -1,36 +1,19 @@
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/presentation/components/web_root/responsive_container.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
 import 'package:flutter/material.dart';
 
-class _FooterCol {
-  const _FooterCol(this.title, this.items);
-  final String title;
-  final List<String> items;
-}
-
 // Footer desktop: 5 colunas (1.4fr + 4*1fr), ink-deep bg.
+// Sempre escuro (o footer é black/ink-deep em ambos os modos).
+// Suporta l10n.
 class DesktopFooter extends StatelessWidget {
   const DesktopFooter({super.key});
 
-  static const _cols = <_FooterCol>[
-    _FooterCol('Produto', ['Recursos', 'Planos', 'Cockpit', 'IA cadastro']),
-    _FooterCol('Segmentos', [
-      'Pet shop',
-      'Assistência técnica',
-      'Loja de roupas',
-      'Papelaria'
-    ]),
-    _FooterCol('Empresa', ['Sobre', 'Carreiras', 'Imprensa', 'Contato']),
-    _FooterCol('Suporte', [
-      'Central de ajuda',
-      'Status',
-      'Termos',
-      'Privacidade'
-    ]),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final l10n = WebRootL10n.of(context);
+    final cols = l10n.footerColumns;
+
     return Container(
       color: WebRootTokens.inkDeep,
       padding: const EdgeInsets.symmetric(vertical: 64),
@@ -42,10 +25,13 @@ class DesktopFooter extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(flex: 14, child: _brandCol()),
-                ..._cols.expand((c) => [
+                Expanded(flex: 14, child: _brandCol(l10n)),
+                ...cols.expand((c) => [
                       const SizedBox(width: 32),
-                      Expanded(flex: 10, child: _col(c)),
+                      Expanded(
+                        flex: 10,
+                        child: _col(title: c.$1, items: c.$2),
+                      ),
                     ]),
               ],
             ),
@@ -60,8 +46,8 @@ class DesktopFooter extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _legalText('© 2026 Six POS — feito no Brasil'),
-                  _legalText('v1.0.1 · CNPJ 00.000.000/0001-00'),
+                  _legalText(l10n.footerRights),
+                  _legalText(l10n.footerMadeBr),
                 ],
               ),
             ),
@@ -71,21 +57,18 @@ class DesktopFooter extends StatelessWidget {
     );
   }
 
-  Widget _brandCol() {
+  Widget _brandCol(WebRootL10n l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // CSS do design: `filter: invert(1) brightness(1.5)` — inverte o logo
-        // pra clarear em cima do bg ink-deep. ColorFiltered replica o mesmo.
-        // Logo footer maior — antes 40h/60 asset, agora 56h/96 asset.
         SizedBox(
           height: 56,
           child: ColorFiltered(
             colorFilter: const ColorFilter.matrix(<double>[
-              -1.5,  0,   0,   0, 255,
-               0,  -1.5,  0,   0, 255,
-               0,   0,  -1.5,  0, 255,
-               0,   0,   0,   1,   0,
+              -1.5,  0,    0,   0, 255,
+               0,   -1.5,  0,   0, 255,
+               0,    0,   -1.5, 0, 255,
+               0,    0,    0,   1,   0,
             ]),
             child: Image.asset(
               'assets/images/six-logo-flecha.png',
@@ -97,12 +80,11 @@ class DesktopFooter extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const SizedBox(
+        SizedBox(
           width: 280,
           child: Text(
-            'PDV para pequenos negócios brasileiros. Frente de caixa, '
-            'estoque, OS e financeiro, tudo num só lugar.',
-            style: TextStyle(
+            l10n.footerTagline,
+            style: const TextStyle(
               color: Color(0xA6FFFFFF),
               fontFamily: WebRootTokens.fontFamily,
               fontFamilyFallback: WebRootTokens.fontFamilyFallback,
@@ -115,16 +97,18 @@ class DesktopFooter extends StatelessWidget {
     );
   }
 
-  Widget _col(_FooterCol c) {
+  Widget _col({required String title, required List<String> items}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(c.title.toUpperCase(), style: WebRootTokens.footerColHeader),
+        Text(title.toUpperCase(), style: WebRootTokens.footerColHeader),
         const SizedBox(height: 14),
-        ...c.items.map((it) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _FooterLink(it),
-            )),
+        ...items.map(
+          (it) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _FooterLink(it),
+          ),
+        ),
       ],
     );
   }
@@ -150,6 +134,7 @@ class _FooterLink extends StatefulWidget {
 
 class _FooterLinkState extends State<_FooterLink> {
   bool _hover = false;
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(

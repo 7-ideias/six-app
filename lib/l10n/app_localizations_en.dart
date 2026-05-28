@@ -14,9 +14,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pdvQuickServiceDescription =>
       'Fast checkout service, item inclusion and sale closing.';
-
-  @override
-  String get teste => 'apague ';
 }
 
 /// The translations for English, as used in the United States (`en_US`).

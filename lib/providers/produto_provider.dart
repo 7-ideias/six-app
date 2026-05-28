@@ -1,4 +1,4 @@
-import 'package:appplanilha/data/models/produto_model.dart';
+import 'package:sixpos/data/models/produto_model.dart';
 import 'package:flutter/material.dart';
 
 import '../core/services/auth_service.dart';

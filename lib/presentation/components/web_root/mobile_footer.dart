@@ -1,4 +1,4 @@
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
 import 'package:flutter/material.dart';
 
 class _Col {

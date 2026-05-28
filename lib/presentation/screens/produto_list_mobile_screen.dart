@@ -1,5 +1,5 @@
-import 'package:appplanilha/core/enums/tipo_cadastro_enum.dart';
-import 'package:appplanilha/core/utils/produto_helper.dart';
+import 'package:sixpos/core/enums/tipo_cadastro_enum.dart';
+import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -160,7 +160,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildSearchField() {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(

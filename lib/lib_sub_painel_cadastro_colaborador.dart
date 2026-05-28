@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
+import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
 
 import 'core/services/auth_service.dart';

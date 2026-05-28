@@ -1,22 +1,24 @@
-import 'package:appplanilha/data/models/produto_model.dart';
-import 'package:appplanilha/data/services/regionalizacao/regionalizacao_api_client.dart';
-import 'package:appplanilha/domain/services/regionalizacao/regionalizacao_service.dart';
-import 'package:appplanilha/pdv_page_web.dart';
-import 'package:appplanilha/presentation/screens/login_mobile.dart';
-import 'package:appplanilha/presentation/screens/login_page_web.dart';
-import 'package:appplanilha/presentation/screens/on_boarding_screen.dart';
-import 'package:appplanilha/presentation/screens/cliente_auto_cadastro_publico_page.dart';
-import 'package:appplanilha/presentation/screens/ordem_servico_publica_page.dart';
-import 'package:appplanilha/presentation/pages/web_root/web_root_page.dart';
-import 'package:appplanilha/presentation/screens/web_checkout_page.dart';
-import 'package:appplanilha/presentation/screens/web_trial_onboarding_page.dart';
-import 'package:appplanilha/providers/empresa_provider.dart';
-import 'package:appplanilha/providers/locale_settings_provider.dart';
-import 'package:appplanilha/providers/produtos_list_provider.dart';
-import 'package:appplanilha/providers/theme_provider.dart';
+import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
+import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/pdv_page_web.dart';
+import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/presentation/screens/login_page_web.dart';
+import 'package:sixpos/presentation/screens/register_page_web.dart';
+import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
+import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
+import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.dart';
+import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
+import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
+import 'package:sixpos/presentation/screens/web_checkout_page.dart';
+import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/providers/produtos_list_provider.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:appplanilha/l10n/app_localizations.dart';
+import 'package:sixpos/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
@@ -88,6 +90,20 @@ class MyApp extends StatelessWidget {
       );
     }
 
+    if (routeUri.path == '/register') {
+      return _slidePageRoute(
+        settings: settings,
+        page: const RegisterPageWeb(),
+      );
+    }
+
+    if (routeUri.path == '/forgot-password') {
+      return _slidePageRoute(
+        settings: settings,
+        page: const EsqueceuSenhaWeb(),
+      );
+    }
+
     if (routeUri.path == '/app') {
       return MaterialPageRoute<void>(
         settings: settings,
@@ -141,6 +157,36 @@ class MyApp extends StatelessWidget {
     return MaterialPageRoute<void>(
       settings: settings,
       builder: (_) => const WebRootPage(),
+    );
+  }
+
+  /// Rota com transição de slide horizontal — usada nas telas de auth
+  /// para garantir feedback visual consistente em web (push/pop suaves).
+  PageRouteBuilder<void> _slidePageRoute({
+    required RouteSettings settings,
+    required Widget page,
+  }) {
+    return PageRouteBuilder<void>(
+      settings: settings,
+      transitionDuration: const Duration(milliseconds: 350),
+      reverseTransitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (_, __, ___) => page,
+      transitionsBuilder: (_, animation, __, child) {
+        final slide = Tween<Offset>(
+          begin: const Offset(1.0, 0.0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOutCubic,
+        ));
+        final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        );
+        return SlideTransition(
+          position: slide,
+          child: FadeTransition(opacity: fade, child: child),
+        );
+      },
     );
   }
 

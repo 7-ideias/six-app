@@ -1,9 +1,8 @@
-import 'package:appplanilha/core/services/auth_service.dart';
-import 'package:appplanilha/core/services/empresa_service.dart';
-import 'package:appplanilha/data/models/empresa_model.dart';
-import 'package:appplanilha/presentation/screens/assinatura_mobile_screen.dart';
-import 'package:appplanilha/presentation/screens/seguimento_mobile_screen.dart';
-import 'package:appplanilha/providers/empresa_provider.dart';
+import 'package:sixpos/core/services/empresa_service.dart';
+import 'package:sixpos/data/models/empresa_model.dart';
+import 'package:sixpos/presentation/screens/assinatura_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/seguimento_mobile_screen.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:flutter/material.dart';
 
 class PerfilDoMeuNegocioMobileScreen extends StatefulWidget {
@@ -27,13 +26,15 @@ class _PerfilDoMeuNegocioMobileScreenState
     final empresaProvider = EmpresaProvider();
     final empresa = empresaProvider.empresa;
 
-
-    _nomeEmpresaController =
-        TextEditingController(text: empresa?.nomeEmpresa ?? '');
-    _cnpjController =
-        TextEditingController(text: empresa?.documentoNoBrasilCNPJ ?? '');
-    _razaoSocialController =
-        TextEditingController(text: empresa?.nomeFantasia ?? '');
+    _nomeEmpresaController = TextEditingController(
+      text: empresa?.nomeEmpresa ?? '',
+    );
+    _cnpjController = TextEditingController(
+      text: empresa?.documentoNoBrasilCNPJ ?? '',
+    );
+    _razaoSocialController = TextEditingController(
+      text: empresa?.nomeFantasia ?? '',
+    );
 
     _carregarDadosDaEmpresa();
   }

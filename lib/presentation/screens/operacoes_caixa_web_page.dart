@@ -1520,41 +1520,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildResumoLinha(
-    String label,
-    double valor, {
-    bool destaque = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color:
-                    destaque
-                        ? const Color(0xff0f172a)
-                        : const Color(0xff64748b),
-                fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
-              ),
-            ),
-          ),
-          Text(
-            _formatCurrency(valor),
-            style: TextStyle(
-              color:
-                  destaque ? const Color(0xff0f172a) : const Color(0xff1e293b),
-              fontWeight: destaque ? FontWeight.w900 : FontWeight.w800,
-              fontSize: destaque ? 18 : 15,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildResumoSecundario(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -2358,22 +2323,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   //     totalOutros: totalOutros,
   //   );
   // }
-
-  NaturezaMovimento _naturezaPorTipo(OperacaoCaixaTipo tipo) {
-    switch (tipo) {
-      case OperacaoCaixaTipo.aberturaCaixa:
-      case OperacaoCaixaTipo.suprimento:
-      case OperacaoCaixaTipo.recebimentoAvulso:
-        return NaturezaMovimento.entrada;
-      case OperacaoCaixaTipo.fechamentoCaixa:
-      case OperacaoCaixaTipo.sangria:
-      case OperacaoCaixaTipo.retiradaDespesa:
-      case OperacaoCaixaTipo.ajuste:
-      case OperacaoCaixaTipo.estorno:
-      case OperacaoCaixaTipo.pagamentoAvulso:
-        return NaturezaMovimento.saida;
-    }
-  }
 
   Color _corPorNatureza(String? natureza) {
     if (natureza == null) return const Color(0xff7a8394);

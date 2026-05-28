@@ -1,4 +1,4 @@
-import 'package:appplanilha/data/models/tela_inicial_models.dart';
+import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:flutter/material.dart';
 
 class TelaInicialWebProvider with ChangeNotifier {

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:appplanilha/core/network/logging_interceptor.dart';
-import 'package:appplanilha/data/models/produto_model.dart';
+import 'package:sixpos/core/network/logging_interceptor.dart';
+import 'package:sixpos/data/models/produto_model.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../config/app_config.dart';

@@ -1,10 +1,15 @@
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/presentation/components/web_root/responsive_container.dart';
-import 'package:appplanilha/presentation/components/web_root/store_badge.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
+import 'package:sixpos/presentation/components/web_root/store_badge.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-// Banner final "Está em dúvida?" (desktop) ou "Baixe o Six e comece hoje"
-// (mobile, com store badges).
+// Banner final CTA — desktop: "Está em dúvida?" | mobile: "Baixe o Six".
+// Suporta dark mode e l10n.
 class CtaSection extends StatelessWidget {
   const CtaSection({
     super.key,
@@ -17,19 +22,21 @@ class CtaSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isDesktop) return _desktop();
-    return _mobile();
+    context.watch<ThemeProvider>();
+    final l10n = WebRootL10n.of(context);
+    final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
+    return isDesktop ? _desktop(l10n, scheme) : _mobile(l10n, scheme);
   }
 
-  Widget _desktop() {
+  Widget _desktop(WebRootL10n l10n, WebRootScheme scheme) {
     return Container(
-      color: WebRootTokens.bgCanvas,
+      color: scheme.bgCanvas,
       padding: const EdgeInsets.symmetric(vertical: 64),
       child: ResponsiveContainer(
         isDesktop: true,
         child: Container(
           decoration: BoxDecoration(
-            color: WebRootTokens.ink,
+            color: scheme.ctaBannerBg,
             borderRadius: BorderRadius.circular(WebRootTokens.radiusBig),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
@@ -41,7 +48,7 @@ class CtaSection extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Está em dúvida? Faça um teste.',
+                      l10n.ctaDesktopTitle,
                       style: WebRootTokens.sectionTitleDesktop.copyWith(
                         color: Colors.white,
                         fontSize: 26,
@@ -51,7 +58,7 @@ class CtaSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '14 dias grátis, sem cartão. Um especialista te ajuda a configurar.',
+                      l10n.ctaDesktopSub,
                       style: WebRootTokens.leadDesktop.copyWith(
                         color: const Color(0xBFFFFFFF),
                         fontSize: 15,
@@ -61,7 +68,7 @@ class CtaSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 24),
-              _whiteCta(),
+              _whiteCta(l10n),
             ],
           ),
         ),
@@ -69,7 +76,7 @@ class CtaSection extends StatelessWidget {
     );
   }
 
-  Widget _whiteCta() {
+  Widget _whiteCta(WebRootL10n l10n) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -85,12 +92,11 @@ class CtaSection extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Fale com um especialista',
+                l10n.ctaDesktopButton,
                 style: WebRootTokens.buttonMd.copyWith(color: WebRootTokens.ink),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward,
-                  size: 16, color: WebRootTokens.ink),
+              const Icon(Icons.arrow_forward, size: 16, color: WebRootTokens.ink),
             ],
           ),
         ),
@@ -98,7 +104,7 @@ class CtaSection extends StatelessWidget {
     );
   }
 
-  Widget _mobile() {
+  Widget _mobile(WebRootL10n l10n, WebRootScheme scheme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         WebRootTokens.gutterMobile,
@@ -108,7 +114,7 @@ class CtaSection extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: WebRootTokens.ink,
+          color: scheme.ctaBannerBg,
           borderRadius: BorderRadius.circular(24),
         ),
         padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
@@ -135,9 +141,9 @@ class CtaSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Baixe o Six e comece hoje.',
-                  style: TextStyle(
+                Text(
+                  l10n.ctaMobileTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontFamily: WebRootTokens.fontFamily,
                     fontFamilyFallback: WebRootTokens.fontFamilyFallback,
@@ -148,9 +154,9 @@ class CtaSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  '14 dias grátis, sem cartão. Disponível para iPhone e Android.',
-                  style: TextStyle(
+                Text(
+                  l10n.ctaMobileSub,
+                  style: const TextStyle(
                     color: Color(0xC7FFFFFF),
                     fontFamily: WebRootTokens.fontFamily,
                     fontFamilyFallback: WebRootTokens.fontFamilyFallback,

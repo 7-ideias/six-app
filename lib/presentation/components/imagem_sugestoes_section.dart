@@ -1,4 +1,4 @@
-import 'package:appplanilha/data/models/imagem_sugestao_model.dart';
+import 'package:sixpos/data/models/imagem_sugestao_model.dart';
 import 'package:flutter/material.dart';
 
 class ImagemSugestoesSection extends StatelessWidget {

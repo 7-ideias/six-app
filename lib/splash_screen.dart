@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/presentation/screens/login_mobile.dart';
-import 'package:appplanilha/presentation/screens/login_page_web.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 

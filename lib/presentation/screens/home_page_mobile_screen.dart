@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:appplanilha/pdv_page_web.dart';
+import 'package:sixpos/pdv_page_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
