@@ -25,3 +25,4 @@ ios_backup/
 
 # Forçar rastreamento de arquivos essenciais
 !/pubspec.yaml
+.github/agents/
