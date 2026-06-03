@@ -4,6 +4,7 @@ import 'package:sixpos/l10n/web_root_l10n.dart';
 import '../../core/exceptions/recuperacao_senha_exception.dart';
 import '../../core/services/recuperacao_senha_service.dart';
 import '../components/web_auth_shell.dart';
+import '../components/web_root/web_i18n_gate.dart';
 import 'verificar_codigo_recuperacao_web.dart';
 
 /// Tela "Esqueceu a senha?" mapeada para a rota `/forgot-password`.
@@ -72,35 +73,39 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
   @override
   Widget build(BuildContext context) {
-    _l10n = WebRootL10n.of(context);
+    return WebI18nGate(
+      builder: (context) {
+        _l10n = WebRootL10n.of(context);
 
-    return WebAuthShell(
-      showBack: true,
-      onBack: _goToLogin,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          WebAuthTitle(
-            title: _l10n.authForgotTitle,
-            subtitle: _l10n.authForgotSubtitle,
+        return WebAuthShell(
+          showBack: true,
+          onBack: _goToLogin,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              WebAuthTitle(
+                title: _l10n.authForgotTitle,
+                subtitle: _l10n.authForgotSubtitle,
+              ),
+              const SizedBox(height: 32),
+              WebAuthTextField(
+                controller: _emailCtrl,
+                hint: _l10n.authEmailHint,
+                label: _l10n.authEmailLabel,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _enviarCodigo(),
+              ),
+              const SizedBox(height: 28),
+              WebAuthPrimaryButton(
+                label: _l10n.authSendVerificationCode,
+                onPressed: _enviarCodigo,
+                isLoading: _isLoading,
+              ),
+            ],
           ),
-          const SizedBox(height: 32),
-          WebAuthTextField(
-            controller: _emailCtrl,
-            hint: _l10n.authEmailHint,
-            label: _l10n.authEmailLabel,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _enviarCodigo(),
-          ),
-          const SizedBox(height: 28),
-          WebAuthPrimaryButton(
-            label: _l10n.authSendVerificationCode,
-            onPressed: _enviarCodigo,
-            isLoading: _isLoading,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

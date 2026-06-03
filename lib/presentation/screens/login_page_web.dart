@@ -10,6 +10,7 @@ import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
+import '../components/web_root/web_i18n_gate.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -122,10 +123,12 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   @override
   Widget build(BuildContext context) {
-    _l10n = WebRootL10n.of(context);
-    final primary = Theme.of(context).colorScheme.primary;
+    return WebI18nGate(
+      builder: (context) {
+        _l10n = WebRootL10n.of(context);
+        final primary = Theme.of(context).colorScheme.primary;
 
-    return WebAuthShell(
+        return WebAuthShell(
       showBack: Navigator.of(context).canPop(),
       onBack: () => Navigator.of(context).maybePop(),
       child: Column(
@@ -234,8 +237,10 @@ class _LoginPageWebState extends State<LoginPageWeb> {
               ),
             ),
           ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:sixpos/core/platform_detector.dart';
 import 'package:sixpos/presentation/pages/web_root/desktop_layout.dart';
 import 'package:sixpos/presentation/pages/web_root/mobile_layout.dart';
+import 'package:sixpos/presentation/components/web_root/web_i18n_gate.dart';
 import 'package:sixpos/presentation/pages/web_root/web_root_provider.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,10 @@ class WebRootPage extends StatelessWidget {
       return const _NonWebFallback();
     }
 
-    return ChangeNotifierProvider<WebRootProvider>(
+    // O conteúdo da landing depende das traduções do backend; o gate só o
+    // constrói quando as mensagens do locale corrente estão carregadas.
+    return WebI18nGate(
+      builder: (context) => ChangeNotifierProvider<WebRootProvider>(
       create: (_) => WebRootProvider(),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -59,6 +63,7 @@ class WebRootPage extends StatelessWidget {
                   onChoosePlan: (_) => _goLogin(context),
                 );
         },
+      ),
       ),
     );
   }

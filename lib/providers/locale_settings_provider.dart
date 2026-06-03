@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models/regionalizacao_models.dart';
+import '../data/services/i18n/web_i18n_api_client.dart';
 import '../domain/models/regionalizacao_models.dart';
 import '../domain/services/regionalizacao/regionalizacao_service.dart';
+import '../l10n/web_i18n_store.dart';
 
 class LocaleSettingsProvider extends ChangeNotifier {
-  LocaleSettingsProvider({required RegionalizacaoService regionalizacaoService})
-    : _regionalizacaoService = regionalizacaoService;
+  LocaleSettingsProvider({
+    required RegionalizacaoService regionalizacaoService,
+    WebI18nApiClient? webI18nApiClient,
+  }) : _regionalizacaoService = regionalizacaoService,
+       _webI18nApiClient = webI18nApiClient ?? WebI18nApiClient();
 
   static const List<Locale> supportedLocales = <Locale>[
     Locale('pt', 'BR'),
@@ -20,13 +25,22 @@ class LocaleSettingsProvider extends ChangeNotifier {
   static const String _countryCodeKey = 'user_country_code';
 
   final RegionalizacaoService _regionalizacaoService;
+  final WebI18nApiClient _webI18nApiClient;
+
+  /// Locales cujas traduções de UI já foram buscadas no backend nesta sessão.
+  final Set<String> _loadedI18nTags = <String>{};
 
   ConfiguracaoRegionalizacaoSistema _companyConfig =
       ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
   Locale? _userOverrideLocale;
   bool _initialized = false;
+  bool _i18nLoading = false;
 
   bool get initialized => _initialized;
+
+  /// `true` enquanto uma busca de traduções de UI está em andamento. Usado pelo
+  /// `WebI18nGate` para exibir carregamento vs. estado de erro.
+  bool get i18nLoading => _i18nLoading;
 
   ConfiguracaoRegionalizacaoSistema get companyConfig => _companyConfig;
 
@@ -47,6 +61,10 @@ class LocaleSettingsProvider extends ChangeNotifier {
     }
     _initialized = true;
     notifyListeners();
+
+    // Busca as traduções de UI do backend (única fonte de conteúdo). O
+    // WebI18nGate exibe carregamento até o store estar pronto.
+    await _loadWebTranslations(currentLocale);
   }
 
   Future<void> refreshCompanyConfig() async {
@@ -88,6 +106,35 @@ class LocaleSettingsProvider extends ChangeNotifier {
       sanitized.countryCode ?? _systemFallbackLocale.countryCode!,
     );
 
+    notifyListeners();
+
+    await _loadWebTranslations(sanitized);
+  }
+
+  /// Força uma nova busca das traduções do locale corrente (botão "tentar
+  /// novamente" do `WebI18nGate` após uma falha de rede).
+  Future<void> reloadWebTranslations() =>
+      _loadWebTranslations(currentLocale, force: true);
+
+  /// Busca as traduções de UI do backend para [locale] e as injeta no
+  /// [WebI18nStore].
+  ///
+  /// Idempotente por sessão: um idioma já carregado não é rebuscado (atende
+  /// "só chama o backend ao trocar de idioma"), salvo [force] = `true`.
+  Future<void> _loadWebTranslations(Locale locale, {bool force = false}) async {
+    final tag = locale.toLanguageTag();
+    if (!force && _loadedI18nTags.contains(tag)) return;
+
+    _i18nLoading = true;
+    notifyListeners();
+
+    final messages = await _webI18nApiClient.fetchMessages(tag);
+    if (messages != null) {
+      WebI18nStore.instance.setMessages(locale.languageCode, messages);
+      _loadedI18nTags.add(tag);
+    }
+
+    _i18nLoading = false;
     notifyListeners();
   }
 
