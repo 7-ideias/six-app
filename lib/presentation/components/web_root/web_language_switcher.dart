@@ -30,7 +30,10 @@ class _WebLanguageSwitcherState extends State<WebLanguageSwitcher> {
 
   @override
   void dispose() {
-    _removeOverlay();
+    // Remove o overlay sem `setState` — o widget está sendo desmontado e chamar
+    // setState aqui dispara assertion (_lifecycleState == defunct).
+    _overlay?.remove();
+    _overlay = null;
     super.dispose();
   }
 

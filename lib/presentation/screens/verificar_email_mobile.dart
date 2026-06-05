@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/exceptions/registro_otp_exception.dart';
 import '../../core/services/nova_empresa_service.dart';
 import '../../core/services/registro_otp_service.dart';
+import '../../design_system/tokens/auth_tokens.dart';
 import 'conta_criada_mobile.dart';
 
 class VerificarEmailMobile extends StatefulWidget {
@@ -376,15 +377,19 @@ class _OtpBox extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: const BorderSide(
+                color: SixAuthTokens.colorFieldBorder,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: const BorderSide(
+                color: SixAuthTokens.colorFieldBorder,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: activeBorder, width: 1.4),
+              borderSide: BorderSide(color: activeBorder, width: 2.0),
             ),
           ),
           onChanged: onChanged,

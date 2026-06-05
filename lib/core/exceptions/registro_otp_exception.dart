@@ -1,8 +1,9 @@
 /// Códigos de erro retornados pelo backend no fluxo de registro com OTP.
 enum RegistroOtpErrorCode {
-  invalidOrExpired, // OTP_001 → 401
-  smtpFailure,      // OTP_002 → 502
-  emailNotVerified, // OTP_003 → 403
+  invalidOrExpired,  // OTP_001 → 401
+  smtpFailure,       // OTP_002 → 502
+  emailNotVerified,  // OTP_003 → 403
+  emailAlreadyExists, // 409
   unknown,
 }
 
@@ -24,6 +25,7 @@ class RegistroOtpException implements Exception {
     final codeFromStatus = switch (statusCode) {
       401 => RegistroOtpErrorCode.invalidOrExpired,
       403 => RegistroOtpErrorCode.emailNotVerified,
+      409 => RegistroOtpErrorCode.emailAlreadyExists,
       502 => RegistroOtpErrorCode.smtpFailure,
       _ => RegistroOtpErrorCode.unknown,
     };
@@ -43,6 +45,8 @@ class RegistroOtpException implements Exception {
         'Não foi possível enviar o e-mail agora. Tente novamente em instantes.',
       RegistroOtpErrorCode.emailNotVerified =>
         'E-mail não verificado. Confirme o código enviado para prosseguir.',
+      RegistroOtpErrorCode.emailAlreadyExists =>
+        'Este e-mail já está cadastrado. Faça login ou recupere sua senha.',
       RegistroOtpErrorCode.unknown =>
         'Não foi possível concluir a operação. Tente novamente.',
     };
