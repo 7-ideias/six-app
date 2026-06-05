@@ -1,3 +1,7 @@
+import 'package:sixpos/design_system/components/auth/six_auth_input.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dart';
+import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
+import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
@@ -20,12 +24,15 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
+  final TextEditingController _confirmPasswordCtrl = TextEditingController();
   final RegistroOtpService _otpService = RegistroOtpService();
   final AuthService _authService = AuthService();
 
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
   bool _isLoading = false;
+  String? _passwordMismatchError;
 
   @override
   void dispose() {
@@ -34,6 +41,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -51,16 +59,31 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     final sobrenome = _surnameCtrl.text.trim();
     final celular = _phoneCtrl.text.trim();
     final email = _emailCtrl.text.trim();
-    final password = _passwordCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    final confirmPassword = _confirmPasswordCtrl.text;
 
     if (nome.isEmpty ||
         sobrenome.isEmpty ||
         celular.isEmpty ||
         email.isEmpty ||
-        password.isEmpty) {
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showSnack('Preencha todos os campos');
       return;
     }
+
+    if (password.length < 8) {
+      _showSnack('A senha precisa ter ao menos 8 caracteres');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() => _passwordMismatchError = 'As senhas não coincidem.');
+      _showSnack('As senhas informadas não são iguais. Verifique e tente novamente.');
+      return;
+    }
+
+    setState(() => _passwordMismatchError = null);
 
     setState(() => _isLoading = true);
     try {
@@ -93,14 +116,14 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
 
   Future<void> _signUpWithGoogle() async {
     if (_isLoading) return;
-
     setState(() => _isLoading = true);
     try {
       await _authService.loginWithGoogle();
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomePageMobile(title: 'Home')),
+        MaterialPageRoute(
+            builder: (_) => const HomePageMobile(title: 'Home')),
         (route) => false,
       );
     } on GoogleAuthException catch (e) {
@@ -118,20 +141,20 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    const fieldFill = Color(0xFFF1F3F2);
-    const labelGrey = Color(0xFF8A8F8D);
-    const textDark = Color(0xFF1A1A1A);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: SixAuthTokens.colorShellBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: SixAuthTokens.colorShellBackground,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: textDark, size: 20),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(
+            Icons.arrow_back_ios_rounded,
+            color: SixAuthTokens.colorTextPrimary,
+            size: 20,
+          ),
+          onPressed: _goToLogin,
         ),
       ),
       body: SafeArea(
@@ -148,85 +171,67 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── Título ────────────────────────────────────────
-                      const Text(
-                        'Criar conta',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Preencha seus dados abaixo ou\ncadastre-se com sua conta social',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: labelGrey,
-                          height: 1.45,
-                        ),
+                      // ── Título ──────────────────────────────────────────
+                      const SixAuthTitle(
+                        title: 'Criar conta',
+                        subtitle:
+                            'Preencha seus dados abaixo ou\ncadastre-se com sua conta social',
                       ),
                       const SizedBox(height: 28),
 
-                      // ── Nome ──────────────────────────────────────────
-                      _LabeledField(
+                      // ── Nome ────────────────────────────────────────────
+                      SixAuthInput(
                         label: 'Nome',
                         hint: 'Seu primeiro nome',
                         controller: _nameCtrl,
-                        fillColor: fieldFill,
                         textInputAction: TextInputAction.next,
                         keyboardType: TextInputType.name,
                       ),
                       const SizedBox(height: 14),
 
-                      // ── Sobrenome ─────────────────────────────────────
-                      _LabeledField(
+                      // ── Sobrenome ───────────────────────────────────────
+                      SixAuthInput(
                         label: 'Sobrenome',
                         hint: 'Seu sobrenome',
                         controller: _surnameCtrl,
-                        fillColor: fieldFill,
                         textInputAction: TextInputAction.next,
                         keyboardType: TextInputType.name,
                       ),
                       const SizedBox(height: 14),
 
-                      // ── Celular ───────────────────────────────────────
-                      _LabeledField(
+                      // ── Celular ─────────────────────────────────────────
+                      SixAuthInput(
                         label: 'Celular',
                         hint: '(00) 00000-0000',
                         controller: _phoneCtrl,
-                        fillColor: fieldFill,
                         textInputAction: TextInputAction.next,
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 14),
 
-                      // ── E-mail ────────────────────────────────────────
-                      _LabeledField(
+                      // ── E-mail ──────────────────────────────────────────
+                      SixAuthInput(
                         label: 'E-mail',
                         hint: 'exemplo@email.com',
                         controller: _emailCtrl,
-                        fillColor: fieldFill,
                         textInputAction: TextInputAction.next,
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 14),
 
-                      // ── Senha ─────────────────────────────────────────
-                      _LabeledField(
+                      // ── Senha ───────────────────────────────────────────
+                      SixAuthInput(
                         label: 'Senha',
                         hint: 'Mínimo 8 caracteres',
                         controller: _passwordCtrl,
-                        fillColor: fieldFill,
                         obscure: _obscurePassword,
+                        textInputAction: TextInputAction.next,
                         suffix: IconButton(
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
-                            color: labelGrey,
+                            color: SixAuthTokens.colorDividerText,
                             size: 20,
                           ),
                           onPressed: () => setState(
@@ -234,9 +239,46 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 14),
+
+                      // ── Confirmar senha ─────────────────────────────────
+                      SixAuthInput(
+                        label: 'Confirme a senha',
+                        hint: 'Repita sua senha',
+                        controller: _confirmPasswordCtrl,
+                        obscure: _obscureConfirmPassword,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _signUp(),
+                        suffix: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: SixAuthTokens.colorDividerText,
+                            size: 20,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscureConfirmPassword =
+                                !_obscureConfirmPassword,
+                          ),
+                        ),
+                      ),
+                      if (_passwordMismatchError != null) ...[
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            _passwordMismatchError!,
+                            style: const TextStyle(
+                              color: Color(0xFFD32F2F),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 18),
 
-                      // ── Termos ────────────────────────────────────────
+                      // ── Termos ──────────────────────────────────────────
                       InkWell(
                         onTap: () =>
                             setState(() => _agreeTerms = !_agreeTerms),
@@ -268,17 +310,19 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                                   text: TextSpan(
                                     style: const TextStyle(
                                       fontSize: 13.5,
-                                      color: textDark,
+                                      color: SixAuthTokens.colorTextPrimary,
                                       height: 1.4,
                                     ),
                                     children: [
-                                      const TextSpan(text: 'Concordo com os '),
+                                      const TextSpan(
+                                          text: 'Concordo com os '),
                                       TextSpan(
                                         text: 'Termos e Condições',
                                         style: TextStyle(
                                           color: primary,
                                           fontWeight: FontWeight.w600,
-                                          decoration: TextDecoration.underline,
+                                          decoration:
+                                              TextDecoration.underline,
                                         ),
                                       ),
                                     ],
@@ -291,73 +335,48 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                       ),
                       const SizedBox(height: 20),
 
-                      // ── Botão Cadastrar ───────────────────────────────
-                      SizedBox(
-                        height: 54,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _signUp,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primary,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                primary.withValues(alpha: 0.6),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.4,
-                                  ),
-                                )
-                              : const Text(
-                                  'Cadastrar',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
+                      // ── Botão Cadastrar ─────────────────────────────────
+                      SixAuthPrimaryButton(
+                        label: 'Cadastrar',
+                        onPressed: _signUp,
+                        isLoading: _isLoading,
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Divider "Ou cadastre-se com" ──────────────────
+                      // ── Divider ─────────────────────────────────────────
                       Row(
                         children: [
                           const Expanded(
                             child: Divider(
-                                color: Color(0xFFE3E6E5), thickness: 1),
+                              color: SixAuthTokens.colorDivider,
+                              thickness: 1,
+                            ),
                           ),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: Text(
                               'Ou cadastre-se com',
                               style: TextStyle(
-                                color: labelGrey,
+                                color: SixAuthTokens.colorDividerText,
                                 fontSize: 13,
                               ),
                             ),
                           ),
                           const Expanded(
                             child: Divider(
-                                color: Color(0xFFE3E6E5), thickness: 1),
+                              color: SixAuthTokens.colorDivider,
+                              thickness: 1,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 18),
 
-                      // ── Ícones sociais ────────────────────────────────
+                      // ── Ícones sociais ──────────────────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _SocialIconButton(
-                            fillColor: fieldFill,
                             onPressed: _signUpWithApple,
                             child: const Icon(
                               Icons.apple,
@@ -367,13 +386,11 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                           ),
                           const SizedBox(width: 14),
                           _SocialIconButton(
-                            fillColor: fieldFill,
                             onPressed: _signUpWithGoogle,
                             child: const _GoogleGlyph(),
                           ),
                           const SizedBox(width: 14),
                           _SocialIconButton(
-                            fillColor: fieldFill,
                             onPressed: _signUpWithFacebook,
                             child: const Text(
                               'f',
@@ -391,7 +408,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                       const Spacer(),
                       const SizedBox(height: 16),
 
-                      // ── Rodapé ────────────────────────────────────────
+                      // ── Rodapé ──────────────────────────────────────────
                       Center(
                         child: GestureDetector(
                           onTap: _goToLogin,
@@ -400,7 +417,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                             text: TextSpan(
                               style: const TextStyle(
                                 fontSize: 13.5,
-                                color: labelGrey,
+                                color: SixAuthTokens.colorDividerText,
                               ),
                               children: [
                                 const TextSpan(text: 'Já tem uma conta? '),
@@ -428,103 +445,34 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   }
 }
 
-// ── Campo com rótulo acima ─────────────────────────────────────────────────
-class _LabeledField extends StatelessWidget {
-  final String label;
-  final String hint;
-  final TextEditingController controller;
-  final Color fillColor;
-  final bool obscure;
-  final Widget? suffix;
-  final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
-
-  const _LabeledField({
-    required this.label,
-    required this.hint,
-    required this.controller,
-    required this.fillColor,
-    this.obscure = false,
-    this.suffix,
-    this.keyboardType,
-    this.textInputAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
-        ),
-        TextField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          style: const TextStyle(fontSize: 15, color: Color(0xFF1A1A1A)),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle:
-                const TextStyle(color: Color(0xFF8A8F8D), fontSize: 15),
-            suffixIcon: suffix,
-            filled: true,
-            fillColor: fillColor,
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide:
-                  BorderSide(color: primary.withValues(alpha: 0.4), width: 1.2),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Botão circular social ──────────────────────────────────────────────────
-class _SocialIconButton extends StatelessWidget {
-  final Color fillColor;
-  final VoidCallback onPressed;
-  final Widget child;
 
+class _SocialIconButton extends StatelessWidget {
   const _SocialIconButton({
-    required this.fillColor,
     required this.onPressed,
     required this.child,
   });
 
+  final VoidCallback onPressed;
+  final Widget child;
+
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: fillColor,
+      color: SixAuthTokens.colorFieldFill,
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onPressed,
         customBorder: const CircleBorder(),
-        child: SizedBox(
+        child: Container(
           width: 54,
           height: 54,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.fromBorderSide(
+              BorderSide(color: SixAuthTokens.colorFieldBorder),
+            ),
+          ),
           child: Center(child: child),
         ),
       ),
@@ -532,7 +480,8 @@ class _SocialIconButton extends StatelessWidget {
   }
 }
 
-// ── Glyph simples representando o G do Google ──────────────────────────────
+// ── Google "G" glyph ────────────────────────────────────────────────────────
+
 class _GoogleGlyph extends StatelessWidget {
   const _GoogleGlyph();
 

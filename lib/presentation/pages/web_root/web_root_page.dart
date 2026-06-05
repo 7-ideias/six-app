@@ -1,8 +1,10 @@
-import 'package:appplanilha/core/platform_detector.dart';
-import 'package:appplanilha/presentation/pages/web_root/desktop_layout.dart';
-import 'package:appplanilha/presentation/pages/web_root/mobile_layout.dart';
-import 'package:appplanilha/presentation/pages/web_root/web_root_provider.dart';
-import 'package:appplanilha/presentation/screens/login_page_web.dart';
+import 'package:sixpos/core/platform_detector.dart';
+import 'package:sixpos/presentation/pages/web_root/desktop_layout.dart';
+import 'package:sixpos/presentation/pages/web_root/mobile_layout.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_root/web_i18n_gate.dart';
+import 'package:sixpos/presentation/pages/web_root/web_root_provider.dart';
+import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,7 +32,10 @@ class WebRootPage extends StatelessWidget {
       return const _NonWebFallback();
     }
 
-    return ChangeNotifierProvider<WebRootProvider>(
+    // O conteúdo da landing depende das traduções do backend; o gate só o
+    // constrói quando as mensagens do locale corrente estão carregadas.
+    return WebI18nGate(
+      builder: (context) => ChangeNotifierProvider<WebRootProvider>(
       create: (_) => WebRootProvider(),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -52,19 +57,33 @@ class WebRootPage extends StatelessWidget {
               ? DesktopLayout(
                   onLogin: () => _goLogin(context),
                   onSignup: () => _goLogin(context),
-                  onChoosePlan: (_) => _goLogin(context),
+                  onChoosePlan: (plan) => _handlePlanChoice(context, plan),
                 )
               : MobileLayout(
                   onSignup: () => _goLogin(context),
-                  onChoosePlan: (_) => _goLogin(context),
+                  onChoosePlan: (plan) => _handlePlanChoice(context, plan),
                 );
         },
+      ),
       ),
     );
   }
 
   void _goLogin(BuildContext context) {
     Navigator.of(context).pushNamed('/login');
+  }
+
+  /// Só o plano em destaque (featured = CTA "Assinar") vai para o checkout,
+  /// carregando o plano escolhido. Os demais mantêm o fluxo de login.
+  void _handlePlanChoice(BuildContext context, String planName) {
+    final plans = WebRootL10n.of(context).plans;
+    final isFeatured =
+        plans.where((p) => p.name == planName && p.featured).isNotEmpty;
+    if (isFeatured) {
+      Navigator.of(context).pushNamed('/checkout?plan=$planName');
+    } else {
+      _goLogin(context);
+    }
   }
 }
 

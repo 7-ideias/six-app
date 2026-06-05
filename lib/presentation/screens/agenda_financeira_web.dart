@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:appplanilha/core/services/agenda_financeira_lancamento_service.dart';
-import 'package:appplanilha/data/models/agenda_financeira_lancamento_model.dart';
-import 'package:appplanilha/sub_painel_lancamento_agenda_financeira_web.dart';
+import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
+import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
   const AgendaFinanceiraWeb({super.key, this.embedded = false, this.onBack});

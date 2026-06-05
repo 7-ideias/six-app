@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:appplanilha/core/services/auth_service.dart';
-import 'package:appplanilha/presentation/screens/configuracoes_mobile_screen.dart';
-import 'package:appplanilha/presentation/screens/login_mobile.dart';
-import 'package:appplanilha/presentation/screens/perfil_do_meu_negocio_mobile_screen.dart';
-import 'package:appplanilha/presentation/screens/precos_e_planos_mobile_screen.dart';
+import 'package:sixpos/core/services/auth_service.dart';
+import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/presentation/screens/perfil_do_meu_negocio_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/precos_e_planos_mobile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 

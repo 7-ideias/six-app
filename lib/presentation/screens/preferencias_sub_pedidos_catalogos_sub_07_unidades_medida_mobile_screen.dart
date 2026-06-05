@@ -122,11 +122,10 @@ class _UnidadesMedidaMobileScreenState
 class _UnidadeItem {
   final String sigla;
   final String descricao;
-  bool selecionado;
+  bool selecionado = true;
 
   _UnidadeItem({
     required this.sigla,
     required this.descricao,
-    this.selecionado = true,
   });
 }

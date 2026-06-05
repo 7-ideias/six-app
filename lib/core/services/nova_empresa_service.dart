@@ -15,27 +15,38 @@ class NovaEmpresaService {
   Uri get _endpoint =>
       Uri.parse('${AppConfig.baseUrl}/public/api/login/nova-empresa');
 
-  /// Cria a empresa. Pré-requisito: o e-mail precisa ter sido verificado
-  /// via fluxo de OTP (validarCodigo retornou 204) dentro da janela de 15 min.
+  /// Cria a empresa.
+  ///
+  /// Pré-requisito: o e-mail precisa ter sido verificado via fluxo de OTP
+  /// (validarCodigo retornou 204) dentro da janela de 15 min.
+  ///
+  /// Fluxo simplificado: apenas [email] e [senha] são obrigatórios.
+  /// Demais campos são opcionais; quando omitidos, o backend deriva defaults
+  /// a partir do e-mail (nome=prefixo, celular=email).
   Future<void> criarNovaEmpresa({
-    required String nome,
-    required String sobrenome,
     required String email,
     required String senha,
-    required String celular,
+    String? nome,
+    String? sobrenome,
+    String? celular,
     String? username,
     String? comercioId,
     List<String> permissoes = const ['TODAS'],
   }) async {
+    // Payload mínimo: email + senha. Campos opcionais só vão se preenchidos —
+    // o backend (LoginService.normalizarParaCadastroSimplificado) aplica
+    // defaults derivados do e-mail para os que vierem ausentes.
     final payload = <String, dynamic>{
-      'nome': nome,
-      'sobrenome': sobrenome,
-      'celular': celular,
       'email': email,
-      'username': username ?? _deriveUsername(email),
-      'senhaInicial': senha,
       'senha': senha,
+      'senhaInicial': senha,
       'permissoes': permissoes,
+      if (nome != null && nome.isNotEmpty) 'nome': nome,
+      if (sobrenome != null && sobrenome.isNotEmpty) 'sobrenome': sobrenome,
+      if (celular != null && celular.isNotEmpty) 'celular': celular,
+      if (username != null && username.isNotEmpty) 'username': username,
+      if (comercioId != null && comercioId.isNotEmpty)
+        'comercioId': comercioId,
     };
 
     final response = await _client.post(
@@ -57,10 +68,5 @@ class NovaEmpresaService {
     throw Exception(
       'Falha ao criar empresa (${response.statusCode}): ${response.body}',
     );
-  }
-
-  static String _deriveUsername(String email) {
-    final at = email.indexOf('@');
-    return at > 0 ? email.substring(0, at) : email;
   }
 }

@@ -1,5 +1,5 @@
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/presentation/components/web_root/store_badge.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/presentation/components/web_root/store_badge.dart';
 import 'package:flutter/material.dart';
 
 // .dock do CSS — aparece quando o usuário scrolla além da seção #baixar.

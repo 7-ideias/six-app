@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:appplanilha/core/services/produto_service.dart';
-import 'package:appplanilha/core/utils/produto_helper.dart';
-import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
-import 'package:appplanilha/sub_painel_cadastro_produto.dart';
+import 'package:sixpos/core/services/produto_service.dart';
+import 'package:sixpos/core/utils/produto_helper.dart';
+import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
+import 'package:sixpos/sub_painel_cadastro_produto.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:appplanilha/core/utils/pdf_download.dart';
+import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

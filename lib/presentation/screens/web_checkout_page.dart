@@ -1,11 +1,47 @@
 import 'dart:convert';
 
-import 'package:appplanilha/presentation/screens/web_marketing_localization.dart';
-import 'package:appplanilha/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:provider/provider.dart';
 
+import '../../design_system/tokens/web_root_tokens.dart';
+import '../../l10n/web_root_l10n.dart';
+import '../components/web_root/web_i18n_gate.dart';
+import '../components/web_root/web_language_switcher.dart';
+
+/// Plano vindo do backend (`WebRootL10n.plans`). Mesmo formato usado na
+/// `PricingSection` — fonte única de preços.
+typedef _Plan = ({
+  String name,
+  String price,
+  String cadence,
+  String pitch,
+  List<String> features,
+  String cta,
+  bool featured,
+});
+
+/// Método de pagamento selecionado no segmented control.
+enum _PayMethod { card, pix, boleto }
+
+// ── Tokens locais ───────────────────────────────────────────────────────────
+// Cores/raios presentes no design (Claude Design / Six Design System) que ainda
+// não têm constante em [WebRootTokens]. Mantidos aqui, comentados, para não
+// hardcodar valores soltos no meio do layout.
+const Color _kLineStrong = Color(0xFFBCBCBC); // outline forte (--six-line-strong)
+const Color _kFgDim = Color(0xFF696969); // fine print (--six-fg-dim)
+
+const double _kRadiusXs = 6; // badge "economize"
+const double _kRadiusMd = 12; // card de detalhes / QR
+const double _kRadiusField = 14; // campos, CTA, grupo de planos
+const double _kRadiusSheet = 24; // folha externa
+
+/// Checkout web redesenhado a partir do design feito no Claude Design sobre o
+/// Six Design System. Estrutura: folha central com topbar (cancelar / logo /
+/// ajuda) e corpo em duas colunas — esquerda com seleção de plano, forma de
+/// pagamento (cartão/Pix/Boleto) e CTA; direita com os detalhes do plano.
+///
+/// Conteúdo via [WebRootL10n] (backend + defaults PT-BR locais) e planos/preços
+/// do backend (`WebRootL10n.plans`), unificados com o pricing da landing.
 class WebCheckoutPage extends StatefulWidget {
   const WebCheckoutPage({super.key, this.initialUri});
 
@@ -18,524 +54,729 @@ class WebCheckoutPage extends StatefulWidget {
 }
 
 class _WebCheckoutPageState extends State<WebCheckoutPage> {
-  final TextEditingController _companyController = TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _couponController = TextEditingController();
+  final TextEditingController _cardNumberController = TextEditingController();
+  final TextEditingController _cardExpiryController = TextEditingController();
+  final TextEditingController _cardCvvController = TextEditingController();
+  final TextEditingController _cardNameController = TextEditingController();
 
-  late String _selectedPlan;
-  String _billingCycle = 'monthly';
-  String _paymentMethod = 'card';
+  /// Nome do plano selecionado (ex.: "Professional"). Vem da query `?plan=`.
+  String? _selectedPlanName;
+  _PayMethod _payMethod = _PayMethod.card;
 
   @override
   void initState() {
     super.initState();
-    _selectedPlan = _sanitizePlan(widget.initialUri?.queryParameters['plan']);
-  }
-
-  String _sanitizePlan(String? value) {
-    if (value == 'starter') {
-      return 'starter';
-    }
-    if (value == 'enterprise') {
-      return 'enterprise';
-    }
-    return 'pro';
+    _selectedPlanName = widget.initialUri?.queryParameters['plan'];
   }
 
   @override
   void dispose() {
-    _companyController.dispose();
-    _nameController.dispose();
-    _emailController.dispose();
-    _couponController.dispose();
+    _cardNumberController.dispose();
+    _cardExpiryController.dispose();
+    _cardCvvController.dispose();
+    _cardNameController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final copy = WebMarketingLocalizer.of(context);
+    return WebI18nGate(
+      builder: (context) {
+        final l10n = WebRootL10n.of(context);
+        final plans = l10n.plans;
+        final selected = _resolveSelected(plans);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/web/atendente_login_web.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.72),
-                    const Color(0xFF0A1420).withValues(alpha: 0.92),
-                  ],
+        return Scaffold(
+          backgroundColor: WebRootTokens.bgCanvas,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1280),
+                  child: _sheet(context, l10n, plans, selected)
+                      .animate()
+                      .fadeIn(duration: 360.ms)
+                      .slideY(begin: 0.03, end: 0, curve: Curves.easeOut),
                 ),
               ),
             ),
           ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1180),
+        );
+      },
+    );
+  }
+
+  _Plan? _resolveSelected(List<_Plan> plans) {
+    if (plans.isEmpty) return null;
+    for (final p in plans) {
+      if (p.name == _selectedPlanName) return p;
+    }
+    for (final p in plans) {
+      if (p.featured) return p;
+    }
+    return plans.first;
+  }
+
+  // ── Folha (card externo) ───────────────────────────────────────────────────
+  Widget _sheet(
+    BuildContext context,
+    WebRootL10n l10n,
+    List<_Plan> plans,
+    _Plan? selected,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: WebRootTokens.surface,
+        borderRadius: BorderRadius.circular(_kRadiusSheet),
+        border: Border.all(color: WebRootTokens.line),
+        boxShadow: WebRootTokens.cardShadow,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _topBar(context, l10n),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final twoCols = constraints.maxWidth >= 880;
+              final left = _leftColumn(context, l10n, plans, selected);
+              final right = _rightColumn(l10n, selected);
+
+              if (!twoCols) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 36),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _CheckoutTopBar(copy: copy),
-                      const SizedBox(height: 20),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final compact = constraints.maxWidth < 980;
-                          return Flex(
-                            direction:
-                                compact ? Axis.vertical : Axis.horizontal,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: compact ? 0 : 7,
-                                child: _buildCheckoutForm(copy)
-                                    .animate()
-                                    .fadeIn(duration: 380.ms)
-                                    .slideY(begin: 0.04, end: 0),
-                              ),
-                              if (!compact) const SizedBox(width: 16),
-                              Expanded(
-                                flex: compact ? 0 : 5,
-                                child: _buildSummary(copy)
-                                    .animate(delay: 120.ms)
-                                    .fadeIn(duration: 380.ms)
-                                    .slideY(begin: 0.06, end: 0),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
+                    children: [left, const SizedBox(height: 40), right],
                   ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCheckoutForm(WebMarketingLocalizer copy) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            copy.t('checkout.title'),
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            copy.t('checkout.subtitle'),
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white70,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 18),
-          _buildPlanSelector(copy),
-          const SizedBox(height: 14),
-          _buildTextField(
-            controller: _companyController,
-            label: copy.t('checkout.company'),
-          ),
-          const SizedBox(height: 10),
-          _buildTextField(
-            controller: _nameController,
-            label: copy.t('checkout.name'),
-          ),
-          const SizedBox(height: 10),
-          _buildTextField(
-            controller: _emailController,
-            label: copy.t('checkout.email'),
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 10),
-          _buildTextField(
-            controller: _couponController,
-            label: copy.t('checkout.coupon'),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            copy.t('checkout.billingCycle'),
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: Text(copy.t('checkout.monthly')),
-                selected: _billingCycle == 'monthly',
-                onSelected: (_) => setState(() => _billingCycle = 'monthly'),
-              ),
-              ChoiceChip(
-                label: Text(copy.t('checkout.yearly')),
-                selected: _billingCycle == 'yearly',
-                onSelected: (_) => setState(() => _billingCycle = 'yearly'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            copy.t('checkout.payment'),
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _PaymentCard(
-                title: copy.t('checkout.card'),
-                icon: Icons.credit_card,
-                selected: _paymentMethod == 'card',
-                onTap: () => setState(() => _paymentMethod = 'card'),
-              ),
-              _PaymentCard(
-                title: copy.t('checkout.pix'),
-                icon: Icons.pix,
-                selected: _paymentMethod == 'pix',
-                onTap: () => setState(() => _paymentMethod = 'pix'),
-              ),
-              _PaymentCard(
-                title: copy.t('checkout.invoice'),
-                icon: Icons.receipt_long,
-                selected: _paymentMethod == 'invoice',
-                onTap: () => setState(() => _paymentMethod = 'invoice'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _finishCheckout,
-              icon: const Icon(Icons.lock_rounded),
-              label: Text(copy.t('checkout.integrate')),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            copy.t('checkout.nextStep'),
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlanSelector(WebMarketingLocalizer copy) {
-    final theme = Theme.of(context);
-
-    final plans = [
-      _PlanViewData(
-        id: 'starter',
-        title: copy.t('pricing.cardStarter'),
-        monthlyPrice: 199,
-        yearlyPrice: 169,
-        features: copy.list('planStarterFeatures'),
-      ),
-      _PlanViewData(
-        id: 'pro',
-        title: copy.t('pricing.cardPro'),
-        monthlyPrice: 349,
-        yearlyPrice: 299,
-        features: copy.list('planProFeatures'),
-      ),
-      _PlanViewData(
-        id: 'enterprise',
-        title: copy.t('pricing.cardEnterprise'),
-        monthlyPrice: null,
-        yearlyPrice: null,
-        features: copy.list('planEnterpriseFeatures'),
-      ),
-    ];
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children:
-          plans.map((plan) {
-            final selected = _selectedPlan == plan.id;
-            final price = _formatPlanPrice(plan, copy);
-
-            return GestureDetector(
-              onTap: () => setState(() => _selectedPlan = plan.id),
-              child: Container(
-                width: 230,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color:
-                      selected
-                          ? const Color(0xFF0B72FF).withValues(alpha: 0.30)
-                          : Colors.white.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color:
-                        selected
-                            ? const Color(0xFF59CCFF)
-                            : Colors.white.withValues(alpha: 0.16),
-                  ),
-                ),
-                child: Column(
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(56, 48, 56, 56),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      plan.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      price,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
+                    Expanded(flex: 106, child: left),
+                    const SizedBox(width: 72),
+                    Expanded(flex: 94, child: right),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Topbar ─────────────────────────────────────────────────────────────────
+  Widget _topBar(BuildContext context, WebRootL10n l10n) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 22),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: WebRootTokens.line)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showHelp = constraints.maxWidth >= 700;
+          return Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _cancelButton(context, l10n),
+                ),
+              ),
+              Image.asset(
+                'assets/images/six-logo-flecha.png',
+                height: 30,
+                fit: BoxFit.contain,
+              ),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (showHelp) ...[
+                      _helpLink(l10n),
+                      const SizedBox(width: 18),
+                    ],
+                    const WebLanguageSwitcher(),
                   ],
                 ),
               ),
-            );
-          }).toList(),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildSummary(WebMarketingLocalizer copy) {
-    final theme = Theme.of(context);
-    final selectedPlan = _getPlanData(copy, _selectedPlan);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+  Widget _cancelButton(BuildContext context, WebRootL10n l10n) {
+    return _HoverButton(
+      onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(
+        '/',
+        (route) => false,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            copy.t('checkout.summary'),
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+      builder: (hovered) => Container(
+        height: 42,
+        padding: const EdgeInsets.fromLTRB(14, 0, 18, 0),
+        decoration: BoxDecoration(
+          color: hovered ? WebRootTokens.field : WebRootTokens.surface,
+          borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
+          border: Border.all(color: _kLineStrong),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.close, size: 19, color: WebRootTokens.fg),
+            const SizedBox(width: 8),
+            Text(
+              l10n.checkoutCancel,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: WebRootTokens.fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _helpLink(WebRootL10n l10n) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.support_agent, size: 20, color: WebRootTokens.ink),
+        const SizedBox(width: 8),
+        Text(
+          '${l10n.checkoutHelp} ',
+          style: const TextStyle(fontSize: 14, color: WebRootTokens.fgSoft),
+        ),
+        _HoverButton(
+          onTap: () {},
+          builder: (hovered) => Text(
+            l10n.checkoutHelpLink,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: hovered ? WebRootTokens.ink : WebRootTokens.fg,
+              decoration: TextDecoration.underline,
+              decorationColor: hovered ? WebRootTokens.ink : WebRootTokens.fg,
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10283A).withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(14),
+        ),
+      ],
+    );
+  }
+
+  // ── Coluna esquerda ─────────────────────────────────────────────────────────
+  Widget _leftColumn(
+    BuildContext context,
+    WebRootL10n l10n,
+    List<_Plan> plans,
+    _Plan? selected,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _colTitle(l10n.checkoutChoosePlan),
+        const SizedBox(height: 20),
+        _planGroup(l10n, plans, selected),
+        const _Rule(margin: 32),
+        _colTitle(l10n.checkoutPayment),
+        const SizedBox(height: 20),
+        _paySegment(l10n),
+        const SizedBox(height: 24),
+        _payPanel(l10n),
+        const _Rule(margin: 32),
+        _legal(l10n),
+        const SizedBox(height: 24),
+        _ctaButton(context, l10n, selected),
+      ],
+    );
+  }
+
+  Widget _colTitle(String text) => Text(
+        text,
+        style: const TextStyle(
+          fontSize: 26,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.4,
+          color: WebRootTokens.fg,
+        ),
+      );
+
+  // ── Grupo de planos ─────────────────────────────────────────────────────────
+  Widget _planGroup(WebRootL10n l10n, List<_Plan> plans, _Plan? selected) {
+    if (plans.isEmpty) return const SizedBox.shrink();
+    return Container(
+      decoration: BoxDecoration(
+        color: WebRootTokens.surface,
+        borderRadius: BorderRadius.circular(_kRadiusField),
+        border: Border.all(color: WebRootTokens.line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < plans.length; i++)
+            _PlanRow(
+              plan: plans[i],
+              selected: selected?.name == plans[i].name,
+              showTopBorder: i != 0,
+              popularLabel: l10n.checkoutPopularBadge,
+              onTap: () =>
+                  setState(() => _selectedPlanName = plans[i].name),
             ),
+        ],
+      ),
+    );
+  }
+
+  // ── Segmented control (forma de pagamento) ───────────────────────────────────
+  Widget _paySegment(WebRootL10n l10n) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: WebRootTokens.field,
+        borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
+      ),
+      child: Row(
+        children: [
+          _SegButton(
+            label: l10n.checkoutCard,
+            icon: Icons.credit_card,
+            selected: _payMethod == _PayMethod.card,
+            onTap: () => setState(() => _payMethod = _PayMethod.card),
+          ),
+          const SizedBox(width: 4),
+          _SegButton(
+            label: l10n.checkoutPix,
+            icon: Icons.qr_code_2,
+            selected: _payMethod == _PayMethod.pix,
+            onTap: () => setState(() => _payMethod = _PayMethod.pix),
+          ),
+          const SizedBox(width: 4),
+          _SegButton(
+            label: l10n.checkoutBoleto,
+            icon: Icons.receipt_long,
+            selected: _payMethod == _PayMethod.boleto,
+            onTap: () => setState(() => _payMethod = _PayMethod.boleto),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _payPanel(WebRootL10n l10n) {
+    switch (_payMethod) {
+      case _PayMethod.card:
+        return _cardForm(l10n);
+      case _PayMethod.pix:
+        return _altPanel(
+          icon: Icons.qr_code_2,
+          title: l10n.checkoutPixTitle,
+          body: l10n.checkoutPixBody,
+        );
+      case _PayMethod.boleto:
+        return _altPanel(
+          icon: Icons.receipt_long,
+          title: l10n.checkoutBoletoTitle,
+          body: l10n.checkoutBoletoBody,
+        );
+    }
+  }
+
+  // ── Formulário de cartão ─────────────────────────────────────────────────────
+  Widget _cardForm(WebRootL10n l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FilledField(
+          label: l10n.checkoutCardNumberLabel,
+          controller: _cardNumberController,
+          hint: '1234 1234 1234 1234',
+          leadingIcon: Icons.credit_card,
+          keyboardType: TextInputType.number,
+          trailing: const _CardBrandChips(),
+        ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final expiry = _FilledField(
+              label: l10n.checkoutCardExpiryLabel,
+              controller: _cardExpiryController,
+              hint: 'MM / AA',
+              keyboardType: TextInputType.number,
+            );
+            final cvv = _FilledField(
+              label: l10n.checkoutCardCvvLabel,
+              controller: _cardCvvController,
+              hint: 'CVV',
+              keyboardType: TextInputType.number,
+              trailing: const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(Icons.badge_outlined,
+                    size: 20, color: WebRootTokens.fgMuted),
+              ),
+            );
+            if (constraints.maxWidth < 420) {
+              return Column(
+                children: [expiry, const SizedBox(height: 20), cvv],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: expiry),
+                const SizedBox(width: 16),
+                Expanded(child: cvv),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _FilledField(
+          label: l10n.checkoutCardNameLabel,
+          controller: _cardNameController,
+          hint: l10n.checkoutCardNameHint,
+        ),
+        const SizedBox(height: 20),
+        _SelectField(
+          label: l10n.checkoutCardCountryLabel,
+          value: l10n.checkoutCardCountryValue,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.checkoutCardFinePrint,
+          style: const TextStyle(fontSize: 12, height: 1.5, color: _kFgDim),
+        ),
+      ],
+    );
+  }
+
+  Widget _altPanel({
+    required IconData icon,
+    required String title,
+    required String body,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: WebRootTokens.field,
+        borderRadius: BorderRadius.circular(_kRadiusField),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 116,
+            height: 116,
+            decoration: BoxDecoration(
+              color: WebRootTokens.surface,
+              borderRadius: BorderRadius.circular(_kRadiusMd),
+              border: Border.all(color: WebRootTokens.line),
+            ),
+            child: Icon(icon, size: 64, color: WebRootTokens.ink),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  selectedPlan.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
+                    color: WebRootTokens.fg,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _formatPlanPrice(selectedPlan, copy),
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...selectedPlan.features.map(
-                  (feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 2),
-                          child: Icon(
-                            Icons.check,
-                            color: Color(0xFF6CF0B6),
-                            size: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  body,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    height: 1.5,
+                    color: WebRootTokens.fgSoft,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0E2435),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              copy.t('checkout.badge'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.white70,
-              ),
-            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Texto legal ──────────────────────────────────────────────────────────────
+  Widget _legal(WebRootL10n l10n) {
+    const style = TextStyle(
+      fontSize: 13,
+      height: 1.45,
+      color: WebRootTokens.fgSoft,
+    );
+    final parts = l10n.checkoutLegal.split('{terms}');
+    final spans = <InlineSpan>[TextSpan(text: parts.first)];
+    if (parts.length > 1) {
+      spans.add(TextSpan(
+        text: l10n.checkoutTermsLink,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: WebRootTokens.fg,
+          decoration: TextDecoration.underline,
+        ),
+      ));
+      spans.add(TextSpan(text: parts.sublist(1).join('{terms}')));
+    }
+    return Text.rich(TextSpan(style: style, children: spans));
+  }
+
+  Widget _ctaButton(BuildContext context, WebRootL10n l10n, _Plan? selected) {
+    return _HoverButton(
+      onTap: () => _finishCheckout(l10n, selected),
+      builder: (hovered) => Opacity(
+        opacity: hovered ? 0.92 : 1,
+        child: Container(
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: WebRootTokens.ink,
+            borderRadius: BorderRadius.circular(_kRadiusField),
           ),
-          const SizedBox(height: 12),
-          FilledButton.tonalIcon(
-            onPressed:
-                () => Navigator.pushReplacementNamed(context, '/onboarding'),
-            icon: const Icon(Icons.auto_awesome_rounded),
-            label: Text(copy.t('nav.testNow')),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.lock_outline, size: 20, color: Colors.white),
+              const SizedBox(width: 10),
+              Text(
+                l10n.checkoutSubmit,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Coluna direita (detalhes do plano) ───────────────────────────────────────
+  Widget _rightColumn(WebRootL10n l10n, _Plan? selected) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _colTitle(l10n.checkoutPlanDetails),
+        const SizedBox(height: 20),
+        _detailsCard(l10n, selected),
+      ],
+    );
+  }
+
+  Widget _detailsCard(WebRootL10n l10n, _Plan? selected) {
+    final langCode = Localizations.localeOf(context).languageCode;
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: WebRootTokens.surface,
+        borderRadius: BorderRadius.circular(_kRadiusMd),
+        border: Border.all(color: WebRootTokens.line),
+        boxShadow: WebRootTokens.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: WebRootTokens.field,
+                  borderRadius: BorderRadius.circular(_kRadiusField),
+                ),
+                child: Image.asset(
+                  'assets/images/six-logo-flecha.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.checkoutSubscriptionName,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1,
+                        color: WebRootTokens.fg,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      selected?.name ?? '',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: WebRootTokens.fgSoft,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${l10n.checkoutRenewPrefix} '
+                      '${_renewDateLabel(langCode, selected?.cadence ?? '')}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: WebRootTokens.fgMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (selected != null && selected.features.isNotEmpty) ...[
+            const SizedBox(height: 26),
+            for (final f in selected.features) _FeatureItem(text: f),
+          ],
+          const _Rule(margin: 26),
+          if (selected != null) _lineRow(selected.name, selected.price),
+          const _Rule(margin: 18),
+          _totalRow(l10n.checkoutTotalToday, selected?.price ?? ''),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              const Icon(Icons.verified_user,
+                  size: 17, color: WebRootTokens.success),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  l10n.checkoutSecure,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: WebRootTokens.fgMuted,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  _PlanViewData _getPlanData(WebMarketingLocalizer copy, String planId) {
-    if (planId == 'starter') {
-      return _PlanViewData(
-        id: 'starter',
-        title: copy.t('pricing.cardStarter'),
-        monthlyPrice: 199,
-        yearlyPrice: 169,
-        features: copy.list('planStarterFeatures'),
-      );
-    }
-    if (planId == 'enterprise') {
-      return _PlanViewData(
-        id: 'enterprise',
-        title: copy.t('pricing.cardEnterprise'),
-        monthlyPrice: null,
-        yearlyPrice: null,
-        features: copy.list('planEnterpriseFeatures'),
-      );
-    }
-
-    return _PlanViewData(
-      id: 'pro',
-      title: copy.t('pricing.cardPro'),
-      monthlyPrice: 349,
-      yearlyPrice: 299,
-      features: copy.list('planProFeatures'),
+  Widget _lineRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 15, color: WebRootTokens.fg),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: WebRootTokens.fg,
+          ),
+        ),
+      ],
     );
   }
 
-  String _formatPlanPrice(_PlanViewData plan, WebMarketingLocalizer copy) {
-    if (plan.monthlyPrice == null) {
-      return copy.t('pricing.contact');
-    }
-
-    final value =
-        _billingCycle == 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-    if (value == null) {
-      return copy.t('pricing.contact');
-    }
-
-    final cycleLabel =
-        _billingCycle == 'monthly'
-            ? copy.t('checkout.monthly')
-            : copy.t('checkout.yearly');
-
-    return 'R\$ $value - $cycleLabel';
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.08),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.20)),
+  Widget _totalRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: WebRootTokens.fg,
+            ),
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.20)),
+        const SizedBox(width: 12),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+            color: WebRootTokens.fg,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF4CC9FF)),
-        ),
-      ),
+      ],
     );
   }
 
-  void _finishCheckout() {
-    final copy = WebMarketingLocalizer.of(context);
+  // ── Data de renovação ────────────────────────────────────────────────────────
+  String _renewDateLabel(String langCode, String cadence) {
+    final now = DateTime.now();
+    final renew = DateTime(now.year, now.month + _monthsForCadence(cadence),
+        now.day);
+    const monthsByLang = <String, List<String>>{
+      'pt': ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set',
+        'out', 'nov', 'dez'],
+      'en': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+        'Oct', 'Nov', 'Dec'],
+      'es': ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep',
+        'oct', 'nov', 'dic'],
+    };
+    final abbr = monthsByLang[langCode] ?? monthsByLang['pt']!;
+    return '${renew.day} ${abbr[renew.month - 1]} ${renew.year}';
+  }
 
-    if (_companyController.text.trim().isEmpty ||
-        _nameController.text.trim().isEmpty ||
-        _emailController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(copy.t('checkout.required'))));
+  int _monthsForCadence(String cadence) {
+    final c = cadence.toLowerCase();
+    if (c.contains('trimest') || c.contains('quarter')) return 3;
+    if (c.contains('semes')) return 6;
+    if (c.contains('mês') ||
+        c.contains('mes') ||
+        c.contains('month') ||
+        c.contains('mensal')) {
+      return 1;
+    }
+    return 12; // anual / yearly (default)
+  }
+
+  // ── Ação ─────────────────────────────────────────────────────────────────────
+  void _finishCheckout(WebRootL10n l10n, _Plan? selected) {
+    if (_payMethod == _PayMethod.card &&
+        (_cardNumberController.text.trim().isEmpty ||
+            _cardExpiryController.text.trim().isEmpty ||
+            _cardCvvController.text.trim().isEmpty ||
+            _cardNameController.text.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.checkoutRequired)),
+      );
       return;
     }
 
     final payload = {
-      'plan': _selectedPlan,
-      'billingCycle': _billingCycle,
-      'paymentMethod': _paymentMethod,
-      'company': _companyController.text.trim(),
-      'owner': _nameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'coupon': _couponController.text.trim(),
+      'plan': selected?.name,
+      'price': selected?.price,
+      'cadence': selected?.cadence,
+      'paymentMethod': _payMethod.name,
+      if (_payMethod == _PayMethod.card) ...{
+        'cardName': _cardNameController.text.trim(),
+        'cardLast4': _last4(_cardNumberController.text),
+      },
       'createdAt': DateTime.now().toIso8601String(),
     };
 
@@ -543,7 +784,7 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(copy.t('checkout.simulated')),
+          title: Text(l10n.checkoutSimulatedTitle),
           content: SizedBox(
             width: 520,
             child: SelectableText(
@@ -560,46 +801,422 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
       },
     );
   }
+
+  String _last4(String number) {
+    final digits = number.replaceAll(RegExp(r'\D'), '');
+    return digits.length <= 4 ? digits : digits.substring(digits.length - 4);
+  }
 }
 
-class _CheckoutTopBar extends StatelessWidget {
-  const _CheckoutTopBar({required this.copy});
+// ── Linha divisória ───────────────────────────────────────────────────────────
+class _Rule extends StatelessWidget {
+  const _Rule({required this.margin});
 
-  final WebMarketingLocalizer copy;
+  final double margin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: margin),
+      child: const Divider(height: 1, thickness: 1, color: WebRootTokens.line),
+    );
+  }
+}
+
+// ── Linha de plano (rádio-lista) ──────────────────────────────────────────────
+class _PlanRow extends StatelessWidget {
+  const _PlanRow({
+    required this.plan,
+    required this.selected,
+    required this.showTopBorder,
+    required this.popularLabel,
+    required this.onTap,
+  });
+
+  final _Plan plan;
+  final bool selected;
+  final bool showTopBorder;
+  final String popularLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final priceSpans = <InlineSpan>[
+      TextSpan(text: '${plan.price} ${plan.cadence}'.trim()),
+      if (plan.pitch.isNotEmpty)
+        TextSpan(
+          text: '  ·  ${plan.pitch}',
+          style: const TextStyle(color: WebRootTokens.fgMuted),
+        ),
+    ];
+
+    return _HoverButton(
+      onTap: onTap,
+      builder: (hovered) => AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: selected
+              ? WebRootTokens.field
+              : (hovered ? WebRootTokens.surfaceAlt : WebRootTokens.surface),
+          borderRadius:
+              selected ? BorderRadius.circular(_kRadiusField) : null,
+          border: Border(
+            top: BorderSide(
+              color: (showTopBorder && !selected)
+                  ? WebRootTokens.line
+                  : Colors.transparent,
+            ),
+          ),
+        ),
+        foregroundDecoration: selected
+            ? BoxDecoration(
+                borderRadius: BorderRadius.circular(_kRadiusField),
+                border: Border.all(color: WebRootTokens.ink, width: 1.6),
+              )
+            : null,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    plan.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.1,
+                      color: WebRootTokens.fg,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text.rich(
+                    TextSpan(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: WebRootTokens.fgSoft,
+                      ),
+                      children: priceSpans,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (plan.featured) ...[
+              const SizedBox(width: 12),
+              Container(
+                height: 26,
+                padding: const EdgeInsets.symmetric(horizontal: 11),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: WebRootTokens.accent,
+                  borderRadius: BorderRadius.circular(_kRadiusXs),
+                ),
+                child: Text(
+                  popularLabel,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
+                    color: WebRootTokens.ink,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(width: 16),
+            _Radio(selected: selected),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Radio extends StatelessWidget {
+  const _Radio({required this.selected});
+
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: 24,
+      height: 24,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        shape: BoxShape.circle,
+        color: selected ? WebRootTokens.ink : Colors.transparent,
+        border: Border.all(
+          color: selected ? WebRootTokens.ink : _kLineStrong,
+          width: 2,
+        ),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 8,
-        children: [
-          FilledButton.tonalIcon(
-            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-            icon: const Icon(Icons.arrow_back),
-            label: const Text('Home'),
+      child: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: selected ? 9 : 0,
+          height: selected ? 9 : 0,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: WebRootTokens.surface,
           ),
-          Wrap(
-            spacing: 10,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Botão do segmented control ────────────────────────────────────────────────
+class _SegButton extends StatelessWidget {
+  const _SegButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: _HoverButton(
+        onTap: onTap,
+        builder: (hovered) => AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? WebRootTokens.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
+            boxShadow: selected ? WebRootTokens.cardShadow : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _LanguageDropdown(copy: copy),
-              FilledButton.tonal(
-                onPressed: () => Navigator.pushNamed(context, '/login'),
-                child: Text(copy.t('nav.login')),
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? WebRootTokens.ink : WebRootTokens.fgSoft,
               ),
-              FilledButton.tonal(
-                onPressed: () => Navigator.pushNamed(context, '/onboarding'),
-                child: Text(copy.t('nav.testNow')),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? WebRootTokens.ink : WebRootTokens.fgSoft,
+                  ),
+                ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Campo preenchido (input) ──────────────────────────────────────────────────
+class _FilledField extends StatelessWidget {
+  const _FilledField({
+    required this.label,
+    required this.controller,
+    required this.hint,
+    this.leadingIcon,
+    this.trailing,
+    this.keyboardType,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String hint;
+  final IconData? leadingIcon;
+  final Widget? trailing;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: WebRootTokens.fg,
+          ),
+        ),
+        const SizedBox(height: 7),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontSize: 15, color: WebRootTokens.fg),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: WebRootTokens.field,
+            hintText: hint,
+            hintStyle: const TextStyle(
+              fontSize: 15,
+              color: WebRootTokens.fgMuted,
+            ),
+            prefixIcon: leadingIcon == null
+                ? null
+                : Icon(leadingIcon, size: 20, color: WebRootTokens.ink),
+            prefixIconConstraints:
+                const BoxConstraints(minWidth: 44, minHeight: 44),
+            suffixIcon: trailing,
+            suffixIconConstraints:
+                const BoxConstraints(minWidth: 0, minHeight: 0),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 17),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(_kRadiusField),
+              borderSide: BorderSide.none,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(_kRadiusField),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(_kRadiusField),
+              borderSide: BorderSide(
+                color: WebRootTokens.ink.withValues(alpha: 0.4),
+                width: 1.4,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Campo "select" estático (País) ────────────────────────────────────────────
+class _SelectField extends StatelessWidget {
+  const _SelectField({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: WebRootTokens.fg,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Container(
+          height: 54,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: WebRootTokens.field,
+            borderRadius: BorderRadius.circular(_kRadiusField),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(fontSize: 15, color: WebRootTokens.fg),
+                ),
+              ),
+              const Icon(Icons.expand_more,
+                  size: 20, color: WebRootTokens.fgMuted),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Selos de bandeira do cartão ───────────────────────────────────────────────
+class _CardBrandChips extends StatelessWidget {
+  const _CardBrandChips();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          _BrandChip(
+            child: Text(
+              'VISA',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                fontStyle: FontStyle.italic,
+                color: Color(0xFF1A1F71),
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+          _BrandChip(
+            padding: EdgeInsets.symmetric(horizontal: 6),
+            child: SizedBox(
+              width: 20,
+              height: 13,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    child: _McCircle(color: Color(0xFFEB001B)),
+                  ),
+                  Positioned(
+                    left: 7,
+                    child: _McCircle(color: Color(0xFFF79E1B)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+          _BrandChip(
+            child: Text.rich(
+              TextSpan(
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1A1A1A),
+                ),
+                children: [
+                  TextSpan(text: 'e'),
+                  TextSpan(text: 'l', style: TextStyle(color: Color(0xFFF24200))),
+                  TextSpan(text: 'o'),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+          _BrandChip(
+            background: Color(0xFF1F72CD),
+            borderColor: Color(0xFF1F72CD),
+            child: Text(
+              'AMEX',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -607,130 +1224,115 @@ class _CheckoutTopBar extends StatelessWidget {
   }
 }
 
-class _LanguageDropdown extends StatelessWidget {
-  const _LanguageDropdown({required this.copy});
+class _BrandChip extends StatelessWidget {
+  const _BrandChip({
+    required this.child,
+    this.background = Colors.white,
+    this.borderColor = WebRootTokens.line,
+    this.padding = const EdgeInsets.symmetric(horizontal: 5),
+  });
 
-  final WebMarketingLocalizer copy;
+  final Widget child;
+  final Color background;
+  final Color borderColor;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
-    final localeProvider = context.watch<LocaleSettingsProvider>();
-    final selected = localeProvider.currentLocale;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: 22,
+      constraints: const BoxConstraints(minWidth: 32),
+      padding: padding,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
+        color: background,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: borderColor),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<Locale>(
-          value: _normalize(selected),
-          dropdownColor: const Color(0xFF123047),
-          style: const TextStyle(color: Colors.white),
-          iconEnabledColor: Colors.white,
-          onChanged: (locale) {
-            if (locale == null) {
-              return;
-            }
-            context.read<LocaleSettingsProvider>().setUserLocale(locale);
-          },
-          items: [
-            DropdownMenuItem(
-              value: const Locale('pt', 'BR'),
-              child: Text(copy.t('language.pt')),
-            ),
-            DropdownMenuItem(
-              value: const Locale('en', 'US'),
-              child: Text(copy.t('language.en')),
-            ),
-            DropdownMenuItem(
-              value: const Locale('es', 'ES'),
-              child: Text(copy.t('language.es')),
-            ),
-          ],
-        ),
-      ),
+      child: child,
     );
-  }
-
-  Locale _normalize(Locale locale) {
-    if (locale.languageCode == 'pt') {
-      return const Locale('pt', 'BR');
-    }
-    if (locale.languageCode == 'es') {
-      return const Locale('es', 'ES');
-    }
-    return const Locale('en', 'US');
   }
 }
 
-class _PaymentCard extends StatelessWidget {
-  const _PaymentCard({
-    required this.title,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
+class _McCircle extends StatelessWidget {
+  const _McCircle({required this.color});
 
-  final String title;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color:
-              selected
-                  ? const Color(0xFF0B72FF).withValues(alpha: 0.30)
-                  : Colors.white.withValues(alpha: 0.08),
-          border: Border.all(
-            color:
-                selected
-                    ? const Color(0xFF59CCFF)
-                    : Colors.white.withValues(alpha: 0.16),
+    return Container(
+      width: 13,
+      height: 13,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+// ── Item de feature (coluna direita) ──────────────────────────────────────────
+class _FeatureItem extends StatelessWidget {
+  const _FeatureItem({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: WebRootTokens.field,
+            ),
+            child: const Icon(Icons.check, size: 16, color: WebRootTokens.ink),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14.5,
+                height: 1.4,
+                color: WebRootTokens.fg,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _PlanViewData {
-  const _PlanViewData({
-    required this.id,
-    required this.title,
-    required this.monthlyPrice,
-    required this.yearlyPrice,
-    required this.features,
-  });
+// ── Wrapper de hover/cursor para áreas clicáveis ──────────────────────────────
+class _HoverButton extends StatefulWidget {
+  const _HoverButton({required this.onTap, required this.builder});
 
-  final String id;
-  final String title;
-  final int? monthlyPrice;
-  final int? yearlyPrice;
-  final List<String> features;
+  final VoidCallback onTap;
+  final Widget Function(bool hovered) builder;
+
+  @override
+  State<_HoverButton> createState() => _HoverButtonState();
+}
+
+class _HoverButtonState extends State<_HoverButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: widget.builder(_hovered),
+      ),
+    );
+  }
 }

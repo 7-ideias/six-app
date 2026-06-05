@@ -135,8 +135,8 @@ class _AssinaturaMobileScreenState extends State<AssinaturaMobileScreen> {
                     ),
                     onPressed: () async {
                       if (_controller.isNotEmpty) {
-                        final signature = await _controller.toPngBytes();
                         // TODO: Salvar assinatura
+                        await _controller.toPngBytes();
                       }
                     },
                     child: const Text('salvar'),

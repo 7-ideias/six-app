@@ -1,9 +1,6 @@
-import 'dart:io';
-
-import 'package:appplanilha/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../components/custom_nav_bar.dart';
 import '../components/escolha_card_grid.dart';
@@ -29,26 +26,10 @@ class _CadastroMobileScreenState extends State<CadastroMobileScreen> {
     }),
   ];
 
-  File? _image;
-  final ImagePicker _picker = ImagePicker();
-
-  Future<void> _pickImage(ImageSource source) async {
-    final XFile? selected = await _picker.pickImage(source: source);
-    if (selected != null) {
-      setState(() {
-        _image = File(selected.path);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('O que deseja fazer?')),
-      // drawer: AppDrawerDoMobile(
-      //   image: _image,
-      //   onPickImage: _pickImage,
-      // ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

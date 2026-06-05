@@ -13,8 +13,5 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pdvQuickServiceDescription =>
-      'Fast checkout service, item inclusion and sale closing.';
-
-  @override
-  String get teste => 'em espanhol';
+      'Servicio rápido en caja, inclusión de artículos y cierre de venta.';
 }

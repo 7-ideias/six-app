@@ -1,6 +1,6 @@
-import 'package:appplanilha/core/services/agenda_financeira_lancamento_service.dart';
-import 'package:appplanilha/data/models/agenda_financeira_lancamento_model.dart';
-import 'package:appplanilha/design_system/components/web/sub_painel_web_general.dart';
+import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
+import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
 
 class SubPainelLancamentoAgendaFinanceiraWeb extends SubPainelWebGeneral {

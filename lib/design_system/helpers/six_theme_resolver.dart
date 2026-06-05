@@ -48,6 +48,17 @@ class SixThemeResolver extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Alterna entre claro e escuro sem alterar a paleta atual.
+  /// Usado pelo toggle de dark mode nos headers web.
+  void toggleDarkLight() {
+    _temaAtual = _temaAtual == TemaSistema.escuro
+        ? TemaSistema.claro
+        : TemaSistema.escuro;
+    notifyListeners();
+  }
+
+  bool get isDark => _temaAtual == TemaSistema.escuro;
+
   PaletaSistema get paleta => _paletaAtual;
   TemaSistema get tema => _temaAtual;
   DensidadeVisualSistema get densidade => _densidadeAtual;

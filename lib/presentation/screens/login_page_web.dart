@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
@@ -9,8 +10,7 @@ import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
-import 'create_account_web.dart';
-import 'esqueceu_senha_web.dart';
+import '../components/web_root/web_i18n_gate.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -26,6 +26,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  // Strings l10n capturadas no build para uso em callbacks assíncronos.
+  late WebRootL10n _l10n;
 
   @override
   void initState() {
@@ -59,7 +62,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
           final msg =
               error is GoogleAuthException
                   ? error.message
-                  : 'Não foi possível concluir o login com Google.';
+                  : _l10n.authErrGoogleLogin;
           _showSnack(msg);
         });
   }
@@ -89,7 +92,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     final senha = _passwordController.text.trim();
 
     if (login.isEmpty || senha.isEmpty) {
-      _showSnack('Preencha o e-mail e a senha');
+      _showSnack(_l10n.authErrFillEmailPassword);
       return;
     }
 
@@ -111,36 +114,35 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _forgotPassword() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const EsqueceuSenhaWeb()),
-    );
+    Navigator.pushNamed(context, '/forgot-password');
   }
 
   void _createAccount() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CreateAccountWeb()),
-    );
+    Navigator.pushNamed(context, '/register');
   }
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    return WebI18nGate(
+      builder: (context) {
+        _l10n = WebRootL10n.of(context);
+        final primary = Theme.of(context).colorScheme.primary;
 
-    return WebAuthShell(
+        return WebAuthShell(
+      showBack: Navigator.of(context).canPop(),
+      onBack: () => Navigator.of(context).maybePop(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const WebAuthTitle(
-            title: 'Entrar na sua conta',
-            subtitle: 'Informe seu e-mail e senha para acessar o painel.',
+          WebAuthTitle(
+            title: _l10n.authLoginTitle,
+            subtitle: _l10n.authLoginSubtitle,
           ),
           const SizedBox(height: 32),
           WebAuthTextField(
             controller: _loginController,
-            hint: 'seu@email.com',
-            label: 'E-mail',
+            hint: _l10n.authEmailHint,
+            label: _l10n.authEmailLabel,
             prefixIcon: Icons.mail_outline_rounded,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
@@ -148,8 +150,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
           const SizedBox(height: 16),
           WebAuthTextField(
             controller: _passwordController,
-            hint: 'Sua senha',
-            label: 'Senha',
+            hint: _l10n.authPasswordHint,
+            label: _l10n.authPasswordLabel,
             prefixIcon: Icons.shield_outlined,
             obscure: _obscurePassword,
             textInputAction: TextInputAction.done,
@@ -172,7 +174,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
             child: TextButton(
               onPressed: _forgotPassword,
               child: Text(
-                'Esqueceu a senha?',
+                _l10n.authForgotPassword,
                 style: TextStyle(
                   color: primary,
                   fontWeight: FontWeight.w600,
@@ -183,7 +185,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
           ),
           const SizedBox(height: 12),
           WebAuthPrimaryButton(
-            label: 'Entrar',
+            label: _l10n.authSignInButton,
             onPressed: _login,
             isLoading: _isLoading,
           ),
@@ -196,7 +198,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  'ou continue com',
+                  _l10n.authOrContinueWith,
                   style: TextStyle(
                     color: WebAuthShell.labelGrey(),
                     fontSize: 13,
@@ -222,9 +224,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                     color: WebAuthShell.labelGrey(),
                   ),
                   children: [
-                    const TextSpan(text: 'Ainda não tem uma conta? '),
+                    TextSpan(text: _l10n.authNoAccount),
                     TextSpan(
-                      text: 'Criar conta',
+                      text: _l10n.authCreateAccountLink,
                       style: TextStyle(
                         color: primary,
                         fontWeight: FontWeight.w700,
@@ -235,8 +237,10 @@ class _LoginPageWebState extends State<LoginPageWeb> {
               ),
             ),
           ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

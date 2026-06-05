@@ -6,23 +6,20 @@ import 'package:flutter/services.dart';
 import '../../core/exceptions/registro_otp_exception.dart';
 import '../../core/services/nova_empresa_service.dart';
 import '../../core/services/registro_otp_service.dart';
+import '../../design_system/tokens/auth_tokens.dart';
 import '../components/web_auth_shell.dart';
 import 'conta_criada_web.dart';
 
 class VerificarEmailWeb extends StatefulWidget {
-  final String nome;
-  final String sobrenome;
+  // Fluxo simplificado: só email + senha. Demais campos (nome/sobrenome/celular)
+  // são derivados no backend a partir do e-mail.
   final String email;
   final String senha;
-  final String celular;
 
   const VerificarEmailWeb({
     super.key,
-    required this.nome,
-    required this.sobrenome,
     required this.email,
     required this.senha,
-    this.celular = '',
   });
 
   @override
@@ -150,11 +147,8 @@ class _VerificarEmailWebState extends State<VerificarEmailWeb> {
     try {
       await _otpService.validarCodigo(email: widget.email, codigo: code);
       await _novaEmpresaService.criarNovaEmpresa(
-        nome: widget.nome,
-        sobrenome: widget.sobrenome,
         email: widget.email,
         senha: widget.senha,
-        celular: widget.celular,
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
@@ -313,15 +307,19 @@ class _OtpBox extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: const BorderSide(
+                color: SixAuthTokens.colorFieldBorder,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: const BorderSide(
+                color: SixAuthTokens.colorFieldBorder,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: activeBorder, width: 1.4),
+              borderSide: BorderSide(color: activeBorder, width: 2.0),
             ),
           ),
           onChanged: onChanged,

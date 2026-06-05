@@ -1,11 +1,14 @@
-import 'package:appplanilha/design_system/tokens/web_root_tokens.dart';
-import 'package:appplanilha/presentation/components/web_root/desktop_footer.dart';
-import 'package:appplanilha/presentation/components/web_root/desktop_header.dart';
-import 'package:appplanilha/presentation/pages/web_root/sections/cta_section.dart';
-import 'package:appplanilha/presentation/pages/web_root/sections/features_section.dart';
-import 'package:appplanilha/presentation/pages/web_root/sections/hero_section.dart';
-import 'package:appplanilha/presentation/pages/web_root/sections/pricing_section.dart';
+import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
+import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
+import 'package:sixpos/presentation/components/web_root/desktop_footer.dart';
+import 'package:sixpos/presentation/components/web_root/desktop_header.dart';
+import 'package:sixpos/presentation/pages/web_root/sections/cta_section.dart';
+import 'package:sixpos/presentation/pages/web_root/sections/features_section.dart';
+import 'package:sixpos/presentation/pages/web_root/sections/hero_section.dart';
+import 'package:sixpos/presentation/pages/web_root/sections/pricing_section.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 // Layout para viewports >= 1024px.
 // Header sticky + scroll vertical com hero / features / pricing / cta / footer.
@@ -84,8 +87,10 @@ class _DesktopLayoutState extends State<DesktopLayout> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
+    final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
     return Scaffold(
-      backgroundColor: WebRootTokens.surface,
+      backgroundColor: scheme.surfacePage,
       body: Column(
         children: [
           DesktopHeader(

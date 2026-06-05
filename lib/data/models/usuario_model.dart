@@ -57,10 +57,8 @@ class UsuarioModel {
       'celular': celular,
       'senha': senha,
       'salt': salt,
-      'cpf': cpf, // Note: O CURL repete CPF no body
       'rg': rg,
       'dataNascimento': dataNascimento,
-      'email': email,
       'objEndereco': objEndereco?.toJson(),
     };
   }

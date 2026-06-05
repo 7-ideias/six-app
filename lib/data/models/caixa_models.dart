@@ -1,4 +1,4 @@
-import 'package:appplanilha/data/models/regionalizacao_models.dart';
+import 'package:sixpos/data/models/regionalizacao_models.dart';
 
 import '../../presentation/screens/operacoes_caixa_web_page.dart';
 
