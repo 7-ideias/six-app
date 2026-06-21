@@ -13,8 +13,94 @@ class AgendaFinanceiraWeb extends StatefulWidget {
   State<AgendaFinanceiraWeb> createState() => _AgendaFinanceiraWebState();
 }
 
-class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
-    with SingleTickerProviderStateMixin {
+class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+  final AgendaFinanceiraLancamentoService _consultaService =
+      AgendaFinanceiraLancamentoService();
+  final ScrollController _mainScrollController = ScrollController();
+
+  final List<String> _periodos = const [
+    'Hoje',
+    'Próximos 7 dias',
+    'Este mês',
+    'Próximo mês',
+    'Personalizado',
+  ];
+
+  final List<String> _tipos = const ['Todos', 'Receber', 'Pagar'];
+
+  final List<String> _statusDisponiveis = const [
+    'Todos',
+    'Previsto',
+    'Pendente',
+    'Vence hoje',
+    'Vencido',
+    'Pago',
+    'Recebido',
+    'Parcial',
+    'Cancelado',
+  ];
+
+  final List<String> _origens = const [
+    'Todas',
+    'Venda',
+    'Ordem de serviço',
+    'Despesa manual',
+    'Compra',
+    'Parcela',
+    'Movimentação de caixa',
+  ];
+
+  final List<String> _abas = const ['Agenda', 'Calendário', 'Fluxo previsto'];
+
+  String _periodoSelecionado = 'Próximos 7 dias';
+  String _tipoSelecionado = 'Todos';
+  String _statusSelecionado = 'Todos';
+  String _origemSelecionada = 'Todas';
+  String _empresaSelecionada = 'Todas';
+  bool _mostrarSomenteCriticos = false;
+
+  String _periodoBusca = 'Próximos 7 dias';
+  String _tipoBusca = 'Todos';
+  String _statusBusca = 'Todos';
+  String _origemBusca = 'Todas';
+  String _empresaBusca = 'Todas';
+  bool _somenteCriticosBusca = false;
+
+  bool _isConsultando = false;
+  int _abaSelecionada = 0;
+  DateTime? _ultimaConsultaEm;
+  Map<String, dynamic>? _lancamentoSelecionado;
+
+  final List<Map<String, dynamic>> _empresas = <Map<String, dynamic>>[
+    <String, dynamic>{'id': 'all', 'nome': 'Todas'},
+  ];
+  final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> _calendarioAgenda = <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> _fluxoPrevistoAgenda =
+      <Map<String, dynamic>>[];
+
+  bool get _temFiltrosPendentes =>
+      _periodoBusca != _periodoSelecionado ||
+      _tipoBusca != _tipoSelecionado ||
+      _statusBusca != _statusSelecionado ||
+      _origemBusca != _origemSelecionada ||
+      _empresaBusca != _empresaSelecionada ||
+      _somenteCriticosBusca != _mostrarSomenteCriticos;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consultarLancamentos();
+    });
+  }
+
+  @override
+  void dispose() {
+    _mainScrollController.dispose();
+    super.dispose();
+  }
+
   void _voltarTelaAnterior() {
     if (widget.embedded) {
       widget.onBack?.call();
@@ -27,8 +113,20 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     }
   }
 
-  void _onAtualizarPressed() {
-    _consultarLancamentos(mostrarFeedback: true);
+  void _sincronizarLancamentoSelecionado() {
+    final idAtual = _lancamentoSelecionado?['id']?.toString();
+    final itens = _itensFiltrados;
+
+    if (idAtual != null && idAtual.isNotEmpty) {
+      for (final item in itens) {
+        if (item['id']?.toString() == idAtual) {
+          _lancamentoSelecionado = item;
+          return;
+        }
+      }
+    }
+
+    _lancamentoSelecionado = itens.isEmpty ? null : itens.first;
   }
 
   Future<void> _onNovoLancamentoPressed() async {
@@ -51,14 +149,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       return;
     }
 
-    await _consultarLancamentos();
+    await _consultarLancamentos(mostrarFeedback: true);
   }
 
   Future<void> _onEditarLancamentoPressed({
     Map<String, dynamic>? itemBase,
   }) async {
-    final item =
-        itemBase ?? _lancamentoSelecionado ?? _itensFiltrados.firstOrNull;
+    final item = itemBase ?? _lancamentoSelecionado;
     if (item == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecione um lançamento para editar.')),
@@ -94,169 +191,25 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     await _consultarLancamentos(mostrarFeedback: true);
   }
 
-  final ScrollController _mainScrollController = ScrollController();
-  final AgendaFinanceiraLancamentoService _consultaService =
-      AgendaFinanceiraLancamentoService();
-  late final AnimationController _fabMenuController;
+  void _marcarFiltroPendente(VoidCallback atualizacao) {
+    setState(atualizacao);
+  }
 
-  final List<String> _periodos = const [
-    'Hoje',
-    'Próximos 7 dias',
-    'Este mês',
-    'Próximo mês',
-    'Personalizado',
-  ];
+  Future<void> _aplicarFiltrosPendentesEConsultar() async {
+    if (_isConsultando) {
+      return;
+    }
 
-  final List<String> _tipos = const ['Todos', 'Receber', 'Pagar'];
-
-  final List<String> _statusDisponiveis = const [
-    'Todos',
-    'Previsto',
-    'Pendente',
-    'Vence hoje',
-    'Vencido',
-    'Pago',
-    'Recebido',
-    'Parcial',
-    'Cancelado',
-  ];
-
-  final List<String> _origens = const [
-    'Todas',
-    'Venda',
-    'Ordem de serviço',
-    'Despesa manual',
-    'Compra',
-    'Parcela',
-    'Movimentação de caixa',
-  ];
-
-  String _periodoSelecionado = 'Próximos 7 dias';
-  String _tipoSelecionado = 'Todos';
-  String _statusSelecionado = 'Todos';
-  String _origemSelecionada = 'Todas';
-  String _empresaSelecionada = 'Todas';
-  bool _mostrarSomenteCriticos = false;
-
-  int _abaSelecionada = 0;
-  Map<String, dynamic>? _lancamentoSelecionado;
-  double _resumoCardsProgress = 0.0;
-  int _resumoAtualizacaoVersao = 0;
-  bool _isConsultando = false;
-  Map<String, double> _resumoValoresBaseAnimacao = <String, double>{};
-
-  final List<String> _abas = const ['Agenda', 'Calendário', 'Fluxo previsto'];
-
-  final List<Map<String, dynamic>> _empresas = <Map<String, dynamic>>[
-    <String, dynamic>{'id': 'all', 'nome': 'Todas'},
-  ];
-
-  final List<Map<String, dynamic>> _cardsResumo = <Map<String, dynamic>>[
-    <String, dynamic>{
-      'titulo': 'Receber hoje',
-      'valor': 'R\$ 0,00',
-      'valorNumerico': 0.0,
-      'icone': Icons.south_west_rounded,
-      'ajuda': 'Sem dados carregados.',
-    },
-    <String, dynamic>{
-      'titulo': 'Pagar hoje',
-      'valor': 'R\$ 0,00',
-      'valorNumerico': 0.0,
-      'icone': Icons.north_east_rounded,
-      'ajuda': 'Sem dados carregados.',
-    },
-    <String, dynamic>{
-      'titulo': 'Vencidos a receber',
-      'valor': 'R\$ 0,00',
-      'valorNumerico': 0.0,
-      'icone': Icons.warning_amber_rounded,
-      'ajuda': 'Sem dados carregados.',
-    },
-    <String, dynamic>{
-      'titulo': 'Vencidos a pagar',
-      'valor': 'R\$ 0,00',
-      'valorNumerico': 0.0,
-      'icone': Icons.error_outline_rounded,
-      'ajuda': 'Sem dados carregados.',
-    },
-    <String, dynamic>{
-      'titulo': 'Saldo previsto da semana',
-      'valor': 'R\$ 0,00',
-      'valorNumerico': 0.0,
-      'icone': Icons.query_stats_rounded,
-      'ajuda': 'Sem dados carregados.',
-    },
-    <String, dynamic>{
-      'titulo': 'Saldo previsto do mês',
-      'valor': 'R\$ 0,00',
-      'valorNumerico': 0.0,
-      'icone': Icons.account_balance_wallet_outlined,
-      'ajuda': 'Sem dados carregados.',
-    },
-    <String, dynamic>{
-      'titulo': 'Apenas Confirmados',
-      'valor': 'R\$ 0,00',
-      'valorNumerico': 0.0,
-      'icone': Icons.verified_rounded,
-      'ajuda': 'Sem dados carregados.',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
-  final List<Map<String, dynamic>> _calendarioAgenda = <Map<String, dynamic>>[];
-  final List<Map<String, dynamic>> _fluxoPrevistoAgenda =
-      <Map<String, dynamic>>[];
-
-  @override
-  void initState() {
-    super.initState();
-    _sincronizarLancamentoSelecionado();
-    _mainScrollController.addListener(_onMainScroll);
-    _fabMenuController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 260),
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _consultarLancamentos();
+    setState(() {
+      _periodoSelecionado = _periodoBusca;
+      _tipoSelecionado = _tipoBusca;
+      _statusSelecionado = _statusBusca;
+      _origemSelecionada = _origemBusca;
+      _empresaSelecionada = _empresaBusca;
+      _mostrarSomenteCriticos = _somenteCriticosBusca;
     });
-  }
 
-  @override
-  void dispose() {
-    _fabMenuController.dispose();
-    _mainScrollController.removeListener(_onMainScroll);
-    _mainScrollController.dispose();
-    super.dispose();
-  }
-
-  void _sincronizarLancamentoSelecionado() {
-    final String? idSelecionadoAtual =
-        _lancamentoSelecionado?['id']?.toString();
-
-    if (idSelecionadoAtual != null && idSelecionadoAtual.isNotEmpty) {
-      for (final grupo in _gruposAgenda) {
-        final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
-        final encontrado = itens.firstWhere(
-          (item) => item['id']?.toString() == idSelecionadoAtual,
-          orElse: () => <String, dynamic>{},
-        );
-        if (encontrado.isNotEmpty) {
-          _lancamentoSelecionado = encontrado;
-          return;
-        }
-      }
-    }
-
-    for (final grupo in _gruposAgenda) {
-      final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
-      if (itens.isNotEmpty) {
-        _lancamentoSelecionado = itens.first;
-        return;
-      }
-    }
-
-    _lancamentoSelecionado = null;
+    await _consultarLancamentos(mostrarFeedback: true);
   }
 
   Future<void> _consultarLancamentos({bool mostrarFeedback = false}) async {
@@ -293,8 +246,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           SnackBar(
             content: Text(
               endpointNaoPublicado
-                  ? 'Endpoint de consulta ainda não publicado. Exibindo dados locais.'
-                  : 'Falha ao consultar lançamentos (${e.statusCode}). Exibindo dados locais.',
+                  ? 'Endpoint de consulta ainda não publicado. Exibindo dados já carregados.'
+                  : 'Falha ao consultar lançamentos (${e.statusCode}). Exibindo dados já carregados.',
             ),
           ),
         );
@@ -305,7 +258,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Não foi possível consultar agora. Exibindo dados locais.',
+              'Não foi possível consultar agora. Exibindo dados já carregados.',
             ),
           ),
         );
@@ -318,17 +271,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   AgendaFinanceiraConsultaRequest _buildConsultaRequest() {
-    final periodo = _periodoParaRequest(_periodoSelecionado);
-
     return AgendaFinanceiraConsultaRequest(
-      periodo: periodo,
+      periodo: _periodoParaRequest(_periodoSelecionado),
       filtros: AgendaFinanceiraFiltrosRequest(
         tipo:
             _tipoSelecionado == 'Todos'
                 ? 'TODOS'
                 : _tipoSelecionado.toUpperCase(),
-        status: _statusFiltroParaBackend(),
-        origens: _origensFiltroParaBackend(),
+        status: _statusFiltroParaBackend(_statusSelecionado),
+        origens: _origensFiltroParaBackend(_origemSelecionada),
         categorias: <String>[],
         formasPagamento: <String>[],
         clienteFornecedor: null,
@@ -376,8 +327,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     }
   }
 
-  List<String> _statusFiltroParaBackend() {
-    switch (_statusSelecionado) {
+  List<String> _statusFiltroParaBackend(String status) {
+    switch (status) {
       case 'Previsto':
         return <String>['PREVISTO'];
       case 'Pendente':
@@ -399,8 +350,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     }
   }
 
-  List<String> _origensFiltroParaBackend() {
-    switch (_origemSelecionada) {
+  List<String> _origensFiltroParaBackend(String origem) {
+    switch (origem) {
       case 'Venda':
         return <String>['VENDA'];
       case 'Ordem de serviço':
@@ -430,156 +381,41 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   void _aplicarConsultaBackend(Map<String, dynamic> payload) {
-    final valoresBaseAnimacao = _mapaValoresResumo(_cardsResumo);
-    final novosCardsResumo = _mapearResumoCards(
-      payload['resumo'] is Map<String, dynamic>
-          ? payload['resumo'] as Map<String, dynamic>
-          : null,
-      payload['confirmados'] is Map<String, dynamic>
-          ? payload['confirmados'] as Map<String, dynamic>
-          : null,
-    );
-    final novosGruposAgenda = _mapearGruposAgenda(payload['gruposAgenda']);
+    final novosGrupos = _mapearGruposAgenda(payload['gruposAgenda']);
     final novoCalendario = _mapearCalendario(payload['calendario']);
     final novoFluxo = _mapearFluxoPrevisto(payload['fluxoPrevisto']);
-    final empresasResposta = _extrairEmpresas(novosGruposAgenda);
+    final empresasResposta = _extrairEmpresas(novosGrupos);
 
     setState(() {
-      _resumoValoresBaseAnimacao = valoresBaseAnimacao;
-      _resumoAtualizacaoVersao++;
-
-      _cardsResumo
-        ..clear()
-        ..addAll(novosCardsResumo);
-
       _gruposAgenda
         ..clear()
-        ..addAll(novosGruposAgenda);
-
+        ..addAll(novosGrupos);
       _calendarioAgenda
         ..clear()
         ..addAll(novoCalendario);
-
       _fluxoPrevistoAgenda
         ..clear()
         ..addAll(novoFluxo);
-
       _empresas
         ..clear()
         ..add(<String, dynamic>{'id': 'all', 'nome': 'Todas'})
         ..addAll(
-          empresasResposta
-              .map(
-                (nome) => <String, dynamic>{
-                  'id': nome.toLowerCase().replaceAll(' ', '-'),
-                  'nome': nome,
-                },
-              )
-              .toList(),
+          empresasResposta.map(
+            (nome) => <String, dynamic>{
+              'id': nome.toLowerCase().replaceAll(' ', '-'),
+              'nome': nome,
+            },
+          ),
         );
 
       if (!_empresas.any((e) => e['nome'] == _empresaSelecionada)) {
         _empresaSelecionada = 'Todas';
+        _empresaBusca = 'Todas';
       }
 
+      _ultimaConsultaEm = DateTime.now();
       _sincronizarLancamentoSelecionado();
     });
-  }
-
-  List<Map<String, dynamic>> _mapearResumoCards(
-    Map<String, dynamic>? resumo,
-    Map<String, dynamic>? confirmados,
-  ) {
-    final dados = resumo ?? <String, dynamic>{};
-    final dadosConfirmados = confirmados ?? <String, dynamic>{};
-
-    final receberHoje = _toDoubleDynamic(dados['receberHoje']);
-    final pagarHoje = _toDoubleDynamic(dados['pagarHoje']);
-    final vencidosReceber = _toDoubleDynamic(dados['vencidosReceber']);
-    final vencidosPagar = _toDoubleDynamic(dados['vencidosPagar']);
-    final saldoSemana = _toDoubleDynamic(dados['saldoPrevistoSemana']);
-    final saldoMes = _toDoubleDynamic(dados['saldoPrevistoMes']);
-    final qtdHoje = _toIntDynamic(dados['quantidadeLancamentosHoje']);
-    final qtdVencidos = _toIntDynamic(dados['quantidadeVencidos']);
-    final qtdConfirmados = _toIntDynamic(
-      dadosConfirmados['quantidadeOperacoes'],
-    );
-    final saldoConfirmado = _toDoubleDynamic(
-      dadosConfirmados['saldoConfirmado'],
-    );
-    final totalRecebidoConfirmado = _toDoubleDynamic(
-      dadosConfirmados['totalRecebidoConfirmado'],
-    );
-    final totalPagoConfirmado = _toDoubleDynamic(
-      dadosConfirmados['totalPagoConfirmado'],
-    );
-
-    return <Map<String, dynamic>>[
-      {
-        'titulo': 'Receber hoje',
-        'valor': _formatarMoeda(receberHoje),
-        'valorNumerico': receberHoje,
-        'icone': Icons.south_west_rounded,
-        'ajuda': '$qtdHoje lançamento(s) previstos para entrada no dia.',
-      },
-      {
-        'titulo': 'Pagar hoje',
-        'valor': _formatarMoeda(pagarHoje),
-        'valorNumerico': pagarHoje,
-        'icone': Icons.north_east_rounded,
-        'ajuda': '$qtdHoje lançamento(s) previstos para saída no dia.',
-      },
-      {
-        'titulo': 'Vencidos a receber',
-        'valor': _formatarMoeda(vencidosReceber),
-        'valorNumerico': vencidosReceber,
-        'icone': Icons.warning_amber_rounded,
-        'ajuda': '$qtdVencidos lançamento(s) em atraso para cobrança.',
-      },
-      {
-        'titulo': 'Vencidos a pagar',
-        'valor': _formatarMoeda(vencidosPagar),
-        'valorNumerico': vencidosPagar,
-        'icone': Icons.error_outline_rounded,
-        'ajuda': '$qtdVencidos lançamento(s) em atraso para pagamento.',
-      },
-      {
-        'titulo': 'Saldo previsto da semana',
-        'valor': _formatarMoeda(saldoSemana),
-        'valorNumerico': saldoSemana,
-        'icone': Icons.query_stats_rounded,
-        'ajuda': 'Entradas previstas menos saídas previstas.',
-      },
-      {
-        'titulo': 'Saldo previsto do mês',
-        'valor': _formatarMoeda(saldoMes),
-        'valorNumerico': saldoMes,
-        'icone': Icons.account_balance_wallet_outlined,
-        'ajuda': 'Indicador consolidado do período atual.',
-      },
-      {
-        'titulo': 'Apenas Confirmados',
-        'valor': _formatarMoeda(saldoConfirmado),
-        'valorNumerico': saldoConfirmado,
-        'icone': Icons.verified_rounded,
-        'ajuda':
-            '$qtdConfirmados operação(ões) quitada(s). '
-            'Recebido: ${_formatarMoeda(totalRecebidoConfirmado)} | '
-            'Pago: ${_formatarMoeda(totalPagoConfirmado)}',
-      },
-    ];
-  }
-
-  Map<String, double> _mapaValoresResumo(List<Map<String, dynamic>> cards) {
-    final mapa = <String, double>{};
-    for (final card in cards) {
-      final titulo = card['titulo']?.toString().trim() ?? '';
-      if (titulo.isEmpty) {
-        continue;
-      }
-      mapa[titulo] = _toDoubleDynamic(card['valorNumerico'] ?? card['valor']);
-    }
-    return mapa;
   }
 
   List<Map<String, dynamic>> _mapearGruposAgenda(dynamic gruposRaw) {
@@ -587,15 +423,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       return <Map<String, dynamic>>[];
     }
 
-    final List<Map<String, dynamic>> grupos = <Map<String, dynamic>>[];
-
+    final grupos = <Map<String, dynamic>>[];
     for (final grupo in gruposRaw) {
       if (grupo is! Map<String, dynamic>) {
         continue;
       }
 
       final itensRaw = grupo['itens'];
-      final List<Map<String, dynamic>> itens =
+      final itens =
           itensRaw is List
               ? itensRaw
                   .whereType<Map<String, dynamic>>()
@@ -646,44 +481,27 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     }).toList();
   }
 
-  List<String> _extrairEmpresas(List<Map<String, dynamic>> grupos) {
-    final Set<String> nomes = <String>{};
-
-    for (final grupo in grupos) {
-      final itens =
-          (grupo['itens'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      for (final item in itens) {
-        final nome = item['empresa']?.toString() ?? '';
-        if (nome.trim().isNotEmpty) {
-          nomes.add(nome.trim());
-        }
-      }
-    }
-
-    final lista = nomes.toList()..sort();
-    return lista;
-  }
-
   Map<String, dynamic> _mapearItemResumo(Map<String, dynamic> item) {
     final tipoBackend = item['tipo']?.toString().toUpperCase() ?? '';
     final empresa = item['empresa'];
     final nomeEmpresa =
         empresa is Map<String, dynamic>
             ? empresa['nome']?.toString() ?? ''
-            : '';
+            : empresa?.toString() ?? '';
 
     final acoesRaw = item['acoesDisponiveis'];
-    final List<String> acoes =
+    final acoes =
         acoesRaw is List
             ? acoesRaw
                 .map((acao) => _acaoBackendParaLabel(acao?.toString()))
                 .where((acao) => acao.isNotEmpty)
                 .toList()
             : <String>[];
+    final tipo = tipoBackend == 'RECEBER' ? 'receber' : 'pagar';
 
     return <String, dynamic>{
       'id': item['idLancamento']?.toString() ?? '',
-      'tipo': tipoBackend == 'RECEBER' ? 'receber' : 'pagar',
+      'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
       'valor': _toDoubleDynamic(item['valor']),
@@ -701,7 +519,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       'acoes':
           acoes.isNotEmpty
               ? acoes
-              : (tipoBackend == 'RECEBER'
+              : (tipo == 'receber'
                   ? <String>['Receber', 'Detalhes']
                   : <String>['Pagar', 'Detalhes']),
     };
@@ -794,14 +612,172 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     }
   }
 
+  List<String> _extrairEmpresas(List<Map<String, dynamic>> grupos) {
+    final nomes = <String>{};
+    for (final grupo in grupos) {
+      final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
+      for (final item in itens) {
+        final nome = item['empresa']?.toString().trim() ?? '';
+        if (nome.isNotEmpty) {
+          nomes.add(nome);
+        }
+      }
+    }
+
+    final lista = nomes.toList()..sort();
+    return lista;
+  }
+
+  bool _deveSomarLancamento(Map<String, dynamic> item) {
+    return item['status']?.toString() != 'Cancelado';
+  }
+
+  List<Map<String, dynamic>> get _itensFiltrados {
+    return _gruposAgenda
+        .expand(
+          (grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>(),
+        )
+        .where((item) {
+          final bateTipo =
+              _tipoSelecionado == 'Todos' ||
+              (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
+              (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
+          final bateStatus =
+              _statusSelecionado == 'Todos' ||
+              item['status'] == _statusSelecionado;
+          final bateOrigem =
+              _origemSelecionada == 'Todas' || item['origem'] == _origemSelecionada;
+          final empresaDoItem = item['empresa']?.toString() ?? '';
+          final bateEmpresa =
+              _empresaSelecionada == 'Todas' ||
+              empresaDoItem.isEmpty ||
+              empresaDoItem == _empresaSelecionada;
+          final bateCritico =
+              !_mostrarSomenteCriticos ||
+              item['status'] == 'Vencido' ||
+              item['status'] == 'Vence hoje';
+
+          return bateTipo &&
+              bateStatus &&
+              bateOrigem &&
+              bateEmpresa &&
+              bateCritico;
+        })
+        .toList();
+  }
+
+  List<Map<String, dynamic>> get _itensSomaveisFiltrados {
+    return _itensFiltrados.where(_deveSomarLancamento).toList();
+  }
+
+  double _somarItens(String tipo) {
+    return _itensSomaveisFiltrados
+        .where((item) => item['tipo'] == tipo)
+        .fold<double>(0, (soma, item) => soma + (item['valor'] as double));
+  }
+
+  double _somarItensHoje(String tipo) {
+    final hoje = _formatarDataBr(DateTime.now());
+    return _itensSomaveisFiltrados
+        .where((item) => item['tipo'] == tipo && item['vencimento'] == hoje)
+        .fold<double>(0, (soma, item) => soma + (item['valor'] as double));
+  }
+
+  double _somarItensVencidos(String tipo) {
+    final hoje = DateTime.now();
+    final dataHoje = DateTime(hoje.year, hoje.month, hoje.day);
+    return _itensSomaveisFiltrados.where((item) {
+      if (item['tipo'] != tipo) return false;
+      final vencimento = _parseDataBr(item['vencimento']?.toString());
+      return vencimento != null && vencimento.isBefore(dataHoje);
+    }).fold<double>(0, (soma, item) => soma + (item['valor'] as double));
+  }
+
+  int get _quantidadeCanceladosVisiveis {
+    return _itensFiltrados
+        .where((item) => item['status'] == 'Cancelado')
+        .length;
+  }
+
+  List<Map<String, dynamic>> _buildCardsResumoData() {
+    final receberHoje = _somarItensHoje('receber');
+    final pagarHoje = _somarItensHoje('pagar');
+    final vencidosReceber = _somarItensVencidos('receber');
+    final vencidosPagar = _somarItensVencidos('pagar');
+    final totalReceber = _somarItens('receber');
+    final totalPagar = _somarItens('pagar');
+    final saldo = totalReceber - totalPagar;
+    final qtdCancelados = _quantidadeCanceladosVisiveis;
+    final observacaoCancelados =
+        qtdCancelados > 0
+            ? ' $qtdCancelados cancelado(s) exibido(s), sem compor valores.'
+            : '';
+
+    return <Map<String, dynamic>>[
+      {
+        'titulo': 'Receber hoje',
+        'valor': receberHoje,
+        'icone': Icons.south_west_rounded,
+        'ajuda': 'Entradas do dia, sem lançamentos cancelados.$observacaoCancelados',
+      },
+      {
+        'titulo': 'Pagar hoje',
+        'valor': pagarHoje,
+        'icone': Icons.north_east_rounded,
+        'ajuda': 'Saídas do dia, sem lançamentos cancelados.$observacaoCancelados',
+      },
+      {
+        'titulo': 'Vencidos a receber',
+        'valor': vencidosReceber,
+        'icone': Icons.warning_amber_rounded,
+        'ajuda': 'Cobranças vencidas consideradas no período.',
+      },
+      {
+        'titulo': 'Vencidos a pagar',
+        'valor': vencidosPagar,
+        'icone': Icons.error_outline_rounded,
+        'ajuda': 'Pagamentos vencidos considerados no período.',
+      },
+      {
+        'titulo': 'Saldo previsto',
+        'valor': saldo,
+        'icone': Icons.query_stats_rounded,
+        'ajuda': 'Entradas menos saídas. Cancelados não entram na soma.',
+      },
+    ];
+  }
+
+  List<Map<String, dynamic>> _itensPorGrupo(String grupo) {
+    final grupoEncontrado = _gruposAgenda.firstWhere(
+      (g) => g['grupo'] == grupo,
+      orElse: () => {'itens': <Map<String, dynamic>>[]},
+    );
+
+    final idsFiltrados = _itensFiltrados.map((item) => item['id']).toSet();
+    return (grupoEncontrado['itens'] as List)
+        .cast<Map<String, dynamic>>()
+        .where((item) => idsFiltrados.contains(item['id']))
+        .toList();
+  }
+
+  DateTime? _parseDataBr(String? data) {
+    if (data == null || data.trim().isEmpty) return null;
+    final partes = data.split('/');
+    if (partes.length != 3) return null;
+    final dia = int.tryParse(partes[0]);
+    final mes = int.tryParse(partes[1]);
+    final ano = int.tryParse(partes[2]);
+    if (dia == null || mes == null || ano == null) return null;
+    return DateTime(ano, mes, dia);
+  }
+
   String _formatarDataIsoParaBr(String? dataIso) {
     if (dataIso == null || dataIso.trim().isEmpty) {
       return _formatarDataBr(DateTime.now());
     }
 
     try {
-      final data = DateTime.parse(dataIso);
-      return _formatarDataBr(data);
+      return _formatarDataBr(DateTime.parse(dataIso));
     } catch (_) {
       return _formatarDataBr(DateTime.now());
     }
@@ -854,8 +830,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     final partes = absoluto.toStringAsFixed(2).split('.');
     final inteiro = partes[0];
     final decimal = partes[1];
-
     final buffer = StringBuffer();
+
     for (int i = 0; i < inteiro.length; i++) {
       final indexInvertido = inteiro.length - i;
       buffer.write(inteiro[i]);
@@ -868,27 +844,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     return '$prefixo${buffer.toString()},$decimal';
   }
 
-  void _alternarMenuFab() {
-    if (_fabMenuController.isCompleted) {
-      _fabMenuController.reverse();
-      return;
+  String _formatarHora(DateTime? data) {
+    if (data == null) {
+      return 'Ainda não consultado';
     }
-    _fabMenuController.forward();
-  }
-
-  void _executarAcaoFab(VoidCallback acao) {
-    acao();
-    _fabMenuController.reverse();
-  }
-
-  void _onMainScroll() {
-    if (!_mainScrollController.hasClients) return;
-    if (_mainScrollController.positions.length != 1) return;
-
-    final novoProgresso = (_mainScrollController.offset / 180).clamp(0.0, 1.0);
-
-    if ((novoProgresso - _resumoCardsProgress).abs() < 0.02) return;
-    setState(() => _resumoCardsProgress = novoProgresso);
+    final hora = data.hour.toString().padLeft(2, '0');
+    final minuto = data.minute.toString().padLeft(2, '0');
+    return 'Atualizado às $hora:$minuto';
   }
 
   Color _corTipo(String tipo) {
@@ -913,60 +875,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       default:
         return const Color(0xFF1565C0);
     }
-  }
-
-  List<Map<String, dynamic>> get _itensFiltrados {
-    return _gruposAgenda
-        .expand(
-          (grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>(),
-        )
-        .where((item) {
-          final bateTipo =
-              _tipoSelecionado == 'Todos' ||
-              (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
-              (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
-
-          final bateStatus =
-              _statusSelecionado == 'Todos' ||
-              item['status'] == _statusSelecionado;
-
-          final bateOrigem =
-              _origemSelecionada == 'Todas' ||
-              item['origem'] == _origemSelecionada;
-
-          final empresaDoItem = item['empresa']?.toString() ?? '';
-          final bateEmpresa =
-              _empresaSelecionada == 'Todas' ||
-              empresaDoItem.isEmpty ||
-              empresaDoItem == _empresaSelecionada;
-
-          final bateCritico =
-              !_mostrarSomenteCriticos ||
-              item['status'] == 'Vencido' ||
-              item['status'] == 'Vence hoje';
-
-          return bateTipo &&
-              bateStatus &&
-              bateOrigem &&
-              bateEmpresa &&
-              bateCritico;
-        })
-        .toList();
-  }
-
-  List<Map<String, dynamic>> _itensPorGrupo(String grupo) {
-    final grupoEncontrado = _gruposAgenda.firstWhere(
-      (g) => g['grupo'] == grupo,
-      orElse: () => {'itens': <Map<String, dynamic>>[]},
-    );
-
-    return (grupoEncontrado['itens'] as List)
-        .cast<Map<String, dynamic>>()
-        .where(
-          (item) =>
-              _itensFiltrados.any((filtrado) => filtrado['id'] == item['id']),
-        )
-        .toList();
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -1025,6 +933,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                       icon: Icons.tune_rounded,
                       text: _periodoSelecionado,
                     ),
+                    _buildChipInfo(
+                      context,
+                      icon: Icons.access_time_rounded,
+                      text: _formatarHora(_ultimaConsultaEm),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -1053,21 +966,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                   ),
                 ),
               ),
-              _buildHeaderAction(
-                context,
-                icon: Icons.add_card_rounded,
-                label: 'Novo lançamento',
+              FilledButton.icon(
                 onPressed: _onNovoLancamentoPressed,
-              ),
-              _buildHeaderAction(
-                context,
-                icon: Icons.picture_as_pdf_outlined,
-                label: 'Exportar PDF',
-              ),
-              _buildHeaderAction(
-                context,
-                icon: Icons.notifications_active_outlined,
-                label: 'Cobranças',
+                icon: const Icon(Icons.add_card_rounded),
+                label: const Text('Novo lançamento'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(170, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1101,80 +1009,26 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     );
   }
 
-  Widget _buildHeaderAction(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    VoidCallback? onPressed,
-  }) {
-    return OutlinedButton.icon(
-      onPressed: onPressed ?? () {},
-      icon: Icon(icon),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(170, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-    );
-  }
-
   Widget _buildResumoCards(BuildContext context) {
-    final mostrarLinhaUnica = _resumoCardsProgress > 0.30;
-    final double alturaReservada = mostrarLinhaUnica ? 126 : 220;
+    final cards = _buildCardsResumoData();
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-      constraints: BoxConstraints(minHeight: alturaReservada),
-      padding: const EdgeInsets.only(bottom: 14),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 320),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        layoutBuilder: (currentChild, previousChildren) {
-          return Stack(
-            alignment: Alignment.topCenter,
-            children: [
-              ...previousChildren,
-              if (currentChild != null) currentChild,
-            ],
-          );
-        },
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: SizeTransition(
-              sizeFactor: animation,
-              axisAlignment: -1,
-              child: child,
-            ),
-          );
-        },
-        child:
-            mostrarLinhaUnica
-                ? _buildResumoCardsLinhaUnica(context)
-                : _buildResumoCardsGrade(context),
-      ),
-    );
-  }
-
-  Widget _buildResumoCardsGrade(BuildContext context) {
     return LayoutBuilder(
-      key: const ValueKey('resumo-cards-grade'),
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final cardWidth =
             width > 1500
-                ? (width - 40) / 3
-                : width > 1000
-                ? (width - 24) / 2
+                ? (width - 48) / 4
+                : width > 1080
+                ? (width - 24) / 3
+                : width > 680
+                ? (width - 12) / 2
                 : width;
 
         return Wrap(
           spacing: 12,
           runSpacing: 12,
           children:
-              _cardsResumo.map((card) {
+              cards.map((card) {
                 return SizedBox(
                   width: cardWidth,
                   child: _buildResumoCard(context, card),
@@ -1185,226 +1039,253 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     );
   }
 
-  Widget _buildResumoCardsLinhaUnica(BuildContext context) {
-    return LayoutBuilder(
-      key: const ValueKey('resumo-cards-linha-unica'),
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final cardWidth =
-            width > 1600
-                ? 250.0
-                : width > 1200
-                ? 220.0
-                : 200.0;
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: List.generate(_cardsResumo.length, (index) {
-              final card = _cardsResumo[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  right: index == _cardsResumo.length - 1 ? 0 : 12,
-                ),
-                child: SizedBox(
-                  width: cardWidth,
-                  child: _buildResumoCard(context, card),
-                ),
-              );
-            }),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildResumoCard(BuildContext context, Map<String, dynamic> card) {
     final theme = Theme.of(context);
-    final titulo = card['titulo'] as String;
-    final valorAtual = _toDoubleDynamic(card['valorNumerico'] ?? card['valor']);
-    final valorInicial = _resumoValoresBaseAnimacao[titulo] ?? valorAtual;
-    final ajuda = card['ajuda']?.toString() ?? '';
+    final valor = card['valor'] as double;
 
-    return TweenAnimationBuilder<double>(
-      key: ValueKey('resumo-card-pulse-$titulo-$_resumoAtualizacaoVersao'),
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-      builder: (context, progresso, _) {
-        final destaque = (1 - progresso).clamp(0.0, 1.0);
-        final escala = 1 + (0.012 * destaque);
-        final elevacao = 2 + (2.2 * destaque);
-        final corBorda = theme.colorScheme.primary.withValues(
-          alpha: 0.08 + (0.14 * destaque),
-        );
-        final corSombra = theme.colorScheme.primary.withValues(
-          alpha: 0.04 + (0.10 * destaque),
-        );
-
-        return Transform.scale(
-          scale: escala,
-          child: Card(
-            elevation: elevacao,
-            shadowColor: corSombra,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-              side: BorderSide(color: corBorda),
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                card['icone'] as IconData,
+                color: theme.colorScheme.primary,
+              ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 58,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(18),
+                  Text(
+                    card['titulo'] as String,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                    child: Icon(
-                      card['icone'] as IconData,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatarMoeda(valor),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          titulo,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        TweenAnimationBuilder<double>(
-                          key: ValueKey(
-                            'resumo-card-valor-$titulo-$_resumoAtualizacaoVersao',
-                          ),
-                          tween: Tween<double>(
-                            begin: valorInicial,
-                            end: valorAtual,
-                          ),
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, valorAnimado, _) {
-                            return Text(
-                              _formatarMoeda(valorAnimado),
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: theme.colorScheme.primary,
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          ajuda,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 6),
+                  Text(
+                    card['ajuda'] as String,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildToolbarFiltros(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final campoLargo = width > 1600 ? 220.0 : 190.0;
-            final campoMedio = width > 1600 ? 180.0 : 160.0;
+    final theme = Theme.of(context);
+    final destaque = _temFiltrosPendentes;
 
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _buildDropdownBox(
-                  context,
-                  label: 'Período',
-                  value: _periodoSelecionado,
-                  items: _periodos,
-                  onChanged:
-                      (value) => setState(() => _periodoSelecionado = value!),
-                  width: campoLargo,
-                ),
-                _buildDropdownBox(
-                  context,
-                  label: 'Tipo',
-                  value: _tipoSelecionado,
-                  items: _tipos,
-                  onChanged:
-                      (value) => setState(() => _tipoSelecionado = value!),
-                  width: campoMedio,
-                ),
-                _buildDropdownBox(
-                  context,
-                  label: 'Status',
-                  value: _statusSelecionado,
-                  items: _statusDisponiveis,
-                  onChanged:
-                      (value) => setState(() => _statusSelecionado = value!),
-                  width: campoMedio,
-                ),
-                _buildDropdownBox(
-                  context,
-                  label: 'Origem',
-                  value: _origemSelecionada,
-                  items: _origens,
-                  onChanged:
-                      (value) => setState(() => _origemSelecionada = value!),
-                  width: campoLargo,
-                ),
-                _buildDropdownBox(
-                  context,
-                  label: 'Empresa',
-                  value: _empresaSelecionada,
-                  items: _empresas.map((e) => e['nome'] as String).toList(),
-                  onChanged:
-                      (value) => setState(() => _empresaSelecionada = value!),
-                  width: campoLargo,
-                ),
-                FilterChip(
-                  selected: _mostrarSomenteCriticos,
-                  onSelected:
-                      (value) =>
-                          setState(() => _mostrarSomenteCriticos = value),
-                  label: const Text('Somente críticos'),
-                  avatar: const Icon(Icons.priority_high_rounded, size: 18),
-                ),
-                OutlinedButton.icon(
-                  onPressed:
-                      _isConsultando
-                          ? null
-                          : () => _consultarLancamentos(mostrarFeedback: true),
-                  icon: const Icon(Icons.search_rounded),
-                  label: const Text('Buscar'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(120, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow:
+            destaque
+                ? [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-              ],
-            );
-          },
+                ]
+                : const [],
+      ),
+      child: Card(
+        elevation: destaque ? 5 : 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(
+            color:
+                destaque
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outlineVariant,
+            width: destaque ? 1.4 : 1,
+          ),
         ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child:
+                    destaque
+                        ? _buildFiltrosPendentesBanner(context)
+                        : const SizedBox.shrink(),
+              ),
+              if (destaque) const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final campoLargo = width > 1600 ? 220.0 : 190.0;
+                  final campoMedio = width > 1600 ? 180.0 : 160.0;
+
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _buildDropdownBox(
+                        context,
+                        label: 'Período',
+                        value: _periodoBusca,
+                        items: _periodos,
+                        onChanged:
+                            (value) => _marcarFiltroPendente(
+                              () => _periodoBusca = value!,
+                            ),
+                        width: campoLargo,
+                      ),
+                      _buildDropdownBox(
+                        context,
+                        label: 'Tipo',
+                        value: _tipoBusca,
+                        items: _tipos,
+                        onChanged:
+                            (value) => _marcarFiltroPendente(
+                              () => _tipoBusca = value!,
+                            ),
+                        width: campoMedio,
+                      ),
+                      _buildDropdownBox(
+                        context,
+                        label: 'Status',
+                        value: _statusBusca,
+                        items: _statusDisponiveis,
+                        onChanged:
+                            (value) => _marcarFiltroPendente(
+                              () => _statusBusca = value!,
+                            ),
+                        width: campoMedio,
+                      ),
+                      _buildDropdownBox(
+                        context,
+                        label: 'Origem',
+                        value: _origemBusca,
+                        items: _origens,
+                        onChanged:
+                            (value) => _marcarFiltroPendente(
+                              () => _origemBusca = value!,
+                            ),
+                        width: campoLargo,
+                      ),
+                      _buildDropdownBox(
+                        context,
+                        label: 'Empresa',
+                        value: _empresaBusca,
+                        items: _empresas.map((e) => e['nome'] as String).toList(),
+                        onChanged:
+                            (value) => _marcarFiltroPendente(
+                              () => _empresaBusca = value!,
+                            ),
+                        width: campoLargo,
+                      ),
+                      FilterChip(
+                        selected: _somenteCriticosBusca,
+                        onSelected:
+                            (value) => _marcarFiltroPendente(
+                              () => _somenteCriticosBusca = value,
+                            ),
+                        label: const Text('Somente críticos'),
+                        avatar: const Icon(Icons.priority_high_rounded, size: 18),
+                      ),
+                      _buildBotaoBuscar(context),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFiltrosPendentesBanner(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      key: const ValueKey('filtros-pendentes'),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.30)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Filtros alterados. Clique em Buscar alterações para atualizar os resultados.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBotaoBuscar(BuildContext context) {
+    final label = _temFiltrosPendentes ? 'Buscar alterações' : 'Buscar';
+    final icon =
+        _temFiltrosPendentes ? Icons.manage_search_rounded : Icons.search_rounded;
+    final onPressed = _isConsultando ? null : _aplicarFiltrosPendentesEConsultar;
+
+    if (_temFiltrosPendentes) {
+      return FilledButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(180, 48),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(120, 48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -1417,12 +1298,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     required ValueChanged<String?> onChanged,
     required double width,
   }) {
+    final safeValue = items.contains(value) ? value : items.first;
+
     return SizedBox(
       width: width,
       child: DropdownButtonFormField<String>(
-        value: value,
+        value: safeValue,
         isExpanded: true,
-        onChanged: onChanged,
+        onChanged: _isConsultando ? null : onChanged,
         decoration: InputDecoration(
           labelText: label,
           isDense: true,
@@ -1467,7 +1350,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           return ChoiceChip(
             selected: selecionada,
             label: Text(_abas[index]),
-            onSelected: (_) => setState(() => _abaSelecionada = index),
+            onSelected:
+                (_) => setState(() {
+                  _abaSelecionada = index;
+                }),
           );
         }),
       ),
@@ -1502,7 +1388,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             gruposVisiveis.isEmpty
                 ? const Center(
                   child: Text(
-                    'Nenhum lançamento encontrado com os filtros atuais.',
+                    'Nenhum lançamento encontrado com os filtros aplicados.',
                   ),
                 )
                 : ListView.separated(
@@ -1527,8 +1413,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -1551,6 +1436,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     final corTipo = _corTipo(item['tipo'] as String);
     final corStatus = _corStatus(item['status'] as String);
     final selecionado = _lancamentoSelecionado?['id'] == item['id'];
+    final cancelado = item['status'] == 'Cancelado';
 
     return InkWell(
       onTap: () => setState(() => _lancamentoSelecionado = item),
@@ -1575,6 +1461,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
         child: LayoutBuilder(
           builder: (context, constraints) {
             final empilhar = constraints.maxWidth < 980;
+            final conteudo = _buildLancamentoConteudo(context, item);
+            final valor = _buildLancamentoValorEAcoes(
+              context,
+              item,
+              cancelado ? _corStatus('Cancelado') : corTipo,
+            );
 
             if (empilhar) {
               return Column(
@@ -1582,9 +1474,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                 children: [
                   _buildLancamentoBadges(context, item, corTipo, corStatus),
                   const SizedBox(height: 14),
-                  _buildLancamentoConteudo(context, item),
+                  conteudo,
                   const SizedBox(height: 14),
-                  _buildLancamentoValorEAcoes(context, item, corTipo),
+                  valor,
                 ],
               );
             }
@@ -1596,16 +1488,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _buildLancamentoConteudo(context, item)),
+                    Expanded(child: conteudo),
                     const SizedBox(width: 18),
-                    SizedBox(
-                      width: 280,
-                      child: _buildLancamentoValorEAcoes(
-                        context,
-                        item,
-                        corTipo,
-                      ),
-                    ),
+                    SizedBox(width: 280, child: valor),
                   ],
                 ),
               ],
@@ -1678,6 +1563,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             ),
           ),
         ),
+        if (item['status'] == 'Cancelado')
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Text(
+              'Não soma nos totais',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1702,11 +1603,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           spacing: 16,
           runSpacing: 10,
           children: [
-            _buildMiniInfo(
-              context,
-              Icons.person_outline,
-              item['contato'] as String,
-            ),
+            _buildMiniInfo(context, Icons.person_outline, item['contato'] as String),
             _buildMiniInfo(
               context,
               Icons.event_outlined,
@@ -1747,7 +1644,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          'R\$ ${(item['valor'] as double).toStringAsFixed(2)}',
+          _formatarMoeda(item['valor'] as double),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w900,
             color: corTipo,
@@ -1817,16 +1714,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           children: [
             Text(
               'Calendário financeiro',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               'Resumo por dia com volume de lançamentos e criticidade.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -1926,16 +1823,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
           children: [
             Text(
               'Fluxo previsto',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               'Resumo visual das entradas e saídas esperadas para apoiar decisões de caixa.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
             const SizedBox(height: 18),
             if (barras.isEmpty)
@@ -1986,7 +1883,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        'Saldo previsto: R\$ ${saldo.toStringAsFixed(2)}',
+                        'Saldo previsto: ${_formatarMoeda(saldo)}',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           color:
@@ -2018,7 +1915,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label • R\$ ${valor.toStringAsFixed(2)}'),
+        Text('$label • ${_formatarMoeda(valor)}'),
         const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
@@ -2035,8 +1932,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
   }
 
   Widget _buildPainelDetalheUnificado(BuildContext context) {
-    final item = _lancamentoSelecionado ?? _itensFiltrados.firstOrNull;
-    return _buildDetalheLancamento(context, item);
+    return _buildDetalheLancamento(context, _lancamentoSelecionado);
   }
 
   Widget _buildDetalheLancamento(
@@ -2055,12 +1951,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
     }
 
     final corTipo = _corTipo(item['tipo'] as String);
-    final totalReceber = _itensFiltrados
-        .where((i) => i['tipo'] == 'receber')
-        .fold<double>(0, (soma, i) => soma + (i['valor'] as double));
-    final totalPagar = _itensFiltrados
-        .where((i) => i['tipo'] == 'pagar')
-        .fold<double>(0, (soma, i) => soma + (i['valor'] as double));
+    final cancelado = item['status'] == 'Cancelado';
+    final totalReceber = _somarItens('receber');
+    final totalPagar = _somarItens('pagar');
     final saldo = totalReceber - totalPagar;
 
     return Card(
@@ -2085,12 +1978,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             ),
             const SizedBox(height: 12),
             Text(
-              'R\$ ${(item['valor'] as double).toStringAsFixed(2)}',
+              _formatarMoeda(item['valor'] as double),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: corTipo,
+                color: cancelado ? _corStatus('Cancelado') : corTipo,
               ),
             ),
+            if (cancelado) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Este lançamento está cancelado e não compõe os totais financeiros.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,
@@ -2103,11 +2006,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                           : () => _onEditarLancamentoPressed(itemBase: item),
                   icon: const Icon(Icons.edit_outlined),
                   label: const Text('Editar lançamento'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: null,
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Excluir (em breve)'),
                 ),
               ],
             ),
@@ -2125,26 +2023,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             _buildLinhaDetalhe('Responsável', item['responsavel'] as String),
             const Divider(height: 28),
             Text(
-              'Ações rápidas',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children:
-                  (item['acoes'] as List).map((acao) {
-                    return OutlinedButton(
-                      onPressed:
-                          () => _executarAcaoLancamento(acao.toString(), item),
-                      child: Text(acao.toString()),
-                    );
-                  }).toList(),
-            ),
-            const Divider(height: 28),
-            Text(
               'Resumo do período',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
@@ -2154,7 +2032,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             _buildIndicadorLateral('Total a receber', totalReceber),
             _buildIndicadorLateral('Total a pagar', totalPagar),
             _buildIndicadorLateral('Saldo previsto', saldo, destaque: true),
-            _buildIndicadorTexto('Alertas financeiros', '2 cobranças críticas'),
+            if (_quantidadeCanceladosVisiveis > 0)
+              _buildIndicadorTexto(
+                'Cancelados fora da soma',
+                '$_quantidadeCanceladosVisiveis lançamento(s)',
+              ),
             const Divider(height: 28),
             Text(
               'Observações',
@@ -2192,23 +2074,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
                 ),
               ),
             )),
-            const Divider(height: 28),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: null,
-                  icon: const Icon(Icons.receipt_long_outlined),
-                  label: const Text('Abrir origem'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: null,
-                  icon: const Icon(Icons.attach_file_outlined),
-                  label: const Text('Comprovante'),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -2265,7 +2130,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
             ),
           ),
           Text(
-            'R\$ ${valor.toStringAsFixed(2)}',
+            _formatarMoeda(valor),
             style: TextStyle(fontWeight: FontWeight.w900, color: color),
           ),
         ],
@@ -2369,118 +2234,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb>
       },
     );
 
-    if (widget.embedded) {
-      return Scaffold(
-        backgroundColor: theme.colorScheme.surfaceContainerLowest,
-        floatingActionButton: _buildFloatingActions(),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        body: SafeArea(child: conteudo),
-      );
-    }
-
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
-      floatingActionButton: _buildFloatingActions(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _onNovoLancamentoPressed,
+        icon: const Icon(Icons.add),
+        label: const Text('Novo lançamento'),
+      ),
       body: SafeArea(child: conteudo),
     );
   }
-
-  Widget _buildFloatingActions() {
-    final itens = <
-      ({String heroTag, IconData icon, String label, VoidCallback onPressed})
-    >[
-      (
-        heroTag: 'fab-voltar-agenda-financeira',
-        icon: Icons.arrow_back_rounded,
-        label: 'Voltar',
-        onPressed: _voltarTelaAnterior,
-      ),
-      (
-        heroTag: 'fab-novo-lancamento-agenda-financeira',
-        icon: Icons.add_rounded,
-        label: 'Novo lançamento',
-        onPressed: _onNovoLancamentoPressed,
-      ),
-      (
-        heroTag: 'fab-atualizar-agenda-financeira',
-        icon: Icons.refresh_rounded,
-        label: 'Atualizar',
-        onPressed: _onAtualizarPressed,
-      ),
-    ];
-
-    const double espacoVertical = 72;
-    const double alturaBase = 56;
-
-    return SizedBox(
-      width: 260,
-      height: alturaBase + (itens.length * espacoVertical) + 12,
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          ...List<Widget>.generate(itens.length, (index) {
-            final item = itens[index];
-            final inicio = index * 0.12;
-            final fim = (inicio + 0.60).clamp(0.0, 1.0);
-            final animacao = CurvedAnimation(
-              parent: _fabMenuController,
-              curve: Interval(inicio, fim, curve: Curves.easeOutCubic),
-              reverseCurve: Curves.easeInCubic,
-            );
-
-            final deslocamentoBase = (index + 1) * espacoVertical;
-
-            return AnimatedBuilder(
-              animation: _fabMenuController,
-              builder: (context, _) {
-                final visivel = _fabMenuController.value > 0.01;
-                return Positioned(
-                  right: 0,
-                  bottom: deslocamentoBase * animacao.value,
-                  child: IgnorePointer(
-                    ignoring: !visivel,
-                    child: Opacity(
-                      opacity: animacao.value,
-                      child: Transform.scale(
-                        scale: 0.92 + (0.08 * animacao.value),
-                        alignment: Alignment.bottomRight,
-                        child: FloatingActionButton.extended(
-                          heroTag: item.heroTag,
-                          onPressed: () => _executarAcaoFab(item.onPressed),
-                          icon: Icon(item.icon),
-                          label: Text(item.label),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: FloatingActionButton(
-              heroTag: 'fab-menu-agenda-financeira',
-              onPressed: _alternarMenuFab,
-              child: RotationTransition(
-                turns: Tween<double>(begin: 0.0, end: 0.125).animate(
-                  CurvedAnimation(
-                    parent: _fabMenuController,
-                    curve: Curves.easeInOut,
-                  ),
-                ),
-                child: const Icon(Icons.add_rounded),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-extension _FirstOrNull on List<Map<String, dynamic>> {
-  Map<String, dynamic>? get firstOrNull => isEmpty ? null : first;
 }
