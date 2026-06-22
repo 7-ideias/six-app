@@ -802,6 +802,105 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         .length;
   }
 
+  List<Map<String, dynamic>> get _calendarioFinanceiroCalculado {
+    final agrupadoPorData = <String, Map<String, dynamic>>{};
+
+    for (final item in _itensFiltrados) {
+      final data = item['vencimento']?.toString() ?? '-';
+      final dia = agrupadoPorData.putIfAbsent(
+        data,
+        () => <String, dynamic>{
+          'data': data,
+          'quantidadeLancamentos': 0,
+          'quantidadeCriticos': 0,
+          'totalReceber': 0.0,
+          'totalPagar': 0.0,
+        },
+      );
+
+      dia['quantidadeLancamentos'] =
+          (dia['quantidadeLancamentos'] as int? ?? 0) + 1;
+      if (item['status'] == 'Vencido' || item['status'] == 'Vence hoje') {
+        dia['quantidadeCriticos'] =
+            (dia['quantidadeCriticos'] as int? ?? 0) + 1;
+      }
+
+      if (!_deveSomarLancamento(item)) {
+        continue;
+      }
+
+      final valor = item['valor'] as double? ?? 0;
+      if (item['tipo'] == 'receber') {
+        dia['totalReceber'] = (dia['totalReceber'] as double? ?? 0) + valor;
+      } else {
+        dia['totalPagar'] = (dia['totalPagar'] as double? ?? 0) + valor;
+      }
+    }
+
+    final dias = agrupadoPorData.values.toList();
+    dias.sort((a, b) {
+      final dataA = _parseDataBr(a['data']?.toString());
+      final dataB = _parseDataBr(b['data']?.toString());
+      if (dataA == null && dataB == null) return 0;
+      if (dataA == null) return 1;
+      if (dataB == null) return -1;
+      return dataA.compareTo(dataB);
+    });
+    return dias;
+  }
+
+  List<Map<String, dynamic>> get _fluxoPrevistoCalculado {
+    final agrupadoPorCompetencia = <String, Map<String, dynamic>>{};
+
+    for (final item in _itensFiltrados) {
+      final competencia = _competenciaDoLancamento(item);
+      final fluxo = agrupadoPorCompetencia.putIfAbsent(
+        competencia,
+        () => <String, dynamic>{
+          'competencia': competencia,
+          'totalEntradas': 0.0,
+          'totalSaidas': 0.0,
+          'saldoPrevisto': 0.0,
+        },
+      );
+
+      if (!_deveSomarLancamento(item)) {
+        continue;
+      }
+
+      final valor = item['valor'] as double? ?? 0;
+      if (item['tipo'] == 'receber') {
+        fluxo['totalEntradas'] =
+            (fluxo['totalEntradas'] as double? ?? 0) + valor;
+      } else {
+        fluxo['totalSaidas'] = (fluxo['totalSaidas'] as double? ?? 0) + valor;
+      }
+      fluxo['saldoPrevisto'] =
+          (fluxo['totalEntradas'] as double? ?? 0) -
+          (fluxo['totalSaidas'] as double? ?? 0);
+    }
+
+    final fluxos = agrupadoPorCompetencia.values.toList();
+    fluxos.sort(
+      (a, b) =>
+          (a['competencia']?.toString() ?? '').compareTo(
+            b['competencia']?.toString() ?? '',
+          ),
+    );
+    return fluxos;
+  }
+
+  String _competenciaDoLancamento(Map<String, dynamic> item) {
+    final data = _parseDataBr(item['vencimento']?.toString());
+    if (data == null) {
+      return 'Sem competência';
+    }
+
+    final ano = data.year.toString().padLeft(4, '0');
+    final mes = data.month.toString().padLeft(2, '0');
+    return '$ano-$mes';
+  }
+
   List<Map<String, dynamic>> _buildCardsResumoData() {
     final receberHoje = _somarItensHoje('receber');
     final pagarHoje = _somarItensHoje('pagar');
@@ -1807,6 +1906,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildCalendario(BuildContext context) {
+    final dias = _calendarioFinanceiroCalculado;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -1823,7 +1924,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Resumo por dia com volume de lançamentos e criticidade.',
+              'Resumo por dia com volume de lançamentos e criticidade. Lançamentos cancelados aparecem na contagem, mas não entram nos valores.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -1831,15 +1932,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             const SizedBox(height: 16),
             Expanded(
               child:
-                  _calendarioAgenda.isEmpty
+                  dias.isEmpty
                       ? const Center(
                         child: Text('Nenhum dado de calendário no período.'),
                       )
                       : ListView.separated(
-                        itemCount: _calendarioAgenda.length,
+                        itemCount: dias.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
-                          final dia = _calendarioAgenda[index];
+                          final dia = dias[index];
                           final bool critico =
                               (dia['quantidadeCriticos'] as int? ?? 0) > 0;
 
@@ -1904,8 +2005,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildFluxoPrevisto(BuildContext context) {
-    final barras = _fluxoPrevistoAgenda;
-    final double maxValor =
+    final barras = _fluxoPrevistoCalculado;
+    final double maiorValorCalculado =
         barras.isEmpty
             ? 1
             : barras.fold<double>(
@@ -1916,6 +2017,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 (barra['totalSaidas'] as double? ?? 0),
               ].reduce((a, b) => a > b ? a : b),
             );
+    final double maxValor = maiorValorCalculado <= 0 ? 1 : maiorValorCalculado;
 
     return Card(
       elevation: 2,
@@ -1932,7 +2034,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Resumo visual das entradas e saídas esperadas para apoiar decisões de caixa.',
+              'Resumo visual das entradas e saídas esperadas para apoiar decisões de caixa. Lançamentos cancelados não entram nos valores.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
