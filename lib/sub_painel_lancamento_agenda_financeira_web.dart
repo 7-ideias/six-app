@@ -178,6 +178,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     if (_origens.contains(origem)) {
       _origemSelecionada = origem;
     }
+    _alinharOrigemComTipo(_tipoSelecionado);
 
     final formaPagamento = item['formaPagamento']?.toString() ?? '';
     if (_formasPagamento.contains(formaPagamento)) {
@@ -274,6 +275,39 @@ class _LancamentoAgendaFinanceiraWebBodyState
     }
 
     return texto;
+  }
+
+  bool _origemSugerePagar(String origem) {
+    return origem == 'Despesa manual' || origem == 'Compra';
+  }
+
+  bool _origemSugereReceber(String origem) {
+    return origem == 'Venda' || origem == 'Ordem de serviço';
+  }
+
+  String _origemPadraoPorTipo(String tipo) {
+    return tipo == 'Receber' ? 'Venda' : 'Despesa manual';
+  }
+
+  void _alinharOrigemComTipo(String tipo) {
+    if (tipo == 'Receber' && _origemSugerePagar(_origemSelecionada)) {
+      _origemSelecionada = _origemPadraoPorTipo(tipo);
+    } else if (tipo == 'Pagar' && _origemSugereReceber(_origemSelecionada)) {
+      _origemSelecionada = _origemPadraoPorTipo(tipo);
+    }
+  }
+
+  void _aplicarTipoSelecionado(String tipo) {
+    _tipoSelecionado = tipo;
+    _alinharOrigemComTipo(tipo);
+
+    if (_statusQuitada) {
+      _statusSelecionado = _statusPadraoPorTipo();
+    } else if (tipo == 'Receber' && _statusSelecionado == 'Pago') {
+      _statusSelecionado = 'Recebido';
+    } else if (tipo == 'Pagar' && _statusSelecionado == 'Recebido') {
+      _statusSelecionado = 'Pago';
+    }
   }
 
   @override
@@ -610,7 +644,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       case 'Movimentação de caixa':
         return 'MOVIMENTACAO_CAIXA';
       default:
-        return 'DESPESA_MANUAL';
+        return _tipoSelecionado == 'Receber' ? 'VENDA' : 'DESPESA_MANUAL';
     }
   }
 
@@ -647,6 +681,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final contatoNome = _contatoController.text.trim();
     final contatoIdPayload =
         contatoIdDigitado.isEmpty ? 'contato-$idLocal' : contatoIdDigitado;
+    final contatoIdOuNull = contatoIdDigitado.isEmpty ? null : contatoIdDigitado;
+    final contatoNomeOuNull = contatoNome.isEmpty ? null : contatoNome;
+    final isReceber = _tipoSelecionado == 'Receber';
     final quantidadeParcelasDigitada = _toInt(
       _quantidadeParcelasController.text,
     );
@@ -696,10 +733,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
       categoria: _categoriaController.text.trim(),
       idColaborador: 'web-user',
       nomeColaborador: _responsavelController.text.trim(),
-      idCliente: contatoIdDigitado.isEmpty ? null : contatoIdDigitado,
-      nomeCliente: contatoNome.isEmpty ? null : contatoNome,
-      idFornecedor: contatoIdDigitado.isEmpty ? null : contatoIdDigitado,
-      nomeFornecedor: contatoNome.isEmpty ? null : contatoNome,
+      idCliente: isReceber ? contatoIdOuNull : null,
+      nomeCliente: isReceber ? contatoNomeOuNull : null,
+      idFornecedor: isReceber ? null : contatoIdOuNull,
+      nomeFornecedor: isReceber ? null : contatoNomeOuNull,
       referenciaExterna:
           _referenciaController.text.trim().isEmpty
               ? null
@@ -928,12 +965,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           items: _tipos,
                           onChanged: (value) {
                             if (value == null) return;
-                            setState(() {
-                              _tipoSelecionado = value;
-                              if (_statusQuitada) {
-                                _statusSelecionado = _statusPadraoPorTipo();
-                              }
-                            });
+                            setState(() => _aplicarTipoSelecionado(value));
                           },
                         ),
                       ),
@@ -1129,8 +1161,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
                                 : (telaMedia ? 220 : double.infinity),
                         child: _buildTextField(
                           controller: _idContatoController,
-                          label: 'ID do contato',
-                          hintText: 'Ex.: cli-001',
+                          label:
+                              _tipoSelecionado == 'Receber'
+                                  ? 'ID do cliente'
+                                  : 'ID do fornecedor',
+                          hintText:
+                              _tipoSelecionado == 'Receber'
+                                  ? 'Ex.: cli-001'
+                                  : 'Ex.: forn-001',
                         ),
                       ),
                       SizedBox(
@@ -1140,8 +1178,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
                                 : (telaMedia ? 280 : double.infinity),
                         child: _buildTextField(
                           controller: _contatoController,
-                          label: 'Contato (cliente/fornecedor)',
-                          hintText: 'Ex.: Connect Fibra',
+                          label:
+                              _tipoSelecionado == 'Receber'
+                                  ? 'Cliente'
+                                  : 'Fornecedor',
+                          hintText:
+                              _tipoSelecionado == 'Receber'
+                                  ? 'Ex.: João da Silva'
+                                  : 'Ex.: Connect Fibra',
                           requiredField: true,
                         ),
                       ),
