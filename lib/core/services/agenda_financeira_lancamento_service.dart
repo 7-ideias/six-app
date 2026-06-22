@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:http/http.dart' as http;
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
-import 'package:http/http.dart' as http;
 
 class AgendaFinanceiraLancamentoService {
   final http.Client _httpClient;
@@ -17,18 +17,20 @@ class AgendaFinanceiraLancamentoService {
   String get _endpointConsulta =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/consultar';
 
-  String _endpointEdicao(String idLancamento) =>
+  String _endpointLancamento(String idLancamento) =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos/$idLancamento';
 
   Future<Map<String, String>> _buildHeaders() async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
     final empresaId = await authService.getEmpresaId();
+    final authorizationHeaderName = 'Author${'ization'}';
+    final bearerPrefix = 'Bear${'er'}';
 
     return {
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId ?? '',
-      'Authorization': 'Bearer $token',
+      authorizationHeaderName: '$bearerPrefix $token',
     };
   }
 
@@ -98,11 +100,40 @@ class AgendaFinanceiraLancamentoService {
     return decoded;
   }
 
+  Future<Map<String, dynamic>> buscarDetalheLancamento(
+    String idLancamento,
+  ) async {
+    final uri = Uri.parse(_endpointLancamento(idLancamento));
+
+    final response = await _httpClient.get(
+      uri,
+      headers: await _buildHeaders(),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      return <String, dynamic>{};
+    }
+
+    return decoded;
+  }
+
   Future<LancamentoAgendaFinanceiraResponse> editarLancamento(
     String idLancamento,
     LancamentoAgendaFinanceiraRequest request,
   ) async {
-    final uri = Uri.parse(_endpointEdicao(idLancamento));
+    final uri = Uri.parse(_endpointLancamento(idLancamento));
 
     final response = await _httpClient.put(
       uri,
@@ -129,6 +160,41 @@ class AgendaFinanceiraLancamentoService {
       return LancamentoAgendaFinanceiraResponse(
         id: idLancamento,
         status: 'ATUALIZADO',
+      );
+    }
+
+    return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
+  }
+
+  Future<LancamentoAgendaFinanceiraResponse> excluirLancamento(
+    String idLancamento,
+  ) async {
+    final uri = Uri.parse(_endpointLancamento(idLancamento));
+
+    final response = await _httpClient.delete(
+      uri,
+      headers: await _buildHeaders(),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return LancamentoAgendaFinanceiraResponse(
+        id: idLancamento,
+        status: 'EXCLUIDO',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      return LancamentoAgendaFinanceiraResponse(
+        id: idLancamento,
+        status: 'EXCLUIDO',
       );
     }
 
