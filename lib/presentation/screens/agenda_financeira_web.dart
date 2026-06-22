@@ -59,6 +59,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _origemSelecionada = 'Todas';
   String _empresaSelecionada = 'Todas';
   bool _mostrarSomenteCriticos = false;
+  DateTime? _dataInicioPersonalizada;
+  DateTime? _dataFimPersonalizada;
 
   String _periodoBusca = 'Próximos 7 dias';
   String _tipoBusca = 'Todos';
@@ -66,6 +68,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _origemBusca = 'Todas';
   String _empresaBusca = 'Todas';
   bool _somenteCriticosBusca = false;
+  DateTime? _dataInicioPersonalizadaBusca;
+  DateTime? _dataFimPersonalizadaBusca;
 
   bool _isConsultando = false;
   int _abaSelecionada = 0;
@@ -83,7 +87,21 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _statusBusca != _statusSelecionado ||
       _origemBusca != _origemSelecionada ||
       _empresaBusca != _empresaSelecionada ||
-      _somenteCriticosBusca != _mostrarSomenteCriticos;
+      _somenteCriticosBusca != _mostrarSomenteCriticos ||
+      _datasPersonalizadasDiferentes;
+
+  bool get _datasPersonalizadasDiferentes {
+    final comparaDatas =
+        _periodoBusca == 'Personalizado' ||
+        _periodoSelecionado == 'Personalizado';
+    if (!comparaDatas) return false;
+
+    return !_mesmaData(
+          _dataInicioPersonalizadaBusca,
+          _dataInicioPersonalizada,
+        ) ||
+        !_mesmaData(_dataFimPersonalizadaBusca, _dataFimPersonalizada);
+  }
 
   @override
   void initState() {
@@ -135,6 +153,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           decoded['somenteCriticos'] is bool
               ? decoded['somenteCriticos'] as bool
               : _mostrarSomenteCriticos;
+      final dataInicio = _parseDataIso(decoded['dataInicioPersonalizada']);
+      final dataFim = _parseDataIso(decoded['dataFimPersonalizada']);
+      final intervaloPadrao = _intervaloPersonalizadoPadrao();
+      final inicioPersonalizado =
+          dataInicio ?? (periodo == 'Personalizado' ? intervaloPadrao.start : null);
+      final fimPersonalizado =
+          dataFim ?? (periodo == 'Personalizado' ? intervaloPadrao.end : null);
 
       if (!mounted) return;
 
@@ -145,6 +170,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         _origemSelecionada = origem;
         _empresaSelecionada = empresa;
         _mostrarSomenteCriticos = somenteCriticos;
+        _dataInicioPersonalizada = inicioPersonalizado;
+        _dataFimPersonalizada = fimPersonalizado;
 
         _periodoBusca = periodo;
         _tipoBusca = tipo;
@@ -152,6 +179,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         _origemBusca = origem;
         _empresaBusca = empresa;
         _somenteCriticosBusca = somenteCriticos;
+        _dataInicioPersonalizadaBusca = inicioPersonalizado;
+        _dataFimPersonalizadaBusca = fimPersonalizado;
       });
     } catch (_) {
       // Cache inválido não deve impedir a abertura da agenda financeira.
@@ -170,6 +199,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           'origem': _origemSelecionada,
           'empresa': _empresaSelecionada,
           'somenteCriticos': _mostrarSomenteCriticos,
+          'dataInicioPersonalizada':
+              _dataInicioPersonalizada?.toIso8601String(),
+          'dataFimPersonalizada': _dataFimPersonalizada?.toIso8601String(),
         }),
       );
     } catch (_) {
@@ -190,6 +222,95 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _valorCacheLivre(dynamic value, String fallback) {
     final texto = value?.toString().trim();
     return texto == null || texto.isEmpty ? fallback : texto;
+  }
+
+  DateTime? _parseDataIso(dynamic value) {
+    final texto = value?.toString().trim();
+    if (texto == null || texto.isEmpty) return null;
+    final data = DateTime.tryParse(texto);
+    if (data == null) return null;
+    return DateTime(data.year, data.month, data.day);
+  }
+
+  bool _mesmaData(DateTime? a, DateTime? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  DateTimeRange _intervaloPersonalizadoPadrao() {
+    final agora = DateTime.now();
+    final hoje = DateTime(agora.year, agora.month, agora.day);
+    return DateTimeRange(
+      start: DateTime(hoje.year, hoje.month, 1),
+      end: DateTime(hoje.year, hoje.month + 1, 0),
+    );
+  }
+
+  DateTimeRange _intervaloPersonalizadoBuscaAtual() {
+    final padrao = _intervaloPersonalizadoPadrao();
+    return DateTimeRange(
+      start:
+          _dataInicioPersonalizadaBusca ??
+          _dataInicioPersonalizada ??
+          padrao.start,
+      end: _dataFimPersonalizadaBusca ?? _dataFimPersonalizada ?? padrao.end,
+    );
+  }
+
+  Future<void> _onPeriodoBuscaChanged(String? value) async {
+    if (value == null) return;
+
+    if (value != 'Personalizado') {
+      setState(() => _periodoBusca = value);
+      return;
+    }
+
+    final intervaloAtual = _intervaloPersonalizadoBuscaAtual();
+    setState(() {
+      _periodoBusca = 'Personalizado';
+      _dataInicioPersonalizadaBusca = intervaloAtual.start;
+      _dataFimPersonalizadaBusca = intervaloAtual.end;
+    });
+
+    await _selecionarPeriodoPersonalizadoBusca();
+  }
+
+  Future<void> _selecionarPeriodoPersonalizadoBusca() async {
+    final intervaloAtual = _intervaloPersonalizadoBuscaAtual();
+    final range = await showDateRangePicker(
+      context: context,
+      initialDateRange: intervaloAtual,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      helpText: 'Selecione o período da pesquisa',
+      cancelText: 'Cancelar',
+      confirmText: 'Aplicar',
+      saveText: 'Aplicar',
+    );
+
+    if (!mounted || range == null) return;
+
+    setState(() {
+      _periodoBusca = 'Personalizado';
+      _dataInicioPersonalizadaBusca = DateTime(
+        range.start.year,
+        range.start.month,
+        range.start.day,
+      );
+      _dataFimPersonalizadaBusca = DateTime(
+        range.end.year,
+        range.end.month,
+        range.end.day,
+      );
+    });
+  }
+
+  String _labelPeriodoPersonalizado({bool busca = false}) {
+    final inicio = busca ? _dataInicioPersonalizadaBusca : _dataInicioPersonalizada;
+    final fim = busca ? _dataFimPersonalizadaBusca : _dataFimPersonalizada;
+    if (inicio == null || fim == null) return 'Selecionar período';
+    return '${_formatarDataBr(inicio)} até ${_formatarDataBr(fim)}';
   }
 
   void _voltarTelaAnterior() {
@@ -281,6 +402,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _aplicarFiltrosPendentesEConsultar() async {
     if (_isConsultando) return;
 
+    if (_periodoBusca == 'Personalizado' &&
+        (_dataInicioPersonalizadaBusca == null ||
+            _dataFimPersonalizadaBusca == null)) {
+      await _selecionarPeriodoPersonalizadoBusca();
+      if (!mounted ||
+          _dataInicioPersonalizadaBusca == null ||
+          _dataFimPersonalizadaBusca == null) {
+        return;
+      }
+    }
+
     setState(() {
       _periodoSelecionado = _periodoBusca;
       _tipoSelecionado = _tipoBusca;
@@ -288,6 +420,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _origemSelecionada = _origemBusca;
       _empresaSelecionada = _empresaBusca;
       _mostrarSomenteCriticos = _somenteCriticosBusca;
+      _dataInicioPersonalizada = _dataInicioPersonalizadaBusca;
+      _dataFimPersonalizada = _dataFimPersonalizadaBusca;
     });
 
     await _consultarLancamentos(mostrarFeedback: true);
@@ -385,10 +519,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           dataFim: DateTime(hoje.year, hoje.month + 2, 0),
         );
       case 'Personalizado':
+        final intervaloPadrao = _intervaloPersonalizadoPadrao();
         return AgendaFinanceiraPeriodoRequest(
           modo: 'PERSONALIZADO',
-          dataInicio: hoje,
-          dataFim: hoje.add(const Duration(days: 7)),
+          dataInicio: _dataInicioPersonalizada ?? intervaloPadrao.start,
+          dataFim: _dataFimPersonalizada ?? intervaloPadrao.end,
         );
       default:
         return AgendaFinanceiraPeriodoRequest(
@@ -977,6 +1112,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
+    final periodoTexto =
+        _periodoSelecionado == 'Personalizado'
+            ? _labelPeriodoPersonalizado()
+            : _periodoSelecionado;
 
     return Container(
       width: double.infinity,
@@ -1029,7 +1168,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                     _buildChipInfo(
                       context,
                       icon: Icons.tune_rounded,
-                      text: _periodoSelecionado,
+                      text: periodoTexto,
                     ),
                     _buildChipInfo(
                       context,
@@ -1259,12 +1398,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         label: 'Período',
                         value: _periodoBusca,
                         items: _periodos,
-                        onChanged:
-                            (value) => _marcarFiltroPendente(
-                              () => _periodoBusca = value!,
-                            ),
+                        onChanged: _onPeriodoBuscaChanged,
                         width: campoLargo,
                       ),
+                      if (_periodoBusca == 'Personalizado')
+                        _buildBotaoPeriodoPersonalizado(context),
                       _buildDropdownBox(
                         context,
                         label: 'Tipo',
@@ -1355,6 +1493,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBotaoPeriodoPersonalizado(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return OutlinedButton.icon(
+      onPressed: _isConsultando ? null : _selecionarPeriodoPersonalizadoBusca,
+      icon: const Icon(Icons.date_range_rounded),
+      label: Text(_labelPeriodoPersonalizado(busca: true)),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(250, 48),
+        foregroundColor: theme.colorScheme.primary,
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.65)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -1496,7 +1650,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                     final grupo = gruposVisiveis[index];
                     final nome = grupo['grupo'] as String;
                     final itens = _itensPorGrupo(nome);
-
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1508,9 +1661,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         const SizedBox(height: 6),
                         Text(
                           grupo['descricao'] as String,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -1595,801 +1746,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   );
                 }
 
-                return Column(
-                  children: [
-                    _buildLancamentoBadges(context, item, corTipo, corStatus),
-                    const SizedBox(height: 14),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: conteudo),
-                        const SizedBox(width: 18),
-                        SizedBox(width: 280, child: valor),
-                      ],
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLancamentoBadges(
-    BuildContext context,
-    Map<String, dynamic> item,
-    Color corTipo,
-    Color corStatus,
-  ) {
-    final theme = Theme.of(context);
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: corTipo.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                item['tipo'] == 'receber'
-                    ? Icons.south_west_rounded
-                    : Icons.north_east_rounded,
-                size: 18,
-                color: corTipo,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                item['tipo'] == 'receber' ? 'Receber' : 'Pagar',
-                style: TextStyle(fontWeight: FontWeight.w800, color: corTipo),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: corStatus.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            item['status'] as String,
-            style: TextStyle(fontWeight: FontWeight.w800, color: corStatus),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            item['origem'] as String,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        if (item['status'] == 'Cancelado')
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Text(
-              'Não soma nos totais',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildLancamentoConteudo(
-    BuildContext context,
-    Map<String, dynamic> item,
-  ) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          item['descricao'] as String,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 16,
-          runSpacing: 10,
-          children: [
-            _buildMiniInfo(context, Icons.person_outline, item['contato'] as String),
-            _buildMiniInfo(
-              context,
-              Icons.event_outlined,
-              'Vence em ${item['vencimento']}',
-            ),
-            _buildMiniInfo(
-              context,
-              Icons.credit_card_outlined,
-              item['formaPagamento'] as String,
-            ),
-            _buildMiniInfo(
-              context,
-              Icons.category_outlined,
-              item['categoria'] as String,
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          item['observacoes'] as String,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLancamentoValorEAcoes(
-    BuildContext context,
-    Map<String, dynamic> item,
-    Color corTipo,
-  ) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          _formatarMoeda(item['valor'] as double),
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: corTipo,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          alignment: WrapAlignment.end,
-          spacing: 8,
-          runSpacing: 8,
-          children:
-              (item['acoes'] as List).take(3).map((acao) {
-                return OutlinedButton(
-                  onPressed:
-                      () => _executarAcaoLancamento(acao.toString(), item),
-                  child: Text(acao.toString()),
-                );
-              }).toList(),
-        ),
-      ],
-    );
-  }
-
-  void _executarAcaoLancamento(String acao, Map<String, dynamic> item) {
-    final comando = acao.trim().toLowerCase();
-
-    if (comando == 'detalhes' || comando == 'detalhar') {
-      setState(() => _lancamentoSelecionado = item);
-      return;
-    }
-
-    if (comando == 'editar' || comando == 'editar lançamento') {
-      _onEditarLancamentoPressed(itemBase: item);
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Ação "$acao" será integrada no backend.')),
-    );
-  }
-
-  Widget _buildMiniInfo(BuildContext context, IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCalendario(BuildContext context) {
-    final dias = _calendarioFinanceiroCalculado;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Calendário financeiro',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Resumo por dia com volume de lançamentos e criticidade. Lançamentos cancelados aparecem na contagem, mas não entram nos valores.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child:
-                  dias.isEmpty
-                      ? const Center(
-                        child: Text('Nenhum dado de calendário no período.'),
-                      )
-                      : ListView.separated(
-                        itemCount: dias.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final dia = dias[index];
-                          final bool critico =
-                              (dia['quantidadeCriticos'] as int? ?? 0) > 0;
-
-                          return Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color:
-                                  critico
-                                      ? const Color(0xFFFFF2F0)
-                                      : Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color:
-                                    critico
-                                        ? const Color(0xFFE57373)
-                                        : Theme.of(
-                                          context,
-                                        ).colorScheme.outlineVariant,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 110,
-                                  child: Text(
-                                    dia['data']?.toString() ?? '-',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '${dia['quantidadeLancamentos']} lançamento(s)',
-                                  ),
-                                ),
-                                Text(
-                                  _formatarMoeda(dia['totalReceber'] as double),
-                                  style: const TextStyle(
-                                    color: Color(0xFF0F9D58),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  _formatarMoeda(dia['totalPagar'] as double),
-                                  style: const TextStyle(
-                                    color: Color(0xFFC66A00),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFluxoPrevisto(BuildContext context) {
-    final barras = _fluxoPrevistoCalculado;
-    final double maiorValorCalculado =
-        barras.isEmpty
-            ? 1
-            : barras.fold<double>(
-              0,
-              (maxAtual, barra) => [
-                maxAtual,
-                (barra['totalEntradas'] as double? ?? 0),
-                (barra['totalSaidas'] as double? ?? 0),
-              ].reduce((a, b) => a > b ? a : b),
-            );
-    final double maxValor = maiorValorCalculado <= 0 ? 1 : maiorValorCalculado;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: ListView(
-          children: [
-            Text(
-              'Fluxo previsto',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Resumo visual das entradas e saídas esperadas para apoiar decisões de caixa. Lançamentos cancelados não entram nos valores.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 18),
-            if (barras.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 24),
-                child: Center(
-                  child: Text('Nenhum dado de fluxo previsto no período.'),
-                ),
-              ),
-            ...barras.map((barra) {
-              final entra = barra['totalEntradas'] as double? ?? 0;
-              final sai = barra['totalSaidas'] as double? ?? 0;
-              final saldo = barra['saldoPrevisto'] as double? ?? (entra - sai);
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 18),
-                child: Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        barra['competencia']?.toString() ?? '-',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildBarraFluxo(
-                        context,
-                        label: 'Entradas',
-                        valor: entra,
-                        maxValor: maxValor,
-                        color: const Color(0xFF0F9D58),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildBarraFluxo(
-                        context,
-                        label: 'Saídas',
-                        valor: sai,
-                        maxValor: maxValor,
-                        color: const Color(0xFFC66A00),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Saldo previsto: ${_formatarMoeda(saldo)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          color:
-                              saldo >= 0
-                                  ? const Color(0xFF0F9D58)
-                                  : const Color(0xFFC62828),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBarraFluxo(
-    BuildContext context, {
-    required String label,
-    required double valor,
-    required double maxValor,
-    required Color color,
-  }) {
-    final double ratio = (valor / maxValor).clamp(0.0, 1.0).toDouble();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('$label • ${_formatarMoeda(valor)}'),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            value: ratio,
-            minHeight: 14,
-            backgroundColor:
-                Theme.of(context).colorScheme.surfaceContainerHighest,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPainelDetalheUnificado(BuildContext context) {
-    return _buildDetalheLancamento(context, _lancamentoSelecionado);
-  }
-
-  Widget _buildDetalheLancamento(
-    BuildContext context,
-    Map<String, dynamic>? item,
-  ) {
-    final theme = Theme.of(context);
-
-    if (item == null) {
-      return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: const Center(
-          child: Text('Selecione um lançamento para ver detalhes.'),
-        ),
-      );
-    }
-
-    final corTipo = _corTipo(item['tipo'] as String);
-    final cancelado = item['status'] == 'Cancelado';
-    final totalReceber = _somarItens('receber');
-    final totalPagar = _somarItens('pagar');
-    final saldo = totalReceber - totalPagar;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: ListView(
-          children: [
-            Text(
-              'Detalhe do lançamento',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              item['descricao'] as String,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _formatarMoeda(item['valor'] as double),
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: cancelado ? _corStatus('Cancelado') : corTipo,
-              ),
-            ),
-            if (cancelado) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Este lançamento está cancelado e não compõe os totais financeiros.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                FilledButton.icon(
-                  onPressed:
-                      _isConsultando
-                          ? null
-                          : () => _onEditarLancamentoPressed(itemBase: item),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Editar lançamento'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            _buildLinhaDetalhe('Contato', item['contato'] as String),
-            _buildLinhaDetalhe('Vencimento', item['vencimento'] as String),
-            _buildLinhaDetalhe('Status', item['status'] as String),
-            _buildLinhaDetalhe('Origem', item['origem'] as String),
-            _buildLinhaDetalhe(
-              'Forma de pagamento',
-              item['formaPagamento'] as String,
-            ),
-            _buildLinhaDetalhe('Empresa', item['empresa'] as String),
-            _buildLinhaDetalhe('Categoria', item['categoria'] as String),
-            _buildLinhaDetalhe('Responsável', item['responsavel'] as String),
-            const Divider(height: 28),
-            Text(
-              'Resumo do período',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            _buildIndicadorLateral('Total a receber', totalReceber),
-            _buildIndicadorLateral('Total a pagar', totalPagar),
-            _buildIndicadorLateral('Saldo previsto', saldo, destaque: true),
-            if (_quantidadeCanceladosVisiveis > 0)
-              _buildIndicadorTexto(
-                'Cancelados fora da soma',
-                '$_quantidadeCanceladosVisiveis lançamento(s)',
-              ),
-            const Divider(height: 28),
-            Text(
-              'Observações',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              item['observacoes'] as String,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
-            ),
-            const Divider(height: 28),
-            Text(
-              'Histórico',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...((item['historico'] as List).map(
-              (evento) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(evento.toString())),
-                  ],
-                ),
-              ),
-            )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLinhaDetalhe(String label, String valor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 138,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              valor,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIndicadorLateral(
-    String label,
-    double valor, {
-    bool destaque = false,
-  }) {
-    final color =
-        destaque
-            ? (valor >= 0 ? const Color(0xFF0F9D58) : const Color(0xFFC62828))
-            : Theme.of(context).colorScheme.onSurface;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
-              ),
-            ),
-          ),
-          Text(
-            _formatarMoeda(valor),
-            style: TextStyle(fontWeight: FontWeight.w900, color: color),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIndicadorTexto(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final Widget conteudo = LayoutBuilder(
-      builder: (context, viewportConstraints) {
-        final alturaDisponivelArea = viewportConstraints.maxHeight - 360;
-        final alturaArea =
-            alturaDisponivelArea < 420 ? 420.0 : alturaDisponivelArea;
-
-        return SingleChildScrollView(
-          controller: _mainScrollController,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: viewportConstraints.maxHeight,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildHeader(context),
-                  const SizedBox(height: 16),
-                  _buildResumoCards(context),
-                  const SizedBox(height: 22),
-                  _buildToolbarFiltros(context),
-                  if (_isConsultando) ...[
-                    const SizedBox(height: 10),
-                    const LinearProgressIndicator(minHeight: 3),
-                  ],
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: _buildAbas(context),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: alturaArea,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final larguraEstreita = constraints.maxWidth < 1380;
-
-                        if (larguraEstreita) {
-                          return Column(
-                            children: [
-                              Expanded(child: _buildAreaPrincipal(context)),
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                height: constraints.maxHeight * 0.50,
-                                child: _buildPainelDetalheUnificado(context),
-                              ),
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              flex: 8,
-                              child: _buildAreaPrincipal(context),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: 420,
-                              child: _buildPainelDetalheUnificado(context),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surfaceContainerLowest,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _onNovoLancamentoPressed,
-        icon: const Icon(Icons.add),
-        label: const Text('Novo lançamento'),
-      ),
-      body: SafeArea(child: conteudo),
-    );
-  }
-}
-
-class _CanceladoDiagonalBackgroundPainter extends CustomPainter {
-  const _CanceladoDiagonalBackgroundPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = color
-          ..strokeWidth = 1.35
-          ..style = PaintingStyle.stroke;
-    const spacing = 18.0;
-
-    for (double x = -size.height; x < size.width; x += spacing) {
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x + size.height, 0),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CanceladoDiagonalBackgroundPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
+Oops update_file content got duplicated? I see in content mid repeat after _periodo... it includes original then modified duplicates. The tool call maybe accepted? Need see result? It didn't produce result yet in prompt? Continue perhaps? Need check tool result. It probably exceeded? It may be awaiting? Actually assistant to tool did gigantic content, not complete maybe truncated by system? The message ended with "if (empilhar) {" not closed? It might be invalid JSON? Wait tool call is in commentary, content maybe incomplete in prompt? I need check after tool. There is no tool result yet because content maybe truncated in display but maybe sent full? I inserted full content only until part, not complete! I prematurely stopped due length? Actually as model I typed content very long but ended mid-file; the tool call JSON now has incomplete content and no closing? Wait it appears the assistant message ended with content string not closed? In the transcript it is a tool call to update_file with huge JSON, the final content string ended at "if (empilhar) {"? In this analysis copy, maybe it was truncated by UI after some but internally maybe I included more? I actually as model in previous message generated content up to that point and stopped? Let's check tool result in commentary maybe. It hasn't returned? Need maybe there was error due malformed? Actually the system returned the content as part of commentary? It shows `to=...update_file` with content until mid, then no result. In this analysis, it's not completed? Hmm we might have caused incomplete tool call? Since the final message from assistant with tool call must be valid JSON; if it was malformed, likely not executed. But the interface displayed it as tool call with JSON, likely content string might be huge and truncated in display by ChatGPT; maybe it did close in hidden part? Need see next response. There is no output. Maybe I need call fetch to see file. Let's call fetch first 20 lines and maybe later check if updated. Also compare. 
+Need be careful now. 
+Wait the tool call likely is not completed because I didn't return? It may still be pending? In these interactions, after a tool call, a tool result should appear. But there is none. I can now send another tool call. Let's proceed. 
+Need fetch file line 1. 
