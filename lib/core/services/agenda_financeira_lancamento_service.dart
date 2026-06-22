@@ -165,6 +165,41 @@ class AgendaFinanceiraLancamentoService {
 
     return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
   }
+
+  Future<LancamentoAgendaFinanceiraResponse> excluirLancamento(
+    String idLancamento,
+  ) async {
+    final uri = Uri.parse(_endpointLancamento(idLancamento));
+
+    final response = await _httpClient.delete(
+      uri,
+      headers: await _buildHeaders(),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return LancamentoAgendaFinanceiraResponse(
+        id: idLancamento,
+        status: 'EXCLUIDO',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      return LancamentoAgendaFinanceiraResponse(
+        id: idLancamento,
+        status: 'EXCLUIDO',
+      );
+    }
+
+    return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
+  }
 }
 
 class AgendaFinanceiraLancamentoApiException implements Exception {
