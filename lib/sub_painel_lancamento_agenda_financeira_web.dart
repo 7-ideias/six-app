@@ -144,17 +144,42 @@ class _LancamentoAgendaFinanceiraWebBodyState
   @override
   void initState() {
     super.initState();
+    final empresas = widget.empresas.isEmpty ? <String>['Empresa'] : widget.empresas;
     _empresaSelecionada =
-        widget.empresas.contains(widget.empresaSelecionada)
+        empresas.contains(widget.empresaSelecionada)
             ? widget.empresaSelecionada
-            : widget.empresas.first;
+            : empresas.first;
 
     if (widget.modoEdicao && widget.lancamentoInicial != null) {
       _preencherCamposEdicao(widget.lancamentoInicial!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _carregarDetalheLancamentoEdicao();
+      });
     }
 
     _garantirRecorrenciaConsistente();
     _sincronizarTextosData();
+  }
+
+  @override
+  void dispose() {
+    _descricaoController.dispose();
+    _contatoController.dispose();
+    _idContatoController.dispose();
+    _categoriaController.dispose();
+    _valorController.dispose();
+    _responsavelController.dispose();
+    _observacoesController.dispose();
+    _referenciaController.dispose();
+    _documentoFiscalController.dispose();
+    _centroCustoController.dispose();
+    _quantidadeParcelasController.dispose();
+    _dataOperacaoController.dispose();
+    _dataVencimentoController.dispose();
+    _dataCompetenciaController.dispose();
+    _inicioRecorrenciaController.dispose();
+    _fimRecorrenciaController.dispose();
+    super.dispose();
   }
 
   void _preencherCamposEdicao(Map<String, dynamic> item) {
@@ -204,50 +229,82 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
     _dataVencimento = _parseData(item['vencimento'], fallback: _dataVencimento);
     _dataOperacao = _parseData(item['dataOperacao'], fallback: _dataVencimento);
-    _dataCompetencia = _parseData(
-      item['dataCompetencia'],
-      fallback: _dataVencimento,
-    );
+    _dataCompetencia = _parseData(item['dataCompetencia'], fallback: _dataVencimento);
 
-    _recorrente = _itemIndicaRecorrencia(item);
-    _frequenciaRecorrencia = _normalizarFrequencia(
-      item['frequenciaRecorrencia'],
-      fallback: _frequenciaRecorrencia,
-    );
-    _inicioRecorrencia = _parseData(
-      item['recorrenciaInicio'],
-      fallback: _dataVencimento,
-    );
-    _fimRecorrencia =
-        item['recorrenciaFim'] != null
-            ? _parseData(item['recorrenciaFim'], fallback: _dataVencimento)
-            : null;
+    _aplicarDadosRecorrencia(item, respeitarAusencia: true);
+  }
 
-    final quantidadeParcelas = item['quantidadeParcelas'];
-    if (quantidadeParcelas is num && quantidadeParcelas > 0) {
-      _quantidadeParcelasController.text =
-          quantidadeParcelas.toInt().toString();
+  Future<void> _carregarDetalheLancamentoEdicao() async {
+    final id = _idLancamentoEdicao;
+    if (!widget.modoEdicao || id == null || id.trim().isEmpty) return;
+
+    try {
+      final detalhe = await _service.buscarDetalheLancamento(id);
+      if (!mounted || detalhe.isEmpty) return;
+
+      setState(() {
+        _aplicarDadosRecorrencia(detalhe, respeitarAusencia: false);
+        _garantirRecorrenciaConsistente();
+        _sincronizarTextosData();
+      });
+    } catch (_) {
+      // Se o detalhe não estiver disponível, mantém os dados já recebidos pela listagem.
     }
   }
 
-  bool _itemIndicaRecorrencia(Map<String, dynamic> item) {
-    if (item['recorrente'] == true) return true;
-
-    final quantidade = item['quantidadeParcelas'];
-    if (quantidade is num && quantidade > 1) return true;
-
+  void _aplicarDadosRecorrencia(
+    Map<String, dynamic> item, {
+    required bool respeitarAusencia,
+  }) {
+    final possuiCampoRecorrente = item.containsKey('recorrente');
+    final quantidade = _toIntDynamic(item['quantidadeParcelas']);
     final frequencia = item['frequenciaRecorrencia']?.toString().trim() ?? '';
-    if (frequencia.isEmpty) return false;
-    final normalizada = _normalizarSemAcento(frequencia).toUpperCase();
-    return normalizada != 'NAO RECORRENTE' && normalizada != 'NAO_RECORRENTE';
+    final possuiDadosRecorrencia =
+        quantidade > 1 ||
+        frequencia.isNotEmpty ||
+        item['recorrenciaInicio'] != null ||
+        item['recorrenciaFim'] != null;
+
+    if (!possuiCampoRecorrente && !possuiDadosRecorrencia && respeitarAusencia) {
+      return;
+    }
+
+    _recorrente = item['recorrente'] == true || possuiDadosRecorrencia;
+
+    final frequenciaNormalizada = _normalizarFrequencia(
+      item['frequenciaRecorrencia'],
+      fallback: _frequenciaRecorrencia,
+    );
+    _frequenciaRecorrencia = frequenciaNormalizada;
+
+    final inicio = _parseDataOpcional(item['recorrenciaInicio']);
+    if (inicio != null) {
+      _inicioRecorrencia = inicio;
+    } else if (_recorrente) {
+      _inicioRecorrencia = _dataVencimento;
+    }
+
+    final fim = _parseDataOpcional(item['recorrenciaFim']);
+    if (fim != null) {
+      _fimRecorrencia = fim;
+    }
+
+    if (quantidade > 0) {
+      _quantidadeParcelasController.text = quantidade.toString();
+    }
   }
 
   DateTime _parseData(dynamic value, {required DateTime fallback}) {
-    if (value == null) return fallback;
+    final data = _parseDataOpcional(value);
+    return data ?? fallback;
+  }
+
+  DateTime? _parseDataOpcional(dynamic value) {
+    if (value == null) return null;
     if (value is DateTime) return _normalizarData(value);
 
     final texto = value.toString().trim();
-    if (texto.isEmpty) return fallback;
+    if (texto.isEmpty) return null;
 
     if (texto.contains('/')) {
       final partes = texto.split('/');
@@ -262,24 +319,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
     }
 
     final iso = DateTime.tryParse(texto);
-    return iso == null ? fallback : _normalizarData(iso);
+    return iso == null ? null : _normalizarData(iso);
   }
 
-  DateTime _normalizarData(DateTime data) {
-    return DateTime(data.year, data.month, data.day);
-  }
-
-  String _formatarValorParaCampo(dynamic valor) {
-    if (valor is num) return valor.toStringAsFixed(2).replaceAll('.', ',');
-
-    final texto = valor?.toString().trim() ?? '';
-    if (texto.isEmpty) return '';
-
-    final numero = double.tryParse(texto);
-    if (numero != null) return numero.toStringAsFixed(2).replaceAll('.', ',');
-
-    return texto;
-  }
+  DateTime _normalizarData(DateTime data) => DateTime(data.year, data.month, data.day);
 
   String _normalizarSemAcento(String value) {
     return value
@@ -302,8 +345,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final texto = value?.toString().trim() ?? '';
     if (texto.isEmpty) return fallback;
 
-    final normalizado = _normalizarSemAcento(texto).toUpperCase();
-    switch (normalizado) {
+    switch (_normalizarSemAcento(texto).toUpperCase()) {
       case 'DIARIA':
       case 'DIARIO':
         return 'Diária';
@@ -327,17 +369,36 @@ class _LancamentoAgendaFinanceiraWebBodyState
     }
   }
 
-  bool _origemSugerePagar(String origem) {
-    return origem == 'Despesa manual' || origem == 'Compra';
+  String _formatarValorParaCampo(dynamic valor) {
+    if (valor is num) return valor.toStringAsFixed(2).replaceAll('.', ',');
+    final texto = valor?.toString().trim() ?? '';
+    final numero = double.tryParse(texto);
+    if (numero != null) return numero.toStringAsFixed(2).replaceAll('.', ',');
+    return texto;
   }
 
-  bool _origemSugereReceber(String origem) {
-    return origem == 'Venda' || origem == 'Ordem de serviço';
+  int _toInt(String text) => int.tryParse(text.trim()) ?? 0;
+
+  int _toIntDynamic(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString().trim() ?? '') ?? 0;
   }
 
-  String _origemPadraoPorTipo(String tipo) {
-    return tipo == 'Receber' ? 'Venda' : 'Despesa manual';
+  double _toDouble(String text) {
+    final normalizado = text.replaceAll('.', '').replaceAll(',', '.').trim();
+    return double.tryParse(normalizado) ?? 0;
   }
+
+  int _quantidadeParcelasInformada() {
+    final quantidade = _toInt(_quantidadeParcelasController.text);
+    return quantidade > 0 ? quantidade : 1;
+  }
+
+  bool _origemSugerePagar(String origem) => origem == 'Despesa manual' || origem == 'Compra';
+
+  bool _origemSugereReceber(String origem) => origem == 'Venda' || origem == 'Ordem de serviço';
+
+  String _origemPadraoPorTipo(String tipo) => tipo == 'Receber' ? 'Venda' : 'Despesa manual';
 
   void _alinharOrigemComTipo(String tipo) {
     if (tipo == 'Receber' && _origemSugerePagar(_origemSelecionada)) {
@@ -358,20 +419,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
     } else if (tipo == 'Pagar' && _statusSelecionado == 'Recebido') {
       _statusSelecionado = 'Pago';
     }
-  }
-
-  int _toInt(String text) {
-    return int.tryParse(text.trim()) ?? 0;
-  }
-
-  double _toDouble(String text) {
-    final normalizado = text.replaceAll('.', '').replaceAll(',', '.').trim();
-    return double.tryParse(normalizado) ?? 0;
-  }
-
-  int _quantidadeParcelasInformada() {
-    final quantidade = _toInt(_quantidadeParcelasController.text);
-    return quantidade > 0 ? quantidade : 1;
   }
 
   int _mesesPorFrequencia(String frequencia) {
@@ -415,8 +462,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
       case 'Semanal':
         return _normalizarData(inicio.add(Duration(days: incremento * 7)));
       default:
-        final meses = _mesesPorFrequencia(frequencia);
-        return _somarMesesPreservandoDia(inicio, meses * incremento);
+        return _somarMesesPreservandoDia(
+          inicio,
+          _mesesPorFrequencia(frequencia) * incremento,
+        );
     }
   }
 
@@ -466,27 +515,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _sincronizarTextosData();
   }
 
-  @override
-  void dispose() {
-    _descricaoController.dispose();
-    _contatoController.dispose();
-    _idContatoController.dispose();
-    _categoriaController.dispose();
-    _valorController.dispose();
-    _responsavelController.dispose();
-    _observacoesController.dispose();
-    _referenciaController.dispose();
-    _documentoFiscalController.dispose();
-    _centroCustoController.dispose();
-    _quantidadeParcelasController.dispose();
-    _dataOperacaoController.dispose();
-    _dataVencimentoController.dispose();
-    _dataCompetenciaController.dispose();
-    _inicioRecorrenciaController.dispose();
-    _fimRecorrenciaController.dispose();
-    super.dispose();
-  }
-
   void _sincronizarTextosData() {
     _dataOperacaoController.text = _formatarDataBr(_dataOperacao);
     _dataVencimentoController.text = _formatarDataBr(_dataVencimento);
@@ -496,289 +524,18 @@ class _LancamentoAgendaFinanceiraWebBodyState
         _fimRecorrencia != null ? _formatarDataBr(_fimRecorrencia!) : '';
   }
 
-  InputDecoration _inputDecoration(String label, {String? hintText}) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InputDecoration(
-      labelText: label,
-      hintText: hintText,
-      filled: true,
-      fillColor: colorScheme.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error, width: 1.4),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hintText,
-    TextInputType keyboardType = TextInputType.text,
-    bool requiredField = false,
-    int maxLines = 1,
-    ValueChanged<String>? onChanged,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      onChanged: onChanged,
-      decoration: _inputDecoration(label, hintText: hintText),
-      validator:
-          requiredField
-              ? (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Campo obrigatório';
-                }
-                return null;
-              }
-              : null,
-    );
-  }
-
-  Widget _buildDateField({
-    required String label,
-    required TextEditingController controller,
-    required DateTime initialDate,
-    required ValueChanged<DateTime> onChanged,
-    bool requiredField = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      readOnly: true,
-      decoration: _inputDecoration(label),
-      validator:
-          requiredField
-              ? (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null
-              : null,
-      onTap: () async {
-        final selecionada = await showDatePicker(
-          context: context,
-          initialDate: initialDate,
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-        );
-
-        if (selecionada != null) {
-          onChanged(_normalizarData(selecionada));
-          _sincronizarTextosData();
-          setState(() {});
-        }
-      },
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      onChanged: onChanged,
-      decoration: _inputDecoration(label),
-      items:
-          items
-              .map(
-                (item) => DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item),
-                ),
-              )
-              .toList(),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Widget child,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: colorScheme.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSurface.withOpacity(0.65),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[
-            colorScheme.primary,
-            colorScheme.primary.withOpacity(0.88),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        runAlignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 16,
-        children: <Widget>[
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.18)),
-                ),
-                child: const Icon(
-                  Icons.request_page_outlined,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    widget.modoEdicao
-                        ? 'Editar lançamento financeiro'
-                        : 'Novo lançamento financeiro',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.modoEdicao
-                        ? 'Atualize os campos e envie para persistir alterações no backend.'
-                        : 'Cadastro completo com suporte a recorrência e payload preparado para backend.',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
-            ),
-            child: Text(
-              _isLoading
-                  ? (widget.modoEdicao ? 'Atualizando...' : 'Enviando...')
-                  : 'Pronto para salvar',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatarDataBr(DateTime data) {
+    final dia = data.day.toString().padLeft(2, '0');
+    final mes = data.month.toString().padLeft(2, '0');
+    return '$dia/$mes/${data.year}';
   }
 
   String _statusPadraoPorTipo() {
-    if (_statusQuitada) {
-      return _tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago';
-    }
+    if (_statusQuitada) return _tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago';
     return _statusSelecionado;
   }
 
-  String _tipoOperacaoParaBackend() {
-    return _tipoSelecionado.toUpperCase();
-  }
+  String _tipoOperacaoParaBackend() => _tipoSelecionado.toUpperCase();
 
   String _origemParaBackend() {
     switch (_origemSelecionada) {
@@ -821,7 +578,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   LancamentoAgendaFinanceiraRequest _buildRequest() {
-    _garantirRecorrenciaConsistente(recalcularFim: _recorrente && _fimRecorrencia == null);
+    _garantirRecorrenciaConsistente(
+      recalcularFim: _recorrente && _fimRecorrencia == null,
+    );
 
     final valorTotal = _toDouble(_valorController.text);
     final idLocal =
@@ -849,7 +608,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
             : _dataVencimento;
     final frequenciaRecorrencia =
         _recorrente ? _frequenciaRecorrencia : 'Nao recorrente';
-    final diaVencimentoRecorrencia = _dataVencimento.day;
 
     final payload = <String, dynamic>{
       'agendaFinanceira': <String, dynamic>{
@@ -914,7 +672,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       recorrenciaInicio: recorrenciaInicio,
       recorrenciaFim: recorrenciaFim,
       quantidadeParcelas: quantidadeParcelas,
-      diaVencimentoRecorrencia: diaVencimentoRecorrencia,
+      diaVencimentoRecorrencia: _dataVencimento.day,
       payloadOriginalJson: payload,
     );
   }
@@ -933,26 +691,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
       _garantirRecorrenciaConsistente(recalcularFim: _fimRecorrencia == null);
       _sincronizarTextosData();
 
-      if (_quantidadeParcelasInformada() <= 0) {
+      if (_fimRecorrencia == null || _fimRecorrencia!.isBefore(_inicioRecorrencia)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Informe a quantidade de parcelas da recorrência.'),
-          ),
-        );
-        return;
-      }
-
-      if (_fimRecorrencia == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Informe o fim da recorrência.')),
-        );
-        return;
-      }
-
-      if (_fimRecorrencia!.isBefore(_inicioRecorrencia)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('O fim da recorrência não pode ser anterior ao início.'),
+            content: Text('Revise o período da recorrência antes de salvar.'),
           ),
         );
         return;
@@ -960,7 +702,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
     }
 
     final request = _buildRequest();
-
     setState(() => _isLoading = true);
 
     String? idGerado;
@@ -1004,28 +745,196 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
     if (!mounted) return;
 
-    if (aviso != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.modoEdicao
-                ? 'Lançamento atualizado com sucesso.'
-                : 'Lançamento salvo com sucesso.',
-          ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          aviso ??
+              (widget.modoEdicao
+                  ? 'Lançamento atualizado com sucesso.'
+                  : 'Lançamento salvo com sucesso.'),
         ),
-      );
-    }
+      ),
+    );
 
     final idRetorno = idGerado ?? _idLancamentoEdicao ?? request.uuidOperacaoApp;
     Navigator.of(context).pop(request.toAgendaItem(idFallback: idRetorno));
   }
 
-  String _formatarDataBr(DateTime data) {
-    final dia = data.day.toString().padLeft(2, '0');
-    final mes = data.month.toString().padLeft(2, '0');
-    return '$dia/$mes/${data.year}';
+  InputDecoration _inputDecoration(String label, {String? hintText}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      filled: true,
+      fillColor: colorScheme.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    String? hintText,
+    TextInputType keyboardType = TextInputType.text,
+    bool requiredField = false,
+    int maxLines = 1,
+    ValueChanged<String>? onChanged,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      onChanged: onChanged,
+      decoration: _inputDecoration(label, hintText: hintText),
+      validator:
+          requiredField
+              ? (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Campo obrigatório';
+                }
+                return null;
+              }
+              : null,
+    );
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required TextEditingController controller,
+    required DateTime initialDate,
+    required ValueChanged<DateTime> onChanged,
+    bool requiredField = false,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: true,
+      decoration: _inputDecoration(label),
+      validator:
+          requiredField
+              ? (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null
+              : null,
+      onTap: () async {
+        final selecionada = await showDatePicker(
+          context: context,
+          initialDate: initialDate,
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (selecionada != null) {
+          onChanged(_normalizarData(selecionada));
+          _sincronizarTextosData();
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    final safeValue = items.contains(value) ? value : items.first;
+    return DropdownButtonFormField<String>(
+      value: safeValue,
+      onChanged: onChanged,
+      decoration: _inputDecoration(label),
+      items:
+          items
+              .map((item) => DropdownMenuItem<String>(value: item, child: Text(item)))
+              .toList(),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Widget child,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: colorScheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurface.withOpacity(0.65),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[colorScheme.primary, colorScheme.primary.withOpacity(0.88)],
+        ),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Text(
+        widget.modoEdicao ? 'Editar lançamento financeiro' : 'Novo lançamento financeiro',
+        style: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   Widget _buildActionsBar() {
@@ -1035,20 +944,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.12),
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.12)),
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
-        runAlignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 16,
         runSpacing: 16,
@@ -1078,15 +977,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 label: Text(
                   _isLoading
                       ? (widget.modoEdicao ? 'Atualizando...' : 'Salvando...')
-                      : (widget.modoEdicao
-                          ? 'Atualizar lançamento'
-                          : 'Salvar lançamento'),
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 22,
-                    vertical: 16,
-                  ),
+                      : (widget.modoEdicao ? 'Atualizar lançamento' : 'Salvar lançamento'),
                 ),
               ),
             ],
@@ -1097,19 +988,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Widget _buildRecorrenciaResumo() {
-    final theme = Theme.of(context);
     if (!_recorrente) return const SizedBox.shrink();
-
     final quantidade = _quantidadeParcelasInformada();
-    final fim = _fimRecorrencia;
-    final fimTexto = fim == null ? 'fim não definido' : _formatarDataBr(fim);
-
+    final fimTexto = _fimRecorrencia == null ? 'fim não definido' : _formatarDataBr(_fimRecorrencia!);
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Text(
         'Serão consideradas $quantidade parcela(s), frequência $_frequenciaRecorrencia, de ${_formatarDataBr(_inicioRecorrencia)} até $fimTexto.',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -1122,6 +1009,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
       builder: (context, constraints) {
         final bool telaGrande = constraints.maxWidth >= 1080;
         final bool telaMedia = constraints.maxWidth >= 760;
+        double largura(double grande, double media) =>
+            telaGrande ? grande : (telaMedia ? media : double.infinity);
 
         return Form(
           key: _formKey,
@@ -1133,75 +1022,18 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 const SizedBox(height: 18),
                 _buildSectionCard(
                   title: 'Dados principais',
-                  subtitle:
-                      'Campos que alimentam filtros e detalhes da Agenda Financeira.',
+                  subtitle: 'Campos que alimentam filtros e detalhes da Agenda Financeira.',
                   icon: Icons.badge_outlined,
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
                     children: <Widget>[
+                      SizedBox(width: largura(260, 220), child: _buildDropdownField(label: 'Tipo', value: _tipoSelecionado, items: _tipos, onChanged: (v) => setState(() => _aplicarTipoSelecionado(v!)))),
+                      SizedBox(width: largura(260, 220), child: _buildDropdownField(label: 'Status', value: _statusSelecionado, items: _status, onChanged: (v) => setState(() => _statusSelecionado = v!))),
+                      SizedBox(width: largura(320, 300), child: _buildTextField(controller: _descricaoController, label: 'Descrição', requiredField: true)),
+                      SizedBox(width: largura(260, 220), child: _buildTextField(controller: _valorController, label: 'Valor total', requiredField: true, keyboardType: const TextInputType.numberWithOptions(decimal: true))),
                       SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildDropdownField(
-                          label: 'Tipo',
-                          value: _tipoSelecionado,
-                          items: _tipos,
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _aplicarTipoSelecionado(value));
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildDropdownField(
-                          label: 'Status',
-                          value: _statusSelecionado,
-                          items: _status,
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _statusSelecionado = value);
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 320
-                                : (telaMedia ? 300 : double.infinity),
-                        child: _buildTextField(
-                          controller: _descricaoController,
-                          label: 'Descrição',
-                          hintText: 'Ex.: Conta de internet da loja',
-                          requiredField: true,
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildTextField(
-                          controller: _valorController,
-                          label: 'Valor total',
-                          hintText: 'Ex.: 329,00',
-                          requiredField: true,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
+                        width: largura(260, 220),
                         child: _buildDateField(
                           label: 'Data de vencimento',
                           controller: _dataVencimentoController,
@@ -1216,215 +1048,50 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           },
                         ),
                       ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildDateField(
-                          label: 'Data da operação',
-                          controller: _dataOperacaoController,
-                          initialDate: _dataOperacao,
-                          requiredField: true,
-                          onChanged: (date) => _dataOperacao = date,
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildDateField(
-                          label: 'Competência',
-                          controller: _dataCompetenciaController,
-                          initialDate: _dataCompetencia,
-                          onChanged: (date) => _dataCompetencia = date,
-                        ),
-                      ),
+                      SizedBox(width: largura(260, 220), child: _buildDateField(label: 'Data da operação', controller: _dataOperacaoController, initialDate: _dataOperacao, requiredField: true, onChanged: (date) => _dataOperacao = date)),
+                      SizedBox(width: largura(260, 220), child: _buildDateField(label: 'Competência', controller: _dataCompetenciaController, initialDate: _dataCompetencia, onChanged: (date) => _dataCompetencia = date)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Classificação e filtros',
-                  subtitle:
-                      'Informações usadas para segmentação por origem, empresa e método de pagamento.',
+                  subtitle: 'Informações usadas para segmentação por origem, empresa e método de pagamento.',
                   icon: Icons.filter_alt_outlined,
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
                     children: <Widget>[
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildDropdownField(
-                          label: 'Origem',
-                          value: _origemSelecionada,
-                          items: _origens,
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _origemSelecionada = value);
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildDropdownField(
-                          label: 'Empresa',
-                          value: _empresaSelecionada,
-                          items: widget.empresas,
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _empresaSelecionada = value);
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildDropdownField(
-                          label: 'Forma de pagamento',
-                          value: _formaPagamentoSelecionada,
-                          items: _formasPagamento,
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _formaPagamentoSelecionada = value);
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 320
-                                : (telaMedia ? 280 : double.infinity),
-                        child: _buildTextField(
-                          controller: _categoriaController,
-                          label: 'Categoria',
-                          hintText: 'Ex.: Infraestrutura',
-                          requiredField: true,
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 320
-                                : (telaMedia ? 280 : double.infinity),
-                        child: _buildTextField(
-                          controller: _centroCustoController,
-                          label: 'Centro de custo',
-                          hintText: 'Ex.: Operação da loja',
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 240
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildTextField(
-                          controller: _documentoFiscalController,
-                          label: 'Documento fiscal',
-                          hintText: 'Ex.: NF 5561',
-                        ),
-                      ),
+                      SizedBox(width: largura(260, 220), child: _buildDropdownField(label: 'Origem', value: _origemSelecionada, items: _origens, onChanged: (v) => setState(() => _origemSelecionada = v!))),
+                      SizedBox(width: largura(260, 220), child: _buildDropdownField(label: 'Empresa', value: _empresaSelecionada, items: widget.empresas.isEmpty ? <String>['Empresa'] : widget.empresas, onChanged: (v) => setState(() => _empresaSelecionada = v!))),
+                      SizedBox(width: largura(260, 220), child: _buildDropdownField(label: 'Forma de pagamento', value: _formaPagamentoSelecionada, items: _formasPagamento, onChanged: (v) => setState(() => _formaPagamentoSelecionada = v!))),
+                      SizedBox(width: largura(320, 280), child: _buildTextField(controller: _categoriaController, label: 'Categoria', requiredField: true)),
+                      SizedBox(width: largura(320, 280), child: _buildTextField(controller: _centroCustoController, label: 'Centro de custo')),
+                      SizedBox(width: largura(240, 220), child: _buildTextField(controller: _documentoFiscalController, label: 'Documento fiscal')),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Contato e responsabilidade',
-                  subtitle:
-                      'Dados exibidos nos cards da agenda e usados para cobrança/pagamento.',
+                  subtitle: 'Dados exibidos nos cards da agenda e usados para cobrança/pagamento.',
                   icon: Icons.person_outline,
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
                     children: <Widget>[
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 260
-                                : (telaMedia ? 220 : double.infinity),
-                        child: _buildTextField(
-                          controller: _idContatoController,
-                          label:
-                              _tipoSelecionado == 'Receber'
-                                  ? 'ID do cliente'
-                                  : 'ID do fornecedor',
-                          hintText:
-                              _tipoSelecionado == 'Receber'
-                                  ? 'Ex.: cli-001'
-                                  : 'Ex.: forn-001',
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 320
-                                : (telaMedia ? 280 : double.infinity),
-                        child: _buildTextField(
-                          controller: _contatoController,
-                          label:
-                              _tipoSelecionado == 'Receber'
-                                  ? 'Cliente'
-                                  : 'Fornecedor',
-                          hintText:
-                              _tipoSelecionado == 'Receber'
-                                  ? 'Ex.: João da Silva'
-                                  : 'Ex.: Connect Fibra',
-                          requiredField: true,
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 320
-                                : (telaMedia ? 280 : double.infinity),
-                        child: _buildTextField(
-                          controller: _responsavelController,
-                          label: 'Responsável',
-                          hintText: 'Ex.: Carlos Lima',
-                          requiredField: true,
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 320
-                                : (telaMedia ? 280 : double.infinity),
-                        child: _buildTextField(
-                          controller: _referenciaController,
-                          label: 'Referência externa',
-                          hintText: 'Ex.: Contrato 2026-04',
-                        ),
-                      ),
-                      SizedBox(
-                        width:
-                            telaGrande
-                                ? 900
-                                : (telaMedia ? 680 : double.infinity),
-                        child: _buildTextField(
-                          controller: _observacoesController,
-                          label: 'Observações',
-                          hintText:
-                              'Ex.: Confirmar se o débito automático foi processado.',
-                          maxLines: 3,
-                        ),
-                      ),
+                      SizedBox(width: largura(260, 220), child: _buildTextField(controller: _idContatoController, label: _tipoSelecionado == 'Receber' ? 'ID do cliente' : 'ID do fornecedor')),
+                      SizedBox(width: largura(320, 280), child: _buildTextField(controller: _contatoController, label: _tipoSelecionado == 'Receber' ? 'Cliente' : 'Fornecedor', requiredField: true)),
+                      SizedBox(width: largura(320, 280), child: _buildTextField(controller: _responsavelController, label: 'Responsável', requiredField: true)),
+                      SizedBox(width: largura(320, 280), child: _buildTextField(controller: _referenciaController, label: 'Referência externa')),
+                      SizedBox(width: largura(900, 680), child: _buildTextField(controller: _observacoesController, label: 'Observações', maxLines: 3)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Recorrência e status',
-                  subtitle:
-                      'Configuração de despesas/receitas recorrentes e quitação.',
+                  subtitle: 'Configuração de despesas/receitas recorrentes e quitação.',
                   icon: Icons.repeat_rounded,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1444,16 +1111,11 @@ class _LancamentoAgendaFinanceiraWebBodyState
                             onSelected: (value) {
                               setState(() {
                                 _statusQuitada = value;
-                                if (value) {
-                                  _statusSelecionado = _statusPadraoPorTipo();
-                                }
+                                if (value) _statusSelecionado = _statusPadraoPorTipo();
                               });
                             },
                             label: const Text('Marcar como quitada'),
-                            avatar: const Icon(
-                              Icons.verified_rounded,
-                              size: 18,
-                            ),
+                            avatar: const Icon(Icons.verified_rounded, size: 18),
                           ),
                         ],
                       ),
@@ -1465,28 +1127,21 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           runSpacing: 16,
                           children: <Widget>[
                             SizedBox(
-                              width:
-                                  telaGrande
-                                      ? 260
-                                      : (telaMedia ? 220 : double.infinity),
+                              width: largura(260, 220),
                               child: _buildDropdownField(
                                 label: 'Frequência',
                                 value: _frequenciaRecorrencia,
                                 items: _frequencias,
                                 onChanged: (value) {
-                                  if (value == null) return;
                                   setState(() {
-                                    _frequenciaRecorrencia = value;
+                                    _frequenciaRecorrencia = value!;
                                     _recalcularFimRecorrencia();
                                   });
                                 },
                               ),
                             ),
                             SizedBox(
-                              width:
-                                  telaGrande
-                                      ? 260
-                                      : (telaMedia ? 220 : double.infinity),
+                              width: largura(260, 220),
                               child: _buildDateField(
                                 label: 'Início da recorrência',
                                 controller: _inicioRecorrenciaController,
@@ -1499,32 +1154,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
                               ),
                             ),
                             SizedBox(
-                              width:
-                                  telaGrande
-                                      ? 260
-                                      : (telaMedia ? 220 : double.infinity),
+                              width: largura(260, 220),
                               child: _buildDateField(
                                 label: 'Fim da recorrência',
                                 controller: _fimRecorrenciaController,
-                                initialDate:
-                                    _fimRecorrencia ?? _inicioRecorrencia,
+                                initialDate: _fimRecorrencia ?? _inicioRecorrencia,
                                 requiredField: true,
                                 onChanged: (date) => _fimRecorrencia = date,
                               ),
                             ),
                             SizedBox(
-                              width:
-                                  telaGrande
-                                      ? 220
-                                      : (telaMedia ? 220 : double.infinity),
+                              width: largura(220, 220),
                               child: _buildTextField(
                                 controller: _quantidadeParcelasController,
                                 label: 'Qtd. parcelas',
                                 keyboardType: TextInputType.number,
                                 requiredField: true,
-                                onChanged: (_) {
-                                  setState(_recalcularFimRecorrencia);
-                                },
+                                onChanged: (_) => setState(_recalcularFimRecorrencia),
                               ),
                             ),
                           ],
