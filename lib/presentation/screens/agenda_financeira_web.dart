@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -389,8 +390,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
     final itemAtualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
-      empresaSelecionada:
-          empresaAtual.isNotEmpty ? empresaAtual : empresas.first,
+      empresaSelecionada: empresaAtual.isNotEmpty ? empresaAtual : empresas.first,
       empresas: empresas,
       modoEdicao: true,
       lancamentoInicial: item,
@@ -679,7 +679,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'categoria': item['categoria']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
-      'historico': <String>['Lançamento consultado na agenda financeira.'],
+      'recorrente': item['recorrente'] == true,
+      'quantidadeParcelas': item['quantidadeParcelas'],
+      'historico': <String>[
+        'Lançamento consultado na agenda financeira.',
+        if (item['recorrente'] == true) 'Lançamento recorrente.',
+      ],
       'acoes':
           acoes.isNotEmpty
               ? acoes
@@ -804,8 +809,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
               (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
           final bateStatus =
-              _statusSelecionado == 'Todos' ||
-              item['status'] == _statusSelecionado;
+              _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
           final bateOrigem =
               _origemSelecionada == 'Todas' || item['origem'] == _origemSelecionada;
           final empresaDoItem = item['empresa']?.toString() ?? '';
@@ -855,9 +859,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   int get _quantidadeCanceladosVisiveis {
-    return _itensFiltrados
-        .where((item) => item['status'] == 'Cancelado')
-        .length;
+    return _itensFiltrados.where((item) => item['status'] == 'Cancelado').length;
   }
 
   List<Map<String, dynamic>> get _calendarioFinanceiroCalculado {
@@ -958,13 +960,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final pagarHoje = _somarItensHoje('pagar');
     final vencidosReceber = _somarItensVencidos('receber');
     final vencidosPagar = _somarItensVencidos('pagar');
-    final totalReceber = _somarItens('receber');
-    final totalPagar = _somarItens('pagar');
-    final saldo = totalReceber - totalPagar;
-    final qtdCancelados = _quantidadeCanceladosVisiveis;
+    final saldo = _somarItens('receber') - _somarItens('pagar');
     final observacaoCancelados =
-        qtdCancelados > 0
-            ? ' $qtdCancelados cancelado(s) exibido(s), sem compor valores.'
+        _quantidadeCanceladosVisiveis > 0
+            ? ' $_quantidadeCanceladosVisiveis cancelado(s) fora da soma.'
             : '';
 
     return <Map<String, dynamic>>[
@@ -1409,8 +1408,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         label: 'Tipo',
                         value: _tipoBusca,
                         items: _tipos,
-                        onChanged:
-                            (value) => setState(() => _tipoBusca = value!),
+                        onChanged: (value) => setState(() => _tipoBusca = value!),
                         width: campoMedio,
                       ),
                       _buildDropdownBox(
@@ -1418,8 +1416,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         label: 'Status',
                         value: _statusBusca,
                         items: _statusDisponiveis,
-                        onChanged:
-                            (value) => setState(() => _statusBusca = value!),
+                        onChanged: (value) => setState(() => _statusBusca = value!),
                         width: campoMedio,
                       ),
                       _buildDropdownBox(
@@ -1427,8 +1424,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         label: 'Origem',
                         value: _origemBusca,
                         items: _origens,
-                        onChanged:
-                            (value) => setState(() => _origemBusca = value!),
+                        onChanged: (value) => setState(() => _origemBusca = value!),
                         width: campoLargo,
                       ),
                       _buildDropdownBox(
@@ -1436,15 +1432,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                         label: 'Empresa',
                         value: _empresaBusca,
                         items: _empresas.map((e) => e['nome'] as String).toList(),
-                        onChanged:
-                            (value) => setState(() => _empresaBusca = value!),
+                        onChanged: (value) => setState(() => _empresaBusca = value!),
                         width: campoLargo,
                       ),
                       FilterChip(
                         selected: _somenteCriticosBusca,
                         onSelected:
-                            (value) =>
-                                setState(() => _somenteCriticosBusca = value),
+                            (value) => setState(() => _somenteCriticosBusca = value),
                         label: const Text('Somente críticos'),
                         avatar: const Icon(Icons.priority_high_rounded, size: 18),
                       ),
@@ -1610,6 +1604,155 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       default:
         return _buildListaAgenda(context);
     }
+  }
+
+  Widget _buildResultadosComEstadoPendente({required Widget child}) {
+    final theme = Theme.of(context);
+    final pendente = _temFiltrosPendentes;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow:
+            pendente
+                ? <BoxShadow>[
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.10),
+                    blurRadius: 28,
+                    offset: const Offset(0, 14),
+                  ),
+                ]
+                : const <BoxShadow>[],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: <Widget>[
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              opacity: pendente ? 0.42 : 1,
+              child: IgnorePointer(
+                ignoring: pendente,
+                child:
+                    pendente
+                        ? ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 4.5, sigmaY: 4.5),
+                          child: child,
+                        )
+                        : child,
+              ),
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child:
+                  pendente
+                      ? Positioned.fill(
+                        key: const ValueKey('overlay-resultados-pendentes'),
+                        child: _buildOverlayResultadosPendentes(context),
+                      )
+                      : const SizedBox.shrink(
+                        key: ValueKey('overlay-resultados-atualizados'),
+                      ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlayResultadosPendentes(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            theme.colorScheme.surface.withOpacity(0.60),
+            theme.colorScheme.surface.withOpacity(0.82),
+          ],
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withOpacity(0.92),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.32),
+                width: 1.2,
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.10),
+                  blurRadius: 28,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Icon(
+                      Icons.manage_search_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Resultados aguardando atualização',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Os filtros foram alterados, mas a agenda abaixo ainda mostra a última consulta aplicada. Clique em Buscar alterações para carregar os novos dados.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed:
+                        _isConsultando ? null : _aplicarFiltrosPendentesEConsultar,
+                    icon: const Icon(Icons.search_rounded),
+                    label: const Text('Buscar alterações'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(210, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildListaAgenda(BuildContext context) {
@@ -1819,6 +1962,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
           ),
         ),
+        if (item['recorrente'] == true)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.20)),
+            ),
+            child: Text(
+              'Recorrente',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
         if (item['status'] == 'Cancelado')
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1914,8 +2073,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           children:
               (item['acoes'] as List).take(3).map((acao) {
                 return OutlinedButton(
-                  onPressed:
-                      () => _executarAcaoLancamento(acao.toString(), item),
+                  onPressed: () => _executarAcaoLancamento(acao.toString(), item),
                   child: Text(acao.toString()),
                 );
               }).toList(),
@@ -2176,15 +2334,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text('$label • ${_formatarMoeda(valor)}'),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
           child: LinearProgressIndicator(
             value: ratio,
             minHeight: 14,
-            backgroundColor:
-                Theme.of(context).colorScheme.surfaceContainerHighest,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+            color: color,
+            backgroundColor: color.withOpacity(0.12),
           ),
         ),
       ],
@@ -2192,29 +2349,33 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildPainelDetalheUnificado(BuildContext context) {
-    return _buildDetalheLancamento(context, _lancamentoSelecionado);
-  }
-
-  Widget _buildDetalheLancamento(
-    BuildContext context,
-    Map<String, dynamic>? item,
-  ) {
+    final item = _lancamentoSelecionado;
     final theme = Theme.of(context);
 
     if (item == null) {
       return Card(
+        elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: const Center(
-          child: Text('Selecione um lançamento para ver detalhes.'),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Selecione um lançamento para visualizar os detalhes.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         ),
       );
     }
 
-    final corTipo = _corTipo(item['tipo'] as String);
-    final cancelado = item['status'] == 'Cancelado';
     final totalReceber = _somarItens('receber');
     final totalPagar = _somarItens('pagar');
     final saldo = totalReceber - totalPagar;
+    final corTipo = _corTipo(item['tipo'] as String);
+    final cancelado = item['status'] == 'Cancelado';
 
     return Card(
       elevation: 2,
@@ -2229,14 +2390,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text(
               item['descricao'] as String,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Text(
               _formatarMoeda(item['valor'] as double),
               style: theme.textTheme.headlineSmall?.copyWith(
@@ -2274,10 +2435,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             _buildLinhaDetalhe('Vencimento', item['vencimento'] as String),
             _buildLinhaDetalhe('Status', item['status'] as String),
             _buildLinhaDetalhe('Origem', item['origem'] as String),
-            _buildLinhaDetalhe(
-              'Forma de pagamento',
-              item['formaPagamento'] as String,
-            ),
+            _buildLinhaDetalhe('Forma de pagamento', item['formaPagamento'] as String),
             _buildLinhaDetalhe('Empresa', item['empresa'] as String),
             _buildLinhaDetalhe('Categoria', item['categoria'] as String),
             _buildLinhaDetalhe('Responsável', item['responsavel'] as String),
@@ -2404,10 +2562,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       child: Row(
         children: <Widget>[
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
@@ -2422,68 +2577,71 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final Widget conteudo = LayoutBuilder(
       builder: (context, viewportConstraints) {
         final alturaDisponivelArea = viewportConstraints.maxHeight - 360;
-        final alturaArea =
-            alturaDisponivelArea < 420 ? 420.0 : alturaDisponivelArea;
+        final alturaArea = alturaDisponivelArea < 420 ? 420.0 : alturaDisponivelArea;
 
         return SingleChildScrollView(
           controller: _mainScrollController,
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: viewportConstraints.maxHeight,
-            ),
+            constraints: BoxConstraints(minHeight: viewportConstraints.maxHeight),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: <Widget>[
                   _buildHeader(context),
                   const SizedBox(height: 16),
-                  _buildResumoCards(context),
-                  const SizedBox(height: 22),
                   _buildToolbarFiltros(context),
                   if (_isConsultando) ...<Widget>[
                     const SizedBox(height: 10),
                     const LinearProgressIndicator(minHeight: 3),
                   ],
                   const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: _buildAbas(context),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: alturaArea,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final larguraEstreita = constraints.maxWidth < 1380;
+                  _buildResultadosComEstadoPendente(
+                    child: Column(
+                      children: <Widget>[
+                        _buildResumoCards(context),
+                        const SizedBox(height: 22),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: _buildAbas(context),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: alturaArea,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final larguraEstreita = constraints.maxWidth < 1380;
 
-                        if (larguraEstreita) {
-                          return Column(
-                            children: <Widget>[
-                              Expanded(child: _buildAreaPrincipal(context)),
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                height: constraints.maxHeight * 0.50,
-                                child: _buildPainelDetalheUnificado(context),
-                              ),
-                            ],
-                          );
-                        }
+                              if (larguraEstreita) {
+                                return Column(
+                                  children: <Widget>[
+                                    Expanded(child: _buildAreaPrincipal(context)),
+                                    const SizedBox(height: 14),
+                                    SizedBox(
+                                      height: constraints.maxHeight * 0.50,
+                                      child: _buildPainelDetalheUnificado(context),
+                                    ),
+                                  ],
+                                );
+                              }
 
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Expanded(
-                              flex: 8,
-                              child: _buildAreaPrincipal(context),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: 420,
-                              child: _buildPainelDetalheUnificado(context),
-                            ),
-                          ],
-                        );
-                      },
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  Expanded(
+                                    flex: 8,
+                                    child: _buildAreaPrincipal(context),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  SizedBox(
+                                    width: 420,
+                                    child: _buildPainelDetalheUnificado(context),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
