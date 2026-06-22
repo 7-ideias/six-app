@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
@@ -14,6 +17,8 @@ class AgendaFinanceiraWeb extends StatefulWidget {
 }
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
+  static const String _filtrosCacheKey = 'six.agendaFinanceiraWeb.filtros.v1';
+
   final AgendaFinanceiraLancamentoService _consultaService =
       AgendaFinanceiraLancamentoService();
   final ScrollController _mainScrollController = ScrollController();
@@ -91,7 +96,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _consultarLancamentos();
+      _inicializarTela();
     });
   }
 
@@ -99,6 +104,103 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   void dispose() {
     _mainScrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _inicializarTela() async {
+    await _carregarFiltrosDoCache();
+    if (!mounted) return;
+    await _consultarLancamentos();
+  }
+
+  Future<void> _carregarFiltrosDoCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_filtrosCacheKey);
+      if (raw == null || raw.trim().isEmpty) {
+        return;
+      }
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return;
+      }
+
+      final periodo = _valorCacheValido(
+        decoded['periodo'],
+        _periodos,
+        _periodoSelecionado,
+      );
+      final tipo = _valorCacheValido(decoded['tipo'], _tipos, _tipoSelecionado);
+      final status = _valorCacheValido(
+        decoded['status'],
+        _statusDisponiveis,
+        _statusSelecionado,
+      );
+      final origem = _valorCacheValido(
+        decoded['origem'],
+        _origens,
+        _origemSelecionada,
+      );
+      final empresa = _valorCacheLivre(decoded['empresa'], _empresaSelecionada);
+      final somenteCriticos =
+          decoded['somenteCriticos'] is bool
+              ? decoded['somenteCriticos'] as bool
+              : _mostrarSomenteCriticos;
+
+      if (!mounted) return;
+
+      setState(() {
+        _periodoSelecionado = periodo;
+        _tipoSelecionado = tipo;
+        _statusSelecionado = status;
+        _origemSelecionada = origem;
+        _empresaSelecionada = empresa;
+        _mostrarSomenteCriticos = somenteCriticos;
+
+        _periodoBusca = periodo;
+        _tipoBusca = tipo;
+        _statusBusca = status;
+        _origemBusca = origem;
+        _empresaBusca = empresa;
+        _somenteCriticosBusca = somenteCriticos;
+      });
+    } catch (_) {
+      // Cache inválido não deve impedir a abertura da agenda financeira.
+    }
+  }
+
+  Future<void> _salvarFiltrosNoCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _filtrosCacheKey,
+        jsonEncode(<String, dynamic>{
+          'periodo': _periodoSelecionado,
+          'tipo': _tipoSelecionado,
+          'status': _statusSelecionado,
+          'origem': _origemSelecionada,
+          'empresa': _empresaSelecionada,
+          'somenteCriticos': _mostrarSomenteCriticos,
+        }),
+      );
+    } catch (_) {
+      // Falha no cache não deve bloquear a consulta financeira.
+    }
+  }
+
+  String _valorCacheValido(
+    dynamic value,
+    List<String> valoresPermitidos,
+    String fallback,
+  ) {
+    final texto = value?.toString().trim();
+    if (texto == null || texto.isEmpty) return fallback;
+    return valoresPermitidos.contains(texto) ? texto : fallback;
+  }
+
+  String _valorCacheLivre(dynamic value, String fallback) {
+    final texto = value?.toString().trim();
+    return texto == null || texto.isEmpty ? fallback : texto;
   }
 
   void _voltarTelaAnterior() {
@@ -210,6 +312,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     });
 
     await _consultarLancamentos(mostrarFeedback: true);
+    await _salvarFiltrosNoCache();
   }
 
   Future<void> _consultarLancamentos({bool mostrarFeedback = false}) async {
