@@ -760,6 +760,82 @@ class _LancamentoAgendaFinanceiraWebBodyState
     Navigator.of(context).pop(request.toAgendaItem(idFallback: idRetorno));
   }
 
+  Future<void> _confirmarExcluirLancamento() async {
+    final id = _idLancamentoEdicao;
+    if (!widget.modoEdicao || id == null || id.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lançamento ainda não possui identificador para exclusão.')),
+      );
+      return;
+    }
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final colorScheme = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          title: const Text('Excluir lançamento?'),
+          content: Text(
+            _recorrente
+                ? 'Esta ação vai apagar de forma definitiva este lançamento e todas as ocorrências recorrentes exibidas na agenda. Essa operação não pode ser desfeita.'
+                : 'Esta ação vai apagar de forma definitiva este lançamento financeiro. Essa operação não pode ser desfeita.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.delete_forever_outlined),
+              label: const Text('Excluir/apagar'),
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmado == true) {
+      await _excluirLancamento(id);
+    }
+  }
+
+  Future<void> _excluirLancamento(String idLancamento) async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await _service.excluirLancamento(idLancamento);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lançamento excluído definitivamente.')),
+      );
+
+      Navigator.of(context).pop(<String, dynamic>{
+        'id': response.id ?? idLancamento,
+        'deleted': true,
+        'status': response.status,
+      });
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao excluir lançamento: ${e.statusCode}')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível excluir o lançamento agora.')),
+      );
+    }
+  }
+
   InputDecoration _inputDecoration(String label, {String? hintText}) {
     final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
@@ -938,13 +1014,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Widget _buildActionsBar() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
@@ -960,6 +1038,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
             spacing: 12,
             runSpacing: 12,
             children: <Widget>[
+              if (widget.modoEdicao)
+                OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _confirmarExcluirLancamento,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: const Text('Excluir/apagar'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colorScheme.error,
+                    side: BorderSide(color: colorScheme.error),
+                  ),
+                ),
               OutlinedButton(
                 onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
                 child: const Text('Cancelar'),
