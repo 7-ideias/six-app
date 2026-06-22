@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
-import 'package:flutter/material.dart';
 
 class SubPainelLancamentoAgendaFinanceiraWeb extends SubPainelWebGeneral {
   const SubPainelLancamentoAgendaFinanceiraWeb({
@@ -103,8 +103,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
   DateTime _inicioRecorrencia = DateTime.now();
   DateTime? _fimRecorrencia;
 
-  static const List<String> _tipos = ['Pagar', 'Receber'];
-  static const List<String> _status = [
+  static const List<String> _tipos = <String>['Pagar', 'Receber'];
+  static const List<String> _status = <String>[
     'Previsto',
     'Pendente',
     'Vence hoje',
@@ -114,7 +114,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     'Parcial',
     'Cancelado',
   ];
-  static const List<String> _origens = [
+  static const List<String> _origens = <String>[
     'Venda',
     'Ordem de serviço',
     'Despesa manual',
@@ -122,7 +122,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     'Parcela',
     'Movimentação de caixa',
   ];
-  static const List<String> _formasPagamento = [
+  static const List<String> _formasPagamento = <String>[
     'Pix',
     'Boleto',
     'Transferência',
@@ -131,7 +131,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     'Débito automático',
     'Dinheiro',
   ];
-  static const List<String> _frequencias = [
+  static const List<String> _frequencias = <String>[
     'Diária',
     'Semanal',
     'Mensal',
@@ -153,6 +153,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       _preencherCamposEdicao(widget.lancamentoInicial!);
     }
 
+    _garantirRecorrenciaConsistente();
     _sincronizarTextosData();
   }
 
@@ -208,14 +209,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
       fallback: _dataVencimento,
     );
 
-    _recorrente = item['recorrente'] == true;
-    final frequencia = item['frequenciaRecorrencia']?.toString();
-    if (frequencia != null && _frequencias.contains(frequencia)) {
-      _frequenciaRecorrencia = frequencia;
-    }
+    _recorrente = _itemIndicaRecorrencia(item);
+    _frequenciaRecorrencia = _normalizarFrequencia(
+      item['frequenciaRecorrencia'],
+      fallback: _frequenciaRecorrencia,
+    );
     _inicioRecorrencia = _parseData(
       item['recorrenciaInicio'],
-      fallback: _dataOperacao,
+      fallback: _dataVencimento,
     );
     _fimRecorrencia =
         item['recorrenciaFim'] != null
@@ -229,19 +230,24 @@ class _LancamentoAgendaFinanceiraWebBodyState
     }
   }
 
-  DateTime _parseData(dynamic value, {required DateTime fallback}) {
-    if (value == null) {
-      return fallback;
-    }
+  bool _itemIndicaRecorrencia(Map<String, dynamic> item) {
+    if (item['recorrente'] == true) return true;
 
-    if (value is DateTime) {
-      return value;
-    }
+    final quantidade = item['quantidadeParcelas'];
+    if (quantidade is num && quantidade > 1) return true;
+
+    final frequencia = item['frequenciaRecorrencia']?.toString().trim() ?? '';
+    if (frequencia.isEmpty) return false;
+    final normalizada = _normalizarSemAcento(frequencia).toUpperCase();
+    return normalizada != 'NAO RECORRENTE' && normalizada != 'NAO_RECORRENTE';
+  }
+
+  DateTime _parseData(dynamic value, {required DateTime fallback}) {
+    if (value == null) return fallback;
+    if (value is DateTime) return _normalizarData(value);
 
     final texto = value.toString().trim();
-    if (texto.isEmpty) {
-      return fallback;
-    }
+    if (texto.isEmpty) return fallback;
 
     if (texto.contains('/')) {
       final partes = texto.split('/');
@@ -256,25 +262,69 @@ class _LancamentoAgendaFinanceiraWebBodyState
     }
 
     final iso = DateTime.tryParse(texto);
-    return iso ?? fallback;
+    return iso == null ? fallback : _normalizarData(iso);
+  }
+
+  DateTime _normalizarData(DateTime data) {
+    return DateTime(data.year, data.month, data.day);
   }
 
   String _formatarValorParaCampo(dynamic valor) {
-    if (valor is num) {
-      return valor.toStringAsFixed(2).replaceAll('.', ',');
-    }
+    if (valor is num) return valor.toStringAsFixed(2).replaceAll('.', ',');
 
     final texto = valor?.toString().trim() ?? '';
-    if (texto.isEmpty) {
-      return '';
-    }
+    if (texto.isEmpty) return '';
 
     final numero = double.tryParse(texto);
-    if (numero != null) {
-      return numero.toStringAsFixed(2).replaceAll('.', ',');
-    }
+    if (numero != null) return numero.toStringAsFixed(2).replaceAll('.', ',');
 
     return texto;
+  }
+
+  String _normalizarSemAcento(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('à', 'a')
+        .replaceAll('â', 'a')
+        .replaceAll('ã', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ô', 'o')
+        .replaceAll('õ', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ç', 'c');
+  }
+
+  String _normalizarFrequencia(dynamic value, {String fallback = 'Mensal'}) {
+    final texto = value?.toString().trim() ?? '';
+    if (texto.isEmpty) return fallback;
+
+    final normalizado = _normalizarSemAcento(texto).toUpperCase();
+    switch (normalizado) {
+      case 'DIARIA':
+      case 'DIARIO':
+        return 'Diária';
+      case 'SEMANAL':
+        return 'Semanal';
+      case 'MENSAL':
+        return 'Mensal';
+      case 'BIMESTRAL':
+        return 'Bimestral';
+      case 'TRIMESTRAL':
+        return 'Trimestral';
+      case 'SEMESTRAL':
+        return 'Semestral';
+      case 'ANUAL':
+        return 'Anual';
+      case 'NAO RECORRENTE':
+      case 'NAO_RECORRENTE':
+        return fallback;
+      default:
+        return _frequencias.contains(texto) ? texto : fallback;
+    }
   }
 
   bool _origemSugerePagar(String origem) {
@@ -308,6 +358,112 @@ class _LancamentoAgendaFinanceiraWebBodyState
     } else if (tipo == 'Pagar' && _statusSelecionado == 'Recebido') {
       _statusSelecionado = 'Pago';
     }
+  }
+
+  int _toInt(String text) {
+    return int.tryParse(text.trim()) ?? 0;
+  }
+
+  double _toDouble(String text) {
+    final normalizado = text.replaceAll('.', '').replaceAll(',', '.').trim();
+    return double.tryParse(normalizado) ?? 0;
+  }
+
+  int _quantidadeParcelasInformada() {
+    final quantidade = _toInt(_quantidadeParcelasController.text);
+    return quantidade > 0 ? quantidade : 1;
+  }
+
+  int _mesesPorFrequencia(String frequencia) {
+    switch (frequencia) {
+      case 'Bimestral':
+        return 2;
+      case 'Trimestral':
+        return 3;
+      case 'Semestral':
+        return 6;
+      case 'Anual':
+        return 12;
+      case 'Mensal':
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  DateTime _somarMesesPreservandoDia(DateTime data, int meses) {
+    final mesBaseZero = data.month - 1 + meses;
+    final ano = data.year + (mesBaseZero ~/ 12);
+    final mes = (mesBaseZero % 12) + 1;
+    final ultimoDiaMes = DateUtils.getDaysInMonth(ano, mes);
+    final dia = data.day > ultimoDiaMes ? ultimoDiaMes : data.day;
+    return DateTime(ano, mes, dia);
+  }
+
+  DateTime _calcularFimRecorrencia({
+    required DateTime inicio,
+    required String frequencia,
+    required int quantidadeParcelas,
+  }) {
+    final parcelas = quantidadeParcelas <= 0 ? 1 : quantidadeParcelas;
+    final incremento = parcelas - 1;
+    if (incremento <= 0) return _normalizarData(inicio);
+
+    switch (frequencia) {
+      case 'Diária':
+        return _normalizarData(inicio.add(Duration(days: incremento)));
+      case 'Semanal':
+        return _normalizarData(inicio.add(Duration(days: incremento * 7)));
+      default:
+        final meses = _mesesPorFrequencia(frequencia);
+        return _somarMesesPreservandoDia(inicio, meses * incremento);
+    }
+  }
+
+  void _garantirRecorrenciaConsistente({bool recalcularFim = false}) {
+    if (!_recorrente) {
+      _fimRecorrencia = null;
+      return;
+    }
+
+    _inicioRecorrencia = _normalizarData(_inicioRecorrencia);
+    if (_quantidadeParcelasInformada() <= 0) {
+      _quantidadeParcelasController.text = '12';
+    }
+
+    if (_fimRecorrencia == null || recalcularFim) {
+      _fimRecorrencia = _calcularFimRecorrencia(
+        inicio: _inicioRecorrencia,
+        frequencia: _frequenciaRecorrencia,
+        quantidadeParcelas: _quantidadeParcelasInformada(),
+      );
+    }
+  }
+
+  void _onRecorrenteChanged(bool value) {
+    setState(() {
+      _recorrente = value;
+      if (_recorrente) {
+        _inicioRecorrencia = _normalizarData(_dataVencimento);
+        if (_quantidadeParcelasInformada() <= 1) {
+          _quantidadeParcelasController.text = '12';
+        }
+        _garantirRecorrenciaConsistente(recalcularFim: true);
+      } else {
+        _fimRecorrencia = null;
+      }
+      _sincronizarTextosData();
+    });
+  }
+
+  void _recalcularFimRecorrencia() {
+    if (!_recorrente) return;
+    _fimRecorrencia = _calcularFimRecorrencia(
+      inicio: _inicioRecorrencia,
+      frequencia: _frequenciaRecorrencia,
+      quantidadeParcelas: _quantidadeParcelasInformada(),
+    );
+    _sincronizarTextosData();
   }
 
   @override
@@ -375,11 +531,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
     TextInputType keyboardType = TextInputType.text,
     bool requiredField = false,
     int maxLines = 1,
+    ValueChanged<String>? onChanged,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      onChanged: onChanged,
       decoration: _inputDecoration(label, hintText: hintText),
       validator:
           requiredField
@@ -418,7 +576,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
         );
 
         if (selecionada != null) {
-          onChanged(selecionada);
+          onChanged(_normalizarData(selecionada));
           _sincronizarTextosData();
           setState(() {});
         }
@@ -439,8 +597,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
       items:
           items
               .map(
-                (item) =>
-                    DropdownMenuItem<String>(value: item, child: Text(item)),
+                (item) => DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(item),
+                ),
               )
               .toList(),
     );
@@ -570,7 +730,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     widget.modoEdicao
                         ? 'Editar lançamento financeiro'
                         : 'Novo lançamento financeiro',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -607,15 +767,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
         ],
       ),
     );
-  }
-
-  double _toDouble(String text) {
-    final normalizado = text.replaceAll('.', '').replaceAll(',', '.').trim();
-    return double.tryParse(normalizado) ?? 0;
-  }
-
-  int _toInt(String text) {
-    return int.tryParse(text.trim()) ?? 0;
   }
 
   String _statusPadraoPorTipo() {
@@ -670,10 +821,11 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   LancamentoAgendaFinanceiraRequest _buildRequest() {
+    _garantirRecorrenciaConsistente(recalcularFim: _recorrente && _fimRecorrencia == null);
+
     final valorTotal = _toDouble(_valorController.text);
     final idLocal =
-        _uuidOperacaoAppEdicao ??
-        DateTime.now().millisecondsSinceEpoch.toString();
+        _uuidOperacaoAppEdicao ?? DateTime.now().millisecondsSinceEpoch.toString();
     final tipoOperacao = _tipoOperacaoParaBackend();
     final origem = _origemParaBackend();
     final formaPagamento = _formaPagamentoParaBackend();
@@ -684,29 +836,30 @@ class _LancamentoAgendaFinanceiraWebBodyState
     final contatoIdOuNull = contatoIdDigitado.isEmpty ? null : contatoIdDigitado;
     final contatoNomeOuNull = contatoNome.isEmpty ? null : contatoNome;
     final isReceber = _tipoSelecionado == 'Receber';
-    final quantidadeParcelasDigitada = _toInt(
-      _quantidadeParcelasController.text,
-    );
-    final quantidadeParcelas =
-        _recorrente
-            ? (quantidadeParcelasDigitada > 0 ? quantidadeParcelasDigitada : 1)
-            : 1;
-    final recorrenciaInicio = _recorrente ? _inicioRecorrencia : _dataOperacao;
+    final quantidadeParcelas = _recorrente ? _quantidadeParcelasInformada() : 1;
+    final recorrenciaInicio = _recorrente ? _inicioRecorrencia : _dataVencimento;
     final recorrenciaFim =
-        _recorrente ? (_fimRecorrencia ?? _inicioRecorrencia) : _dataVencimento;
+        _recorrente
+            ? (_fimRecorrencia ??
+                _calcularFimRecorrencia(
+                  inicio: recorrenciaInicio,
+                  frequencia: _frequenciaRecorrencia,
+                  quantidadeParcelas: quantidadeParcelas,
+                ))
+            : _dataVencimento;
     final frequenciaRecorrencia =
         _recorrente ? _frequenciaRecorrencia : 'Nao recorrente';
     final diaVencimentoRecorrencia = _dataVencimento.day;
 
     final payload = <String, dynamic>{
-      'agendaFinanceira': {
+      'agendaFinanceira': <String, dynamic>{
         'tipoFiltro': tipoOperacao,
         'statusFiltro': _statusPadraoPorTipo(),
         'origemFiltro': origem,
         'empresaFiltro': _empresaSelecionada,
       },
-      'contato': {'id': contatoIdPayload, 'nome': contatoNome},
-      'recorrencia': {
+      'contato': <String, dynamic>{'id': contatoIdPayload, 'nome': contatoNome},
+      'recorrencia': <String, dynamic>{
         'recorrente': _recorrente,
         'frequencia': frequenciaRecorrencia,
         'inicio': recorrenciaInicio.toIso8601String(),
@@ -767,9 +920,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Future<void> _salvar() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     if (_toDouble(_valorController.text) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -778,13 +929,34 @@ class _LancamentoAgendaFinanceiraWebBodyState
       return;
     }
 
-    if (_recorrente && _toInt(_quantidadeParcelasController.text) <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Informe a quantidade de parcelas da recorrência.'),
-        ),
-      );
-      return;
+    if (_recorrente) {
+      _garantirRecorrenciaConsistente(recalcularFim: _fimRecorrencia == null);
+      _sincronizarTextosData();
+
+      if (_quantidadeParcelasInformada() <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Informe a quantidade de parcelas da recorrência.'),
+          ),
+        );
+        return;
+      }
+
+      if (_fimRecorrencia == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Informe o fim da recorrência.')),
+        );
+        return;
+      }
+
+      if (_fimRecorrencia!.isBefore(_inicioRecorrencia)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('O fim da recorrência não pode ser anterior ao início.'),
+          ),
+        );
+        return;
+      }
     }
 
     final request = _buildRequest();
@@ -830,14 +1002,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
               : 'Não foi possível confirmar a API no momento. Payload foi montado e mantido localmente.';
     }
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     if (aviso != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(aviso)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -850,8 +1018,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       );
     }
 
-    final idRetorno =
-        idGerado ?? _idLancamentoEdicao ?? request.uuidOperacaoApp;
+    final idRetorno = idGerado ?? _idLancamentoEdicao ?? request.uuidOperacaoApp;
     Navigator.of(context).pop(request.toAgendaItem(idFallback: idRetorno));
   }
 
@@ -895,8 +1062,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
             runSpacing: 12,
             children: <Widget>[
               OutlinedButton(
-                onPressed:
-                    _isLoading ? null : () => Navigator.of(context).pop(),
+                onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
                 child: const Text('Cancelar'),
               ),
               FilledButton.icon(
@@ -930,6 +1096,26 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
+  Widget _buildRecorrenciaResumo() {
+    final theme = Theme.of(context);
+    if (!_recorrente) return const SizedBox.shrink();
+
+    final quantidade = _quantidadeParcelasInformada();
+    final fim = _fimRecorrencia;
+    final fimTexto = fim == null ? 'fim não definido' : _formatarDataBr(fim);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(
+        'Serão consideradas $quantidade parcela(s), frequência $_frequenciaRecorrencia, de ${_formatarDataBr(_inicioRecorrencia)} até $fimTexto.',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -942,7 +1128,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(18),
             child: Column(
-              children: [
+              children: <Widget>[
                 _buildHeader(),
                 const SizedBox(height: 18),
                 _buildSectionCard(
@@ -953,7 +1139,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
-                    children: [
+                    children: <Widget>[
                       SizedBox(
                         width:
                             telaGrande
@@ -1021,7 +1207,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           controller: _dataVencimentoController,
                           initialDate: _dataVencimento,
                           requiredField: true,
-                          onChanged: (date) => _dataVencimento = date,
+                          onChanged: (date) {
+                            _dataVencimento = date;
+                            if (_recorrente) {
+                              _inicioRecorrencia = date;
+                              _recalcularFimRecorrencia();
+                            }
+                          },
                         ),
                       ),
                       SizedBox(
@@ -1061,7 +1253,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
-                    children: [
+                    children: <Widget>[
                       SizedBox(
                         width:
                             telaGrande
@@ -1153,7 +1345,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
-                    children: [
+                    children: <Widget>[
                       SizedBox(
                         width:
                             telaGrande
@@ -1236,15 +1428,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   icon: Icons.repeat_rounded,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
-                        children: [
+                        children: <Widget>[
                           FilterChip(
                             selected: _recorrente,
-                            onSelected:
-                                (value) => setState(() => _recorrente = value),
+                            onSelected: _onRecorrenteChanged,
                             label: const Text('Lançamento recorrente'),
                             avatar: const Icon(Icons.repeat_rounded, size: 18),
                           ),
@@ -1266,12 +1457,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           ),
                         ],
                       ),
-                      if (_recorrente) ...[
+                      if (_recorrente) ...<Widget>[
+                        _buildRecorrenciaResumo(),
                         const SizedBox(height: 16),
                         Wrap(
                           spacing: 16,
                           runSpacing: 16,
-                          children: [
+                          children: <Widget>[
                             SizedBox(
                               width:
                                   telaGrande
@@ -1283,9 +1475,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
                                 items: _frequencias,
                                 onChanged: (value) {
                                   if (value == null) return;
-                                  setState(
-                                    () => _frequenciaRecorrencia = value,
-                                  );
+                                  setState(() {
+                                    _frequenciaRecorrencia = value;
+                                    _recalcularFimRecorrencia();
+                                  });
                                 },
                               ),
                             ),
@@ -1299,7 +1492,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
                                 controller: _inicioRecorrenciaController,
                                 initialDate: _inicioRecorrencia,
                                 requiredField: true,
-                                onChanged: (date) => _inicioRecorrencia = date,
+                                onChanged: (date) {
+                                  _inicioRecorrencia = date;
+                                  _recalcularFimRecorrencia();
+                                },
                               ),
                             ),
                             SizedBox(
@@ -1312,6 +1508,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                                 controller: _fimRecorrenciaController,
                                 initialDate:
                                     _fimRecorrencia ?? _inicioRecorrencia,
+                                requiredField: true,
                                 onChanged: (date) => _fimRecorrencia = date,
                               ),
                             ),
@@ -1325,6 +1522,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                                 label: 'Qtd. parcelas',
                                 keyboardType: TextInputType.number,
                                 requiredField: true,
+                                onChanged: (_) {
+                                  setState(_recalcularFimRecorrencia);
+                                },
                               ),
                             ),
                           ],
