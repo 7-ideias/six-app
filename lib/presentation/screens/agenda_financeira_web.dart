@@ -30,9 +30,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     'Próximo mês',
     'Personalizado',
   ];
-
   final List<String> _tipos = const ['Todos', 'Receber', 'Pagar'];
-
   final List<String> _statusDisponiveis = const [
     'Todos',
     'Previsto',
@@ -44,7 +42,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     'Parcial',
     'Cancelado',
   ];
-
   final List<String> _origens = const [
     'Todas',
     'Venda',
@@ -54,7 +51,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     'Parcela',
     'Movimentação de caixa',
   ];
-
   final List<String> _abas = const ['Agenda', 'Calendário', 'Fluxo previsto'];
 
   String _periodoSelecionado = 'Próximos 7 dias';
@@ -80,9 +76,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     <String, dynamic>{'id': 'all', 'nome': 'Todas'},
   ];
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
-  final List<Map<String, dynamic>> _calendarioAgenda = <Map<String, dynamic>>[];
-  final List<Map<String, dynamic>> _fluxoPrevistoAgenda =
-      <Map<String, dynamic>>[];
 
   bool get _temFiltrosPendentes =>
       _periodoBusca != _periodoSelecionado ||
@@ -116,14 +109,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_filtrosCacheKey);
-      if (raw == null || raw.trim().isEmpty) {
-        return;
-      }
+      if (raw == null || raw.trim().isEmpty) return;
 
       final decoded = jsonDecode(raw);
-      if (decoded is! Map<String, dynamic>) {
-        return;
-      }
+      if (decoded is! Map<String, dynamic>) return;
 
       final periodo = _valorCacheValido(
         decoded['periodo'],
@@ -210,9 +199,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
 
     final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    }
+    if (navigator.canPop()) navigator.pop();
   }
 
   void _sincronizarLancamentoSelecionado() {
@@ -247,10 +234,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       empresas: empresas,
     );
 
-    if (!mounted || item == null) {
-      return;
-    }
-
+    if (!mounted || item == null) return;
     await _consultarLancamentos(mostrarFeedback: true);
   }
 
@@ -286,10 +270,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       lancamentoInicial: item,
     );
 
-    if (!mounted || itemAtualizado == null) {
-      return;
-    }
-
+    if (!mounted || itemAtualizado == null) return;
     await _consultarLancamentos(mostrarFeedback: true);
   }
 
@@ -298,9 +279,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _aplicarFiltrosPendentesEConsultar() async {
-    if (_isConsultando) {
-      return;
-    }
+    if (_isConsultando) return;
 
     setState(() {
       _periodoSelecionado = _periodoBusca;
@@ -316,9 +295,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _consultarLancamentos({bool mostrarFeedback = false}) async {
-    if (_isConsultando) {
-      return;
-    }
+    if (_isConsultando) return;
 
     setState(() => _isConsultando = true);
 
@@ -327,7 +304,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       final payload = await _consultaService.consultarLancamentos(request);
 
       if (!mounted) return;
-
       _aplicarConsultaBackend(payload);
 
       if (mostrarFeedback) {
@@ -340,36 +316,29 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         );
       }
     } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (!mounted) return;
-
-      if (mostrarFeedback) {
-        final bool endpointNaoPublicado =
-            e.statusCode == 404 || e.statusCode == 405 || e.statusCode == 501;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              endpointNaoPublicado
-                  ? 'Endpoint de consulta ainda não publicado. Exibindo dados já carregados.'
-                  : 'Falha ao consultar lançamentos (${e.statusCode}). Exibindo dados já carregados.',
-            ),
+      if (!mounted || !mostrarFeedback) return;
+      final bool endpointNaoPublicado =
+          e.statusCode == 404 || e.statusCode == 405 || e.statusCode == 501;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            endpointNaoPublicado
+                ? 'Endpoint de consulta ainda não publicado. Exibindo dados já carregados.'
+                : 'Falha ao consultar lançamentos (${e.statusCode}). Exibindo dados já carregados.',
           ),
-        );
-      }
+        ),
+      );
     } catch (_) {
-      if (!mounted) return;
-      if (mostrarFeedback) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Não foi possível consultar agora. Exibindo dados já carregados.',
-            ),
+      if (!mounted || !mostrarFeedback) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível consultar agora. Exibindo dados já carregados.',
           ),
-        );
-      }
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isConsultando = false);
-      }
+      if (mounted) setState(() => _isConsultando = false);
     }
   }
 
@@ -485,20 +454,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   void _aplicarConsultaBackend(Map<String, dynamic> payload) {
     final novosGrupos = _mapearGruposAgenda(payload['gruposAgenda']);
-    final novoCalendario = _mapearCalendario(payload['calendario']);
-    final novoFluxo = _mapearFluxoPrevisto(payload['fluxoPrevisto']);
     final empresasResposta = _extrairEmpresas(novosGrupos);
 
     setState(() {
       _gruposAgenda
         ..clear()
         ..addAll(novosGrupos);
-      _calendarioAgenda
-        ..clear()
-        ..addAll(novoCalendario);
-      _fluxoPrevistoAgenda
-        ..clear()
-        ..addAll(novoFluxo);
       _empresas
         ..clear()
         ..add(<String, dynamic>{'id': 'all', 'nome': 'Todas'})
@@ -522,15 +483,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   List<Map<String, dynamic>> _mapearGruposAgenda(dynamic gruposRaw) {
-    if (gruposRaw is! List) {
-      return <Map<String, dynamic>>[];
-    }
+    if (gruposRaw is! List) return <Map<String, dynamic>>[];
 
     final grupos = <Map<String, dynamic>>[];
     for (final grupo in gruposRaw) {
-      if (grupo is! Map<String, dynamic>) {
-        continue;
-      }
+      if (grupo is! Map<String, dynamic>) continue;
 
       final itensRaw = grupo['itens'];
       final itens =
@@ -553,37 +510,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return grupos;
   }
 
-  List<Map<String, dynamic>> _mapearCalendario(dynamic calendarioRaw) {
-    if (calendarioRaw is! List) {
-      return <Map<String, dynamic>>[];
-    }
-
-    return calendarioRaw.whereType<Map<String, dynamic>>().map((dia) {
-      return <String, dynamic>{
-        'data': _formatarDataIsoParaBr(dia['data']?.toString()),
-        'quantidadeLancamentos': _toIntDynamic(dia['quantidadeLancamentos']),
-        'quantidadeCriticos': _toIntDynamic(dia['quantidadeCriticos']),
-        'totalReceber': _toDoubleDynamic(dia['totalReceber']),
-        'totalPagar': _toDoubleDynamic(dia['totalPagar']),
-      };
-    }).toList();
-  }
-
-  List<Map<String, dynamic>> _mapearFluxoPrevisto(dynamic fluxoRaw) {
-    if (fluxoRaw is! List) {
-      return <Map<String, dynamic>>[];
-    }
-
-    return fluxoRaw.whereType<Map<String, dynamic>>().map((item) {
-      return <String, dynamic>{
-        'competencia': item['competencia']?.toString() ?? '',
-        'totalEntradas': _toDoubleDynamic(item['totalEntradas']),
-        'totalSaidas': _toDoubleDynamic(item['totalSaidas']),
-        'saldoPrevisto': _toDoubleDynamic(item['saldoPrevisto']),
-      };
-    }).toList();
-  }
-
   Map<String, dynamic> _mapearItemResumo(Map<String, dynamic> item) {
     final tipoBackend = item['tipo']?.toString().toUpperCase() ?? '';
     final empresa = item['empresa'];
@@ -591,7 +517,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         empresa is Map<String, dynamic>
             ? empresa['nome']?.toString() ?? ''
             : empresa?.toString() ?? '';
-
     final acoesRaw = item['acoesDisponiveis'];
     final acoes =
         acoesRaw is List
@@ -721,12 +646,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
       for (final item in itens) {
         final nome = item['empresa']?.toString().trim() ?? '';
-        if (nome.isNotEmpty) {
-          nomes.add(nome);
-        }
+        if (nome.isNotEmpty) nomes.add(nome);
       }
     }
-
     final lista = nomes.toList()..sort();
     return lista;
   }
@@ -825,9 +747,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             (dia['quantidadeCriticos'] as int? ?? 0) + 1;
       }
 
-      if (!_deveSomarLancamento(item)) {
-        continue;
-      }
+      if (!_deveSomarLancamento(item)) continue;
 
       final valor = item['valor'] as double? ?? 0;
       if (item['tipo'] == 'receber') {
@@ -864,9 +784,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         },
       );
 
-      if (!_deveSomarLancamento(item)) {
-        continue;
-      }
+      if (!_deveSomarLancamento(item)) continue;
 
       final valor = item['valor'] as double? ?? 0;
       if (item['tipo'] == 'receber') {
@@ -892,9 +810,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   String _competenciaDoLancamento(Map<String, dynamic> item) {
     final data = _parseDataBr(item['vencimento']?.toString());
-    if (data == null) {
-      return 'Sem competência';
-    }
+    if (data == null) return 'Sem competência';
 
     final ano = data.year.toString().padLeft(4, '0');
     final mes = data.month.toString().padLeft(2, '0');
@@ -992,9 +908,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   double _toDoubleDynamic(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
-    }
+    if (value is num) return value.toDouble();
 
     if (value is String) {
       final texto = value.trim();
@@ -1005,22 +919,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               ? texto.replaceAll(',', '.')
               : texto;
       return double.tryParse(normalizado) ?? 0;
-    }
-
-    return 0;
-  }
-
-  int _toIntDynamic(dynamic value) {
-    if (value is int) {
-      return value;
-    }
-
-    if (value is num) {
-      return value.toInt();
-    }
-
-    if (value is String) {
-      return int.tryParse(value.trim()) ?? 0;
     }
 
     return 0;
@@ -1047,9 +945,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String _formatarHora(DateTime? data) {
-    if (data == null) {
-      return 'Ainda não consultado';
-    }
+    if (data == null) return 'Ainda não consultado';
     final hora = data.hour.toString().padLeft(2, '0');
     final minuto = data.minute.toString().padLeft(2, '0');
     return 'Atualizado às $hora:$minuto';
@@ -1648,7 +1544,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color:
-              selecionado
+              cancelado
+                  ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.52)
+                  : selecionado
                   ? theme.colorScheme.primary.withOpacity(0.05)
                   : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
@@ -1656,48 +1554,64 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             color:
                 selecionado
                     ? theme.colorScheme.primary
+                    : cancelado
+                    ? _corStatus('Cancelado').withOpacity(0.55)
                     : theme.colorScheme.outlineVariant,
             width: selecionado ? 1.6 : 1,
           ),
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final empilhar = constraints.maxWidth < 980;
-            final conteudo = _buildLancamentoConteudo(context, item);
-            final valor = _buildLancamentoValorEAcoes(
-              context,
-              item,
-              cancelado ? _corStatus('Cancelado') : corTipo,
-            );
-
-            if (empilhar) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLancamentoBadges(context, item, corTipo, corStatus),
-                  const SizedBox(height: 14),
-                  conteudo,
-                  const SizedBox(height: 14),
-                  valor,
-                ],
-              );
-            }
-
-            return Column(
-              children: [
-                _buildLancamentoBadges(context, item, corTipo, corStatus),
-                const SizedBox(height: 14),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: conteudo),
-                    const SizedBox(width: 18),
-                    SizedBox(width: 280, child: valor),
-                  ],
+        child: Stack(
+          children: [
+            if (cancelado)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _CanceladoDiagonalBackgroundPainter(
+                      color: theme.colorScheme.onSurface.withOpacity(0.055),
+                    ),
+                  ),
                 ),
-              ],
-            );
-          },
+              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final empilhar = constraints.maxWidth < 980;
+                final conteudo = _buildLancamentoConteudo(context, item);
+                final valor = _buildLancamentoValorEAcoes(
+                  context,
+                  item,
+                  cancelado ? _corStatus('Cancelado') : corTipo,
+                );
+
+                if (empilhar) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLancamentoBadges(context, item, corTipo, corStatus),
+                      const SizedBox(height: 14),
+                      conteudo,
+                      const SizedBox(height: 14),
+                      valor,
+                    ],
+                  );
+                }
+
+                return Column(
+                  children: [
+                    _buildLancamentoBadges(context, item, corTipo, corStatus),
+                    const SizedBox(height: 14),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: conteudo),
+                        const SizedBox(width: 18),
+                        SizedBox(width: 280, child: valor),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -1769,7 +1683,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
@@ -2448,5 +2362,34 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ),
       body: SafeArea(child: conteudo),
     );
+  }
+}
+
+class _CanceladoDiagonalBackgroundPainter extends CustomPainter {
+  const _CanceladoDiagonalBackgroundPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 1.35
+          ..style = PaintingStyle.stroke;
+    const spacing = 18.0;
+
+    for (double x = -size.height; x < size.width; x += spacing) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CanceladoDiagonalBackgroundPainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }
