@@ -17,6 +17,25 @@ class AgendaFinanceiraWeb extends StatefulWidget {
   State<AgendaFinanceiraWeb> createState() => _AgendaFinanceiraWebState();
 }
 
+class AgendaFiltroOption {
+  const AgendaFiltroOption({
+    required this.code,
+    required this.label,
+  });
+
+  final String code;
+  final String label;
+}
+
+String _labelOption(List<AgendaFiltroOption> options, String code) {
+  return options
+      .firstWhere(
+        (option) => option.code == code,
+    orElse: () => options.first,
+  )
+      .label;
+}
+
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   static const String _filtrosCacheKey = 'six.agendaFinanceiraWeb.filtros.v1';
 
@@ -24,14 +43,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final ScrollController _scrollController = ScrollController();
 
   final List<String> _periodos = const <String>['Hoje', 'Próximos 7 dias', 'Este mês', 'Próximo mês', 'Personalizado'];
-  final List<String> _tipos = const <String>['Todos', 'Receber', 'Pagar'];
-  final List<String> _status = const <String>['Todos', 'Previsto', 'Pendente', 'Vence hoje', 'Vencido', 'Pago', 'Recebido', 'Parcial', 'Cancelado'];
+  // final List<String> _tipos = const <String>['Todos', 'Receber', 'Pagar'];
+  // final List<String> _status = const <String>['Todos', 'Previsto', 'Pendente', 'Vence hoje', 'Vencido', 'Pago', 'Recebido', 'Parcial', 'Cancelado'];
   final List<String> _origens = const <String>['Todas', 'Venda', 'Ordem de serviço', 'Despesa manual', 'Compra', 'Parcela', 'Movimentação de caixa'];
   final List<String> _abas = const <String>['Agenda', 'Calendário', 'Fluxo previsto'];
 
   String _periodoSelecionado = 'Próximos 7 dias';
-  String _tipoSelecionado = 'Todos';
-  String _statusSelecionado = 'Todos';
+  // String _tipoSelecionado = 'Todos';
+  // String _statusSelecionado = 'Todos';
   String _origemSelecionada = 'Todas';
   String _empresaSelecionada = 'Todas';
   bool _somenteCriticosSelecionado = false;
@@ -39,8 +58,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   DateTime? _dataFimPersonalizada;
 
   String _periodoBusca = 'Próximos 7 dias';
-  String _tipoBusca = 'Todos';
-  String _statusBusca = 'Todos';
+  // String _tipoBusca = 'Todos';
+  // String _statusBusca = 'Todos';
   String _origemBusca = 'Todas';
   String _empresaBusca = 'Todas';
   bool _somenteCriticosBusca = false;
@@ -54,6 +73,29 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   final List<Map<String, dynamic>> _empresas = <Map<String, dynamic>>[<String, dynamic>{'id': 'all', 'nome': 'Todas'}];
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
+
+  final List<AgendaFiltroOption> _tipos = const <AgendaFiltroOption>[
+    AgendaFiltroOption(code: 'TODOS', label: 'Todos'),
+    AgendaFiltroOption(code: 'RECEBER', label: 'Receber'),
+    AgendaFiltroOption(code: 'PAGAR', label: 'Pagar'),
+  ];
+
+  final List<AgendaFiltroOption> _status = const <AgendaFiltroOption>[
+    AgendaFiltroOption(code: 'TODOS', label: 'Todos'),
+    AgendaFiltroOption(code: 'PREVISTO', label: 'Previsto'),
+    AgendaFiltroOption(code: 'PENDENTE', label: 'Pendente'),
+    AgendaFiltroOption(code: 'VENCE_HOJE', label: 'Vence hoje'),
+    AgendaFiltroOption(code: 'VENCIDO', label: 'Vencido'),
+    AgendaFiltroOption(code: 'PAGO', label: 'Pago'),
+    AgendaFiltroOption(code: 'RECEBIDO', label: 'Recebido'),
+    AgendaFiltroOption(code: 'PARCIAL', label: 'Parcial'),
+    AgendaFiltroOption(code: 'CANCELADO', label: 'Cancelado'),
+  ];
+
+  String _tipoSelecionado = 'TODOS';
+  String _statusSelecionado = 'TODOS';
+  String _tipoBusca = 'TODOS';
+  String _statusBusca = 'TODOS';
 
   bool get _temFiltrosPendentes =>
       _periodoBusca != _periodoSelecionado ||
@@ -347,7 +389,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return AgendaFinanceiraConsultaRequest(
       periodo: _periodoParaRequest(_periodoSelecionado),
       filtros: AgendaFinanceiraFiltrosRequest(
-        tipo: _tipoSelecionado == 'Todos' ? 'TODOS' : _tipoSelecionado.toUpperCase(),
+        tipo: _tipoSelecionado,
         status: _statusFiltroParaBackend(_statusSelecionado),
         origens: _origensFiltroParaBackend(_origemSelecionada),
         categorias: <String>[],
@@ -378,17 +420,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   List<String> _statusFiltroParaBackend(String status) {
-    switch (status) {
-      case 'Previsto': return <String>['PREVISTO'];
-      case 'Pendente': return <String>['PENDENTE'];
-      case 'Vence hoje': return <String>['VENCE_HOJE'];
-      case 'Vencido': return <String>['VENCIDO'];
-      case 'Pago': return <String>['PAGO'];
-      case 'Recebido': return <String>['RECEBIDO'];
-      case 'Parcial': return <String>['PARCIAL'];
-      case 'Cancelado': return <String>['CANCELADO'];
-      default: return <String>[];
-    }
+    return status == 'TODOS' ? <String>[] : <String>[status];
   }
 
   List<String> _origensFiltroParaBackend(String origem) {
@@ -546,8 +578,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   List<Map<String, dynamic>> get _itensFiltrados {
     return _gruposAgenda.expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>()).where((item) {
-      final bateTipo = _tipoSelecionado == 'Todos' || (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') || (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
-      final bateStatus = _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
+      final bateTipo = _tipoSelecionado == 'TODOS' ||
+          (_tipoSelecionado == 'RECEBER' && item['tipo'] == 'receber') ||
+          (_tipoSelecionado == 'PAGAR' && item['tipo'] == 'pagar');
+
+      final bateStatus = _statusSelecionado == 'TODOS' ||
+          item['status'] == _labelOption(_status, _statusSelecionado);
+
       final bateOrigem = _origemSelecionada == 'Todas' || item['origem'] == _origemSelecionada;
       final empresaDoItem = item['empresa']?.toString() ?? '';
       final bateEmpresa = _empresaSelecionada == 'Todas' || empresaDoItem.isEmpty || empresaDoItem == _empresaSelecionada;
