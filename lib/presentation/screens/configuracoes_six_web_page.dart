@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:provider/provider.dart';
 import '../../domain/models/regionalizacao_models.dart';
+import '../../l10n/web_i18n_store.dart';
 import '../../providers/locale_settings_provider.dart';
 
 import '../../data/services/aparencia/aparencia_api_client.dart';
@@ -1518,12 +1519,17 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
   }
 
+  String _i18n(String key, String fallback) {
+    final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
+    return WebI18nStore.instance.string(locale.toLanguageTag(), key) ?? fallback;
+  }
+
   Widget _buildSecaoRegionalizacao() {
     return Column(
       children: [
         _buildSectionHeader(
-          titulo: 'Idioma, região e moeda',
-          descricao: _descricaoSecao(SecaoConfiguracaoSix.regionalizacao),
+          titulo: _i18n('configuracoes.regionalizationTitle', 'XXXXX'),
+          descricao: _i18n('configuracoes.descRegionalization', 'XXXXX'),
           icone: Icons.public_rounded,
         ),
         const SizedBox(height: 20),
