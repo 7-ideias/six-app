@@ -1544,16 +1544,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     'Português (Brasil)',
                     'English (US)',
                     'Español',
-                    'Polski',
+                    // 'Polski',
                   ],
                   onChanged: (valor) async {
                     if (valor == null) return;
-
-                    setState(() {
-                      _idiomaSelecionado = valor;
-                    });
-
-                    _marcarAlteracao();
+                    await _alterarIdiomaSistema(valor);
                   },
                 ),
               ),
@@ -2854,6 +2849,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     switch (idioma) {
       case 'English (US)':
         return const Locale('en', 'US');
+      case 'Español':
+        return const Locale('es', 'ES');
       case 'Português (Brasil)':
       default:
         return const Locale('pt', 'BR');
@@ -2876,6 +2873,39 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       case 'Ponto':
       default:
         return '.';
+    }
+  }
+
+  Future<void> _alterarIdiomaSistema(String idioma) async {
+    setState(() {
+      _idiomaSelecionado = idioma;
+      _possuiAlteracoesNaoSalvas = true;
+      _carregandoAparencia = true;
+    });
+
+    try {
+      final locale = _mapIdiomaSelecionadoParaLocale(idioma);
+
+      await context.read<LocaleSettingsProvider>().setUserLocale(locale);
+
+      if (!mounted) return;
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao carregar idioma: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregandoAparencia = false;
+        });
+      }
     }
   }
 
