@@ -1,96 +1,219 @@
+import 'package:flutter/material.dart';
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../domain/models/regionalizacao_models.dart';
-import '../../l10n/web_i18n_store.dart';
 import '../../providers/locale_settings_provider.dart';
 
+import '../../data/services/aparencia/aparencia_api_client.dart';
+import '../../domain/models/aparencia_models.dart';
+import '../../domain/services/aparencia/aparencia_service.dart';
+import '../../design_system/helpers/six_theme_resolver.dart';
+
 class ConfiguracoesSixWebPage extends StatefulWidget {
+  final bool embedded;
+  final VoidCallback? onBack;
+
   const ConfiguracoesSixWebPage({
     super.key,
     this.embedded = false,
     this.onBack,
   });
 
-  final bool embedded;
-  final VoidCallback? onBack;
-
   @override
-  State<ConfiguracoesSixWebPage> createState() => _ConfiguracoesSixWebPageState();
+  State<ConfiguracoesSixWebPage> createState() =>
+      _ConfiguracoesSixWebPageState();
+}
+
+enum SecaoConfiguracaoSix {
+  geral,
+  regionalizacao,
+  aparencia,
+  comunicacao,
+  documentos,
+  operacao,
+  seguranca,
+  preferenciasUsuario,
 }
 
 class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
-  String _idiomaSelecionado = 'pt-BR';
+  SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
+  bool _mostrarResumoLateral = true;
+  bool _possuiAlteracoesNaoSalvas = false;
+  // ignore: unused_field — estado de loading da aparência (ainda não exibido na UI)
+  bool _carregandoAparencia = false;
+  late final AparenciaService _aparenciaService;
+
+  @override
+  void initState() {
+    super.initState();
+    _aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
+    _carregarAparencia();
+  }
+
+  Future<void> _carregarAparencia() async {
+    setState(() => _carregandoAparencia = true);
+    try {
+      final config = await _aparenciaService.buscarAparencia();
+      setState(() {
+        _temaSelecionado = config.tema.label;
+        _densidadeSelecionada = SixThemeResolver().densidade.label;
+        _corPrimaria = config.paleta.primaria;
+        _corSecundaria = config.paleta.secundaria;
+        _corDestaque = config.paleta.destaque;
+        _corAlerta = config.paleta.alerta;
+
+        // Atualiza o resolver global para que outras partes do app possam usar
+        SixThemeResolver().atualizarConfiguracao(config);
+      });
+    } catch (e) {
+      debugPrint('Erro ao carregar aparência: $e');
+    } finally {
+      setState(() => _carregandoAparencia = false);
+    }
+  }
+
+  // =========================
+  // MOCKS / ESTADO DA TELA
+  // =========================
+
+  // Geral
+  final TextEditingController _nomeEmpresaController =
+  TextEditingController(text: 'Six Assistência Premium');
+  final TextEditingController _nomeFantasiaController =
+  TextEditingController(text: 'Six Repair Center');
+  final TextEditingController _documentoFiscalController =
+  TextEditingController(text: '12.345.678/0001-90');
+  final TextEditingController _telefoneController =
+  TextEditingController(text: '+55 (47) 99999-8888');
+  final TextEditingController _whatsAppController =
+  TextEditingController(text: '+55 (47) 99999-7777');
+  final TextEditingController _emailController =
+  TextEditingController(text: 'contato@sixrepair.com');
+  final TextEditingController _siteController =
+  TextEditingController(text: 'www.sixrepair.com');
+  final TextEditingController _enderecoController =
+  TextEditingController(text: 'Av. Central, 1500 - Centro - Itajaí/SC');
+
+  // Regionalização
+  String _idiomaSelecionado = 'Português (Brasil)';
   String _paisRegiaoSelecionado = 'Brasil';
   String _fusoSelecionado = 'America/Sao_Paulo';
   String _formatoDataSelecionado = 'dd/MM/yyyy';
   String _formatoHoraSelecionado = '24 horas';
   String _primeiroDiaSemanaSelecionado = 'Segunda-feira';
   String _formatoNumeroSelecionado = '1.234,56';
+
+  // Financeiro / moeda
   String _moedaSelecionada = 'BRL - Real Brasileiro (R\$)';
   String _posicaoSimboloSelecionada = 'Antes do valor';
   String _casasDecimaisSelecionadas = '2';
   String _separadorDecimalSelecionado = 'Vírgula';
   String _separadorMilharSelecionado = 'Ponto';
-  String _temaSelecionado = 'Claro';
-  String _canalPreferencialCliente = 'WhatsApp';
-  String _paginaInicialSelecionada = 'Painel administrativo';
   bool _permitirMultiplasMoedas = false;
   bool _aplicarArredondamentoFinanceiro = true;
+
+  // Aparência
+  String _temaSelecionado = 'Claro';
+  String _densidadeSelecionada = 'Confortável';
+  Color _corPrimaria = const Color(0xFF1F3C88);
+  Color _corSecundaria = const Color(0xFF5E81F4);
+  Color _corDestaque = const Color(0xFF0FA958);
+  Color _corAlerta = const Color(0xFFF59E0B);
+
+  // Comunicação
   bool _notificarPorEmail = true;
   bool _notificarPorWhatsApp = true;
   bool _notificarPorTelegram = false;
+  bool _envioAutomaticoStatus = true;
+  bool _envioManualPermitido = true;
+  String _canalPreferencialCliente = 'WhatsApp';
+  final TextEditingController _assinaturaMensagemController =
+  TextEditingController(
+    text:
+    'Equipe Six agradece o seu contato. Qualquer dúvida, estamos à disposição.',
+  );
+  final TextEditingController _mensagemOrdemCriadaController =
+  TextEditingController(
+    text: 'Sua ordem de serviço foi criada com sucesso.',
+  );
+  final TextEditingController _mensagemProntoRetiradaController =
+  TextEditingController(
+    text: 'Seu equipamento está pronto para retirada.',
+  );
+
+  // Documentos
+  String _modeloOrcamentoSelecionado = 'Modelo corporativo moderno';
+  String _modeloOrdemServicoSelecionado = 'Modelo técnico com checklist';
+  String _modeloReciboSelecionado = 'Modelo enxuto com logo';
   bool _exibirLogoNoPdf = true;
+  bool _exibirAssinaturaCliente = true;
+  bool _exibirQrCode = false;
+  String _tamanhoPapelSelecionado = 'A4';
+  String _idiomaDocumentoSelecionado = 'Mesmo idioma do sistema';
+  String _moedaDocumentoSelecionada = 'Mesma moeda da empresa';
+  final TextEditingController _rodapeDocumentoController =
+  TextEditingController(
+    text:
+    'Obrigado pela preferência. Este documento foi gerado automaticamente pelo Six.',
+  );
+  final TextEditingController _termosCondicoesController =
+  TextEditingController(
+    text:
+    'Após aprovação do orçamento, poderá haver necessidade de peças adicionais conforme análise técnica.',
+  );
+
+  // Operação
   bool _controlarEstoque = true;
+  bool _exigirClienteNaVenda = false;
+  bool _exigirSerialImei = true;
+  bool _exigirTecnicoResponsavel = true;
   bool _abrirCaixaObrigatorio = true;
+  bool _permitirVendaSemEstoque = false;
+  bool _gerarComissaoColaborador = true;
+  bool _permitirEdicaoAposFechamento = false;
+  bool _descontoManualPermitido = true;
+  double _limiteDesconto = 10;
+
+  final List<String> _statusAssistencia = [
+    'Recebido',
+    'Em análise',
+    'Aguardando aprovação',
+    'Aguardando peça',
+    'Em reparo',
+    'Pronto para retirada',
+    'Entregue',
+  ];
+
+  // Segurança
   bool _mfaHabilitado = false;
+  bool _encerrarSessoesInativas = true;
+  String _tempoSessaoSelecionado = '8 horas';
+  bool _permitirLoginMultiplo = true;
+  bool _exigirTrocaSenhaPeriodica = false;
+
+  // Preferências do usuário
+  String _paginaInicialSelecionada = 'Painel administrativo';
+  bool _receberSomNotificacao = true;
   bool _receberNotificacoesDesktop = true;
-  bool _possuiAlteracoesNaoSalvas = false;
-  bool _salvando = false;
-  bool _baixandoIdioma = false;
-
-  final TextEditingController _nomeEmpresaController = TextEditingController(text: 'Six Assistência Premium');
-  final TextEditingController _nomeFantasiaController = TextEditingController(text: 'Six Repair Center');
-  final TextEditingController _emailController = TextEditingController(text: 'contato@sixrepair.com');
-  final TextEditingController _assinaturaMensagemController = TextEditingController();
-  final TextEditingController _mensagemOrdemCriadaController = TextEditingController();
-  final TextEditingController _mensagemProntoRetiradaController = TextEditingController();
-  final TextEditingController _rodapeDocumentoController = TextEditingController();
-  final TextEditingController _termosCondicoesController = TextEditingController();
-
-  _SettingsI18n get _i18n => _SettingsI18n(_idiomaSelecionado);
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sincronizarIdiomaInicial());
-  }
-
-  Future<void> _sincronizarIdiomaInicial() async {
-    if (!mounted) return;
-    final provider = context.read<LocaleSettingsProvider>();
-    final locale = provider.currentLocale;
-    final codigoIdioma = _localeParaCodigo(locale);
-
-    setState(() {
-      _idiomaSelecionado = codigoIdioma;
-      _atualizarTextosEditaveis();
-    });
-
-    if (!WebI18nStore.instance.hasLanguage(codigoIdioma)) {
-      await provider.reloadWebTranslations();
-      if (!mounted) return;
-      setState(_atualizarTextosEditaveis);
-    }
-  }
+  bool _mostrarDicasContextuais = true;
+  final List<String> _atalhosFavoritos = [
+    'Nova venda',
+    'Nova ordem de serviço',
+    'Caixa',
+    'Clientes',
+  ];
 
   @override
   void dispose() {
     _nomeEmpresaController.dispose();
     _nomeFantasiaController.dispose();
+    _documentoFiscalController.dispose();
+    _telefoneController.dispose();
+    _whatsAppController.dispose();
     _emailController.dispose();
+    _siteController.dispose();
+    _enderecoController.dispose();
     _assinaturaMensagemController.dispose();
     _mensagemOrdemCriadaController.dispose();
     _mensagemProntoRetiradaController.dispose();
@@ -99,139 +222,215 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     super.dispose();
   }
 
+  // =========================
+  // AUXILIARES
+  // =========================
+
   void _marcarAlteracao() {
     if (!_possuiAlteracoesNaoSalvas) {
-      setState(() => _possuiAlteracoesNaoSalvas = true);
-    }
-  }
-
-  Future<void> _alterarIdioma(String codigoIdioma) async {
-    final locale = _mapIdiomaParaLocale(codigoIdioma);
-
-    setState(() {
-      _baixandoIdioma = true;
-      _idiomaSelecionado = codigoIdioma;
-      _atualizarTextosEditaveis();
-    });
-
-    try {
-      await context.read<LocaleSettingsProvider>().setUserLocale(locale);
-      if (!mounted) return;
       setState(() {
-        _atualizarTextosEditaveis();
         _possuiAlteracoesNaoSalvas = true;
       });
-    } finally {
-      if (mounted) setState(() => _baixandoIdioma = false);
     }
   }
 
-  void _atualizarTextosEditaveis() {
-    _assinaturaMensagemController.text = _i18n.t('defaultSignature');
-    _mensagemOrdemCriadaController.text = _i18n.t('defaultOrderCreated');
-    _mensagemProntoRetiradaController.text = _i18n.t('defaultReadyPickup');
-    _rodapeDocumentoController.text = _i18n.t('defaultDocumentFooter');
-    _termosCondicoesController.text = _i18n.t('defaultTerms');
+  void _aplicarAparenciaPreview() {
+    final resolver = SixThemeResolver();
+    final paletaAtual = resolver.paleta;
+    resolver.atualizarConfiguracao(
+      ConfiguracaoAparenciaSistema(
+        tema: TemaSistema.fromLabel(_temaSelecionado),
+        paleta: PaletaSistema(
+          primaria: _corPrimaria,
+          secundaria: _corSecundaria,
+          destaque: _corDestaque,
+          alerta: _corAlerta,
+          fundo: paletaAtual.fundo,
+          superficie: paletaAtual.superficie,
+          textoPrimario: paletaAtual.textoPrimario,
+          textoSecundario: paletaAtual.textoSecundario,
+        ),
+      ),
+    );
+    resolver.atualizarDensidade(
+      DensidadeVisualSistema.fromLabel(_densidadeSelecionada),
+    );
   }
 
   Future<void> _salvarConfiguracoes() async {
-    setState(() => _salvando = true);
+    setState(() {
+      _carregandoAparencia = true;
+    });
 
     try {
-      final provider = context.read<LocaleSettingsProvider>();
-      final locale = _mapIdiomaParaLocale(_idiomaSelecionado);
-      final config = provider.companyConfig.copyWith(
+      final localeProvider = context.read<LocaleSettingsProvider>();
+      final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
+
+      final configuracaoRegionalizacao = localeProvider.companyConfig.copyWith(
         languageCode: locale.languageCode,
-        countryCode: locale.countryCode ?? provider.companyConfig.countryCode,
+        countryCode: locale.countryCode ?? localeProvider.companyConfig.countryCode,
         formatting: AppRegionalFormatting(
-          currencyCode: _mapMoedaParaCurrencyCode(_moedaSelecionada),
+          currencyCode: _mapMoedaSelecionadaParaCurrencyCode(_moedaSelecionada),
           timeZone: _fusoSelecionado,
           dateFormat: _formatoDataSelecionado,
           timeFormat: _formatoHoraSelecionado == '24 horas' ? '24h' : '12h',
-          decimalSeparator: _separadorDecimalSelecionado == 'Vírgula' ? ',' : '.',
+          decimalSeparator:
+          _separadorDecimalSelecionado == 'Vírgula' ? ',' : '.',
           thousandSeparator: _mapSeparadorMilhar(_separadorMilharSelecionado),
-          firstDayOfWeek: _primeiroDiaSemanaSelecionado == 'Domingo' ? 'SUNDAY' : 'MONDAY',
-          numberPattern: _formatoNumeroSelecionado == '1,234.56' ? '#,##0.00' : '#.##0,00',
+          firstDayOfWeek: _primeiroDiaSemanaSelecionado == 'Domingo'
+              ? 'SUNDAY'
+              : 'MONDAY',
+          numberPattern: _formatoNumeroSelecionado == '1,234.56'
+              ? '#,##0.00'
+              : '#.##0,00',
           decimalPlaces: int.tryParse(_casasDecimaisSelecionadas) ?? 2,
           allowMultipleCurrencies: _permitirMultiplasMoedas,
           applyFinancialRounding: _aplicarArredondamentoFinanceiro,
         ),
       );
 
-      await provider.saveCompanyConfig(config);
-      await provider.setUserLocale(locale);
+      await localeProvider.saveCompanyConfig(configuracaoRegionalizacao);
+      await localeProvider.setUserLocale(locale);
 
-      if (!mounted) return;
-      setState(() => _possuiAlteracoesNaoSalvas = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_i18n.t('settingsSaved')), behavior: SnackBarBehavior.floating),
+      final configuracao = ConfiguracaoAparenciaSistema(
+        tema: TemaSistema.fromLabel(_temaSelecionado),
+        paleta: PaletaSistema(
+          primaria: _corPrimaria,
+          secundaria: _corSecundaria,
+          destaque: _corDestaque,
+          alerta: _corAlerta,
+          fundo: SixThemeResolver().paleta.fundo,
+          superficie: SixThemeResolver().paleta.superficie,
+          textoPrimario: SixThemeResolver().paleta.textoPrimario,
+          textoSecundario: SixThemeResolver().paleta.textoSecundario,
+        ),
       );
+
+      await _aparenciaService.salvarAparencia(configuracao);
+      SixThemeResolver().atualizarConfiguracao(configuracao);
+      SixThemeResolver().atualizarDensidade(
+        DensidadeVisualSistema.fromLabel(_densidadeSelecionada),
+      );
+
+      setState(() {
+        _possuiAlteracoesNaoSalvas = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Configurações salvas com sucesso.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${_i18n.t('settingsSaveError')}: $e'), behavior: SnackBarBehavior.floating),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar configurações: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _salvando = false);
+      setState(() {
+        _carregandoAparencia = false;
+      });
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<LocaleSettingsProvider>();
-    final carregandoIdioma = _baixandoIdioma || provider.i18nLoading;
-    final content = _buildContent(context);
-
-    final body = Stack(
-      children: <Widget>[
-        Positioned.fill(child: content),
-        if (carregandoIdioma) Positioned.fill(child: _buildLoadingOverlay(context)),
-        Positioned(right: 32, bottom: 32, child: _buildFloatingActions(context)),
-      ],
+  void _restaurarPadraoDaSecao() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Os valores padrão da seção "${_tituloSecao(_secaoAtual)}" foram restaurados (mock).',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
-
-    if (widget.embedded) return body;
-    return Scaffold(body: SafeArea(child: body));
   }
 
-  Widget _buildContent(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+  String _tituloSecao(SecaoConfiguracaoSix secao) {
+    switch (secao) {
+      case SecaoConfiguracaoSix.geral:
+        return 'Geral';
+      case SecaoConfiguracaoSix.regionalizacao:
+        return 'Regionalização';
+      case SecaoConfiguracaoSix.aparencia:
+        return 'Aparência';
+      case SecaoConfiguracaoSix.comunicacao:
+        return 'Comunicação';
+      case SecaoConfiguracaoSix.documentos:
+        return 'Documentos';
+      case SecaoConfiguracaoSix.operacao:
+        return 'Operação';
+      case SecaoConfiguracaoSix.seguranca:
+        return 'Segurança';
+      case SecaoConfiguracaoSix.preferenciasUsuario:
+        return 'Preferências do usuário';
+    }
+  }
+
+  String _descricaoSecao(SecaoConfiguracaoSix secao) {
+    switch (secao) {
+      case SecaoConfiguracaoSix.geral:
+        return 'Dados institucionais, identidade do comércio e informações principais para documentos e comunicação.';
+      case SecaoConfiguracaoSix.regionalizacao:
+        return 'Idioma, país, moeda, fuso horário, formatos de data e padronização financeira da empresa.';
+      case SecaoConfiguracaoSix.aparencia:
+        return 'Tema, densidade visual, branding do sistema e personalização visual do Six.';
+      case SecaoConfiguracaoSix.comunicacao:
+        return 'Mensagens automáticas, canais de notificação e preferências de contato com clientes.';
+      case SecaoConfiguracaoSix.documentos:
+        return 'Templates, rodapés, termos e componentes visuais de PDFs e comprovantes.';
+      case SecaoConfiguracaoSix.operacao:
+        return 'Regras de venda, assistência técnica, controle operacional e comportamento do fluxo.';
+      case SecaoConfiguracaoSix.seguranca:
+        return 'Sessão, autenticação, acesso, políticas de proteção e gestão de segurança da conta.';
+      case SecaoConfiguracaoSix.preferenciasUsuario:
+        return 'Ajustes pessoais do operador para melhorar produtividade e experiência no dia a dia.';
+    }
+  }
+
+  Widget _buildResumoSidebarHeader() {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(width: 310, child: _buildResumoLateral(context)),
-          const SizedBox(width: 18),
+        children: [
           Expanded(
-            child: Card(
-              elevation: 5,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _buildHeader(context),
-                    const SizedBox(height: 18),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: <Widget>[
-                            _buildRegionalizacaoCard(context),
-                            const SizedBox(height: 16),
-                            _buildAparenciaCard(context),
-                            const SizedBox(height: 16),
-                            _buildComunicacaoCard(context),
-                            const SizedBox(height: 16),
-                            _buildDocumentosCard(context),
-                            const SizedBox(height: 16),
-                            _buildOperacaoSegurancaCard(context),
-                            const SizedBox(height: 100),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+            child: Text(
+              'Configs',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          Tooltip(
+            message: 'Ocultar painel',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () {
+                setState(() {
+                  _mostrarResumoLateral = false;
+                });
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ),
@@ -241,57 +440,378 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildResumoSidebar() {
     final theme = Theme.of(context);
+
+    final itens = [
+      {
+        'titulo': 'Idioma ativo',
+        'valor': _idiomaSelecionado,
+        'icone': Icons.language_rounded,
+      },
+      {
+        'titulo': 'Moeda principal',
+        'valor': _moedaSelecionada.split(' - ').first,
+        'icone': Icons.attach_money_rounded,
+      },
+      {
+        'titulo': 'Tema',
+        'valor': _temaSelecionado,
+        'icone': Icons.dark_mode_rounded,
+      },
+      {
+        'titulo': 'Canal preferencial',
+        'valor': _canalPreferencialCliente,
+        'icone': Icons.chat_bubble_outline_rounded,
+      },
+      {
+        'titulo': 'Modelo OS',
+        'valor': _modeloOrdemServicoSelecionado,
+        'icone': Icons.description_rounded,
+      },
+      {
+        'titulo': 'Abertura de caixa',
+        'valor': _abrirCaixaObrigatorio ? 'Obrigatória' : 'Opcional',
+        'icone': Icons.point_of_sale_rounded,
+      },
+      {
+        'titulo': 'MFA',
+        'valor': _mfaHabilitado ? 'Habilitado' : 'Desabilitado',
+        'icone': Icons.security_rounded,
+      },
+    ];
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      width: 330,
+      padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(28),
       ),
-      child: Row(
-        children: <Widget>[
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildResumoSidebarHeader(),
           Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(18)),
-            child: Icon(Icons.settings_rounded, color: theme.colorScheme.primary),
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary.withOpacity(0.08),
+                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.70),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Painel inteligente',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Visualize rapidamente os principais parâmetros operacionais e de branding antes de salvar.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 14),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-              Text(_i18n.t('pageTitle'), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
-              const SizedBox(height: 4),
-              Text(_i18n.t('pageSubtitle'), style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ]),
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: itens.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = itens[index];
+                return _buildResumoCard(
+                  icon: item['icone'] as IconData,
+                  title: item['titulo'] as String,
+                  value: item['valor'] as String,
+                );
+              },
+            ),
           ),
-          _buildEstadoAlteracaoChip(context),
+          const SizedBox(height: 14),
+          _buildPreviewBrandingCard(),
         ],
       ),
     );
   }
 
-  Widget _buildEstadoAlteracaoChip(BuildContext context) {
+  Widget _buildResumoCard({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
     final theme = Theme.of(context);
-    final pendente = _possuiAlteracoesNaoSalvas;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: pendente ? theme.colorScheme.primary.withOpacity(0.10) : Colors.green.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: pendente ? theme.colorScheme.primary.withOpacity(0.25) : Colors.green.withOpacity(0.25)),
+
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
-      child: Text(
-        pendente ? _i18n.t('unsavedChanges') : _i18n.t('savedState'),
-        style: TextStyle(fontWeight: FontWeight.w800, color: pendente ? theme.colorScheme.primary : Colors.green.shade700),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: theme.colorScheme.primary),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    value,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildResumoLateral(BuildContext context) {
+  Widget _buildPreviewBrandingCard() {
     final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: theme.colorScheme.surface,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Preview visual',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: LinearGradient(
+                colors: [
+                  _corPrimaria.withOpacity(0.16),
+                  _corSecundaria.withOpacity(0.10),
+                ],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _nomeFantasiaController.text.isEmpty
+                      ? 'Sua marca aqui'
+                      : _nomeFantasiaController.text,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Tema $_temaSelecionado • Moeda ${_moedaSelecionada.split(' - ').first} • Idioma ${_idiomaSelecionado.split(' ').first}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _buildColorBadge(_corPrimaria, 'Primária'),
+                    _buildColorBadge(_corSecundaria, 'Secundária'),
+                    _buildColorBadge(_corDestaque, 'Destaque'),
+                    _buildColorBadge(_corAlerta, 'Alerta'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorBadge(Color color, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoSidebarCollapsed() {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 14, right: 12),
+      child: Tooltip(
+        message: 'Mostrar painel',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            setState(() {
+              _mostrarResumoLateral = true;
+            });
+          },
+          child: Container(
+            width: 72,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.dashboard_customize_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 10),
+                RotatedBox(
+                  quarterTurns: 3,
+                  child: Text(
+                    'Resumo',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuLateralSecoes() {
+    final theme = Theme.of(context);
+
+    final itens = [
+      (
+      secao: SecaoConfiguracaoSix.geral,
+      titulo: 'Geral',
+      icone: Icons.apartment_rounded,
+      ),
+      (
+      secao: SecaoConfiguracaoSix.regionalizacao,
+      titulo: 'Regionalização',
+      icone: Icons.public_rounded,
+      ),
+      (
+      secao: SecaoConfiguracaoSix.aparencia,
+      titulo: 'Aparência',
+      icone: Icons.palette_rounded,
+      ),
+      (
+      secao: SecaoConfiguracaoSix.comunicacao,
+      titulo: 'Comunicação',
+      icone: Icons.markunread_outlined,
+      ),
+      (
+      secao: SecaoConfiguracaoSix.documentos,
+      titulo: 'Documentos',
+      icone: Icons.picture_as_pdf_rounded,
+      ),
+      (
+      secao: SecaoConfiguracaoSix.operacao,
+      titulo: 'Operação',
+      icone: Icons.settings_suggest_rounded,
+      ),
+      (
+      secao: SecaoConfiguracaoSix.seguranca,
+      titulo: 'Segurança',
+      icone: Icons.security_rounded,
+      ),
+      (
+      secao: SecaoConfiguracaoSix.preferenciasUsuario,
+      titulo: 'Usuário',
+      icone: Icons.person_outline_rounded,
+      ),
+    ];
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -301,573 +821,2062 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(_i18n.t('configs'), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
-          const SizedBox(height: 10),
-          Text(_i18n.t('smartPanelDescription'), style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.35)),
-          const SizedBox(height: 18),
-          _summaryTile(Icons.language_rounded, _i18n.t('activeLanguage'), _i18n.o(_idiomaSelecionado)),
-          _summaryTile(Icons.attach_money_rounded, _i18n.t('mainCurrency'), _mapMoedaParaCurrencyCode(_moedaSelecionada)),
-          _summaryTile(Icons.dark_mode_rounded, _i18n.t('theme'), _i18n.o(_temaSelecionado)),
-          _summaryTile(Icons.chat_bubble_outline_rounded, _i18n.t('preferredChannel'), _i18n.o(_canalPreferencialCliente)),
-          _summaryTile(Icons.point_of_sale_rounded, _i18n.t('cashOpening'), _abrirCaixaObrigatorio ? _i18n.t('required') : _i18n.t('optional')),
-          _summaryTile(Icons.security_rounded, _i18n.t('mfa'), _mfaHabilitado ? _i18n.t('enabled') : _i18n.t('disabled')),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: widget.onBack,
-            icon: const Icon(Icons.arrow_back_rounded),
-            label: Text(_i18n.t('back')),
+        children: [
+          Text(
+            'Seções',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...itens.map((item) {
+            final selecionado = _secaoAtual == item.secao;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () {
+                  setState(() {
+                    _secaoAtual = item.secao;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selecionado
+                        ? theme.colorScheme.primary.withOpacity(0.10)
+                        : theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: selecionado
+                          ? theme.colorScheme.primary.withOpacity(0.25)
+                          : theme.colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: selecionado
+                              ? theme.colorScheme.primary.withOpacity(0.12)
+                              : theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          item.icone,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item.titulo,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: selecionado
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String titulo,
+    required String descricao,
+    required IconData icone,
+  }) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              icone,
+              size: 30,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.primary,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  descricao,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _summaryTile(IconData icon, String title, String value) {
+  Widget _buildBigCard({
+    required String title,
+    required String subtitle,
+    required Widget child,
+    Widget? trailing,
+  }) {
     final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(children: <Widget>[
-        Icon(icon, color: theme.colorScheme.primary),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-          Text(title, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-        ])),
-      ]),
-    );
-  }
 
-  Widget _buildRegionalizacaoCard(BuildContext context) {
-    return _sectionCard(
-      icon: Icons.public_rounded,
-      title: _i18n.t('regionalizationTitle'),
-      subtitle: _i18n.t('languageAndConventionsSubtitle'),
-      children: <Widget>[
-        _dropdown(_i18n.t('systemLanguage'), _idiomaSelecionado, const <String>['pt-BR', 'en-US', 'es-ES'], (value) {
-          if (value != null) _alterarIdioma(value);
-        }),
-        _dropdown(_i18n.t('countryRegion'), _paisRegiaoSelecionado, const <String>['Brasil', 'Estados Unidos', 'Espanha'], (value) => setState(() => _paisRegiaoSelecionado = value!)),
-        _dropdown(_i18n.t('timezone'), _fusoSelecionado, const <String>['America/Sao_Paulo', 'UTC', 'America/New_York', 'Europe/Madrid'], (value) => setState(() => _fusoSelecionado = value!)),
-        _dropdown(_i18n.t('dateFormat'), _formatoDataSelecionado, const <String>['dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'], (value) => setState(() => _formatoDataSelecionado = value!)),
-        _dropdown(_i18n.t('timeFormat'), _formatoHoraSelecionado, const <String>['24 horas', '12 horas'], (value) => setState(() => _formatoHoraSelecionado = value!)),
-        _dropdown(_i18n.t('firstDayOfWeek'), _primeiroDiaSemanaSelecionado, const <String>['Segunda-feira', 'Domingo'], (value) => setState(() => _primeiroDiaSemanaSelecionado = value!)),
-        _dropdown(_i18n.t('numberFormat'), _formatoNumeroSelecionado, const <String>['1.234,56', '1,234.56'], (value) => setState(() => _formatoNumeroSelecionado = value!)),
-        _dropdown(_i18n.t('mainCurrencyField'), _moedaSelecionada, const <String>['BRL - Real Brasileiro (R\$)', 'USD - US Dollar (\$)', 'EUR - Euro (€)'], (value) => setState(() => _moedaSelecionada = value!)),
-        _dropdown(_i18n.t('symbolPosition'), _posicaoSimboloSelecionada, const <String>['Antes do valor', 'Depois do valor'], (value) => setState(() => _posicaoSimboloSelecionada = value!)),
-        _dropdown(_i18n.t('decimalPlaces'), _casasDecimaisSelecionadas, const <String>['0', '2', '3'], (value) => setState(() => _casasDecimaisSelecionadas = value!)),
-        _dropdown(_i18n.t('decimalSeparator'), _separadorDecimalSelecionado, const <String>['Vírgula', 'Ponto'], (value) => setState(() => _separadorDecimalSelecionado = value!)),
-        _dropdown(_i18n.t('thousandSeparator'), _separadorMilharSelecionado, const <String>['Ponto', 'Vírgula', 'Espaço'], (value) => setState(() => _separadorMilharSelecionado = value!)),
-        _switch(_i18n.t('allowMultipleCurrencies'), _i18n.t('allowMultipleCurrenciesSubtitle'), _permitirMultiplasMoedas, (value) => setState(() => _permitirMultiplasMoedas = value)),
-        _switch(_i18n.t('applyFinancialRounding'), _i18n.t('applyFinancialRoundingSubtitle'), _aplicarArredondamentoFinanceiro, (value) => setState(() => _aplicarArredondamentoFinanceiro = value)),
-      ],
-    );
-  }
-
-  Widget _buildAparenciaCard(BuildContext context) {
-    return _sectionCard(
-      icon: Icons.palette_rounded,
-      title: _i18n.t('appearanceTitle'),
-      subtitle: _i18n.t('themeAndDensitySubtitle'),
-      children: <Widget>[
-        _dropdown(_i18n.t('visualTheme'), _temaSelecionado, const <String>['Claro', 'Escuro', 'Automático'], (value) => setState(() => _temaSelecionado = value!)),
-        _text(_i18n.t('companyName'), _nomeEmpresaController),
-        _text(_i18n.t('tradeName'), _nomeFantasiaController),
-        _text(_i18n.t('mainEmail'), _emailController),
-      ],
-    );
-  }
-
-  Widget _buildComunicacaoCard(BuildContext context) {
-    return _sectionCard(
-      icon: Icons.markunread_outlined,
-      title: _i18n.t('communicationTitle'),
-      subtitle: _i18n.t('notificationChannelsSubtitle'),
-      children: <Widget>[
-        _switch(_i18n.t('notifyByEmail'), _i18n.t('notifyByEmailSubtitle'), _notificarPorEmail, (value) => setState(() => _notificarPorEmail = value)),
-        _switch(_i18n.t('notifyByWhatsapp'), _i18n.t('notifyByWhatsappSubtitle'), _notificarPorWhatsApp, (value) => setState(() => _notificarPorWhatsApp = value)),
-        _switch(_i18n.t('notifyByTelegram'), _i18n.t('notifyByTelegramSubtitle'), _notificarPorTelegram, (value) => setState(() => _notificarPorTelegram = value)),
-        _dropdown(_i18n.t('preferredCustomerChannel'), _canalPreferencialCliente, const <String>['WhatsApp', 'Email', 'Telegram'], (value) => setState(() => _canalPreferencialCliente = value!)),
-        _text(_i18n.t('messageSignature'), _assinaturaMensagemController, maxLines: 3),
-        _text(_i18n.t('orderCreatedMessage'), _mensagemOrdemCriadaController, maxLines: 3),
-        _text(_i18n.t('readyPickupMessage'), _mensagemProntoRetiradaController, maxLines: 3),
-      ],
-    );
-  }
-
-  Widget _buildDocumentosCard(BuildContext context) {
-    return _sectionCard(
-      icon: Icons.picture_as_pdf_rounded,
-      title: _i18n.t('documentsTitle'),
-      subtitle: _i18n.t('pdfVisualCompositionSubtitle'),
-      children: <Widget>[
-        _switch(_i18n.t('showLogoPdf'), _i18n.t('showLogoPdfSubtitle'), _exibirLogoNoPdf, (value) => setState(() => _exibirLogoNoPdf = value)),
-        _text(_i18n.t('defaultFooter'), _rodapeDocumentoController, maxLines: 3),
-        _text(_i18n.t('termsAndConditions'), _termosCondicoesController, maxLines: 4),
-      ],
-    );
-  }
-
-  Widget _buildOperacaoSegurancaCard(BuildContext context) {
-    return _sectionCard(
-      icon: Icons.settings_suggest_rounded,
-      title: _i18n.t('operationTitle'),
-      subtitle: _i18n.t('salesStockCashSubtitle'),
-      children: <Widget>[
-        _switch(_i18n.t('controlStock'), _i18n.t('controlStockSubtitle'), _controlarEstoque, (value) => setState(() => _controlarEstoque = value)),
-        _switch(_i18n.t('mandatoryCashOpening'), _i18n.t('mandatoryCashOpeningSubtitle'), _abrirCaixaObrigatorio, (value) => setState(() => _abrirCaixaObrigatorio = value)),
-        _switch(_i18n.t('enableMfa'), _i18n.t('enableMfaSubtitle'), _mfaHabilitado, (value) => setState(() => _mfaHabilitado = value)),
-        _dropdown(_i18n.t('homePage'), _paginaInicialSelecionada, const <String>['Painel administrativo', 'Vendas', 'Ordem de serviço', 'Agenda financeira'], (value) => setState(() => _paginaInicialSelecionada = value!)),
-        _switch(_i18n.t('desktopNotifications'), _i18n.t('desktopNotificationsSubtitle'), _receberNotificacoesDesktop, (value) => setState(() => _receberNotificacoesDesktop = value)),
-      ],
-    );
-  }
-
-  Widget _sectionCard({required IconData icon, required String title, required String subtitle, required List<Widget> children}) {
-    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: theme.colorScheme.outlineVariant)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-        Row(children: <Widget>[
-          Container(width: 48, height: 48, decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(16)), child: Icon(icon, color: theme.colorScheme.primary)),
-          const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-            Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          ])),
-        ]),
-        const SizedBox(height: 18),
-        Wrap(spacing: 16, runSpacing: 16, children: children),
-      ]),
-    );
-  }
-
-  Widget _dropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
-    return SizedBox(
-      width: 320,
-      child: DropdownButtonFormField<String>(
-        value: items.contains(value) ? value : items.first,
-        isExpanded: true,
-        decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))),
-        items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(_i18n.o(item), overflow: TextOverflow.ellipsis))).toList(),
-        onChanged: (next) {
-          onChanged(next);
-          _marcarAlteracao();
-        },
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 16),
+                trailing,
+              ],
+            ],
+          ),
+          const SizedBox(height: 20),
+          child,
+        ],
       ),
     );
   }
 
-  Widget _text(String label, TextEditingController controller, {int maxLines = 1}) {
-    return SizedBox(
-      width: maxLines > 1 ? 480 : 320,
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        onChanged: (_) => _marcarAlteracao(),
-        decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))),
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    String? hint,
+    int maxLines = 1,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      onChanged: (_) {
+        setState(() {});
+        _marcarAlteracao();
+      },
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
       ),
     );
   }
 
-  Widget _switch(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      onChanged: (novo) {
+        onChanged(novo);
+        _marcarAlteracao();
+      },
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+      items: items
+          .map(
+            (item) => DropdownMenuItem<String>(
+          value: item,
+          child: Text(item),
+        ),
+      )
+          .toList(),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
     final theme = Theme.of(context);
-    return SizedBox(
-      width: 430,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerLowest, borderRadius: BorderRadius.circular(18), border: Border.all(color: theme.colorScheme.outlineVariant)),
-        child: Row(children: <Widget>[
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          ])),
-          Switch(value: value, onChanged: (next) { onChanged(next); _marcarAlteracao(); }),
-        ]),
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Switch(
+            value: value,
+            onChanged: (novo) {
+              onChanged(novo);
+              _marcarAlteracao();
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFloatingActions(BuildContext context) {
+  Widget _buildColorSelector({
+    required String label,
+    required Color color,
+    required ValueChanged<Color> onColorSelected,
+  }) {
+    final opcoes = [
+      const Color(0xFF1F3C88),
+      const Color(0xFF5E81F4),
+      const Color(0xFF0FA958),
+      const Color(0xFFF59E0B),
+      const Color(0xFF7C3AED),
+      const Color(0xFFEF4444),
+      const Color(0xFF0EA5E9),
+      const Color(0xFF111827),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: opcoes.map((opcao) {
+              final selecionado = opcao.value == color.value;
+              return InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () {
+                  onColorSelected(opcao);
+                  _marcarAlteracao();
+                },
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: opcao,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: selecionado ? Colors.black : Colors.transparent,
+                      width: 3,
+                    ),
+                  ),
+                  child: selecionado
+                      ? const Icon(Icons.check_rounded, color: Colors.white)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.drag_indicator_rounded,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutChip(String label) {
+    return Chip(
+      label: Text(label),
+      avatar: const Icon(Icons.flash_on_rounded, size: 18),
+      onDeleted: () {
+        setState(() {
+          _atalhosFavoritos.remove(label);
+        });
+        _marcarAlteracao();
+      },
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+
+  Widget _buildFloatingActions() {
     final theme = Theme.of(context);
+
+    Widget secondaryAction({
+      required IconData icon,
+      required String tooltip,
+      required VoidCallback onPressed,
+    }) {
+      return Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onPressed,
+            child: Ink(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.35),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.10),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: theme.colorScheme.primary,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(28),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: theme.colorScheme.surface.withOpacity(0.86), borderRadius: BorderRadius.circular(24), border: Border.all(color: theme.colorScheme.outlineVariant)),
-          child: FilledButton.icon(
-            onPressed: (_salvando || _baixandoIdioma) ? null : _salvarConfiguracoes,
-            icon: _salvando ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_rounded),
-            label: Text(_i18n.t('save')),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.30),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.embedded && widget.onBack != null) ...[
+                secondaryAction(
+                  icon: Icons.arrow_back_rounded,
+                  tooltip: 'Voltar',
+                  onPressed: widget.onBack!,
+                ),
+                const SizedBox(height: 10),
+              ],
+              secondaryAction(
+                icon: Icons.restart_alt_rounded,
+                tooltip: 'Restaurar padrão',
+                onPressed: _restaurarPadraoDaSecao,
+              ),
+              const SizedBox(height: 14),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: _salvarConfiguracoes,
+                  child: Ink(
+                    height: 56,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.92),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.18),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.28),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.save_rounded,
+                          color: theme.colorScheme.onPrimary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Salvar',
+                          style: TextStyle(
+                            color: theme.colorScheme.onPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLoadingOverlay(BuildContext context) {
-    final theme = Theme.of(context);
-    return ColoredBox(
-      color: theme.colorScheme.surface.withOpacity(0.76),
-      child: Center(
-        child: Container(
-          width: 430,
-          padding: const EdgeInsets.all(26),
-          decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(28), border: Border.all(color: theme.colorScheme.primary.withOpacity(0.24)), boxShadow: <BoxShadow>[BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 28, offset: const Offset(0, 16))]),
-          child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 18),
-            Text(_i18n.t('loadingLanguageTitle'), textAlign: TextAlign.center, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            Text(_i18n.t('loadingLanguageMessage'), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.4)),
-          ]),
+  Widget _buildConteudoSecao() {
+    switch (_secaoAtual) {
+      case SecaoConfiguracaoSix.geral:
+        return _buildSecaoGeral();
+      case SecaoConfiguracaoSix.regionalizacao:
+        return _buildSecaoRegionalizacao();
+      case SecaoConfiguracaoSix.aparencia:
+        return _buildSecaoAparencia();
+      case SecaoConfiguracaoSix.comunicacao:
+        return _buildSecaoComunicacao();
+      case SecaoConfiguracaoSix.documentos:
+        return _buildSecaoDocumentos();
+      case SecaoConfiguracaoSix.operacao:
+        return _buildSecaoOperacao();
+      case SecaoConfiguracaoSix.seguranca:
+        return _buildSecaoSeguranca();
+      case SecaoConfiguracaoSix.preferenciasUsuario:
+        return _buildSecaoPreferenciasUsuario();
+    }
+  }
+
+  Widget _buildSecaoGeral() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Configurações institucionais',
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.geral),
+          icone: Icons.apartment_rounded,
         ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Identidade do comércio',
+          subtitle:
+          'Informações usadas em cabeçalhos de documentos, relatórios, ordens de serviço e comunicações da loja.',
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+            ),
+            child: Text(
+              'Obrigatório',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 320,
+                child: _buildTextField(
+                  label: 'Nome da empresa',
+                  controller: _nomeEmpresaController,
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildTextField(
+                  label: 'Nome fantasia',
+                  controller: _nomeFantasiaController,
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildTextField(
+                  label: 'Documento fiscal',
+                  controller: _documentoFiscalController,
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildTextField(
+                  label: 'Telefone',
+                  controller: _telefoneController,
+                  keyboardType: TextInputType.phone,
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildTextField(
+                  label: 'WhatsApp',
+                  controller: _whatsAppController,
+                  keyboardType: TextInputType.phone,
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildTextField(
+                  label: 'Email principal',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildTextField(
+                  label: 'Site',
+                  controller: _siteController,
+                ),
+              ),
+              SizedBox(
+                width: 656,
+                child: _buildTextField(
+                  label: 'Endereço',
+                  controller: _enderecoController,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Branding institucional',
+          subtitle:
+          'Estruture a apresentação da marca para a web, PDFs e comunicações futuras do sistema.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _buildSwitchTile(
+                title: 'Exibir nome fantasia como principal',
+                subtitle:
+                'Quando ativo, o Six prioriza o nome fantasia em documentos e cabeçalhos.',
+                value: true,
+                onChanged: (_) {},
+              ),
+              _buildSwitchTile(
+                title: 'Permitir capa personalizada na web',
+                subtitle:
+                'Prepara a plataforma para futura imagem institucional na tela de login web.',
+                value: true,
+                onChanged: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecaoRegionalizacao() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Idioma, região e moeda',
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.regionalizacao),
+          icone: Icons.public_rounded,
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Idioma e convenções regionais',
+          subtitle:
+          'Defina a experiência local da empresa, incluindo idioma, fuso e padrões de exibição.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Idioma do sistema',
+                  value: _idiomaSelecionado,
+                  items: const [
+                    'Português (Brasil)',
+                    'English (US)',
+                    'Español',
+                    'Polski',
+                  ],
+                  onChanged: (valor) async {
+                    if (valor == null) return;
+
+                    setState(() {
+                      _idiomaSelecionado = valor;
+                    });
+
+                    _marcarAlteracao();
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'País / região',
+                  value: _paisRegiaoSelecionado,
+                  items: const [
+                    'Brasil',
+                    'Estados Unidos',
+                    'Espanha',
+                    'Polônia',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _paisRegiaoSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Fuso horário',
+                  value: _fusoSelecionado,
+                  items: const [
+                    'America/Sao_Paulo',
+                    'UTC',
+                    'Europe/Warsaw',
+                    'America/New_York',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _fusoSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Formato de data',
+                  value: _formatoDataSelecionado,
+                  items: const [
+                    'dd/MM/yyyy',
+                    'MM/dd/yyyy',
+                    'yyyy-MM-dd',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _formatoDataSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Formato de hora',
+                  value: _formatoHoraSelecionado,
+                  items: const [
+                    '24 horas',
+                    '12 horas',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _formatoHoraSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Primeiro dia da semana',
+                  value: _primeiroDiaSemanaSelecionado,
+                  items: const [
+                    'Segunda-feira',
+                    'Domingo',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _primeiroDiaSemanaSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Formato numérico',
+                  value: _formatoNumeroSelecionado,
+                  items: const [
+                    '1.234,56',
+                    '1,234.56',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _formatoNumeroSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Moeda e padronização financeira',
+          subtitle:
+          'Essas definições influenciam dashboards, vendas, ordem de serviço, orçamentos e documentos.',
+          child: Column(
+            children: [
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 320,
+                    child: _buildDropdownField(
+                      label: 'Moeda principal',
+                      value: _moedaSelecionada,
+                      items: const [
+                        'BRL - Real Brasileiro (R\$)',
+                        'USD - US Dollar (\$)',
+                        'EUR - Euro (€)',
+                        'PLN - Złoty (zł)',
+                      ],
+                      onChanged: (valor) {
+                        setState(() {
+                          _moedaSelecionada = valor!;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: _buildDropdownField(
+                      label: 'Posição do símbolo',
+                      value: _posicaoSimboloSelecionada,
+                      items: const [
+                        'Antes do valor',
+                        'Depois do valor',
+                      ],
+                      onChanged: (valor) {
+                        setState(() {
+                          _posicaoSimboloSelecionada = valor!;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: _buildDropdownField(
+                      label: 'Casas decimais',
+                      value: _casasDecimaisSelecionadas,
+                      items: const [
+                        '0',
+                        '2',
+                        '3',
+                      ],
+                      onChanged: (valor) {
+                        setState(() {
+                          _casasDecimaisSelecionadas = valor!;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: _buildDropdownField(
+                      label: 'Separador decimal',
+                      value: _separadorDecimalSelecionado,
+                      items: const [
+                        'Vírgula',
+                        'Ponto',
+                      ],
+                      onChanged: (valor) {
+                        setState(() {
+                          _separadorDecimalSelecionado = valor!;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: _buildDropdownField(
+                      label: 'Separador de milhar',
+                      value: _separadorMilharSelecionado,
+                      items: const [
+                        'Ponto',
+                        'Vírgula',
+                        'Espaço',
+                      ],
+                      onChanged: (valor) {
+                        setState(() {
+                          _separadorMilharSelecionado = valor!;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 430,
+                    child: _buildSwitchTile(
+                      title: 'Permitir múltiplas moedas',
+                      subtitle:
+                      'Mantém a base preparada para cenários internacionais e conversão futura.',
+                      value: _permitirMultiplasMoedas,
+                      onChanged: (valor) {
+                        setState(() {
+                          _permitirMultiplasMoedas = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 430,
+                    child: _buildSwitchTile(
+                      title: 'Aplicar arredondamento financeiro',
+                      subtitle:
+                      'Padroniza cálculos e evita divergências de centavos em documentos e totais.',
+                      value: _aplicarArredondamentoFinanceiro,
+                      onChanged: (valor) {
+                        setState(() {
+                          _aplicarArredondamentoFinanceiro = valor;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecaoAparencia() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Aparência e personalização visual',
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.aparencia),
+          icone: Icons.palette_rounded,
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Tema e densidade visual',
+          subtitle:
+          'Ajuste a experiência visual do operador para diferentes perfis de uso e ambientes.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Tema do sistema',
+                  value: _temaSelecionado,
+                  items: const [
+                    'Claro',
+                    'Escuro',
+                    'Automático',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _temaSelecionado = valor!;
+                    });
+                    _aplicarAparenciaPreview();
+                    _marcarAlteracao();
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Densidade visual',
+                  value: _densidadeSelecionada,
+                  items: const [
+                    'Confortável',
+                    'Compacta',
+                    'Expandida',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _densidadeSelecionada = valor!;
+                    });
+                    _aplicarAparenciaPreview();
+                    _marcarAlteracao();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Paleta do sistema',
+          subtitle:
+          'Essas cores serão úteis para branding do comércio, dashboards e futura personalização premium.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 320,
+                child: _buildColorSelector(
+                  label: 'Cor primária',
+                  color: _corPrimaria,
+                  onColorSelected: (valor) {
+                setState(() {
+                  _corPrimaria = valor;
+                });
+                _aplicarAparenciaPreview();
+                _marcarAlteracao();
+              },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildColorSelector(
+                  label: 'Cor secundária',
+                  color: _corSecundaria,
+                  onColorSelected: (valor) {
+                    setState(() {
+                      _corSecundaria = valor;
+                    });
+                    _aplicarAparenciaPreview();
+                    _marcarAlteracao();
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildColorSelector(
+                  label: 'Cor de destaque',
+                  color: _corDestaque,
+                  onColorSelected: (valor) {
+                    setState(() {
+                      _corDestaque = valor;
+                    });
+                    _aplicarAparenciaPreview();
+                    _marcarAlteracao();
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildColorSelector(
+                  label: 'Cor de alerta',
+                  color: _corAlerta,
+                  onColorSelected: (valor) {
+                    setState(() {
+                      _corAlerta = valor;
+                    });
+                    _aplicarAparenciaPreview();
+                    _marcarAlteracao();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecaoComunicacao() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Comunicação com clientes',
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.comunicacao),
+          icone: Icons.markunread_outlined,
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Canais e automações',
+          subtitle:
+          'Defina como o Six deve se comunicar com clientes durante o ciclo de venda e assistência técnica.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Notificar por email',
+                  subtitle: 'Envia comunicações formais e comprovantes.',
+                  value: _notificarPorEmail,
+                  onChanged: (valor) {
+                    setState(() {
+                      _notificarPorEmail = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Notificar por WhatsApp',
+                  subtitle:
+                  'Ideal para atualizações rápidas de orçamento e status.',
+                  value: _notificarPorWhatsApp,
+                  onChanged: (valor) {
+                    setState(() {
+                      _notificarPorWhatsApp = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Notificar por Telegram',
+                  subtitle:
+                  'Mantém a base pronta para futuras integrações opcionais.',
+                  value: _notificarPorTelegram,
+                  onChanged: (valor) {
+                    setState(() {
+                      _notificarPorTelegram = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Envio automático de status',
+                  subtitle:
+                  'Dispara mensagens conforme as etapas da assistência técnica.',
+                  value: _envioAutomaticoStatus,
+                  onChanged: (valor) {
+                    setState(() {
+                      _envioAutomaticoStatus = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir envio manual',
+                  subtitle:
+                  'Usuários podem complementar o contato diretamente pela tela.',
+                  value: _envioManualPermitido,
+                  onChanged: (valor) {
+                    setState(() {
+                      _envioManualPermitido = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Canal preferencial do cliente',
+                  value: _canalPreferencialCliente,
+                  items: const [
+                    'WhatsApp',
+                    'Email',
+                    'Telegram',
+                    'SMS',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _canalPreferencialCliente = valor!;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Textos padrão',
+          subtitle:
+          'Esses textos mockados já deixam a tela pronta para evoluir depois com templates vindos do backend.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 460,
+                child: _buildTextField(
+                  label: 'Assinatura padrão',
+                  controller: _assinaturaMensagemController,
+                  maxLines: 3,
+                ),
+              ),
+              SizedBox(
+                width: 460,
+                child: _buildTextField(
+                  label: 'Mensagem - ordem criada',
+                  controller: _mensagemOrdemCriadaController,
+                  maxLines: 3,
+                ),
+              ),
+              SizedBox(
+                width: 460,
+                child: _buildTextField(
+                  label: 'Mensagem - pronto para retirada',
+                  controller: _mensagemProntoRetiradaController,
+                  maxLines: 3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecaoDocumentos() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Documentos, PDFs e comprovantes',
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.documentos),
+          icone: Icons.picture_as_pdf_rounded,
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Modelos principais',
+          subtitle:
+          'Escolha os padrões visuais que serão aplicados em orçamentos, ordem de serviço e comprovantes.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Modelo de orçamento',
+                  value: _modeloOrcamentoSelecionado,
+                  items: const [
+                    'Modelo corporativo moderno',
+                    'Modelo técnico detalhado',
+                    'Modelo comercial enxuto',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _modeloOrcamentoSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Modelo de ordem de serviço',
+                  value: _modeloOrdemServicoSelecionado,
+                  items: const [
+                    'Modelo técnico com checklist',
+                    'Modelo padrão resumido',
+                    'Modelo com termos ampliados',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _modeloOrdemServicoSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Modelo de recibo',
+                  value: _modeloReciboSelecionado,
+                  items: const [
+                    'Modelo enxuto com logo',
+                    'Modelo fiscal completo',
+                    'Modelo simples',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _modeloReciboSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Tamanho do papel',
+                  value: _tamanhoPapelSelecionado,
+                  items: const [
+                    'A4',
+                    'Carta',
+                    '80mm térmico',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _tamanhoPapelSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Idioma do documento',
+                  value: _idiomaDocumentoSelecionado,
+                  items: const [
+                    'Mesmo idioma do sistema',
+                    'Português (Brasil)',
+                    'English (US)',
+                    'Español',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _idiomaDocumentoSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Moeda do documento',
+                  value: _moedaDocumentoSelecionada,
+                  items: const [
+                    'Mesma moeda da empresa',
+                    'BRL',
+                    'USD',
+                    'EUR',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _moedaDocumentoSelecionada = valor!;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Composição visual do PDF',
+          subtitle:
+          'Ajustes que impactam o compartilhamento via email, WhatsApp e a apresentação final do documento.',
+          child: Column(
+            children: [
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Exibir logo no PDF',
+                      subtitle: 'Inclui a identidade da empresa no cabeçalho.',
+                      value: _exibirLogoNoPdf,
+                      onChanged: (valor) {
+                        setState(() {
+                          _exibirLogoNoPdf = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Exibir assinatura do cliente',
+                      subtitle:
+                      'Mantém a tela pronta para futuros fluxos de assinatura.',
+                      value: _exibirAssinaturaCliente,
+                      onChanged: (valor) {
+                        setState(() {
+                          _exibirAssinaturaCliente = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Exibir QR Code',
+                      subtitle:
+                      'Pode ser usado para validação, consulta ou link temporário no futuro.',
+                      value: _exibirQrCode,
+                      onChanged: (valor) {
+                        setState(() {
+                          _exibirQrCode = valor;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 460,
+                    child: _buildTextField(
+                      label: 'Rodapé padrão',
+                      controller: _rodapeDocumentoController,
+                      maxLines: 3,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 460,
+                    child: _buildTextField(
+                      label: 'Termos e condições',
+                      controller: _termosCondicoesController,
+                      maxLines: 5,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecaoOperacao() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Regras operacionais do comércio',
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.operacao),
+          icone: Icons.settings_suggest_rounded,
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Venda, estoque e caixa',
+          subtitle:
+          'Defina o comportamento operacional padrão do Six no balcão e na rotina do caixa.',
+          child: Column(
+            children: [
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Controlar estoque',
+                      subtitle:
+                      'Atualiza saldo de produtos e permite relatórios operacionais.',
+                      value: _controlarEstoque,
+                      onChanged: (valor) {
+                        setState(() {
+                          _controlarEstoque = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Exigir cliente na venda',
+                      subtitle:
+                      'Garante rastreabilidade de compras e histórico por pessoa.',
+                      value: _exigirClienteNaVenda,
+                      onChanged: (valor) {
+                        setState(() {
+                          _exigirClienteNaVenda = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Abertura de caixa obrigatória',
+                      subtitle:
+                      'Impede operações antes da abertura formal do caixa.',
+                      value: _abrirCaixaObrigatorio,
+                      onChanged: (valor) {
+                        setState(() {
+                          _abrirCaixaObrigatorio = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Permitir venda sem estoque',
+                      subtitle:
+                      'Útil para cenários específicos, mas exige cuidado operacional.',
+                      value: _permitirVendaSemEstoque,
+                      onChanged: (valor) {
+                        setState(() {
+                          _permitirVendaSemEstoque = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Gerar comissão para colaborador',
+                      subtitle:
+                      'Prepara o sistema para metas, comissão e dashboards futuros.',
+                      value: _gerarComissaoColaborador,
+                      onChanged: (valor) {
+                        setState(() {
+                          _gerarComissaoColaborador = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Permitir edição após fechamento',
+                      subtitle:
+                      'Quando desligado, a operação passa a ser mais rígida e auditável.',
+                      value: _permitirEdicaoAposFechamento,
+                      onChanged: (valor) {
+                        setState(() {
+                          _permitirEdicaoAposFechamento = valor;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Política de desconto',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Defina se o operador pode conceder descontos e qual limite padrão.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 420,
+                          child: _buildSwitchTile(
+                            title: 'Permitir desconto manual',
+                            subtitle:
+                            'Libera desconto direto pelo operador no fluxo.',
+                            value: _descontoManualPermitido,
+                            onChanged: (valor) {
+                              setState(() {
+                                _descontoManualPermitido = valor;
+                              });
+                            },
+                          ),
+                        ),
+                        SizedBox(
+                          width: 420,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Limite máximo de desconto: ${_limiteDesconto.toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Slider(
+                                value: _limiteDesconto,
+                                min: 0,
+                                max: 50,
+                                divisions: 10,
+                                label: '${_limiteDesconto.toStringAsFixed(0)}%',
+                                onChanged: (valor) {
+                                  setState(() {
+                                    _limiteDesconto = valor;
+                                  });
+                                  _marcarAlteracao();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Assistência técnica',
+          subtitle:
+          'Parametrize o fluxo de reparo para refletir a operação real da loja.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Exigir número de série / IMEI',
+                      subtitle:
+                      'Ajuda a identificar corretamente o equipamento recebido.',
+                      value: _exigirSerialImei,
+                      onChanged: (valor) {
+                        setState(() {
+                          _exigirSerialImei = valor;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 420,
+                    child: _buildSwitchTile(
+                      title: 'Exigir técnico responsável',
+                      subtitle:
+                      'Fortalece rastreabilidade e produtividade do time técnico.',
+                      value: _exigirTecnicoResponsavel,
+                      onChanged: (valor) {
+                        setState(() {
+                          _exigirTecnicoResponsavel = valor;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Fluxo de status da assistência',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mock de status já preparado para futura persistência e personalização por comércio.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _statusAssistencia.map(_buildStatusChip).toList(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecaoSeguranca() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Segurança e acesso',
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.seguranca),
+          icone: Icons.security_rounded,
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Proteção da conta',
+          subtitle:
+          'Centralize políticas de sessão, autenticação e comportamento de login da operação.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Habilitar MFA',
+                  subtitle:
+                  'Mantém a conta mais protegida para administradores e usuários sensíveis.',
+                  value: _mfaHabilitado,
+                  onChanged: (valor) {
+                    setState(() {
+                      _mfaHabilitado = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Encerrar sessões inativas',
+                  subtitle:
+                  'Reduz risco operacional em computadores compartilhados.',
+                  value: _encerrarSessoesInativas,
+                  onChanged: (valor) {
+                    setState(() {
+                      _encerrarSessoesInativas = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir login simultâneo',
+                  subtitle:
+                  'Controla se o mesmo usuário pode operar em mais de um dispositivo ao mesmo tempo.',
+                  value: _permitirLoginMultiplo,
+                  onChanged: (valor) {
+                    setState(() {
+                      _permitirLoginMultiplo = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir troca periódica de senha',
+                  subtitle:
+                  'Prepara o produto para políticas corporativas mais rígidas.',
+                  value: _exigirTrocaSenhaPeriodica,
+                  onChanged: (valor) {
+                    setState(() {
+                      _exigirTrocaSenhaPeriodica = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Tempo de sessão',
+                  value: _tempoSessaoSelecionado,
+                  items: const [
+                    '2 horas',
+                    '8 horas',
+                    '12 horas',
+                    '24 horas',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _tempoSessaoSelecionado = valor!;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecaoPreferenciasUsuario() {
+    return Column(
+      children: [
+        _buildSectionHeader(
+          titulo: 'Preferências do usuário',
+          descricao:
+          _descricaoSecao(SecaoConfiguracaoSix.preferenciasUsuario),
+          icone: Icons.person_outline_rounded,
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Experiência pessoal de uso',
+          subtitle:
+          'Essas opções ajudam o operador a trabalhar melhor no dia a dia sem misturar com as configurações globais da empresa.',
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 320,
+                child: _buildDropdownField(
+                  label: 'Página inicial',
+                  value: _paginaInicialSelecionada,
+                  items: const [
+                    'Painel administrativo',
+                    'Vendas',
+                    'Ordem de serviço',
+                    'Agenda financeira',
+                  ],
+                  onChanged: (valor) {
+                    setState(() {
+                      _paginaInicialSelecionada = valor!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Som de notificação',
+                  subtitle: 'Emite feedback sonoro para eventos importantes.',
+                  value: _receberSomNotificacao,
+                  onChanged: (valor) {
+                    setState(() {
+                      _receberSomNotificacao = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Notificações desktop',
+                  subtitle:
+                  'Mantém alertas visíveis durante o uso do sistema na web.',
+                  value: _receberNotificacoesDesktop,
+                  onChanged: (valor) {
+                    setState(() {
+                      _receberNotificacoesDesktop = valor;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Mostrar dicas contextuais',
+                  subtitle:
+                  'Ajuda novos operadores durante a curva de adoção.',
+                  value: _mostrarDicasContextuais,
+                  onChanged: (valor) {
+                    setState(() {
+                      _mostrarDicasContextuais = valor;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: 'Atalhos favoritos',
+          subtitle:
+          'Deixe acessos rápidos para os fluxos mais usados na operação.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: _atalhosFavoritos.map(_buildShortcutChip).toList(),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _atalhosFavoritos.add('Relatórios');
+                      });
+                      _marcarAlteracao();
+                    },
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Adicionar Relatórios'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _atalhosFavoritos.add('Produtos');
+                      });
+                      _marcarAlteracao();
+                    },
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Adicionar Produtos'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConteudoPrincipal() {
+    return SingleChildScrollView(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool layoutEmpilhado = constraints.maxWidth < 1180;
+
+          if (layoutEmpilhado) {
+            return Column(
+              children: [
+                _buildMenuLateralSecoes(),
+                const SizedBox(height: 20),
+                _buildConteudoSecao(),
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 300,
+                child: _buildMenuLateralSecoes(),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _buildConteudoSecao(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Locale _mapIdiomaParaLocale(String idioma) {
+  @override
+  Widget build(BuildContext context) {
+    final bodyContent = Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_mostrarResumoLateral) ...[
+            _buildResumoSidebar(),
+            const SizedBox(width: 20),
+          ] else ...[
+            _buildResumoSidebarCollapsed(),
+          ],
+          Expanded(
+            child: Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(18.0),
+                child: _buildConteudoPrincipal(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final contentWithFab = Stack(
+      children: [
+        Positioned.fill(child: bodyContent),
+        Positioned(
+          right: 36,
+          bottom: 36,
+          child: _buildFloatingActions(),
+        )
+      ],
+    );
+
+    if (widget.embedded) {
+      return contentWithFab;
+    }
+
+    return Scaffold(
+      body: SafeArea(child: contentWithFab),
+    );
+  }
+
+  Locale _mapIdiomaSelecionadoParaLocale(String idioma) {
     switch (idioma) {
-      case 'en-US': return const Locale('en', 'US');
-      case 'es-ES': return const Locale('es', 'ES');
-      case 'pt-BR':
-      default: return const Locale('pt', 'BR');
+      case 'English (US)':
+        return const Locale('en', 'US');
+      case 'Português (Brasil)':
+      default:
+        return const Locale('pt', 'BR');
     }
   }
 
-  String _localeParaCodigo(Locale locale) {
-    if (locale.languageCode == 'en') return 'en-US';
-    if (locale.languageCode == 'es') return 'es-ES';
-    return 'pt-BR';
-  }
-
-  String _mapMoedaParaCurrencyCode(String moeda) {
-    if (moeda.startsWith('USD')) return 'USD';
-    if (moeda.startsWith('EUR')) return 'EUR';
+  String _mapMoedaSelecionadaParaCurrencyCode(String moedaSelecionada) {
+    if (moedaSelecionada.startsWith('USD')) return 'USD';
+    if (moedaSelecionada.startsWith('EUR')) return 'EUR';
+    if (moedaSelecionada.startsWith('PLN')) return 'PLN';
     return 'BRL';
   }
 
   String _mapSeparadorMilhar(String valor) {
     switch (valor) {
-      case 'Vírgula': return ',';
-      case 'Espaço': return ' ';
+      case 'Vírgula':
+        return ',';
+      case 'Espaço':
+        return ' ';
       case 'Ponto':
-      default: return '.';
+      default:
+        return '.';
     }
   }
-}
 
-class _SettingsI18n {
-  const _SettingsI18n(this.localeCode);
-
-  final String localeCode;
-
-  String get _lang {
-    if (localeCode.toLowerCase().startsWith('en')) return 'en';
-    if (localeCode.toLowerCase().startsWith('es')) return 'es';
-    return 'pt';
-  }
-
-  String t(String key) {
-    return WebI18nStore.instance.string(localeCode, 'configuracoes.$key') ??
-        _fallbackTextos[_lang]?[key] ??
-        _fallbackTextos['pt']?[key] ??
-        key;
-  }
-
-  String o(String value) {
-    return WebI18nStore.instance.string(localeCode, 'configuracoes.options.$value') ??
-        _fallbackOpcoes[_lang]?[value] ??
-        _fallbackOpcoes['pt']?[value] ??
-        value;
-  }
-
-  static const Map<String, Map<String, String>> _fallbackTextos = <String, Map<String, String>>{
-    'pt': <String, String>{
-      'pageTitle': 'Configurações Six',
-      'pageSubtitle': 'Centralize idioma, região, aparência, documentos, operação e preferências da conta.',
-      'loadingLanguageTitle': 'Atualizando idioma',
-      'loadingLanguageMessage': 'Baixando pacote de tradução e preparando os textos da tela...',
-      'unsavedChanges': 'Alterações não salvas',
-      'savedState': 'Tudo salvo',
-      'configs': 'Configs',
-      'smartPanelDescription': 'Visualize rapidamente os principais parâmetros operacionais e de branding antes de salvar.',
-      'activeLanguage': 'Idioma ativo',
-      'mainCurrency': 'Moeda principal',
-      'theme': 'Tema',
-      'preferredChannel': 'Canal preferencial',
-      'cashOpening': 'Abertura de caixa',
-      'mfa': 'MFA',
-      'required': 'Obrigatório',
-      'optional': 'Opcional',
-      'enabled': 'Habilitado',
-      'disabled': 'Desabilitado',
-      'back': 'Voltar',
-      'save': 'Salvar',
-      'settingsSaved': 'Configurações salvas com sucesso.',
-      'settingsSaveError': 'Erro ao salvar configurações',
-      'regionalizationTitle': 'Idioma, região e moeda',
-      'languageAndConventionsSubtitle': 'Defina a experiência local da empresa, incluindo idioma, fuso e padrões de exibição.',
-      'systemLanguage': 'Idioma do sistema',
-      'countryRegion': 'País / região',
-      'timezone': 'Fuso horário',
-      'dateFormat': 'Formato de data',
-      'timeFormat': 'Formato de hora',
-      'firstDayOfWeek': 'Primeiro dia da semana',
-      'numberFormat': 'Formato numérico',
-      'mainCurrencyField': 'Moeda principal',
-      'symbolPosition': 'Posição do símbolo',
-      'decimalPlaces': 'Casas decimais',
-      'decimalSeparator': 'Separador decimal',
-      'thousandSeparator': 'Separador de milhar',
-      'allowMultipleCurrencies': 'Permitir múltiplas moedas',
-      'allowMultipleCurrenciesSubtitle': 'Mantém a base preparada para cenários internacionais e conversão futura.',
-      'applyFinancialRounding': 'Aplicar arredondamento financeiro',
-      'applyFinancialRoundingSubtitle': 'Padroniza cálculos e evita divergências de centavos em documentos e totais.',
-      'appearanceTitle': 'Aparência e personalização visual',
-      'themeAndDensitySubtitle': 'Controle como o Six se apresenta para os usuários da empresa.',
-      'visualTheme': 'Tema visual',
-      'companyName': 'Nome da empresa',
-      'tradeName': 'Nome fantasia',
-      'mainEmail': 'Email principal',
-      'communicationTitle': 'Comunicação e notificações',
-      'notificationChannelsSubtitle': 'Escolha como clientes e usuários serão avisados sobre eventos importantes.',
-      'notifyByEmail': 'Notificar por email',
-      'notifyByEmailSubtitle': 'Envia mensagens formais e comprovantes para o email do cliente.',
-      'notifyByWhatsapp': 'Notificar por WhatsApp',
-      'notifyByWhatsappSubtitle': 'Facilita comunicação rápida sobre etapas da assistência técnica.',
-      'notifyByTelegram': 'Notificar por Telegram',
-      'notifyByTelegramSubtitle': 'Mantém o canal preparado para integrações futuras.',
-      'preferredCustomerChannel': 'Canal preferencial do cliente',
-      'messageSignature': 'Assinatura da mensagem',
-      'orderCreatedMessage': 'Mensagem de ordem criada',
-      'readyPickupMessage': 'Mensagem de pronto para retirada',
-      'documentsTitle': 'Documentos e comprovantes',
-      'pdfVisualCompositionSubtitle': 'Ajustes que impactam o compartilhamento via email, WhatsApp e a apresentação final do documento.',
-      'showLogoPdf': 'Exibir logo no PDF',
-      'showLogoPdfSubtitle': 'Inclui a identidade da empresa no cabeçalho.',
-      'defaultFooter': 'Rodapé padrão',
-      'termsAndConditions': 'Termos e condições',
-      'operationTitle': 'Regras operacionais do comércio',
-      'salesStockCashSubtitle': 'Defina o comportamento operacional padrão do Six no balcão e na rotina do caixa.',
-      'controlStock': 'Controlar estoque',
-      'controlStockSubtitle': 'Atualiza saldo de produtos e permite relatórios operacionais.',
-      'mandatoryCashOpening': 'Abertura de caixa obrigatória',
-      'mandatoryCashOpeningSubtitle': 'Impede operações antes da abertura formal do caixa.',
-      'enableMfa': 'Habilitar MFA',
-      'enableMfaSubtitle': 'Adiciona uma camada extra de segurança no login.',
-      'homePage': 'Página inicial',
-      'desktopNotifications': 'Notificações desktop',
-      'desktopNotificationsSubtitle': 'Mantém alertas visíveis durante o uso do sistema na web.',
-      'defaultSignature': 'Equipe Six agradece o seu contato. Qualquer dúvida, estamos à disposição.',
-      'defaultOrderCreated': 'Sua ordem de serviço foi criada com sucesso.',
-      'defaultReadyPickup': 'Seu equipamento está pronto para retirada.',
-      'defaultDocumentFooter': 'Obrigado pela preferência. Este documento foi gerado automaticamente pelo Six.',
-      'defaultTerms': 'Após aprovação do orçamento, poderá haver necessidade de peças adicionais conforme análise técnica.',
-    },
-    'en': <String, String>{
-      'pageTitle': 'Six Settings',
-      'pageSubtitle': 'Centralize language, region, appearance, documents, operation and account preferences.',
-      'loadingLanguageTitle': 'Updating language',
-      'loadingLanguageMessage': 'Downloading the translation package and preparing the screen texts...',
-      'unsavedChanges': 'Unsaved changes',
-      'savedState': 'All saved',
-      'configs': 'Configs',
-      'smartPanelDescription': 'Quickly review the main operation and branding parameters before saving.',
-      'activeLanguage': 'Active language',
-      'mainCurrency': 'Main currency',
-      'theme': 'Theme',
-      'preferredChannel': 'Preferred channel',
-      'cashOpening': 'Cash opening',
-      'mfa': 'MFA',
-      'required': 'Required',
-      'optional': 'Optional',
-      'enabled': 'Enabled',
-      'disabled': 'Disabled',
-      'back': 'Back',
-      'save': 'Save',
-      'settingsSaved': 'Settings saved successfully.',
-      'settingsSaveError': 'Error saving settings',
-      'regionalizationTitle': 'Language, region and currency',
-      'languageAndConventionsSubtitle': 'Set the company local experience, including language, time zone and display patterns.',
-      'systemLanguage': 'System language',
-      'countryRegion': 'Country / region',
-      'timezone': 'Time zone',
-      'dateFormat': 'Date format',
-      'timeFormat': 'Time format',
-      'firstDayOfWeek': 'First day of week',
-      'numberFormat': 'Number format',
-      'mainCurrencyField': 'Main currency',
-      'symbolPosition': 'Symbol position',
-      'decimalPlaces': 'Decimal places',
-      'decimalSeparator': 'Decimal separator',
-      'thousandSeparator': 'Thousand separator',
-      'allowMultipleCurrencies': 'Allow multiple currencies',
-      'allowMultipleCurrenciesSubtitle': 'Keeps the base ready for international scenarios and future conversion.',
-      'applyFinancialRounding': 'Apply financial rounding',
-      'applyFinancialRoundingSubtitle': 'Standardizes calculations and prevents cent differences in documents and totals.',
-      'appearanceTitle': 'Appearance and visual customization',
-      'themeAndDensitySubtitle': 'Control how Six is presented to company users.',
-      'visualTheme': 'Visual theme',
-      'companyName': 'Company name',
-      'tradeName': 'Trade name',
-      'mainEmail': 'Main email',
-      'communicationTitle': 'Communication and notifications',
-      'notificationChannelsSubtitle': 'Choose how customers and users are notified about important events.',
-      'notifyByEmail': 'Notify by email',
-      'notifyByEmailSubtitle': 'Sends formal messages and receipts to the customer email.',
-      'notifyByWhatsapp': 'Notify by WhatsApp',
-      'notifyByWhatsappSubtitle': 'Makes it easier to communicate technical service steps quickly.',
-      'notifyByTelegram': 'Notify by Telegram',
-      'notifyByTelegramSubtitle': 'Keeps the channel ready for future integrations.',
-      'preferredCustomerChannel': 'Preferred customer channel',
-      'messageSignature': 'Message signature',
-      'orderCreatedMessage': 'Order created message',
-      'readyPickupMessage': 'Ready for pickup message',
-      'documentsTitle': 'Documents and receipts',
-      'pdfVisualCompositionSubtitle': 'Settings that affect sharing by email, WhatsApp and the final document presentation.',
-      'showLogoPdf': 'Show logo in PDF',
-      'showLogoPdfSubtitle': 'Includes the company identity in the header.',
-      'defaultFooter': 'Default footer',
-      'termsAndConditions': 'Terms and conditions',
-      'operationTitle': 'Business operation rules',
-      'salesStockCashSubtitle': 'Set Six default operational behavior at the counter and in cash register routines.',
-      'controlStock': 'Control stock',
-      'controlStockSubtitle': 'Updates product balance and enables operational reports.',
-      'mandatoryCashOpening': 'Mandatory cash opening',
-      'mandatoryCashOpeningSubtitle': 'Prevents operations before the formal cash opening.',
-      'enableMfa': 'Enable MFA',
-      'enableMfaSubtitle': 'Adds an extra security layer to login.',
-      'homePage': 'Home page',
-      'desktopNotifications': 'Desktop notifications',
-      'desktopNotificationsSubtitle': 'Keeps alerts visible while using the system on the web.',
-      'defaultSignature': 'The Six team thanks you for contacting us. If you have any questions, we are available.',
-      'defaultOrderCreated': 'Your work order has been created successfully.',
-      'defaultReadyPickup': 'Your device is ready for pickup.',
-      'defaultDocumentFooter': 'Thank you for your preference. This document was generated automatically by Six.',
-      'defaultTerms': 'After quote approval, additional parts may be required according to the technical analysis.',
-    },
-    'es': <String, String>{
-      'pageTitle': 'Configuración Six',
-      'pageSubtitle': 'Centralice idioma, región, apariencia, documentos, operación y preferencias de la cuenta.',
-      'loadingLanguageTitle': 'Actualizando idioma',
-      'loadingLanguageMessage': 'Descargando el paquete de traducción y preparando los textos de la pantalla...',
-      'unsavedChanges': 'Cambios no guardados',
-      'savedState': 'Todo guardado',
-      'configs': 'Configs',
-      'smartPanelDescription': 'Vea rápidamente los principales parámetros operativos y de marca antes de guardar.',
-      'activeLanguage': 'Idioma activo',
-      'mainCurrency': 'Moneda principal',
-      'theme': 'Tema',
-      'preferredChannel': 'Canal preferido',
-      'cashOpening': 'Apertura de caja',
-      'mfa': 'MFA',
-      'required': 'Obligatorio',
-      'optional': 'Opcional',
-      'enabled': 'Habilitado',
-      'disabled': 'Deshabilitado',
-      'back': 'Volver',
-      'save': 'Guardar',
-      'settingsSaved': 'Configuración guardada con éxito.',
-      'settingsSaveError': 'Error al guardar configuración',
-      'regionalizationTitle': 'Idioma, región y moneda',
-      'languageAndConventionsSubtitle': 'Defina la experiencia local de la empresa, incluyendo idioma, zona horaria y patrones de visualización.',
-      'systemLanguage': 'Idioma del sistema',
-      'countryRegion': 'País / región',
-      'timezone': 'Zona horaria',
-      'dateFormat': 'Formato de fecha',
-      'timeFormat': 'Formato de hora',
-      'firstDayOfWeek': 'Primer día de la semana',
-      'numberFormat': 'Formato numérico',
-      'mainCurrencyField': 'Moneda principal',
-      'symbolPosition': 'Posición del símbolo',
-      'decimalPlaces': 'Decimales',
-      'decimalSeparator': 'Separador decimal',
-      'thousandSeparator': 'Separador de miles',
-      'allowMultipleCurrencies': 'Permitir múltiples monedas',
-      'allowMultipleCurrenciesSubtitle': 'Mantiene la base preparada para escenarios internacionales y conversión futura.',
-      'applyFinancialRounding': 'Aplicar redondeo financiero',
-      'applyFinancialRoundingSubtitle': 'Estandariza cálculos y evita diferencias de centavos en documentos y totales.',
-      'appearanceTitle': 'Apariencia y personalización visual',
-      'themeAndDensitySubtitle': 'Controle cómo Six se presenta a los usuarios de la empresa.',
-      'visualTheme': 'Tema visual',
-      'companyName': 'Nombre de la empresa',
-      'tradeName': 'Nombre comercial',
-      'mainEmail': 'Email principal',
-      'communicationTitle': 'Comunicación y notificaciones',
-      'notificationChannelsSubtitle': 'Elija cómo clientes y usuarios serán avisados sobre eventos importantes.',
-      'notifyByEmail': 'Notificar por email',
-      'notifyByEmailSubtitle': 'Envía mensajes formales y comprobantes al email del cliente.',
-      'notifyByWhatsapp': 'Notificar por WhatsApp',
-      'notifyByWhatsappSubtitle': 'Facilita la comunicación rápida sobre etapas de la asistencia técnica.',
-      'notifyByTelegram': 'Notificar por Telegram',
-      'notifyByTelegramSubtitle': 'Mantiene el canal preparado para integraciones futuras.',
-      'preferredCustomerChannel': 'Canal preferido del cliente',
-      'messageSignature': 'Firma del mensaje',
-      'orderCreatedMessage': 'Mensaje de orden creada',
-      'readyPickupMessage': 'Mensaje de listo para retirada',
-      'documentsTitle': 'Documentos y comprobantes',
-      'pdfVisualCompositionSubtitle': 'Ajustes que impactan el envío por email, WhatsApp y la presentación final del documento.',
-      'showLogoPdf': 'Mostrar logo en el PDF',
-      'showLogoPdfSubtitle': 'Incluye la identidad de la empresa en el encabezado.',
-      'defaultFooter': 'Pie de página estándar',
-      'termsAndConditions': 'Términos y condiciones',
-      'operationTitle': 'Reglas operativas del comercio',
-      'salesStockCashSubtitle': 'Defina el comportamiento operativo estándar de Six en el mostrador y la rutina de caja.',
-      'controlStock': 'Controlar stock',
-      'controlStockSubtitle': 'Actualiza saldo de productos y permite informes operativos.',
-      'mandatoryCashOpening': 'Apertura de caja obligatoria',
-      'mandatoryCashOpeningSubtitle': 'Impide operaciones antes de la apertura formal de caja.',
-      'enableMfa': 'Habilitar MFA',
-      'enableMfaSubtitle': 'Añade una capa extra de seguridad en el login.',
-      'homePage': 'Página inicial',
-      'desktopNotifications': 'Notificaciones desktop',
-      'desktopNotificationsSubtitle': 'Mantiene alertas visibles durante el uso del sistema en la web.',
-      'defaultSignature': 'El equipo Six agradece su contacto. Cualquier duda, estamos a disposición.',
-      'defaultOrderCreated': 'Su orden de servicio fue creada con éxito.',
-      'defaultReadyPickup': 'Su equipo está listo para retirada.',
-      'defaultDocumentFooter': 'Gracias por su preferencia. Este documento fue generado automáticamente por Six.',
-      'defaultTerms': 'Después de la aprobación del presupuesto, puede ser necesario agregar piezas adicionales según el análisis técnico.',
-    },
-  };
-
-  static const Map<String, Map<String, String>> _fallbackOpcoes = <String, Map<String, String>>{
-    'pt': <String, String>{
-      'pt-BR': 'Português (Brasil)', 'en-US': 'English (US)', 'es-ES': 'Español',
-      'Brasil': 'Brasil', 'Estados Unidos': 'Estados Unidos', 'Espanha': 'Espanha',
-      '24 horas': '24 horas', '12 horas': '12 horas', 'Segunda-feira': 'Segunda-feira', 'Domingo': 'Domingo',
-      'Antes do valor': 'Antes do valor', 'Depois do valor': 'Depois do valor', 'Vírgula': 'Vírgula', 'Ponto': 'Ponto', 'Espaço': 'Espaço',
-      'Claro': 'Claro', 'Escuro': 'Escuro', 'Automático': 'Automático', 'WhatsApp': 'WhatsApp', 'Email': 'Email', 'Telegram': 'Telegram',
-      'Painel administrativo': 'Painel administrativo', 'Vendas': 'Vendas', 'Ordem de serviço': 'Ordem de serviço', 'Agenda financeira': 'Agenda financeira',
-    },
-    'en': <String, String>{
-      'pt-BR': 'Portuguese (Brazil)', 'en-US': 'English (US)', 'es-ES': 'Spanish',
-      'Brasil': 'Brazil', 'Estados Unidos': 'United States', 'Espanha': 'Spain',
-      '24 horas': '24 hours', '12 horas': '12 hours', 'Segunda-feira': 'Monday', 'Domingo': 'Sunday',
-      'Antes do valor': 'Before amount', 'Depois do valor': 'After amount', 'Vírgula': 'Comma', 'Ponto': 'Dot', 'Espaço': 'Space',
-      'Claro': 'Light', 'Escuro': 'Dark', 'Automático': 'Automatic', 'WhatsApp': 'WhatsApp', 'Email': 'Email', 'Telegram': 'Telegram',
-      'Painel administrativo': 'Admin dashboard', 'Vendas': 'Sales', 'Ordem de serviço': 'Work order', 'Agenda financeira': 'Financial agenda',
-    },
-    'es': <String, String>{
-      'pt-BR': 'Portugués (Brasil)', 'en-US': 'Inglés (US)', 'es-ES': 'Español',
-      'Brasil': 'Brasil', 'Estados Unidos': 'Estados Unidos', 'Espanha': 'España',
-      '24 horas': '24 horas', '12 horas': '12 horas', 'Segunda-feira': 'Lunes', 'Domingo': 'Domingo',
-      'Antes do valor': 'Antes del valor', 'Depois do valor': 'Después del valor', 'Vírgula': 'Coma', 'Ponto': 'Punto', 'Espaço': 'Espacio',
-      'Claro': 'Claro', 'Escuro': 'Oscuro', 'Automático': 'Automático', 'WhatsApp': 'WhatsApp', 'Email': 'Email', 'Telegram': 'Telegram',
-      'Painel administrativo': 'Panel administrativo', 'Vendas': 'Ventas', 'Ordem de serviço': 'Orden de servicio', 'Agenda financeira': 'Agenda financiera',
-    },
-  };
 }
