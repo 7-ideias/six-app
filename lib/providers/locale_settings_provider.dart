@@ -92,6 +92,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
   Future<void> setUserLocale(Locale locale) async {
     final sanitized = _sanitizeLocale(locale);
     _userOverrideLocale = sanitized;
+    _i18nLoading = true;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_languageCodeKey, sanitized.languageCode);
@@ -104,18 +105,24 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
     // Troca de idioma deve baixar o pacote completo do idioma ativo, persistir
     // localmente e remover os pacotes anteriores para economizar espaço.
-    await _loadWebTranslations(sanitized, force: true);
+    await _loadWebTranslations(sanitized, force: true, alreadyLoading: true);
   }
 
   /// Força uma nova busca das traduções do locale corrente.
   Future<void> reloadWebTranslations() =>
       _loadWebTranslations(currentLocale, force: true);
 
-  Future<void> _loadWebTranslations(Locale locale, {bool force = false}) async {
+  Future<void> _loadWebTranslations(
+    Locale locale, {
+    bool force = false,
+    bool alreadyLoading = false,
+  }) async {
     final tag = locale.toLanguageTag();
 
-    _i18nLoading = true;
-    notifyListeners();
+    if (!alreadyLoading) {
+      _i18nLoading = true;
+      notifyListeners();
+    }
 
     try {
       final messages = await _webI18nApiClient.fetchMessages(tag, force: force);
