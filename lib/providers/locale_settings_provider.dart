@@ -27,9 +27,6 @@ class LocaleSettingsProvider extends ChangeNotifier {
   final RegionalizacaoService _regionalizacaoService;
   final WebI18nApiClient _webI18nApiClient;
 
-  /// Locales cujas traduções de UI já foram buscadas no backend nesta sessão.
-  final Set<String> _loadedI18nTags = <String>{};
-
   ConfiguracaoRegionalizacaoSistema _companyConfig =
       ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
   Locale? _userOverrideLocale;
@@ -38,8 +35,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
   bool get initialized => _initialized;
 
-  /// `true` enquanto uma busca de traduções de UI está em andamento. Usado pelo
-  /// `WebI18nGate` para exibir carregamento vs. estado de erro.
+  /// `true` enquanto uma busca de traduções de UI está em andamento.
   bool get i18nLoading => _i18nLoading;
 
   ConfiguracaoRegionalizacaoSistema get companyConfig => _companyConfig;
@@ -62,9 +58,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
     _initialized = true;
     notifyListeners();
 
-    // Busca as traduções de UI do backend (única fonte de conteúdo). O
-    // WebI18nGate exibe carregamento até o store estar pronto.
-    await _loadWebTranslations(currentLocale);
+    await _loadWebTranslations(currentLocale, force: false);
   }
 
   Future<void> refreshCompanyConfig() async {
@@ -108,34 +102,31 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
     notifyListeners();
 
-    await _loadWebTranslations(sanitized);
+    // Troca de idioma deve baixar o pacote completo do idioma ativo, persistir
+    // localmente e remover os pacotes anteriores para economizar espaço.
+    await _loadWebTranslations(sanitized, force: true);
   }
 
-  /// Força uma nova busca das traduções do locale corrente (botão "tentar
-  /// novamente" do `WebI18nGate` após uma falha de rede).
+  /// Força uma nova busca das traduções do locale corrente.
   Future<void> reloadWebTranslations() =>
       _loadWebTranslations(currentLocale, force: true);
 
-  /// Busca as traduções de UI do backend para [locale] e as injeta no
-  /// [WebI18nStore].
-  ///
-  /// Idempotente por sessão: um idioma já carregado não é rebuscado (atende
-  /// "só chama o backend ao trocar de idioma"), salvo [force] = `true`.
   Future<void> _loadWebTranslations(Locale locale, {bool force = false}) async {
     final tag = locale.toLanguageTag();
-    if (!force && _loadedI18nTags.contains(tag)) return;
 
     _i18nLoading = true;
     notifyListeners();
 
-    final messages = await _webI18nApiClient.fetchMessages(tag);
-    if (messages != null) {
-      WebI18nStore.instance.setMessages(locale.languageCode, messages);
-      _loadedI18nTags.add(tag);
+    try {
+      final messages = await _webI18nApiClient.fetchMessages(tag, force: force);
+      if (messages != null) {
+        WebI18nStore.instance.setMessages(tag, messages);
+        WebI18nStore.instance.keepOnly(tag);
+      }
+    } finally {
+      _i18nLoading = false;
+      notifyListeners();
     }
-
-    _i18nLoading = false;
-    notifyListeners();
   }
 
   Future<void> clearUserOverride() async {
