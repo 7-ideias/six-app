@@ -65,14 +65,25 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final locale = context.read<LocaleSettingsProvider>().currentLocale;
-      setState(() {
-        _idiomaSelecionado = _localeParaCodigo(locale);
-        _atualizarTextosEditaveis();
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sincronizarIdiomaInicial());
+  }
+
+  Future<void> _sincronizarIdiomaInicial() async {
+    if (!mounted) return;
+    final provider = context.read<LocaleSettingsProvider>();
+    final locale = provider.currentLocale;
+    final codigoIdioma = _localeParaCodigo(locale);
+
+    setState(() {
+      _idiomaSelecionado = codigoIdioma;
+      _atualizarTextosEditaveis();
     });
+
+    if (!WebI18nStore.instance.hasLanguage(codigoIdioma)) {
+      await provider.reloadWebTranslations();
+      if (!mounted) return;
+      setState(_atualizarTextosEditaveis);
+    }
   }
 
   @override
@@ -100,6 +111,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     setState(() {
       _baixandoIdioma = true;
       _idiomaSelecionado = codigoIdioma;
+      _atualizarTextosEditaveis();
     });
 
     try {
@@ -183,7 +195,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildContent(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -564,11 +575,299 @@ class _SettingsI18n {
 
   final String localeCode;
 
+  String get _lang {
+    if (localeCode.toLowerCase().startsWith('en')) return 'en';
+    if (localeCode.toLowerCase().startsWith('es')) return 'es';
+    return 'pt';
+  }
+
   String t(String key) {
-    return WebI18nStore.instance.string(localeCode, 'configuracoes.$key') ?? key;
+    return WebI18nStore.instance.string(localeCode, 'configuracoes.$key') ??
+        _fallbackTextos[_lang]?[key] ??
+        _fallbackTextos['pt']?[key] ??
+        key;
   }
 
   String o(String value) {
-    return WebI18nStore.instance.string(localeCode, 'configuracoes.options.$value') ?? value;
+    return WebI18nStore.instance.string(localeCode, 'configuracoes.options.$value') ??
+        _fallbackOpcoes[_lang]?[value] ??
+        _fallbackOpcoes['pt']?[value] ??
+        value;
   }
+
+  static const Map<String, Map<String, String>> _fallbackTextos = <String, Map<String, String>>{
+    'pt': <String, String>{
+      'pageTitle': 'Configurações Six',
+      'pageSubtitle': 'Centralize idioma, região, aparência, documentos, operação e preferências da conta.',
+      'loadingLanguageTitle': 'Atualizando idioma',
+      'loadingLanguageMessage': 'Baixando pacote de tradução e preparando os textos da tela...',
+      'unsavedChanges': 'Alterações não salvas',
+      'savedState': 'Tudo salvo',
+      'configs': 'Configs',
+      'smartPanelDescription': 'Visualize rapidamente os principais parâmetros operacionais e de branding antes de salvar.',
+      'activeLanguage': 'Idioma ativo',
+      'mainCurrency': 'Moeda principal',
+      'theme': 'Tema',
+      'preferredChannel': 'Canal preferencial',
+      'cashOpening': 'Abertura de caixa',
+      'mfa': 'MFA',
+      'required': 'Obrigatório',
+      'optional': 'Opcional',
+      'enabled': 'Habilitado',
+      'disabled': 'Desabilitado',
+      'back': 'Voltar',
+      'save': 'Salvar',
+      'settingsSaved': 'Configurações salvas com sucesso.',
+      'settingsSaveError': 'Erro ao salvar configurações',
+      'regionalizationTitle': 'Idioma, região e moeda',
+      'languageAndConventionsSubtitle': 'Defina a experiência local da empresa, incluindo idioma, fuso e padrões de exibição.',
+      'systemLanguage': 'Idioma do sistema',
+      'countryRegion': 'País / região',
+      'timezone': 'Fuso horário',
+      'dateFormat': 'Formato de data',
+      'timeFormat': 'Formato de hora',
+      'firstDayOfWeek': 'Primeiro dia da semana',
+      'numberFormat': 'Formato numérico',
+      'mainCurrencyField': 'Moeda principal',
+      'symbolPosition': 'Posição do símbolo',
+      'decimalPlaces': 'Casas decimais',
+      'decimalSeparator': 'Separador decimal',
+      'thousandSeparator': 'Separador de milhar',
+      'allowMultipleCurrencies': 'Permitir múltiplas moedas',
+      'allowMultipleCurrenciesSubtitle': 'Mantém a base preparada para cenários internacionais e conversão futura.',
+      'applyFinancialRounding': 'Aplicar arredondamento financeiro',
+      'applyFinancialRoundingSubtitle': 'Padroniza cálculos e evita divergências de centavos em documentos e totais.',
+      'appearanceTitle': 'Aparência e personalização visual',
+      'themeAndDensitySubtitle': 'Controle como o Six se apresenta para os usuários da empresa.',
+      'visualTheme': 'Tema visual',
+      'companyName': 'Nome da empresa',
+      'tradeName': 'Nome fantasia',
+      'mainEmail': 'Email principal',
+      'communicationTitle': 'Comunicação e notificações',
+      'notificationChannelsSubtitle': 'Escolha como clientes e usuários serão avisados sobre eventos importantes.',
+      'notifyByEmail': 'Notificar por email',
+      'notifyByEmailSubtitle': 'Envia mensagens formais e comprovantes para o email do cliente.',
+      'notifyByWhatsapp': 'Notificar por WhatsApp',
+      'notifyByWhatsappSubtitle': 'Facilita comunicação rápida sobre etapas da assistência técnica.',
+      'notifyByTelegram': 'Notificar por Telegram',
+      'notifyByTelegramSubtitle': 'Mantém o canal preparado para integrações futuras.',
+      'preferredCustomerChannel': 'Canal preferencial do cliente',
+      'messageSignature': 'Assinatura da mensagem',
+      'orderCreatedMessage': 'Mensagem de ordem criada',
+      'readyPickupMessage': 'Mensagem de pronto para retirada',
+      'documentsTitle': 'Documentos e comprovantes',
+      'pdfVisualCompositionSubtitle': 'Ajustes que impactam o compartilhamento via email, WhatsApp e a apresentação final do documento.',
+      'showLogoPdf': 'Exibir logo no PDF',
+      'showLogoPdfSubtitle': 'Inclui a identidade da empresa no cabeçalho.',
+      'defaultFooter': 'Rodapé padrão',
+      'termsAndConditions': 'Termos e condições',
+      'operationTitle': 'Regras operacionais do comércio',
+      'salesStockCashSubtitle': 'Defina o comportamento operacional padrão do Six no balcão e na rotina do caixa.',
+      'controlStock': 'Controlar estoque',
+      'controlStockSubtitle': 'Atualiza saldo de produtos e permite relatórios operacionais.',
+      'mandatoryCashOpening': 'Abertura de caixa obrigatória',
+      'mandatoryCashOpeningSubtitle': 'Impede operações antes da abertura formal do caixa.',
+      'enableMfa': 'Habilitar MFA',
+      'enableMfaSubtitle': 'Adiciona uma camada extra de segurança no login.',
+      'homePage': 'Página inicial',
+      'desktopNotifications': 'Notificações desktop',
+      'desktopNotificationsSubtitle': 'Mantém alertas visíveis durante o uso do sistema na web.',
+      'defaultSignature': 'Equipe Six agradece o seu contato. Qualquer dúvida, estamos à disposição.',
+      'defaultOrderCreated': 'Sua ordem de serviço foi criada com sucesso.',
+      'defaultReadyPickup': 'Seu equipamento está pronto para retirada.',
+      'defaultDocumentFooter': 'Obrigado pela preferência. Este documento foi gerado automaticamente pelo Six.',
+      'defaultTerms': 'Após aprovação do orçamento, poderá haver necessidade de peças adicionais conforme análise técnica.',
+    },
+    'en': <String, String>{
+      'pageTitle': 'Six Settings',
+      'pageSubtitle': 'Centralize language, region, appearance, documents, operation and account preferences.',
+      'loadingLanguageTitle': 'Updating language',
+      'loadingLanguageMessage': 'Downloading the translation package and preparing the screen texts...',
+      'unsavedChanges': 'Unsaved changes',
+      'savedState': 'All saved',
+      'configs': 'Configs',
+      'smartPanelDescription': 'Quickly review the main operation and branding parameters before saving.',
+      'activeLanguage': 'Active language',
+      'mainCurrency': 'Main currency',
+      'theme': 'Theme',
+      'preferredChannel': 'Preferred channel',
+      'cashOpening': 'Cash opening',
+      'mfa': 'MFA',
+      'required': 'Required',
+      'optional': 'Optional',
+      'enabled': 'Enabled',
+      'disabled': 'Disabled',
+      'back': 'Back',
+      'save': 'Save',
+      'settingsSaved': 'Settings saved successfully.',
+      'settingsSaveError': 'Error saving settings',
+      'regionalizationTitle': 'Language, region and currency',
+      'languageAndConventionsSubtitle': 'Set the company local experience, including language, time zone and display patterns.',
+      'systemLanguage': 'System language',
+      'countryRegion': 'Country / region',
+      'timezone': 'Time zone',
+      'dateFormat': 'Date format',
+      'timeFormat': 'Time format',
+      'firstDayOfWeek': 'First day of week',
+      'numberFormat': 'Number format',
+      'mainCurrencyField': 'Main currency',
+      'symbolPosition': 'Symbol position',
+      'decimalPlaces': 'Decimal places',
+      'decimalSeparator': 'Decimal separator',
+      'thousandSeparator': 'Thousand separator',
+      'allowMultipleCurrencies': 'Allow multiple currencies',
+      'allowMultipleCurrenciesSubtitle': 'Keeps the base ready for international scenarios and future conversion.',
+      'applyFinancialRounding': 'Apply financial rounding',
+      'applyFinancialRoundingSubtitle': 'Standardizes calculations and prevents cent differences in documents and totals.',
+      'appearanceTitle': 'Appearance and visual customization',
+      'themeAndDensitySubtitle': 'Control how Six is presented to company users.',
+      'visualTheme': 'Visual theme',
+      'companyName': 'Company name',
+      'tradeName': 'Trade name',
+      'mainEmail': 'Main email',
+      'communicationTitle': 'Communication and notifications',
+      'notificationChannelsSubtitle': 'Choose how customers and users are notified about important events.',
+      'notifyByEmail': 'Notify by email',
+      'notifyByEmailSubtitle': 'Sends formal messages and receipts to the customer email.',
+      'notifyByWhatsapp': 'Notify by WhatsApp',
+      'notifyByWhatsappSubtitle': 'Makes it easier to communicate technical service steps quickly.',
+      'notifyByTelegram': 'Notify by Telegram',
+      'notifyByTelegramSubtitle': 'Keeps the channel ready for future integrations.',
+      'preferredCustomerChannel': 'Preferred customer channel',
+      'messageSignature': 'Message signature',
+      'orderCreatedMessage': 'Order created message',
+      'readyPickupMessage': 'Ready for pickup message',
+      'documentsTitle': 'Documents and receipts',
+      'pdfVisualCompositionSubtitle': 'Settings that affect sharing by email, WhatsApp and the final document presentation.',
+      'showLogoPdf': 'Show logo in PDF',
+      'showLogoPdfSubtitle': 'Includes the company identity in the header.',
+      'defaultFooter': 'Default footer',
+      'termsAndConditions': 'Terms and conditions',
+      'operationTitle': 'Business operation rules',
+      'salesStockCashSubtitle': 'Set Six default operational behavior at the counter and in cash register routines.',
+      'controlStock': 'Control stock',
+      'controlStockSubtitle': 'Updates product balance and enables operational reports.',
+      'mandatoryCashOpening': 'Mandatory cash opening',
+      'mandatoryCashOpeningSubtitle': 'Prevents operations before the formal cash opening.',
+      'enableMfa': 'Enable MFA',
+      'enableMfaSubtitle': 'Adds an extra security layer to login.',
+      'homePage': 'Home page',
+      'desktopNotifications': 'Desktop notifications',
+      'desktopNotificationsSubtitle': 'Keeps alerts visible while using the system on the web.',
+      'defaultSignature': 'The Six team thanks you for contacting us. If you have any questions, we are available.',
+      'defaultOrderCreated': 'Your work order has been created successfully.',
+      'defaultReadyPickup': 'Your device is ready for pickup.',
+      'defaultDocumentFooter': 'Thank you for your preference. This document was generated automatically by Six.',
+      'defaultTerms': 'After quote approval, additional parts may be required according to the technical analysis.',
+    },
+    'es': <String, String>{
+      'pageTitle': 'Configuración Six',
+      'pageSubtitle': 'Centralice idioma, región, apariencia, documentos, operación y preferencias de la cuenta.',
+      'loadingLanguageTitle': 'Actualizando idioma',
+      'loadingLanguageMessage': 'Descargando el paquete de traducción y preparando los textos de la pantalla...',
+      'unsavedChanges': 'Cambios no guardados',
+      'savedState': 'Todo guardado',
+      'configs': 'Configs',
+      'smartPanelDescription': 'Vea rápidamente los principales parámetros operativos y de marca antes de guardar.',
+      'activeLanguage': 'Idioma activo',
+      'mainCurrency': 'Moneda principal',
+      'theme': 'Tema',
+      'preferredChannel': 'Canal preferido',
+      'cashOpening': 'Apertura de caja',
+      'mfa': 'MFA',
+      'required': 'Obligatorio',
+      'optional': 'Opcional',
+      'enabled': 'Habilitado',
+      'disabled': 'Deshabilitado',
+      'back': 'Volver',
+      'save': 'Guardar',
+      'settingsSaved': 'Configuración guardada con éxito.',
+      'settingsSaveError': 'Error al guardar configuración',
+      'regionalizationTitle': 'Idioma, región y moneda',
+      'languageAndConventionsSubtitle': 'Defina la experiencia local de la empresa, incluyendo idioma, zona horaria y patrones de visualización.',
+      'systemLanguage': 'Idioma del sistema',
+      'countryRegion': 'País / región',
+      'timezone': 'Zona horaria',
+      'dateFormat': 'Formato de fecha',
+      'timeFormat': 'Formato de hora',
+      'firstDayOfWeek': 'Primer día de la semana',
+      'numberFormat': 'Formato numérico',
+      'mainCurrencyField': 'Moneda principal',
+      'symbolPosition': 'Posición del símbolo',
+      'decimalPlaces': 'Decimales',
+      'decimalSeparator': 'Separador decimal',
+      'thousandSeparator': 'Separador de miles',
+      'allowMultipleCurrencies': 'Permitir múltiples monedas',
+      'allowMultipleCurrenciesSubtitle': 'Mantiene la base preparada para escenarios internacionales y conversión futura.',
+      'applyFinancialRounding': 'Aplicar redondeo financiero',
+      'applyFinancialRoundingSubtitle': 'Estandariza cálculos y evita diferencias de centavos en documentos y totales.',
+      'appearanceTitle': 'Apariencia y personalización visual',
+      'themeAndDensitySubtitle': 'Controle cómo Six se presenta a los usuarios de la empresa.',
+      'visualTheme': 'Tema visual',
+      'companyName': 'Nombre de la empresa',
+      'tradeName': 'Nombre comercial',
+      'mainEmail': 'Email principal',
+      'communicationTitle': 'Comunicación y notificaciones',
+      'notificationChannelsSubtitle': 'Elija cómo clientes y usuarios serán avisados sobre eventos importantes.',
+      'notifyByEmail': 'Notificar por email',
+      'notifyByEmailSubtitle': 'Envía mensajes formales y comprobantes al email del cliente.',
+      'notifyByWhatsapp': 'Notificar por WhatsApp',
+      'notifyByWhatsappSubtitle': 'Facilita la comunicación rápida sobre etapas de la asistencia técnica.',
+      'notifyByTelegram': 'Notificar por Telegram',
+      'notifyByTelegramSubtitle': 'Mantiene el canal preparado para integraciones futuras.',
+      'preferredCustomerChannel': 'Canal preferido del cliente',
+      'messageSignature': 'Firma del mensaje',
+      'orderCreatedMessage': 'Mensaje de orden creada',
+      'readyPickupMessage': 'Mensaje de listo para retirada',
+      'documentsTitle': 'Documentos y comprobantes',
+      'pdfVisualCompositionSubtitle': 'Ajustes que impactan el envío por email, WhatsApp y la presentación final del documento.',
+      'showLogoPdf': 'Mostrar logo en el PDF',
+      'showLogoPdfSubtitle': 'Incluye la identidad de la empresa en el encabezado.',
+      'defaultFooter': 'Pie de página estándar',
+      'termsAndConditions': 'Términos y condiciones',
+      'operationTitle': 'Reglas operativas del comercio',
+      'salesStockCashSubtitle': 'Defina el comportamiento operativo estándar de Six en el mostrador y la rutina de caja.',
+      'controlStock': 'Controlar stock',
+      'controlStockSubtitle': 'Actualiza saldo de productos y permite informes operativos.',
+      'mandatoryCashOpening': 'Apertura de caja obligatoria',
+      'mandatoryCashOpeningSubtitle': 'Impide operaciones antes de la apertura formal de caja.',
+      'enableMfa': 'Habilitar MFA',
+      'enableMfaSubtitle': 'Añade una capa extra de seguridad en el login.',
+      'homePage': 'Página inicial',
+      'desktopNotifications': 'Notificaciones desktop',
+      'desktopNotificationsSubtitle': 'Mantiene alertas visibles durante el uso del sistema en la web.',
+      'defaultSignature': 'El equipo Six agradece su contacto. Cualquier duda, estamos a disposición.',
+      'defaultOrderCreated': 'Su orden de servicio fue creada con éxito.',
+      'defaultReadyPickup': 'Su equipo está listo para retirada.',
+      'defaultDocumentFooter': 'Gracias por su preferencia. Este documento fue generado automáticamente por Six.',
+      'defaultTerms': 'Después de la aprobación del presupuesto, puede ser necesario agregar piezas adicionales según el análisis técnico.',
+    },
+  };
+
+  static const Map<String, Map<String, String>> _fallbackOpcoes = <String, Map<String, String>>{
+    'pt': <String, String>{
+      'pt-BR': 'Português (Brasil)', 'en-US': 'English (US)', 'es-ES': 'Español',
+      'Brasil': 'Brasil', 'Estados Unidos': 'Estados Unidos', 'Espanha': 'Espanha',
+      '24 horas': '24 horas', '12 horas': '12 horas', 'Segunda-feira': 'Segunda-feira', 'Domingo': 'Domingo',
+      'Antes do valor': 'Antes do valor', 'Depois do valor': 'Depois do valor', 'Vírgula': 'Vírgula', 'Ponto': 'Ponto', 'Espaço': 'Espaço',
+      'Claro': 'Claro', 'Escuro': 'Escuro', 'Automático': 'Automático', 'WhatsApp': 'WhatsApp', 'Email': 'Email', 'Telegram': 'Telegram',
+      'Painel administrativo': 'Painel administrativo', 'Vendas': 'Vendas', 'Ordem de serviço': 'Ordem de serviço', 'Agenda financeira': 'Agenda financeira',
+    },
+    'en': <String, String>{
+      'pt-BR': 'Portuguese (Brazil)', 'en-US': 'English (US)', 'es-ES': 'Spanish',
+      'Brasil': 'Brazil', 'Estados Unidos': 'United States', 'Espanha': 'Spain',
+      '24 horas': '24 hours', '12 horas': '12 hours', 'Segunda-feira': 'Monday', 'Domingo': 'Sunday',
+      'Antes do valor': 'Before amount', 'Depois do valor': 'After amount', 'Vírgula': 'Comma', 'Ponto': 'Dot', 'Espaço': 'Space',
+      'Claro': 'Light', 'Escuro': 'Dark', 'Automático': 'Automatic', 'WhatsApp': 'WhatsApp', 'Email': 'Email', 'Telegram': 'Telegram',
+      'Painel administrativo': 'Admin dashboard', 'Vendas': 'Sales', 'Ordem de serviço': 'Work order', 'Agenda financeira': 'Financial agenda',
+    },
+    'es': <String, String>{
+      'pt-BR': 'Portugués (Brasil)', 'en-US': 'Inglés (US)', 'es-ES': 'Español',
+      'Brasil': 'Brasil', 'Estados Unidos': 'Estados Unidos', 'Espanha': 'España',
+      '24 horas': '24 horas', '12 horas': '12 horas', 'Segunda-feira': 'Lunes', 'Domingo': 'Domingo',
+      'Antes do valor': 'Antes del valor', 'Depois do valor': 'Después del valor', 'Vírgula': 'Coma', 'Ponto': 'Punto', 'Espaço': 'Espacio',
+      'Claro': 'Claro', 'Escuro': 'Oscuro', 'Automático': 'Automático', 'WhatsApp': 'WhatsApp', 'Email': 'Email', 'Telegram': 'Telegram',
+      'Painel administrativo': 'Panel administrativo', 'Vendas': 'Ventas', 'Ordem de serviço': 'Orden de servicio', 'Agenda financeira': 'Agenda financiera',
+    },
+  };
 }
