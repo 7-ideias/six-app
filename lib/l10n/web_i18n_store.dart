@@ -30,14 +30,18 @@ class WebI18nStore {
   bool hasLanguage(String code) => _byCode.containsKey(_lang(code));
 
   /// String simples para [key], ou `null` se ausente/tipo inesperado.
+  ///
+  /// Suporta os dois formatos:
+  /// - chave plana: `configuracoes.pageTitle`;
+  /// - mapa aninhado vindo do Mongo: `{ "configuracoes": { "pageTitle": "..." } }`.
   String? string(String code, String key) {
-    final value = _byCode[_lang(code)]?[key];
+    final value = _resolve(code, key);
     return value is String ? value : null;
   }
 
   /// Lista de strings para [key], ou `null` se ausente/tipo inesperado.
   List<String>? stringList(String code, String key) {
-    final value = _byCode[_lang(code)]?[key];
+    final value = _resolve(code, key);
     if (value is List) {
       return value.map((e) => e.toString()).toList();
     }
@@ -46,7 +50,7 @@ class WebI18nStore {
 
   /// Lista de objetos para [key] (ex.: plans, featureCards), ou `null`.
   List<Map<String, dynamic>>? objectList(String code, String key) {
-    final value = _byCode[_lang(code)]?[key];
+    final value = _resolve(code, key);
     if (value is List) {
       return value
           .whereType<Map>()
@@ -54,6 +58,24 @@ class WebI18nStore {
           .toList();
     }
     return null;
+  }
+
+  Object? _resolve(String code, String key) {
+    final messages = _byCode[_lang(code)];
+    if (messages == null) return null;
+
+    final flatValue = messages[key];
+    if (flatValue != null) return flatValue;
+
+    Object? current = messages;
+    for (final part in key.split('.')) {
+      if (current is Map) {
+        current = current[part];
+      } else {
+        return null;
+      }
+    }
+    return current;
   }
 
   String _lang(String code) {
