@@ -10,10 +10,10 @@ import '../../../core/config/app_config.dart';
 /// `GET {baseUrl}/public/api/i18n/{languageTag}` → `{ locale, version, messages }`.
 ///
 /// Estratégia resiliente:
-/// - mantém uma cópia em [SharedPreferences] (corpo + ETag);
+/// - mantém uma cópia local apenas do idioma ativo (corpo + ETag);
+/// - ao trocar de idioma, remove os caches dos demais idiomas suportados;
 /// - envia `If-None-Match` e trata `304 Not Modified` reutilizando o cache;
-/// - em qualquer falha (sem rede, baseUrl vazia, timeout, erro HTTP) retorna o
-///   cache local se houver, ou `null` — nunca lança para a UI.
+/// - em qualquer falha retorna o cache local do idioma ativo se houver, ou `null`.
 class WebI18nApiClient {
   WebI18nApiClient({http.Client? httpClient})
     : _httpClient = httpClient ?? http.Client();
@@ -22,13 +22,27 @@ class WebI18nApiClient {
 
   static const String _bodyPrefix = 'web_i18n_body_';
   static const String _etagPrefix = 'web_i18n_etag_';
-  static const Duration _timeout = Duration(seconds: 6);
+  static const String _activeLocaleKey = 'web_i18n_active_locale';
+  static const List<String> _supportedLanguageTags = <String>[
+    'pt-BR',
+    'en-US',
+    'es-ES',
+  ];
+  static const Duration _timeout = Duration(seconds: 12);
 
   /// Retorna a árvore `messages` para [languageTag] (ex.: 'pt-BR'), ou `null`.
-  Future<Map<String, dynamic>?> fetchMessages(String languageTag) async {
+  ///
+  /// A resposta representa todos os namespaces daquele idioma já mesclados pelo
+  /// backend. Assim, ao trocar o idioma, o app baixa o pacote completo que será
+  /// usado à medida que o usuário navega pelas telas.
+  Future<Map<String, dynamic>?> fetchMessages(
+    String languageTag, {
+    bool force = false,
+  }) async {
+    final normalizedTag = _normalizeLanguageTag(languageTag);
     final prefs = await SharedPreferences.getInstance();
-    final bodyKey = '$_bodyPrefix$languageTag';
-    final etagKey = '$_etagPrefix$languageTag';
+    final bodyKey = '$_bodyPrefix$normalizedTag';
+    final etagKey = '$_etagPrefix$normalizedTag';
     final cachedBody = prefs.getString(bodyKey);
 
     if (AppConfig.baseUrl.isEmpty) {
@@ -37,10 +51,17 @@ class WebI18nApiClient {
 
     try {
       final cachedEtag = prefs.getString(etagKey);
-      final uri = Uri.parse('${AppConfig.baseUrl}/public/api/i18n/$languageTag');
+      final baseUri = Uri.parse('${AppConfig.baseUrl}/public/api/i18n/$normalizedTag');
+      final uri = force
+          ? baseUri.replace(
+              queryParameters: <String, String>{
+                '_refresh': DateTime.now().millisecondsSinceEpoch.toString(),
+              },
+            )
+          : baseUri;
 
       final headers = <String, String>{'Content-Type': 'application/json'};
-      if (cachedEtag != null && cachedBody != null) {
+      if (!force && cachedEtag != null && cachedBody != null) {
         headers['If-None-Match'] = cachedEtag;
       }
 
@@ -49,6 +70,7 @@ class WebI18nApiClient {
           .timeout(_timeout);
 
       if (response.statusCode == 304) {
+        await _markLocaleAsActiveAndPruneOthers(prefs, normalizedTag);
         return _extractMessages(cachedBody);
       }
 
@@ -59,6 +81,7 @@ class WebI18nApiClient {
         if (etag != null && etag.isNotEmpty) {
           await prefs.setString(etagKey, etag);
         }
+        await _markLocaleAsActiveAndPruneOthers(prefs, normalizedTag);
         return _extractMessages(body);
       }
 
@@ -66,6 +89,26 @@ class WebI18nApiClient {
     } catch (_) {
       return _extractMessages(cachedBody);
     }
+  }
+
+  Future<void> _markLocaleAsActiveAndPruneOthers(
+    SharedPreferences prefs,
+    String activeTag,
+  ) async {
+    await prefs.setString(_activeLocaleKey, activeTag);
+
+    for (final tag in _supportedLanguageTags) {
+      if (tag == activeTag) continue;
+      await prefs.remove('$_bodyPrefix$tag');
+      await prefs.remove('$_etagPrefix$tag');
+    }
+  }
+
+  String _normalizeLanguageTag(String languageTag) {
+    final raw = languageTag.trim();
+    if (raw.toLowerCase().startsWith('en')) return 'en-US';
+    if (raw.toLowerCase().startsWith('es')) return 'es-ES';
+    return 'pt-BR';
   }
 
   Map<String, dynamic>? _extractMessages(String? body) {

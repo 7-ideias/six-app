@@ -1,15 +1,8 @@
 /// Armazena, em memória, as traduções de UI carregadas do backend.
 ///
-/// É um singleton síncrono lido durante o `build` dos widgets via
-/// [WebRootL10n]. O carregamento remoto (assíncrono) acontece no
-/// `LocaleSettingsProvider`, que escreve aqui via [setMessages] e dispara
-/// `notifyListeners()` para reconstruir a árvore com os textos novos.
-///
-/// Não há fallback embutido no app: o backend é a única fonte de conteúdo. As
-/// telas que dependem destas mensagens só são construídas depois que o locale
-/// corrente está carregado — o `WebI18nGate` exibe carregamento/erro enquanto
-/// [hasLanguage] for falso. Por isso os getters retornam `null` quando a chave
-/// ainda não chegou, e [WebRootL10n] traduz isso em vazio (`''` / `[]`).
+/// É um singleton síncrono lido durante o `build` dos widgets. O carregamento
+/// remoto assíncrono acontece no `LocaleSettingsProvider`, que escreve aqui via
+/// [setMessages] e dispara `notifyListeners()` para reconstruir a árvore.
 class WebI18nStore {
   WebI18nStore._();
 
@@ -24,17 +17,31 @@ class WebI18nStore {
     _byCode[_lang(code)] = messages;
   }
 
+  /// Mantém em memória somente o idioma ativo.
+  ///
+  /// O objetivo é manter o mesmo comportamento do cache local persistido:
+  /// quando o usuário troca de idioma, o pacote anterior deixa de ocupar espaço
+  /// e o app passa a usar somente o pacote recém-baixado.
+  void keepOnly(String code) {
+    final active = _lang(code);
+    _byCode.removeWhere((key, _) => key != active);
+  }
+
   bool hasLanguage(String code) => _byCode.containsKey(_lang(code));
 
   /// String simples para [key], ou `null` se ausente/tipo inesperado.
+  ///
+  /// Suporta os dois formatos:
+  /// - chave plana: `configuracoes.pageTitle`;
+  /// - mapa aninhado vindo do Mongo: `{ "configuracoes": { "pageTitle": "..." } }`.
   String? string(String code, String key) {
-    final value = _byCode[_lang(code)]?[key];
+    final value = _resolve(code, key);
     return value is String ? value : null;
   }
 
   /// Lista de strings para [key], ou `null` se ausente/tipo inesperado.
   List<String>? stringList(String code, String key) {
-    final value = _byCode[_lang(code)]?[key];
+    final value = _resolve(code, key);
     if (value is List) {
       return value.map((e) => e.toString()).toList();
     }
@@ -43,7 +50,7 @@ class WebI18nStore {
 
   /// Lista de objetos para [key] (ex.: plans, featureCards), ou `null`.
   List<Map<String, dynamic>>? objectList(String code, String key) {
-    final value = _byCode[_lang(code)]?[key];
+    final value = _resolve(code, key);
     if (value is List) {
       return value
           .whereType<Map>()
@@ -51,6 +58,24 @@ class WebI18nStore {
           .toList();
     }
     return null;
+  }
+
+  Object? _resolve(String code, String key) {
+    final messages = _byCode[_lang(code)];
+    if (messages == null) return null;
+
+    final flatValue = messages[key];
+    if (flatValue != null) return flatValue;
+
+    Object? current = messages;
+    for (final part in key.split('.')) {
+      if (current is Map) {
+        current = current[part];
+      } else {
+        return null;
+      }
+    }
+    return current;
   }
 
   String _lang(String code) {

@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:provider/provider.dart';
 import '../../domain/models/regionalizacao_models.dart';
+import '../../l10n/web_i18n_store.dart';
 import '../../providers/locale_settings_provider.dart';
 
 import '../../data/services/aparencia/aparencia_api_client.dart';
@@ -1518,12 +1519,17 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
   }
 
+  String _i18n(String key, String fallback) {
+    final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
+    return WebI18nStore.instance.string(locale.toLanguageTag(), key) ?? fallback;
+  }
+
   Widget _buildSecaoRegionalizacao() {
     return Column(
       children: [
         _buildSectionHeader(
-          titulo: 'Idioma, região e moeda',
-          descricao: _descricaoSecao(SecaoConfiguracaoSix.regionalizacao),
+          titulo: _i18n('configuracoes.regionalizationTitle', 'XXXXX'),
+          descricao: _i18n('configuracoes.descRegionalization', 'XXXXX'),
           icone: Icons.public_rounded,
         ),
         const SizedBox(height: 20),
@@ -1544,16 +1550,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     'Português (Brasil)',
                     'English (US)',
                     'Español',
-                    'Polski',
+                    // 'Polski',
                   ],
                   onChanged: (valor) async {
                     if (valor == null) return;
-
-                    setState(() {
-                      _idiomaSelecionado = valor;
-                    });
-
-                    _marcarAlteracao();
+                    await _alterarIdiomaSistema(valor);
                   },
                 ),
               ),
@@ -2854,6 +2855,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     switch (idioma) {
       case 'English (US)':
         return const Locale('en', 'US');
+      case 'Español':
+        return const Locale('es', 'ES');
       case 'Português (Brasil)':
       default:
         return const Locale('pt', 'BR');
@@ -2876,6 +2879,39 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       case 'Ponto':
       default:
         return '.';
+    }
+  }
+
+  Future<void> _alterarIdiomaSistema(String idioma) async {
+    setState(() {
+      _idiomaSelecionado = idioma;
+      _possuiAlteracoesNaoSalvas = true;
+      _carregandoAparencia = true;
+    });
+
+    try {
+      final locale = _mapIdiomaSelecionadoParaLocale(idioma);
+
+      await context.read<LocaleSettingsProvider>().setUserLocale(locale);
+
+      if (!mounted) return;
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao carregar idioma: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregandoAparencia = false;
+        });
+      }
     }
   }
 
