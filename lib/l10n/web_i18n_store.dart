@@ -1,15 +1,8 @@
 /// Armazena, em memória, as traduções de UI carregadas do backend.
 ///
-/// É um singleton síncrono lido durante o `build` dos widgets via
-/// [WebRootL10n]. O carregamento remoto (assíncrono) acontece no
-/// `LocaleSettingsProvider`, que escreve aqui via [setMessages] e dispara
-/// `notifyListeners()` para reconstruir a árvore com os textos novos.
-///
-/// Não há fallback embutido no app: o backend é a única fonte de conteúdo. As
-/// telas que dependem destas mensagens só são construídas depois que o locale
-/// corrente está carregado — o `WebI18nGate` exibe carregamento/erro enquanto
-/// [hasLanguage] for falso. Por isso os getters retornam `null` quando a chave
-/// ainda não chegou, e [WebRootL10n] traduz isso em vazio (`''` / `[]`).
+/// É um singleton síncrono lido durante o `build` dos widgets. O carregamento
+/// remoto assíncrono acontece no `LocaleSettingsProvider`, que escreve aqui via
+/// [setMessages] e dispara `notifyListeners()` para reconstruir a árvore.
 class WebI18nStore {
   WebI18nStore._();
 
@@ -22,6 +15,16 @@ class WebI18nStore {
   /// ('pt-BR') ou só o idioma ('pt'); apenas o idioma é usado como chave.
   void setMessages(String code, Map<String, dynamic> messages) {
     _byCode[_lang(code)] = messages;
+  }
+
+  /// Mantém em memória somente o idioma ativo.
+  ///
+  /// O objetivo é manter o mesmo comportamento do cache local persistido:
+  /// quando o usuário troca de idioma, o pacote anterior deixa de ocupar espaço
+  /// e o app passa a usar somente o pacote recém-baixado.
+  void keepOnly(String code) {
+    final active = _lang(code);
+    _byCode.removeWhere((key, _) => key != active);
   }
 
   bool hasLanguage(String code) => _byCode.containsKey(_lang(code));
