@@ -51,7 +51,14 @@ class WebI18nApiClient {
 
     try {
       final cachedEtag = prefs.getString(etagKey);
-      final uri = Uri.parse('${AppConfig.baseUrl}/public/api/i18n/$normalizedTag');
+      final baseUri = Uri.parse('${AppConfig.baseUrl}/public/api/i18n/$normalizedTag');
+      final uri = force
+          ? baseUri.replace(
+              queryParameters: <String, String>{
+                '_refresh': DateTime.now().millisecondsSinceEpoch.toString(),
+              },
+            )
+          : baseUri;
 
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (!force && cachedEtag != null && cachedBody != null) {
