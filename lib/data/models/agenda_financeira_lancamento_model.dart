@@ -191,6 +191,64 @@ class LancamentoAgendaFinanceiraResponse {
   }
 }
 
+class AgendaFinanceiraLiquidacaoRequest {
+  AgendaFinanceiraLiquidacaoRequest({
+    required this.tipoLiquidacao,
+    required this.dataLiquidacao,
+    required this.valorLiquidado,
+    required this.formaPagamentoRealizada,
+    this.observacoes,
+    this.referenciaExterna,
+    this.anexarComprovante = false,
+  });
+
+  final String tipoLiquidacao;
+  final DateTime dataLiquidacao;
+  final double valorLiquidado;
+  final String formaPagamentoRealizada;
+  final String? observacoes;
+  final String? referenciaExterna;
+  final bool anexarComprovante;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'tipoLiquidacao': tipoLiquidacao,
+      'dataLiquidacao': _toIsoDate(dataLiquidacao),
+      'valorLiquidado': valorLiquidado,
+      'formaPagamentoRealizada': formaPagamentoRealizada,
+      'observacoes': observacoes,
+      'referenciaExterna': referenciaExterna,
+      'anexarComprovante': anexarComprovante,
+    };
+  }
+}
+
+class AgendaFinanceiraParcialRequest {
+  AgendaFinanceiraParcialRequest({
+    required this.tipoLiquidacao,
+    required this.dataLiquidacao,
+    required this.valorLiquidado,
+    required this.formaPagamentoRealizada,
+    this.observacoes,
+  });
+
+  final String tipoLiquidacao;
+  final DateTime dataLiquidacao;
+  final double valorLiquidado;
+  final String formaPagamentoRealizada;
+  final String? observacoes;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'tipoLiquidacao': tipoLiquidacao,
+      'dataLiquidacao': _toIsoDate(dataLiquidacao),
+      'valorLiquidado': valorLiquidado,
+      'formaPagamentoRealizada': formaPagamentoRealizada,
+      'observacoes': observacoes,
+    };
+  }
+}
+
 class AgendaFinanceiraConsultaRequest {
   AgendaFinanceiraConsultaRequest({
     required this.periodo,
