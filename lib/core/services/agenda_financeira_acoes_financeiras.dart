@@ -1,0 +1,3 @@
+class AgendaFinanceiraAcoesFinanceiras {
+  const AgendaFinanceiraAcoesFinanceiras();
+}
