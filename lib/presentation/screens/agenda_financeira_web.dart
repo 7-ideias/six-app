@@ -66,6 +66,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   double get _totalReceberPrevisto => _somar(_itensSomaveis, 'receber', 'valorRestante');
   double get _totalPagarPrevisto => _somar(_itensSomaveis, 'pagar', 'valorRestante');
+  double get _saldoPrevisto => _totalReceberPrevisto - _totalPagarPrevisto;
   double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
   double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
   double get _saldoConfirmado => _toDouble(_totaisConfirmados['saldoConfirmado']);
@@ -536,6 +537,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final cards = <Map<String, dynamic>>[
       {'titulo': 'A receber aberto', 'valor': _totalReceberPrevisto, 'icone': Icons.south_west_rounded},
       {'titulo': 'A pagar aberto', 'valor': _totalPagarPrevisto, 'icone': Icons.north_east_rounded},
+      {'titulo': 'Saldo previsto', 'valor': _saldoPrevisto, 'icone': Icons.query_stats_rounded},
       {'titulo': 'Recebido confirmado', 'valor': _totalRecebidoConfirmado, 'icone': Icons.verified_rounded},
       {'titulo': 'Pago confirmado', 'valor': _totalPagoConfirmado, 'icone': Icons.task_alt_rounded},
       {'titulo': 'Saldo confirmado', 'valor': _saldoConfirmado, 'icone': Icons.account_balance_wallet_rounded},
