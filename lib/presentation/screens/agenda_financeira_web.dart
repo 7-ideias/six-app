@@ -281,6 +281,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       setState(() => _selecionado = item);
       return;
     }
+    if (comando == 'editar') {
+      await _editarLancamento(item);
+      return;
+    }
     if (comando == 'registrar parcial') {
       await _registrarParcial(item);
       return;
@@ -414,6 +418,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _novoLancamento() async {
     final item = await showSubPainelLancamentoAgendaFinanceiraWeb(context, empresaSelecionada: 'Empresa', empresas: const <String>['Empresa']);
     if (!mounted || item == null) return;
+    await _consultar(mostrarFeedback: true);
+  }
+
+  Future<void> _editarLancamento(Map<String, dynamic> item) async {
+    final empresaAtual = _empresaNome(item['empresa']).trim();
+    final empresas = <String>[empresaAtual.isEmpty ? 'Empresa' : empresaAtual];
+
+    final itemAtualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
+      context,
+      empresaSelecionada: empresas.first,
+      empresas: empresas,
+      modoEdicao: true,
+      lancamentoInicial: item,
+    );
+
+    if (!mounted || itemAtualizado == null) return;
     await _consultar(mostrarFeedback: true);
   }
 
@@ -601,10 +621,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: (item['acoes'] as List).take(4).map((acao) => OutlinedButton(
-              onPressed: _executandoAcao ? null : () => _executarAcao(acao.toString(), item),
-              child: Text(acao.toString()),
-            )).toList(),
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: _executandoAcao ? null : () => _editarLancamento(item),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Editar'),
+              ),
+              ...(item['acoes'] as List).take(4).map((acao) => OutlinedButton(
+                onPressed: _executandoAcao ? null : () => _executarAcao(acao.toString(), item),
+                child: Text(acao.toString()),
+              )),
+            ],
           ),
         ]),
       ),
@@ -669,6 +696,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   String _acaoLabel(String? acao) {
     switch ((acao ?? '').toUpperCase()) {
+      case 'EDITAR':
+      case 'ALTERAR':
+        return 'Editar';
       case 'REGISTRAR_RECEBIMENTO':
       case 'RECEBER':
         return 'Receber';
