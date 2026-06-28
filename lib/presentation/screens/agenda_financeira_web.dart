@@ -98,6 +98,25 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     await _consultarLancamentos();
   }
 
+  String _formaPagamentoLabelParaBackend(String label) {
+    switch (label.toLowerCase()) {
+      case 'boleto':
+        return 'BOLETO';
+      case 'transferência':
+        return 'TRANSFERENCIA';
+      case 'cartão de crédito':
+        return 'CARTAO_CREDITO';
+      case 'cartão de débito':
+        return 'CARTAO_DEBITO';
+      case 'débito automático':
+        return 'DEBITO_AUTOMATICO';
+      case 'dinheiro':
+        return 'DINHEIRO';
+      default:
+        return 'PIX';
+    }
+  }
+
   Future<void> _carregarFiltrosDoCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -479,7 +498,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'observacoes': item['observacaoResumida']?.toString() ?? '',
       'recorrente': item['recorrente'] == true,
       'historico': <String>['Lançamento consultado na agenda financeira.', if (item['recorrente'] == true) 'Lançamento recorrente.'],
-      'acoes': acoes.isNotEmpty ? acoes : (tipo == 'receber' ? <String>['Receber', 'Detalhes'] : <String>['Pagar', 'Detalhes']),
+      'acoes': acoes.isNotEmpty
+          ? acoes
+          : (tipo == 'receber'
+          ? <String>['Receber', 'Registrar parcial', 'Detalhes']
+          : <String>['Pagar', 'Registrar parcial', 'Detalhes']),
     };
   }
 
@@ -1090,7 +1113,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return Column(crossAxisAlignment: CrossAxisAlignment.end, children: <Widget>[
       Text(_formatarMoeda(item['valor'] as double), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: corTipo)),
       const SizedBox(height: 12),
-      Wrap(alignment: WrapAlignment.end, spacing: 8, runSpacing: 8, children: (item['acoes'] as List).take(3).map((acao) => OutlinedButton(onPressed: () => _executarAcaoLancamento(acao.toString(), item), child: Text(acao.toString()))).toList()),
+      Wrap(alignment: WrapAlignment.end, spacing: 8, runSpacing: 8, children: (item['acoes'] as List).take(3).map((acao) =>
+          OutlinedButton(
+              onPressed: _isExecutandoAcao
+                  ? null
+                  : () => _executarAcaoLancamento(acao.toString(), item),child: Text(acao.toString()))).toList()
+      ),
     ]);
   }
 
