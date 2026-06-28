@@ -82,6 +82,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   bool _recorrente = false;
   bool _statusQuitada = false;
   bool _bloquearTipoStatusPorConfirmacao = false;
+  final List<Map<String, dynamic>> _liquidacoes = <Map<String, dynamic>>[];
   String? _idLancamentoEdicao;
   String? _uuidOperacaoAppEdicao;
 
@@ -238,6 +239,24 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _dataCompetencia = _parseData(item['dataCompetencia'], fallback: _dataVencimento);
 
     _aplicarDadosRecorrencia(item, respeitarAusencia: true);
+    _aplicarLiquidacoes(item);
+  }
+
+  void _aplicarLiquidacoes(Map<String, dynamic> item) {
+    if (!item.containsKey('liquidacoes')) return;
+
+    final raw = item['liquidacoes'];
+
+    _liquidacoes
+      ..clear()
+      ..addAll(
+        raw is List
+            ? raw
+            .whereType<Map<String, dynamic>>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList()
+            : <Map<String, dynamic>>[],
+      );
   }
 
   Future<void> _carregarDetalheLancamentoEdicao() async {
@@ -249,6 +268,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       if (!mounted || detalhe.isEmpty) return;
 
       setState(() {
+        _aplicarLiquidacoes(detalhe);
         _aplicarDadosRecorrencia(detalhe, respeitarAusencia: false);
         _garantirRecorrenciaConsistente();
         _sincronizarTextosData();
@@ -256,6 +276,110 @@ class _LancamentoAgendaFinanceiraWebBodyState
     } catch (_) {
       // Se o detalhe não estiver disponível, mantém os dados já recebidos pela listagem.
     }
+  }
+
+  String _formatarMoeda(dynamic valor) {
+    final numero = _toDoubleDynamic(valor);
+    final negativo = numero < 0;
+    final absoluto = numero.abs();
+    final partes = absoluto.toStringAsFixed(2).split('.');
+    final inteiro = partes[0];
+    final decimal = partes[1];
+    final buffer = StringBuffer();
+
+    for (var i = 0; i < inteiro.length; i++) {
+      final indexInvertido = inteiro.length - i;
+      buffer.write(inteiro[i]);
+      if (indexInvertido > 1 && indexInvertido % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+
+    return '${negativo ? '-R\$ ' : 'R\$ '}${buffer.toString()},$decimal';
+  }
+
+  String _formatarDataLiquidacao(dynamic value) {
+    final data = _parseDataOpcional(value);
+    if (data != null) return _formatarDataBr(data);
+    return value?.toString() ?? '-';
+  }
+
+  String _tipoLiquidacaoLabel(dynamic value) {
+    switch (value?.toString().toUpperCase()) {
+      case 'TOTAL':
+        return 'Total';
+      case 'PARCIAL':
+        return 'Parcial';
+      default:
+        return value?.toString() ?? 'Confirmação';
+    }
+  }
+
+  Widget _buildHistoricoLiquidacoes() {
+    if (_liquidacoes.isEmpty) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _liquidacoes.map((liquidacao) {
+        final tipo = liquidacao['tipoLiquidacao'] ?? liquidacao['tipo'];
+        final valor = liquidacao['valorLiquidado'];
+        final antes = liquidacao['valorRestanteAntes'];
+        final depois = liquidacao['valorRestanteDepois'];
+        final formaPagamento = liquidacao['formaPagamentoRealizada'] ?? liquidacao['formaPagamento'];
+        final observacoes = liquidacao['observacoes']?.toString() ?? '';
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outline.withOpacity(0.14)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Chip(
+                    avatar: const Icon(Icons.payments_outlined, size: 18),
+                    label: Text(_tipoLiquidacaoLabel(tipo)),
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.calendar_today_outlined, size: 16),
+                    label: Text(_formatarDataLiquidacao(liquidacao['dataLiquidacao'])),
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.account_balance_wallet_outlined, size: 16),
+                    label: Text(formaPagamento?.toString() ?? '-'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 20,
+                runSpacing: 8,
+                children: <Widget>[
+                  Text('Valor confirmado: ${_formatarMoeda(valor)}', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Text('Antes: ${_formatarMoeda(antes)}'),
+                  Text('Depois: ${_formatarMoeda(depois)}'),
+                ],
+              ),
+              if (observacoes.trim().isNotEmpty) ...<Widget>[
+                const SizedBox(height: 8),
+                Text('Observação: $observacoes'),
+              ],
+            ],
+          ),
+        );
+      }).toList(),
+    );
   }
 
   void _aplicarDadosRecorrencia(Map<String, dynamic> item, {required bool respeitarAusencia}) {
@@ -982,7 +1106,18 @@ class _LancamentoAgendaFinanceiraWebBodyState
                         ),
                       ),
                       SizedBox(width: largura(320, 300), child: _buildTextField(controller: _descricaoController, label: 'Descrição', requiredField: true)),
-                      SizedBox(width: largura(260, 220), child: _buildTextField(controller: _valorController, label: 'Valor total', requiredField: true, keyboardType: const TextInputType.numberWithOptions(decimal: true))),
+
+                      SizedBox(
+                        width: largura(260, 220),
+                        child: _buildTextField(
+                          controller: _valorController,
+                          label: 'Valor total',
+                          requiredField: true,
+                          enabled: !_bloquearTipoStatus,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ),
+                      ),
+
                       SizedBox(
                         width: largura(260, 220),
                         child: _buildTextField(
@@ -1113,6 +1248,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     ],
                   ]),
                 ),
+                const SizedBox(height: 16),
+                if (widget.modoEdicao && _liquidacoes.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    title: 'Histórico de confirmações',
+                    subtitle: 'Detalhamento dos pagamentos ou recebimentos parciais já registrados.',
+                    icon: Icons.receipt_long_outlined,
+                    child: _buildHistoricoLiquidacoes(),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 _buildActionsBar(),
               ],
