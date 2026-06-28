@@ -850,6 +850,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final total = entrada + saida;
     final percentualEntrada = total <= 0 ? 0.0 : entrada / total;
     final percentualSaida = total <= 0 ? 0.0 : saida / total;
+    final percentualEntradaTexto = total <= 0
+        ? '0,0% entradas'
+        : '${(percentualEntrada * 100).toStringAsFixed(1).replaceAll('.', ',')}% entradas';
+
+    final percentualSaidaTexto = total <= 0
+        ? '0,0% saídas'
+        : '${(percentualSaida * 100).toStringAsFixed(1).replaceAll('.', ',')}% saídas';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -871,7 +878,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         LayoutBuilder(
           builder: (context, constraints) {
             return Container(
-              height: 22,
+              height: 44,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
@@ -880,24 +887,46 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               clipBehavior: Clip.antiAlias,
               child: TweenAnimationBuilder<double>(
                 tween: Tween<double>(begin: 0, end: 1),
-                duration: const Duration(milliseconds: 650),
+                duration: const Duration(milliseconds: 750),
                 curve: Curves.easeOutCubic,
                 builder: (context, value, child) {
-                  return Row(
+                  final carregou = value >= 0.98;
+
+                  return Stack(
                     children: <Widget>[
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 650),
-                        curve: Curves.easeOutCubic,
-                        width: constraints.maxWidth * percentualEntrada * value,
-                        height: 22,
-                        color: theme.colorScheme.primary,
+                      Row(
+                        children: <Widget>[
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 750),
+                            curve: Curves.easeOutCubic,
+                            width: constraints.maxWidth * percentualEntrada * value,
+                            height: 44,
+                            color: theme.colorScheme.primary,
+                          ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 750),
+                            curve: Curves.easeOutCubic,
+                            width: constraints.maxWidth * percentualSaida * value,
+                            height: 44,
+                            color: theme.colorScheme.error,
+                          ),
+                        ],
                       ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 650),
-                        curve: Curves.easeOutCubic,
-                        width: constraints.maxWidth * percentualSaida * value,
-                        height: 22,
-                        color: theme.colorScheme.error,
+                      Positioned.fill(
+                        child: AnimatedOpacity(
+                          opacity: carregou ? 1 : 0,
+                          duration: const Duration(milliseconds: 250),
+                          child: Center(
+                            child: Text(
+                              '$percentualEntradaTexto • $percentualSaidaTexto',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   );
