@@ -65,6 +65,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   final TextEditingController _idContatoController = TextEditingController();
   final TextEditingController _categoriaController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
+  final TextEditingController _valorConfirmadoController = TextEditingController(text: '0,00');
   final TextEditingController _responsavelController = TextEditingController();
   final TextEditingController _observacoesController = TextEditingController();
   final TextEditingController _referenciaController = TextEditingController();
@@ -163,6 +164,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _idContatoController.dispose();
     _categoriaController.dispose();
     _valorController.dispose();
+    _valorConfirmadoController.dispose();
     _responsavelController.dispose();
     _observacoesController.dispose();
     _referenciaController.dispose();
@@ -193,6 +195,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       _statusSelecionado = status;
     }
 
+    final valorOriginal = item['valorOriginal'] ?? item['valorTotalOperacao'] ?? item['valorTotal'] ?? item['valor'];
     final valorConfirmado = _toDoubleDynamic(item['valorConfirmado']);
     final valorRestante = _toDoubleDynamic(item['valorRestante']);
     final statusNormalizado = _normalizarSemAcento(status).toUpperCase();
@@ -222,7 +225,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _contatoController.text = item['contato']?.toString() ?? '';
     _idContatoController.text = item['idContato']?.toString() ?? '';
     _categoriaController.text = item['categoria']?.toString() ?? '';
-    _valorController.text = _formatarValorParaCampo(item['valor']);
+    _valorController.text = _formatarValorParaCampo(valorOriginal);
+    _valorConfirmadoController.text = _formatarValorParaCampo(valorConfirmado);
     _responsavelController.text = item['responsavel']?.toString() ?? '';
     _observacoesController.text = item['observacoes']?.toString() ?? '';
     _referenciaController.text = item['referenciaExterna']?.toString() ?? '';
@@ -979,6 +983,15 @@ class _LancamentoAgendaFinanceiraWebBodyState
                       ),
                       SizedBox(width: largura(320, 300), child: _buildTextField(controller: _descricaoController, label: 'Descrição', requiredField: true)),
                       SizedBox(width: largura(260, 220), child: _buildTextField(controller: _valorController, label: 'Valor total', requiredField: true, keyboardType: const TextInputType.numberWithOptions(decimal: true))),
+                      SizedBox(
+                        width: largura(260, 220),
+                        child: _buildTextField(
+                          controller: _valorConfirmadoController,
+                          label: 'Valor confirmado',
+                          enabled: false,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ),
+                      ),
                       SizedBox(
                         width: largura(260, 220),
                         child: _buildDateField(
