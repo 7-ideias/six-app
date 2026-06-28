@@ -17,6 +17,9 @@ class AgendaFinanceiraLancamentoService {
   String get _endpointConsulta =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/consultar';
 
+  String get _endpointValoresConfirmados =>
+      '${AppConfig.baseUrl}/private/api/agenda-financeira/valores-confirmados';
+
   String _endpointLancamento(String idLancamento) =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos/$idLancamento';
 
@@ -74,6 +77,36 @@ class AgendaFinanceiraLancamentoService {
     AgendaFinanceiraConsultaRequest request,
   ) async {
     final uri = Uri.parse(_endpointConsulta);
+
+    final response = await _httpClient.post(
+      uri,
+      headers: await _buildHeaders(),
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      return <String, dynamic>{};
+    }
+
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> consultarValoresConfirmados(
+    AgendaFinanceiraConsultaRequest request,
+  ) async {
+    final uri = Uri.parse(_endpointValoresConfirmados);
 
     final response = await _httpClient.post(
       uri,
