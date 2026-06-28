@@ -571,7 +571,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildAgenda(ThemeData theme) {
     if (_itensAgenda.isEmpty) return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum lançamento encontrado.')));
-    return Column(children: _itensAgenda.map((item) => _cardLancamento(theme, item)).toList());
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: _itensAgenda.map((item) => _cardLancamento(theme, item)).toList(),
+    );
   }
 
   Widget _cardLancamento(ThemeData theme, Map<String, dynamic> item) {
