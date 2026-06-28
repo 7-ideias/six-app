@@ -68,7 +68,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   double get _totalPagarPrevisto => _somar(_itensSomaveis, 'pagar', 'valorRestante');
   double get _saldoPrevisto =>
       (_totalRecebidoConfirmado + _totalReceberPrevisto) -
-          (_totalPagoConfirmado + _totalPagarPrevisto);
+      (_totalPagoConfirmado + _totalPagarPrevisto);
   double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
   double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
   double get _saldoConfirmado => _toDouble(_totaisConfirmados['saldoConfirmado']);
@@ -185,7 +185,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         grupos.add(<String, dynamic>{
           'grupo': grupo['titulo']?.toString() ?? 'Lançamentos',
           'descricao': grupo['descricao']?.toString() ?? '',
-          'itens': itensRaw is List ? itensRaw.whereType<Map<String, dynamic>>().map(_mapearItemAgenda).toList() : <Map<String, dynamic>>[],
+          'itens': itensRaw is List
+              ? itensRaw.whereType<Map<String, dynamic>>().map(_mapearItemAgenda).toList()
+              : <Map<String, dynamic>>[],
         });
       }
     }
@@ -232,16 +234,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'categoria': item['categoria']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
-      'acoes': acoes.isNotEmpty
-          ? acoes
-          : (tipo == 'receber'
-              ? <String>['Receber', 'Registrar parcial', 'Detalhes']
-              : <String>['Pagar', 'Registrar parcial', 'Detalhes']),
-      'liquidacoes': item['liquidacoes'] is List
-          ? List<Map<String, dynamic>>.from(
-        (item['liquidacoes'] as List).whereType<Map<String, dynamic>>(),
-      )
-          : <Map<String, dynamic>>[],
+      'acoes': acoes.isNotEmpty ? acoes : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
+      'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
     };
   }
 
@@ -261,12 +255,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'formaPagamento': _formaPagamentoLabel(item['formaPagamento']?.toString()),
       'empresa': item['empresa']?.toString() ?? '',
       'quantidadeConfirmacoes': item['quantidadeConfirmacoes'] ?? item['quantidadeLiquidacoes'] ?? 1,
-      'liquidacoes': item['liquidacoes'] is List
-          ? List<Map<String, dynamic>>.from(
-        (item['liquidacoes'] as List).whereType<Map<String, dynamic>>(),
-      )
-          : <Map<String, dynamic>>[],
+      'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
     };
+  }
+
+  List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) {
+    return raw is List
+        ? raw.whereType<Map<String, dynamic>>().map((item) => Map<String, dynamic>.from(item)).toList()
+        : <Map<String, dynamic>>[];
   }
 
   void _sincronizarValoresConfirmadosNosLancamentos() {
@@ -282,11 +278,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
         item['valor'] = confirmado['valorRestante'];
-        if ((confirmado['valorConfirmado'] as double? ?? 0) > 0 && (confirmado['valorRestante'] as double? ?? 0) > 0) {
-          item['status'] = 'Parcial';
-        }
         item['liquidacoes'] = confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
         item['quantidadeConfirmacoes'] = confirmado['quantidadeConfirmacoes'] ?? 0;
+        if (_toDouble(confirmado['valorConfirmado']) > 0 && _toDouble(confirmado['valorRestante']) > 0) {
+          item['status'] = 'Parcial';
+        }
       }
     }
   }
@@ -305,8 +301,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       await _registrarParcial(item);
       return;
     }
-    if (comando == 'receber' || comando == 'pagar') {
-      await _confirmarTotal(item, comando == 'receber' ? 'Receber' : 'Pagar');
+    if (comando == 'liquidar' || comando == 'receber' || comando == 'pagar') {
+      await _confirmarTotal(item, 'Liquidar');
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ação "$acao" ainda não implementada.')));
@@ -387,11 +383,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _confirmarTotal(Map<String, dynamic> item, String label) async {
+    final valor = _toDouble(item['valorRestante'] ?? item['valor']);
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('$label lançamento'),
-        content: Text('Confirmar $label de ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}?'),
+        title: const Text('Liquidar lançamento'),
+        content: Text('Confirmar liquidação de ${_formatarMoeda(valor)}?'),
         actions: <Widget>[
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(label)),
@@ -406,15 +403,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         request: AgendaFinanceiraLiquidacaoRequest(
           tipoLiquidacao: 'TOTAL',
           dataLiquidacao: DateTime.now(),
-          valorLiquidado: _toDouble(item['valorRestante'] ?? item['valor']),
+          valorLiquidado: valor,
           formaPagamentoRealizada: _formaPagamentoBackend(item['formaPagamento']?.toString() ?? 'Pix'),
-          observacoes: 'Confirmação realizada pela agenda financeira.',
+          observacoes: 'Liquidação realizada pela agenda financeira.',
           referenciaExterna: item['id']?.toString(),
         ),
       );
       await _consultar();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label registrado com sucesso.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento liquidado com sucesso.')));
     });
   }
 
@@ -541,7 +538,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       width: 190,
       child: DropdownButtonFormField<String>(
         value: items.contains(value) ? value : items.first,
-        decoration: InputDecoration(labelText: label, isDense: true, border: const OutlineInputBorder()),
+        decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()).copyWith(labelText: label),
         items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(item, overflow: TextOverflow.ellipsis))).toList(),
         onChanged: _carregando ? null : onChanged,
       ),
@@ -718,10 +715,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         return 'Editar';
       case 'REGISTRAR_RECEBIMENTO':
       case 'RECEBER':
-        return 'Receber';
       case 'REGISTRAR_PAGAMENTO':
       case 'PAGAR':
-        return 'Pagar';
+        return 'Liquidar';
       case 'REGISTRAR_PARCIAL':
         return 'Registrar parcial';
       case 'DETALHAR':
