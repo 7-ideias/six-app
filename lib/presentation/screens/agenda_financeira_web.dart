@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
+import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
   const AgendaFinanceiraWeb({super.key, this.embedded = false, this.onBack});
@@ -13,9 +14,16 @@ class AgendaFinanceiraWeb extends StatefulWidget {
   final bool embedded;
   final VoidCallback? onBack;
 
+
+
   @override
   State<AgendaFinanceiraWeb> createState() => _AgendaFinanceiraWebState();
 }
+
+final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
+AgendaFinanceiraAcoesFinanceiras();
+
+bool _isExecutandoAcao = false;
 
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   static const String _filtrosCacheKey = 'six.agendaFinanceiraWeb.filtros.v1';
@@ -1085,17 +1093,140 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ]);
   }
 
-  void _executarAcaoLancamento(String acao, Map<String, dynamic> item) {
+  Future<void> _executarAcaoLancamento(
+      String acao,
+      Map<String, dynamic> item,
+      ) async {
     final comando = acao.trim().toLowerCase();
+
     if (comando == 'detalhes' || comando == 'detalhar') {
       setState(() => _lancamentoSelecionado = item);
       return;
     }
-    if (comando == 'editar' || comando == 'editar lançamento') {
-      _onEditarLancamentoPressed(itemBase: item);
+
+    if (comando == 'receber' || comando == 'pagar') {
+      await _confirmarBaixaTotal(
+        item,
+        comando == 'receber' ? 'Receber' : 'Pagar',
+      );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ação "$acao" será integrada no backend.')));
+
+    if (comando == 'registrar parcial') {
+      await _registrarParcial(item);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ação "$acao" ainda não está disponível.')),
+    );
+  }
+
+  Future<void> _registrarParcial(Map<String, dynamic> item) async {
+    final valorController = TextEditingController();
+    final observacaoController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final valor = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Registrar parcial'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Valor aberto: ${_formatarMoeda(item['valor'] as double)}'),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: valorController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Valor parcial'),
+                validator: (value) {
+                  final valor = _toDoubleDynamic(value);
+                  if (valor <= 0) return 'Informe um valor maior que zero.';
+                  if (valor >= (item['valor'] as double)) {
+                    return 'Informe um valor menor que o total aberto.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: observacaoController,
+                minLines: 2,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Observação'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() != true) return;
+              Navigator.pop(context, _toDoubleDynamic(valorController.text));
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+
+    final observacao = observacaoController.text.trim();
+    valorController.dispose();
+    observacaoController.dispose();
+
+    if (valor == null) return;
+
+    await _executarComFeedback(() async {
+      await _acoesFinanceiras.executarAbatimento(
+        idLancamento: item['id'].toString(),
+        request: AgendaFinanceiraParcialRequest(
+          tipoLiquidacao: 'PARCIAL',
+          dataLiquidacao: DateTime.now(),
+          valorLiquidado: valor,
+          formaPagamentoRealizada: _formaPagamentoLabelParaBackend(
+            item['formaPagamento']?.toString() ?? 'Pix',
+          ),
+          observacoes: observacao.isEmpty
+              ? 'Lançamento parcial registrado pela agenda financeira.'
+              : observacao,
+        ),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Parcial registrada com sucesso.')),
+      );
+    });
+  }
+
+  Future<void> _executarComFeedback(Future<void> Function() action) async {
+    if (_isExecutandoAcao) return;
+
+    setState(() => _isExecutandoAcao = true);
+
+    try {
+      await action();
+      await _consultarLancamentos(mostrarFeedback: false);
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível concluir a ação (${e.statusCode}).')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível concluir a ação.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isExecutandoAcao = false);
+    }
   }
 
   Widget _buildMiniInfo(BuildContext context, IconData icon, String text) {
