@@ -66,7 +66,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   double get _totalReceberPrevisto => _somar(_itensSomaveis, 'receber', 'valorRestante');
   double get _totalPagarPrevisto => _somar(_itensSomaveis, 'pagar', 'valorRestante');
-  double get _saldoPrevisto => _totalReceberPrevisto - _totalPagarPrevisto;
+  double get _saldoPrevisto =>
+      (_totalRecebidoConfirmado + _totalReceberPrevisto) -
+          (_totalPagoConfirmado + _totalPagarPrevisto);
   double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
   double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
   double get _saldoConfirmado => _toDouble(_totaisConfirmados['saldoConfirmado']);
@@ -235,11 +237,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           : (tipo == 'receber'
               ? <String>['Receber', 'Registrar parcial', 'Detalhes']
               : <String>['Pagar', 'Registrar parcial', 'Detalhes']),
+      'liquidacoes': item['liquidacoes'] is List
+          ? List<Map<String, dynamic>>.from(
+        (item['liquidacoes'] as List).whereType<Map<String, dynamic>>(),
+      )
+          : <Map<String, dynamic>>[],
     };
   }
 
   Map<String, dynamic> _mapearItemConfirmado(Map<String, dynamic> item) {
     final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
+
     return <String, dynamic>{
       'id': item['idLancamento']?.toString() ?? '',
       'tipo': tipo,
@@ -253,6 +261,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'formaPagamento': _formaPagamentoLabel(item['formaPagamento']?.toString()),
       'empresa': item['empresa']?.toString() ?? '',
       'quantidadeConfirmacoes': item['quantidadeConfirmacoes'] ?? item['quantidadeLiquidacoes'] ?? 1,
+      'liquidacoes': item['liquidacoes'] is List
+          ? List<Map<String, dynamic>>.from(
+        (item['liquidacoes'] as List).whereType<Map<String, dynamic>>(),
+      )
+          : <Map<String, dynamic>>[],
     };
   }
 
@@ -272,6 +285,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         if ((confirmado['valorConfirmado'] as double? ?? 0) > 0 && (confirmado['valorRestante'] as double? ?? 0) > 0) {
           item['status'] = 'Parcial';
         }
+        item['liquidacoes'] = confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
+        item['quantidadeConfirmacoes'] = confirmado['quantidadeConfirmacoes'] ?? 0;
       }
     }
   }
