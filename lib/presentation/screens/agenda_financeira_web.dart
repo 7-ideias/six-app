@@ -4,9 +4,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
+import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
-import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
   const AgendaFinanceiraWeb({super.key, this.embedded = false, this.onBack});
@@ -14,22 +14,27 @@ class AgendaFinanceiraWeb extends StatefulWidget {
   final bool embedded;
   final VoidCallback? onBack;
 
-
-
   @override
   State<AgendaFinanceiraWeb> createState() => _AgendaFinanceiraWebState();
 }
 
-final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
-AgendaFinanceiraAcoesFinanceiras();
-
-bool _isExecutandoAcao = false;
-
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   static const String _filtrosCacheKey = 'six.agendaFinanceiraWeb.filtros.v1';
 
-  final AgendaFinanceiraLancamentoService _service = AgendaFinanceiraLancamentoService();
+  final AgendaFinanceiraLancamentoService _service =
+  AgendaFinanceiraLancamentoService();
+
+  final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
+  AgendaFinanceiraAcoesFinanceiras();
+
   final ScrollController _scrollController = ScrollController();
+
+  bool _isConsultando = false;
+  bool _isExecutandoAcao = false;
+
+  int _abaSelecionada = 0;
+  DateTime? _ultimaConsultaEm;
+  Map<String, dynamic>? _lancamentoSelecionado;
 
   final List<String> _periodos = const <String>['Hoje', 'Próximos 7 dias', 'Este mês', 'Próximo mês', 'Personalizado'];
   final List<String> _tipos = const <String>['Todos', 'Receber', 'Pagar'];
@@ -55,10 +60,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   DateTime? _dataInicioPersonalizadaBusca;
   DateTime? _dataFimPersonalizadaBusca;
 
-  bool _isConsultando = false;
-  int _abaSelecionada = 0;
-  DateTime? _ultimaConsultaEm;
-  Map<String, dynamic>? _lancamentoSelecionado;
 
   final List<Map<String, dynamic>> _empresas = <Map<String, dynamic>>[<String, dynamic>{'id': 'all', 'nome': 'Todas'}];
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
