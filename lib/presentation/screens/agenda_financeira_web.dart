@@ -688,53 +688,83 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         child: itens.isEmpty
             ? const Text('Nenhum lançamento encontrado no calendário.')
             : SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const <DataColumn>[
-                    DataColumn(label: Text('Data')),
-                    DataColumn(label: Text('Tipo')),
-                    DataColumn(label: Text('Descrição')),
-                    DataColumn(label: Text('Valor'), numeric: true),
-                  ],
-                  rows: itens.map((item) {
-                    final tipoEntrada = item['tipo'] == 'receber';
-                    final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-                    return DataRow(
-                      cells: <DataCell>[
-                        DataCell(Text(item['vencimento']?.toString() ?? '-')),
-                        DataCell(Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar'))),
-                        DataCell(SizedBox(
-                          width: 420,
-                          child: Text(
-                            item['descricao']?.toString() ?? '-',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )),
-                        DataCell(Text(
-                          _formatarMoeda(valor),
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        )),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columns: const <DataColumn>[
+              DataColumn(label: Text('Data')),
+              DataColumn(label: Text('Tipo')),
+              DataColumn(label: Text('Descrição')),
+              DataColumn(label: Text('Valor previsto'), numeric: true),
+              DataColumn(label: Text('Valor confirmado'), numeric: true),
+              DataColumn(label: Text('Diferença'), numeric: true),
+            ],
+            rows: itens.map((item) {
+              final tipoEntrada = item['tipo'] == 'receber';
+              final valorPrevisto = _toDouble(item['valorOriginal'] ?? item['valor']);
+              final valorConfirmado = _toDouble(item['valorConfirmado']);
+              final diferenca = valorPrevisto - valorConfirmado;
+
+              return DataRow(
+                cells: <DataCell>[
+                  DataCell(Text(item['vencimento']?.toString() ?? '-')),
+                  DataCell(Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar'))),
+                  DataCell(SizedBox(
+                    width: 420,
+                    child: Text(
+                      item['descricao']?.toString() ?? '-',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )),
+                  DataCell(Text(
+                    _formatarMoeda(valorPrevisto),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  )),
+                  DataCell(Text(
+                    _formatarMoeda(valorConfirmado),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  )),
+                  DataCell(Text(
+                    _formatarMoeda(diferenca),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  )),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildFluxo(ThemeData theme) {
     final porMes = <String, double>{};
+
     for (final item in _itensSomaveis) {
       final data = _parseDataBr(item['vencimento']?.toString());
-      final mes = data == null ? 'Sem competência' : '${data.year}-${data.month.toString().padLeft(2, '0')}';
+      final mes = data == null
+          ? 'Sem competência'
+          : '${data.year}-${data.month.toString().padLeft(2, '0')}';
+
       final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-      porMes[mes] = (porMes[mes] ?? 0) + (item['tipo'] == 'receber' ? valor : -valor);
+
+      porMes[mes] = (porMes[mes] ?? 0) +
+          (item['tipo'] == 'receber' ? valor : -valor);
     }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: porMes.entries.map((entry) => ListTile(title: Text(entry.key), trailing: Text(_formatarMoeda(entry.value)))).toList()),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: porMes.entries
+              .map(
+                (entry) => ListTile(
+              title: Text(entry.key),
+              trailing: Text(_formatarMoeda(entry.value)),
+            ),
+          )
+              .toList(),
+        ),
       ),
     );
   }
