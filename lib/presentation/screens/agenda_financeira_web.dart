@@ -1122,6 +1122,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ]);
   }
 
+
   Future<void> _executarAcaoLancamento(
       String acao,
       Map<String, dynamic> item,
@@ -1149,6 +1150,54 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Ação "$acao" ainda não está disponível.')),
     );
+  }
+
+  Future<void> _confirmarBaixaTotal(
+      Map<String, dynamic> item,
+      String labelAcao,
+      ) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$labelAcao lançamento'),
+        content: Text(
+          'Confirmar $labelAcao de ${_formatarMoeda(item['valor'] as double)} para "${item['descricao']}"?',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(labelAcao),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado != true) return;
+
+    await _executarComFeedback(() async {
+      await _acoesFinanceiras.executarTotal(
+        idLancamento: item['id'].toString(),
+        request: AgendaFinanceiraLiquidacaoRequest(
+          tipoLiquidacao: 'TOTAL',
+          dataLiquidacao: DateTime.now(),
+          valorLiquidado: item['valor'] as double,
+          formaPagamentoRealizada: _formaPagamentoLabelParaBackend(
+            item['formaPagamento']?.toString() ?? 'Pix',
+          ),
+          observacoes: 'Confirmação realizada pela agenda financeira.',
+          referenciaExterna: item['id']?.toString(),
+        ),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$labelAcao registrado com sucesso.')),
+      );
+    });
   }
 
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
