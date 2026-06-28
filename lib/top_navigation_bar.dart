@@ -44,17 +44,185 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   final Map<int, GlobalKey<_TopNavigationMenuItemState>> _itemKeys = {};
 
   @override
-  void initState() {
-    super.initState();
-    for (var i = 0; i < widget.items.length; i++) {
-      _itemKeys[i] = GlobalKey<_TopNavigationMenuItemState>();
-    }
-  }
-
-  @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+  }
+
+  bool get _usaNovoMenuSix {
+    final Set<String> titulos = widget.items.map((item) => item.title).toSet();
+    return titulos.contains('Cadastros') &&
+        titulos.contains('Configurações') &&
+        titulos.contains('Início');
+  }
+
+  void _ensureItemKeys(int total) {
+    _itemKeys.removeWhere((key, _) => key >= total);
+    for (var i = 0; i < total; i++) {
+      _itemKeys.putIfAbsent(i, () => GlobalKey<_TopNavigationMenuItemState>());
+    }
+
+    if (_keyboardFocusedIndex >= total) {
+      _keyboardFocusedIndex = math.max(0, total - 1);
+    }
+  }
+
+  TopNavItemData? _itemOriginal(String title) {
+    for (final item in widget.items) {
+      if (item.title == title) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  void _executarOriginal(String title, String value) {
+    final TopNavItemData? item = _itemOriginal(title);
+    if (item?.onSelect != null) {
+      item!.onSelect!(value);
+      return;
+    }
+
+    _mostrarRecursoEmPreparacao(value);
+  }
+
+  void _mostrarRecursoEmPreparacao(String value) {
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text('$value: menu criado. A implementação da tela será evoluída nos próximos passos.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  List<TopNavItemData> _itemsEfetivos() {
+    if (!_usaNovoMenuSix) {
+      return widget.items;
+    }
+
+    return <TopNavItemData>[
+      TopNavItemData(
+        title: 'Início',
+        subItems: const <String>[],
+        onSelect: (_) => _mostrarRecursoEmPreparacao('Início'),
+      ),
+      TopNavItemData(
+        title: 'Atendimento',
+        subItems: const <String>[
+          'Nova venda',
+          'Novo orçamento',
+          'Nova assistência técnica',
+          'Vendas',
+          'Orçamentos',
+          'Assistências técnicas',
+        ],
+        onSelect: (String value) => _mostrarRecursoEmPreparacao(value),
+      ),
+      TopNavItemData(
+        title: 'Catálogo',
+        subItems: const <String>['Produtos', 'Serviços', 'Categorias', 'Estoque'],
+        onSelect: (String value) {
+          if (value == 'Produtos') {
+            _executarOriginal('Cadastros', 'Produtos List');
+            return;
+          }
+          _mostrarRecursoEmPreparacao(value);
+        },
+      ),
+      TopNavItemData(
+        title: 'Pessoas',
+        subItems: const <String>['Clientes', 'Colaboradores', 'Fornecedores'],
+        onSelect: (String value) {
+          if (value == 'Clientes') {
+            _executarOriginal('Cadastros', 'Clientes List');
+            return;
+          }
+          if (value == 'Colaboradores') {
+            _executarOriginal('Cadastros', 'Colaboradores List');
+            return;
+          }
+          _executarOriginal('Cadastros', value);
+        },
+      ),
+      TopNavItemData(
+        title: 'Caixa',
+        subItems: const <String>[
+          'Abrir caixa',
+          'Fechar caixa',
+          'Movimentações',
+          'Suprimento',
+          'Sangria',
+          'Retirada para despesa',
+          'Ajustes',
+          'Resumo do caixa',
+        ],
+        onSelect: (String value) => _mostrarRecursoEmPreparacao(value),
+      ),
+      TopNavItemData(
+        title: 'Financeiro',
+        subItems: const <String>[
+          'Contas a receber',
+          'Contas a pagar',
+          'Recebimentos futuros',
+          'Fiado',
+          'Crediário',
+          'Agenda financeira',
+        ],
+        onSelect: (String value) => _mostrarRecursoEmPreparacao(value),
+      ),
+      TopNavItemData(
+        title: 'Relatórios',
+        subItems: const <String>[
+          'Vendas',
+          'Assistências',
+          'Caixa',
+          'Financeiro',
+          'Produtos',
+          'Clientes',
+        ],
+        onSelect: (String value) => _mostrarRecursoEmPreparacao('Relatório de $value'),
+      ),
+      TopNavItemData(
+        title: 'Configurações',
+        subItems: const <String>[
+          'Empresa',
+          'Usuários e permissões',
+          'Regionalização',
+          'Formas de recebimento',
+          'Notificações',
+          'Modelos de PDF',
+          'Integrações',
+        ],
+        onSelect: (_) => _executarOriginal('Configurações', 'Preferências do Six'),
+      ),
+      TopNavItemData(
+        title: 'Legado',
+        subItems: const <String>[
+          'Meu Perfil',
+          'Clientes',
+          'Clientes List',
+          'Produtos',
+          'Colaboradores',
+          'Colaboradores List',
+          'Fornecedores',
+          'Produtos List',
+          'Preferências do Six',
+        ],
+        onSelect: (String value) {
+          if (value == 'Meu Perfil') {
+            _executarOriginal('Início', value);
+            return;
+          }
+          if (value == 'Preferências do Six') {
+            _executarOriginal('Configurações', value);
+            return;
+          }
+          _executarOriginal('Cadastros', value);
+        },
+      ),
+    ];
   }
 
   void _setKeyboardFocus(int index) {
@@ -78,8 +246,17 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
-  void _openMenuFromKeyboard(int index) {
+  void _activateTopLevelItem(TopNavItemData item) {
+    item.onSelect?.call(item.title);
+  }
+
+  void _openMenuFromKeyboard(List<TopNavItemData> items, int index) {
     _setKeyboardFocus(index);
+    final TopNavItemData item = items[index];
+    if (item.subItems.isEmpty) {
+      _activateTopLevelItem(item);
+      return;
+    }
     _requestOpenMenu(index);
     _itemKeys[index]?.currentState?.openFromExternal();
   }
@@ -96,23 +273,25 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
-  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || widget.items.isEmpty) {
+  KeyEventResult _handleKey(
+    List<TopNavItemData> items,
+    FocusNode node,
+    KeyEvent event,
+  ) {
+    if (event is! KeyDownEvent || items.isEmpty) {
       return KeyEventResult.ignored;
     }
 
     final key = event.logicalKey;
 
     if (key == LogicalKeyboardKey.arrowRight) {
-      final next = (_keyboardFocusedIndex + 1) % widget.items.length;
+      final next = (_keyboardFocusedIndex + 1) % items.length;
       _setKeyboardFocus(next);
       return KeyEventResult.handled;
     }
 
     if (key == LogicalKeyboardKey.arrowLeft) {
-      final prev =
-          (_keyboardFocusedIndex - 1 + widget.items.length) %
-          widget.items.length;
+      final prev = (_keyboardFocusedIndex - 1 + items.length) % items.length;
       _setKeyboardFocus(prev);
       return KeyEventResult.handled;
     }
@@ -120,7 +299,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     if (key == LogicalKeyboardKey.arrowDown ||
         key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.space) {
-      _openMenuFromKeyboard(_keyboardFocusedIndex);
+      _openMenuFromKeyboard(items, _keyboardFocusedIndex);
       return KeyEventResult.handled;
     }
 
@@ -134,6 +313,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
 
   @override
   Widget build(BuildContext context) {
+    final List<TopNavItemData> items = _itemsEfetivos();
+    _ensureItemKeys(items.length);
+
     final themeProvider = context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final currentTheme =
@@ -147,7 +329,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
       child: Focus(
         autofocus: true,
         focusNode: _focusNode,
-        onKeyEvent: _handleKey,
+        onKeyEvent: (node, event) => _handleKey(items, node, event),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 1100;
@@ -160,7 +342,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
               title:
                   compact
                       ? _ResponsiveHeader(
-                        items: widget.items,
+                        items: items,
                         itemKeys: _itemKeys,
                         openMenuIndex: _openMenuIndex,
                         keyboardFocusedIndex: _keyboardFocusedIndex,
@@ -173,35 +355,46 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                             });
                           }
                         },
+                        onTopLevelSelected: _activateTopLevelItem,
                         onNotificationPressed: widget.onNotificationPressed,
                         notificationWidget: widget.notificationWidget,
                       )
                       : Row(
                         children: [
-                          ...List.generate(widget.items.length, (index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 2),
-                              child: _TopNavigationMenuItem(
-                                key: _itemKeys[index],
-                                index: index,
-                                data: widget.items[index],
-                                compactMode: false,
-                                isKeyboardFocused:
-                                    _keyboardFocusedIndex == index,
-                                shouldBeOpen: _openMenuIndex == index,
-                                onHoverOrFocus: () => _setKeyboardFocus(index),
-                                onMenuOpened: () => _requestOpenMenu(index),
-                                onMenuClosed: () {
-                                  if (_openMenuIndex == index) {
-                                    setState(() {
-                                      _openMenuIndex = null;
-                                    });
-                                  }
-                                },
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: List.generate(items.length, (index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 2),
+                                    child: _TopNavigationMenuItem(
+                                      key: _itemKeys[index],
+                                      index: index,
+                                      data: items[index],
+                                      compactMode: false,
+                                      isKeyboardFocused:
+                                          _keyboardFocusedIndex == index,
+                                      shouldBeOpen: _openMenuIndex == index,
+                                      onHoverOrFocus:
+                                          () => _setKeyboardFocus(index),
+                                      onMenuOpened:
+                                          () => _requestOpenMenu(index),
+                                      onMenuClosed: () {
+                                        if (_openMenuIndex == index) {
+                                          setState(() {
+                                            _openMenuIndex = null;
+                                          });
+                                        }
+                                      },
+                                      onTopLevelSelected: _activateTopLevelItem,
+                                    ),
+                                  );
+                                }),
                               ),
-                            );
-                          }),
-                          const Spacer(),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           widget.notificationWidget ??
                               IconButton(
                                 onPressed: widget.onNotificationPressed,
@@ -229,6 +422,7 @@ class _ResponsiveHeader extends StatefulWidget {
   final ValueChanged<int> onKeyboardFocusChanged;
   final ValueChanged<int> onMenuOpened;
   final ValueChanged<int> onMenuClosed;
+  final ValueChanged<TopNavItemData> onTopLevelSelected;
   final VoidCallback? onNotificationPressed;
   final Widget? notificationWidget;
 
@@ -240,6 +434,7 @@ class _ResponsiveHeader extends StatefulWidget {
     required this.onKeyboardFocusChanged,
     required this.onMenuOpened,
     required this.onMenuClosed,
+    required this.onTopLevelSelected,
     required this.onNotificationPressed,
     required this.notificationWidget,
   });
@@ -282,6 +477,7 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
                           () => widget.onKeyboardFocusChanged(index),
                       onMenuOpened: () => widget.onMenuOpened(index),
                       onMenuClosed: () => widget.onMenuClosed(index),
+                      onTopLevelSelected: widget.onTopLevelSelected,
                     ),
                   );
                 }),
@@ -320,27 +516,55 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
               textStyle: TextStyle(color: colorScheme.onSurface),
             ),
           ),
-          child: PopupMenuButton<int>(
+          child: PopupMenuButton<_CompactMenuSelection>(
             tooltip: 'Abrir menu',
-            onSelected: (index) {
-              widget.onKeyboardFocusChanged(index);
-
-              final item = widget.items[index];
-              if (item.subItems.isNotEmpty) {
-                widget.onMenuOpened(index);
-                widget.itemKeys[index]?.currentState?.openFromExternal();
+            onSelected: (selection) {
+              final TopNavItemData item = widget.items[selection.menuIndex];
+              widget.onKeyboardFocusChanged(selection.menuIndex);
+              if (selection.subItem == null) {
+                widget.onTopLevelSelected(item);
+                return;
               }
+              item.onSelect?.call(selection.subItem!);
             },
             itemBuilder: (context) {
-              return List.generate(widget.items.length, (index) {
-                return PopupMenuItem<int>(
-                  value: index,
-                  child: Text(
-                    widget.items[index].title,
-                    style: TextStyle(color: colorScheme.onSurface),
+              final entries = <PopupMenuEntry<_CompactMenuSelection>>[];
+              for (var menuIndex = 0; menuIndex < widget.items.length; menuIndex++) {
+                final item = widget.items[menuIndex];
+                entries.add(
+                  PopupMenuItem<_CompactMenuSelection>(
+                    enabled: item.subItems.isEmpty,
+                    value: _CompactMenuSelection(menuIndex),
+                    child: Text(
+                      item.title,
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 );
-              });
+
+                for (final subItem in item.subItems) {
+                  entries.add(
+                    PopupMenuItem<_CompactMenuSelection>(
+                      value: _CompactMenuSelection(menuIndex, subItem),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: Text(
+                          subItem,
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                if (menuIndex < widget.items.length - 1) {
+                  entries.add(const PopupMenuDivider(height: 8));
+                }
+              }
+              return entries;
             },
             icon: Icon(Icons.menu, color: colorScheme.onPrimary),
           ),
@@ -359,6 +583,13 @@ class _ResponsiveHeaderState extends State<_ResponsiveHeader> {
   }
 }
 
+class _CompactMenuSelection {
+  final int menuIndex;
+  final String? subItem;
+
+  const _CompactMenuSelection(this.menuIndex, [this.subItem]);
+}
+
 class _TopNavigationMenuItem extends StatefulWidget {
   final int index;
   final TopNavItemData data;
@@ -368,6 +599,7 @@ class _TopNavigationMenuItem extends StatefulWidget {
   final VoidCallback onHoverOrFocus;
   final VoidCallback onMenuOpened;
   final VoidCallback onMenuClosed;
+  final ValueChanged<TopNavItemData> onTopLevelSelected;
 
   const _TopNavigationMenuItem({
     super.key,
@@ -379,6 +611,7 @@ class _TopNavigationMenuItem extends StatefulWidget {
     required this.onHoverOrFocus,
     required this.onMenuOpened,
     required this.onMenuClosed,
+    required this.onTopLevelSelected,
   });
 
   @override
@@ -458,7 +691,10 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
   }
 
   void activateHighlightedOrFirstItem() {
-    if (widget.data.subItems.isEmpty) return;
+    if (widget.data.subItems.isEmpty) {
+      widget.onTopLevelSelected(widget.data);
+      return;
+    }
     final safeIndex = math.max(
       0,
       math.min(_highlightedSubIndex, widget.data.subItems.length - 1),
@@ -472,7 +708,11 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
   }
 
   void _openMenu() {
-    if (_isOpen || widget.data.subItems.isEmpty) return;
+    if (widget.data.subItems.isEmpty) {
+      widget.onTopLevelSelected(widget.data);
+      return;
+    }
+    if (_isOpen) return;
 
     widget.onMenuOpened();
 
@@ -539,7 +779,11 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
             : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
 
-    final width = widget.compactMode ? 210.0 : 230.0;
+    final maxTextLength = widget.data.subItems.fold<int>(
+      widget.data.title.length,
+      (max, item) => math.max(max, item.length),
+    );
+    final width = math.min(310.0, math.max(230.0, maxTextLength * 8.5 + 48));
 
     return OverlayEntry(
       builder: (context) {
@@ -639,7 +883,7 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
         key == LogicalKeyboardKey.arrowDown) {
       if (!_isOpen) {
         _openMenu();
-      } else if (mounted) {
+      } else if (mounted && widget.data.subItems.isNotEmpty) {
         setState(() {
           _highlightedSubIndex =
               (_highlightedSubIndex + 1) % widget.data.subItems.length;
@@ -728,7 +972,10 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem>
             behavior: HitTestBehavior.opaque,
             onTap: () {
               widget.onHoverOrFocus();
-              if (widget.data.subItems.isEmpty) return;
+              if (widget.data.subItems.isEmpty) {
+                widget.onTopLevelSelected(widget.data);
+                return;
+              }
 
               if (_isOpen) {
                 _closeMenu();
