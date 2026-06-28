@@ -562,6 +562,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _cardResumo(ThemeData theme, Map<String, dynamic> card) {
+    final valor = _toDouble(card['valor']);
+
     return Card(
       elevation: 2,
       child: Padding(
@@ -569,13 +571,37 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         child: Row(children: <Widget>[
           Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
           const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-            Text(card['titulo'] as String, style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(_formatarMoeda(card['valor'] as double), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-          ])),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  card['titulo'] as String,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                _buildValorResumoAnimado(theme, valor),
+              ],
+            ),
+          ),
         ]),
       ),
+    );
+  }
+
+  Widget _buildValorResumoAnimado(ThemeData theme, double valor) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: valor),
+      duration: const Duration(milliseconds: 750),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Text(
+          _formatarMoeda(value),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+          ),
+        );
+      },
     );
   }
 
@@ -737,7 +763,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildFluxo(ThemeData theme) {
-    final porMes = <String, double>{};
+    final fluxoPorMes = <String, Map<String, double>>{};
 
     for (final item in _itensSomaveis) {
       final data = _parseDataBr(item['vencimento']?.toString());
@@ -746,26 +772,170 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           : '${data.year}-${data.month.toString().padLeft(2, '0')}';
 
       final valor = _toDouble(item['valorRestante'] ?? item['valor']);
+      final registro = fluxoPorMes.putIfAbsent(
+        mes,
+            () => <String, double>{'entradas': 0, 'saidas': 0},
+      );
 
-      porMes[mes] = (porMes[mes] ?? 0) +
-          (item['tipo'] == 'receber' ? valor : -valor);
+      if (item['tipo'] == 'receber') {
+        registro['entradas'] = (registro['entradas'] ?? 0) + valor;
+      } else {
+        registro['saidas'] = (registro['saidas'] ?? 0) + valor;
+      }
     }
+
+    if (fluxoPorMes.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('Nenhum fluxo previsto encontrado.'),
+        ),
+      );
+    }
+
+    final mesesOrdenados = fluxoPorMes.keys.toList()..sort();
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: porMes.entries
-              .map(
-                (entry) => ListTile(
-              title: Text(entry.key),
-              trailing: Text(_formatarMoeda(entry.value)),
-            ),
-          )
-              .toList(),
+          children: mesesOrdenados.map((mes) {
+            final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
+            final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
+            final saldo = entrada - saida;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        mes,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        'Saldo: ${_formatarMoeda(saldo)}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildBarraFluxoUnica(
+                    theme: theme,
+                    entrada: entrada,
+                    saida: saida,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ),
+    );
+  }
+
+  Widget _buildBarraFluxoUnica({
+    required ThemeData theme,
+    required double entrada,
+    required double saida,
+  }) {
+    final total = entrada + saida;
+    final percentualEntrada = total <= 0 ? 0.0 : entrada / total;
+    final percentualSaida = total <= 0 ? 0.0 : saida / total;
+    final percentualEntradaTexto = total <= 0
+        ? '0,0% entradas'
+        : '${(percentualEntrada * 100).toStringAsFixed(1).replaceAll('.', ',')}% entradas';
+
+    final percentualSaidaTexto = total <= 0
+        ? '0,0% saídas'
+        : '${(percentualSaida * 100).toStringAsFixed(1).replaceAll('.', ',')}% saídas';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Text(
+              'Entradas: ${_formatarMoeda(entrada)}',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            Text(
+              'Saídas: ${_formatarMoeda(saida)}',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return Container(
+              height: 44,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 750),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  final carregou = value >= 0.98;
+
+                  return Stack(
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 750),
+                            curve: Curves.easeOutCubic,
+                            width: constraints.maxWidth * percentualEntrada * value,
+                            height: 44,
+                            color: theme.colorScheme.primary,
+                          ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 750),
+                            curve: Curves.easeOutCubic,
+                            width: constraints.maxWidth * percentualSaida * value,
+                            height: 44,
+                            color: theme.colorScheme.error,
+                          ),
+                        ],
+                      ),
+                      Positioned.fill(
+                        child: AnimatedOpacity(
+                          opacity: carregou ? 1 : 0,
+                          duration: const Duration(milliseconds: 250),
+                          child: Center(
+                            child: Text(
+                              '$percentualEntradaTexto • $percentualSaidaTexto',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
