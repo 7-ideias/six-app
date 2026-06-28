@@ -1203,56 +1203,71 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
     final valorController = TextEditingController();
     final observacaoController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+    String? erroValor;
 
     final valor = await showDialog<double>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Registrar parcial'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Valor aberto: ${_formatarMoeda(item['valor'] as double)}'),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: valorController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Valor parcial'),
-                validator: (value) {
-                  final valor = _toDoubleDynamic(value);
-                  if (valor <= 0) return 'Informe um valor maior que zero.';
-                  if (valor >= (item['valor'] as double)) {
-                    return 'Informe um valor menor que o total aberto.';
-                  }
-                  return null;
-                },
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Registrar parcial'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text('Valor aberto: ${_formatarMoeda(item['valor'] as double)}'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: valorController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Valor parcial',
+                      errorText: erroValor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: observacaoController,
+                    minLines: 2,
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: 'Observação'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: observacaoController,
-                minLines: 2,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Observação'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() != true) return;
-              Navigator.pop(context, _toDoubleDynamic(valorController.text));
-            },
-            child: const Text('Salvar'),
-          ),
-        ],
-      ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(null),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final valorDigitado = _toDoubleDynamic(valorController.text);
+                    final valorAberto = item['valor'] as double;
+
+                    if (valorDigitado <= 0) {
+                      setDialogState(() {
+                        erroValor = 'Informe um valor maior que zero.';
+                      });
+                      return;
+                    }
+
+                    if (valorDigitado >= valorAberto) {
+                      setDialogState(() {
+                        erroValor = 'Informe um valor menor que o total aberto.';
+                      });
+                      return;
+                    }
+
+                    Navigator.of(dialogContext).pop(valorDigitado);
+                  },
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     final observacao = observacaoController.text.trim();
