@@ -675,15 +675,50 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildCalendario(ThemeData theme) {
-    final porDia = <String, double>{};
-    for (final item in _itensSomaveis) {
-      final data = item['vencimento']?.toString() ?? '-';
-      porDia[data] = (porDia[data] ?? 0) + _toDouble(item['valorRestante'] ?? item['valor']);
-    }
+    final itens = List<Map<String, dynamic>>.from(_itensSomaveis);
+    itens.sort((a, b) {
+      final dataA = _parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999);
+      final dataB = _parseDataBr(b['vencimento']?.toString()) ?? DateTime(9999);
+      return dataA.compareTo(dataB);
+    });
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: porDia.entries.map((entry) => ListTile(title: Text(entry.key), trailing: Text(_formatarMoeda(entry.value)))).toList()),
+        child: itens.isEmpty
+            ? const Text('Nenhum lançamento encontrado no calendário.')
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: const <DataColumn>[
+                    DataColumn(label: Text('Data')),
+                    DataColumn(label: Text('Tipo')),
+                    DataColumn(label: Text('Descrição')),
+                    DataColumn(label: Text('Valor'), numeric: true),
+                  ],
+                  rows: itens.map((item) {
+                    final tipoEntrada = item['tipo'] == 'receber';
+                    final valor = _toDouble(item['valorRestante'] ?? item['valor']);
+                    return DataRow(
+                      cells: <DataCell>[
+                        DataCell(Text(item['vencimento']?.toString() ?? '-')),
+                        DataCell(Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar'))),
+                        DataCell(SizedBox(
+                          width: 420,
+                          child: Text(
+                            item['descricao']?.toString() ?? '-',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        )),
+                        DataCell(Text(
+                          _formatarMoeda(valor),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        )),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
       ),
     );
   }
