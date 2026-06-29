@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
+import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 
 class TopNavItemData {
@@ -99,6 +100,38 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  Future<void> _abrirResumoExecutivoServicos(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        void fecharEExecutar(String title, String value) {
+          Navigator.of(dialogContext).pop();
+          Future<void>.delayed(const Duration(milliseconds: 80), () {
+            _executarOriginal(context, title, value);
+          });
+        }
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: SizedBox(
+            width: size.width * 0.94,
+            height: size.height * 0.90,
+            child: ServicoDashboardWebPage(
+              onBack: () => Navigator.of(dialogContext).pop(),
+              onNovoServico: () => fecharEExecutar('Cadastros', 'Produtos'),
+              onOpenListaCompleta: () => fecharEExecutar('Cadastros', 'Produtos List'),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   List<TopNavItemData> _itemsEfetivos(BuildContext context) {
     if (!_usaNovoMenuSix) {
       return items;
@@ -128,6 +161,10 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         onSelect: (String value) {
           if (value == 'Produtos') {
             _abrirResumoExecutivoProdutos(context);
+            return;
+          }
+          if (value == 'Serviços') {
+            _abrirResumoExecutivoServicos(context);
             return;
           }
           _mostrarRecursoEmPreparacao(context, value);
