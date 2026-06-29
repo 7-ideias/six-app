@@ -23,7 +23,10 @@ class ClientesUsuarioListPage extends StatefulWidget {
 class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   late final ClienteUsuarioApiClient _apiClient;
   final TextEditingController _buscaController = TextEditingController();
-  final NumberFormat _currencyFormatter = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  final NumberFormat _currencyFormatter = NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$',
+  );
   final DateFormat _dateFormatter = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
 
   bool _isLoading = false;
@@ -108,18 +111,14 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   double get _saldoFiadoTotal => _clientes.fold<double>(0, (double total, ClienteUsuario cliente) => total + cliente.saldoFiado);
 
   String _normalizar(String value) => value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-
   String _money(double value) => _currencyFormatter.format(value);
-
   String _date(DateTime? value) => value == null ? '-' : _dateFormatter.format(value.toLocal());
 
   Future<void> _abrirCadastroCliente({ClienteUsuario? cliente}) async {
     final ClienteUsuarioRequest? request = await showDialog<ClienteUsuarioRequest>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return _ClienteFormDialog(cliente: cliente);
-      },
+      builder: (BuildContext dialogContext) => _ClienteFormDialog(cliente: cliente),
     );
 
     if (request == null) return;
@@ -185,6 +184,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
                       Expanded(
                         child: Text(
                           'Visão do cliente: ${cliente.nome}',
+                          overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                         ),
                       ),
@@ -312,7 +312,6 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-
     final Widget content = Column(
       children: <Widget>[
         _buildHeader(theme),
@@ -320,10 +319,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
       ],
     );
 
-    if (widget.embedded) {
-      return content;
-    }
-
+    if (widget.embedded) return content;
     return Scaffold(body: SafeArea(child: content));
   }
 
@@ -376,13 +372,8 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   }
 
   Widget _buildBody(ThemeData theme) {
-    if (_isLoading && _response == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_erro != null && _response == null) {
-      return _errorState(theme);
-    }
+    if (_isLoading && _response == null) return const Center(child: CircularProgressIndicator());
+    if (_erro != null && _response == null) return _errorState(theme);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -490,11 +481,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
                 labelText: 'Buscar por nome, documento, telefone ou e-mail',
                 border: OutlineInputBorder(),
               ),
-              onChanged: (String value) {
-                setState(() {
-                  _filtro = value;
-                });
-              },
+              onChanged: (String value) => setState(() => _filtro = value),
             ),
           ),
           const SizedBox(width: 12),
@@ -621,7 +608,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   }
 
   String _iniciais(String nome) {
-    final List<String> partes = nome.trim().split(RegExp(r'\s+')).where((String item) => item.isNotEmpty).toList(growable: false);
+    final List<String> partes = nome.trim().split(' ').where((String item) => item.isNotEmpty).toList(growable: false);
     if (partes.isEmpty) return 'CL';
     if (partes.length == 1) return partes.first.substring(0, 1).toUpperCase();
     return '${partes.first.substring(0, 1)}${partes.last.substring(0, 1)}'.toUpperCase();
@@ -836,6 +823,25 @@ class _ClienteFormDialogState extends State<_ClienteFormDialog> {
     );
   }
 
+  Widget _tipoPessoaDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _tipoPessoa,
+      isExpanded: true,
+      decoration: _decoration('Tipo', Icons.badge_outlined),
+      selectedItemBuilder: (BuildContext context) {
+        return const <Widget>[
+          Text('PF', overflow: TextOverflow.ellipsis),
+          Text('PJ', overflow: TextOverflow.ellipsis),
+        ];
+      },
+      items: const <DropdownMenuItem<String>>[
+        DropdownMenuItem<String>(value: 'PF', child: Text('Pessoa física', overflow: TextOverflow.ellipsis)),
+        DropdownMenuItem<String>(value: 'PJ', child: Text('Pessoa jurídica', overflow: TextOverflow.ellipsis)),
+      ],
+      onChanged: (String? value) => setState(() => _tipoPessoa = value ?? 'PF'),
+    );
+  }
+
   void _salvar() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     Navigator.of(context).pop(
@@ -888,7 +894,7 @@ class _ClienteFormDialogState extends State<_ClienteFormDialog> {
                   Icon(Icons.person_add_alt_1_rounded, color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(editando ? 'Editar cliente' : 'Novo cliente', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                    child: Text(editando ? 'Editar cliente' : 'Novo cliente', overflow: TextOverflow.ellipsis, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
                   ),
                   IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded)),
                 ],
@@ -908,18 +914,7 @@ class _ClienteFormDialogState extends State<_ClienteFormDialog> {
                         spacing: 14,
                         runSpacing: 14,
                         children: <Widget>[
-                          SizedBox(
-                            width: 180,
-                            child: DropdownButtonFormField<String>(
-                              value: _tipoPessoa,
-                              decoration: _decoration('Tipo', Icons.badge_outlined),
-                              items: const <DropdownMenuItem<String>>[
-                                DropdownMenuItem<String>(value: 'PF', child: Text('Pessoa física')),
-                                DropdownMenuItem<String>(value: 'PJ', child: Text('Pessoa jurídica')),
-                              ],
-                              onChanged: (String? value) => setState(() => _tipoPessoa = value ?? 'PF'),
-                            ),
-                          ),
+                          SizedBox(width: 220, child: _tipoPessoaDropdown()),
                           SizedBox(width: 360, child: _field(controller: _nomeController, label: 'Nome / Razão social', icon: Icons.person_outline, requiredField: true)),
                           SizedBox(width: 260, child: _field(controller: _documentoController, label: 'CPF / CNPJ', icon: Icons.credit_card_outlined, requiredField: true)),
                           SizedBox(width: 260, child: _field(controller: _telefoneController, label: 'Telefone / WhatsApp', icon: Icons.phone_outlined, keyboardType: TextInputType.phone)),
