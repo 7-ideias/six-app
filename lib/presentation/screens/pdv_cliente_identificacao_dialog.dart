@@ -56,7 +56,7 @@ class _PdvClienteIdentificacaoDialogState
 
     try {
       final ClienteUsuarioListResponse response =
-          await _apiClient.listarClientesUsuario();
+      await _apiClient.listarClientesUsuario();
       if (!mounted) return;
       setState(() {
         _clientes = response.clientes.where((cliente) => cliente.ativo).toList();
@@ -268,8 +268,8 @@ class _PdvClienteIdentificacaoDialogState
                     fiadoLiberado
                         ? 'Fiado liberado • limite R\$ ${cliente.limiteFiado.toStringAsFixed(2)} • ${cliente.prazoPagamentoDias} dias'
                         : cliente.permiteCompraFiado
-                            ? 'Fiado bloqueado para novas vendas'
-                            : 'Cliente sem fiado liberado',
+                        ? 'Fiado bloqueado para novas vendas'
+                        : 'Cliente sem fiado liberado',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
