@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
@@ -174,6 +175,30 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  Future<void> _abrirGestaoClientes(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: SizedBox(
+            width: size.width * 0.94,
+            height: size.height * 0.90,
+            child: ClientesUsuarioListPage(
+              embedded: true,
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   List<TopNavItemData> _itemsEfetivos(BuildContext context) {
     if (!_usaNovoMenuSix) {
       return items;
@@ -221,7 +246,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         subItems: const <String>['Clientes', 'Colaboradores', 'Fornecedores'],
         onSelect: (String value) {
           if (value == 'Clientes') {
-            _executarOriginal(context, 'Cadastros', 'Clientes List');
+            _abrirGestaoClientes(context);
             return;
           }
           if (value == 'Colaboradores') {
