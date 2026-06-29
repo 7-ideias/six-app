@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:sixpos/core/network/logging_interceptor.dart';
+import 'package:sixpos/data/models/estoque_dashboard_model.dart';
 import 'package:sixpos/data/models/produto_dashboard_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/servico_dashboard_model.dart';
@@ -17,6 +18,8 @@ class ProdutoService {
       '${AppConfig.baseUrl}/private/api/produto/atualizacao';
   final String endpointDashboard =
       '${AppConfig.baseUrl}/private/api/produto/dashboard';
+  final String endpointEstoqueDashboard =
+      '${AppConfig.baseUrl}/private/api/produto/estoque/dashboard';
   final String endpointServicosDashboard =
       '${AppConfig.baseUrl}/private/api/produto/servicos/dashboard';
 
@@ -92,6 +95,44 @@ class ProdutoService {
       return ProdutoDashboardModel.fromJson(decoded);
     } catch (e) {
       print('❌ Erro ao carregar dashboard de produtos: $e');
+      rethrow;
+    }
+  }
+
+  Future<EstoqueDashboardModel> buscarDashboardEstoque() async {
+    final authService = AuthService();
+    final token = await authService.getAccessToken();
+    final empresaId = await authService.getEmpresaId();
+
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'idUnicoDaEmpresa': empresaId ?? '',
+      'Authorization': 'Bearer $token',
+    };
+
+    final url = Uri.parse(endpointEstoqueDashboard);
+
+    try {
+      print('🌐 GET $url');
+      print('🟦 Headers: $headers');
+
+      final response = await client.get(url, headers: headers);
+
+      print('✅ STATUS: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao carregar dashboard de estoque: ${response.statusCode}');
+      }
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw Exception('Resposta inválida ao carregar dashboard de estoque.');
+      }
+
+      return EstoqueDashboardModel.fromJson(decoded);
+    } catch (e) {
+      print('❌ Erro ao carregar dashboard de estoque: $e');
       rethrow;
     }
   }
