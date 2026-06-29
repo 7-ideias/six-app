@@ -8,6 +8,8 @@ import '../../models/cliente_usuario_model.dart';
 
 abstract class ClienteUsuarioApiClient {
   Future<ClienteUsuarioListResponse> listarClientesUsuario();
+  Future<ClienteUsuario> cadastrarClienteUsuario(ClienteUsuarioRequest request);
+  Future<ClienteUsuario> atualizarClienteUsuario(String idCliente, ClienteUsuarioRequest request);
 }
 
 class HttpClienteUsuarioApiClient implements ClienteUsuarioApiClient {
@@ -66,6 +68,53 @@ class HttpClienteUsuarioApiClient implements ClienteUsuarioApiClient {
     }
 
     return ClienteUsuarioListResponse.fromJson(data);
+  }
+
+  @override
+  Future<ClienteUsuario> cadastrarClienteUsuario(ClienteUsuarioRequest request) async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/cliente-usuario/cadastro',
+    );
+    final response = await _httpClient.post(
+      uri,
+      headers: await _getHeaders(),
+      body: jsonEncode(request.toJson()),
+    );
+
+    return _parseClienteResponse(response);
+  }
+
+  @override
+  Future<ClienteUsuario> atualizarClienteUsuario(String idCliente, ClienteUsuarioRequest request) async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/cliente-usuario/atualizacao/$idCliente',
+    );
+    final response = await _httpClient.put(
+      uri,
+      headers: await _getHeaders(),
+      body: jsonEncode(request.toJson()),
+    );
+
+    return _parseClienteResponse(response);
+  }
+
+  ClienteUsuario _parseClienteResponse(http.Response response) {
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw ClienteUsuarioApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    final dynamic data = jsonDecode(response.body);
+    if (data is! Map<String, dynamic>) {
+      throw ClienteUsuarioApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    return ClienteUsuario.fromJson(data);
   }
 }
 
