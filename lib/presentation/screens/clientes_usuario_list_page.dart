@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
@@ -16,13 +17,14 @@ class ClientesUsuarioListPage extends StatefulWidget {
   final ClienteUsuarioApiClient? apiClient;
 
   @override
-  State<ClientesUsuarioListPage> createState() =>
-      _ClientesUsuarioListPageState();
+  State<ClientesUsuarioListPage> createState() => _ClientesUsuarioListPageState();
 }
 
 class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   late final ClienteUsuarioApiClient _apiClient;
   final TextEditingController _buscaController = TextEditingController();
+  final NumberFormat _currencyFormatter = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  final DateFormat _dateFormatter = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
 
   bool _isLoading = false;
   String? _erro;
@@ -49,29 +51,20 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     });
 
     try {
-      final response = await _apiClient.listarClientesUsuario();
-      if (!mounted) {
-        return;
-      }
-
+      final ClienteUsuarioListResponse response = await _apiClient.listarClientesUsuario();
+      if (!mounted) return;
       setState(() {
         _response = response;
         _isLoading = false;
       });
     } on ClienteUsuarioApiException catch (e) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _erro = _mensagemErroPorStatus(e.statusCode);
       });
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _erro = 'Não foi possível carregar a lista de clientes.';
@@ -82,617 +75,156 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   String _mensagemErroPorStatus(int statusCode) {
     switch (statusCode) {
       case 400:
-        return 'Requisição inválida: header idUnicoDaEmpresa ausente ou inválido.';
+        return 'Dados inválidos ou empresa não informada.';
       case 401:
-        return 'Não autenticado: faça login novamente.';
+        return 'Sessão expirada. Faça login novamente.';
       case 403:
-        return 'Acesso negado: usuário sem vínculo com a empresa.';
+        return 'Usuário sem vínculo com a empresa.';
+      case 409:
+        return 'Já existe cliente com documento ou e-mail informado.';
       default:
         return 'Erro ao carregar clientes (HTTP $statusCode).';
     }
   }
 
-  List<ClienteUsuario> _clientesFiltrados() {
-    final List<ClienteUsuario> clientes =
-        _response?.clientes ?? const <ClienteUsuario>[];
-    if (_filtro.trim().isEmpty) {
-      return clientes;
-    }
+  List<ClienteUsuario> get _clientes => _response?.clientes ?? const <ClienteUsuario>[];
 
+  List<ClienteUsuario> get _clientesFiltrados {
     final String termo = _normalizar(_filtro);
-    return clientes
-        .where((ClienteUsuario cliente) {
-          final String nome = _normalizar(cliente.nome);
-          final String documento = _normalizar(cliente.documento);
-          return nome.contains(termo) || documento.contains(termo);
-        })
-        .toList(growable: false);
+    if (termo.isEmpty) return _clientes;
+
+    return _clientes.where((ClienteUsuario cliente) {
+      return _normalizar(cliente.nome).contains(termo) ||
+          _normalizar(cliente.documento).contains(termo) ||
+          _normalizar(cliente.email).contains(termo) ||
+          _normalizar(cliente.telefone).contains(termo);
+    }).toList(growable: false);
   }
 
-  String _normalizar(String value) {
-    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-  }
+  int get _clientesAtivos => _clientes.where((ClienteUsuario cliente) => cliente.ativo).length;
+  int get _clientesFiado => _clientes.where((ClienteUsuario cliente) => cliente.permiteCompraFiado).length;
+  int get _clientesBloqueadosFiado => _clientes.where((ClienteUsuario cliente) => cliente.bloqueadoFiado).length;
+  double get _limiteFiadoTotal => _clientes.fold<double>(0, (double total, ClienteUsuario cliente) => total + cliente.limiteFiado);
+  double get _saldoFiadoTotal => _clientes.fold<double>(0, (double total, ClienteUsuario cliente) => total + cliente.saldoFiado);
 
-  String _formatarData(DateTime? data) {
-    if (data == null) {
-      return '-';
-    }
+  String _normalizar(String value) => value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
-    final DateTime local = data.toLocal();
-    final String dia = local.day.toString().padLeft(2, '0');
-    final String mes = local.month.toString().padLeft(2, '0');
-    final String ano = local.year.toString();
-    final String hora = local.hour.toString().padLeft(2, '0');
-    final String minuto = local.minute.toString().padLeft(2, '0');
-    return '$dia/$mes/$ano $hora:$minuto';
-  }
+  String _money(double value) => _currencyFormatter.format(value);
 
-  String _formatarDataCurta(DateTime data) {
-    final DateTime local = data.toLocal();
-    final String dia = local.day.toString().padLeft(2, '0');
-    final String mes = local.month.toString().padLeft(2, '0');
-    final String ano = local.year.toString();
-    return '$dia/$mes/$ano';
-  }
+  String _date(DateTime? value) => value == null ? '-' : _dateFormatter.format(value.toLocal());
 
-  String _formatarMoeda(double value) {
-    final String comDuasCasas = value.toStringAsFixed(2);
-    final List<String> partes = comDuasCasas.split('.');
-    String inteiro = partes.first;
-    final String centavos = partes.last;
-    final RegExp regExp = RegExp(r'(\d+)(\d{3})');
+  Future<void> _abrirCadastroCliente({ClienteUsuario? cliente}) async {
+    final ClienteUsuarioRequest? request = await showDialog<ClienteUsuarioRequest>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return _ClienteFormDialog(cliente: cliente);
+      },
+    );
 
-    while (regExp.hasMatch(inteiro)) {
-      inteiro = inteiro.replaceAllMapped(regExp, (Match match) {
-        return '${match.group(1)}.${match.group(2)}';
-      });
-    }
-
-    return 'R\$ $inteiro,$centavos';
-  }
-
-  String _ultimoTrechoId(String id) {
-    final String normalized = id.trim();
-    if (normalized.isEmpty) {
-      return '0000';
-    }
-
-    if (normalized.length <= 4) {
-      return normalized.toUpperCase().padLeft(4, '0');
-    }
-
-    return normalized.substring(normalized.length - 4).toUpperCase();
-  }
-
-  List<_CompraMock> _montarComprasMock(ClienteUsuario cliente) {
-    final DateTime now = DateTime.now();
-    final DateTime base =
-        cliente.criadoEm?.toLocal() ?? now.subtract(const Duration(days: 240));
-    final double fator =
-        (cliente.nome.length + cliente.documento.length + 35).toDouble();
-
-    return <_CompraMock>[
-      _CompraMock(
-        descricao: 'Pedido PDV #${_ultimoTrechoId(cliente.id)}-01',
-        data: base.add(const Duration(days: 18)),
-        formaPagamento: 'Pix',
-        valor: fator * 2.2,
-      ),
-      _CompraMock(
-        descricao: 'Orçamento convertido #${_ultimoTrechoId(cliente.id)}-02',
-        data: now.subtract(const Duration(days: 74)),
-        formaPagamento: 'Cartão de crédito',
-        valor: fator * 3.4,
-      ),
-      _CompraMock(
-        descricao: 'Compra balcão #${_ultimoTrechoId(cliente.id)}-03',
-        data: now.subtract(const Duration(days: 27)),
-        formaPagamento: 'Dinheiro',
-        valor: fator * 1.8,
-      ),
-      _CompraMock(
-        descricao: 'Serviço avulso #${_ultimoTrechoId(cliente.id)}-04',
-        data: now.subtract(const Duration(days: 5)),
-        formaPagamento: 'Boleto',
-        valor: fator * 1.3,
-      ),
-    ];
-  }
-
-  List<_DividaMock> _montarDividasMock(ClienteUsuario cliente) {
-    final DateTime now = DateTime.now();
-    final double fator =
-        (cliente.nome.length + cliente.documento.length + 25).toDouble();
-
-    final List<_DividaMock> dividas = <_DividaMock>[
-      _DividaMock(
-        descricao: 'Parcela crediário #${_ultimoTrechoId(cliente.id)}-A',
-        vencimento: now.subtract(const Duration(days: 9)),
-        valor: fator * 1.5,
-        status: 'Atrasada',
-      ),
-      _DividaMock(
-        descricao: 'Parcela crediário #${_ultimoTrechoId(cliente.id)}-B',
-        vencimento: now.add(const Duration(days: 12)),
-        valor: fator * 1.2,
-        status: 'Em aberto',
-      ),
-    ];
-
-    if (cliente.ativo) {
-      dividas.add(
-        _DividaMock(
-          descricao: 'Acordo de pagamento #${_ultimoTrechoId(cliente.id)}-C',
-          vencimento: now.add(const Duration(days: 32)),
-          valor: fator * 0.9,
-          status: 'Em aberto',
-        ),
-      );
-    }
-
-    return dividas;
-  }
-
-  List<_OrdemServicoMock> _montarOrdensServicoMock(ClienteUsuario cliente) {
-    final DateTime now = DateTime.now();
-
-    final List<_OrdemServicoMock> ordens = <_OrdemServicoMock>[
-      _OrdemServicoMock(
-        numero: 'OS-${_ultimoTrechoId(cliente.id)}-11',
-        descricao: 'Troca de tela',
-        dataAbertura: now.subtract(const Duration(days: 93)),
-        dataFechamento: now.subtract(const Duration(days: 88)),
-        status: 'Concluída',
-      ),
-      _OrdemServicoMock(
-        numero: 'OS-${_ultimoTrechoId(cliente.id)}-12',
-        descricao: 'Revisão geral do equipamento',
-        dataAbertura: now.subtract(const Duration(days: 35)),
-        dataFechamento: now.subtract(const Duration(days: 30)),
-        status: 'Concluída',
-      ),
-    ];
-
-    if (cliente.ativo) {
-      ordens.add(
-        _OrdemServicoMock(
-          numero: 'OS-${_ultimoTrechoId(cliente.id)}-13',
-          descricao: 'Diagnóstico avançado',
-          dataAbertura: now.subtract(const Duration(days: 3)),
-          dataFechamento: null,
-          status: 'Aberta',
-        ),
-      );
-    }
-
-    return ordens;
-  }
-
-  void _atualizarClienteNaLista(ClienteUsuario atualizado) {
-    final ClienteUsuarioListResponse? responseAtual = _response;
-    if (responseAtual == null) {
-      return;
-    }
-
-    final List<ClienteUsuario> novaLista = responseAtual.clientes
-        .map(
-          (ClienteUsuario cliente) =>
-              cliente.id == atualizado.id ? atualizado : cliente,
-        )
-        .toList(growable: false);
+    if (request == null) return;
 
     setState(() {
-      _response = ClienteUsuarioListResponse(
-        idUnicoDaEmpresa: responseAtual.idUnicoDaEmpresa,
-        total: responseAtual.total,
-        clientes: novaLista,
-      );
+      _isLoading = true;
+      _erro = null;
     });
-  }
-
-  Future<void> _abrirEdicaoCliente(ClienteUsuario cliente) async {
-    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController nomeController = TextEditingController(
-      text: cliente.nome,
-    );
-    final TextEditingController documentoController = TextEditingController(
-      text: cliente.documento,
-    );
-    final TextEditingController emailController = TextEditingController(
-      text: cliente.email,
-    );
-    final TextEditingController telefoneController = TextEditingController(
-      text: cliente.telefone,
-    );
-    bool ativo = cliente.ativo;
 
     try {
-      final ClienteUsuario?
-      clienteAtualizado = await showDialog<ClienteUsuario>(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          return StatefulBuilder(
-            builder: (
-              BuildContext builderContext,
-              void Function(void Function()) setDialogState,
-            ) {
-              return AlertDialog(
-                title: Text('Editar cliente: ${cliente.nome}'),
-                content: SizedBox(
-                  width: 520,
-                  child: Form(
-                    key: formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          TextFormField(
-                            controller: nomeController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nome',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (String? value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Informe o nome do cliente.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: documentoController,
-                            decoration: const InputDecoration(
-                              labelText: 'Documento',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: emailController,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: telefoneController,
-                            decoration: const InputDecoration(
-                              labelText: 'Telefone',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            value: ativo,
-                            title: const Text('Cliente ativo'),
-                            onChanged: (bool value) {
-                              setDialogState(() {
-                                ativo = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Fluxo inicial mockado: alterações salvas apenas localmente nesta listagem.',
-                            style: Theme.of(builderContext).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey.shade700),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: const Text('Cancelar'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: () {
-                      if (!(formKey.currentState?.validate() ?? false)) {
-                        return;
-                      }
-
-                      Navigator.of(dialogContext).pop(
-                        ClienteUsuario(
-                          id: cliente.id,
-                          idUsuario: cliente.idUsuario,
-                          idUnicoDaEmpresa: cliente.idUnicoDaEmpresa,
-                          ativo: ativo,
-                          tipoPessoa: cliente.tipoPessoa,
-                          documento: documentoController.text.trim(),
-                          nome: nomeController.text.trim(),
-                          telefone: telefoneController.text.trim(),
-                          email: emailController.text.trim(),
-                          observacoes: cliente.observacoes,
-                          origemAutoCadastro: cliente.origemAutoCadastro,
-                          enviadoEm: cliente.enviadoEm,
-                          criadoEm: cliente.criadoEm,
-                          atualizadoEm: DateTime.now(),
-                          foto: cliente.foto,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.save_outlined),
-                    label: const Text('Salvar'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
-
-      if (!mounted || clienteAtualizado == null) {
-        return;
+      if (cliente == null) {
+        await _apiClient.cadastrarClienteUsuario(request);
+      } else {
+        await _apiClient.atualizarClienteUsuario(cliente.id, request);
       }
-
-      _atualizarClienteNaLista(clienteAtualizado);
+      await _carregar();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cliente atualizado com sucesso (mock local).'),
+        SnackBar(
+          content: Text(cliente == null ? 'Cliente cadastrado com sucesso.' : 'Cliente atualizado com sucesso.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } finally {
-      nomeController.dispose();
-      documentoController.dispose();
-      emailController.dispose();
-      telefoneController.dispose();
+    } on ClienteUsuarioApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _erro = _mensagemErroPorStatus(e.statusCode);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _erro = 'Não foi possível salvar o cliente.';
+      });
     }
   }
 
-  Future<void> _abrirHistoricoCliente(ClienteUsuario cliente) async {
-    final List<_CompraMock> compras = _montarComprasMock(cliente);
-    final List<_DividaMock> dividas = _montarDividasMock(cliente);
-    final List<_OrdemServicoMock> ordensServico = _montarOrdensServicoMock(
-      cliente,
-    );
-    final List<_OrdemServicoMock> ordensAbertas = ordensServico
-        .where((ordem) => ordem.status == 'Aberta')
-        .toList(growable: false);
-
-    final double totalCompras = compras.fold<double>(
-      0,
-      (double total, _CompraMock item) => total + item.valor,
-    );
-    final double totalDividasEmAberto = dividas
-        .where((item) => item.status != 'Paga')
-        .fold<double>(
-          0,
-          (double total, _DividaMock item) => total + item.valor,
-        );
-
-    await showDialog<void>(
+  void _abrirHistoricoCliente(ClienteUsuario cliente) {
+    showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
+        final ThemeData theme = Theme.of(dialogContext);
         return Dialog(
           insetPadding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
           child: SizedBox(
-            width: 1080,
-            height: 680,
+            width: 980,
+            height: 620,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.07),
+                    border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+                  ),
                   child: Row(
                     children: <Widget>[
+                      Icon(Icons.person_search_outlined, color: theme.colorScheme.primary),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Histórico de ${cliente.nome}',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                          'Visão do cliente: ${cliente.nome}',
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Fechar',
                         onPressed: () => Navigator.of(dialogContext).pop(),
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade50,
-                            border: Border.all(color: Colors.amber.shade300),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            children: <Widget>[
-                              Icon(Icons.info_outline, size: 18),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Dados mockados para o desenho inicial. A API de histórico ainda não está ativa.',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                          spacing: 14,
+                          runSpacing: 14,
                           children: <Widget>[
-                            _ResumoHistoricoCard(
-                              titulo: 'Compras registradas',
-                              valor: '${compras.length}',
-                              subtitulo: _formatarMoeda(totalCompras),
-                              icone: Icons.shopping_bag_outlined,
-                            ),
-                            _ResumoHistoricoCard(
-                              titulo: 'Dívidas em aberto',
-                              valor: '${dividas.length}',
-                              subtitulo: _formatarMoeda(totalDividasEmAberto),
-                              icone: Icons.account_balance_wallet_outlined,
-                            ),
-                            _ResumoHistoricoCard(
-                              titulo: 'OS abertas',
-                              valor: '${ordensAbertas.length}',
-                              subtitulo:
-                                  ordensAbertas.isEmpty
-                                      ? 'Sem pendências'
-                                      : 'Necessita acompanhamento',
-                              icone: Icons.build_circle_outlined,
-                            ),
+                            _historicoCard('Documento', cliente.documento, Icons.badge_outlined),
+                            _historicoCard('Telefone', cliente.telefone.isEmpty ? '-' : cliente.telefone, Icons.phone_outlined),
+                            _historicoCard('E-mail', cliente.email.isEmpty ? '-' : cliente.email, Icons.mail_outline),
+                            _historicoCard('Fiado', cliente.permiteCompraFiado ? 'Liberado' : 'Não liberado', Icons.request_quote_outlined),
+                            _historicoCard('Limite fiado', _money(cliente.limiteFiado), Icons.account_balance_wallet_outlined),
+                            _historicoCard('Saldo fiado', _money(cliente.saldoFiado), Icons.receipt_long_outlined),
                           ],
                         ),
                         const SizedBox(height: 22),
-                        Text(
-                          'Histórico de compras',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 8),
-                        Card(
-                          child: Column(
-                            children: compras
-                                .map(
-                                  (_CompraMock item) => ListTile(
-                                    leading: const Icon(Icons.point_of_sale),
-                                    title: Text(item.descricao),
-                                    subtitle: Text(
-                                      '${_formatarDataCurta(item.data)} • ${item.formaPagamento}',
-                                    ),
-                                    trailing: Text(
-                                      _formatarMoeda(item.valor),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(growable: false),
-                          ),
+                        _infoBox(
+                          title: 'Compras, serviços e fiado',
+                          text: 'Esta tela já está preparada para receber o histórico real de vendas, serviços, contas em aberto e crediário. A próxima etapa é cruzar o cliente com movimentações de venda, assistência técnica e financeiro.',
+                          icon: Icons.timeline_outlined,
                         ),
                         const SizedBox(height: 18),
-                        Text(
-                          'Dívidas / crediário',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                        _infoBox(
+                          title: 'Endereço e observações',
+                          text: '${_enderecoCliente(cliente)}\n${cliente.observacoes.isEmpty ? 'Sem observações cadastradas.' : cliente.observacoes}',
+                          icon: Icons.location_on_outlined,
                         ),
-                        const SizedBox(height: 8),
-                        Card(
-                          child: Column(
-                            children: dividas
-                                .map(
-                                  (_DividaMock item) => ListTile(
-                                    leading: Icon(
-                                      item.status == 'Atrasada'
-                                          ? Icons.warning_amber_rounded
-                                          : Icons.receipt_long_outlined,
-                                      color:
-                                          item.status == 'Atrasada'
-                                              ? Colors.red.shade500
-                                              : null,
-                                    ),
-                                    title: Text(item.descricao),
-                                    subtitle: Text(
-                                      'Vencimento: ${_formatarDataCurta(item.vencimento)} • ${item.status}',
-                                    ),
-                                    trailing: Text(
-                                      _formatarMoeda(item.valor),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(growable: false),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          'Histórico de ordens de serviço',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 8),
-                        Card(
-                          child: Column(
-                            children: ordensServico
-                                .map(
-                                  (_OrdemServicoMock item) => ListTile(
-                                    leading: Icon(
-                                      item.status == 'Aberta'
-                                          ? Icons.work_history_outlined
-                                          : Icons.check_circle_outline,
-                                      color:
-                                          item.status == 'Aberta'
-                                              ? Colors.orange.shade700
-                                              : Colors.green.shade600,
-                                    ),
-                                    title: Text(
-                                      '${item.numero} • ${item.descricao}',
-                                    ),
-                                    subtitle: Text(
-                                      item.dataFechamento == null
-                                          ? 'Aberta em ${_formatarDataCurta(item.dataAbertura)}'
-                                          : 'Aberta em ${_formatarDataCurta(item.dataAbertura)} • Fechada em ${_formatarDataCurta(item.dataFechamento!)}',
-                                    ),
-                                    trailing: Text(
-                                      item.status,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color:
-                                            item.status == 'Aberta'
-                                                ? Colors.orange.shade700
-                                                : Colors.green.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(growable: false),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          'OS abertas (se houver)',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 8),
-                        if (ordensAbertas.isEmpty)
-                          const Card(
-                            child: ListTile(
-                              leading: Icon(Icons.verified_outlined),
-                              title: Text(
-                                'Nenhuma OS aberta para este cliente.',
-                              ),
-                            ),
-                          )
-                        else
-                          Card(
-                            child: Column(
-                              children: ordensAbertas
-                                  .map(
-                                    (_OrdemServicoMock item) => ListTile(
-                                      leading: const Icon(
-                                        Icons.engineering_outlined,
-                                      ),
-                                      title: Text(item.numero),
-                                      subtitle: Text(
-                                        '${item.descricao} • abertura em ${_formatarDataCurta(item.dataAbertura)}',
-                                      ),
-                                    ),
-                                  )
-                                  .toList(growable: false),
-                            ),
-                          ),
                       ],
                     ),
                   ),
@@ -705,272 +237,794 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     );
   }
 
-  Widget _buildConteudo() {
-    if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            CircularProgressIndicator(),
-            SizedBox(height: 12),
-            Text('Carregando clientes...'),
-          ],
+  String _enderecoCliente(ClienteUsuario cliente) {
+    final List<String> partes = <String>[
+      cliente.logradouro,
+      cliente.numero,
+      cliente.bairro,
+      cliente.cidade,
+      cliente.uf,
+      cliente.cep,
+    ].where((String value) => value.trim().isNotEmpty).toList(growable: false);
+    return partes.isEmpty ? 'Endereço não informado.' : partes.join(', ');
+  }
+
+  Widget _historicoCard(String title, String value, IconData icon) {
+    final ThemeData theme = Theme.of(context);
+    return SizedBox(
+      width: 290,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
-      );
-    }
-
-    if (_erro != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: <Widget>[
-            const Icon(Icons.error_outline, size: 36),
-            const SizedBox(height: 10),
-            Text(_erro!, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _carregar,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Tentar novamente'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final List<ClienteUsuario> clientesFiltrados = _clientesFiltrados();
-    final int total = _response?.total ?? 0;
-
-    if ((_response?.clientes.isEmpty ?? true)) {
-      return const Center(
-        child: Text('Nenhum cliente encontrado para esta empresa.'),
-      );
-    }
-
-    if (clientesFiltrados.isEmpty) {
-      return const Center(
-        child: Text('Nenhum cliente encontrado para o filtro informado.'),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            SizedBox(
-              width: 360,
-              child: TextField(
-                key: const Key('clientes-busca-input'),
-                controller: _buscaController,
-                onChanged: (value) {
-                  setState(() {
-                    _filtro = value;
-                  });
-                },
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Buscar por nome/documento',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-            Text('Total de registros: $total'),
-            if (clientesFiltrados.length != total)
-              Text('Exibindo: ${clientesFiltrados.length}'),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              child: DataTable(
-                columns: const <DataColumn>[
-                  DataColumn(label: Text('Nome')),
-                  DataColumn(label: Text('Documento')),
-                  DataColumn(label: Text('Email')),
-                  DataColumn(label: Text('Telefone')),
-                  DataColumn(label: Text('Tipo Pessoa')),
-                  DataColumn(label: Text('Ativo')),
-                  DataColumn(label: Text('Criado em')),
-                  DataColumn(label: Text('Ações')),
+            Icon(icon, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(title, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 4),
+                  Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
                 ],
-                rows: clientesFiltrados
-                    .map((ClienteUsuario cliente) {
-                      return DataRow(
-                        cells: <DataCell>[
-                          DataCell(Text(cliente.nome)),
-                          DataCell(Text(cliente.documento)),
-                          DataCell(Text(cliente.email)),
-                          DataCell(Text(cliente.telefone)),
-                          DataCell(Text(cliente.tipoPessoa)),
-                          DataCell(Text(cliente.ativo ? 'Sim' : 'Não')),
-                          DataCell(Text(_formatarData(cliente.criadoEm))),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                IconButton(
-                                  tooltip: 'Editar cliente',
-                                  onPressed: () => _abrirEdicaoCliente(cliente),
-                                  icon: const Icon(Icons.edit_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: 'Histórico de compras, dívidas e OS',
-                                  onPressed:
-                                      () => _abrirHistoricoCliente(cliente),
-                                  icon: const Icon(Icons.history_rounded),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    })
-                    .toList(growable: false),
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _infoBox({required String title, required String text, required IconData icon}) {
+    final ThemeData theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.32),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              if (widget.embedded && widget.onBack != null)
-                IconButton(
-                  tooltip: 'Voltar',
-                  onPressed: widget.onBack,
-                  icon: const Icon(Icons.arrow_back),
-                ),
-              const Expanded(
-                child: Text(
-                  'Clientes List',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Atualizar',
-                onPressed: _carregar,
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
+          Icon(icon, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                Text(text, style: theme.textTheme.bodyMedium?.copyWith(height: 1.45, color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Expanded(child: _buildConteudo()),
         ],
       ),
     );
   }
-}
-
-class _ResumoHistoricoCard extends StatelessWidget {
-  const _ResumoHistoricoCard({
-    required this.titulo,
-    required this.valor,
-    required this.subtitulo,
-    required this.icone,
-  });
-
-  final String titulo;
-  final String valor;
-  final String subtitulo;
-  final IconData icone;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 300,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+    final ThemeData theme = Theme.of(context);
+
+    final Widget content = Column(
+      children: <Widget>[
+        _buildHeader(theme),
+        Expanded(child: _buildBody(theme)),
+      ],
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return Scaffold(body: SafeArea(child: content));
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.06),
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(Icons.groups_2_outlined, color: theme.colorScheme.primary, size: 30),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Clientes', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text(
+                  'Cadastro, relacionamento, compras a prazo e controle de fiado dos clientes da empresa.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.35),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: <Widget>[
+              OutlinedButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
+              FilledButton.icon(onPressed: () => _abrirCadastroCliente(), icon: const Icon(Icons.person_add_alt_1_rounded), label: const Text('Novo cliente')),
+              if (widget.onBack != null)
+                IconButton.filledTonal(onPressed: widget.onBack, tooltip: 'Voltar', icon: const Icon(Icons.close_rounded)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(ThemeData theme) {
+    if (_isLoading && _response == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_erro != null && _response == null) {
+      return _errorState(theme);
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (_erro != null) ...<Widget>[
+            _inlineError(theme, _erro!),
+            const SizedBox(height: 16),
+          ],
+          _kpiGrid(theme),
+          const SizedBox(height: 18),
+          _toolbar(theme),
+          const SizedBox(height: 18),
+          _clientesFiltrados.isEmpty ? _emptyState(theme) : _clientesGrid(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _kpiGrid(ThemeData theme) {
+    final List<_Kpi> kpis = <_Kpi>[
+      _Kpi(Icons.groups_outlined, 'Clientes cadastrados', '${_clientes.length}'),
+      _Kpi(Icons.verified_user_outlined, 'Clientes ativos', '$_clientesAtivos'),
+      _Kpi(Icons.request_quote_outlined, 'Com fiado liberado', '$_clientesFiado'),
+      _Kpi(Icons.block_outlined, 'Fiado bloqueado', '$_clientesBloqueadosFiado'),
+      _Kpi(Icons.account_balance_wallet_outlined, 'Limite total fiado', _money(_limiteFiadoTotal), true),
+      _Kpi(Icons.receipt_long_outlined, 'Saldo em aberto', _money(_saldoFiadoTotal)),
+    ];
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int crossAxisCount = constraints.maxWidth < 900 ? 2 : 3;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: kpis.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            mainAxisExtent: 118,
+          ),
+          itemBuilder: (BuildContext context, int index) => _kpiCard(theme, kpis[index]),
+        );
+      },
+    );
+  }
+
+  Widget _kpiCard(ThemeData theme, _Kpi kpi) {
+    final Color background = kpi.highlight ? theme.colorScheme.primary : theme.colorScheme.surface;
+    final Color foreground = kpi.highlight ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
+    final Color muted = kpi.highlight ? theme.colorScheme.onPrimary.withOpacity(0.80) : theme.colorScheme.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: kpi.highlight ? theme.colorScheme.primary : theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: kpi.highlight ? theme.colorScheme.onPrimary.withOpacity(0.14) : theme.colorScheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(kpi.icon, color: kpi.highlight ? theme.colorScheme.onPrimary : theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(kpi.label, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: muted, fontWeight: FontWeight.w700, fontSize: 12)),
+                const SizedBox(height: 6),
+                Text(kpi.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: foreground, fontWeight: FontWeight.w900, fontSize: 21)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _toolbar(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: TextField(
+              controller: _buscaController,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search_rounded),
+                labelText: 'Buscar por nome, documento, telefone ou e-mail',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (String value) {
+                setState(() {
+                  _filtro = value;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text('${_clientesFiltrados.length} encontrados', style: const TextStyle(fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+
+  Widget _clientesGrid(ThemeData theme) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 980;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _clientesFiltrados.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: compact ? 1 : 2,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            mainAxisExtent: 270,
+          ),
+          itemBuilder: (BuildContext context, int index) => _clienteCard(theme, _clientesFiltrados[index]),
+        );
+      },
+    );
+  }
+
+  Widget _clienteCard(ThemeData theme, ClienteUsuario cliente) {
+    final bool fiadoOk = cliente.permiteCompraFiado && !cliente.bloqueadoFiado;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
             children: <Widget>[
               CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: Icon(icone, size: 20),
+                radius: 24,
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
+                child: Text(_iniciais(cliente.nome), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(titulo, style: Theme.of(context).textTheme.bodyMedium),
-                    const SizedBox(height: 4),
-                    Text(
-                      valor,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      subtitulo,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    Text(cliente.nome.isEmpty ? 'Cliente sem nome' : cliente.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 3),
+                    Text('${cliente.tipoPessoa.isEmpty ? 'PF' : cliente.tipoPessoa} • ${cliente.documento}', maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   ],
+                ),
+              ),
+              _statusChip(theme, cliente.ativo ? 'Ativo' : 'Inativo', cliente.ativo ? Colors.green.shade700 : theme.colorScheme.error),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _infoChip(theme, Icons.phone_outlined, cliente.telefone.isEmpty ? 'Sem telefone' : cliente.telefone),
+              _infoChip(theme, Icons.mail_outline, cliente.email.isEmpty ? 'Sem e-mail' : cliente.email),
+              _infoChip(theme, Icons.location_on_outlined, cliente.cidade.isEmpty ? 'Sem cidade' : '${cliente.cidade}/${cliente.uf}'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: fiadoOk ? Colors.green.withOpacity(0.08) : theme.colorScheme.surfaceVariant.withOpacity(0.45),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: fiadoOk ? Colors.green.withOpacity(0.20) : theme.colorScheme.outlineVariant),
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.request_quote_outlined, color: fiadoOk ? Colors.green.shade700 : theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    cliente.permiteCompraFiado
+                        ? 'Fiado: limite ${_money(cliente.limiteFiado)} • prazo ${cliente.prazoPagamentoDias} dias'
+                        : 'Fiado não liberado para este cliente',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _abrirHistoricoCliente(cliente),
+                  icon: const Icon(Icons.timeline_outlined),
+                  label: const Text('Histórico'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => _abrirCadastroCliente(cliente: cliente),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar'),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Text('Atualizado em ${_date(cliente.atualizadoEm)}', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+
+  String _iniciais(String nome) {
+    final List<String> partes = nome.trim().split(RegExp(r'\s+')).where((String item) => item.isNotEmpty).toList(growable: false);
+    if (partes.isEmpty) return 'CL';
+    if (partes.length == 1) return partes.first.substring(0, 1).toUpperCase();
+    return '${partes.first.substring(0, 1)}${partes.last.substring(0, 1)}'.toUpperCase();
+  }
+
+  Widget _statusChip(ThemeData theme, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(999)),
+      child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)),
+    );
+  }
+
+  Widget _infoChip(ThemeData theme, IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.42),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), border: Border.all(color: theme.colorScheme.outlineVariant)),
+      child: Column(
+        children: <Widget>[
+          Icon(Icons.person_add_alt_1_rounded, size: 48, color: theme.colorScheme.primary),
+          const SizedBox(height: 12),
+          Text('Nenhum cliente encontrado.', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          Text('Cadastre clientes para registrar vendas, serviços e compras a prazo.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 18),
+          FilledButton.icon(onPressed: () => _abrirCadastroCliente(), icon: const Icon(Icons.person_add_alt_1_rounded), label: const Text('Novo cliente')),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorState(ThemeData theme) {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withOpacity(0.30),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: theme.colorScheme.error.withOpacity(0.25)),
         ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.cloud_off_rounded, size: 42, color: theme.colorScheme.error),
+            const SizedBox(height: 14),
+            Text('Não foi possível carregar os clientes.', textAlign: TextAlign.center, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(_erro ?? '', textAlign: TextAlign.center, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 18),
+            FilledButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _inlineError(ThemeData theme, String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withOpacity(0.28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.error.withOpacity(0.24)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+          const SizedBox(width: 10),
+          Expanded(child: Text(message)),
+        ],
       ),
     );
   }
 }
 
-class _CompraMock {
-  _CompraMock({
-    required this.descricao,
-    required this.data,
-    required this.formaPagamento,
-    required this.valor,
-  });
+class _ClienteFormDialog extends StatefulWidget {
+  const _ClienteFormDialog({this.cliente});
 
-  final String descricao;
-  final DateTime data;
-  final String formaPagamento;
-  final double valor;
+  final ClienteUsuario? cliente;
+
+  @override
+  State<_ClienteFormDialog> createState() => _ClienteFormDialogState();
 }
 
-class _DividaMock {
-  _DividaMock({
-    required this.descricao,
-    required this.vencimento,
-    required this.valor,
-    required this.status,
-  });
+class _ClienteFormDialogState extends State<_ClienteFormDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nomeController;
+  late final TextEditingController _documentoController;
+  late final TextEditingController _telefoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _cepController;
+  late final TextEditingController _logradouroController;
+  late final TextEditingController _numeroController;
+  late final TextEditingController _complementoController;
+  late final TextEditingController _bairroController;
+  late final TextEditingController _cidadeController;
+  late final TextEditingController _ufController;
+  late final TextEditingController _observacoesController;
+  late final TextEditingController _limiteFiadoController;
+  late final TextEditingController _prazoFiadoController;
 
-  final String descricao;
-  final DateTime vencimento;
-  final double valor;
-  final String status;
+  String _tipoPessoa = 'PF';
+  bool _ativo = true;
+  bool _permiteFiado = false;
+  bool _bloqueadoFiado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final ClienteUsuario? cliente = widget.cliente;
+    _tipoPessoa = cliente?.tipoPessoa.isNotEmpty == true ? cliente!.tipoPessoa : 'PF';
+    _ativo = cliente?.ativo ?? true;
+    _permiteFiado = cliente?.permiteCompraFiado ?? false;
+    _bloqueadoFiado = cliente?.bloqueadoFiado ?? false;
+    _nomeController = TextEditingController(text: cliente?.nome ?? '');
+    _documentoController = TextEditingController(text: cliente?.documento ?? '');
+    _telefoneController = TextEditingController(text: cliente?.telefone ?? '');
+    _emailController = TextEditingController(text: cliente?.email ?? '');
+    _cepController = TextEditingController(text: cliente?.cep ?? '');
+    _logradouroController = TextEditingController(text: cliente?.logradouro ?? '');
+    _numeroController = TextEditingController(text: cliente?.numero ?? '');
+    _complementoController = TextEditingController(text: cliente?.complemento ?? '');
+    _bairroController = TextEditingController(text: cliente?.bairro ?? '');
+    _cidadeController = TextEditingController(text: cliente?.cidade ?? '');
+    _ufController = TextEditingController(text: cliente?.uf ?? '');
+    _observacoesController = TextEditingController(text: cliente?.observacoes ?? '');
+    _limiteFiadoController = TextEditingController(text: _formatNumber(cliente?.limiteFiado ?? 0));
+    _prazoFiadoController = TextEditingController(text: '${cliente?.prazoPagamentoDias ?? 30}');
+  }
+
+  @override
+  void dispose() {
+    for (final TextEditingController controller in <TextEditingController>[
+      _nomeController,
+      _documentoController,
+      _telefoneController,
+      _emailController,
+      _cepController,
+      _logradouroController,
+      _numeroController,
+      _complementoController,
+      _bairroController,
+      _cidadeController,
+      _ufController,
+      _observacoesController,
+      _limiteFiadoController,
+      _prazoFiadoController,
+    ]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  static String _formatNumber(double value) => value.toStringAsFixed(2).replaceAll('.', ',');
+
+  double _parseMoney(String value) {
+    final String normalized = value.replaceAll('.', '').replaceAll(',', '.').trim();
+    return double.tryParse(normalized) ?? 0.0;
+  }
+
+  int _parseInt(String value) => int.tryParse(value.trim()) ?? 0;
+
+  InputDecoration _decoration(String label, IconData icon, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool requiredField = false,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: _decoration(label, icon),
+      validator: requiredField
+          ? (String? value) {
+              if (value == null || value.trim().isEmpty) return 'Campo obrigatório';
+              return null;
+            }
+          : null,
+    );
+  }
+
+  void _salvar() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.of(context).pop(
+      ClienteUsuarioRequest(
+        ativo: _ativo,
+        tipoPessoa: _tipoPessoa,
+        documento: _documentoController.text.trim(),
+        nome: _nomeController.text.trim(),
+        telefone: _telefoneController.text.trim(),
+        email: _emailController.text.trim(),
+        cep: _cepController.text.trim(),
+        logradouro: _logradouroController.text.trim(),
+        numero: _numeroController.text.trim(),
+        complemento: _complementoController.text.trim(),
+        bairro: _bairroController.text.trim(),
+        cidade: _cidadeController.text.trim(),
+        uf: _ufController.text.trim().toUpperCase(),
+        observacoes: _observacoesController.text.trim(),
+        foto: widget.cliente?.foto ?? '',
+        permiteCompraFiado: _permiteFiado,
+        limiteFiado: _permiteFiado ? _parseMoney(_limiteFiadoController.text) : 0,
+        prazoPagamentoDias: _permiteFiado ? _parseInt(_prazoFiadoController.text) : 0,
+        bloqueadoFiado: _bloqueadoFiado,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool editando = widget.cliente != null;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: SizedBox(
+        width: 1040,
+        height: 760,
+        child: Column(
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.07),
+                border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(Icons.person_add_alt_1_rounded, color: theme.colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(editando ? 'Editar cliente' : 'Novo cliente', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                  ),
+                  IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _sectionTitle(theme, 'Dados principais'),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 14,
+                        children: <Widget>[
+                          SizedBox(
+                            width: 180,
+                            child: DropdownButtonFormField<String>(
+                              value: _tipoPessoa,
+                              decoration: _decoration('Tipo', Icons.badge_outlined),
+                              items: const <DropdownMenuItem<String>>[
+                                DropdownMenuItem<String>(value: 'PF', child: Text('Pessoa física')),
+                                DropdownMenuItem<String>(value: 'PJ', child: Text('Pessoa jurídica')),
+                              ],
+                              onChanged: (String? value) => setState(() => _tipoPessoa = value ?? 'PF'),
+                            ),
+                          ),
+                          SizedBox(width: 360, child: _field(controller: _nomeController, label: 'Nome / Razão social', icon: Icons.person_outline, requiredField: true)),
+                          SizedBox(width: 260, child: _field(controller: _documentoController, label: 'CPF / CNPJ', icon: Icons.credit_card_outlined, requiredField: true)),
+                          SizedBox(width: 260, child: _field(controller: _telefoneController, label: 'Telefone / WhatsApp', icon: Icons.phone_outlined, keyboardType: TextInputType.phone)),
+                          SizedBox(width: 360, child: _field(controller: _emailController, label: 'E-mail', icon: Icons.mail_outline, keyboardType: TextInputType.emailAddress)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      _sectionTitle(theme, 'Endereço'),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 14,
+                        children: <Widget>[
+                          SizedBox(width: 180, child: _field(controller: _cepController, label: 'CEP', icon: Icons.markunread_mailbox_outlined)),
+                          SizedBox(width: 360, child: _field(controller: _logradouroController, label: 'Logradouro', icon: Icons.route_outlined)),
+                          SizedBox(width: 120, child: _field(controller: _numeroController, label: 'Número', icon: Icons.numbers_outlined)),
+                          SizedBox(width: 260, child: _field(controller: _complementoController, label: 'Complemento', icon: Icons.add_home_outlined)),
+                          SizedBox(width: 260, child: _field(controller: _bairroController, label: 'Bairro', icon: Icons.location_city_outlined)),
+                          SizedBox(width: 260, child: _field(controller: _cidadeController, label: 'Cidade', icon: Icons.location_on_outlined)),
+                          SizedBox(width: 120, child: _field(controller: _ufController, label: 'UF', icon: Icons.map_outlined)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      _sectionTitle(theme, 'Fiado / compra a prazo'),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceVariant.withOpacity(0.32),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: theme.colorScheme.outlineVariant),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            SwitchListTile.adaptive(
+                              value: _permiteFiado,
+                              title: const Text('Permitir compra fiado / a prazo'),
+                              subtitle: const Text('Libera o cliente para pagar depois conforme limite e prazo configurados.'),
+                              onChanged: (bool value) => setState(() => _permiteFiado = value),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 14,
+                              runSpacing: 14,
+                              children: <Widget>[
+                                SizedBox(width: 220, child: _field(controller: _limiteFiadoController, label: 'Limite de fiado', icon: Icons.account_balance_wallet_outlined, keyboardType: TextInputType.number)),
+                                SizedBox(width: 220, child: _field(controller: _prazoFiadoController, label: 'Prazo padrão em dias', icon: Icons.event_available_outlined, keyboardType: TextInputType.number)),
+                                SizedBox(
+                                  width: 320,
+                                  child: SwitchListTile.adaptive(
+                                    value: _bloqueadoFiado,
+                                    title: const Text('Bloquear fiado'),
+                                    subtitle: const Text('Impede novas vendas a prazo.'),
+                                    onChanged: (bool value) => setState(() => _bloqueadoFiado = value),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _sectionTitle(theme, 'Status e observações'),
+                      const SizedBox(height: 12),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: _ativo,
+                        title: const Text('Cliente ativo'),
+                        onChanged: (bool value) => setState(() => _ativo = value),
+                      ),
+                      const SizedBox(height: 12),
+                      _field(controller: _observacoesController, label: 'Observações', icon: Icons.notes_outlined, maxLines: 4),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant))),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(onPressed: _salvar, icon: const Icon(Icons.save_outlined), label: Text(editando ? 'Salvar alterações' : 'Cadastrar cliente')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(ThemeData theme, String title) {
+    return Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900));
+  }
 }
 
-class _OrdemServicoMock {
-  _OrdemServicoMock({
-    required this.numero,
-    required this.descricao,
-    required this.dataAbertura,
-    required this.dataFechamento,
-    required this.status,
-  });
+class _Kpi {
+  const _Kpi(this.icon, this.label, this.value, [this.highlight = false]);
 
-  final String numero;
-  final String descricao;
-  final DateTime dataAbertura;
-  final DateTime? dataFechamento;
-  final String status;
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool highlight;
 }
