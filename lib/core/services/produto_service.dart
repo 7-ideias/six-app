@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:sixpos/core/network/logging_interceptor.dart';
 import 'package:sixpos/data/models/produto_dashboard_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/data/models/servico_dashboard_model.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../config/app_config.dart';
@@ -16,6 +17,8 @@ class ProdutoService {
       '${AppConfig.baseUrl}/private/api/produto/atualizacao';
   final String endpointDashboard =
       '${AppConfig.baseUrl}/private/api/produto/dashboard';
+  final String endpointServicosDashboard =
+      '${AppConfig.baseUrl}/private/api/produto/servicos/dashboard';
 
   final String endpointRelatorioListagemPdf =
       '${AppConfig.baseUrl}/private/api/produto/relatorio/listagem/pdf';
@@ -89,6 +92,44 @@ class ProdutoService {
       return ProdutoDashboardModel.fromJson(decoded);
     } catch (e) {
       print('❌ Erro ao carregar dashboard de produtos: $e');
+      rethrow;
+    }
+  }
+
+  Future<ServicoDashboardModel> buscarDashboardServicos() async {
+    final authService = AuthService();
+    final token = await authService.getAccessToken();
+    final empresaId = await authService.getEmpresaId();
+
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'idUnicoDaEmpresa': empresaId ?? '',
+      'Authorization': 'Bearer $token',
+    };
+
+    final url = Uri.parse(endpointServicosDashboard);
+
+    try {
+      print('🌐 GET $url');
+      print('🟦 Headers: $headers');
+
+      final response = await client.get(url, headers: headers);
+
+      print('✅ STATUS: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao carregar dashboard de serviços: ${response.statusCode}');
+      }
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw Exception('Resposta inválida ao carregar dashboard de serviços.');
+      }
+
+      return ServicoDashboardModel.fromJson(decoded);
+    } catch (e) {
+      print('❌ Erro ao carregar dashboard de serviços: $e');
       rethrow;
     }
   }
