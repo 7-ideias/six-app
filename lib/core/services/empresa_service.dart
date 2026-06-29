@@ -20,7 +20,7 @@ class EmpresaService {
     final empresaId = await authService.getEmpresaId();
 
     if (token == null || empresaId == null) {
-      throw Exception('Credenciais não encontradas');
+      throw Exception('Credenciais não encontradas EMPRESA_SERVICE 23');
     }
 
     final uri = Uri.parse('${AppConfig.baseUrl}/private/api/dados-empresa');
@@ -57,7 +57,7 @@ class EmpresaService {
     final empresaId = await authService.getEmpresaId();
 
     if (token == null || empresaId == null) {
-      throw Exception('Credenciais não encontradas');
+      throw Exception('Credenciais não encontradas EMPRESA_SERVICE 60');
     }
 
     final uri = Uri.parse('${AppConfig.baseUrl}/private/api/dados-empresa');
