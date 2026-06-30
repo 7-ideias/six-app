@@ -38,22 +38,24 @@ class ProdutoHelper {
     required String ordenacao,
   }) {
     List<ProdutoModel> resultado = [...produtos];
+    final termoNormalizado = termoBusca.trim().toLowerCase();
 
-    if (termoBusca.isNotEmpty) {
+    if (termoNormalizado.isNotEmpty) {
       resultado = resultado
           .where(
-            (p) => p.nomeProduto.toLowerCase().contains(
-                  termoBusca.toLowerCase(),
-                ),
+            (p) =>
+                p.nomeProduto.toLowerCase().contains(termoNormalizado) ||
+                p.codigoDeBarras.toLowerCase().contains(termoNormalizado),
           )
           .toList();
     }
 
-    // Ordenação
     if (ordenacao == 'nome') {
       resultado.sort((a, b) => a.nomeProduto.compareTo(b.nomeProduto));
     } else if (ordenacao == 'preco') {
       resultado.sort((a, b) => a.precoVenda.compareTo(b.precoVenda));
+    } else if (ordenacao == 'precoDesc') {
+      resultado.sort((a, b) => b.precoVenda.compareTo(a.precoVenda));
     }
 
     return resultado;
