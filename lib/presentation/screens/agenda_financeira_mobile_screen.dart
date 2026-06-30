@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
@@ -25,6 +27,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   final AgendaFinanceiraLancamentoService _service = AgendaFinanceiraLancamentoService();
   final AgendaFinanceiraAcoesFinanceiras _acoesService = AgendaFinanceiraAcoesFinanceiras();
+  final ScrollController _periodosScrollController = ScrollController();
 
   final List<String> _abas = const <String>[
     'Agenda',
@@ -32,7 +35,12 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     'Fluxo previsto',
     'Valores confirmados',
   ];
-  final List<String> _periodos = const <String>['Hoje', 'Próximos 7 dias', 'Este mês', 'Próximo mês'];
+  final List<String> _periodos = const <String>[
+    'Hoje',
+    'Próximos 7 dias',
+    'Este mês',
+    'Próximo mês',
+  ];
   final List<String> _tipos = const <String>['Todos', 'Receber', 'Pagar'];
   final List<String> _status = const <String>[
     'Todos',
@@ -53,6 +61,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   bool _carregando = false;
   bool _executandoAcao = false;
+  bool _dicaPeriodosExecutada = false;
   DateTime? _ultimaConsultaEm;
 
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
@@ -62,7 +71,16 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _consultar());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consultar();
+      _executarDicaScrollPeriodos();
+    });
+  }
+
+  @override
+  void dispose() {
+    _periodosScrollController.dispose();
+    super.dispose();
   }
 
   List<Map<String, dynamic>> get _itensAgenda {
@@ -88,6 +106,35 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   double get _saldoPrevisto =>
       (_totalRecebidoConfirmado + _totalReceberPrevisto) - (_totalPagoConfirmado + _totalPagarPrevisto);
   double get _saldoConfirmado => _toDouble(_totaisConfirmados['saldoConfirmado']);
+
+  Future<void> _executarDicaScrollPeriodos() async {
+    if (_dicaPeriodosExecutada) return;
+    _dicaPeriodosExecutada = true;
+
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+    if (!mounted || !_periodosScrollController.hasClients) return;
+
+    final double maxOffset = _periodosScrollController.position.maxScrollExtent;
+    if (maxOffset <= 0) return;
+
+    final double hintOffset = maxOffset < 46 ? maxOffset : 46;
+    try {
+      await _periodosScrollController.animateTo(
+        hintOffset,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeOutCubic,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 160));
+      if (!mounted || !_periodosScrollController.hasClients) return;
+      await _periodosScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {
+      // O movimento de dica não deve interferir no uso da tela.
+    }
+  }
 
   Future<void> _consultar({bool mostrarFeedback = false}) async {
     if (_carregando) return;
@@ -518,21 +565,21 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           onRefresh: () => _consultar(mostrarFeedback: true),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
               SixStaggeredEntry(child: _buildHeaderCard()),
-              const SizedBox(height: 14),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 70), child: _buildFilterCard()),
+              const SizedBox(height: 12),
+              SixStaggeredEntry(delay: const Duration(milliseconds: 60), child: _buildFilterCard()),
               if (_carregando || _executandoAcao) ...const [
-                SizedBox(height: 12),
+                SizedBox(height: 10),
                 LinearProgressIndicator(minHeight: 3),
               ],
-              const SizedBox(height: 16),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 120), child: _buildResumo()),
-              const SizedBox(height: 18),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 170), child: _buildTabs()),
               const SizedBox(height: 14),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 220), child: _buildConteudoAba()),
+              SixStaggeredEntry(delay: const Duration(milliseconds: 110), child: _buildResumo()),
+              const SizedBox(height: 16),
+              SixStaggeredEntry(delay: const Duration(milliseconds: 160), child: _buildTabs()),
+              const SizedBox(height: 12),
+              SixStaggeredEntry(delay: const Duration(milliseconds: 210), child: _buildConteudoAba()),
             ],
           ),
         ),
@@ -542,54 +589,53 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
           colors: [_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x260B1F3A),
-            blurRadius: 22,
-            offset: Offset(0, 12),
+            color: Color(0x1F0B1F3A),
+            blurRadius: 16,
+            offset: Offset(0, 8),
           ),
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: const Color(0x1AFFFFFF),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0x33FFFFFF)),
             ),
-            child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white),
+            child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white, size: 22),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Agenda financeira',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   _ultimaConsultaEm == null
-                      ? 'Previsões, cobranças, pagamentos e confirmações em um só lugar.'
+                      ? 'Previsões e confirmações do período.'
                       : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
-                  style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFFD7E3F5), fontSize: 12.5, height: 1.25),
                 ),
               ],
             ),
@@ -601,65 +647,32 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   Widget _buildFilterCard() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
       decoration: BoxDecoration(
         color: _surfaceColor,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
         boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _periodos.map((periodo) {
-                final selected = periodo == _periodoSelecionado;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    selected: selected,
-                    label: Text(periodo),
-                    onSelected: _carregando
-                        ? null
-                        : (_) => setState(() => _periodoSelecionado = periodo),
-                    selectedColor: _primaryColor,
-                    labelStyle: TextStyle(
-                      color: selected ? Colors.white : _titleTextColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
+          _buildPeriodosSelector(),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _smallInfoChip(Icons.swap_vert_rounded, _tipoSelecionado),
-                    _smallInfoChip(Icons.flag_outlined, _statusSelecionado),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
+              _smallInfoChip(Icons.swap_vert_rounded, _tipoSelecionado),
+              _smallInfoChip(Icons.flag_outlined, _statusSelecionado),
               OutlinedButton.icon(
                 onPressed: _carregando ? null : _abrirFiltros,
                 icon: const Icon(Icons.tune_rounded, size: 18),
                 label: const Text('Filtros'),
               ),
-              const SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
                 icon: const Icon(Icons.search_rounded, size: 18),
@@ -672,13 +685,73 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     );
   }
 
+  Widget _buildPeriodosSelector() {
+    return SizedBox(
+      height: 40,
+      child: Stack(
+        children: [
+          ListView.separated(
+            controller: _periodosScrollController,
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(right: 34),
+            itemCount: _periodos.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final periodo = _periodos[index];
+              final selected = periodo == _periodoSelecionado;
+              return ChoiceChip(
+                selected: selected,
+                visualDensity: VisualDensity.compact,
+                label: Text(periodo),
+                onSelected: _carregando
+                    ? null
+                    : (_) {
+                        setState(() => _periodoSelecionado = periodo);
+                      },
+                selectedColor: _primaryColor,
+                labelStyle: TextStyle(
+                  color: selected ? Colors.white : _titleTextColor,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                ),
+                avatar: selected ? const Icon(Icons.check_rounded, size: 15, color: Colors.white) : null,
+              );
+            },
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: Container(
+                width: 42,
+                alignment: Alignment.centerRight,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [Color(0x00FFFFFF), _surfaceColor],
+                  ),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.only(right: 2),
+                  child: SixPulsingBadge(
+                    child: Icon(Icons.chevron_right_rounded, color: _accentColor, size: 22),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _smallInfoChip(IconData icon, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: _softBlueColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -686,11 +759,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           const SizedBox(width: 6),
           Text(
             text,
-            style: const TextStyle(
-              color: _titleTextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(color: _titleTextColor, fontSize: 12, fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -716,55 +785,53 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
               ),
               child: SafeArea(
                 top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 42,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFCBD5E1),
-                          borderRadius: BorderRadius.circular(999),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Filtrar agenda',
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Filtrar agenda',
+                        style: TextStyle(color: _titleTextColor, fontSize: 18, fontWeight: FontWeight.w900),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildFilterOptions(
-                      title: 'Tipo',
-                      values: _tipos,
-                      selected: tipoTemp,
-                      onSelected: (value) => setModalState(() => tipoTemp = value),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildFilterOptions(
-                      title: 'Status',
-                      values: _status,
-                      selected: statusTemp,
-                      onSelected: (value) => setModalState(() => statusTemp = value),
-                    ),
-                    const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: () => Navigator.of(context).pop(
-                          _AgendaMobileFiltro(tipo: tipoTemp, status: statusTemp),
+                      const SizedBox(height: 16),
+                      _buildFilterOptions(
+                        title: 'Tipo',
+                        values: _tipos,
+                        selected: tipoTemp,
+                        onSelected: (value) => setModalState(() => tipoTemp = value),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFilterOptions(
+                        title: 'Status',
+                        values: _status,
+                        selected: statusTemp,
+                        onSelected: (value) => setModalState(() => statusTemp = value),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => Navigator.of(context).pop(
+                            _AgendaMobileFiltro(tipo: tipoTemp, status: statusTemp),
+                          ),
+                          icon: const Icon(Icons.check_rounded),
+                          label: const Text('Aplicar filtros'),
                         ),
-                        icon: const Icon(Icons.check_rounded),
-                        label: const Text('Aplicar filtros'),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -791,11 +858,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: _mutedTextColor,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
+          style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -848,23 +911,14 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
       ),
       child: Row(
         children: [
           Container(
             width: 38,
             height: 38,
-            decoration: BoxDecoration(
-              color: _softBlueColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
+            decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(14)),
             child: Icon(card.icon, color: _accentColor, size: 19),
           ),
           const SizedBox(width: 12),
@@ -876,11 +930,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                   card.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _mutedTextColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 TweenAnimationBuilder<double>(
@@ -892,11 +942,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                       _formatarMoeda(value),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: const TextStyle(color: _titleTextColor, fontSize: 15, fontWeight: FontWeight.w900),
                     );
                   },
                 ),
@@ -955,9 +1001,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       );
     }
 
-    return Column(
-      children: _itensAgenda.map(_buildLancamentoCard).toList(),
-    );
+    return Column(children: _itensAgenda.map(_buildLancamentoCard).toList());
   }
 
   Widget _buildLancamentoCard(Map<String, dynamic> item) {
@@ -973,13 +1017,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -997,11 +1035,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           const SizedBox(height: 12),
           Text(
             item['descricao']?.toString() ?? '',
-            style: const TextStyle(
-              color: _titleTextColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(color: _titleTextColor, fontSize: 16, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 7),
           Text(
@@ -1076,13 +1110,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                   children: [
                     const Icon(Icons.calendar_today_outlined, color: _accentColor, size: 18),
                     const SizedBox(width: 8),
-                    Text(
-                      entry.key,
-                      style: const TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+                    Text(entry.key, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900)),
                   ],
                 ),
               ),
@@ -1107,10 +1135,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: _softBlueColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
+            decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(14)),
             child: Icon(
               tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded,
               color: _accentColor,
@@ -1224,10 +1249,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         return Container(
           height: 30,
           width: double.infinity,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE2E8F0),
-            borderRadius: BorderRadius.circular(999),
-          ),
+          decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(999)),
           clipBehavior: Clip.antiAlias,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
@@ -1239,11 +1261,13 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 650),
                     width: constraints.maxWidth * percentualEntrada * value,
+                    height: 30,
                     color: _accentColor,
                   ),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 650),
                     width: constraints.maxWidth * percentualSaida * value,
+                    height: 30,
                     color: const Color(0xFFE11D48),
                   ),
                 ],
@@ -1258,10 +1282,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   Widget _fluxoValor(String label, double value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _softBlueColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1305,10 +1326,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
               Container(
                 width: 42,
                 height: 42,
-                decoration: BoxDecoration(
-                  color: _softBlueColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(14)),
                 child: Icon(
                   tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded,
                   color: _accentColor,
@@ -1351,23 +1369,13 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   Widget _pill(String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: _softBlueColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: _accentColor, size: 15),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: _titleTextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          Text(label, style: const TextStyle(color: _titleTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -1386,21 +1394,14 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(
-              color: _softBlueColor,
-              borderRadius: BorderRadius.circular(18),
-            ),
+            decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(18)),
             child: Icon(icon, color: _accentColor),
           ),
           const SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: _titleTextColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(color: _titleTextColor, fontSize: 16, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1427,48 +1428,46 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           ),
           child: SafeArea(
             top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
-                      borderRadius: BorderRadius.circular(999),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  item['descricao']?.toString() ?? 'Detalhes',
-                  style: const TextStyle(
-                    color: _titleTextColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                  const SizedBox(height: 18),
+                  Text(
+                    item['descricao']?.toString() ?? 'Detalhes',
+                    style: const TextStyle(color: _titleTextColor, fontSize: 18, fontWeight: FontWeight.w900),
                   ),
-                ),
-                const SizedBox(height: 14),
-                _detalheLinha('Contato', item['contato']?.toString() ?? '-'),
-                _detalheLinha('Vencimento', item['vencimento']?.toString() ?? '-'),
-                _detalheLinha('Status', item['status']?.toString() ?? '-'),
-                _detalheLinha('Forma de recebimento', item['formaPagamento']?.toString() ?? '-'),
-                _detalheLinha('Valor original', _formatarMoeda(_toDouble(item['valorOriginal']))),
-                _detalheLinha('Valor confirmado', _formatarMoeda(_toDouble(item['valorConfirmado']))),
-                _detalheLinha('Valor em aberto', _formatarMoeda(_toDouble(item['valorRestante']))),
-                if ((item['observacoes']?.toString() ?? '').isNotEmpty)
-                  _detalheLinha('Observações', item['observacoes'].toString()),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Fechar'),
+                  const SizedBox(height: 14),
+                  _detalheLinha('Contato', item['contato']?.toString() ?? '-'),
+                  _detalheLinha('Vencimento', item['vencimento']?.toString() ?? '-'),
+                  _detalheLinha('Status', item['status']?.toString() ?? '-'),
+                  _detalheLinha('Forma de recebimento', item['formaPagamento']?.toString() ?? '-'),
+                  _detalheLinha('Valor original', _formatarMoeda(_toDouble(item['valorOriginal']))),
+                  _detalheLinha('Valor confirmado', _formatarMoeda(_toDouble(item['valorConfirmado']))),
+                  _detalheLinha('Valor em aberto', _formatarMoeda(_toDouble(item['valorRestante']))),
+                  if ((item['observacoes']?.toString() ?? '').isNotEmpty)
+                    _detalheLinha('Observações', item['observacoes'].toString()),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Fechar'),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -1484,17 +1483,9 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         children: [
           SizedBox(
             width: 130,
-            child: Text(
-              label,
-              style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w800),
-            ),
+            child: Text(label, style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w800)),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800))),
         ],
       ),
     );
@@ -1636,7 +1627,8 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       if (indexInvertido > 1 && indexInvertido % 3 == 1) buffer.write('.');
     }
 
-    return '${negativo ? '-R\$ ' : 'R\$ '}${buffer.toString()},$decimal';
+    final prefixo = negativo ? r'-R$ ' : r'R$ ';
+    return '$prefixo${buffer.toString()},$decimal';
   }
 }
 
