@@ -52,7 +52,7 @@ class ProdutoHelper {
 
     if (ordenacao == 'nome') {
       resultado.sort((a, b) => a.nomeProduto.compareTo(b.nomeProduto));
-    } else if (ordenacao == 'preco') {
+    } else if (ordenacao == 'preco' || ordenacao == 'precoAsc') {
       resultado.sort((a, b) => a.precoVenda.compareTo(b.precoVenda));
     } else if (ordenacao == 'precoDesc') {
       resultado.sort((a, b) => b.precoVenda.compareTo(a.precoVenda));
