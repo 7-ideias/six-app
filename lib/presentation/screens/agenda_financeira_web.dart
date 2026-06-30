@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
@@ -40,7 +41,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
   final List<Map<String, dynamic>> _itensConfirmados = <Map<String, dynamic>>[];
   Map<String, dynamic> _totaisConfirmados = <String, dynamic>{};
-  Map<String, dynamic>? _selecionado;
 
   @override
   void initState() {
@@ -73,6 +73,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
   double get _saldoConfirmado => _toDouble(_totaisConfirmados['saldoConfirmado']);
 
+  void _fechar() {
+    final onBack = widget.onBack;
+    if (onBack != null) {
+      onBack();
+      return;
+    }
+    Navigator.of(context).maybePop();
+  }
+
   Future<void> _consultar({bool mostrarFeedback = false}) async {
     if (_carregando) return;
     setState(() => _carregando = true);
@@ -87,7 +96,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _aplicarConfirmados(confirmados);
       _sincronizarValoresConfirmadosNosLancamentos();
       _ultimaConsultaEm = DateTime.now();
-      _selecionado = _itensAgenda.isEmpty ? null : _itensAgenda.first;
 
       if (mostrarFeedback) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -289,10 +297,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Future<void> _executarAcao(String acao, Map<String, dynamic> item) async {
     final comando = acao.trim().toLowerCase();
-    if (comando == 'detalhes') {
-      setState(() => _selecionado = item);
-      return;
-    }
+    if (comando == 'detalhes') return;
     if (comando == 'editar') {
       await _editarLancamento(item);
       return;
@@ -453,30 +458,36 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surfaceContainerLowest,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _novoLancamento,
-        icon: const Icon(Icons.add),
-        label: const Text('Novo lançamento'),
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => _consultar(mostrarFeedback: true),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: <Widget>[
-              _buildHeader(theme),
-              const SizedBox(height: 14),
-              _buildFiltros(theme),
-              if (_carregando || _executandoAcao) ...const <Widget>[SizedBox(height: 10), LinearProgressIndicator(minHeight: 3)],
-              const SizedBox(height: 14),
-              _buildResumo(theme),
-              const SizedBox(height: 18),
-              _buildAbas(theme),
-              const SizedBox(height: 16),
-              _buildConteudoAba(theme),
-            ],
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.escape): _fechar,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Material(
+          color: theme.colorScheme.surface,
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () => _consultar(mostrarFeedback: true),
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: <Widget>[
+                  _buildHeader(theme),
+                  const SizedBox(height: 14),
+                  _buildFiltros(theme),
+                  if (_carregando || _executandoAcao) ...const <Widget>[
+                    SizedBox(height: 10),
+                    LinearProgressIndicator(minHeight: 3),
+                  ],
+                  const SizedBox(height: 14),
+                  _buildResumo(theme),
+                  const SizedBox(height: 18),
+                  _buildAbas(theme),
+                  const SizedBox(height: 16),
+                  _buildConteudoAba(theme),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -484,37 +495,73 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildHeader(ThemeData theme) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            Column(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 22, 20, 18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.06),
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              Icons.account_balance_wallet_outlined,
+              color: theme.colorScheme.primary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Agenda Financeira', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 6),
-                Text(_ultimaConsultaEm == null
-                    ? 'Ainda não consultado'
-                    : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
+                Text(
+                  'Agenda Financeira',
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _ultimaConsultaEm == null
+                      ? 'Ainda não consultado'
+                      : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
-            Wrap(spacing: 8, children: <Widget>[
+          ),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
               OutlinedButton.icon(
-                onPressed: widget.embedded ? widget.onBack : () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Voltar'),
+                onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Atualizar'),
               ),
-              FilledButton.icon(onPressed: () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.refresh), label: const Text('Atualizar')),
-            ]),
-          ],
-        ),
+              FilledButton.icon(
+                onPressed: _executandoAcao ? null : _novoLancamento,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Novo lançamento'),
+              ),
+              IconButton.filledTonal(
+                onPressed: _fechar,
+                tooltip: 'Fechar',
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -575,10 +622,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  card['titulo'] as String,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
+                Text(card['titulo'] as String, style: const TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 _buildValorResumoAnimado(theme, valor),
               ],
@@ -597,9 +641,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       builder: (context, value, child) {
         return Text(
           _formatarMoeda(value),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
         );
       },
     );
@@ -714,50 +756,35 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         child: itens.isEmpty
             ? const Text('Nenhum lançamento encontrado no calendário.')
             : SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columns: const <DataColumn>[
-              DataColumn(label: Text('Data')),
-              DataColumn(label: Text('Tipo')),
-              DataColumn(label: Text('Descrição')),
-              DataColumn(label: Text('Valor previsto'), numeric: true),
-              DataColumn(label: Text('Valor confirmado'), numeric: true),
-              DataColumn(label: Text('Diferença'), numeric: true),
-            ],
-            rows: itens.map((item) {
-              final tipoEntrada = item['tipo'] == 'receber';
-              final valorPrevisto = _toDouble(item['valorOriginal'] ?? item['valor']);
-              final valorConfirmado = _toDouble(item['valorConfirmado']);
-              final diferenca = valorPrevisto - valorConfirmado;
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: const <DataColumn>[
+                    DataColumn(label: Text('Data')),
+                    DataColumn(label: Text('Tipo')),
+                    DataColumn(label: Text('Descrição')),
+                    DataColumn(label: Text('Valor previsto'), numeric: true),
+                    DataColumn(label: Text('Valor confirmado'), numeric: true),
+                    DataColumn(label: Text('Diferença'), numeric: true),
+                  ],
+                  rows: itens.map((item) {
+                    final tipoEntrada = item['tipo'] == 'receber';
+                    final valorPrevisto = _toDouble(item['valorOriginal'] ?? item['valor']);
+                    final valorConfirmado = _toDouble(item['valorConfirmado']);
+                    final diferenca = valorPrevisto - valorConfirmado;
 
-              return DataRow(
-                cells: <DataCell>[
-                  DataCell(Text(item['vencimento']?.toString() ?? '-')),
-                  DataCell(Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar'))),
-                  DataCell(SizedBox(
-                    width: 420,
-                    child: Text(
-                      item['descricao']?.toString() ?? '-',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  )),
-                  DataCell(Text(
-                    _formatarMoeda(valorPrevisto),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  )),
-                  DataCell(Text(
-                    _formatarMoeda(valorConfirmado),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  )),
-                  DataCell(Text(
-                    _formatarMoeda(diferenca),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  )),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
+                    return DataRow(
+                      cells: <DataCell>[
+                        DataCell(Text(item['vencimento']?.toString() ?? '-')),
+                        DataCell(Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar'))),
+                        DataCell(SizedBox(width: 420, child: Text(item['descricao']?.toString() ?? '-', overflow: TextOverflow.ellipsis))),
+                        DataCell(Text(_formatarMoeda(valorPrevisto), style: const TextStyle(fontWeight: FontWeight.w800))),
+                        DataCell(Text(_formatarMoeda(valorConfirmado), style: const TextStyle(fontWeight: FontWeight.w800))),
+                        DataCell(Text(_formatarMoeda(diferenca), style: const TextStyle(fontWeight: FontWeight.w800))),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
       ),
     );
   }
@@ -767,15 +794,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
     for (final item in _itensSomaveis) {
       final data = _parseDataBr(item['vencimento']?.toString());
-      final mes = data == null
-          ? 'Sem competência'
-          : '${data.year}-${data.month.toString().padLeft(2, '0')}';
-
+      final mes = data == null ? 'Sem competência' : '${data.year}-${data.month.toString().padLeft(2, '0')}';
       final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-      final registro = fluxoPorMes.putIfAbsent(
-        mes,
-            () => <String, double>{'entradas': 0, 'saidas': 0},
-      );
+      final registro = fluxoPorMes.putIfAbsent(mes, () => <String, double>{'entradas': 0, 'saidas': 0});
 
       if (item['tipo'] == 'receber') {
         registro['entradas'] = (registro['entradas'] ?? 0) + valor;
@@ -785,12 +806,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
 
     if (fluxoPorMes.isEmpty) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('Nenhum fluxo previsto encontrado.'),
-        ),
-      );
+      return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum fluxo previsto encontrado.')));
     }
 
     final mesesOrdenados = fluxoPorMes.keys.toList()..sort();
@@ -813,26 +829,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-                      Text(
-                        mes,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Text(
-                        'Saldo: ${_formatarMoeda(saldo)}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                      Text(mes, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                      Text('Saldo: ${_formatarMoeda(saldo)}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildBarraFluxoUnica(
-                    theme: theme,
-                    entrada: entrada,
-                    saida: saida,
-                  ),
+                  _buildBarraFluxoUnica(theme: theme, entrada: entrada, saida: saida),
                 ],
               ),
             );
@@ -853,7 +855,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final percentualEntradaTexto = total <= 0
         ? '0,0% entradas'
         : '${(percentualEntrada * 100).toStringAsFixed(1).replaceAll('.', ',')}% entradas';
-
     final percentualSaidaTexto = total <= 0
         ? '0,0% saídas'
         : '${(percentualSaida * 100).toStringAsFixed(1).replaceAll('.', ',')}% saídas';
@@ -864,14 +865,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            Text(
-              'Entradas: ${_formatarMoeda(entrada)}',
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            Text(
-              'Saídas: ${_formatarMoeda(saida)}',
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
+            Text('Entradas: ${_formatarMoeda(entrada)}', style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text('Saídas: ${_formatarMoeda(saida)}', style: const TextStyle(fontWeight: FontWeight.w800)),
           ],
         ),
         const SizedBox(height: 8),
@@ -919,11 +914,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                           child: Center(
                             child: Text(
                               '$percentualEntradaTexto • $percentualSaidaTexto',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 15,
-                              ),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
                             ),
                           ),
                         ),
