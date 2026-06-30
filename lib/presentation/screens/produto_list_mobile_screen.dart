@@ -315,15 +315,15 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           return const SizedBox.shrink();
         }
 
-        return Row(
-          children: [
-            Expanded(
-              child: _SummaryCard(
-                label: 'Itens',
-                value: response.skusTotaisNoEstoque.toString(),
-                icon: Icons.widgets_outlined,
-              ),
+        final summaryCards = <Widget>[
+          Expanded(
+            child: _SummaryCard(
+              label: 'Itens',
+              value: response.skusTotaisNoEstoque.toString(),
+              icon: Icons.widgets_outlined,
             ),
+          ),
+          if (_isProdutoSelecionado) ...[
             const SizedBox(width: 10),
             Expanded(
               child: _SummaryCard(
@@ -332,17 +332,19 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 icon: Icons.inventory_outlined,
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _SummaryCard(
-                label: 'Valor',
-                value: _formatCurrency(response.vlEstoqueEmGrana),
-                icon: Icons.payments_outlined,
-                compact: true,
-              ),
-            ),
           ],
-        );
+          const SizedBox(width: 10),
+          Expanded(
+            child: _SummaryCard(
+              label: 'Valor',
+              value: _formatCurrency(response.vlEstoqueEmGrana),
+              icon: Icons.payments_outlined,
+              compact: true,
+            ),
+          ),
+        ];
+
+        return Row(children: summaryCards);
       },
     );
   }
