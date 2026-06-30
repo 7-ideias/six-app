@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/pdv_page_web.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
@@ -81,6 +82,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   icon: const Icon(Icons.calendar_month_outlined),
                   onPressed: () => _selectDateRange(context),
                 ),
+                IconButton(
+                  tooltip: 'Notificações',
+                  icon: _buildNotificationIcon(),
+                  onPressed: () => _openNotifications(context),
+                ),
               ],
             ),
             drawer: AppDrawerDoMobile(
@@ -101,6 +107,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
           _buildSearchField(),
           const SizedBox(height: 16),
           _buildExecutiveSummary(),
+          const SizedBox(height: 16),
+          _buildNotificationsOverviewCard(context),
           const SizedBox(height: 22),
           _buildSectionTitle('Ações rápidas'),
           const SizedBox(height: 12),
@@ -111,6 +119,28 @@ class _HomePageMobileState extends State<HomePageMobile> {
           ..._buildMetricTiles(context),
         ],
       ),
+    );
+  }
+
+  Widget _buildNotificationIcon() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(Icons.notifications_none_rounded),
+        Positioned(
+          right: -1,
+          top: -1,
+          child: Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -244,6 +274,102 @@ class _HomePageMobileState extends State<HomePageMobile> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationsOverviewCard(BuildContext context) {
+    return Material(
+      color: _surfaceColor,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => _openNotifications(context),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_active_outlined,
+                      color: _accentColor,
+                    ),
+                  ),
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: const Text(
+                        '3',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Notificações recentes',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Eventos do backend, webhooks e envios ao cliente',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -493,6 +619,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final String day = value.day.toString().padLeft(2, '0');
     final String month = value.month.toString().padLeft(2, '0');
     return '$day/$month';
+  }
+
+  void _openNotifications(BuildContext context) {
+    _navigateTo(context, const NotificacoesMobileScreen());
   }
 
   void _navigateTo(BuildContext context, Widget page) {
