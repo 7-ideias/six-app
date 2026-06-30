@@ -139,10 +139,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 const _EmptyState()
               else
                 ...itensDaLista.asMap().entries.map((entry) {
+                  final int itemDelay =
+                      210 + ((entry.key * 35).clamp(0, 220)).toInt();
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: SixStaggeredEntry(
-                      delay: Duration(milliseconds: 210 + (entry.key * 35).clamp(0, 220)),
+                      delay: Duration(milliseconds: itemDelay),
                       child: _buildProdutoCard(entry.value),
                     ),
                   );
