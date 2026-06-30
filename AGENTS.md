@@ -27,6 +27,7 @@ Backend:
 * Como Flutter Web, Android e iOS compartilham a mesma base, requests, models, services e clients devem ficar em camada reutilizável.
 * Evitar lógica HTTP diretamente dentro de telas.
 * Evitar duplicar chamadas entre web e mobile.
+* Movimento deve comunicar estado, prioridade, feedback de ação ou descoberta de conteúdo escondido, como listas horizontais roláveis.
 
 ## Arquitetura Flutter
 
@@ -106,6 +107,26 @@ Backend:
 * Não hardcodar textos visíveis ao usuário dentro das telas quando eles pertencerem ao app.
 * Preferir arquivos de tradução, mapas de label ou estruturas reutilizáveis de internacionalização.
 * Componentes devem suportar traduções maiores sem quebrar layout.
+
+### Dica visual para listas horizontais no mobile
+
+Quando houver menus, filtros, abas ou listas horizontais com opções que podem ficar escondidas fora da tela, aplicar uma microinteração discreta para indicar ao usuário que existe conteúdo rolável.
+
+Padrão recomendado:
+- Usar `ScrollController` no componente horizontal.
+- Após o primeiro render, executar um pequeno deslocamento automático para a direita e retornar suavemente para o início.
+- Usar movimento curto, sutil e funcional, apenas como dica visual.
+- Evitar animação contínua ou exagerada.
+- Complementar, quando fizer sentido, com um fade/gradiente lateral e uma seta discreta indicando continuidade.
+- Não aplicar em listas verticais nem em componentes onde todas as opções já aparecem visíveis.
+- O movimento deve ocorrer uma única vez ao abrir a tela ou ao montar o componente, sem atrapalhar o toque do usuário.
+
+Exemplo de intenção:
+- filtros horizontais de período;
+- abas horizontais;
+- chips de categorias;
+- menus de ações rápidas;
+- carrosséis de opções.
 
 ## Integração com backend
 

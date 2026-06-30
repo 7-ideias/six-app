@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
@@ -144,7 +145,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Agenda financeira',
             subtitle: 'Previsões, fiado e crediário',
             icon: Icons.event_note_outlined,
-            onTap: _showFeatureInProgress,
+            onTap: () => _navigateTo(context, const AgendaFinanceiraMobileScreen()),
           ),
           _ManagementItem(
             title: 'Formas de recebimento',
