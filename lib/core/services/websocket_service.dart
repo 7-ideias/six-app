@@ -96,8 +96,19 @@ void onConnectCallback(StompFrame frame) {
 
   onStompConectado?.call();
 
-  final String destination = '/topic/empresa/$empresaId/vendas';
+  final List<String> destinations = <String>[
+    '/topic/empresa/$empresaId/vendas',
+    '/topic/empresa/$empresaId/produtos',
+  ];
 
+  for (final String destination in destinations) {
+    _assinarDestino(destination);
+  }
+
+  debugPrint('✅ Conectado ao WebSocket em ${destinations.join(', ')}');
+}
+
+void _assinarDestino(String destination) {
   _stompClient?.subscribe(
     destination: destination,
     callback: (StompFrame frame) {
@@ -114,9 +125,11 @@ void onConnectCallback(StompFrame frame) {
             ? decoded
             : Map<String, dynamic>.from(decoded as Map);
 
+        final DateTime recebidoEm = DateTime.now();
         final Map<String, dynamic> payload = <String, dynamic>{
           ...jsonBody,
-          'recebidoEm': DateTime.now().toIso8601String(),
+          'recebidoEm': _formatarDataHoraLocal(recebidoEm),
+          'recebidoEmIso': recebidoEm.toIso8601String(),
         };
 
         NotificacaoService().registrarPayload(payload);
@@ -126,8 +139,6 @@ void onConnectCallback(StompFrame frame) {
       }
     },
   );
-
-  debugPrint('✅ Conectado ao WebSocket em $destination');
 }
 
 void disconnectStomp() {
@@ -157,4 +168,14 @@ String? _normalizarEmpresaId(String? idUnicoDaEmpresa) {
   }
 
   return empresaId;
+}
+
+String _formatarDataHoraLocal(DateTime value) {
+  final DateTime local = value.toLocal();
+  final String day = local.day.toString().padLeft(2, '0');
+  final String month = local.month.toString().padLeft(2, '0');
+  final String year = local.year.toString();
+  final String hour = local.hour.toString().padLeft(2, '0');
+  final String minute = local.minute.toString().padLeft(2, '0');
+  return '$day/$month/$year $hour:$minute';
 }
