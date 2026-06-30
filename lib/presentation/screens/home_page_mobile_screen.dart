@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/pdv_page_web.dart';
+import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
@@ -104,17 +105,32 @@ class _HomePageMobileState extends State<HomePageMobile> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
-          _buildSearchField(),
+          SixStaggeredEntry(child: _buildSearchField()),
           const SizedBox(height: 16),
-          _buildExecutiveSummary(),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 60),
+            child: _buildExecutiveSummary(),
+          ),
           const SizedBox(height: 16),
-          _buildNotificationsOverviewCard(context),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 120),
+            child: _buildNotificationsOverviewCard(context),
+          ),
           const SizedBox(height: 22),
-          _buildSectionTitle('Ações rápidas'),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 180),
+            child: _buildSectionTitle('Ações rápidas'),
+          ),
           const SizedBox(height: 12),
-          _buildQuickActions(context),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 230),
+            child: _buildQuickActions(context),
+          ),
           const SizedBox(height: 24),
-          _buildSectionTitle('Pendências'),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 290),
+            child: _buildSectionTitle('Pendências'),
+          ),
           const SizedBox(height: 12),
           ..._buildMetricTiles(context),
         ],
@@ -130,13 +146,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
         Positioned(
           right: -1,
           top: -1,
-          child: Container(
-            width: 9,
-            height: 9,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEF4444),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 1.5),
+          child: SixPulsingBadge(
+            child: Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
             ),
           ),
         ),
@@ -245,6 +263,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   Widget _buildSummaryPill({required String label, required String value}) {
+    final TextStyle valueStyle = const TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.w800,
+    );
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
@@ -265,14 +288,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          if (int.tryParse(value) == null)
+            Text(value, overflow: TextOverflow.ellipsis, style: valueStyle)
+          else
+            SixAnimatedNumberText(value: value, style: valueStyle),
         ],
       ),
     );
@@ -318,19 +337,21 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   Positioned(
                     right: -2,
                     top: -2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: const Text(
-                        '3',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
+                    child: SixPulsingBadge(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: const Text(
+                          '3',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ),
@@ -405,10 +426,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: actions.map((action) {
+          children: actions.asMap().entries.map((entry) {
             return SizedBox(
               width: width,
-              child: _buildQuickActionCard(action),
+              child: SixStaggeredEntry(
+                delay: Duration(milliseconds: 270 + (entry.key * 45)),
+                child: _buildQuickActionCard(entry.value),
+              ),
             );
           }).toList(),
         );
@@ -498,11 +522,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
       ),
     ];
 
-    return metrics
+    return metrics.asMap().entries
         .map(
-          (metric) => Padding(
+          (entry) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _buildMetricTile(metric),
+            child: SixStaggeredEntry(
+              delay: Duration(milliseconds: 340 + (entry.key * 55)),
+              child: _buildMetricTile(entry.value),
+            ),
           ),
         )
         .toList();
@@ -571,8 +598,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    metric.count,
+                  SixAnimatedNumberText(
+                    value: metric.count,
                     style: const TextStyle(
                       color: _titleTextColor,
                       fontSize: 24,
