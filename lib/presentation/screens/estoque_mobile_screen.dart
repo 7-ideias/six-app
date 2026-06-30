@@ -17,19 +17,18 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
   static const Color _primaryColor = Color(0xFF0B1F3A);
   static const Color _secondaryColor = Color(0xFF123B69);
   static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
   static const Color _mutedTextColor = Color(0xFF64748B);
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final ProdutoService _produtoService = ProdutoService();
   late Future<EstoqueDashboardModel> _dashboardFuture;
 
-  final NumberFormat _currencyFormatter = NumberFormat.currency(
+  final NumberFormat _moneyFormat = NumberFormat.currency(
     locale: 'pt_BR',
     symbol: 'R\$',
   );
-  final NumberFormat _decimalFormatter = NumberFormat.decimalPattern('pt_BR');
-  final DateFormat _dateFormatter = DateFormat('dd/MM HH:mm', 'pt_BR');
+  final NumberFormat _numberFormat = NumberFormat.decimalPattern('pt_BR');
+  final DateFormat _dateFormat = DateFormat('dd/MM HH:mm', 'pt_BR');
 
   @override
   void initState() {
@@ -37,7 +36,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     _dashboardFuture = _produtoService.buscarDashboardEstoque();
   }
 
-  Future<void> _recarregar() async {
+  Future<void> _reload() async {
     setState(() {
       _dashboardFuture = _produtoService.buscarDashboardEstoque();
     });
@@ -61,7 +60,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           IconButton(
             tooltip: 'Atualizar',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _recarregar,
+            onPressed: _reload,
           ),
         ],
       ),
@@ -69,20 +68,20 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
         future: _dashboardFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const _LoadingState();
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
-            return _ErrorState(onRetry: _recarregar);
+            return _ErrorState(onRetry: _reload);
           }
 
           final dashboard = snapshot.data ?? _emptyDashboard();
           if (dashboard.isEmpty) {
-            return _EmptyInventoryState(onRefresh: _recarregar);
+            return _EmptyInventoryState(onRefresh: _reload);
           }
 
           return RefreshIndicator(
-            onRefresh: _recarregar,
+            onRefresh: _reload,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
@@ -91,7 +90,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                 const SizedBox(height: 16),
                 SixStaggeredEntry(
                   delay: const Duration(milliseconds: 70),
-                  child: _buildQuickActions(),
+                  child: _buildActions(),
                 ),
                 const SizedBox(height: 18),
                 SixStaggeredEntry(
@@ -101,12 +100,26 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                 const SizedBox(height: 22),
                 SixStaggeredEntry(
                   delay: const Duration(milliseconds: 170),
-                  child: _buildStockSituation(dashboard.situacaoEstoque),
+                  child: _buildProgressSection(
+                    title: 'Situação do estoque',
+                    subtitle: 'Distribuição dos produtos por risco operacional.',
+                    icon: Icons.donut_large_rounded,
+                    items: dashboard.situacaoEstoque,
+                    useValue: false,
+                    emptyText: 'Sem dados de situação do estoque.',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SixStaggeredEntry(
                   delay: const Duration(milliseconds: 220),
-                  child: _buildCategoryValue(dashboard.valorEstoquePorCategoria),
+                  child: _buildProgressSection(
+                    title: 'Valor por categoria',
+                    subtitle: 'Onde está concentrado o dinheiro parado em estoque.',
+                    icon: Icons.bar_chart_rounded,
+                    items: dashboard.valorEstoquePorCategoria,
+                    useValue: true,
+                    emptyText: 'Sem valores por categoria.',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SixStaggeredEntry(
@@ -116,17 +129,38 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                 const SizedBox(height: 16),
                 SixStaggeredEntry(
                   delay: const Duration(milliseconds: 320),
-                  child: _buildProductsToReplenish(dashboard.produtosParaReposicao),
+                  child: _buildProductSection(
+                    title: 'Produtos para reposição',
+                    subtitle: 'Itens abaixo do mínimo ou sem estoque.',
+                    icon: Icons.add_shopping_cart_outlined,
+                    items: dashboard.produtosParaReposicao,
+                    emptyText: 'Nenhum produto abaixo do mínimo.',
+                    valueMode: _ProductValueMode.reposition,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SixStaggeredEntry(
                   delay: const Duration(milliseconds: 370),
-                  child: _buildStockErrors(dashboard.produtosComErroEstoque),
+                  child: _buildProductSection(
+                    title: 'Erros e excessos',
+                    subtitle: 'Estoque negativo ou acima do máximo configurado.',
+                    icon: Icons.report_problem_outlined,
+                    items: dashboard.produtosComErroEstoque,
+                    emptyText: 'Nenhum erro operacional identificado.',
+                    valueMode: _ProductValueMode.reposition,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SixStaggeredEntry(
                   delay: const Duration(milliseconds: 420),
-                  child: _buildStockValue(dashboard.produtosMaiorValorParado),
+                  child: _buildProductSection(
+                    title: 'Maior valor parado',
+                    subtitle: 'Produtos que concentram mais dinheiro em estoque.',
+                    icon: Icons.account_balance_wallet_outlined,
+                    items: dashboard.produtosMaiorValorParado,
+                    emptyText: 'Sem produtos com valor parado.',
+                    valueMode: _ProductValueMode.value,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SixStaggeredEntry(
@@ -219,7 +253,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildActions() {
     return Row(
       children: [
         Expanded(
@@ -256,12 +290,12 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     final items = [
       _Kpi(Icons.payments_outlined, 'Valor em estoque', _money(dashboard.valorTotalEstoque), true),
       _Kpi(Icons.inventory_2_outlined, 'Quantidade total', _qty(dashboard.quantidadeTotalEstoque)),
-      _Kpi(Icons.production_quantity_limits_outlined, 'Abaixo do mínimo', _decimalFormatter.format(dashboard.produtosAbaixoMinimo)),
-      _Kpi(Icons.remove_shopping_cart_outlined, 'Sem estoque', _decimalFormatter.format(dashboard.produtosSemEstoque)),
-      _Kpi(Icons.report_problem_outlined, 'Estoque negativo', _decimalFormatter.format(dashboard.produtosEstoqueNegativo)),
-      _Kpi(Icons.unarchive_outlined, 'Acima do máximo', _decimalFormatter.format(dashboard.produtosAcimaMaximo)),
-      _Kpi(Icons.history_toggle_off_outlined, 'Sem movimentação', _decimalFormatter.format(dashboard.produtosSemMovimentacao)),
-      _Kpi(Icons.swap_vert_rounded, 'Entradas/Saídas', '${_decimalFormatter.format(dashboard.entradasRecentes)} / ${_decimalFormatter.format(dashboard.saidasRecentes)}'),
+      _Kpi(Icons.production_quantity_limits_outlined, 'Abaixo do mínimo', _numberFormat.format(dashboard.produtosAbaixoMinimo)),
+      _Kpi(Icons.remove_shopping_cart_outlined, 'Sem estoque', _numberFormat.format(dashboard.produtosSemEstoque)),
+      _Kpi(Icons.report_problem_outlined, 'Estoque negativo', _numberFormat.format(dashboard.produtosEstoqueNegativo)),
+      _Kpi(Icons.unarchive_outlined, 'Acima do máximo', _numberFormat.format(dashboard.produtosAcimaMaximo)),
+      _Kpi(Icons.history_toggle_off_outlined, 'Sem movimentação', _numberFormat.format(dashboard.produtosSemMovimentacao)),
+      _Kpi(Icons.swap_vert_rounded, 'Entradas/Saídas', '${_numberFormat.format(dashboard.entradasRecentes)} / ${_numberFormat.format(dashboard.saidasRecentes)}'),
     ];
 
     return LayoutBuilder(
@@ -278,51 +312,41 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     );
   }
 
-  Widget _buildStockSituation(List<EstoqueDashboardSerieItem> items) {
-    final filtered = items.where((item) => item.quantidade > 0).toList();
-    final total = filtered.fold<double>(0, (sum, item) => sum + item.quantidade);
+  Widget _buildProgressSection({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required List<EstoqueDashboardSerieItem> items,
+    required bool useValue,
+    required String emptyText,
+  }) {
+    final filtered = items
+        .where((item) => useValue ? item.valor > 0 : item.quantidade > 0)
+        .take(6)
+        .toList();
 
-    return _SectionCard(
-      title: 'Situação do estoque',
-      subtitle: 'Distribuição dos produtos por risco operacional.',
-      icon: Icons.donut_large_rounded,
-      child: filtered.isEmpty
-          ? const _NoData(text: 'Sem dados de situação do estoque.')
-          : Column(
-              children: filtered.asMap().entries.map((entry) {
-                final item = entry.value;
-                final percent = total <= 0 ? 0.0 : item.quantidade / total;
-                return _ProgressItem(
-                  color: _chartColor(entry.key),
-                  title: item.label,
-                  value: _qty(item.quantidade),
-                  percent: percent,
-                );
-              }).toList(),
-            ),
-    );
-  }
-
-  Widget _buildCategoryValue(List<EstoqueDashboardSerieItem> items) {
-    final filtered = items.where((item) => item.valor > 0).take(6).toList();
     final maxValue = filtered.fold<double>(0, (max, item) {
-      return item.valor > max ? item.valor : max;
+      final value = useValue ? item.valor : item.quantidade;
+      return value > max ? value : max;
     });
 
     return _SectionCard(
-      title: 'Valor por categoria',
-      subtitle: 'Onde está concentrado o dinheiro parado em estoque.',
-      icon: Icons.bar_chart_rounded,
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
       child: filtered.isEmpty
-          ? const _NoData(text: 'Sem valores por categoria.')
+          ? _NoData(text: emptyText)
           : Column(
               children: filtered.asMap().entries.map((entry) {
                 final item = entry.value;
-                final percent = maxValue <= 0 ? 0.0 : item.valor / maxValue;
+                final rawValue = useValue ? item.valor : item.quantidade;
+                final valueLabel = useValue ? _money(item.valor) : _qty(item.quantidade);
+                final percent = maxValue <= 0 ? 0.0 : rawValue / maxValue;
+
                 return _ProgressItem(
                   color: _chartColor(entry.key),
                   title: item.label.isEmpty ? 'Sem categoria' : item.label,
-                  value: _money(item.valor),
+                  value: valueLabel,
                   percent: percent,
                 );
               }).toList(),
@@ -378,7 +402,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _decimalFormatter.format(alert.quantidade),
+                        _numberFormat.format(alert.quantidade),
                         style: TextStyle(
                           color: color,
                           fontSize: 18,
@@ -393,61 +417,39 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     );
   }
 
-  Widget _buildProductsToReplenish(List<EstoqueDashboardProdutoItem> items) {
+  Widget _buildProductSection({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required List<EstoqueDashboardProdutoItem> items,
+    required String emptyText,
+    required _ProductValueMode valueMode,
+  }) {
     return _SectionCard(
-      title: 'Produtos para reposição',
-      subtitle: 'Itens abaixo do mínimo ou sem estoque.',
-      icon: Icons.add_shopping_cart_outlined,
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
       child: items.isEmpty
-          ? const _NoData(text: 'Nenhum produto abaixo do mínimo.')
-          : Column(children: items.take(5).map(_productToReplenishTile).toList()),
+          ? _NoData(text: emptyText)
+          : Column(
+              children: items.take(5).map((item) {
+                return valueMode == _ProductValueMode.value
+                    ? _productValueTile(item)
+                    : _productRepositionTile(item);
+              }).toList(),
+            ),
     );
   }
 
-  Widget _buildStockErrors(List<EstoqueDashboardProdutoItem> items) {
-    return _SectionCard(
-      title: 'Erros e excessos',
-      subtitle: 'Estoque negativo ou acima do máximo configurado.',
-      icon: Icons.report_problem_outlined,
-      child: items.isEmpty
-          ? const _NoData(text: 'Nenhum erro operacional identificado.')
-          : Column(children: items.take(5).map(_productToReplenishTile).toList()),
-    );
-  }
-
-  Widget _buildStockValue(List<EstoqueDashboardProdutoItem> items) {
-    return _SectionCard(
-      title: 'Maior valor parado',
-      subtitle: 'Produtos que concentram mais dinheiro em estoque.',
-      icon: Icons.account_balance_wallet_outlined,
-      child: items.isEmpty
-          ? const _NoData(text: 'Sem produtos com valor parado.')
-          : Column(children: items.take(5).map(_productValueTile).toList()),
-    );
-  }
-
-  Widget _buildMovements(List<EstoqueDashboardMovimentoItem> items) {
-    return _SectionCard(
-      title: 'Movimentações recentes',
-      subtitle: 'Últimas entradas e saídas registradas.',
-      icon: Icons.swap_vert_rounded,
-      child: items.isEmpty
-          ? const _NoData(text: 'Nenhuma movimentação encontrada.')
-          : Column(children: items.take(8).map(_movementTile).toList()),
-    );
-  }
-
-  Widget _productToReplenishTile(EstoqueDashboardProdutoItem item) {
-    final bool normal = item.problema.toLowerCase() == 'normal';
-    final color = normal ? _accentColor : const Color(0xFFDC2626);
-
+  Widget _productRepositionTile(EstoqueDashboardProdutoItem item) {
+    final normal = item.problema.toLowerCase() == 'normal';
     return _InventoryTile(
       icon: Icons.inventory_2_outlined,
       title: item.nome.isEmpty ? 'Produto sem nome' : item.nome,
       subtitle: '${item.categoria} • Atual ${_qty(item.quantidadeEstoque)} • Mín. ${_qty(item.estoqueMinimo)}',
       trailingTitle: item.problema.isEmpty ? 'Atenção' : item.problema,
       trailingSubtitle: 'Dif. ${_qty(item.diferencaParaMinimo)}',
-      trailingColor: color,
+      trailingColor: normal ? _accentColor : const Color(0xFFDC2626),
     );
   }
 
@@ -462,8 +464,19 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     );
   }
 
+  Widget _buildMovements(List<EstoqueDashboardMovimentoItem> items) {
+    return _SectionCard(
+      title: 'Movimentações recentes',
+      subtitle: 'Últimas entradas e saídas registradas.',
+      icon: Icons.swap_vert_rounded,
+      child: items.isEmpty
+          ? const _NoData(text: 'Nenhuma movimentação encontrada.')
+          : Column(children: items.take(8).map(_movementTile).toList()),
+    );
+  }
+
   Widget _movementTile(EstoqueDashboardMovimentoItem item) {
-    final bool entrada = item.tipo.toUpperCase().contains('ENTRADA');
+    final entrada = item.tipo.toUpperCase().contains('ENTRADA');
     final color = entrada ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
 
     return _InventoryTile(
@@ -485,18 +498,18 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     );
   }
 
-  String _money(double value) => _currencyFormatter.format(value);
+  String _money(double value) => _moneyFormat.format(value);
 
   String _qty(double value) {
     if (value == value.roundToDouble()) {
-      return _decimalFormatter.format(value.toInt());
+      return _numberFormat.format(value.toInt());
     }
     return value.toStringAsFixed(2).replaceAll('.', ',');
   }
 
   String _dateLabel(DateTime? value) {
     if (value == null) return 'Sem data';
-    return _dateFormatter.format(value);
+    return _dateFormat.format(value);
   }
 
   Color _chartColor(int index) {
@@ -534,6 +547,8 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
   }
 }
 
+enum _ProductValueMode { reposition, value }
+
 class _Kpi {
   const _Kpi(this.icon, this.label, this.value, [this.highlight = false]);
 
@@ -548,23 +563,20 @@ class _KpiCard extends StatelessWidget {
 
   final _Kpi item;
 
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-
   @override
   Widget build(BuildContext context) {
-    final background = item.highlight ? _primaryColor : Colors.white;
-    final foreground = item.highlight ? Colors.white : _titleTextColor;
-    final muted = item.highlight ? const Color(0xFFD7E3F5) : _mutedTextColor;
+    final background = item.highlight ? const Color(0xFF0B1F3A) : Colors.white;
+    final foreground = item.highlight ? Colors.white : const Color(0xFF0F172A);
+    final muted = item.highlight ? const Color(0xFFD7E3F5) : const Color(0xFF64748B);
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: item.highlight ? _primaryColor : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: item.highlight ? const Color(0xFF0B1F3A) : const Color(0xFFE2E8F0),
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0F000000),
@@ -583,7 +595,11 @@ class _KpiCard extends StatelessWidget {
               color: item.highlight ? const Color(0x1AFFFFFF) : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(item.icon, color: item.highlight ? Colors.white : _accentColor, size: 21),
+            child: Icon(
+              item.icon,
+              color: item.highlight ? Colors.white : const Color(0xFF2563EB),
+              size: 21,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -744,6 +760,8 @@ class _ProgressItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final safePercent = percent < 0.0 ? 0.0 : (percent > 1.0 ? 1.0 : percent);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 13),
       child: Column(
@@ -780,7 +798,7 @@ class _ProgressItem extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: percent.clamp(0, 1),
+              value: safePercent,
               minHeight: 8,
               color: color,
               backgroundColor: const Color(0xFFE2E8F0),
@@ -912,17 +930,6 @@ class _NoData extends StatelessWidget {
           height: 1.35,
         ),
       ),
-    );
-  }
-}
-
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(),
     );
   }
 }
