@@ -38,6 +38,51 @@ Backend:
 * Criar componentes reutilizáveis quando houver repetição clara.
 * Não transformar correções pontuais em grandes refatorações sem necessidade.
 
+## Padrão visual Mobile — Six
+
+* A experiência mobile deve ser orientada a ação rápida, acompanhamento e gestão simples.
+* Não copiar a navegação web 1:1 para o mobile; adaptar para uso em balcão, atendimento e operação rápida.
+* Usar a estrutura principal:
+  * `Início`: visão geral, busca, indicadores, notificações e ações rápidas.
+  * `Atendimento`: nova venda, novo orçamento, nova assistência técnica e acompanhamento dos atendimentos.
+  * `Gestão`: cadastros, catálogo, financeiro, relatórios, configurações e integrações.
+* Evitar telas mobile com aparência infantil, excesso de cores fortes ou cards grandes coloridos sem hierarquia.
+* Preferir visual profissional com:
+  * fundo claro;
+  * AppBar escura;
+  * cards brancos;
+  * bordas discretas;
+  * sombras leves;
+  * ícones pequenos e consistentes;
+  * textos objetivos;
+  * números em destaque apenas quando forem indicadores.
+* Cards de dashboard devem ter título, subtítulo, número/estado e ação clara.
+* Evitar termos técnicos na UI principal quando houver alternativa mais clara para o usuário final.
+  * Preferir `Assistência` ou `Ordem de serviço` em vez de `OT`.
+  * Preferir `Atendimento` em vez de `Operação` quando o contexto for venda/orçamento/assistência.
+* Telas mobile devem priorizar `ListView`, `Wrap`, `LayoutBuilder`, `SafeArea`, `Expanded` e `TextOverflow.ellipsis` para evitar overflow.
+* A navegação mobile deve ser clara e curta; evitar mais de 3 ou 4 destinos principais no menu inferior.
+
+## Movimento e microinterações no Mobile
+
+* Usar movimento de forma sutil, profissional e funcional.
+* Evitar animações decorativas exageradas ou ícones se movimentando continuamente sem necessidade.
+* Preferir animações curtas com:
+  * `FadeTransition`;
+  * `SlideTransition`;
+  * `TweenAnimationBuilder`;
+  * `AnimatedContainer`;
+  * `AnimatedSwitcher`;
+  * `AnimatedScale`.
+* Cards importantes podem entrar com `fade + leve deslocamento de baixo para cima`.
+* Indicadores numéricos podem usar animação de contagem curta.
+* Badges de notificações podem usar `pulse` discreto quando houver mensagens não lidas.
+* A troca de abas pode usar transição curta com fade.
+* O item ativo do menu inferior pode ter leve escala/subida para reforçar o estado atual.
+* Skeleton loading é preferível a spinner central quando a tela depende de dados do backend.
+* Movimento deve comunicar estado, prioridade ou feedback de ação.
+* Não usar animação que prejudique leitura, acessibilidade ou performance em aparelhos simples.
+
 ## Responsividade
 
 * Evitar overflow em web e mobile.

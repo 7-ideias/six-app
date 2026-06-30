@@ -1,184 +1,28 @@
 import 'dart:io';
 
-import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/tabela_de_precos_mobile_screen.dart';
-import 'package:sixpos/core/utils/produto_helper.dart';
-import 'package:sixpos/data/models/produto_model.dart';
-import 'package:sixpos/providers/produtos_list_provider.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
+import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
 import '../components/drawer_mobile.dart';
 
 class OperacaoMobileScreen extends StatefulWidget {
+  const OperacaoMobileScreen({super.key});
+
   @override
   State<OperacaoMobileScreen> createState() => _OperacaoMobileScreenState();
 }
 
-
 class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
-  bool showCadastrosStats = false;
-  bool showOperacoesStats = false;
-
-  Widget buildHeader(String title, IconData icon, VoidCallback onTap,
-      {bool isExpandable = false, bool isExpanded = false}) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(icon, color: Colors.blueAccent),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: isExpandable
-            ? Icon(isExpanded ? Icons.remove : Icons.add, color: Colors.black54)
-            : const Icon(Icons.chevron_right, color: Colors.black54),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  Widget buildOperacoesCard(String title, IconData icon, VoidCallback onTap,
-      {bool isExpandable = false, bool isExpanded = false}) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(icon, color: Colors.blueAccent),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: isExpandable
-            ? Icon(isExpanded ? Icons.remove : Icons.add, color: Colors.black54)
-            : const Icon(Icons.chevron_right, color: Colors.black54),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  Widget buildCadastrosCard(Color color, String label, int value,
-      VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 2,
-        margin: const EdgeInsets.only(bottom: 12),
-        color: color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$value',
-                style: const TextStyle(
-                  fontSize: 28,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.add_circle_outline, color: Colors.white),
-                  SizedBox(width: 10,),
-                  Text(
-                    'mais info', style: const TextStyle(color: Colors.white),)
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildCadastrosSection() {
-    return AnimatedCrossFade(
-      duration: const Duration(milliseconds: 300),
-      crossFadeState: showCadastrosStats
-          ? CrossFadeState.showSecond
-          : CrossFadeState.showFirst,
-      firstChild: const SizedBox.shrink(),
-      secondChild: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
-        children: [
-          Consumer<ProdutosListProvider<ProdutoModel>>(
-            builder: (context, provider, _) {
-              final response = provider.fullResponse;
-              final int valorProdutos = (response is ProdutoResponseModel) 
-                  ? response.skusTotaisNoEstoque 
-                  : 0;
-              
-              return buildCadastrosCard(Colors.teal, 'Produtos', valorProdutos, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ProdutolistMobileScreen()),
-                );
-              });
-            },
-          ),
-          buildCadastrosCard(Colors.amber, 'Colaboradores', 9, () {}),
-          buildCadastrosCard(Colors.green, 'Clientes', 205, () {}),
-          buildCadastrosCard(Colors.red, 'Fornecedores', 10, () {}),
-          buildCadastrosCard(Colors.pink, 'Catálogo', 10, () {}),
-          buildCadastrosCard(Colors.pink, 'Tabela de Preços', 10, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => TabelaDePrecosMobileScreen()),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget buildOperacoesStatSection() {
-    return AnimatedCrossFade(
-      duration: const Duration(milliseconds: 300),
-      crossFadeState: showOperacoesStats
-          ? CrossFadeState.showSecond
-          : CrossFadeState.showFirst,
-      firstChild: const SizedBox.shrink(),
-      secondChild: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
-        children: [
-          buildCadastrosCard(Colors.teal, 'Vendas', 257, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PdvMobileScreen(),
-              ),
-            );
-          }),
-          buildCadastrosCard(Colors.amber, 'Os', 9, () {}),
-          buildCadastrosCard(Colors.pink, 'Caixa', 9, () {}),
-        ],
-      ),
-    );
-  }
+  static const Color _backgroundColor = Color(0xFFF4F7FB);
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _secondaryColor = Color(0xFF123B69);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -193,68 +37,536 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    Future.microtask(() {
-      ProdutoHelper.retornarProdutosList(context);
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Operações')),
+      backgroundColor: _backgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: _primaryColor,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Atendimento',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
       drawer: AppDrawerDoMobile(
         image: _image,
         onPickImage: _pickImage,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // buildHeader('Perfil do Meu Negócio', Icons.newspaper, () {
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => SeguimentoSelecionarMobileScreen(),
-            //     ),
-            //   );
-            // }),
-            buildOperacoesCard(
-              'Operações',
-              Icons.bar_chart,
-                  () {
-                setState(() {
-                  showOperacoesStats = !showOperacoesStats;
-                  showOperacoesStats == true
-                      ? showCadastrosStats = false
-                      : null;
-                });
-              },
-              isExpandable: true,
-              isExpanded: showOperacoesStats,
-            ),
-            buildOperacoesStatSection(),
-            buildHeader(
-              'Cadastros',
-              Icons.bar_chart,
-                  () {
-                setState(() {
-                  showCadastrosStats = !showCadastrosStats;
-                  showCadastrosStats == true
-                      ? showOperacoesStats = false
-                      : null;
-                });
-              },
-              isExpandable: true,
-              isExpanded: showCadastrosStats,
-            ),
-            buildCadastrosSection(),
-          ],
+      body: _buildContent(context),
+      bottomNavigationBar: kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: [
+          _buildSearchField(),
+          const SizedBox(height: 16),
+          _buildQuickServiceHeader(),
+          const SizedBox(height: 18),
+          _buildSectionTitle('Atendimento rápido'),
+          const SizedBox(height: 12),
+          _buildQuickActions(context),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Acompanhamento'),
+          const SizedBox(height: 12),
+          ..._buildTrackingTiles(context),
+          const SizedBox(height: 12),
+          _buildSectionTitle('Caixa'),
+          const SizedBox(height: 12),
+          _buildCashTile(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Buscar cliente, venda ou assistência...',
+          hintStyle: const TextStyle(color: _mutedTextColor),
+          prefixIcon: const Icon(Icons.search, color: _accentColor),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.tune_rounded, color: _titleTextColor),
+            onPressed: _showFeatureInProgress,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 15,
+          ),
         ),
       ),
-      bottomNavigationBar: kIsWeb ? null : CustomBottomNavBar(initialIndex: 2),
+    );
+  }
+
+  Widget _buildQuickServiceHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [_primaryColor, _secondaryColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x260B1F3A),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0x1AFFFFFF),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0x33FFFFFF)),
+            ),
+            child: const Icon(Icons.support_agent_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Balcão digital',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Venda, orçamento e assistência técnica em poucos passos.',
+                  style: TextStyle(
+                    color: Color(0xFFD7E3F5),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      children: [
+        _buildPrimaryActionCard(
+          title: 'Nova venda',
+          subtitle: 'Abrir atendimento no caixa',
+          icon: Icons.point_of_sale_rounded,
+          onTap: () => _navigateTo(context, PdvMobileScreen()),
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double width = (constraints.maxWidth - 12) / 2;
+
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                SizedBox(
+                  width: width,
+                  child: _buildSecondaryActionCard(
+                    title: 'Novo orçamento',
+                    icon: Icons.request_quote_rounded,
+                    onTap: _showFeatureInProgress,
+                  ),
+                ),
+                SizedBox(
+                  width: width,
+                  child: _buildSecondaryActionCard(
+                    title: 'Nova assistência',
+                    icon: Icons.handyman_rounded,
+                    onTap: _showFeatureInProgress,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPrimaryActionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: _surfaceColor,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(icon, color: _accentColor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecondaryActionCard({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: _surfaceColor,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: _accentColor, size: 22),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontWeight: FontWeight.w800,
+                  height: 1.15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTrackingTiles(BuildContext context) {
+    final List<_TrackingItem> items = [
+      _TrackingItem(
+        title: 'Vendas em aberto',
+        subtitle: 'Aguardando pagamento',
+        count: '257',
+        icon: Icons.receipt_long_outlined,
+        onTap: () => _navigateTo(context, PdvMobileScreen()),
+      ),
+      _TrackingItem(
+        title: 'Orçamentos pendentes',
+        subtitle: 'Aguardando retorno do cliente',
+        count: '9',
+        icon: Icons.description_outlined,
+        onTap: _showFeatureInProgress,
+      ),
+      _TrackingItem(
+        title: 'Assistências em revisão',
+        subtitle: 'Aguardando análise técnica',
+        count: '9',
+        icon: Icons.fact_check_outlined,
+        onTap: _showFeatureInProgress,
+      ),
+      _TrackingItem(
+        title: 'Assistências em execução',
+        subtitle: 'Serviços técnicos em andamento',
+        count: '27',
+        icon: Icons.build_circle_outlined,
+        onTap: _showFeatureInProgress,
+      ),
+    ];
+
+    return items
+        .map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildTrackingTile(item),
+          ),
+        )
+        .toList();
+  }
+
+  Widget _buildTrackingTile(_TrackingItem item) {
+    return Material(
+      color: _surfaceColor,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: item.onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(item.icon, color: _primaryColor, size: 23),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                item.count,
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCashTile() {
+    return Material(
+      color: _surfaceColor,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: _showFeatureInProgress,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.account_balance_wallet_outlined,
+                    color: _accentColor),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Caixa do dia',
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Recebimentos, sangrias e fechamento',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '9',
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: _titleTextColor,
+        fontSize: 16,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.1,
+      ),
+    );
+  }
+
+  void _navigateTo(BuildContext context, Widget page) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (BuildContext context) => page),
+    );
+  }
+
+  void _showFeatureInProgress() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fluxo mobile em evolução.'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
 
+class _TrackingItem {
+  const _TrackingItem({
+    required this.title,
+    required this.subtitle,
+    required this.count,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String count;
+  final IconData icon;
+  final VoidCallback onTap;
+}
