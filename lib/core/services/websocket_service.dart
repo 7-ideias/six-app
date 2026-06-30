@@ -6,8 +6,10 @@ import 'package:stomp_dart_client/stomp_frame.dart';
 
 import '../config/app_config.dart';
 
-late StompClient stompClient;
+StompClient? _stompClient;
 bool _stompInicializado = false;
+bool _stompAtivo = false;
+bool _stompDesconectando = false;
 
 Function(Map<String, dynamic>)? onMensagemRecebida;
 VoidCallback? onStompConectado;
@@ -15,65 +17,91 @@ VoidCallback? onStompDesconectado;
 ValueChanged<Object>? onStompErro;
 
 void connectStomp() {
+  if (_stompAtivo || _stompDesconectando) {
+    return;
+  }
+
   _stompInicializado = true;
-  stompClient = StompClient(
+  _stompAtivo = true;
+
+  final StompClient client = StompClient(
     config: StompConfig.SockJS(
       url: '${AppConfig.baseUrl}/ws',
       onConnect: onConnectCallback,
-      onWebSocketError: (error) {
-        print('Erro no WebSocket: $error');
+      onWebSocketError: (Object error) {
+        if (!_stompAtivo) return;
+        debugPrint('Erro no WebSocket: $error');
         onStompErro?.call(error);
         onStompDesconectado?.call();
       },
-      onDisconnect: (frame) {
-        print('WebSocket desconectado');
-        onStompDesconectado?.call();
+      onDisconnect: (StompFrame frame) {
+        debugPrint('WebSocket desconectado');
+        if (_stompAtivo) {
+          onStompDesconectado?.call();
+        }
+        _stompAtivo = false;
+        _stompDesconectando = false;
       },
-      onStompError: (frame) {
+      onStompError: (StompFrame frame) {
+        if (!_stompAtivo) return;
         final Object erro = frame.body ?? 'Erro STOMP desconhecido';
-        print('Erro STOMP: ${frame.body}');
+        debugPrint('Erro STOMP: ${frame.body}');
         onStompErro?.call(erro);
       },
-      onDebugMessage: (msg) => print('DEBUG: $msg'),
+      onDebugMessage: (String msg) => debugPrint('DEBUG: $msg'),
     ),
   );
 
-  stompClient.activate();
+  _stompClient = client;
+  client.activate();
 }
 
 void onConnectCallback(StompFrame frame) {
+  if (!_stompAtivo) {
+    return;
+  }
+
   onStompConectado?.call();
 
-  stompClient.subscribe(
+  _stompClient?.subscribe(
     destination: '/topic/ordem',
     callback: (StompFrame frame) {
-      final body = frame.body;
-      print('📩 Mensagem recebida: $body');
+      if (!_stompAtivo) return;
+
+      final String? body = frame.body;
+      debugPrint('📩 Mensagem recebida: $body');
 
       if (body == null || body.isEmpty) return;
 
       try {
         final Map<String, dynamic> jsonBody = jsonDecode(body);
-
-        if (onMensagemRecebida != null) {
-          onMensagemRecebida!(jsonBody);
-        }
+        onMensagemRecebida?.call(jsonBody);
       } catch (e) {
-        print('Erro ao converter mensagem do WebSocket: $e');
+        debugPrint('Erro ao converter mensagem do WebSocket: $e');
       }
     },
   );
 
-  print('✅ Conectado ao WebSocket!');
+  debugPrint('✅ Conectado ao WebSocket!');
 }
 
 void disconnectStomp() {
-  if (!isStompConnected()) {
+  if (!_stompInicializado || _stompClient == null || _stompDesconectando) {
     return;
   }
-  stompClient.deactivate();
+
+  _stompAtivo = false;
+  _stompDesconectando = true;
+
+  try {
+    _stompClient?.deactivate();
+  } catch (e) {
+    debugPrint('Erro ao desconectar WebSocket: $e');
+  } finally {
+    _stompDesconectando = false;
+  }
 }
 
 bool isStompConnected() {
-  return _stompInicializado && stompClient.connected;
+  return _stompInicializado && (_stompClient?.connected ?? false);
 }
