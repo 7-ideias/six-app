@@ -28,7 +28,7 @@ void connectStomp() {
     config: StompConfig.SockJS(
       url: '${AppConfig.baseUrl}/ws',
       onConnect: onConnectCallback,
-      onWebSocketError: (Object error) {
+      onWebSocketError: (error) {
         if (!_stompAtivo) return;
         debugPrint('Erro no WebSocket: $error');
         onStompErro?.call(error);
