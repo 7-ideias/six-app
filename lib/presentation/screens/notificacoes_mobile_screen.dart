@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
-class NotificacoesMobileScreen extends StatelessWidget {
+import '../../core/services/notificacao_service.dart';
+
+class NotificacoesMobileScreen extends StatefulWidget {
   const NotificacoesMobileScreen({super.key});
 
+  @override
+  State<NotificacoesMobileScreen> createState() => _NotificacoesMobileScreenState();
+}
+
+class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
   static const Color _backgroundColor = Color(0xFFF4F7FB);
   static const Color _primaryColor = Color(0xFF0B1F3A);
   static const Color _secondaryColor = Color(0xFF123B69);
@@ -11,70 +18,36 @@ class NotificacoesMobileScreen extends StatelessWidget {
   static const Color _mutedTextColor = Color(0xFF64748B);
   static const Color _titleTextColor = Color(0xFF0F172A);
 
-  static const List<_NotificationGroup> _groups = [
-    _NotificationGroup(
-      title: 'Hoje',
-      events: [
-        _NotificationEvent(
-          time: '11:32',
-          title: 'Assistência entrou em revisão',
-          description: 'OS #1023 recebeu atualização do backend e aguarda análise técnica.',
-          entity: 'Assistência #1023',
-          channel: 'APP',
-          status: 'NÃO LIDA',
-          icon: Icons.handyman_outlined,
-          isUnread: true,
-        ),
-        _NotificationEvent(
-          time: '10:48',
-          title: 'WhatsApp enviado ao cliente',
-          description: 'João recebeu a notificação de orçamento disponível para aprovação.',
-          entity: 'Orçamento #556',
-          channel: 'WHATSAPP',
-          status: 'ENVIADO',
-          icon: Icons.chat_outlined,
-          isUnread: true,
-        ),
-        _NotificationEvent(
-          time: '09:15',
-          title: 'Falha ao enviar email',
-          description: 'O backend registrou erro no envio do comprovante para Maria.',
-          entity: 'Venda #884',
-          channel: 'EMAIL',
-          status: 'ERRO',
-          icon: Icons.error_outline_rounded,
-          isUnread: true,
-          isError: true,
-        ),
-      ],
-    ),
-    _NotificationGroup(
-      title: 'Ontem',
-      events: [
-        _NotificationEvent(
-          time: '17:40',
-          title: 'Orçamento aprovado',
-          description: 'Cliente aprovou o orçamento e a assistência pode seguir para execução.',
-          entity: 'Orçamento #549',
-          channel: 'WEBHOOK',
-          status: 'PROCESSADO',
-          icon: Icons.check_circle_outline_rounded,
-        ),
-        _NotificationEvent(
-          time: '15:22',
-          title: 'Venda aguardando pagamento',
-          description: 'Venda finalizada no PDV mobile com recebimento pendente.',
-          entity: 'Venda #871',
-          channel: 'APP',
-          status: 'PENDENTE',
-          icon: Icons.payments_outlined,
-        ),
-      ],
-    ),
-  ];
+  final NotificacaoService _notificacaoService = NotificacaoService();
+
+  @override
+  void initState() {
+    super.initState();
+    _notificacaoService.addListener(_onNotificacoesChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notificacaoService.marcarTodasComoLidas();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificacaoService.removeListener(_onNotificacoesChanged);
+    super.dispose();
+  }
+
+  void _onNotificacoesChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    final List<SixNotificationEvent> events = _notificacaoService.notificacoes;
+    final Map<String, List<SixNotificationEvent>> groups = _groupEvents(events);
+
     return Scaffold(
       backgroundColor: _backgroundColor,
       appBar: AppBar(
@@ -89,6 +62,14 @@ class NotificacoesMobileScreen extends StatelessWidget {
             letterSpacing: 0.2,
           ),
         ),
+        actions: [
+          if (events.isNotEmpty)
+            IconButton(
+              tooltip: 'Limpar notificações',
+              icon: const Icon(Icons.delete_outline_rounded),
+              onPressed: _notificacaoService.limpar,
+            ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -98,7 +79,12 @@ class NotificacoesMobileScreen extends StatelessWidget {
             const SizedBox(height: 18),
             _buildSummaryCards(),
             const SizedBox(height: 24),
-            ..._groups.map((group) => _buildGroup(context, group)),
+            if (events.isEmpty)
+              _buildEmptyState()
+            else
+              ...groups.entries.map(
+                (entry) => _buildGroup(context, entry.key, entry.value),
+              ),
           ],
         ),
       ),
@@ -141,7 +127,7 @@ class NotificacoesMobileScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Eventos do backend, webhooks e notificações enviadas ao cliente.',
+                  'Mensagens recebidas do backend em tempo real para a empresa atual.',
                   style: TextStyle(
                     color: Color(0xFFD7E3F5),
                     height: 1.35,
@@ -167,15 +153,15 @@ class NotificacoesMobileScreen extends StatelessWidget {
             SizedBox(
               width: width,
               child: _buildSummaryCard(
-                value: '3',
-                label: 'Não lidas',
-                icon: Icons.mark_email_unread_outlined,
+                value: _notificacaoService.total.toString(),
+                label: 'Recebidas',
+                icon: Icons.notifications_active_outlined,
               ),
             ),
             SizedBox(
               width: width,
               child: _buildSummaryCard(
-                value: '1',
+                value: _notificacaoService.comErro.toString(),
                 label: 'Com erro',
                 icon: Icons.report_problem_outlined,
               ),
@@ -238,14 +224,57 @@ class NotificacoesMobileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGroup(BuildContext context, _NotificationGroup group) {
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.notifications_none_rounded,
+            color: _mutedTextColor,
+            size: 42,
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Nenhuma mensagem recebida ainda',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _titleTextColor,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Quando uma nova venda chegar pelo WebSocket, ela aparecerá aqui.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _mutedTextColor,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroup(
+    BuildContext context,
+    String title,
+    List<SixNotificationEvent> events,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            group.title,
+            title,
             style: const TextStyle(
               color: _titleTextColor,
               fontSize: 16,
@@ -254,8 +283,8 @@ class NotificacoesMobileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          ...group.events.map(
-            (event) => Padding(
+          ...events.map(
+            (SixNotificationEvent event) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildNotificationCard(context, event),
             ),
@@ -265,7 +294,7 @@ class NotificacoesMobileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationCard(BuildContext context, _NotificationEvent event) {
+  Widget _buildNotificationCard(BuildContext context, SixNotificationEvent event) {
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(20),
@@ -303,7 +332,7 @@ class NotificacoesMobileScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
-                      event.icon,
+                      _iconFor(event),
                       color: event.isError ? const Color(0xFFDC2626) : _primaryColor,
                       size: 23,
                     ),
@@ -344,7 +373,7 @@ class NotificacoesMobileScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          event.time,
+                          event.timeLabel,
                           style: const TextStyle(
                             color: _mutedTextColor,
                             fontSize: 11,
@@ -405,7 +434,7 @@ class NotificacoesMobileScreen extends StatelessWidget {
     );
   }
 
-  void _showEventDetails(BuildContext context, _NotificationEvent event) {
+  void _showEventDetails(BuildContext context, SixNotificationEvent event) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -441,7 +470,11 @@ class NotificacoesMobileScreen extends StatelessWidget {
                 _buildDetailRow('Entidade', event.entity),
                 _buildDetailRow('Canal', event.channel),
                 _buildDetailRow('Status', event.status),
-                _buildDetailRow('Horário', event.time),
+                _buildDetailRow('Horário', event.timeLabel),
+                if (event.payload['valorTotal'] != null)
+                  _buildDetailRow('Valor', event.payload['valorTotal'].toString()),
+                if (event.payload['quantidadeItens'] != null)
+                  _buildDetailRow('Itens', event.payload['quantidadeItens'].toString()),
               ],
             ),
           ),
@@ -478,6 +511,41 @@ class NotificacoesMobileScreen extends StatelessWidget {
       ),
     );
   }
+
+  Map<String, List<SixNotificationEvent>> _groupEvents(
+    List<SixNotificationEvent> events,
+  ) {
+    final Map<String, List<SixNotificationEvent>> groups = <String, List<SixNotificationEvent>>{};
+
+    for (final SixNotificationEvent event in events) {
+      groups.putIfAbsent(event.groupTitle, () => <SixNotificationEvent>[]).add(event);
+    }
+
+    return groups;
+  }
+
+  IconData _iconFor(SixNotificationEvent event) {
+    final String tipoDeEvento = event.payload['tipoDeEvento']?.toString().toUpperCase() ?? '';
+    final String channel = event.channel.toUpperCase();
+
+    if (event.isError) {
+      return Icons.error_outline_rounded;
+    }
+
+    if (tipoDeEvento == 'NOVA_VENDA') {
+      return Icons.point_of_sale_rounded;
+    }
+
+    if (channel.contains('WHATSAPP') || channel.contains('TELEGRAM')) {
+      return Icons.chat_outlined;
+    }
+
+    if (channel.contains('EMAIL')) {
+      return Icons.mail_outline_rounded;
+    }
+
+    return Icons.campaign_rounded;
+  }
 }
 
 class _HeaderIcon extends StatelessWidget {
@@ -496,38 +564,4 @@ class _HeaderIcon extends StatelessWidget {
       child: const Icon(Icons.notifications_active_outlined, color: Colors.white),
     );
   }
-}
-
-class _NotificationGroup {
-  const _NotificationGroup({
-    required this.title,
-    required this.events,
-  });
-
-  final String title;
-  final List<_NotificationEvent> events;
-}
-
-class _NotificationEvent {
-  const _NotificationEvent({
-    required this.time,
-    required this.title,
-    required this.description,
-    required this.entity,
-    required this.channel,
-    required this.status,
-    required this.icon,
-    this.isUnread = false,
-    this.isError = false,
-  });
-
-  final String time;
-  final String title;
-  final String description;
-  final String entity;
-  final String channel;
-  final String status;
-  final IconData icon;
-  final bool isUnread;
-  final bool isError;
 }
