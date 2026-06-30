@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
@@ -229,13 +230,23 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
     return SafeArea(
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
-          _buildSearchField(),
+          SixStaggeredEntry(child: _buildSearchField()),
           const SizedBox(height: 16),
-          _buildManagementHeader(),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 70),
+            child: _buildManagementHeader(),
+          ),
           const SizedBox(height: 22),
-          ...sections.map(_buildManagementSection),
+          ...sections.asMap().entries.map((entry) {
+            final int delay = 130 + (entry.key * 65);
+            return SixStaggeredEntry(
+              delay: Duration(milliseconds: delay),
+              child: _buildManagementSection(entry.value),
+            );
+          }),
         ],
       ),
     );
@@ -379,9 +390,14 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               children: section.items.asMap().entries.map((entry) {
                 final int index = entry.key;
                 final _ManagementItem item = entry.value;
+                final bool isFirst = index == 0;
                 final bool isLast = index == section.items.length - 1;
 
-                return _buildManagementTile(item, isLast: isLast);
+                return _buildManagementTile(
+                  item,
+                  isFirst: isFirst,
+                  isLast: isLast,
+                );
               }).toList(),
             ),
           ),
@@ -390,12 +406,16 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
-  Widget _buildManagementTile(_ManagementItem item, {required bool isLast}) {
+  Widget _buildManagementTile(
+    _ManagementItem item, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(isLast ? 0 : 22),
+          top: Radius.circular(isFirst ? 22 : 0),
           bottom: Radius.circular(isLast ? 22 : 0),
         ),
         onTap: item.onTap,
