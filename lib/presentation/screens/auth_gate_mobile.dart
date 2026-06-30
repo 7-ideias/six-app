@@ -116,7 +116,6 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
 class _AuthGateLogo extends StatelessWidget {
   const _AuthGateLogo();
 
-  static const Color _primaryColor = Color(0xFF0B1F3A);
   static const Color _accentColor = Color(0xFF2563EB);
 
   @override
