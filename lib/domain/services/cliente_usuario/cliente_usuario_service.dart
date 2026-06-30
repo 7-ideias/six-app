@@ -1,5 +1,5 @@
-import '../../../data/models/cliente_usuario_model.dart';
-import '../../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
+import '../../data/models/cliente_usuario_model.dart';
+import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 
 class ClienteUsuarioService {
   ClienteUsuarioService({required ClienteUsuarioApiClient apiClient})
