@@ -75,7 +75,9 @@ class SixNotificationEvent {
   final bool isError;
 
   factory SixNotificationEvent.fromPayload(Map<String, dynamic> payload) {
-    final DateTime receivedAt = _parseDate(payload['recebidoEm']) ?? DateTime.now();
+    final DateTime receivedAt = _parseDate(payload['recebidoEmIso']) ??
+        _parseDate(payload['recebidoEm']) ??
+        DateTime.now();
     final String eventType = _read(payload, 'tipoDeEvento') ?? 'EVENTO_BACKEND';
     final String title = _read(payload, 'titulo') ?? _titleFor(eventType);
     final String description = _read(payload, 'mensagem') ?? title;
@@ -114,15 +116,21 @@ class SixNotificationEvent {
   }
 
   String get timeLabel {
-    final String hour = receivedAt.hour.toString().padLeft(2, '0');
-    final String minute = receivedAt.minute.toString().padLeft(2, '0');
+    final DateTime local = receivedAt.toLocal();
+    final String hour = local.hour.toString().padLeft(2, '0');
+    final String minute = local.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
 
   String get groupTitle {
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
-    final DateTime eventDay = DateTime(receivedAt.year, receivedAt.month, receivedAt.day);
+    final DateTime localReceivedAt = receivedAt.toLocal();
+    final DateTime eventDay = DateTime(
+      localReceivedAt.year,
+      localReceivedAt.month,
+      localReceivedAt.day,
+    );
 
     if (eventDay == today) {
       return 'Hoje';
@@ -132,9 +140,9 @@ class SixNotificationEvent {
       return 'Ontem';
     }
 
-    final String day = receivedAt.day.toString().padLeft(2, '0');
-    final String month = receivedAt.month.toString().padLeft(2, '0');
-    final String year = receivedAt.year.toString();
+    final String day = localReceivedAt.day.toString().padLeft(2, '0');
+    final String month = localReceivedAt.month.toString().padLeft(2, '0');
+    final String year = localReceivedAt.year.toString();
     return '$day/$month/$year';
   }
 
@@ -153,16 +161,17 @@ class SixNotificationEvent {
       return null;
     }
 
-    return DateTime.tryParse(value.toString());
+    return DateTime.tryParse(value.toString())?.toLocal();
   }
 
   static String _idFor(Map<String, dynamic> payload, DateTime receivedAt) {
-    final String? idOperacao = _read(payload, 'idOperacao') ??
+    final String? id = _read(payload, 'idOperacao') ??
+        _read(payload, 'idProduto') ??
         _read(payload, 'idOperacaoApp') ??
         _read(payload, 'ordemId');
 
-    if (idOperacao != null) {
-      return '${idOperacao}_${receivedAt.microsecondsSinceEpoch}';
+    if (id != null) {
+      return '${id}_${receivedAt.microsecondsSinceEpoch}';
     }
 
     return receivedAt.microsecondsSinceEpoch.toString();
@@ -172,6 +181,8 @@ class SixNotificationEvent {
     switch (eventType.toUpperCase()) {
       case 'NOVA_VENDA':
         return 'Nova venda registrada';
+      case 'NOVO_PRODUTO':
+        return 'Produto cadastrado';
       case 'NOVA_OPERACAO':
         return 'Nova operação recebida';
       default:
@@ -183,16 +194,30 @@ class SixNotificationEvent {
     switch (eventType.toUpperCase()) {
       case 'NOVA_VENDA':
         return 'NOVA';
+      case 'NOVO_PRODUTO':
+        return 'CADASTRADO';
       default:
         return 'RECEBIDA';
     }
   }
 
   static String _entityFor(Map<String, dynamic> payload, String eventType) {
+    final String? nomeProduto = _read(payload, 'nomeProduto');
+    final String? idProduto = _read(payload, 'idProduto');
     final String? numeroOperacao = _read(payload, 'numeroOperacao');
     final String? idOperacao = _read(payload, 'idOperacao') ??
         _read(payload, 'idOperacaoApp') ??
         _read(payload, 'ordemId');
+
+    if (eventType.toUpperCase() == 'NOVO_PRODUTO') {
+      if (nomeProduto != null) {
+        return 'Produto $nomeProduto';
+      }
+
+      if (idProduto != null) {
+        return 'Produto $idProduto';
+      }
+    }
 
     if (numeroOperacao != null) {
       return eventType.toUpperCase() == 'NOVA_VENDA'
