@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacao_mobile_screen.dart';
-import 'package:flutter/material.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   final int initialIndex;
@@ -36,13 +36,13 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
 
     switch (index) {
       case 0:
-        page = GestaoMobileScreen();
+        page = const GestaoMobileScreen();
         break;
       case 1:
         page = const HomePageMobile(title: 'Início');
         break;
       case 2:
-        page = OperacaoMobileScreen();
+        page = const OperacaoMobileScreen();
         break;
       default:
         return;
@@ -52,8 +52,11 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       context,
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => page,
-        transitionDuration: Duration.zero,
+        transitionDuration: const Duration(milliseconds: 120),
         reverseTransitionDuration: Duration.zero,
+        transitionsBuilder: (_, Animation<double> animation, __, Widget child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }
@@ -114,13 +117,27 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   }) {
     return BottomNavigationBarItem(
       icon: Icon(icon, size: 24),
-      activeIcon: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
-          borderRadius: BorderRadius.circular(16),
+      activeIcon: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0.92, end: 1),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutBack,
+        builder: (BuildContext context, double scale, Widget? child) {
+          return Transform.scale(
+            scale: scale,
+            child: Transform.translate(
+              offset: const Offset(0, -2),
+              child: child,
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(activeIcon, color: _accentColor, size: 24),
         ),
-        child: Icon(activeIcon, color: _accentColor, size: 24),
       ),
       label: label,
     );
