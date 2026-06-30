@@ -1,5 +1,5 @@
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
-import '../../domain/services/cliente_usuario/cliente_usuario_service.dart';
+import '../services/cliente_usuario_service.dart';
 
 class ClienteUsuarioModule {
   ClienteUsuarioModule._();
