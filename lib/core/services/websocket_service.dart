@@ -96,9 +96,8 @@ void disconnectStomp() {
   try {
     _stompClient?.deactivate();
   } catch (e) {
-    debugPrint('Erro ao desconectar WebSocket: $e');
-  } finally {
     _stompDesconectando = false;
+    debugPrint('Erro ao desconectar WebSocket: $e');
   }
 }
 
