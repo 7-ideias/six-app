@@ -105,8 +105,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
-          SixStaggeredEntry(child: _buildSearchField()),
-          const SizedBox(height: 16),
           SixStaggeredEntry(
             delay: const Duration(milliseconds: 60),
             child: _buildExecutiveSummary(),
@@ -159,38 +157,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSearchField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Buscar cliente, venda ou assistência...',
-          hintStyle: const TextStyle(color: _mutedTextColor),
-          prefixIcon: const Icon(Icons.search, color: _accentColor),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.tune_rounded, color: _titleTextColor),
-            onPressed: () => _showFeatureInProgress(),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 15,
-          ),
-        ),
-      ),
     );
   }
 
