@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
@@ -42,9 +43,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
   TopNavItemData? _itemOriginal(String title) {
     for (final TopNavItemData item in items) {
-      if (item.title == title) {
-        return item;
-      }
+      if (item.title == title) return item;
     }
     return null;
   }
@@ -199,10 +198,32 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  Future<void> _abrirAgendaFinanceira(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: SizedBox(
+            width: size.width * 0.94,
+            height: size.height * 0.90,
+            child: AgendaFinanceiraWeb(
+              embedded: true,
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   List<TopNavItemData> _itemsEfetivos(BuildContext context) {
-    if (!_usaNovoMenuSix) {
-      return items;
-    }
+    if (!_usaNovoMenuSix) return items;
 
     return <TopNavItemData>[
       TopNavItemData(
@@ -280,7 +301,13 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Crediário',
           'Agenda financeira',
         ],
-        onSelect: (String value) => _mostrarRecursoEmPreparacao(context, value),
+        onSelect: (String value) {
+          if (value == 'Agenda financeira') {
+            _abrirAgendaFinanceira(context);
+            return;
+          }
+          _mostrarRecursoEmPreparacao(context, value);
+        },
       ),
       TopNavItemData(
         title: 'Relatórios',
@@ -339,9 +366,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final ThemeProvider themeProvider = context.watch<ThemeProvider>();
     final Brightness brightness = Theme.of(context).brightness;
-    final ThemeData currentTheme = brightness == Brightness.dark
-        ? themeProvider.darkTheme
-        : themeProvider.lightTheme;
+    final ThemeData currentTheme = brightness == Brightness.dark ? themeProvider.darkTheme : themeProvider.lightTheme;
     final ColorScheme colorScheme = currentTheme.colorScheme;
     final List<TopNavItemData> effectiveItems = _itemsEfetivos(context);
 
@@ -387,10 +412,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                       notificationWidget ??
                           IconButton(
                             onPressed: onNotificationPressed,
-                            icon: Icon(
-                              Icons.notifications_none,
-                              color: colorScheme.onPrimary,
-                            ),
+                            icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
                             tooltip: 'Notificações',
                           ),
                     ],
@@ -447,8 +469,7 @@ class _CompactHeader extends StatelessWidget {
               item.onSelect?.call(selection.subItem!);
             },
             itemBuilder: (BuildContext context) {
-              final List<PopupMenuEntry<_CompactMenuSelection>> entries =
-                  <PopupMenuEntry<_CompactMenuSelection>>[];
+              final List<PopupMenuEntry<_CompactMenuSelection>> entries = <PopupMenuEntry<_CompactMenuSelection>>[];
 
               for (int menuIndex = 0; menuIndex < items.length; menuIndex++) {
                 final TopNavItemData item = items[menuIndex];
@@ -472,18 +493,13 @@ class _CompactHeader extends StatelessWidget {
                       value: _CompactMenuSelection(menuIndex, subItem),
                       child: Padding(
                         padding: const EdgeInsets.only(left: 12),
-                        child: Text(
-                          subItem,
-                          style: TextStyle(color: colorScheme.onSurface),
-                        ),
+                        child: Text(subItem, style: TextStyle(color: colorScheme.onSurface)),
                       ),
                     ),
                   );
                 }
 
-                if (menuIndex < items.length - 1) {
-                  entries.add(const PopupMenuDivider(height: 8));
-                }
+                if (menuIndex < items.length - 1) entries.add(const PopupMenuDivider(height: 8));
               }
 
               return entries;
@@ -494,10 +510,7 @@ class _CompactHeader extends StatelessWidget {
         notificationWidget ??
             IconButton(
               onPressed: onNotificationPressed,
-              icon: Icon(
-                Icons.notifications_none,
-                color: colorScheme.onPrimary,
-              ),
+              icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
               tooltip: 'Notificações',
             ),
       ],
@@ -595,10 +608,7 @@ class _TopNavChipState extends State<_TopNavChip> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: 8,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
           decoration: BoxDecoration(
             color: active ? widget.colorScheme.onPrimary.withOpacity(0.12) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
@@ -622,11 +632,7 @@ class _TopNavChipState extends State<_TopNavChip> {
               ),
               if (widget.hasMenu) ...<Widget>[
                 const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: widget.colorScheme.onPrimary,
-                  size: 18,
-                ),
+                Icon(Icons.keyboard_arrow_down_rounded, color: widget.colorScheme.onPrimary, size: 18),
               ],
             ],
           ),
