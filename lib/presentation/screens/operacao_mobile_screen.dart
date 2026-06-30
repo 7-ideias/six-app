@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
@@ -65,23 +66,42 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   Widget _buildContent(BuildContext context) {
     return SafeArea(
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
-          _buildSearchField(),
+          SixStaggeredEntry(child: _buildSearchField()),
           const SizedBox(height: 16),
-          _buildQuickServiceHeader(),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 70),
+            child: _buildQuickServiceHeader(),
+          ),
           const SizedBox(height: 18),
-          _buildSectionTitle('Atendimento rápido'),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 120),
+            child: _buildSectionTitle('Atendimento rápido'),
+          ),
           const SizedBox(height: 12),
-          _buildQuickActions(context),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 170),
+            child: _buildQuickActions(context),
+          ),
           const SizedBox(height: 24),
-          _buildSectionTitle('Acompanhamento'),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 230),
+            child: _buildSectionTitle('Acompanhamento'),
+          ),
           const SizedBox(height: 12),
           ..._buildTrackingTiles(context),
           const SizedBox(height: 12),
-          _buildSectionTitle('Caixa'),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 420),
+            child: _buildSectionTitle('Caixa'),
+          ),
           const SizedBox(height: 12),
-          _buildCashTile(),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 470),
+            child: _buildCashTile(),
+          ),
         ],
       ),
     );
@@ -369,14 +389,16 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       ),
     ];
 
-    return items
-        .map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildTrackingTile(item),
-          ),
-        )
-        .toList();
+    return items.asMap().entries.map((entry) {
+      final int delay = 280 + (entry.key * 45);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: SixStaggeredEntry(
+          delay: Duration(milliseconds: delay),
+          child: _buildTrackingTile(entry.value),
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildTrackingTile(_TrackingItem item) {
@@ -439,8 +461,8 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                item.count,
+              SixAnimatedNumberText(
+                value: item.count,
                 style: const TextStyle(
                   color: _titleTextColor,
                   fontSize: 24,
@@ -478,8 +500,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                   color: const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.account_balance_wallet_outlined,
-                    color: _accentColor),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: _accentColor,
+                ),
               ),
               const SizedBox(width: 14),
               const Expanded(
@@ -508,8 +532,8 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                '9',
+              const SixAnimatedNumberText(
+                value: '9',
                 style: TextStyle(
                   color: _titleTextColor,
                   fontSize: 24,

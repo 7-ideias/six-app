@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 
 class ClientesUsuarioListPage extends StatefulWidget {
-  const ClientesUsuarioListPage({
-    super.key,
-    this.embedded = false,
-    this.onBack,
-    this.apiClient,
-  });
+  const ClientesUsuarioListPage({super.key, this.embedded = false, this.onBack, this.apiClient});
 
   final bool embedded;
   final VoidCallback? onBack;
@@ -21,62 +17,75 @@ class ClientesUsuarioListPage extends StatefulWidget {
 }
 
 class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
-  late final ClienteUsuarioApiClient _apiClient;
-  final TextEditingController _buscaController = TextEditingController();
-  final NumberFormat _currencyFormatter = NumberFormat.currency(
-    locale: 'pt_BR',
-    symbol: 'R\$',
-  );
-  final DateFormat _dateFormatter = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
+  static const _bg = Color(0xFFF4F7FB);
+  static const _primary = Color(0xFF0B1F3A);
+  static const _secondary = Color(0xFF123B69);
+  static const _accent = Color(0xFF2563EB);
+  static const _muted = Color(0xFF64748B);
+  static const _title = Color(0xFF0F172A);
 
-  bool _isLoading = false;
+  late final ClienteUsuarioApiClient _api;
+  final _search = TextEditingController();
+  final _money = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  bool _loading = false;
   String? _erro;
   ClienteUsuarioListResponse? _response;
-  String _filtro = '';
+  String _filter = '';
 
   @override
   void initState() {
     super.initState();
-    _apiClient = widget.apiClient ?? HttpClienteUsuarioApiClient();
-    _carregar();
+    _api = widget.apiClient ?? HttpClienteUsuarioApiClient();
+    _reload();
   }
 
   @override
   void dispose() {
-    _buscaController.dispose();
+    _search.dispose();
     super.dispose();
   }
 
-  Future<void> _carregar() async {
+  List<ClienteUsuario> get _all => _response?.clientes ?? const [];
+  List<ClienteUsuario> get _items {
+    final term = _norm(_filter);
+    if (term.isEmpty) return _all;
+    return _all.where((c) => _norm('${c.nome} ${c.documento} ${c.telefone} ${c.email} ${c.cidade}').contains(term)).toList();
+  }
+
+  int get _ativos => _all.where((c) => c.ativo).length;
+  int get _fiado => _all.where((c) => c.permiteCompraFiado).length;
+  double get _saldo => _all.fold(0, (v, c) => v + c.saldoFiado);
+  String _norm(String v) => v.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  Future<void> _reload() async {
     setState(() {
-      _isLoading = true;
+      _loading = true;
       _erro = null;
     });
-
     try {
-      final ClienteUsuarioListResponse response = await _apiClient.listarClientesUsuario();
+      final data = await _api.listarClientesUsuario();
       if (!mounted) return;
       setState(() {
-        _response = response;
-        _isLoading = false;
+        _response = data;
+        _loading = false;
       });
     } on ClienteUsuarioApiException catch (e) {
       if (!mounted) return;
       setState(() {
-        _isLoading = false;
-        _erro = _mensagemErroPorStatus(e.statusCode);
+        _loading = false;
+        _erro = _msg(e.statusCode);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _isLoading = false;
+        _loading = false;
         _erro = 'Não foi possível carregar a lista de clientes.';
       });
     }
   }
 
-  String _mensagemErroPorStatus(int statusCode) {
-    switch (statusCode) {
+  String _msg(int code) {
+    switch (code) {
       case 400:
         return 'Dados inválidos ou empresa não informada.';
       case 401:
@@ -86,940 +95,388 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
       case 409:
         return 'Já existe cliente com documento ou e-mail informado.';
       default:
-        return 'Erro ao carregar clientes (HTTP $statusCode).';
+        return 'Erro ao carregar clientes (HTTP $code).';
     }
   }
 
-  List<ClienteUsuario> get _clientes => _response?.clientes ?? const <ClienteUsuario>[];
-
-  List<ClienteUsuario> get _clientesFiltrados {
-    final String termo = _normalizar(_filtro);
-    if (termo.isEmpty) return _clientes;
-
-    return _clientes.where((ClienteUsuario cliente) {
-      return _normalizar(cliente.nome).contains(termo) ||
-          _normalizar(cliente.documento).contains(termo) ||
-          _normalizar(cliente.email).contains(termo) ||
-          _normalizar(cliente.telefone).contains(termo);
-    }).toList(growable: false);
+  @override
+  Widget build(BuildContext context) {
+    final content = SafeArea(child: _content());
+    if (widget.embedded) return content;
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: _primary,
+        foregroundColor: Colors.white,
+        title: const Text('Clientes', style: TextStyle(fontWeight: FontWeight.w700)),
+        actions: [IconButton(tooltip: 'Atualizar', icon: const Icon(Icons.refresh_rounded), onPressed: _reload)],
+      ),
+      body: content,
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: _accent,
+        foregroundColor: Colors.white,
+        onPressed: () => _form(),
+        icon: const Icon(Icons.person_add_alt_1_rounded),
+        label: const Text('Novo cliente'),
+      ),
+    );
   }
 
-  int get _clientesAtivos => _clientes.where((ClienteUsuario cliente) => cliente.ativo).length;
-  int get _clientesFiado => _clientes.where((ClienteUsuario cliente) => cliente.permiteCompraFiado).length;
-  int get _clientesBloqueadosFiado => _clientes.where((ClienteUsuario cliente) => cliente.bloqueadoFiado).length;
-  double get _limiteFiadoTotal => _clientes.fold<double>(0, (double total, ClienteUsuario cliente) => total + cliente.limiteFiado);
-  double get _saldoFiadoTotal => _clientes.fold<double>(0, (double total, ClienteUsuario cliente) => total + cliente.saldoFiado);
-
-  String _normalizar(String value) => value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-  String _money(double value) => _currencyFormatter.format(value);
-  String _date(DateTime? value) => value == null ? '-' : _dateFormatter.format(value.toLocal());
-
-  Future<void> _abrirCadastroCliente({ClienteUsuario? cliente}) async {
-    final ClienteUsuarioRequest? request = await showDialog<ClienteUsuarioRequest>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) => _ClienteFormDialog(cliente: cliente),
+  Widget _content() {
+    if (_loading && _response == null) return const _LoadingList();
+    if (_erro != null && _response == null) return _errorState();
+    return RefreshIndicator(
+      onRefresh: _reload,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, widget.embedded ? 16 : 14, 16, widget.embedded ? 24 : 96),
+        children: [
+          SixStaggeredEntry(child: _hero()),
+          const SizedBox(height: 16),
+          SixStaggeredEntry(delay: const Duration(milliseconds: 70), child: _searchBox()),
+          if (_erro != null) ...[const SizedBox(height: 14), _inlineError(_erro!)],
+          const SizedBox(height: 14),
+          SixStaggeredEntry(delay: const Duration(milliseconds: 120), child: _kpis()),
+          const SizedBox(height: 18),
+          SixStaggeredEntry(delay: const Duration(milliseconds: 170), child: _listTitle()),
+          const SizedBox(height: 12),
+          if (_items.isEmpty)
+            SixStaggeredEntry(delay: const Duration(milliseconds: 210), child: _empty())
+          else
+            ..._items.asMap().entries.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: SixStaggeredEntry(delay: Duration(milliseconds: 210 + ((e.key * 35).clamp(0, 260)).toInt()), child: _card(e.value)),
+                )),
+        ],
+      ),
     );
+  }
 
-    if (request == null) return;
+  Widget _hero() => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(colors: [_primary, _secondary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          boxShadow: const [BoxShadow(color: Color(0x260B1F3A), blurRadius: 22, offset: Offset(0, 12))],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _icon(Icons.groups_2_outlined),
+            const SizedBox(width: 14),
+            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Base de clientes', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+              SizedBox(height: 6),
+              Text('Relacionamento, histórico, fiado e dados de contato em uma visão rápida.', style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35)),
+            ])),
+            if (widget.onBack != null) IconButton(onPressed: widget.onBack, icon: const Icon(Icons.close_rounded, color: Colors.white)),
+          ]),
+          const SizedBox(height: 18),
+          Row(children: [Expanded(child: _pill('Clientes', '${_all.length}')), const SizedBox(width: 12), Expanded(child: _pill('Ativos', '$_ativos'))]),
+        ]),
+      );
 
-    setState(() {
-      _isLoading = true;
-      _erro = null;
-    });
+  Widget _icon(IconData icon) => Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(color: const Color(0x1AFFFFFF), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0x33FFFFFF))),
+        child: Icon(icon, color: Colors.white),
+      );
 
-    try {
-      if (cliente == null) {
-        await _apiClient.cadastrarClienteUsuario(request);
-      } else {
-        await _apiClient.atualizarClienteUsuario(cliente.id, request);
-      }
-      await _carregar();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(cliente == null ? 'Cliente cadastrado com sucesso.' : 'Cliente atualizado com sucesso.'),
-          behavior: SnackBarBehavior.floating,
+  Widget _pill(String label, String value) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(color: const Color(0x1AFFFFFF), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0x33FFFFFF))),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFBFD0EA), fontSize: 12, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          SixAnimatedNumberText(value: value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+        ]),
+      );
+
+  Widget _searchBox() => Container(
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 18, offset: Offset(0, 8))]),
+        child: TextField(
+          controller: _search,
+          onChanged: (v) => setState(() => _filter = v),
+          decoration: InputDecoration(
+            hintText: 'Buscar nome, documento, telefone ou e-mail...',
+            hintStyle: const TextStyle(color: _muted),
+            prefixIcon: const Icon(Icons.search_rounded, color: _accent),
+            suffixIcon: _search.text.isEmpty ? null : IconButton(icon: const Icon(Icons.close_rounded, color: _muted), onPressed: () { _search.clear(); setState(() => _filter = ''); }),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          ),
         ),
       );
+
+  Widget _kpis() {
+    final data = [
+      _Metric(Icons.groups_outlined, 'Cadastrados', '${_all.length}'),
+      _Metric(Icons.verified_user_outlined, 'Ativos', '$_ativos'),
+      _Metric(Icons.request_quote_outlined, 'Fiado liberado', '$_fiado'),
+      _Metric(Icons.receipt_long_outlined, 'Saldo aberto', _money.format(_saldo), true),
+    ];
+    return LayoutBuilder(builder: (_, c) {
+      final width = c.maxWidth >= 560 ? (c.maxWidth - 12) / 2 : c.maxWidth;
+      return Wrap(spacing: 12, runSpacing: 12, children: data.map((m) => SizedBox(width: width, child: _kpi(m))).toList());
+    });
+  }
+
+  Widget _kpi(_Metric m) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: m.featured ? _primary : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: m.featured ? _primary : const Color(0xFFE2E8F0)), boxShadow: const [BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))]),
+        child: Row(children: [
+          Container(width: 42, height: 42, decoration: BoxDecoration(color: m.featured ? const Color(0x1AFFFFFF) : const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(14)), child: Icon(m.icon, color: m.featured ? Colors.white : _accent, size: 21)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(m.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: m.featured ? const Color(0xFFD7E3F5) : _muted, fontSize: 12, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 5),
+            Text(m.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: m.featured ? Colors.white : _title, fontSize: 18, fontWeight: FontWeight.w900)),
+          ])),
+        ]),
+      );
+
+  Widget _listTitle() => Row(children: [
+        const Expanded(child: Text('Clientes encontrados', style: TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900))),
+        Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(999)), child: Text('${_items.length}', style: const TextStyle(color: _accent, fontWeight: FontWeight.w900))),
+      ]);
+
+  Widget _card(ClienteUsuario c) {
+    final ok = c.permiteCompraFiado && !c.bloqueadoFiado;
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => _history(c),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFE2E8F0)), boxShadow: const [BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))]),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              CircleAvatar(radius: 24, backgroundColor: const Color(0xFFEFF6FF), child: Text(_initials(c.nome), style: const TextStyle(color: _accent, fontWeight: FontWeight.w900))),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(c.nome.isEmpty ? 'Cliente sem nome' : c.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 3),
+                Text('${c.tipoPessoa.isEmpty ? 'PF' : c.tipoPessoa} • ${c.documento.isEmpty ? 'Documento não informado' : c.documento}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 12)),
+              ])),
+              _status(c.ativo ? 'Ativo' : 'Inativo', c.ativo ? const Color(0xFF15803D) : const Color(0xFFB91C1C)),
+            ]),
+            const SizedBox(height: 14),
+            Wrap(spacing: 8, runSpacing: 8, children: [_info(Icons.phone_outlined, c.telefone.isEmpty ? 'Sem telefone' : c.telefone), _info(Icons.mail_outline, c.email.isEmpty ? 'Sem e-mail' : c.email), _info(Icons.location_on_outlined, _location(c))]),
+            const SizedBox(height: 14),
+            _credit(c, ok),
+            const SizedBox(height: 14),
+            Row(children: [Expanded(child: OutlinedButton.icon(onPressed: () => _history(c), icon: const Icon(Icons.timeline_outlined, size: 18), label: const Text('Histórico'))), const SizedBox(width: 10), Expanded(child: FilledButton.icon(onPressed: () => _form(cliente: c), icon: const Icon(Icons.edit_outlined, size: 18), label: const Text('Editar')))]),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _credit(ClienteUsuario c, bool ok) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: ok ? const Color(0xFFEFFDF4) : const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16), border: Border.all(color: ok ? const Color(0xFFBBF7D0) : const Color(0xFFE2E8F0))),
+        child: Row(children: [Icon(Icons.request_quote_outlined, color: ok ? const Color(0xFF15803D) : _muted, size: 20), const SizedBox(width: 10), Expanded(child: Text(c.permiteCompraFiado ? 'Fiado: limite ${_money.format(c.limiteFiado)} • prazo ${c.prazoPagamentoDias} dias' : 'Fiado não liberado para este cliente', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _title, fontWeight: FontWeight.w800, fontSize: 12)))]),
+      );
+
+  Widget _status(String label, Color color) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(999)), child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)));
+  Widget _info(IconData icon, String label) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(999)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 14, color: _muted), const SizedBox(width: 6), ConstrainedBox(constraints: const BoxConstraints(maxWidth: 220), child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: _muted, fontWeight: FontWeight.w700)))]));
+
+  Widget _empty() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFE2E8F0))),
+        child: Column(children: [const Icon(Icons.person_add_alt_1_rounded, color: _accent, size: 42), const SizedBox(height: 12), const Text('Nenhum cliente encontrado.', style: TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: 16)), const SizedBox(height: 6), const Text('Cadastre clientes para registrar vendas, serviços e compras a prazo.', textAlign: TextAlign.center, style: TextStyle(color: _muted)), const SizedBox(height: 18), FilledButton.icon(onPressed: () => _form(), icon: const Icon(Icons.person_add_alt_1_rounded), label: const Text('Novo cliente'))]),
+      );
+
+  Widget _errorState() => Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.cloud_off_rounded, color: Color(0xFFB91C1C), size: 44), const SizedBox(height: 12), const Text('Não foi possível carregar os clientes.', textAlign: TextAlign.center, style: TextStyle(color: _title, fontWeight: FontWeight.w900)), const SizedBox(height: 8), Text(_erro ?? '', textAlign: TextAlign.center, style: const TextStyle(color: _muted)), const SizedBox(height: 18), FilledButton.icon(onPressed: _reload, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente'))])));
+  Widget _inlineError(String msg) => Container(width: double.infinity, padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFFECACA))), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Color(0xFFB91C1C)), const SizedBox(width: 10), Expanded(child: Text(msg, style: const TextStyle(color: _title)))]));
+
+  Future<void> _form({ClienteUsuario? cliente}) async {
+    final request = await showDialog<ClienteUsuarioRequest>(context: context, barrierDismissible: false, builder: (_) => _ClientForm(cliente: cliente));
+    if (request == null) return;
+    setState(() {
+      _loading = true;
+      _erro = null;
+    });
+    try {
+      cliente == null ? await _api.cadastrarClienteUsuario(request) : await _api.atualizarClienteUsuario(cliente.id, request);
+      await _reload();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(cliente == null ? 'Cliente cadastrado com sucesso.' : 'Cliente atualizado com sucesso.'), behavior: SnackBarBehavior.floating));
     } on ClienteUsuarioApiException catch (e) {
       if (!mounted) return;
       setState(() {
-        _isLoading = false;
-        _erro = _mensagemErroPorStatus(e.statusCode);
+        _loading = false;
+        _erro = _msg(e.statusCode);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _isLoading = false;
+        _loading = false;
         _erro = 'Não foi possível salvar o cliente.';
       });
     }
   }
 
-  void _abrirHistoricoCliente(ClienteUsuario cliente) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        final ThemeData theme = Theme.of(dialogContext);
-        return Dialog(
-          insetPadding: const EdgeInsets.all(24),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          child: SizedBox(
-            width: 980,
-            height: 620,
-            child: Column(
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.07),
-                    border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(Icons.person_search_outlined, color: theme.colorScheme.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Visão do cliente: ${cliente.nome}',
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Wrap(
-                          spacing: 14,
-                          runSpacing: 14,
-                          children: <Widget>[
-                            _historicoCard('Documento', cliente.documento, Icons.badge_outlined),
-                            _historicoCard('Telefone', cliente.telefone.isEmpty ? '-' : cliente.telefone, Icons.phone_outlined),
-                            _historicoCard('E-mail', cliente.email.isEmpty ? '-' : cliente.email, Icons.mail_outline),
-                            _historicoCard('Fiado', cliente.permiteCompraFiado ? 'Liberado' : 'Não liberado', Icons.request_quote_outlined),
-                            _historicoCard('Limite fiado', _money(cliente.limiteFiado), Icons.account_balance_wallet_outlined),
-                            _historicoCard('Saldo fiado', _money(cliente.saldoFiado), Icons.receipt_long_outlined),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-                        _infoBox(
-                          title: 'Compras, serviços e fiado',
-                          text: 'Esta tela já está preparada para receber o histórico real de vendas, serviços, contas em aberto e crediário. A próxima etapa é cruzar o cliente com movimentações de venda, assistência técnica e financeiro.',
-                          icon: Icons.timeline_outlined,
-                        ),
-                        const SizedBox(height: 18),
-                        _infoBox(
-                          title: 'Endereço e observações',
-                          text: '${_enderecoCliente(cliente)}\n${cliente.observacoes.isEmpty ? 'Sem observações cadastradas.' : cliente.observacoes}',
-                          icon: Icons.location_on_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+  void _history(ClienteUsuario c) => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.45,
+          maxChildSize: 0.92,
+          builder: (context, controller) => Container(
+            decoration: const BoxDecoration(color: _bg, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+            child: ListView(controller: controller, padding: const EdgeInsets.fromLTRB(16, 16, 16, 28), children: [
+              Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(999)))),
+              const SizedBox(height: 18),
+              Text(c.nome.isEmpty ? 'Cliente sem nome' : c.nome, style: const TextStyle(color: _title, fontSize: 20, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text(c.documento.isEmpty ? 'Documento não informado' : c.documento, style: const TextStyle(color: _muted)),
+              const SizedBox(height: 18),
+              _historyBox(Icons.phone_outlined, 'Telefone', c.telefone.isEmpty ? '-' : c.telefone),
+              _historyBox(Icons.mail_outline, 'E-mail', c.email.isEmpty ? '-' : c.email),
+              _historyBox(Icons.location_on_outlined, 'Endereço', _address(c)),
+              _historyBox(Icons.request_quote_outlined, 'Fiado', c.permiteCompraFiado ? 'Liberado • saldo ${_money.format(c.saldoFiado)}' : 'Não liberado'),
+              _historyBox(Icons.notes_outlined, 'Observações', c.observacoes.isEmpty ? 'Sem observações cadastradas.' : c.observacoes),
+            ]),
           ),
-        );
-      },
-    );
-  }
-
-  String _enderecoCliente(ClienteUsuario cliente) {
-    final List<String> partes = <String>[
-      cliente.logradouro,
-      cliente.numero,
-      cliente.bairro,
-      cliente.cidade,
-      cliente.uf,
-      cliente.cep,
-    ].where((String value) => value.trim().isNotEmpty).toList(growable: false);
-    return partes.isEmpty ? 'Endereço não informado.' : partes.join(', ');
-  }
-
-  Widget _historicoCard(String title, String value, IconData icon) {
-    final ThemeData theme = Theme.of(context);
-    return SizedBox(
-      width: 290,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
-        child: Row(
-          children: <Widget>[
-            Icon(icon, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(title, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 4),
-                  Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+      );
 
-  Widget _infoBox({required String title, required String text, required IconData icon}) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.32),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(icon, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 6),
-                Text(text, style: theme.textTheme.bodyMedium?.copyWith(height: 1.45, color: theme.colorScheme.onSurfaceVariant)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Widget content = Column(
-      children: <Widget>[
-        _buildHeader(theme),
-        Expanded(child: _buildBody(theme)),
-      ],
-    );
-
-    if (widget.embedded) return content;
-    return Scaffold(body: SafeArea(child: content));
-  }
-
-  Widget _buildHeader(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
-        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(Icons.groups_2_outlined, color: theme.colorScheme.primary, size: 30),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Clientes', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Text(
-                  'Cadastro, relacionamento, compras a prazo e controle de fiado dos clientes da empresa.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.35),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              OutlinedButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
-              FilledButton.icon(onPressed: () => _abrirCadastroCliente(), icon: const Icon(Icons.person_add_alt_1_rounded), label: const Text('Novo cliente')),
-              if (widget.onBack != null)
-                IconButton.filledTonal(onPressed: widget.onBack, tooltip: 'Voltar', icon: const Icon(Icons.close_rounded)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBody(ThemeData theme) {
-    if (_isLoading && _response == null) return const Center(child: CircularProgressIndicator());
-    if (_erro != null && _response == null) return _errorState(theme);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (_erro != null) ...<Widget>[
-            _inlineError(theme, _erro!),
-            const SizedBox(height: 16),
-          ],
-          _kpiGrid(theme),
-          const SizedBox(height: 18),
-          _toolbar(theme),
-          const SizedBox(height: 18),
-          _clientesFiltrados.isEmpty ? _emptyState(theme) : _clientesGrid(theme),
-        ],
-      ),
-    );
-  }
-
-  Widget _kpiGrid(ThemeData theme) {
-    final List<_Kpi> kpis = <_Kpi>[
-      _Kpi(Icons.groups_outlined, 'Clientes cadastrados', '${_clientes.length}'),
-      _Kpi(Icons.verified_user_outlined, 'Clientes ativos', '$_clientesAtivos'),
-      _Kpi(Icons.request_quote_outlined, 'Com fiado liberado', '$_clientesFiado'),
-      _Kpi(Icons.block_outlined, 'Fiado bloqueado', '$_clientesBloqueadosFiado'),
-      _Kpi(Icons.account_balance_wallet_outlined, 'Limite total fiado', _money(_limiteFiadoTotal), true),
-      _Kpi(Icons.receipt_long_outlined, 'Saldo em aberto', _money(_saldoFiadoTotal)),
-    ];
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int crossAxisCount = constraints.maxWidth < 900 ? 2 : 3;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: kpis.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            mainAxisExtent: 118,
-          ),
-          itemBuilder: (BuildContext context, int index) => _kpiCard(theme, kpis[index]),
-        );
-      },
-    );
-  }
-
-  Widget _kpiCard(ThemeData theme, _Kpi kpi) {
-    final Color background = kpi.highlight ? theme.colorScheme.primary : theme.colorScheme.surface;
-    final Color foreground = kpi.highlight ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
-    final Color muted = kpi.highlight ? theme.colorScheme.onPrimary.withOpacity(0.80) : theme.colorScheme.onSurfaceVariant;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: kpi.highlight ? theme.colorScheme.primary : theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: kpi.highlight ? theme.colorScheme.onPrimary.withOpacity(0.14) : theme.colorScheme.primary.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(kpi.icon, color: kpi.highlight ? theme.colorScheme.onPrimary : theme.colorScheme.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(kpi.label, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: muted, fontWeight: FontWeight.w700, fontSize: 12)),
-                const SizedBox(height: 6),
-                Text(kpi.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: foreground, fontWeight: FontWeight.w900, fontSize: 21)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _toolbar(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: TextField(
-              controller: _buscaController,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search_rounded),
-                labelText: 'Buscar por nome, documento, telefone ou e-mail',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (String value) => setState(() => _filtro = value),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text('${_clientesFiltrados.length} encontrados', style: const TextStyle(fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-
-  Widget _clientesGrid(ThemeData theme) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 980;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _clientesFiltrados.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: compact ? 1 : 2,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            mainAxisExtent: 270,
-          ),
-          itemBuilder: (BuildContext context, int index) => _clienteCard(theme, _clientesFiltrados[index]),
-        );
-      },
-    );
-  }
-
-  Widget _clienteCard(ThemeData theme, ClienteUsuario cliente) {
-    final bool fiadoOk = cliente.permiteCompraFiado && !cliente.bloqueadoFiado;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
-                child: Text(_iniciais(cliente.nome), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(cliente.nome.isEmpty ? 'Cliente sem nome' : cliente.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 3),
-                    Text('${cliente.tipoPessoa.isEmpty ? 'PF' : cliente.tipoPessoa} • ${cliente.documento}', maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  ],
-                ),
-              ),
-              _statusChip(theme, cliente.ativo ? 'Ativo' : 'Inativo', cliente.ativo ? Colors.green.shade700 : theme.colorScheme.error),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              _infoChip(theme, Icons.phone_outlined, cliente.telefone.isEmpty ? 'Sem telefone' : cliente.telefone),
-              _infoChip(theme, Icons.mail_outline, cliente.email.isEmpty ? 'Sem e-mail' : cliente.email),
-              _infoChip(theme, Icons.location_on_outlined, cliente.cidade.isEmpty ? 'Sem cidade' : '${cliente.cidade}/${cliente.uf}'),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: fiadoOk ? Colors.green.withOpacity(0.08) : theme.colorScheme.surfaceVariant.withOpacity(0.45),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: fiadoOk ? Colors.green.withOpacity(0.20) : theme.colorScheme.outlineVariant),
-            ),
-            child: Row(
-              children: <Widget>[
-                Icon(Icons.request_quote_outlined, color: fiadoOk ? Colors.green.shade700 : theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    cliente.permiteCompraFiado
-                        ? 'Fiado: limite ${_money(cliente.limiteFiado)} • prazo ${cliente.prazoPagamentoDias} dias'
-                        : 'Fiado não liberado para este cliente',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _abrirHistoricoCliente(cliente),
-                  icon: const Icon(Icons.timeline_outlined),
-                  label: const Text('Histórico'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => _abrirCadastroCliente(cliente: cliente),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Editar'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text('Atualizado em ${_date(cliente.atualizadoEm)}', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-
-  String _iniciais(String nome) {
-    final List<String> partes = nome.trim().split(' ').where((String item) => item.isNotEmpty).toList(growable: false);
-    if (partes.isEmpty) return 'CL';
-    if (partes.length == 1) return partes.first.substring(0, 1).toUpperCase();
-    return '${partes.first.substring(0, 1)}${partes.last.substring(0, 1)}'.toUpperCase();
-  }
-
-  Widget _statusChip(ThemeData theme, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(999)),
-      child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)),
-    );
-  }
-
-  Widget _infoChip(ThemeData theme, IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.42),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  Widget _emptyState(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), border: Border.all(color: theme.colorScheme.outlineVariant)),
-      child: Column(
-        children: <Widget>[
-          Icon(Icons.person_add_alt_1_rounded, size: 48, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
-          Text('Nenhum cliente encontrado.', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 6),
-          Text('Cadastre clientes para registrar vendas, serviços e compras a prazo.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 18),
-          FilledButton.icon(onPressed: () => _abrirCadastroCliente(), icon: const Icon(Icons.person_add_alt_1_rounded), label: const Text('Novo cliente')),
-        ],
-      ),
-    );
-  }
-
-  Widget _errorState(ThemeData theme) {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 560),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer.withOpacity(0.30),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: theme.colorScheme.error.withOpacity(0.25)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.cloud_off_rounded, size: 42, color: theme.colorScheme.error),
-            const SizedBox(height: 14),
-            Text('Não foi possível carregar os clientes.', textAlign: TextAlign.center, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Text(_erro ?? '', textAlign: TextAlign.center, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 18),
-            FilledButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente')),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _inlineError(ThemeData theme, String message) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer.withOpacity(0.28),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.error.withOpacity(0.24)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-          const SizedBox(width: 10),
-          Expanded(child: Text(message)),
-        ],
-      ),
-    );
-  }
+  Widget _historyBox(IconData icon, String title, String text) => Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFE2E8F0))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: _accent), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: _title, fontWeight: FontWeight.w900)), const SizedBox(height: 5), Text(text, style: const TextStyle(color: _muted, height: 1.35))]))]));
+  String _location(ClienteUsuario c) => c.cidade.isEmpty && c.uf.isEmpty ? 'Sem cidade' : c.uf.isEmpty ? c.cidade : c.cidade.isEmpty ? c.uf : '${c.cidade}/${c.uf}';
+  String _address(ClienteUsuario c) => [c.logradouro, c.numero, c.bairro, c.cidade, c.uf, c.cep].where((v) => v.trim().isNotEmpty).join(', ').isEmpty ? 'Endereço não informado.' : [c.logradouro, c.numero, c.bairro, c.cidade, c.uf, c.cep].where((v) => v.trim().isNotEmpty).join(', ');
+  String _initials(String n) { final p = n.trim().split(' ').where((v) => v.isNotEmpty).toList(); if (p.isEmpty) return 'CL'; return p.length == 1 ? p.first[0].toUpperCase() : '${p.first[0]}${p.last[0]}'.toUpperCase(); }
 }
 
-class _ClienteFormDialog extends StatefulWidget {
-  const _ClienteFormDialog({this.cliente});
-
+class _ClientForm extends StatefulWidget {
+  const _ClientForm({this.cliente});
   final ClienteUsuario? cliente;
-
   @override
-  State<_ClienteFormDialog> createState() => _ClienteFormDialogState();
+  State<_ClientForm> createState() => _ClientFormState();
 }
 
-class _ClienteFormDialogState extends State<_ClienteFormDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nomeController;
-  late final TextEditingController _documentoController;
-  late final TextEditingController _telefoneController;
-  late final TextEditingController _emailController;
-  late final TextEditingController _cepController;
-  late final TextEditingController _logradouroController;
-  late final TextEditingController _numeroController;
-  late final TextEditingController _complementoController;
-  late final TextEditingController _bairroController;
-  late final TextEditingController _cidadeController;
-  late final TextEditingController _ufController;
-  late final TextEditingController _observacoesController;
-  late final TextEditingController _limiteFiadoController;
-  late final TextEditingController _prazoFiadoController;
-
-  String _tipoPessoa = 'PF';
-  bool _ativo = true;
-  bool _permiteFiado = false;
-  bool _bloqueadoFiado = false;
+class _ClientFormState extends State<_ClientForm> {
+  final _key = GlobalKey<FormState>();
+  late final TextEditingController nome, doc, tel, email, cidade, uf, obs, limite, prazo;
+  String tipo = 'PF';
+  bool ativo = true, permiteFiado = false, bloqueadoFiado = false;
 
   @override
   void initState() {
     super.initState();
-    final ClienteUsuario? cliente = widget.cliente;
-    _tipoPessoa = cliente?.tipoPessoa.isNotEmpty == true ? cliente!.tipoPessoa : 'PF';
-    _ativo = cliente?.ativo ?? true;
-    _permiteFiado = cliente?.permiteCompraFiado ?? false;
-    _bloqueadoFiado = cliente?.bloqueadoFiado ?? false;
-    _nomeController = TextEditingController(text: cliente?.nome ?? '');
-    _documentoController = TextEditingController(text: cliente?.documento ?? '');
-    _telefoneController = TextEditingController(text: cliente?.telefone ?? '');
-    _emailController = TextEditingController(text: cliente?.email ?? '');
-    _cepController = TextEditingController(text: cliente?.cep ?? '');
-    _logradouroController = TextEditingController(text: cliente?.logradouro ?? '');
-    _numeroController = TextEditingController(text: cliente?.numero ?? '');
-    _complementoController = TextEditingController(text: cliente?.complemento ?? '');
-    _bairroController = TextEditingController(text: cliente?.bairro ?? '');
-    _cidadeController = TextEditingController(text: cliente?.cidade ?? '');
-    _ufController = TextEditingController(text: cliente?.uf ?? '');
-    _observacoesController = TextEditingController(text: cliente?.observacoes ?? '');
-    _limiteFiadoController = TextEditingController(text: _formatNumber(cliente?.limiteFiado ?? 0));
-    _prazoFiadoController = TextEditingController(text: '${cliente?.prazoPagamentoDias ?? 30}');
+    final c = widget.cliente;
+    tipo = c?.tipoPessoa.isNotEmpty == true ? c!.tipoPessoa : 'PF';
+    ativo = c?.ativo ?? true;
+    permiteFiado = c?.permiteCompraFiado ?? false;
+    bloqueadoFiado = c?.bloqueadoFiado ?? false;
+    nome = TextEditingController(text: c?.nome ?? '');
+    doc = TextEditingController(text: c?.documento ?? '');
+    tel = TextEditingController(text: c?.telefone ?? '');
+    email = TextEditingController(text: c?.email ?? '');
+    cidade = TextEditingController(text: c?.cidade ?? '');
+    uf = TextEditingController(text: c?.uf ?? '');
+    obs = TextEditingController(text: c?.observacoes ?? '');
+    limite = TextEditingController(text: (c?.limiteFiado ?? 0).toStringAsFixed(2).replaceAll('.', ','));
+    prazo = TextEditingController(text: '${c?.prazoPagamentoDias ?? 30}');
   }
 
   @override
-  void dispose() {
-    for (final TextEditingController controller in <TextEditingController>[
-      _nomeController,
-      _documentoController,
-      _telefoneController,
-      _emailController,
-      _cepController,
-      _logradouroController,
-      _numeroController,
-      _complementoController,
-      _bairroController,
-      _cidadeController,
-      _ufController,
-      _observacoesController,
-      _limiteFiadoController,
-      _prazoFiadoController,
-    ]) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
+  void dispose() { for (final c in [nome, doc, tel, email, cidade, uf, obs, limite, prazo]) { c.dispose(); } super.dispose(); }
 
-  static String _formatNumber(double value) => value.toStringAsFixed(2).replaceAll('.', ',');
+  InputDecoration _dec(String label, IconData icon) => InputDecoration(labelText: label, prefixIcon: Icon(icon), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)));
+  Widget _field(TextEditingController c, String label, IconData icon, {bool req = false, TextInputType type = TextInputType.text, int lines = 1}) => TextFormField(controller: c, keyboardType: type, maxLines: lines, decoration: _dec(label, icon), validator: req ? (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null : null);
+  double _parseMoney(String v) => double.tryParse(v.replaceAll('.', '').replaceAll(',', '.').trim()) ?? 0;
 
-  double _parseMoney(String value) {
-    final String normalized = value.replaceAll('.', '').replaceAll(',', '.').trim();
-    return double.tryParse(normalized) ?? 0.0;
-  }
-
-  int _parseInt(String value) => int.tryParse(value.trim()) ?? 0;
-
-  InputDecoration _decoration(String label, IconData icon, {String? hint}) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-    );
-  }
-
-  Widget _field({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool requiredField = false,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      decoration: _decoration(label, icon),
-      validator: requiredField
-          ? (String? value) {
-              if (value == null || value.trim().isEmpty) return 'Campo obrigatório';
-              return null;
-            }
-          : null,
-    );
-  }
-
-  Widget _tipoPessoaDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _tipoPessoa,
-      isExpanded: true,
-      decoration: _decoration('Tipo', Icons.badge_outlined),
-      selectedItemBuilder: (BuildContext context) {
-        return const <Widget>[
-          Text('PF', overflow: TextOverflow.ellipsis),
-          Text('PJ', overflow: TextOverflow.ellipsis),
-        ];
-      },
-      items: const <DropdownMenuItem<String>>[
-        DropdownMenuItem<String>(value: 'PF', child: Text('Pessoa física', overflow: TextOverflow.ellipsis)),
-        DropdownMenuItem<String>(value: 'PJ', child: Text('Pessoa jurídica', overflow: TextOverflow.ellipsis)),
-      ],
-      onChanged: (String? value) => setState(() => _tipoPessoa = value ?? 'PF'),
-    );
-  }
-
-  void _salvar() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    Navigator.of(context).pop(
-      ClienteUsuarioRequest(
-        ativo: _ativo,
-        tipoPessoa: _tipoPessoa,
-        documento: _documentoController.text.trim(),
-        nome: _nomeController.text.trim(),
-        telefone: _telefoneController.text.trim(),
-        email: _emailController.text.trim(),
-        cep: _cepController.text.trim(),
-        logradouro: _logradouroController.text.trim(),
-        numero: _numeroController.text.trim(),
-        complemento: _complementoController.text.trim(),
-        bairro: _bairroController.text.trim(),
-        cidade: _cidadeController.text.trim(),
-        uf: _ufController.text.trim().toUpperCase(),
-        observacoes: _observacoesController.text.trim(),
-        foto: widget.cliente?.foto ?? '',
-        permiteCompraFiado: _permiteFiado,
-        limiteFiado: _permiteFiado ? _parseMoney(_limiteFiadoController.text) : 0,
-        prazoPagamentoDias: _permiteFiado ? _parseInt(_prazoFiadoController.text) : 0,
-        bloqueadoFiado: _bloqueadoFiado,
-      ),
-    );
+  void _save() {
+    if (!(_key.currentState?.validate() ?? false)) return;
+    final old = widget.cliente;
+    Navigator.of(context).pop(ClienteUsuarioRequest(
+      ativo: ativo,
+      tipoPessoa: tipo,
+      documento: doc.text.trim(),
+      nome: nome.text.trim(),
+      telefone: tel.text.trim(),
+      email: email.text.trim(),
+      cep: old?.cep ?? '',
+      logradouro: old?.logradouro ?? '',
+      numero: old?.numero ?? '',
+      complemento: old?.complemento ?? '',
+      bairro: old?.bairro ?? '',
+      cidade: cidade.text.trim(),
+      uf: uf.text.trim().toUpperCase(),
+      observacoes: obs.text.trim(),
+      foto: old?.foto ?? '',
+      permiteCompraFiado: permiteFiado,
+      limiteFiado: permiteFiado ? _parseMoney(limite.text) : 0,
+      prazoPagamentoDias: permiteFiado ? int.tryParse(prazo.text.trim()) ?? 0 : 0,
+      bloqueadoFiado: bloqueadoFiado,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool editando = widget.cliente != null;
-
+    final edit = widget.cliente != null;
     return Dialog(
-      insetPadding: const EdgeInsets.all(24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      child: SizedBox(
-        width: 1040,
-        height: 760,
-        child: Column(
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.07),
-                border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Icon(Icons.person_add_alt_1_rounded, color: theme.colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(editando ? 'Editar cliente' : 'Novo cliente', overflow: TextOverflow.ellipsis, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-                  ),
-                  IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded)),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      _sectionTitle(theme, 'Dados principais'),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 14,
-                        runSpacing: 14,
-                        children: <Widget>[
-                          SizedBox(width: 220, child: _tipoPessoaDropdown()),
-                          SizedBox(width: 360, child: _field(controller: _nomeController, label: 'Nome / Razão social', icon: Icons.person_outline, requiredField: true)),
-                          SizedBox(width: 260, child: _field(controller: _documentoController, label: 'CPF / CNPJ', icon: Icons.credit_card_outlined, requiredField: true)),
-                          SizedBox(width: 260, child: _field(controller: _telefoneController, label: 'Telefone / WhatsApp', icon: Icons.phone_outlined, keyboardType: TextInputType.phone)),
-                          SizedBox(width: 360, child: _field(controller: _emailController, label: 'E-mail', icon: Icons.mail_outline, keyboardType: TextInputType.emailAddress)),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      _sectionTitle(theme, 'Endereço'),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 14,
-                        runSpacing: 14,
-                        children: <Widget>[
-                          SizedBox(width: 180, child: _field(controller: _cepController, label: 'CEP', icon: Icons.markunread_mailbox_outlined)),
-                          SizedBox(width: 360, child: _field(controller: _logradouroController, label: 'Logradouro', icon: Icons.route_outlined)),
-                          SizedBox(width: 120, child: _field(controller: _numeroController, label: 'Número', icon: Icons.numbers_outlined)),
-                          SizedBox(width: 260, child: _field(controller: _complementoController, label: 'Complemento', icon: Icons.add_home_outlined)),
-                          SizedBox(width: 260, child: _field(controller: _bairroController, label: 'Bairro', icon: Icons.location_city_outlined)),
-                          SizedBox(width: 260, child: _field(controller: _cidadeController, label: 'Cidade', icon: Icons.location_on_outlined)),
-                          SizedBox(width: 120, child: _field(controller: _ufController, label: 'UF', icon: Icons.map_outlined)),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      _sectionTitle(theme, 'Fiado / compra a prazo'),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceVariant.withOpacity(0.32),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: theme.colorScheme.outlineVariant),
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                            SwitchListTile.adaptive(
-                              value: _permiteFiado,
-                              title: const Text('Permitir compra fiado / a prazo'),
-                              subtitle: const Text('Libera o cliente para pagar depois conforme limite e prazo configurados.'),
-                              onChanged: (bool value) => setState(() => _permiteFiado = value),
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 14,
-                              runSpacing: 14,
-                              children: <Widget>[
-                                SizedBox(width: 220, child: _field(controller: _limiteFiadoController, label: 'Limite de fiado', icon: Icons.account_balance_wallet_outlined, keyboardType: TextInputType.number)),
-                                SizedBox(width: 220, child: _field(controller: _prazoFiadoController, label: 'Prazo padrão em dias', icon: Icons.event_available_outlined, keyboardType: TextInputType.number)),
-                                SizedBox(
-                                  width: 320,
-                                  child: SwitchListTile.adaptive(
-                                    value: _bloqueadoFiado,
-                                    title: const Text('Bloquear fiado'),
-                                    subtitle: const Text('Impede novas vendas a prazo.'),
-                                    onChanged: (bool value) => setState(() => _bloqueadoFiado = value),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _sectionTitle(theme, 'Status e observações'),
-                      const SizedBox(height: 12),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        value: _ativo,
-                        title: const Text('Cliente ativo'),
-                        onChanged: (bool value) => setState(() => _ativo = value),
-                      ),
-                      const SizedBox(height: 12),
-                      _field(controller: _observacoesController, label: 'Observações', icon: Icons.notes_outlined, maxLines: 4),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant))),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
-                  const SizedBox(width: 12),
-                  FilledButton.icon(onPressed: _salvar, icon: const Icon(Icons.save_outlined), label: Text(editando ? 'Salvar alterações' : 'Cadastrar cliente')),
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 620, maxHeight: MediaQuery.of(context).size.height * 0.9),
+        child: Column(children: [
+          Container(padding: const EdgeInsets.fromLTRB(20, 18, 12, 16), decoration: const BoxDecoration(color: Color(0xFFF8FAFC), border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0)))), child: Row(children: [const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFF2563EB)), const SizedBox(width: 12), Expanded(child: Text(edit ? 'Editar cliente' : 'Novo cliente', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900))), IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded))])),
+          Expanded(child: Form(key: _key, child: ListView(padding: const EdgeInsets.all(20), children: [
+            DropdownButtonFormField<String>(value: tipo, isExpanded: true, decoration: _dec('Tipo', Icons.badge_outlined), items: const [DropdownMenuItem(value: 'PF', child: Text('Pessoa física')), DropdownMenuItem(value: 'PJ', child: Text('Pessoa jurídica'))], onChanged: (v) => setState(() => tipo = v ?? 'PF')),
+            const SizedBox(height: 12),
+            _field(nome, 'Nome / Razão social', Icons.person_outline, req: true),
+            const SizedBox(height: 12),
+            _field(doc, 'CPF / CNPJ', Icons.credit_card_outlined, req: true),
+            const SizedBox(height: 12),
+            _field(tel, 'Telefone / WhatsApp', Icons.phone_outlined, type: TextInputType.phone),
+            const SizedBox(height: 12),
+            _field(email, 'E-mail', Icons.mail_outline, type: TextInputType.emailAddress),
+            const SizedBox(height: 12),
+            Row(children: [Expanded(child: _field(cidade, 'Cidade', Icons.location_on_outlined)), const SizedBox(width: 12), SizedBox(width: 92, child: _field(uf, 'UF', Icons.map_outlined))]),
+            const SizedBox(height: 12),
+            SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, value: permiteFiado, title: const Text('Permitir compra fiado / a prazo'), onChanged: (v) => setState(() => permiteFiado = v)),
+            if (permiteFiado) ...[const SizedBox(height: 12), _field(limite, 'Limite de fiado', Icons.account_balance_wallet_outlined, type: TextInputType.number), const SizedBox(height: 12), _field(prazo, 'Prazo padrão em dias', Icons.event_available_outlined, type: TextInputType.number)],
+            const SizedBox(height: 12),
+            SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, value: bloqueadoFiado, title: const Text('Bloquear fiado'), onChanged: (v) => setState(() => bloqueadoFiado = v)),
+            SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, value: ativo, title: const Text('Cliente ativo'), onChanged: (v) => setState(() => ativo = v)),
+            const SizedBox(height: 12),
+            _field(obs, 'Observações', Icons.notes_outlined, lines: 3),
+          ]))),
+          Container(padding: const EdgeInsets.all(16), decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))), child: Row(children: [Expanded(child: TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar'))), const SizedBox(width: 12), Expanded(child: FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save_outlined), label: Text(edit ? 'Salvar' : 'Cadastrar')))])),
+        ]),
       ),
     );
   }
-
-  Widget _sectionTitle(ThemeData theme, String title) {
-    return Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900));
-  }
 }
 
-class _Kpi {
-  const _Kpi(this.icon, this.label, this.value, [this.highlight = false]);
+class _LoadingList extends StatelessWidget {
+  const _LoadingList();
+  @override
+  Widget build(BuildContext context) => ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(16, 14, 16, 24), children: const [_SkeletonBlock(height: 150), SizedBox(height: 16), _SkeletonBlock(height: 56), SizedBox(height: 14), _SkeletonBlock(height: 110), SizedBox(height: 12), _SkeletonBlock(height: 210), SizedBox(height: 12), _SkeletonBlock(height: 210)]);
+}
 
+class _SkeletonBlock extends StatelessWidget {
+  const _SkeletonBlock({required this.height});
+  final double height;
+  @override
+  Widget build(BuildContext context) => Container(height: height, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFE2E8F0))), child: const Center(child: CircularProgressIndicator()));
+}
+
+class _Metric {
+  const _Metric(this.icon, this.label, this.value, [this.featured = false]);
   final IconData icon;
   final String label;
   final String value;
-  final bool highlight;
+  final bool featured;
 }
