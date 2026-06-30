@@ -102,7 +102,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       produtos: todosProdutos,
       termoBusca: termoBusca,
       ordenacao: ordenacao,
-    ).where((produto) => produto.tipoProduto.toUpperCase() == 'PRODUTO').toList();
+    );
   }
 
   void _selecionarProduto(ProdutoModel produto) {
@@ -191,11 +191,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
-    final itensDaLista = produtosFiltrados.isNotEmpty ||
-            termoBusca.isNotEmpty ||
-            todosProdutos.isNotEmpty
-        ? produtosFiltrados
-        : provider.listaDeProdutos;
+    final baseProdutos = todosProdutos.isNotEmpty ? todosProdutos : provider.listaDeProdutos;
+    final itensDaLista = baseProdutos.isEmpty && termoBusca.isEmpty
+        ? provider.listaDeProdutos
+        : produtosFiltrados;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -481,7 +480,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     ProdutosListProvider<ProdutoModel> provider,
     List<ProdutoModel> itens,
   ) {
-    if (provider.isLoading) return _loadingList(context);
+    if (provider.isLoading && itens.isEmpty) return _loadingList(context);
     if (itens.isEmpty) return _emptyState(context);
 
     return Scrollbar(
@@ -513,6 +512,44 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 220,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceVariant.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 360,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceVariant.withOpacity(0.40),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
