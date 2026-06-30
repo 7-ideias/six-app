@@ -1,28 +1,53 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
 
 import '../config/app_config.dart';
+import 'auth_service.dart';
+import 'notificacao_service.dart';
 
 StompClient? _stompClient;
 bool _stompInicializado = false;
 bool _stompAtivo = false;
 bool _stompDesconectando = false;
+String? _idUnicoDaEmpresaInscrita;
 
 Function(Map<String, dynamic>)? onMensagemRecebida;
 VoidCallback? onStompConectado;
 VoidCallback? onStompDesconectado;
 ValueChanged<Object>? onStompErro;
 
-void connectStomp() {
-  if (_stompAtivo || _stompDesconectando) {
+Future<void> connectStomp({String? idUnicoDaEmpresa}) async {
+  final String? empresaId = _normalizarEmpresaId(
+    idUnicoDaEmpresa ?? await AuthService().getEmpresaId(),
+  );
+
+  if (empresaId == null) {
+    const String erro = 'idUnicoDaEmpresa não encontrado para assinar WebSocket.';
+    debugPrint(erro);
+    onStompErro?.call(erro);
+    onStompDesconectado?.call();
+    return;
+  }
+
+  if (_stompAtivo && !_stompDesconectando) {
+    if (_idUnicoDaEmpresaInscrita == empresaId) {
+      return;
+    }
+
+    disconnectStomp();
+  }
+
+  if (_stompDesconectando) {
     return;
   }
 
   _stompInicializado = true;
   _stompAtivo = true;
+  _idUnicoDaEmpresaInscrita = empresaId;
 
   final StompClient client = StompClient(
     config: StompConfig.SockJS(
@@ -61,28 +86,48 @@ void onConnectCallback(StompFrame frame) {
     return;
   }
 
+  final String? empresaId = _idUnicoDaEmpresaInscrita;
+  if (empresaId == null || empresaId.isEmpty) {
+    const String erro = 'WebSocket conectado sem idUnicoDaEmpresa para inscrição.';
+    debugPrint(erro);
+    onStompErro?.call(erro);
+    return;
+  }
+
   onStompConectado?.call();
 
+  final String destination = '/topic/empresa/$empresaId/vendas';
+
   _stompClient?.subscribe(
-    destination: '/topic/ordem',
+    destination: destination,
     callback: (StompFrame frame) {
       if (!_stompAtivo) return;
 
       final String? body = frame.body;
-      debugPrint('📩 Mensagem recebida: $body');
+      debugPrint('📩 Mensagem recebida em $destination: $body');
 
       if (body == null || body.isEmpty) return;
 
       try {
-        final Map<String, dynamic> jsonBody = jsonDecode(body);
-        onMensagemRecebida?.call(jsonBody);
+        final dynamic decoded = jsonDecode(body);
+        final Map<String, dynamic> jsonBody = decoded is Map<String, dynamic>
+            ? decoded
+            : Map<String, dynamic>.from(decoded as Map);
+
+        final Map<String, dynamic> payload = <String, dynamic>{
+          ...jsonBody,
+          'recebidoEm': DateTime.now().toIso8601String(),
+        };
+
+        NotificacaoService().registrarPayload(payload);
+        onMensagemRecebida?.call(payload);
       } catch (e) {
         debugPrint('Erro ao converter mensagem do WebSocket: $e');
       }
     },
   );
 
-  debugPrint('✅ Conectado ao WebSocket!');
+  debugPrint('✅ Conectado ao WebSocket em $destination');
 }
 
 void disconnectStomp() {
@@ -103,4 +148,13 @@ void disconnectStomp() {
 
 bool isStompConnected() {
   return _stompInicializado && (_stompClient?.connected ?? false);
+}
+
+String? _normalizarEmpresaId(String? idUnicoDaEmpresa) {
+  final String? empresaId = idUnicoDaEmpresa?.trim();
+  if (empresaId == null || empresaId.isEmpty) {
+    return null;
+  }
+
+  return empresaId;
 }
