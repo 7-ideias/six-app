@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 
@@ -76,7 +77,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Produtos',
             subtitle: 'Cadastro, preço e disponibilidade',
             icon: Icons.shopping_bag_outlined,
-            onTap: () => _navigateTo(context, ProdutolistMobileScreen()),
+            onTap: () => _navigateTo(context, const ProdutolistMobileScreen()),
           ),
           _ManagementItem(
             title: 'Serviços',
@@ -94,7 +95,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Estoque',
             subtitle: 'Saldos, entradas e ajustes',
             icon: Icons.warehouse_outlined,
-            onTap: _showFeatureInProgress,
+            onTap: () => _navigateTo(context, const EstoqueMobileScreen()),
           ),
         ],
       ),
