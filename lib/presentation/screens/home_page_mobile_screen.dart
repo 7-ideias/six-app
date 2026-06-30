@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sixpos/core/services/notificacao_service.dart';
+import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/pdv_page_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
@@ -35,6 +37,60 @@ class _HomePageMobileState extends State<HomePageMobile> {
   DateTimeRange? _selectedDateRange;
   File? _image;
   final ImagePicker _picker = ImagePicker();
+  final NotificacaoService _notificacaoService = NotificacaoService();
+
+  @override
+  void initState() {
+    super.initState();
+    _notificacaoService.addListener(_onNotificacoesChanged);
+    if (!kIsWeb) {
+      _configurarWebSocketMobile();
+    }
+  }
+
+  @override
+  void dispose() {
+    _notificacaoService.removeListener(_onNotificacoesChanged);
+    if (!kIsWeb) {
+      onMensagemRecebida = null;
+      onStompConectado = null;
+      onStompDesconectado = null;
+      onStompErro = null;
+      disconnectStomp();
+    }
+    super.dispose();
+  }
+
+  void _onNotificacoesChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
+  void _configurarWebSocketMobile() {
+    onMensagemRecebida = (Map<String, dynamic> json) {
+      if (!mounted) {
+        return;
+      }
+
+      final String? mensagem = json['mensagem']?.toString().trim();
+      if (mensagem == null || mensagem.isEmpty) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+      );
+    };
+
+    onStompErro = (Object error) {
+      debugPrint('[HomePageMobile] Erro no WebSocket: $error');
+    };
+
+    connectStomp();
+  }
 
   Future<void> _selectDateRange(BuildContext context) async {
     final DateTimeRange? picked = await showDateRangePicker(
@@ -137,25 +193,40 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   Widget _buildNotificationIcon() {
+    final int naoLidas = _notificacaoService.naoLidas;
+    final bool temNaoLidas = naoLidas > 0;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const Icon(Icons.notifications_none_rounded),
-        Positioned(
-          right: -1,
-          top: -1,
-          child: SixPulsingBadge(
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
+        Icon(
+          temNaoLidas
+              ? Icons.notifications_active_rounded
+              : Icons.notifications_none_rounded,
+        ),
+        if (temNaoLidas)
+          Positioned(
+            right: -6,
+            top: -6,
+            child: SixPulsingBadge(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Text(
+                  _badgeText(naoLidas),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -264,6 +335,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   Widget _buildNotificationsOverviewCard(BuildContext context) {
+    final SixNotificationEvent? ultimaNotificacao =
+        _notificacaoService.ultimaNotificacao;
+    final int naoLidas = _notificacaoService.naoLidas;
+    final bool temNaoLidas = naoLidas > 0;
+    final String resumo = ultimaNotificacao?.description ??
+        'Aguardando mensagens do backend para esta empresa';
+
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(20),
@@ -295,41 +373,44 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.notifications_active_outlined,
+                    child: Icon(
+                      temNaoLidas
+                          ? Icons.notifications_active_outlined
+                          : Icons.notifications_none_rounded,
                       color: _accentColor,
                     ),
                   ),
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: SixPulsingBadge(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        child: const Text(
-                          '3',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
+                  if (temNaoLidas)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: SixPulsingBadge(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            _badgeText(naoLidas),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Notificações recentes',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -339,12 +420,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
                         fontSize: 15,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Eventos do backend, webhooks e envios ao cliente',
+                      resumo,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
                       ),
@@ -612,6 +693,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final String day = value.day.toString().padLeft(2, '0');
     final String month = value.month.toString().padLeft(2, '0');
     return '$day/$month';
+  }
+
+  String _badgeText(int count) {
+    if (count > 9) {
+      return '+9';
+    }
+
+    return count.toString();
   }
 
   void _openNotifications(BuildContext context) {
