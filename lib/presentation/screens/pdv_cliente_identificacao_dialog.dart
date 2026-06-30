@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/di/cliente_usuario_module.dart';
+import '../../core/services/cliente_usuario_service.dart';
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
-import '../../domain/services/cliente_usuario/cliente_usuario_service.dart';
 
 class ClienteIdentificacaoVendaResult {
   const ClienteIdentificacaoVendaResult({this.cliente, this.limpar = false});
