@@ -46,6 +46,7 @@ class ProdutoListaBody extends StatefulWidget {
 
 class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final TextEditingController _controllerBusca = TextEditingController();
+  final ScrollController _listaProdutosScrollController = ScrollController();
   final ProdutoService _produtoService = ProdutoService();
 
   List<ProdutoModel> todosProdutos = [];
@@ -89,6 +90,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   @override
   void dispose() {
     _controllerBusca.dispose();
+    _listaProdutosScrollController.dispose();
     super.dispose();
   }
 
@@ -222,6 +224,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       modoEdicao: true,
     );
   }
+
   Future<void> _imprimirRelatorioProdutos() async {
     if (_isGerandoRelatorio) {
       return;
@@ -408,11 +411,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               child: Text('Nenhum produto encontrado.'),
             )
                 : Scrollbar(
+              controller: _listaProdutosScrollController,
               thumbVisibility: true,
               thickness: 8,
               radius: const Radius.circular(8),
               scrollbarOrientation: ScrollbarOrientation.right,
               child: ListView.builder(
+                controller: _listaProdutosScrollController,
+                primary: false,
                 padding: const EdgeInsets.all(10),
                 itemCount: itensDaLista.length,
                 itemBuilder: (context, index) {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/di/cliente_usuario_module.dart';
+import '../../core/services/cliente_usuario_service.dart';
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 
@@ -15,10 +17,12 @@ class PdvClienteIdentificacaoDialog extends StatefulWidget {
     super.key,
     this.clienteAtual,
     this.apiClient,
+    this.clienteUsuarioService,
   });
 
   final ClienteUsuario? clienteAtual;
   final ClienteUsuarioApiClient? apiClient;
+  final ClienteUsuarioService? clienteUsuarioService;
 
   @override
   State<PdvClienteIdentificacaoDialog> createState() =>
@@ -27,7 +31,7 @@ class PdvClienteIdentificacaoDialog extends StatefulWidget {
 
 class _PdvClienteIdentificacaoDialogState
     extends State<PdvClienteIdentificacaoDialog> {
-  late final ClienteUsuarioApiClient _apiClient;
+  late final ClienteUsuarioService _clienteUsuarioService;
   final TextEditingController _buscaController = TextEditingController();
 
   bool _loading = true;
@@ -38,7 +42,10 @@ class _PdvClienteIdentificacaoDialogState
   @override
   void initState() {
     super.initState();
-    _apiClient = widget.apiClient ?? HttpClienteUsuarioApiClient();
+    _clienteUsuarioService = widget.clienteUsuarioService ??
+        (widget.apiClient != null
+            ? ClienteUsuarioService(apiClient: widget.apiClient!)
+            : ClienteUsuarioModule.clienteUsuarioService);
     _carregarClientes();
   }
 
@@ -55,11 +62,11 @@ class _PdvClienteIdentificacaoDialogState
     });
 
     try {
-      final ClienteUsuarioListResponse response =
-      await _apiClient.listarClientesUsuario();
+      final List<ClienteUsuario> clientes =
+          await _clienteUsuarioService.listarClientesAtivos();
       if (!mounted) return;
       setState(() {
-        _clientes = response.clientes.where((cliente) => cliente.ativo).toList();
+        _clientes = clientes;
         _loading = false;
       });
     } catch (_) {
@@ -72,19 +79,7 @@ class _PdvClienteIdentificacaoDialogState
   }
 
   List<ClienteUsuario> get _clientesFiltrados {
-    final String termo = _normalizar(_filtro);
-    if (termo.isEmpty) return _clientes;
-
-    return _clientes.where((ClienteUsuario cliente) {
-      return _normalizar(cliente.nome).contains(termo) ||
-          _normalizar(cliente.documento).contains(termo) ||
-          _normalizar(cliente.telefone).contains(termo) ||
-          _normalizar(cliente.email).contains(termo);
-    }).toList();
-  }
-
-  String _normalizar(String value) {
-    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return _clienteUsuarioService.filtrarClientes(_clientes, _filtro);
   }
 
   void _selecionar(ClienteUsuario cliente) {
