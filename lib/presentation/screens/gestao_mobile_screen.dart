@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
@@ -205,9 +206,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           ),
           _ManagementItem(
             title: 'Notificações',
-            subtitle: 'Email, WhatsApp e Telegram',
+            subtitle: 'Eventos do backend, webhooks e canais',
             icon: Icons.notifications_active_outlined,
-            onTap: _showFeatureInProgress,
+            onTap: () => _navigateTo(context, const NotificacoesMobileScreen()),
           ),
           _ManagementItem(
             title: 'Modelos de PDF',
