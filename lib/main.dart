@@ -2,7 +2,7 @@ import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/pdv_page_web.dart';
-import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:sixpos/presentation/screens/register_page_web.dart';
 import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
@@ -214,7 +214,7 @@ class MyApp extends StatelessWidget {
           kIsWeb
               ? null
               : (hasSeenOnboarding
-                  ? const LoginPageMobile()
+                  ? const AuthGateMobile()
                   : OnboardingScreen()),
       initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
