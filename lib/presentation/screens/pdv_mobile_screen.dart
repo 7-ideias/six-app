@@ -91,7 +91,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     try {
       final String idColaborador = await AuthService().getUserId() ?? '';
-      final usuario = UsuarioProvider().usuario;
       final String nomeColaborador = _nomeColaboradorAtual();
       final DateTime dataOperacao = DateTime.now();
 
