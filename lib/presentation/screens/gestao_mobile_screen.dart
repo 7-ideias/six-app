@@ -1,9 +1,12 @@
 import 'dart:io';
 
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
 import '../components/drawer_mobile.dart';
@@ -16,6 +19,14 @@ class GestaoMobileScreen extends StatefulWidget {
 }
 
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
+  static const Color _backgroundColor = Color(0xFFF4F7FB);
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _secondaryColor = Color(0xFF123B69);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+
   File? _image;
   final ImagePicker _picker = ImagePicker();
 
@@ -28,169 +39,462 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     }
   }
 
-  final List<BarChartGroupData> barData = [
-    BarChartGroupData(
-        x: 0, barRods: [BarChartRodData(toY: 50, color: Colors.teal)]),
-    BarChartGroupData(
-        x: 1, barRods: [BarChartRodData(toY: 80, color: Colors.teal)]),
-    BarChartGroupData(
-        x: 2, barRods: [BarChartRodData(toY: 30, color: Colors.teal)]),
-    BarChartGroupData(
-        x: 3, barRods: [BarChartRodData(toY: 90, color: Colors.teal)]),
-  ];
-
-  final List<PieChartSectionData> pieData = [
-    PieChartSectionData(
-        value: 40, title: 'Serviços', color: Colors.teal, radius: 60),
-    PieChartSectionData(
-        value: 30, title: 'Produtos', color: Colors.amber, radius: 60),
-    PieChartSectionData(
-        value: 20, title: 'Garantias', color: Colors.deepOrange, radius: 60),
-    PieChartSectionData(
-        value: 10, title: 'Outros', color: Colors.grey, radius: 60),
-  ];
-
-  DateTimeRange? _selectedDateRange;
-
-  Future<void> _selectDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2022),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestão')),
+      backgroundColor: _backgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: _primaryColor,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Gestão',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
       drawer: AppDrawerDoMobile(
         image: _image,
         onPickImage: _pickImage,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Resumo geral',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildInfoCard(
-                    'Faturamento', 'R\$ 12.450,00', Icons.monetization_on),
-                _buildInfoCard('Clientes', '134', Icons.people),
-                _buildInfoCard('Produtos', '87', Icons.inventory),
-                _buildInfoCard('Assistências', '25', Icons.build),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Text('Vendas por Mês',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            AspectRatio(
-              aspectRatio: 1.7,
-              child: BarChart(
-                BarChartData(
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, _) {
-                          const months = ['Jan', 'Fev', 'Mar', 'Abr'];
-                          return Text(months[value.toInt() % months.length]);
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: true),
-                    ),
-                  ),
-                  barGroups: barData,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text('Distribuição de Receita',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            AspectRatio(
-              aspectRatio: 1.3,
-              child: PieChart(
-                PieChartData(
-                  sections: pieData,
-                  centerSpaceRadius: 40,
-                  sectionsSpace: 2,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text('Filtros rápidos',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                FilterChip(label: const Text('Últimos 7 dias'),
-                    selected: true,
-                    onSelected: (_) {}),
-                FilterChip(label: const Text('Este mês'),
-                    selected: false,
-                    onSelected: (_) {}),
-                FilterChip(label: const Text('Ano atual'),
-                    selected: false,
-                    onSelected: (_) {}),
-                ActionChip(
-                  label: Text(
-                    _selectedDateRange != null
-                        ? '${_selectedDateRange!.start
-                        .day}/${_selectedDateRange!.start
-                        .month} - ${_selectedDateRange!.end
-                        .day}/${_selectedDateRange!.end.month}'
-                        : 'Escolher datas',
-                  ),
-                  onPressed: _selectDateRange,
-                  avatar: const Icon(Icons.date_range, size: 18),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-      bottomNavigationBar: kIsWeb ? null : CustomBottomNavBar(initialIndex: 0),
+      body: _buildContent(context),
+      bottomNavigationBar: kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
     );
   }
 
-  Widget _buildInfoCard(String label, String value, IconData icon) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 28, color: Colors.teal),
-            const SizedBox(height: 12),
-            Text(value, style: const TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle()),
-          ],
+  Widget _buildContent(BuildContext context) {
+    final List<_ManagementSection> sections = [
+      _ManagementSection(
+        title: 'Catálogo',
+        icon: Icons.inventory_2_outlined,
+        items: [
+          _ManagementItem(
+            title: 'Produtos',
+            subtitle: 'Cadastro, preço e disponibilidade',
+            icon: Icons.shopping_bag_outlined,
+            onTap: () => _navigateTo(context, ProdutolistMobileScreen()),
+          ),
+          _ManagementItem(
+            title: 'Serviços',
+            subtitle: 'Mão de obra e serviços técnicos',
+            icon: Icons.design_services_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Categorias',
+            subtitle: 'Organização do catálogo',
+            icon: Icons.category_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Estoque',
+            subtitle: 'Saldos, entradas e ajustes',
+            icon: Icons.warehouse_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+        ],
+      ),
+      _ManagementSection(
+        title: 'Pessoas',
+        icon: Icons.groups_2_outlined,
+        items: [
+          _ManagementItem(
+            title: 'Clientes',
+            subtitle: 'Base de atendimento e relacionamento',
+            icon: Icons.people_alt_outlined,
+            onTap: () => _navigateTo(context, const ClientesUsuarioListPage()),
+          ),
+          _ManagementItem(
+            title: 'Colaboradores',
+            subtitle: 'Equipe, acessos e responsabilidades',
+            icon: Icons.badge_outlined,
+            onTap: () => _navigateTo(context, const ColaboradoresUsuarioListPage()),
+          ),
+          _ManagementItem(
+            title: 'Fornecedores',
+            subtitle: 'Parceiros e compras do comércio',
+            icon: Icons.local_shipping_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+        ],
+      ),
+      _ManagementSection(
+        title: 'Financeiro',
+        icon: Icons.account_balance_wallet_outlined,
+        items: [
+          _ManagementItem(
+            title: 'Contas a receber',
+            subtitle: 'Recebíveis e cobranças em aberto',
+            icon: Icons.south_west_rounded,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Contas a pagar',
+            subtitle: 'Despesas e compromissos',
+            icon: Icons.north_east_rounded,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Agenda financeira',
+            subtitle: 'Previsões, fiado e crediário',
+            icon: Icons.event_note_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Formas de recebimento',
+            subtitle: 'Dinheiro, cartão, Pix e outros meios',
+            icon: Icons.payments_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+        ],
+      ),
+      _ManagementSection(
+        title: 'Relatórios',
+        icon: Icons.analytics_outlined,
+        items: [
+          _ManagementItem(
+            title: 'Vendas',
+            subtitle: 'Resultados e histórico comercial',
+            icon: Icons.bar_chart_rounded,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Assistências',
+            subtitle: 'Ordens, prazos e produtividade',
+            icon: Icons.handyman_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Caixa',
+            subtitle: 'Aberturas, fechamentos e movimentações',
+            icon: Icons.point_of_sale_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Financeiro',
+            subtitle: 'Receitas, despesas e fluxo de caixa',
+            icon: Icons.query_stats_rounded,
+            onTap: _showFeatureInProgress,
+          ),
+        ],
+      ),
+      _ManagementSection(
+        title: 'Configurações',
+        icon: Icons.settings_outlined,
+        items: [
+          _ManagementItem(
+            title: 'Empresa',
+            subtitle: 'Dados do comércio e identidade',
+            icon: Icons.storefront_outlined,
+            onTap: () => _navigateTo(context, const ConfiguracoesMobileScreen()),
+          ),
+          _ManagementItem(
+            title: 'Usuários e permissões',
+            subtitle: 'Acessos por perfil e colaborador',
+            icon: Icons.admin_panel_settings_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Regionalização',
+            subtitle: 'Idioma, moeda e formato local',
+            icon: Icons.language_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Notificações',
+            subtitle: 'Email, WhatsApp e Telegram',
+            icon: Icons.notifications_active_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Modelos de PDF',
+            subtitle: 'Comprovantes, relatórios e OS',
+            icon: Icons.picture_as_pdf_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Integrações',
+            subtitle: 'Serviços externos e automações',
+            icon: Icons.hub_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+        ],
+      ),
+    ];
+
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: [
+          _buildSearchField(),
+          const SizedBox(height: 16),
+          _buildManagementHeader(),
+          const SizedBox(height: 22),
+          ...sections.map(_buildManagementSection),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Buscar produto, cliente ou configuração...',
+          hintStyle: const TextStyle(color: _mutedTextColor),
+          prefixIcon: const Icon(Icons.search, color: _accentColor),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.tune_rounded, color: _titleTextColor),
+            onPressed: _showFeatureInProgress,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 15,
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildManagementHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [_primaryColor, _secondaryColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x260B1F3A),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0x1AFFFFFF),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0x33FFFFFF)),
+            ),
+            child: const Icon(Icons.business_center_outlined, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Administração do negócio',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Organize cadastros, financeiro, relatórios e configurações do comércio.',
+                  style: TextStyle(
+                    color: Color(0xFFD7E3F5),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManagementSection(_ManagementSection section) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(section.icon, color: _accentColor, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                section.title,
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0F000000),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: section.items.asMap().entries.map((entry) {
+                final int index = entry.key;
+                final _ManagementItem item = entry.value;
+                final bool isLast = index == section.items.length - 1;
+
+                return _buildManagementTile(item, isLast: isLast);
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManagementTile(_ManagementItem item, {required bool isLast}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(isLast ? 0 : 22),
+          bottom: Radius.circular(isLast ? 22 : 0),
+        ),
+        onTap: item.onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            border: isLast
+                ? null
+                : const Border(
+                    bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(item.icon, color: _primaryColor, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateTo(BuildContext context, Widget page) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (BuildContext context) => page),
+    );
+  }
+
+  void _showFeatureInProgress() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fluxo mobile em evolução.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _ManagementSection {
+  const _ManagementSection({
+    required this.title,
+    required this.icon,
+    required this.items,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<_ManagementItem> items;
+}
+
+class _ManagementItem {
+  const _ManagementItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
 }
