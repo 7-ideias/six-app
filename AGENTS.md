@@ -61,6 +61,18 @@ Backend:
 - Sempre validar mentalmente desktop largo, notebook e layout compacto, usando `LayoutBuilder`, `Wrap`, `Expanded` e `TextOverflow.ellipsis` para evitar overflow.
 - Usar microinteração sutil em listas importantes, como entrada com `fade + leve deslocamento`, sem animação contínua ou decorativa.
 
+## Movimento e microinterações no Web
+
+* Usar movimento de forma sutil, profissional e funcional, com o mesmo cuidado aplicado ao mobile.
+* Ao carregar dashboards e subpainéis web, preferir entrada progressiva por prioridade: KPIs primeiro, gráficos depois, listas e alertas em seguida.
+* Cards importantes podem entrar com `fade + leve deslocamento de baixo para cima`, usando pequenos atrasos entre blocos para criar leitura guiada.
+* Gráficos não devem ficar estáticos quando a tela abre: barras podem crescer de zero até o valor real e gráficos de pizza/rosca podem revelar setores suavemente.
+* Skeleton loading é preferível a spinner central em telas executivas que dependem de dados do backend.
+* `AnimatedSwitcher`, `TweenAnimationBuilder`, `AnimatedContainer`, `FadeTransition` e `SlideTransition` são boas opções para transições curtas.
+* Hover em cards e botões pode usar mudança discreta de borda, elevação ou fundo, sem parecer efeito decorativo exagerado.
+* Evitar animação contínua em dashboards; o movimento deve acontecer na entrada, atualização, mudança de estado ou feedback de ação.
+* Não sacrificar leitura, acessibilidade, performance ou estabilidade de layout para adicionar movimento.
+
 ## Padrão visual Mobile — Six
 
 * A experiência mobile deve ser orientada a ação rápida, acompanhamento e gestão simples.
