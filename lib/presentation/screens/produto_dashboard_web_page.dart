@@ -24,7 +24,7 @@ class ProdutoDashboardWebPage extends StatefulWidget {
 
 class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   static const Duration _entryDuration = Duration(milliseconds: 520);
-  static const Duration _chartDuration = Duration(milliseconds: 900);
+  static const Duration _chartDuration = Duration(milliseconds: 1100);
   static const Curve _entryCurve = Curves.easeOutCubic;
 
   final ProdutoService _produtoService = ProdutoService();
@@ -32,9 +32,13 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   final NumberFormat _currencyFormatter = NumberFormat.currency(
     locale: 'pt_BR',
-    symbol: 'R\$',
+    symbol: r'R$',
   );
   final NumberFormat _decimalFormatter = NumberFormat.decimalPattern('pt_BR');
+
+  int _produtosPorCategoriaTouchedIndex = -1;
+  int _situacaoEstoqueTouchedIndex = -1;
+  int _valorPorCategoriaTouchedIndex = -1;
 
   @override
   void initState() {
@@ -44,8 +48,32 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   void _recarregar() {
     setState(() {
+      _produtosPorCategoriaTouchedIndex = -1;
+      _situacaoEstoqueTouchedIndex = -1;
+      _valorPorCategoriaTouchedIndex = -1;
       _dashboardFuture = _produtoService.buscarDashboardProdutos();
     });
+  }
+
+  void _setProdutosPorCategoriaTouchedIndex(int index) {
+    if (_produtosPorCategoriaTouchedIndex == index) {
+      return;
+    }
+    setState(() => _produtosPorCategoriaTouchedIndex = index);
+  }
+
+  void _setSituacaoEstoqueTouchedIndex(int index) {
+    if (_situacaoEstoqueTouchedIndex == index) {
+      return;
+    }
+    setState(() => _situacaoEstoqueTouchedIndex = index);
+  }
+
+  void _setValorPorCategoriaTouchedIndex(int index) {
+    if (_valorPorCategoriaTouchedIndex == index) {
+      return;
+    }
+    setState(() => _valorPorCategoriaTouchedIndex = index);
   }
 
   String _money(double value) => _currencyFormatter.format(value);
@@ -326,6 +354,8 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                             child: _barChart(
                               dashboard.produtosPorCategoria,
                               value: (ProdutoDashboardSerieItem item) => item.quantidade,
+                              touchedIndex: _produtosPorCategoriaTouchedIndex,
+                              onTouchedIndexChanged: _setProdutosPorCategoriaTouchedIndex,
                             ),
                           ),
                         ),
@@ -335,7 +365,11 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                           child: _chartCard(
                             title: 'Situação do estoque',
                             subtitle: 'Distribuição por saúde operacional.',
-                            child: _pieChart(dashboard.situacaoEstoque),
+                            child: _pieChart(
+                              dashboard.situacaoEstoque,
+                              touchedIndex: _situacaoEstoqueTouchedIndex,
+                              onTouchedIndexChanged: _setSituacaoEstoqueTouchedIndex,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -347,6 +381,8 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                             child: _barChart(
                               dashboard.valorEstoquePorCategoria,
                               value: (ProdutoDashboardSerieItem item) => item.valor,
+                              touchedIndex: _valorPorCategoriaTouchedIndex,
+                              onTouchedIndexChanged: _setValorPorCategoriaTouchedIndex,
                             ),
                           ),
                         ),
@@ -364,6 +400,8 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                               child: _barChart(
                                 dashboard.produtosPorCategoria,
                                 value: (ProdutoDashboardSerieItem item) => item.quantidade,
+                                touchedIndex: _produtosPorCategoriaTouchedIndex,
+                                onTouchedIndexChanged: _setProdutosPorCategoriaTouchedIndex,
                               ),
                             ),
                           ),
@@ -375,7 +413,11 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                             child: _chartCard(
                               title: 'Situação do estoque',
                               subtitle: 'Distribuição por saúde operacional.',
-                              child: _pieChart(dashboard.situacaoEstoque),
+                              child: _pieChart(
+                                dashboard.situacaoEstoque,
+                                touchedIndex: _situacaoEstoqueTouchedIndex,
+                                onTouchedIndexChanged: _setSituacaoEstoqueTouchedIndex,
+                              ),
                             ),
                           ),
                         ),
@@ -389,6 +431,8 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                               child: _barChart(
                                 dashboard.valorEstoquePorCategoria,
                                 value: (ProdutoDashboardSerieItem item) => item.valor,
+                                touchedIndex: _valorPorCategoriaTouchedIndex,
+                                onTouchedIndexChanged: _setValorPorCategoriaTouchedIndex,
                               ),
                             ),
                           ),
@@ -542,6 +586,8 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   Widget _barChart(
     List<ProdutoDashboardSerieItem> itens, {
     required double Function(ProdutoDashboardSerieItem item) value,
+    required int touchedIndex,
+    required ValueChanged<int> onTouchedIndexChanged,
   }) {
     final ThemeData theme = Theme.of(context);
     final List<ProdutoDashboardSerieItem> chartItems = itens.take(6).toList();
@@ -555,9 +601,12 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     });
 
     return TweenAnimationBuilder<double>(
+      key: ValueKey<String>(
+        chartItems.map((ProdutoDashboardSerieItem item) => '${item.label}:${value(item)}').join('|'),
+      ),
       tween: Tween<double>(begin: 0, end: 1),
       duration: _chartDuration,
-      curve: _entryCurve,
+      curve: Curves.linear,
       builder: (BuildContext context, double progress, Widget? child) {
         return SizedBox(
           height: 260,
@@ -565,6 +614,13 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
             BarChartData(
               maxY: maxValue <= 0 ? 10.0 : maxValue * 1.18,
               borderData: FlBorderData(show: false),
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchCallback: (_, BarTouchResponse? response) {
+                  final int index = response?.spot?.touchedBarGroupIndex ?? -1;
+                  onTouchedIndexChanged(index >= 0 && index < chartItems.length ? index : -1);
+                },
+              ),
               gridData: FlGridData(
                 show: true,
                 horizontalInterval: maxValue <= 0 ? 2.0 : math.max(1.0, maxValue / 4),
@@ -619,14 +675,18 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 ),
               ),
               barGroups: List<BarChartGroupData>.generate(chartItems.length, (int index) {
+                final double itemProgress = _staggeredItemProgress(progress, index);
+                final bool touched = index == touchedIndex;
+                final double opacity = touchedIndex == -1 || touched ? 1 : 0.45;
+
                 return BarChartGroupData(
                   x: index,
                   barRods: <BarChartRodData>[
                     BarChartRodData(
-                      toY: value(chartItems[index]) * progress,
-                      width: 22,
-                      borderRadius: BorderRadius.circular(8),
-                      color: _chartColor(theme, index),
+                      toY: value(chartItems[index]) * itemProgress,
+                      width: touched ? 30 : 22,
+                      borderRadius: BorderRadius.circular(touched ? 10 : 8),
+                      color: _chartColor(theme, index).withOpacity(opacity),
                     ),
                   ],
                 );
@@ -638,7 +698,11 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     );
   }
 
-  Widget _pieChart(List<ProdutoDashboardSerieItem> itens) {
+  Widget _pieChart(
+    List<ProdutoDashboardSerieItem> itens, {
+    required int touchedIndex,
+    required ValueChanged<int> onTouchedIndexChanged,
+  }) {
     final ThemeData theme = Theme.of(context);
     final List<ProdutoDashboardSerieItem> chartItems = itens
         .where((ProdutoDashboardSerieItem item) => item.quantidade > 0)
@@ -649,9 +713,12 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     }
 
     return TweenAnimationBuilder<double>(
+      key: ValueKey<String>(
+        chartItems.map((ProdutoDashboardSerieItem item) => '${item.label}:${item.quantidade}').join('|'),
+      ),
       tween: Tween<double>(begin: 0, end: 1),
       duration: _chartDuration,
-      curve: _entryCurve,
+      curve: Curves.linear,
       builder: (BuildContext context, double progress, Widget? child) {
         return Column(
           children: <Widget>[
@@ -659,15 +726,26 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
               height: 230,
               child: PieChart(
                 PieChartData(
+                  pieTouchData: PieTouchData(
+                    touchCallback: (_, PieTouchResponse? response) {
+                      final int index = response?.touchedSection?.touchedSectionIndex ?? -1;
+                      onTouchedIndexChanged(index >= 0 && index < chartItems.length ? index : -1);
+                    },
+                  ),
+                  startDegreeOffset: -90,
                   centerSpaceRadius: 48,
-                  sectionsSpace: 3,
+                  sectionsSpace: touchedIndex == -1 ? 3 : 5,
                   sections: List<PieChartSectionData>.generate(chartItems.length, (int index) {
                     final ProdutoDashboardSerieItem item = chartItems[index];
+                    final double itemProgress = _staggeredItemProgress(progress, index);
+                    final bool touched = index == touchedIndex;
+                    final double opacity = touchedIndex == -1 || touched ? 1 : 0.48;
+
                     return PieChartSectionData(
-                      value: math.max(0.001, item.quantidade * progress),
-                      title: progress > 0.72 ? _qty(item.quantidade) : '',
-                      radius: 54 + (12 * progress),
-                      color: _chartColor(theme, index),
+                      value: math.max(0.001, item.quantidade * itemProgress),
+                      title: itemProgress > 0.72 ? _qty(item.quantidade) : '',
+                      radius: touched ? 78 : 54 + (12 * progress),
+                      color: _chartColor(theme, index).withOpacity(opacity),
                       titleStyle: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w900,
@@ -932,6 +1010,11 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
         );
       },
     );
+  }
+
+  double _staggeredItemProgress(double progress, int index) {
+    final double delayedProgress = ((progress - (index * 0.07)) / 0.72).clamp(0.0, 1.0).toDouble();
+    return Curves.easeOutCubic.transform(delayedProgress);
   }
 
   Widget _loadingKpiCard({required bool highlight}) {
