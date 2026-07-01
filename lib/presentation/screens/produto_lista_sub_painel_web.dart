@@ -23,10 +23,7 @@ class SubPainelWebProdutoLista extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProdutoListaBody(
-      isSelecao: isSelecao,
-      modoEdicao: modoEdicao,
-    );
+    return ProdutoListaBody(isSelecao: isSelecao, modoEdicao: modoEdicao);
   }
 }
 
@@ -49,8 +46,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final ScrollController _scrollController = ScrollController();
   final ProdutoService _produtoService = ProdutoService();
 
-  List<ProdutoModel> todosProdutos = [];
-  List<ProdutoModel> produtosFiltrados = [];
+  List<ProdutoModel> todosProdutos = <ProdutoModel>[];
+  List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
 
   String termoBusca = '';
   String ordenacao = 'nome';
@@ -204,7 +201,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         return Container(
           color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.16),
           child: Column(
-            children: [
+            children: <Widget>[
               _buildHeader(context, itensDaLista.length, isCompact),
               Padding(
                 padding: EdgeInsets.fromLTRB(horizontalPadding, 14, horizontalPadding, 10),
@@ -225,13 +222,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _buildHeader(BuildContext context, int totalItens, bool isCompact) {
     final colorScheme = Theme.of(context).colorScheme;
-    final title = widget.modoEdicao ? 'Editar produtos' : 'Produtos';
-    final subtitle = widget.modoEdicao
-        ? 'Lista compacta para revisar cadastro, estoque, preço e imagens.'
-        : 'Consulta rápida do catálogo com ações de balcão.';
+    final title = widget.isSelecao
+        ? 'Selecionar produto'
+        : widget.modoEdicao
+            ? 'Editar produtos'
+            : 'Produtos';
+    final subtitle = widget.isSelecao
+        ? 'Busca rápida para incluir item na venda.'
+        : widget.modoEdicao
+            ? 'Lista compacta para revisar cadastro, estoque, preço e imagens.'
+            : 'Consulta rápida do catálogo com ações de balcão.';
 
     final titleBlock = Row(
-      children: [
+      children: <Widget>[
         Container(
           width: 50,
           height: 50,
@@ -239,13 +242,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             color: colorScheme.primary.withOpacity(0.10),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(Icons.inventory_2_outlined, color: colorScheme.primary),
+          child: Icon(
+            widget.isSelecao ? Icons.add_shopping_cart_rounded : Icons.inventory_2_outlined,
+            color: colorScheme.primary,
+          ),
         ),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               Text(
                 title,
                 maxLines: 1,
@@ -274,15 +280,17 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       runSpacing: 10,
       crossAxisAlignment: WrapCrossAlignment.center,
       alignment: WrapAlignment.end,
-      children: [
+      children: <Widget>[
         _headerButton(context, Icons.refresh_rounded, 'Atualizar', _recarregar),
-        _headerButton(context, Icons.add_rounded, 'Novo produto', _abrirNovoProduto, filled: true),
-        _headerButton(
-          context,
-          Icons.picture_as_pdf_outlined,
-          _isGerandoRelatorio ? 'Gerando...' : 'Imprimir PDF',
-          _isGerandoRelatorio ? null : _imprimirRelatorioProdutos,
-        ),
+        if (!widget.isSelecao) ...<Widget>[
+          _headerButton(context, Icons.add_rounded, 'Novo produto', _abrirNovoProduto, filled: true),
+          _headerButton(
+            context,
+            Icons.picture_as_pdf_outlined,
+            _isGerandoRelatorio ? 'Gerando...' : 'Imprimir PDF',
+            _isGerandoRelatorio ? null : _imprimirRelatorioProdutos,
+          ),
+        ],
         _closeButton(context),
       ],
     );
@@ -298,7 +306,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14))),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 16,
@@ -307,23 +315,23 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         ],
       ),
       child: Column(
-        children: [
+        children: <Widget>[
           isCompact
               ? Column(
-                  children: [
+                  children: <Widget>[
                     titleBlock,
                     const SizedBox(height: 14),
                     Align(alignment: Alignment.centerRight, child: actions),
                   ],
                 )
               : Row(
-                  children: [
+                  children: <Widget>[
                     Expanded(child: titleBlock),
                     const SizedBox(width: 16),
                     actions,
                   ],
                 ),
-          if (widget.modoEdicao && !widget.isSelecao) ...[
+          if (widget.modoEdicao && !widget.isSelecao) ...<Widget>[
             const SizedBox(height: 12),
             _editBanner(context, totalItens),
           ],
@@ -386,7 +394,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           Icon(Icons.edit_note_rounded, color: colorScheme.primary, size: 20),
           const SizedBox(width: 10),
           Expanded(
@@ -411,7 +419,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final search = TextField(
       controller: _controllerBusca,
       decoration: InputDecoration(
-        hintText: 'Buscar por nome, código ou grupo...',
+        hintText: 'Buscar por nome ou código...',
         prefixIcon: Icon(Icons.search_rounded, color: colorScheme.primary),
         suffixIcon: termoBusca.isEmpty
             ? null
@@ -455,7 +463,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           isExpanded: true,
           borderRadius: BorderRadius.circular(16),
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          items: const [
+          items: const <DropdownMenuItem<String>>[
             DropdownMenuItem(value: 'nome', child: Text('Ordenar por nome')),
             DropdownMenuItem(value: 'preco', child: Text('Ordenar por preço')),
           ],
@@ -468,11 +476,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ),
     );
 
-    if (isCompact) {
-      return Column(children: [search, const SizedBox(height: 10), order]);
-    }
-
-    return Row(children: [Expanded(child: search), const SizedBox(width: 12), SizedBox(width: 240, child: order)]);
+    if (isCompact) return Column(children: <Widget>[search, const SizedBox(height: 10), order]);
+    return Row(children: <Widget>[Expanded(child: search), const SizedBox(width: 12), SizedBox(width: 240, child: order)]);
   }
 
   Widget _buildList(
@@ -493,7 +498,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         primary: false,
         padding: const EdgeInsets.fromLTRB(0, 0, 12, 2),
         itemCount: itens.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (_, __) => SizedBox(height: widget.isSelecao ? 7 : 8),
         itemBuilder: (context, index) => _productCard(context, itens[index], index),
       ),
     );
@@ -506,50 +511,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       itemCount: 6,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, __) => Container(
-        height: 74,
+        height: widget.isSelecao ? 58 : 74,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(15),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 220,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 360,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant.withOpacity(0.40),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -569,14 +536,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
         ),
         child: Row(
-          children: [
+          children: <Widget>[
             Icon(Icons.inventory_2_outlined, color: colorScheme.primary, size: 34),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: <Widget>[
                   Text(
                     'Nenhum produto encontrado',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: colorScheme.onSurface),
@@ -594,7 +561,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _productCard(BuildContext context, ProdutoModel produto, int index) {
     final colorScheme = Theme.of(context).colorScheme;
-    final duration = Duration(milliseconds: 140 + (index % 8) * 20);
+    final duration = Duration(milliseconds: 120 + (index % 8) * 18);
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -614,14 +581,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
-              boxShadow: [
+              boxShadow: <BoxShadow>[
                 BoxShadow(color: Colors.black.withOpacity(0.035), blurRadius: 12, offset: const Offset(0, 5)),
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: widget.isSelecao ? 8 : 10),
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  if (widget.isSelecao) return _productSelection(context, produto, constraints.maxWidth < 720);
                   final compact = constraints.maxWidth < 760;
                   return compact ? _productCompact(context, produto) : _productWide(context, produto);
                 },
@@ -633,17 +601,77 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
+  Widget _productSelection(BuildContext context, ProdutoModel produto, bool compact) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final codigo = _codigoLabel(produto);
+
+    final info = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            Text(codigo, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.onSurfaceVariant)),
+            Text(_precoFormatado(produto.precoVenda), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: colorScheme.onSurface)),
+          ],
+        ),
+      ],
+    );
+
+    final action = FilledButton.icon(
+      onPressed: () => _selecionarProduto(produto),
+      icon: const Icon(Icons.add_shopping_cart_rounded, size: 17),
+      label: const Text('Adicionar'),
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+
+    if (compact) {
+      return Row(
+        children: <Widget>[
+          _thumbnail(context, produto, size: 44),
+          const SizedBox(width: 10),
+          Expanded(child: info),
+          const SizedBox(width: 10),
+          Icon(Icons.add_rounded, color: colorScheme.primary),
+        ],
+      );
+    }
+
+    return Row(
+      children: <Widget>[
+        _thumbnail(context, produto, size: 46),
+        const SizedBox(width: 12),
+        Expanded(child: info),
+        const SizedBox(width: 12),
+        action,
+      ],
+    );
+  }
+
   Widget _productWide(BuildContext context, ProdutoModel produto) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
-      children: [
+      children: <Widget>[
         _thumbnail(context, produto),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: <Widget>[
               Text(
                 produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
                 maxLines: 1,
@@ -654,7 +682,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               Wrap(
                 spacing: 7,
                 runSpacing: 7,
-                children: [
+                children: <Widget>[
                   _pill(context, Icons.qr_code_2_rounded, _codigoLabel(produto)),
                   _pill(context, Icons.category_outlined, _tipoLabel(produto)),
                   if (_grupoLabel(produto).isNotEmpty) _pill(context, Icons.folder_outlined, _grupoLabel(produto)),
@@ -677,9 +705,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   Widget _productCompact(BuildContext context, ProdutoModel produto) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
-      children: [
+      children: <Widget>[
         Row(
-          children: [
+          children: <Widget>[
             _thumbnail(context, produto),
             const SizedBox(width: 12),
             Expanded(
@@ -695,12 +723,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         ),
         const SizedBox(height: 10),
         Row(
-          children: [
+          children: <Widget>[
             Expanded(
               child: Wrap(
                 spacing: 7,
                 runSpacing: 7,
-                children: [
+                children: <Widget>[
                   _pill(context, Icons.qr_code_2_rounded, _codigoLabel(produto)),
                   _pill(context, Icons.sell_outlined, _precoFormatado(produto.precoVenda), strong: true),
                 ],
@@ -713,11 +741,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _thumbnail(BuildContext context, ProdutoModel produto) {
+  Widget _thumbnail(BuildContext context, ProdutoModel produto, {double size = 52}) {
     final colorScheme = Theme.of(context).colorScheme;
     final imageUrl = _primeiraImagemUrl(produto);
     final child = imageUrl == null
-        ? Icon(_iconePorTipo(produto), color: colorScheme.primary, size: 24)
+        ? Icon(_iconePorTipo(produto), color: colorScheme.primary, size: size <= 46 ? 21 : 24)
         : Image.network(
             imageUrl,
             fit: BoxFit.cover,
@@ -725,11 +753,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           );
 
     return Container(
-      width: 52,
-      height: 52,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: colorScheme.primary.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(size <= 46 ? 14 : 16),
         border: Border.all(color: colorScheme.primary.withOpacity(0.10)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -738,14 +766,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _actionButton(BuildContext context, ProdutoModel produto) {
-    if (widget.isSelecao) {
-      return FilledButton.icon(
-        onPressed: () => _selecionarProduto(produto),
-        icon: const Icon(Icons.add_shopping_cart_rounded, size: 17),
-        label: const Text('Adicionar'),
-      );
-    }
-
     return FilledButton.icon(
       onPressed: () => widget.modoEdicao ? _abrirCadastroParaEdicao(produto) : _selecionarProduto(produto),
       icon: Icon(widget.modoEdicao ? Icons.edit_rounded : Icons.visibility_outlined, size: 17),
@@ -768,7 +788,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: <Widget>[
           Icon(icon, size: 14, color: strong ? colorScheme.primary : colorScheme.onSurfaceVariant),
           const SizedBox(width: 5),
           Text(
