@@ -1,5 +1,10 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/di/operacao_module.dart';
 import '../../core/services/auth_service.dart';
@@ -159,6 +164,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _enviarVenda(List<FormaPagamentoSelecionada> formasPagamento) async {
+    final List<Map<String, dynamic>> produtosResumo = _clonarProdutosSelecionados();
+    final double totalResumo = _calcularTotal();
+
     setState(() {
       _finalizandoVenda = true;
     });
@@ -181,15 +189,17 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
       if (!mounted) return;
 
-      _limparVendaAtual();
-
-      final String uuid = response.uuid.trim();
-      await _mostrarDialogMensagem(
-        titulo: 'Venda finalizada',
-        mensagem: uuid.isEmpty
-            ? 'Venda enviada com sucesso para o backend.'
-            : 'Venda enviada com sucesso.\nUUID: $uuid',
+      final _ResumoVendaFinalizada resumo = _ResumoVendaFinalizada(
+        uuid: response.uuid.trim(),
+        produtos: produtosResumo,
+        formasPagamento: List<FormaPagamentoSelecionada>.from(formasPagamento),
+        total: totalResumo,
+        operador: nomeColaborador,
+        dataOperacao: dataOperacao,
       );
+
+      _limparVendaAtual();
+      await _mostrarResumoVendaFinalizada(resumo);
     } catch (e) {
       if (!mounted) return;
       await _mostrarDialogMensagem(
@@ -203,6 +213,18 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         });
       }
     }
+  }
+
+  List<Map<String, dynamic>> _clonarProdutosSelecionados() {
+    return _produtosSelecionados.map((Map<String, dynamic> item) {
+      return <String, dynamic>{
+        'id': item['id'],
+        'nome': item['nome'],
+        'preco': item['preco'],
+        'quantidade': item['quantidade'],
+        'ehServico': item['ehServico'],
+      };
+    }).toList(growable: false);
   }
 
   void _limparVendaAtual() {
@@ -284,6 +306,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
+  int _quantidadeTotalItensResumo(List<Map<String, dynamic>> produtos) {
+    return produtos.fold<int>(
+      0,
+      (int soma, Map<String, dynamic> item) => soma + ((item['quantidade'] ?? 1) as num).toInt(),
+    );
+  }
+
   _FormaPagamentoMobile _formaPorCodigo(String codigo) {
     return _formasPagamento.firstWhere(
       (_FormaPagamentoMobile forma) => forma.codigo == codigo,
@@ -302,6 +331,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   String _formatarValor(double valor) {
     return 'R\$ ${valor.toStringAsFixed(2)}';
+  }
+
+  String _formatarDataHora(DateTime data) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${twoDigits(data.day)}/${twoDigits(data.month)}/${data.year} ${twoDigits(data.hour)}:${twoDigits(data.minute)}';
   }
 
   void _preencherValorRestante(String codigoForma) {
@@ -531,6 +565,315 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _mostrarResumoVendaFinalizada(_ResumoVendaFinalizada resumo) async {
+    final GlobalKey resumoKey = GlobalKey();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext bottomSheetContext) {
+        final ThemeData theme = Theme.of(bottomSheetContext);
+
+        return SafeArea(
+          top: false,
+          child: FractionallySizedBox(
+            heightFactor: 0.92,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 48,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.outlineVariant,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE9F6EC),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.check_circle_outline,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              'Venda finalizada',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              'Resumo pronto para compartilhar.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Center(
+                        child: RepaintBoundary(
+                          key: resumoKey,
+                          child: _buildResumoVendaCompartilhavel(resumo),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.icon(
+                    onPressed: () => _compartilharResumoComoImagem(resumoKey),
+                    icon: const Icon(Icons.ios_share_outlined),
+                    label: const Text('Compartilhar resumo como imagem'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    label: const Text('Fechar'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(46),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _compartilharResumoComoImagem(GlobalKey resumoKey) async {
+    try {
+      final BuildContext? resumoContext = resumoKey.currentContext;
+      final RenderObject? renderObject = resumoContext?.findRenderObject();
+      if (renderObject is! RenderRepaintBoundary) {
+        _mostrarSnack('Não foi possível preparar a imagem do resumo.');
+        return;
+      }
+
+      final ui.Image imagem = await renderObject.toImage(pixelRatio: 3);
+      final ByteData? byteData = await imagem.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List? bytes = byteData?.buffer.asUint8List();
+      if (bytes == null || bytes.isEmpty) {
+        _mostrarSnack('Não foi possível gerar a imagem do resumo.');
+        return;
+      }
+
+      await Share.shareXFiles(
+        <XFile>[
+          XFile.fromData(
+            bytes,
+            mimeType: 'image/png',
+            name: 'resumo-venda-six.png',
+          ),
+        ],
+        text: 'Resumo da venda',
+      );
+    } catch (e) {
+      _mostrarSnack('Falha ao compartilhar o resumo da venda.');
+    }
+  }
+
+  Widget _buildResumoVendaCompartilhavel(_ResumoVendaFinalizada resumo) {
+    final int quantidadeItens = _quantidadeTotalItensResumo(resumo.produtos);
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 430),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFE89A),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE6D89A)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Center(
+              child: Text(
+                'RESUMO DA VENDA',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  color: Color(0xFF5C4B00),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Divider(color: Color(0xFFD8C67A), thickness: 1),
+            const SizedBox(height: 8),
+            ...resumo.produtos.map((Map<String, dynamic> produto) {
+              final String nome = produto['nome']?.toString() ?? '';
+              final double preco = ((produto['preco'] ?? 0.0) as num).toDouble();
+              final int quantidade = ((produto['quantidade'] ?? 1) as num).toInt();
+              final double subtotal = preco * quantidade;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      nome,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF3E3300),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            '$quantidade x ${_formatarValor(preco)}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6B5B1E),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _formatarValor(subtotal),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF3E3300),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const Divider(color: Color(0xFFD8C67A), thickness: 1),
+            const SizedBox(height: 8),
+            _buildLinhaCupom('Itens', '$quantidadeItens'),
+            _buildLinhaCupom('Subtotal', _formatarValor(resumo.total)),
+            _buildLinhaCupom('Desconto', _formatarValor(0.0)),
+            const SizedBox(height: 6),
+            _buildLinhaCupom('TOTAL', _formatarValor(resumo.total), destaque: true),
+            const SizedBox(height: 10),
+            const Divider(color: Color(0xFFD8C67A), thickness: 1),
+            const SizedBox(height: 8),
+            const Text(
+              'Pagamento',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF5C4B00),
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...resumo.formasPagamento.map((FormaPagamentoSelecionada forma) {
+              return _buildLinhaCupom(
+                _rotuloForma(forma.codigo),
+                _formatarValor(forma.valor),
+              );
+            }),
+            const SizedBox(height: 10),
+            const Divider(color: Color(0xFFD8C67A), thickness: 1),
+            const SizedBox(height: 8),
+            _buildInfoCupom('Operador', resumo.operador),
+            _buildInfoCupom('Data', _formatarDataHora(resumo.dataOperacao)),
+            if (resumo.uuid.isNotEmpty) _buildInfoCupom('UUID', resumo.uuid),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLinhaCupom(String label, String valor, {bool destaque = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: destaque ? 15 : 13,
+                fontWeight: destaque ? FontWeight.w900 : FontWeight.w700,
+                color: const Color(0xFF3E3300),
+              ),
+            ),
+          ),
+          Text(
+            valor,
+            style: TextStyle(
+              fontSize: destaque ? 15 : 13,
+              fontWeight: destaque ? FontWeight.w900 : FontWeight.w700,
+              color: const Color(0xFF3E3300),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCupom(String label, String valor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Text(
+        '$label: $valor',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF5C4B00),
+        ),
+      ),
     );
   }
 
@@ -1401,6 +1744,24 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       ),
     );
   }
+}
+
+class _ResumoVendaFinalizada {
+  const _ResumoVendaFinalizada({
+    required this.uuid,
+    required this.produtos,
+    required this.formasPagamento,
+    required this.total,
+    required this.operador,
+    required this.dataOperacao,
+  });
+
+  final String uuid;
+  final List<Map<String, dynamic>> produtos;
+  final List<FormaPagamentoSelecionada> formasPagamento;
+  final double total;
+  final String operador;
+  final DateTime dataOperacao;
 }
 
 class _FormaPagamentoMobile {
