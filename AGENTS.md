@@ -73,6 +73,22 @@ Backend:
 * Evitar animação contínua em dashboards; o movimento deve acontecer na entrada, atualização, mudança de estado ou feedback de ação.
 * Não sacrificar leitura, acessibilidade, performance ou estabilidade de layout para adicionar movimento.
 
+### Gráficos animados e interativos no Web
+
+* Em dashboards web, gráficos devem parecer vivos e responsivos, nunca meramente estáticos quando houver dados carregados.
+* Para gráficos de barras, preferir crescimento sequencial com pequeno atraso entre itens. O movimento deve partir de zero até o valor real e ajudar o usuário a perceber ranking, comparação e relevância.
+* Para gráficos de pizza ou rosca, revelar os setores progressivamente, mantendo início visual consistente e sem saltos bruscos.
+* Ao passar o mouse ou tocar em uma barra, destacar a barra ativa e reduzir a opacidade das demais. O destaque pode usar leve aumento de largura, raio ou intensidade visual.
+* Ao passar o mouse ou tocar em um setor de pizza/rosca, expandir discretamente o setor ativo e reduzir a opacidade dos demais.
+* Estados de destaque de gráficos devem ser resetados ao atualizar dados, trocar filtros ou recarregar a tela.
+* Quando os dados mudarem, usar chaves estáveis baseadas nos valores exibidos para permitir que a animação rode novamente sem depender de hacks ou rebuilds desnecessários.
+* Em telas que carregam dados do backend, combinar skeleton loading, entrada progressiva dos cards e animação própria dos gráficos.
+* Usar callbacks de interação do componente de gráfico, como `BarTouchData` e `PieTouchData` no `fl_chart`, para hover/toque quando disponível.
+* Manter cada gráfico com estado de interação separado para evitar que o hover de um gráfico altere outro indevidamente.
+* Limitar a quantidade de itens visíveis quando necessário para preservar leitura e performance; categorias excedentes devem ser tratadas de forma clara, como agrupamento ou lista complementar.
+* Não usar animação contínua em gráfico executivo. Depois da entrada, o gráfico deve ficar estável e só reagir a hover, toque, atualização ou mudança de dados.
+* Validar labels longos, valores grandes, layout compacto e responsividade para evitar overflow em português, inglês e espanhol.
+
 ## Padrão visual Mobile — Six
 
 * A experiência mobile deve ser orientada a ação rápida, acompanhamento e gestão simples.
