@@ -185,9 +185,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Future<void> _avisarFormaPagamentoObrigatoria() async {
     ScaffoldMessenger.of(context).clearSnackBars();
 
-    if (!_destacarPagamento && mounted) {
-      setState(() => _destacarPagamento = true);
-    }
+    if (!_destacarPagamento && mounted) setState(() => _destacarPagamento = true);
 
     await Future<void>.delayed(const Duration(milliseconds: 40));
 
@@ -445,24 +443,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         children: <Widget>[
                           _buildResumoConfirmacaoCard(total),
                           const SizedBox(height: 12),
-                          _buildSecaoResumoModal(
-                            titulo: 'Itens da venda',
-                            icone: Icons.inventory_2_outlined,
-                            children: _produtosSelecionados.map((Map<String, dynamic> produto) {
-                              final String nome = produto['nome']?.toString() ?? '';
-                              final double preco = ((produto['preco'] ?? 0.0) as num).toDouble();
-                              final int quantidade = ((produto['quantidade'] ?? 1) as num).toInt();
-                              return _buildLinhaResumoModal(nome, '$quantidade x ${_formatarValor(preco)}', _formatarValor(preco * quantidade));
-                            }).toList(growable: false),
-                          ),
+                          _buildItensVendaConfirmacaoCard(),
                           const SizedBox(height: 12),
-                          _buildSecaoResumoModal(
-                            titulo: 'Pagamento',
-                            icone: Icons.account_balance_wallet_outlined,
-                            children: formasPagamento.map((FormaPagamentoSelecionada forma) {
-                              return _buildLinhaResumoModal(_rotuloForma(forma.codigo), forma.codigo, _formatarValor(forma.valor));
-                            }).toList(growable: false),
-                          ),
+                          _buildPagamentoConfirmacaoCard(formasPagamento),
                         ],
                       ),
                     ),
@@ -527,6 +510,193 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(icon, color: color ?? theme.colorScheme.primary),
+    );
+  }
+
+  Widget _buildItensVendaConfirmacaoCard() {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Itens da venda', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                    Text('Produtos e serviços selecionados', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              _buildBadgeResumo('${_quantidadeTotalItens()} item(ns)', Icons.shopping_bag_outlined),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._produtosSelecionados.asMap().entries.map((MapEntry<int, Map<String, dynamic>> entry) {
+            final Map<String, dynamic> produto = entry.value;
+            final String nome = produto['nome']?.toString() ?? '';
+            final double preco = ((produto['preco'] ?? 0.0) as num).toDouble();
+            final int quantidade = ((produto['quantidade'] ?? 1) as num).toInt();
+            final bool ehServico = produto['ehServico'] == true;
+            final double subtotal = preco * quantidade;
+
+            return Container(
+              margin: EdgeInsets.only(bottom: entry.key == _produtosSelecionados.length - 1 ? 0 : 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.34),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.62)),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(10)),
+                    child: Icon(ehServico ? Icons.build_outlined : Icons.shopping_bag_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 2),
+                        Text('$quantidade x ${_formatarValor(preco)}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(_formatarValor(subtotal), style: const TextStyle(fontWeight: FontWeight.w900)),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPagamentoConfirmacaoCard(List<FormaPagamentoSelecionada> formasPagamento) {
+    final ThemeData theme = Theme.of(context);
+    final double totalRecebido = formasPagamento.fold<double>(0, (double soma, FormaPagamentoSelecionada forma) => soma + forma.valor);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            theme.colorScheme.primary.withOpacity(0.12),
+            theme.colorScheme.primaryContainer.withOpacity(0.30),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.20)),
+        boxShadow: <BoxShadow>[BoxShadow(color: theme.colorScheme.primary.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: BorderRadius.circular(14)),
+                child: Icon(Icons.account_balance_wallet_outlined, color: theme.colorScheme.onPrimary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Pagamento', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+                    Text('Distribuição do recebimento', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(color: theme.colorScheme.surface.withOpacity(0.78), borderRadius: BorderRadius.circular(999)),
+                child: Text('${formasPagamento.length} forma(s)', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...formasPagamento.map((FormaPagamentoSelecionada forma) => _buildLinhaPagamentoConfirmacao(forma)),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.18)),
+            ),
+            child: Row(
+              children: <Widget>[
+                Expanded(child: Text('Total recebido', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
+                Text(_formatarValor(totalRecebido), style: TextStyle(color: theme.colorScheme.primary, fontSize: 16, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinhaPagamentoConfirmacao(FormaPagamentoSelecionada formaSelecionada) {
+    final ThemeData theme = Theme.of(context);
+    final _FormaPagamentoMobile forma = _formaPorCodigo(formaSelecionada.codigo);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.82),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.10)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
+            child: Icon(forma.icone, size: 16, color: theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(forma.titulo, style: const TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text(formaSelecionada.codigo, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(_formatarValor(formaSelecionada.valor), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
+        ],
+      ),
     );
   }
 
@@ -745,46 +915,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  Widget _buildSecaoResumoModal({required String titulo, required IconData icone, required List<Widget> children}) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: theme.colorScheme.outlineVariant)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(children: <Widget>[Icon(icone, size: 20, color: theme.colorScheme.primary), const SizedBox(width: 8), Text(titulo, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))]),
-          const SizedBox(height: 12),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLinhaResumoModal(String titulo, String subtitulo, String valor) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(titulo, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 2),
-                Text(subtitulo, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(valor, style: const TextStyle(fontWeight: FontWeight.w900)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildProdutoCard(Map<String, dynamic> produto) {
     final ThemeData theme = Theme.of(context);
     final String nome = produto['nome']?.toString() ?? '';
@@ -830,13 +960,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 _buildIconeQuantidade(
                   icon: Icons.remove_rounded,
                   color: Colors.redAccent,
-                  onTap: _finalizandoVenda ? null : () => setState(() {
-                    if (quantidade > 1) {
-                      produto['quantidade'] = quantidade - 1;
-                    } else {
-                      _produtosSelecionados.remove(produto);
-                    }
-                  }),
+                  onTap: _finalizandoVenda
+                      ? null
+                      : () => setState(() {
+                            if (quantidade > 1) {
+                              produto['quantidade'] = quantidade - 1;
+                            } else {
+                              _produtosSelecionados.remove(produto);
+                            }
+                          }),
                 ),
                 Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text('$quantidade', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900))),
                 _buildIconeQuantidade(
@@ -1103,9 +1235,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           color: selecionado ? theme.colorScheme.primary : theme.colorScheme.outline.withOpacity(0.42),
           width: selecionado ? 1.2 : 1,
         ),
-        boxShadow: selecionado
-            ? <BoxShadow>[BoxShadow(color: theme.colorScheme.primary.withOpacity(0.14), blurRadius: 10, offset: const Offset(0, 4))]
-            : const <BoxShadow>[],
+        boxShadow: selecionado ? <BoxShadow>[BoxShadow(color: theme.colorScheme.primary.withOpacity(0.14), blurRadius: 10, offset: const Offset(0, 4))] : const <BoxShadow>[],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1131,11 +1261,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.max,
               children: <Widget>[
-                Icon(
-                  forma.icone,
-                  size: 14,
-                  color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
-                ),
+                Icon(forma.icone, size: 14, color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.primary),
                 const SizedBox(width: 5),
                 Flexible(
                   child: Text(
@@ -1143,12 +1269,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                      color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
-                    ),
+                    style: TextStyle(fontSize: 12, height: 1, fontWeight: FontWeight.w900, color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface),
                   ),
                 ),
               ],
@@ -1303,9 +1424,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: _finalizandoVenda || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
-              icon: _buscandoCodigo
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.qr_code_scanner_rounded),
+              icon: _buscandoCodigo ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.qr_code_scanner_rounded),
               label: const Text('Escanear código de barras'),
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
             ),
@@ -1392,9 +1511,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           heroTag: 'scan-barcode',
           onPressed: _finalizandoVenda || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
           backgroundColor: theme.colorScheme.secondary,
-          icon: _buscandoCodigo
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.qr_code_scanner_rounded, color: Colors.white),
+          icon: _buscandoCodigo ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.qr_code_scanner_rounded, color: Colors.white),
           label: const Text('Código', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
         ),
         const SizedBox(height: 10),
