@@ -184,6 +184,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Future<void> _avisarFormaPagamentoObrigatoria() async {
     ScaffoldMessenger.of(context).clearSnackBars();
+
     if (!_destacarPagamento && mounted) setState(() => _destacarPagamento = true);
 
     await Future<void>.delayed(const Duration(milliseconds: 40));
@@ -512,37 +513,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  Widget _buildResumoConfirmacaoCard(double total) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[theme.colorScheme.primary.withOpacity(0.12), theme.colorScheme.primaryContainer.withOpacity(0.30)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.20)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Total da venda', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(_formatarValor(total), style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
-              ],
-            ),
-          ),
-          _buildBadgeResumo('${_quantidadeTotalItens()} item(ns)', Icons.shopping_bag_outlined),
-        ],
-      ),
-    );
-  }
-
   Widget _buildItensVendaConfirmacaoCard() {
     final ThemeData theme = Theme.of(context);
     return Container(
@@ -557,26 +527,61 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Expanded(child: Text('Itens da venda', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900))),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Itens da venda', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                    Text('Produtos e serviços selecionados', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
               _buildBadgeResumo('${_quantidadeTotalItens()} item(ns)', Icons.shopping_bag_outlined),
             ],
           ),
           const SizedBox(height: 12),
-          ..._produtosSelecionados.map((Map<String, dynamic> produto) {
+          ..._produtosSelecionados.asMap().entries.map((MapEntry<int, Map<String, dynamic>> entry) {
+            final Map<String, dynamic> produto = entry.value;
             final String nome = produto['nome']?.toString() ?? '';
             final double preco = ((produto['preco'] ?? 0.0) as num).toDouble();
             final int quantidade = ((produto['quantidade'] ?? 1) as num).toInt();
+            final bool ehServico = produto['ehServico'] == true;
             final double subtotal = preco * quantidade;
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+            return Container(
+              margin: EdgeInsets.only(bottom: entry.key == _produtosSelecionados.length - 1 ? 0 : 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.34),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.62)),
+              ),
               child: Row(
                 children: <Widget>[
-                  Expanded(child: Text(nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900))),
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(10)),
+                    child: Icon(ehServico ? Icons.build_outlined : Icons.shopping_bag_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                  ),
                   const SizedBox(width: 10),
-                  Text('$quantidade x ${_formatarValor(preco)}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 2),
+                        Text('$quantidade x ${_formatarValor(preco)}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Text(_formatarValor(subtotal), style: const TextStyle(fontWeight: FontWeight.w900)),
                 ],
@@ -595,40 +600,101 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.07),
+        gradient: LinearGradient(
+          colors: <Color>[
+            theme.colorScheme.primary.withOpacity(0.12),
+            theme.colorScheme.primaryContainer.withOpacity(0.30),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.18)),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.20)),
+        boxShadow: <BoxShadow>[BoxShadow(color: theme.colorScheme.primary.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.account_balance_wallet_outlined, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Expanded(child: Text('Pagamento', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary))),
-              _buildBadgeResumo('${formasPagamento.length} forma(s)', Icons.payments_outlined),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...formasPagamento.map((FormaPagamentoSelecionada forma) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: <Widget>[
-                  Expanded(child: Text(_rotuloForma(forma.codigo), style: const TextStyle(fontWeight: FontWeight.w900))),
-                  Text(_formatarValor(forma.valor), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
-                ],
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: BorderRadius.circular(14)),
+                child: Icon(Icons.account_balance_wallet_outlined, color: theme.colorScheme.onPrimary, size: 20),
               ),
-            );
-          }),
-          const Divider(height: 20),
-          Row(
-            children: <Widget>[
-              Expanded(child: Text('Total recebido', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
-              Text(_formatarValor(totalRecebido), style: TextStyle(color: theme.colorScheme.primary, fontSize: 16, fontWeight: FontWeight.w900)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Pagamento', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+                    Text('Distribuição do recebimento', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(color: theme.colorScheme.surface.withOpacity(0.78), borderRadius: BorderRadius.circular(999)),
+                child: Text('${formasPagamento.length} forma(s)', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 12)),
+              ),
             ],
           ),
+          const SizedBox(height: 14),
+          ...formasPagamento.map((FormaPagamentoSelecionada forma) => _buildLinhaPagamentoConfirmacao(forma)),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.18)),
+            ),
+            child: Row(
+              children: <Widget>[
+                Expanded(child: Text('Total recebido', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
+                Text(_formatarValor(totalRecebido), style: TextStyle(color: theme.colorScheme.primary, fontSize: 16, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinhaPagamentoConfirmacao(FormaPagamentoSelecionada formaSelecionada) {
+    final ThemeData theme = Theme.of(context);
+    final _FormaPagamentoMobile forma = _formaPorCodigo(formaSelecionada.codigo);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.82),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.10)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
+            child: Icon(forma.icone, size: 16, color: theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(forma.titulo, style: const TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text(formaSelecionada.codigo, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(_formatarValor(formaSelecionada.valor), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
         ],
       ),
     );
@@ -677,7 +743,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   const SizedBox(height: 16),
                   Expanded(
                     child: SingleChildScrollView(
-                      child: Center(child: RepaintBoundary(key: resumoKey, child: _buildResumoVendaCompartilhavel(resumo))),
+                      child: Center(
+                        child: RepaintBoundary(key: resumoKey, child: _buildResumoVendaCompartilhavel(resumo)),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -735,6 +803,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Material(
       color: Colors.transparent,
       child: Container(
+        width: double.infinity,
         constraints: const BoxConstraints(maxWidth: 430),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -759,45 +828,88 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               final double subtotal = preco * quantidade;
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Expanded(child: Text(nome, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF3F3600)))),
-                    const SizedBox(width: 8),
-                    Text('$quantidade x ${_formatarValor(preco)}', style: const TextStyle(color: Color(0xFF5C4B00))),
-                    const SizedBox(width: 8),
-                    Text(_formatarValor(subtotal), style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF3F3600))),
+                    Text(nome, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF3E3300))),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: <Widget>[
+                        Expanded(child: Text('$quantidade x ${_formatarValor(preco)}', style: const TextStyle(fontSize: 13, color: Color(0xFF6B5B1E)))),
+                        Text(_formatarValor(subtotal), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF3E3300))),
+                      ],
+                    ),
                   ],
                 ),
               );
             }),
-            const SizedBox(height: 8),
             const Divider(color: Color(0xFFD8C67A), thickness: 1),
             const SizedBox(height: 8),
-            _buildLinhaResumoCompartilhavel('Itens', '$quantidadeItens'),
-            _buildLinhaResumoCompartilhavel('Total', _formatarValor(resumo.total), destaque: true),
-            const SizedBox(height: 12),
-            const Text('Formas de pagamento', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF5C4B00))),
+            _buildLinhaCupom('Itens', '$quantidadeItens'),
+            _buildLinhaCupom('Subtotal', _formatarValor(resumo.total)),
+            _buildLinhaCupom('Desconto', _formatarValor(0.0)),
             const SizedBox(height: 6),
-            ...resumo.formasPagamento.map((FormaPagamentoSelecionada forma) => _buildLinhaResumoCompartilhavel(_rotuloForma(forma.codigo), _formatarValor(forma.valor))),
-            const SizedBox(height: 12),
-            Text('Operador: ${resumo.operador}', style: const TextStyle(color: Color(0xFF5C4B00), fontWeight: FontWeight.w700)),
-            Text('Data: ${_formatarDataHora(resumo.dataOperacao)}', style: const TextStyle(color: Color(0xFF5C4B00), fontWeight: FontWeight.w700)),
-            if (resumo.uuid.isNotEmpty) Text('Venda: ${resumo.uuid}', style: const TextStyle(color: Color(0xFF5C4B00), fontWeight: FontWeight.w700)),
+            _buildLinhaCupom('TOTAL', _formatarValor(resumo.total), destaque: true),
+            const SizedBox(height: 10),
+            const Divider(color: Color(0xFFD8C67A), thickness: 1),
+            const SizedBox(height: 8),
+            const Text('Pagamento', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF5C4B00))),
+            const SizedBox(height: 6),
+            ...resumo.formasPagamento.map((FormaPagamentoSelecionada forma) => _buildLinhaCupom(_rotuloForma(forma.codigo), _formatarValor(forma.valor))),
+            const SizedBox(height: 10),
+            const Divider(color: Color(0xFFD8C67A), thickness: 1),
+            const SizedBox(height: 8),
+            _buildInfoCupom('Operador', resumo.operador),
+            _buildInfoCupom('Data', _formatarDataHora(resumo.dataOperacao)),
+            if (resumo.uuid.isNotEmpty) _buildInfoCupom('UUID', resumo.uuid),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLinhaResumoCompartilhavel(String label, String valor, {bool destaque = false}) {
+  Widget _buildLinhaCupom(String label, String valor, {bool destaque = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: <Widget>[
-          Expanded(child: Text(label, style: TextStyle(fontWeight: destaque ? FontWeight.w900 : FontWeight.w700, color: const Color(0xFF5C4B00), fontSize: destaque ? 16 : 14))),
-          Text(valor, style: TextStyle(fontWeight: destaque ? FontWeight.w900 : FontWeight.w700, color: const Color(0xFF3F3600), fontSize: destaque ? 16 : 14)),
+          Expanded(child: Text(label, style: TextStyle(fontSize: destaque ? 15 : 13, fontWeight: destaque ? FontWeight.w900 : FontWeight.w700, color: const Color(0xFF3E3300)))),
+          Text(valor, style: TextStyle(fontSize: destaque ? 15 : 13, fontWeight: destaque ? FontWeight.w900 : FontWeight.w700, color: const Color(0xFF3E3300))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCupom(String label, String valor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Text('$label: $valor', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF5C4B00))),
+    );
+  }
+
+  Widget _buildResumoConfirmacaoCard(double total) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: <Color>[theme.colorScheme.primary.withOpacity(0.10), theme.colorScheme.primaryContainer.withOpacity(0.22)]),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.22)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Total da venda', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text(_formatarValor(total), style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+              ],
+            ),
+          ),
+          _buildBadgeResumo('${_quantidadeTotalItens()} item(ns)', Icons.shopping_bag_outlined),
         ],
       ),
     );
@@ -1335,7 +1447,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
@@ -1344,8 +1456,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _buildQuickActionsDock(theme),
-            const SizedBox(height: 12),
             Row(
               children: <Widget>[
                 Expanded(child: Text('Total ${_formatarValor(total)}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
@@ -1392,104 +1502,27 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  Widget _buildQuickActionsDock(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.46),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.72)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: _buildQuickDockButton(
-              theme: theme,
-              icon: Icons.qr_code_scanner_rounded,
-              title: 'Código',
-              subtitle: 'Ler barras',
-              onTap: _finalizandoVenda || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
-              loading: _buscandoCodigo,
-              highlighted: false,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildQuickDockButton(
-              theme: theme,
-              icon: Icons.add_shopping_cart,
-              title: 'Item',
-              subtitle: 'Adicionar',
-              onTap: _finalizandoVenda ? null : _abrirSelecaoProduto,
-              highlighted: true,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickDockButton({
-    required ThemeData theme,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback? onTap,
-    bool loading = false,
-    bool highlighted = false,
-  }) {
-    final Color activeColor = highlighted ? theme.colorScheme.primary : theme.colorScheme.secondary;
-    final bool disabled = onTap == null;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      height: 54,
-      decoration: BoxDecoration(
-        color: disabled ? theme.colorScheme.surface.withOpacity(0.62) : activeColor.withOpacity(highlighted ? 0.12 : 0.10),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: disabled ? theme.colorScheme.outlineVariant : activeColor.withOpacity(0.22)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(color: activeColor.withOpacity(disabled ? 0.08 : 0.16), borderRadius: BorderRadius.circular(12)),
-                  child: loading
-                      ? const Padding(
-                          padding: EdgeInsets.all(9),
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(icon, size: 18, color: disabled ? theme.colorScheme.onSurfaceVariant : activeColor),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: disabled ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface)),
-                      const SizedBox(height: 1),
-                      Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(fontSize: 11, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+  Widget _buildFloatingActions(ThemeData theme) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: <Widget>[
+        FloatingActionButton.extended(
+          heroTag: 'scan-barcode',
+          onPressed: _finalizandoVenda || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
+          backgroundColor: theme.colorScheme.secondary,
+          icon: _buscandoCodigo ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.qr_code_scanner_rounded, color: Colors.white),
+          label: const Text('Código', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
         ),
-      ),
+        const SizedBox(height: 10),
+        FloatingActionButton.extended(
+          heroTag: 'add-item',
+          onPressed: _finalizandoVenda ? null : _abrirSelecaoProduto,
+          backgroundColor: theme.colorScheme.primary,
+          icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
+          label: const Text('Item', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+        ),
+      ],
     );
   }
 
@@ -1503,6 +1536,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final double total = _calcularTotal();
     final int quantidade = _quantidadeTotalItens();
     final bool temItens = _produtosSelecionados.isNotEmpty;
@@ -1523,7 +1557,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, temItens ? 18 : 112),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -1533,6 +1567,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         ),
       ),
       bottomNavigationBar: temItens ? _buildBottomActions() : null,
+      floatingActionButton: _buildFloatingActions(theme),
     );
   }
 }
