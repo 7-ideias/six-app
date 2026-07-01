@@ -361,6 +361,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
+  void _mostrarSnack(String mensagem) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem)),
+    );
+  }
+
   Future<_DecisaoVenda?> _mostrarResumoFinalizacao({
     required List<FormaPagamentoSelecionada> formasPagamento,
     required double total,
@@ -1435,7 +1445,7 @@ class _SlideConfirmButtonState extends State<_SlideConfirmButton> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double width = constraints.maxWidth;
-        final double maxDrag = (width - _thumbSize).clamp(1.0, double.infinity).toDouble();
+        final double maxDrag = (width - _thumbSize - 6).clamp(1.0, double.infinity).toDouble();
 
         return GestureDetector(
           onHorizontalDragUpdate: disabled
