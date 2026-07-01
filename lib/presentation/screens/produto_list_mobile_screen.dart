@@ -1,11 +1,13 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
+import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
-
-import '../../data/models/produto_model.dart';
-import '../../providers/produtos_list_provider.dart';
+import 'package:sixpos/providers/produtos_list_provider.dart';
 
 class ProdutolistMobileScreen extends StatefulWidget {
   const ProdutolistMobileScreen({super.key, this.isSelecao = false});
@@ -13,7 +15,8 @@ class ProdutolistMobileScreen extends StatefulWidget {
   final bool isSelecao;
 
   @override
-  State<ProdutolistMobileScreen> createState() => _ProdutolistMobileScreenState();
+  State<ProdutolistMobileScreen> createState() =>
+      _ProdutolistMobileScreenState();
 }
 
 class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
@@ -60,6 +63,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       ordenacao: ordenacao,
     );
 
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       produtosFiltrados = listaBase
           .where((produto) => _matchesTipoSelecionado(produto, tipoSelecionado))
@@ -68,11 +75,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   bool _matchesTipoSelecionado(ProdutoModel produto, String tipo) {
-    final valor = produto.tipoProduto;
-    if (valor.trim().isEmpty) {
+    final valor = produto.tipoProduto.trim();
+    if (valor.isEmpty) {
       return tipo == 'PRODUTO';
     }
-    return valor.toUpperCase() == tipo.toUpperCase();
+    final normalizado = valor.toUpperCase();
+    return normalizado == tipo.toUpperCase() ||
+        (tipo == 'SERVICO' && normalizado == 'SERVIÇO');
   }
 
   Future<void> _recarregar() async {
@@ -85,10 +94,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final itensDaLista =
-        produtosFiltrados.isNotEmpty || termoBusca.isNotEmpty || todosProdutos.isNotEmpty
-            ? produtosFiltrados
-            : todosProdutos;
+    final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
+    final itensDaLista = produtosFiltrados.isNotEmpty ||
+            termoBusca.isNotEmpty ||
+            todosProdutos.isNotEmpty
+        ? produtosFiltrados
+        : todosProdutos;
 
     return Scaffold(
       backgroundColor: _backgroundColor,
@@ -133,9 +144,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 child: _buildSummarySection(),
               ),
               const SizedBox(height: 18),
-              _buildListHeader(itensDaLista.length),
+              _buildListHeader(itensDaLista.length, provider.isLoading),
               const SizedBox(height: 12),
-              if (itensDaLista.isEmpty)
+              if (provider.isLoading && todosProdutos.isEmpty)
+                const _LoadingState()
+              else if (provider.erro != null && todosProdutos.isEmpty)
+                _ErrorState(onRetry: _recarregar)
+              else if (itensDaLista.isEmpty)
                 const _EmptyState()
               else
                 ...itensDaLista.asMap().entries.map((entry) {
@@ -208,7 +223,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isProdutoSelecionado ? 'Catálogo de produtos' : 'Catálogo de serviços',
+                  _isProdutoSelecionado
+                      ? 'Catálogo de produtos'
+                      : 'Catálogo de serviços',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -218,8 +235,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 const SizedBox(height: 6),
                 Text(
                   _isProdutoSelecionado
-                      ? 'Consulte preços, SKU, estoque e disponibilidade.'
-                      : 'Consulte serviços, garantias e valores de atendimento.',
+                      ? 'Crie, edite e mantenha fotos, preços e estoque.'
+                      : 'Crie e edite serviços com visual adequado ao mobile.',
                   style: const TextStyle(
                     color: Color(0xFFD7E3F5),
                     height: 1.35,
@@ -255,7 +272,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             child: _SegmentButton(
               label: 'Serviços',
               icon: Icons.design_services_outlined,
-              selected: tipoSelecionado == 'SERVICO' || tipoSelecionado == 'SERVIÇO',
+              selected: tipoSelecionado == 'SERVICO',
               onTap: () => _selectTipo('SERVICO'),
             ),
           ),
@@ -284,7 +301,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           aplicarFiltroOrdenacao();
         },
         decoration: InputDecoration(
-          hintText: _isProdutoSelecionado ? 'Buscar produto ou SKU' : 'Buscar serviço',
+          hintText:
+              _isProdutoSelecionado ? 'Buscar produto ou SKU' : 'Buscar serviço',
           hintStyle: const TextStyle(color: _mutedTextColor),
           prefixIcon: const Icon(Icons.search_rounded, color: _accentColor),
           suffixIcon: _controllerBusca.text.isEmpty
@@ -301,7 +319,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   icon: const Icon(Icons.close_rounded, color: _mutedTextColor),
                 ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         ),
       ),
     );
@@ -349,12 +368,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
-  Widget _buildListHeader(int count) {
+  Widget _buildListHeader(int count, bool isLoading) {
     return Row(
       children: [
         Expanded(
           child: Text(
-            _isProdutoSelecionado ? 'Produtos cadastrados' : 'Serviços cadastrados',
+            _isProdutoSelecionado
+                ? 'Produtos cadastrados'
+                : 'Serviços cadastrados',
             style: const TextStyle(
               color: _titleTextColor,
               fontSize: 16,
@@ -362,6 +383,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ),
           ),
         ),
+        if (isLoading) ...[
+          const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 10),
+        ],
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -384,6 +413,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Widget _buildProdutoCard(ProdutoModel produto) {
     final ativo = produto.ativo == true;
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
+    final imagensCount = produto.imagens?.length ?? 0;
 
     return Material(
       color: _surfaceColor,
@@ -394,13 +424,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           if (widget.isSelecao) {
             Navigator.pop(context, produto);
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Clicou em ${produto.nomeProduto}')),
-            );
+            _editarProduto(produto);
           }
         },
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0xFFE2E8F0)),
@@ -415,19 +443,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  isProduto ? Icons.inventory_2_outlined : Icons.design_services_outlined,
-                  color: _accentColor,
-                ),
-              ),
-              const SizedBox(width: 14),
+              _buildThumbnail(produto, isProduto),
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +469,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         _StatusChip(ativo: ativo),
                       ],
                     ),
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
@@ -468,6 +485,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             icon: Icons.straighten_rounded,
                             label: produto.modeloProduto,
                           ),
+                        _InfoChip(
+                          icon: Icons.photo_library_outlined,
+                          label:
+                              '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -483,7 +505,25 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             ),
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+                        if (!widget.isSelecao)
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.edit_outlined,
+                              color: _accentColor,
+                              size: 19,
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: _mutedTextColor,
+                          ),
                       ],
                     ),
                   ],
@@ -496,6 +536,72 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
+  Widget _buildThumbnail(ProdutoModel produto, bool isProduto) {
+    final imagem =
+        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+
+    Widget content;
+    final bytes =
+        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
+    if (bytes != null) {
+      content = Image.memory(bytes, fit: BoxFit.cover);
+    } else if (imagem?.url != null && imagem!.url!.trim().isNotEmpty) {
+      content = Image.network(
+        imagem.url!,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+      );
+    } else {
+      content = Icon(
+        isProduto ? Icons.inventory_2_outlined : Icons.design_services_outlined,
+        color: _accentColor,
+      );
+    }
+
+    return Container(
+      width: 54,
+      height: 54,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Center(child: content),
+    );
+  }
+
+  Uint8List? _decodeDataUrl(String? value) {
+    if (value == null || !value.startsWith('data:image')) {
+      return null;
+    }
+
+    return _decodeBase64Image(value);
+  }
+
+  Uint8List? _decodeBase64Image(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      final payload = value.contains(',') ? value.split(',').last : value;
+      return base64Decode(payload);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _selectTipo(String tipo) {
     if (tipoSelecionado == tipo) return;
 
@@ -503,25 +609,41 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       tipoSelecionado = tipo;
       termoBusca = '';
       _controllerBusca.clear();
+      produtosFiltrados = [];
+      todosProdutos = [];
     });
     _recarregar();
   }
 
-  void _criarProduto() {
-    if (!_isProdutoSelecionado) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Fluxo mobile em evolução.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+  Future<void> _criarProduto() async {
+    await _abrirCadastro(tipoInicial: tipoSelecionado);
+  }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CadastroProdutoMobileScreen()),
+  Future<void> _editarProduto(ProdutoModel produto) async {
+    await _abrirCadastro(
+      produto: produto,
+      tipoInicial:
+          produto.tipoProduto.trim().isEmpty ? tipoSelecionado : produto.tipoProduto,
     );
+  }
+
+  Future<void> _abrirCadastro({
+    ProdutoModel? produto,
+    required String tipoInicial,
+  }) async {
+    final atualizado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CadastroProdutoMobileScreen(
+          produtoParaEdicao: produto,
+          tipoInicial: tipoInicial,
+        ),
+      ),
+    );
+
+    if (atualizado == true && mounted) {
+      await _recarregar();
+    }
   }
 
   void _showSortOptions() {
@@ -624,7 +746,11 @@ class _SegmentButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 18, color: selected ? Colors.white : _mutedTextColor),
+                Icon(
+                  icon,
+                  size: 18,
+                  color: selected ? Colors.white : _mutedTextColor,
+                ),
                 const SizedBox(width: 7),
                 Flexible(
                   child: Text(
@@ -764,7 +890,10 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label});
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+  });
 
   final IconData icon;
   final String label;
@@ -772,18 +901,19 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(maxWidth: 180),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF64748B)),
+          Icon(icon, size: 13, color: const Color(0xFF64748B)),
           const SizedBox(width: 5),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 150),
+          Flexible(
             child: Text(
               label,
               maxLines: 1,
@@ -791,7 +921,7 @@ class _InfoChip extends StatelessWidget {
               style: const TextStyle(
                 color: Color(0xFF64748B),
                 fontSize: 11,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -816,35 +946,89 @@ class _SortOptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected ? const Color(0xFFEFF6FF) : Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF2563EB)
+                  : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Row(
             children: [
-              Icon(
-                selected ? Icons.check_circle_rounded : Icons.sort_rounded,
-                color: const Color(0xFF2563EB),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
-                    fontWeight: FontWeight.w900,
+                  style: TextStyle(
+                    color: selected
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF0F172A),
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
+              if (selected)
+                const Icon(Icons.check_rounded, color: Color(0xFF2563EB)),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 32),
+      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFFECACA)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.wifi_off_outlined,
+              color: Color(0xFFDC2626), size: 34),
+          const SizedBox(height: 10),
+          const Text(
+            'Não foi possível carregar o catálogo.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => onRetry(),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Tentar novamente'),
+          ),
+        ],
       ),
     );
   }
@@ -856,7 +1040,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
@@ -864,21 +1048,21 @@ class _EmptyState extends StatelessWidget {
       ),
       child: const Column(
         children: [
-          Icon(Icons.search_off_rounded, size: 56, color: Color(0xFF64748B)),
-          SizedBox(height: 12),
+          Icon(Icons.inventory_2_outlined, color: Color(0xFF2563EB), size: 34),
+          SizedBox(height: 10),
           Text(
-            'Nenhum item encontrado',
+            'Nenhum item encontrado.',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF0F172A),
-              fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 6),
+          SizedBox(height: 4),
           Text(
-            'Tente outro termo de busca ou altere a aba selecionada.',
+            'Use o botão de novo cadastro para começar.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF64748B), height: 1.35),
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
           ),
         ],
       ),
