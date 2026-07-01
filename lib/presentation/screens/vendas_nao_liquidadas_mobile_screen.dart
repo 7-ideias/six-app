@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
+import 'pdv_mobile_screen.dart';
 
 class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
   const VendasNaoLiquidadasMobileScreen({super.key});
@@ -19,19 +20,10 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final VendaNaoLiquidadaApiClient _apiClient = VendaNaoLiquidadaApiClient();
-  final List<_FormaRecebimentoMobile> _formas = const <_FormaRecebimentoMobile>[
-    _FormaRecebimentoMobile(codigo: 'tipo1', titulo: 'Dinheiro', icone: Icons.payments_outlined),
-    _FormaRecebimentoMobile(codigo: 'tipo2', titulo: 'Pix', icone: Icons.qr_code_2_outlined),
-    _FormaRecebimentoMobile(codigo: 'tipo3', titulo: 'Cartão crédito', icone: Icons.credit_card_outlined),
-    _FormaRecebimentoMobile(codigo: 'tipo4', titulo: 'Cartão débito', icone: Icons.point_of_sale_outlined),
-    _FormaRecebimentoMobile(codigo: 'tipo10', titulo: 'Outros', icone: Icons.more_horiz_outlined),
-  ];
 
   bool _loading = true;
   String? _erro;
   List<VendaNaoLiquidadaModel> _vendas = <VendaNaoLiquidadaModel>[];
-  String _formaSelecionada = 'tipo1';
-  String? _liquidandoId;
 
   @override
   void initState() {
@@ -57,147 +49,17 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
     }
   }
 
-  Future<void> _confirmarLiquidacao(VendaNaoLiquidadaModel venda) async {
-    final bool? confirmou = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext bottomSheetContext) {
-        final ThemeData theme = Theme.of(bottomSheetContext);
-        return SafeArea(
-          top: false,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Center(
-                  child: Container(
-                    width: 46,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: theme.colorScheme.outlineVariant, borderRadius: BorderRadius.circular(999)),
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    _modalIcon(Icons.point_of_sale_outlined),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text('Receber venda', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-                          Text('Confirme a forma de recebimento.', style: theme.textTheme.bodyMedium?.copyWith(color: _mutedTextColor)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _buildResumoLiquidacao(venda),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _formas.map((forma) => _buildFormaChip(forma)).toList(growable: false),
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: () => Navigator.of(bottomSheetContext).pop(true),
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text('Receber ${_formatarValor(venda.valorAberto)}'),
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(bottomSheetContext).pop(false),
-                  icon: const Icon(Icons.close_rounded),
-                  label: const Text('Cancelar'),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+  Future<void> _abrirVendaNoPdv(VendaNaoLiquidadaModel venda) async {
+    final bool? recebeu = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute<bool>(
+        builder: (_) => PdvMobileScreen(vendaNaoLiquidada: venda),
+      ),
     );
 
-    if (confirmou == true) {
-      await _liquidar(venda);
-    }
-  }
-
-  Future<void> _liquidar(VendaNaoLiquidadaModel venda) async {
-    setState(() => _liquidandoId = venda.idRecebimento);
-    try {
-      await _apiClient.liquidar(
-        idRecebimento: venda.idRecebimento,
-        input: LiquidarVendaNaoLiquidadaInput(
-          codigoTipoRecebimento: _formaSelecionada,
-          valorRecebido: venda.valorAberto,
-          observacao: 'Recebido pelo mobile',
-        ),
-      );
-      if (!mounted) return;
-      _mostrarSnack('Venda recebida com sucesso.');
+    if (recebeu == true) {
       await _carregar();
-    } catch (e) {
-      if (!mounted) return;
-      _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
-    } finally {
-      if (mounted) setState(() => _liquidandoId = null);
     }
-  }
-
-  Widget _modalIcon(IconData icon) {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(color: _accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(16)),
-      child: Icon(icon, color: _accentColor),
-    );
-  }
-
-  Widget _buildResumoLiquidacao(VendaNaoLiquidadaModel venda) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _accentColor.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _accentColor.withOpacity(0.16)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(venda.descricao, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, color: _titleTextColor)),
-          const SizedBox(height: 8),
-          Row(
-            children: <Widget>[
-              const Expanded(child: Text('Valor em aberto', style: TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w700))),
-              Text(_formatarValor(venda.valorAberto), style: const TextStyle(color: _titleTextColor, fontSize: 18, fontWeight: FontWeight.w900)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormaChip(_FormaRecebimentoMobile forma) {
-    final bool selecionada = _formaSelecionada == forma.codigo;
-    return ChoiceChip(
-      selected: selecionada,
-      avatar: Icon(forma.icone, size: 16, color: selecionada ? Colors.white : _accentColor),
-      label: Text(forma.titulo),
-      selectedColor: _accentColor,
-      labelStyle: TextStyle(color: selecionada ? Colors.white : _titleTextColor, fontWeight: FontWeight.w800),
-      onSelected: (_) => setState(() => _formaSelecionada = forma.codigo),
-    );
   }
 
   void _mostrarSnack(String mensagem) {
@@ -298,13 +160,13 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
   }
 
   Widget _buildVendaCard(VendaNaoLiquidadaModel venda) {
-    final bool liquidando = _liquidandoId == venda.idRecebimento;
+    final int quantidadeItens = venda.itens.fold<int>(0, (soma, item) => soma + item.quantidade);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: liquidando ? null : () => _confirmarLiquidacao(venda),
+        onTap: () => _abrirVendaNoPdv(venda),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -318,9 +180,7 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(16)),
-                child: liquidando
-                    ? const Padding(padding: EdgeInsets.all(13), child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.receipt_long_outlined, color: _accentColor),
+                child: const Icon(Icons.receipt_long_outlined, color: _accentColor),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -331,7 +191,7 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
                     const SizedBox(height: 4),
                     Text('Criada por ${venda.nomeColaboradorCriacao.isEmpty ? 'colaborador' : venda.nomeColaboradorCriacao}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _mutedTextColor, fontSize: 12)),
                     const SizedBox(height: 4),
-                    Text(_formatarData(venda.dataCompetencia), style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w700)),
+                    Text('${_formatarData(venda.dataCompetencia)} • $quantidadeItens item(ns)', style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -341,7 +201,7 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
                 children: <Widget>[
                   Text(_formatarValor(venda.valorAberto), style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 17)),
                   const SizedBox(height: 4),
-                  const Text('Receber', style: TextStyle(color: _accentColor, fontWeight: FontWeight.w900, fontSize: 12)),
+                  const Text('Abrir PDV', style: TextStyle(color: _accentColor, fontWeight: FontWeight.w900, fontSize: 12)),
                 ],
               ),
             ],
@@ -377,12 +237,4 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
       ),
     );
   }
-}
-
-class _FormaRecebimentoMobile {
-  const _FormaRecebimentoMobile({required this.codigo, required this.titulo, required this.icone});
-
-  final String codigo;
-  final String titulo;
-  final IconData icone;
 }
