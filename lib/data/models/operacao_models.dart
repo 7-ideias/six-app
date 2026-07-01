@@ -44,6 +44,7 @@ class OperacaoInserirRequest {
 class VendaItemRequest {
   VendaItemRequest({
     required this.idSKU,
+    required this.descricaoProduto,
     required this.qt,
     required this.vlUnitario,
     required this.idColaboradorResponsavelPeloServico,
@@ -51,6 +52,7 @@ class VendaItemRequest {
   });
 
   final String idSKU;
+  final String descricaoProduto;
   final int qt;
   final double vlUnitario;
   final String idColaboradorResponsavelPeloServico;
@@ -59,6 +61,7 @@ class VendaItemRequest {
   Map<String, dynamic> toJson() {
     return {
       'idSKU': idSKU,
+      'descricaoProduto': descricaoProduto,
       'qt': qt,
       'vlUnitario': vlUnitario,
       'idColaboradorResponsavelPeloServico':
@@ -71,6 +74,7 @@ class VendaItemRequest {
 class ServicoItemRequest {
   ServicoItemRequest({
     required this.idCodigoUnicoDoProduto,
+    required this.descricaoProduto,
     required this.qt,
     required this.vlUnitario,
     required this.idColaboradorResponsavelPeloServico,
@@ -78,6 +82,7 @@ class ServicoItemRequest {
   });
 
   final String idCodigoUnicoDoProduto;
+  final String descricaoProduto;
   final int qt;
   final double vlUnitario;
   final String idColaboradorResponsavelPeloServico;
@@ -86,6 +91,7 @@ class ServicoItemRequest {
   Map<String, dynamic> toJson() {
     return {
       'idCodigoUnicoDoProduto': idCodigoUnicoDoProduto,
+      'descricaoProduto': descricaoProduto,
       'qt': qt,
       'vlUnitario': vlUnitario,
       'idColaboradorResponsavelPeloServico':
