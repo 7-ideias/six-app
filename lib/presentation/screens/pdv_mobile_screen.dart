@@ -1462,25 +1462,23 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildFloatingActions(ThemeData theme) {
     final Color primary = theme.colorScheme.primary;
+    final Color secondary = theme.colorScheme.secondary;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: <Widget>[
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 230),
+          duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
           transitionBuilder: (Widget child, Animation<double> animation) {
             return FadeTransition(
               opacity: animation,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
-                child: SizeTransition(
-                  sizeFactor: animation,
-                  axisAlignment: -1,
-                  child: child,
-                ),
+              child: SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: child,
               ),
             );
           },
@@ -1490,99 +1488,42 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
-                    _buildExpandableFabAction(
-                      theme: theme,
-                      label: 'Código',
-                      icon: Icons.qr_code_scanner_rounded,
-                      onTap: _finalizandoVenda || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
-                      loading: _buscandoCodigo,
+                    FloatingActionButton.extended(
+                      heroTag: 'scan-barcode',
+                      onPressed: _finalizandoVenda || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
+                      backgroundColor: secondary,
+                      icon: _buscandoCodigo
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.qr_code_scanner_rounded, color: Colors.white),
+                      label: const Text('Código', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
                     ),
-                    const SizedBox(height: 12),
-                    _buildExpandableFabAction(
-                      theme: theme,
-                      label: 'Item',
-                      icon: Icons.add_shopping_cart,
-                      onTap: _finalizandoVenda ? null : _abrirSelecaoProduto,
+                    const SizedBox(height: 10),
+                    FloatingActionButton.extended(
+                      heroTag: 'add-item',
+                      onPressed: _finalizandoVenda ? null : _abrirSelecaoProduto,
+                      backgroundColor: primary,
+                      icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
+                      label: const Text('Item', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                   ],
                 )
               : const SizedBox.shrink(key: ValueKey<String>('acoes-ocultas')),
         ),
-        SizedBox(
-          width: 58,
-          height: 58,
-          child: FloatingActionButton(
-            heroTag: 'toggle-actions',
-            tooltip: _acoesRapidasVisiveis ? 'Ocultar ações' : 'Mostrar ações',
-            onPressed: () => setState(() => _acoesRapidasVisiveis = !_acoesRapidasVisiveis),
-            backgroundColor: primary,
-            foregroundColor: theme.colorScheme.onPrimary,
-            elevation: 8,
-            shape: const CircleBorder(),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 160),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return RotationTransition(turns: Tween<double>(begin: -0.12, end: 0).animate(animation), child: FadeTransition(opacity: animation, child: child));
-              },
-              child: Icon(
-                _acoesRapidasVisiveis ? Icons.close_rounded : Icons.add_rounded,
-                key: ValueKey<bool>(_acoesRapidasVisiveis),
-                size: 28,
-              ),
+        FloatingActionButton.extended(
+          heroTag: 'toggle-actions',
+          onPressed: () => setState(() => _acoesRapidasVisiveis = !_acoesRapidasVisiveis),
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: primary,
+          elevation: 6,
+          icon: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: Icon(
+              _acoesRapidasVisiveis ? Icons.keyboard_arrow_down_rounded : Icons.apps_rounded,
+              key: ValueKey<bool>(_acoesRapidasVisiveis),
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExpandableFabAction({
-    required ThemeData theme,
-    required String label,
-    required IconData icon,
-    required VoidCallback? onTap,
-    bool loading = false,
-  }) {
-    final bool disabled = onTap == null;
-    final Color primary = theme.colorScheme.primary;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        AnimatedOpacity(
-          duration: const Duration(milliseconds: 160),
-          opacity: disabled ? 0.58 : 1,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withOpacity(0.96),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.76)),
-              boxShadow: <BoxShadow>[BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 12, offset: const Offset(0, 5))],
-            ),
-            child: Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w900)),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Material(
-          color: theme.colorScheme.surface,
-          elevation: disabled ? 1 : 7,
-          shadowColor: Colors.black.withOpacity(0.22),
-          shape: CircleBorder(side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.92))),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: disabled ? null : onTap,
-            child: SizedBox(
-              width: 42,
-              height: 42,
-              child: Center(
-                child: loading
-                    ? SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: primary))
-                    : Icon(icon, size: 20, color: disabled ? theme.colorScheme.onSurfaceVariant : primary),
-              ),
-            ),
-          ),
+          label: Text(_acoesRapidasVisiveis ? 'Ocultar ações' : 'Mostrar ações', style: const TextStyle(fontWeight: FontWeight.w900)),
         ),
       ],
     );
