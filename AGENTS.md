@@ -39,6 +39,28 @@ Backend:
 * Criar componentes reutilizáveis quando houver repetição clara.
 * Não transformar correções pontuais em grandes refatorações sem necessidade.
 
+## Padrão visual Web — Six
+
+- Telas web de listagem devem seguir visual profissional, leve e elegante.
+- Evitar listas com cards genéricos grandes, sombra pesada, ícones enormes ou botões desproporcionais.
+- Preferir estrutura com:
+  - card superior de contexto/resumo;
+  - busca e filtros dentro de uma área organizada;
+  - lista com cards compactos, bem espaçados e com hierarquia clara;
+  - ações alinhadas e proporcionais;
+  - barra inferior discreta para contagem, atualizar e ações secundárias.
+- Cards de listagem devem exibir as informações principais em camadas:
+  - título forte;
+  - metadados em chips discretos;
+  - valores importantes em pequenos blocos;
+  - ação principal à direita no desktop e abaixo no layout compacto.
+- Usar bordas sutis, sombras leves, cantos arredondados e fundo claro.
+- Evitar aparência de tabela improvisada ou lista “crua” com `ListTile` simples quando a tela for um subpainel web importante.
+- Quando houver imagem do item, usar thumbnail discreto; quando não houver, usar ícone dentro de bloco visual neutro.
+- Botões flutuantes só devem ser usados quando fizerem sentido na experiência. Em subpainéis web, preferir botões fixos e bem integrados ao layout.
+- Sempre validar mentalmente desktop largo, notebook e layout compacto, usando `LayoutBuilder`, `Wrap`, `Expanded` e `TextOverflow.ellipsis` para evitar overflow.
+- Usar microinteração sutil em listas importantes, como entrada com `fade + leve deslocamento`, sem animação contínua ou decorativa.
+
 ## Padrão visual Mobile — Six
 
 * A experiência mobile deve ser orientada a ação rápida, acompanhamento e gestão simples.

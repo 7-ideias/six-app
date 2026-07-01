@@ -51,6 +51,10 @@
 	<true/>
 	<key>GIDClientID</key>
 	<string>194419403668-04a9qv3spjctqmcrssqu3vb6upgi6mg6.apps.googleusercontent.com</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O Six precisa acessar a câmera para fotografar produtos no cadastro.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O Six precisa acessar sua galeria para anexar imagens aos produtos.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

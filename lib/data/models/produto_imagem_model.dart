@@ -18,17 +18,47 @@ class ProdutoImagemModel {
   final int? sugestaoId;
 
   factory ProdutoImagemModel.fromJson(Map<String, dynamic> json) {
+    final String? imagemBase64 = _stringOrNull(json['imagemBase64']);
+    final String? url = _resolverUrlDaImagem(
+      _stringOrNull(json['url']),
+      imagemBase64,
+    );
+
     return ProdutoImagemModel(
-      id: json['id']?.toString(),
-      url: json['url']?.toString(),
-      urlMiniatura: json['urlMiniatura']?.toString(),
-      origem: json['origem']?.toString() ?? 'UPLOAD',
-      nomeArquivo: json['nomeArquivo']?.toString(),
-      imagemBase64: json['imagemBase64']?.toString(),
+      id: _stringOrNull(json['id']),
+      url: url,
+      urlMiniatura: _stringOrNull(json['urlMiniatura']),
+      origem: _stringOrNull(json['origem']) ?? 'UPLOAD',
+      nomeArquivo: _stringOrNull(json['nomeArquivo']),
+      imagemBase64: imagemBase64,
       sugestaoId: json['sugestaoId'] != null
           ? int.tryParse(json['sugestaoId'].toString())
           : null,
     );
+  }
+
+  static String? _resolverUrlDaImagem(String? url, String? imagemBase64) {
+    if (url != null && url.isNotEmpty) {
+      return url;
+    }
+
+    if (imagemBase64 == null || imagemBase64.isEmpty) {
+      return null;
+    }
+
+    if (imagemBase64.startsWith('data:image')) {
+      return imagemBase64;
+    }
+
+    return 'data:image/png;base64,$imagemBase64';
+  }
+
+  static String? _stringOrNull(dynamic value) {
+    final String? text = value?.toString().trim();
+    if (text == null || text.isEmpty) {
+      return null;
+    }
+    return text;
   }
 
   Map<String, dynamic> toJson() {
@@ -37,7 +67,9 @@ class ProdutoImagemModel {
     };
 
     if (id != null) data['id'] = id;
-    if (url != null) data['url'] = url;
+    if (url != null && !(url!.startsWith('data:image') && imagemBase64 != null)) {
+      data['url'] = url;
+    }
     if (urlMiniatura != null) data['urlMiniatura'] = urlMiniatura;
     if (nomeArquivo != null) data['nomeArquivo'] = nomeArquivo;
     if (imagemBase64 != null) data['imagemBase64'] = imagemBase64;

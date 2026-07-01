@@ -29,39 +29,81 @@ class ProdutoModel {
     required this.estoqueMinimo,
     required this.precoVenda,
     required this.objComissao,
-    this.objEntradaSaidaProduto, this.imagens,
+    this.objEntradaSaidaProduto,
+    this.imagens,
   });
 
   factory ProdutoModel.fromJson(Map<String, dynamic> json) {
+    final dynamic objetoServicoJson = json['objetoServico'] ?? json['objServico'];
+
     return ProdutoModel(
-      id: json['id'],
+      id: json['id']?.toString(),
       ativo: json['ativo'] ?? true,
       codigoDeBarras: json['codigoDeBarras'] ?? '',
       nomeProduto: json['nomeProduto'] ?? '',
       tipoProduto: json['tipoPoduto'] ?? 'PRODUTO', // Note o 'tipoPoduto' do curl
       objAgrupamento: json['objAgrupamento'] != null
-          ? ObjAgrupamento.fromJson(json['objAgrupamento'])
+          ? ObjAgrupamento.fromJson(Map<String, dynamic>.from(json['objAgrupamento']))
           : null,
-      objetoServico: json['objetoServico'] != null
-          ? ObjetoServico.fromJson(json['objetoServico'])
+      objetoServico: objetoServicoJson != null
+          ? ObjetoServico.fromJson(Map<String, dynamic>.from(objetoServicoJson))
           : null,
       modeloProduto: json['modeloProduto'] ?? 'UNIDADE',
       estoqueMaximo: (json['estoqueMaximo'] ?? 0).toInt(),
       estoqueMinimo: (json['estoqueMinimo'] ?? 0).toInt(),
       precoVenda: (json['precoVenda'] ?? 0.0).toDouble(),
-      objComissao: json['objComissao'] = ObjComissao.fromJson(json['objComissao']),
+      objComissao: json['objComissao'] != null
+          ? ObjComissao.fromJson(Map<String, dynamic>.from(json['objComissao']))
+          : ObjComissao(
+              produtoTemComissaoEspecial: false,
+              valorFixoDeComissaoParaEsseProduto: 0,
+            ),
       objEntradaSaidaProduto: json['objEntradaSaidaProduto'] != null
           ? (json['objEntradaSaidaProduto'] as List)
-              .map((i) => ObjEntradaSaidaProduto.fromJson(i))
+              .where((i) => i is Map)
+              .map((i) => ObjEntradaSaidaProduto.fromJson(Map<String, dynamic>.from(i as Map)))
               .toList()
           : null,
-      imagens: json['imagens'] != null
-          ? (json['imagens'] as List)
-              .whereType<Map<String, dynamic>>()
-              .map(ProdutoImagemModel.fromJson)
-              .toList()
-          : null,
+      imagens: _imagensFromJson(json),
     );
+  }
+
+  static List<ProdutoImagemModel>? _imagensFromJson(Map<String, dynamic> json) {
+    final dynamic imagensJson = json['imagens'];
+    if (imagensJson is List && imagensJson.isNotEmpty) {
+      return imagensJson
+          .where((item) => item is Map)
+          .map(
+            (item) => ProdutoImagemModel.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList();
+    }
+
+    final dynamic fotoProdutoListJson = json['fotoProdutoList'];
+    if (fotoProdutoListJson is! List || fotoProdutoListJson.isEmpty) {
+      return imagensJson is List ? <ProdutoImagemModel>[] : null;
+    }
+
+    return fotoProdutoListJson
+        .map((item) => item?.toString().trim())
+        .whereType<String>()
+        .where((value) => value.isNotEmpty)
+        .take(5)
+        .map((value) {
+          final bool isUrl = value.startsWith('http://') ||
+              value.startsWith('https://') ||
+              value.startsWith('data:image');
+
+          return ProdutoImagemModel.fromJson({
+            'origem': 'LEGADO',
+            'nomeArquivo': 'Imagem do produto',
+            if (isUrl) 'url': value,
+            if (!isUrl) 'imagemBase64': value,
+          });
+        })
+        .toList();
   }
 
   Map<String, dynamic> toJson() {
@@ -80,7 +122,7 @@ class ProdutoModel {
       'objComissao': objComissao.toJson(),
       'objEntradaSaidaProduto':
           objEntradaSaidaProduto?.map((e) => e.toJson()).toList(),
-      'imagens': imagens?.map((e) => e.toJson()).toList(),
+      'imagens': imagens?.take(5).map((e) => e.toJson()).toList(),
     };
   }
 }
@@ -111,7 +153,7 @@ class ProdutoResponseModel {
       vlEstoqueEmGrana: (json['vlEstoqueEmGrana'] ?? 0.0).toDouble(),
       produtosList: json['produtosList'] != null
           ? (json['produtosList'] as List)
-              .map((i) => ProdutoModel.fromJson(i))
+              .map((i) => ProdutoModel.fromJson(Map<String, dynamic>.from(i)))
               .toList()
           : [],
     );
