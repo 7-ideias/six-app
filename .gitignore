@@ -1,28 +1,10 @@
-# Flutter/Dart
+!/pubspecx.lock
+!/pubspec.yaml
+!/pubspecx.lock
+/.idea/
 /build/
 /.dart_tool/
-/.flutter-plugins
-/.flutter-plugins-dependencies
-pubspec.lock
-
-# IDEs
-/.idea/
-*.iml
-
-# macOS
-.DS_Store
-
-# Assets gerados/externos
 /assets/translations/
-
-# Artefatos de build de plataforma
-windows/flutter/ephemeral/
-linux/flutter/ephemeral/
-macos/Flutter/ephemeral/
-
-# Backups
-ios_backup/
-
-# Forçar rastreamento de arquivos essenciais
-!/pubspec.yaml
-.github/agents/
+pubspec.lock
+.DS_Store
+/.flutter-plugins-dependencies

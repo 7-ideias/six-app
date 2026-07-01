@@ -61,6 +61,34 @@ Backend:
 - Sempre validar mentalmente desktop largo, notebook e layout compacto, usando `LayoutBuilder`, `Wrap`, `Expanded` e `TextOverflow.ellipsis` para evitar overflow.
 - Usar microinteração sutil em listas importantes, como entrada com `fade + leve deslocamento`, sem animação contínua ou decorativa.
 
+## Movimento e microinterações no Web
+
+* Usar movimento de forma sutil, profissional e funcional, com o mesmo cuidado aplicado ao mobile.
+* Ao carregar dashboards e subpainéis web, preferir entrada progressiva por prioridade: KPIs primeiro, gráficos depois, listas e alertas em seguida.
+* Cards importantes podem entrar com `fade + leve deslocamento de baixo para cima`, usando pequenos atrasos entre blocos para criar leitura guiada.
+* Gráficos não devem ficar estáticos quando a tela abre: barras podem crescer de zero até o valor real e gráficos de pizza/rosca podem revelar setores suavemente.
+* Skeleton loading é preferível a spinner central em telas executivas que dependem de dados do backend.
+* `AnimatedSwitcher`, `TweenAnimationBuilder`, `AnimatedContainer`, `FadeTransition` e `SlideTransition` são boas opções para transições curtas.
+* Hover em cards e botões pode usar mudança discreta de borda, elevação ou fundo, sem parecer efeito decorativo exagerado.
+* Evitar animação contínua em dashboards; o movimento deve acontecer na entrada, atualização, mudança de estado ou feedback de ação.
+* Não sacrificar leitura, acessibilidade, performance ou estabilidade de layout para adicionar movimento.
+
+### Gráficos animados e interativos no Web
+
+* Em dashboards web, gráficos devem parecer vivos e responsivos, nunca meramente estáticos quando houver dados carregados.
+* Para gráficos de barras, preferir crescimento sequencial com pequeno atraso entre itens. O movimento deve partir de zero até o valor real e ajudar o usuário a perceber ranking, comparação e relevância.
+* Para gráficos de pizza ou rosca, revelar os setores progressivamente, mantendo início visual consistente e sem saltos bruscos.
+* Ao passar o mouse ou tocar em uma barra, destacar a barra ativa e reduzir a opacidade das demais. O destaque pode usar leve aumento de largura, raio ou intensidade visual.
+* Ao passar o mouse ou tocar em um setor de pizza/rosca, expandir discretamente o setor ativo e reduzir a opacidade dos demais.
+* Estados de destaque de gráficos devem ser resetados ao atualizar dados, trocar filtros ou recarregar a tela.
+* Quando os dados mudarem, usar chaves estáveis baseadas nos valores exibidos para permitir que a animação rode novamente sem depender de hacks ou rebuilds desnecessários.
+* Em telas que carregam dados do backend, combinar skeleton loading, entrada progressiva dos cards e animação própria dos gráficos.
+* Usar callbacks de interação do componente de gráfico, como `BarTouchData` e `PieTouchData` no `fl_chart`, para hover/toque quando disponível.
+* Manter cada gráfico com estado de interação separado para evitar que o hover de um gráfico altere outro indevidamente.
+* Limitar a quantidade de itens visíveis quando necessário para preservar leitura e performance; categorias excedentes devem ser tratadas de forma clara, como agrupamento ou lista complementar.
+* Não usar animação contínua em gráfico executivo. Depois da entrada, o gráfico deve ficar estável e só reagir a hover, toque, atualização ou mudança de dados.
+* Validar labels longos, valores grandes, layout compacto e responsividade para evitar overflow em português, inglês e espanhol.
+
 ## Padrão visual Mobile — Six
 
 * A experiência mobile deve ser orientada a ação rápida, acompanhamento e gestão simples.
@@ -105,6 +133,19 @@ Backend:
 * Skeleton loading é preferível a spinner central quando a tela depende de dados do backend.
 * Movimento deve comunicar estado, prioridade ou feedback de ação.
 * Não usar animação que prejudique leitura, acessibilidade ou performance em aparelhos simples.
+
+### Indicadores numéricos animados no Web e Mobile
+
+* Em cards de resumo, KPIs e dashboards, animar números importantes quando a tela carregar ou quando os dados forem atualizados.
+* A animação deve contar de zero até o valor final, com duração curta e curva suave, semelhante ao comportamento da Agenda Financeira.
+* Usar `TweenAnimationBuilder<double>` ou componente reutilizável equivalente para valores monetários, quantidades, percentuais e saldos.
+* O formatter deve respeitar o tipo do número: moeda, quantidade inteira, quantidade decimal ou percentual.
+* Para valores monetários, preservar locale e símbolo corretos; para percentuais, preservar casas decimais definidas pela tela.
+* Usar chaves estáveis baseadas no identificador do indicador e no valor final para que a animação rode novamente quando o dado mudar, sem reiniciar em rebuilds irrelevantes.
+* Combinar animação numérica com skeleton loading e entrada progressiva do card quando a tela depender do backend.
+* Aplicar apenas em indicadores que representam resumo, totalizador, saldo, contagem ou métrica executiva. Evitar em textos comuns, listas longas ou tabelas densas.
+* Garantir `TextOverflow.ellipsis`, `maxLines` e responsividade para números grandes e traduções maiores.
+* Não exagerar na duração nem criar efeito contínuo; depois de atingir o valor final, o número deve permanecer estável.
 
 ## Responsividade
 
