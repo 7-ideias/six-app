@@ -7,12 +7,16 @@ import '../../core/services/auth_service.dart';
 import '../../core/utils/produto_helper.dart';
 import '../../data/models/operacao_models.dart';
 import '../../data/models/produto_model.dart';
+import '../../data/models/venda_nao_liquidada_models.dart';
+import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
 import '../../domain/services/operacao/operacao_service.dart';
 import '../../providers/usuario_provider.dart';
 import 'produto_list_mobile_screen.dart';
 
 class PdvMobileScreen extends StatefulWidget {
-  const PdvMobileScreen({super.key});
+  const PdvMobileScreen({super.key, this.vendaNaoLiquidada});
+
+  final VendaNaoLiquidadaModel? vendaNaoLiquidada;
 
   @override
   State<PdvMobileScreen> createState() => _PdvMobileScreenState();
@@ -26,6 +30,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
+  final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient = VendaNaoLiquidadaApiClient();
   final List<_VendaItemMobile> _itens = <_VendaItemMobile>[];
   final Set<String> _formasSelecionadas = <String>{};
   final Map<String, TextEditingController> _valorPorForma = <String, TextEditingController>{};
@@ -49,6 +54,21 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   bool _buscandoCodigo = false;
   bool _acoesRapidasVisiveis = false;
   bool _destacarPagamento = false;
+
+  bool get _editandoVendaNaoLiquidada => widget.vendaNaoLiquidada != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarVendaNaoLiquidadaInicial();
+  }
+
+  void _carregarVendaNaoLiquidadaInicial() {
+    final venda = widget.vendaNaoLiquidada;
+    if (venda == null) return;
+
+    _itens.addAll(venda.itens.map(_VendaItemMobile.fromVendaNaoLiquidadaItem));
+  }
 
   @override
   void dispose() {
@@ -149,6 +169,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       await _avisarPagamentoObrigatorio();
       return;
     }
+    if (_editandoVendaNaoLiquidada && _formasSelecionadas.length > 1) {
+      _mostrarSnack('Para receber uma venda em aberto, selecione uma única forma de pagamento.');
+      return;
+    }
 
     final formas = _montarFormasPagamento();
     final double totalPago = formas.fold<double>(0, (soma, forma) => soma + forma.valor);
@@ -181,6 +205,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _receberDepois() async {
+    if (_editandoVendaNaoLiquidada) {
+      Navigator.of(context).pop(false);
+      return;
+    }
+
     if (_itens.isEmpty) {
       _mostrarSnack('Inclua pelo menos um item para registrar a venda.');
       return;
@@ -254,6 +283,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Future<void> _enviarVenda({required bool receberDepois, required List<FormaPagamentoSelecionada> formasPagamento}) async {
     setState(() => _enviando = true);
     try {
+      if (_editandoVendaNaoLiquidada && !receberDepois) {
+        await _liquidarVendaNaoLiquidada(formasPagamento.first);
+        return;
+      }
+
       final String idColaborador = await AuthService().getUserId() ?? '';
       final String nomeColaborador = _nomeColaboradorAtual();
       final DateTime dataOperacao = DateTime.now();
@@ -280,6 +314,23 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
   }
 
+  Future<void> _liquidarVendaNaoLiquidada(FormaPagamentoSelecionada formaPagamento) async {
+    final venda = widget.vendaNaoLiquidada!;
+    await _vendaNaoLiquidadaApiClient.liquidar(
+      idRecebimento: venda.idRecebimento,
+      input: LiquidarVendaNaoLiquidadaInput(
+        codigoTipoRecebimento: formaPagamento.codigo.toLowerCase(),
+        valorRecebido: _total,
+        itens: _itens.map((item) => item.toVendaNaoLiquidadaItem()).toList(growable: false),
+        observacao: 'Recebido pelo PDV mobile',
+      ),
+    );
+
+    if (!mounted) return;
+    _mostrarSnack('Venda recebida com sucesso.');
+    Navigator.of(context).pop(true);
+  }
+
   void _limparVenda() {
     setState(() {
       _itens.clear();
@@ -292,6 +343,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   void _cancelarVenda() {
+    if (_editandoVendaNaoLiquidada) {
+      Navigator.of(context).pop(false);
+      return;
+    }
     _limparVenda();
     _mostrarSnack('Venda cancelada.');
   }
@@ -385,7 +440,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
-        title: const Text('PDV - Ponto de Venda', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(_editandoVendaNaoLiquidada ? 'Receber venda' : 'PDV - Ponto de Venda', style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: SafeArea(
         child: ListView(
@@ -413,13 +468,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       ),
       child: Row(
         children: <Widget>[
-          Container(width: 50, height: 50, decoration: BoxDecoration(color: const Color(0x1AFFFFFF), borderRadius: BorderRadius.circular(18)), child: const Icon(Icons.point_of_sale_outlined, color: Colors.white)),
+          Container(width: 50, height: 50, decoration: BoxDecoration(color: const Color(0x1AFFFFFF), borderRadius: BorderRadius.circular(18)), child: Icon(_editandoVendaNaoLiquidada ? Icons.receipt_long_outlined : Icons.point_of_sale_outlined, color: Colors.white)),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text('Balcão de venda', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                Text(_editandoVendaNaoLiquidada ? 'Venda em aberto' : 'Balcão de venda', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
                 Text('$_quantidadeItens item(ns) • ${_formatarValor(_total)}', style: const TextStyle(color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700)),
               ],
@@ -438,9 +493,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         children: <Widget>[
           Container(width: 76, height: 76, decoration: BoxDecoration(color: _accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(24)), child: const Icon(Icons.add_shopping_cart, color: _accentColor, size: 36)),
           const SizedBox(height: 16),
-          const Text('Venda ainda vazia', style: TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w900)),
+          Text(_editandoVendaNaoLiquidada ? 'Venda sem itens carregados' : 'Venda ainda vazia', style: const TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Inclua produtos ou serviços para liberar a finalização ou o recebimento posterior.', textAlign: TextAlign.center, style: TextStyle(color: _mutedTextColor, height: 1.4)),
+          Text(_editandoVendaNaoLiquidada ? 'Inclua novamente os itens antes de receber esta venda.' : 'Inclua produtos ou serviços para liberar a finalização ou o recebimento posterior.', textAlign: TextAlign.center, style: const TextStyle(color: _mutedTextColor, height: 1.4)),
           const SizedBox(height: 18),
           FilledButton.icon(onPressed: _abrirSelecaoProduto, icon: const Icon(Icons.add_rounded), label: const Text('Adicionar produto ou serviço')),
         ],
@@ -571,9 +626,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         _formasSelecionadas.remove(forma.codigo);
                         _valorPorForma[forma.codigo]?.clear();
                       } else {
+                        if (_editandoVendaNaoLiquidada) {
+                          for (final codigo in List<String>.from(_formasSelecionadas)) {
+                            _valorPorForma[codigo]?.clear();
+                          }
+                          _formasSelecionadas.clear();
+                        }
                         _formasSelecionadas.add(forma.codigo);
                         _valorPorForma.putIfAbsent(forma.codigo, () => TextEditingController());
                         _destacarPagamento = false;
+                        if (_editandoVendaNaoLiquidada) _preencherValorRestante(forma.codigo);
                       }
                     });
                   },
@@ -612,10 +674,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         border: Border.all(color: _destacarPagamento ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0)),
       ),
       child: Row(
-        children: const <Widget>[
-          Icon(Icons.touch_app_outlined, color: _accentColor),
-          SizedBox(width: 10),
-          Expanded(child: Text('Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.', style: TextStyle(color: _mutedTextColor, height: 1.35, fontWeight: FontWeight.w700))),
+        children: <Widget>[
+          const Icon(Icons.touch_app_outlined, color: _accentColor),
+          const SizedBox(width: 10),
+          Expanded(child: Text(_editandoVendaNaoLiquidada ? 'Revise itens, quantidades e escolha uma forma para receber esta venda.' : 'Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.', style: const TextStyle(color: _mutedTextColor, height: 1.35, fontWeight: FontWeight.w700))),
         ],
       ),
     );
@@ -676,6 +738,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       } else {
         _itens[index] = _itens[index].copyWith(quantidade: novaQuantidade);
       }
+      if (_editandoVendaNaoLiquidada && _formasSelecionadas.length == 1) {
+        _preencherValorRestante(_formasSelecionadas.first);
+      }
     });
   }
 
@@ -731,11 +796,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           children: <Widget>[
             Row(children: <Widget>[Expanded(child: Text('Total ${_formatarValor(_total)}', style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 16))), Text('$_quantidadeItens item(ns)', style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w800))]),
             const SizedBox(height: 10),
-            FilledButton.icon(onPressed: _enviando ? null : _finalizarVenda, icon: _enviando ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.fact_check_outlined), label: Text(_enviando ? 'Enviando...' : 'Finalizar venda'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)))),
+            FilledButton.icon(onPressed: _enviando ? null : _finalizarVenda, icon: _enviando ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(_editandoVendaNaoLiquidada ? Icons.point_of_sale_outlined : Icons.fact_check_outlined), label: Text(_enviando ? 'Enviando...' : (_editandoVendaNaoLiquidada ? 'Receber venda' : 'Finalizar venda')), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)))),
             const SizedBox(height: 8),
             Row(
               children: <Widget>[
-                Expanded(child: OutlinedButton.icon(onPressed: _enviando ? null : _receberDepois, icon: const Icon(Icons.schedule_send_outlined), label: const Text('Receber depois'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))))),
+                Expanded(child: OutlinedButton.icon(onPressed: _enviando ? null : _receberDepois, icon: Icon(_editandoVendaNaoLiquidada ? Icons.arrow_back_rounded : Icons.schedule_send_outlined), label: Text(_editandoVendaNaoLiquidada ? 'Voltar' : 'Receber depois'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))))),
                 const SizedBox(width: 10),
                 Expanded(child: OutlinedButton.icon(onPressed: _enviando ? null : _cancelarVenda, icon: const Icon(Icons.close_rounded), label: const Text('Cancelar'), style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent, side: const BorderSide(color: Colors.redAccent), minimumSize: const Size.fromHeight(44), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))))),
               ],
@@ -843,6 +908,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 class _VendaItemMobile {
   const _VendaItemMobile({required this.idProduto, required this.nome, required this.valorUnitario, required this.quantidade, required this.ehServico});
 
+  factory _VendaItemMobile.fromVendaNaoLiquidadaItem(VendaNaoLiquidadaItemModel item) {
+    return _VendaItemMobile(
+      idProduto: item.idProduto,
+      nome: item.nome,
+      valorUnitario: item.valorUnitario,
+      quantidade: item.quantidade,
+      ehServico: item.ehServico,
+    );
+  }
+
   final String idProduto;
   final String nome;
   final double valorUnitario;
@@ -857,6 +932,16 @@ class _VendaItemMobile {
 
   ItemVendaAtual toInput() {
     return ItemVendaAtual(idProduto: idProduto, nome: nome, quantidade: quantidade, valorUnitario: valorUnitario, ehServico: ehServico);
+  }
+
+  VendaNaoLiquidadaItemModel toVendaNaoLiquidadaItem() {
+    return VendaNaoLiquidadaItemModel(
+      idProduto: idProduto,
+      nome: nome,
+      quantidade: quantidade,
+      valorUnitario: valorUnitario,
+      ehServico: ehServico,
+    );
   }
 }
 
