@@ -10,6 +10,7 @@ class OperacaoRequestMapper {
         .map(
           (item) => VendaItemRequest(
             idSKU: item.idProduto,
+            descricaoProduto: item.nome,
             qt: item.quantidade,
             vlUnitario: item.valorUnitario,
             idColaboradorResponsavelPeloServico: input.idColaborador,
@@ -23,6 +24,7 @@ class OperacaoRequestMapper {
         .map(
           (item) => ServicoItemRequest(
             idCodigoUnicoDoProduto: item.idProduto,
+            descricaoProduto: item.nome,
             qt: item.quantidade,
             vlUnitario: item.valorUnitario,
             idColaboradorResponsavelPeloServico: input.idColaborador,
