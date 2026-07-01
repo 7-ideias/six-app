@@ -29,6 +29,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   final List<Map<String, dynamic>> _produtosSelecionados = <Map<String, dynamic>>[];
   final Map<String, TextEditingController> _valorPorForma = <String, TextEditingController>{};
   final Set<String> _formasSelecionadas = <String>{};
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _pagamentoKey = GlobalKey();
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
 
   final List<_FormaPagamentoMobile> _formasPagamento = const <_FormaPagamentoMobile>[
@@ -46,9 +48,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   bool _finalizandoVenda = false;
   bool _buscandoCodigo = false;
+  bool _destacarPagamento = false;
 
   @override
   void dispose() {
+    _scrollController.dispose();
     for (final TextEditingController controller in _valorPorForma.values) {
       controller.dispose();
     }
@@ -56,10 +60,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _abrirSelecaoProduto() async {
-    final result = await Navigator.push<ProdutoModel>(
+    final ProdutoModel? result = await Navigator.push<ProdutoModel>(
       context,
       MaterialPageRoute<ProdutoModel>(
-        builder: (context) => const ProdutolistMobileScreen(isSelecao: true),
+        builder: (BuildContext context) => const ProdutolistMobileScreen(isSelecao: true),
       ),
     );
 
@@ -109,7 +113,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
       _adicionarProdutoSelecionado(encontrado);
       _mostrarSnack('${encontrado.nomeProduto} adicionado à venda.');
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       _mostrarSnack('Não foi possível buscar o produto pelo código.');
     } finally {
@@ -119,8 +123,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
     final String idProduto = produto.id ?? produto.codigoDeBarras;
-    final bool ehServico = produto.tipoProduto.toUpperCase() == 'SERVICO' ||
-        produto.tipoProduto.toUpperCase() == 'SERVIÇO';
+    final String tipoNormalizado = produto.tipoProduto.toUpperCase();
+    final bool ehServico = tipoNormalizado == 'SERVICO' || tipoNormalizado == 'SERVIÇO';
 
     setState(() {
       final int index = _produtosSelecionados.indexWhere(
@@ -150,13 +154,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
 
     if (_formasSelecionadas.isEmpty) {
-      _mostrarSnack('Selecione pelo menos uma forma de pagamento.');
+      await _avisarFormaPagamentoObrigatoria();
       return;
     }
 
     final double total = _calcularTotal();
     final List<FormaPagamentoSelecionada> formasPagamento = _montarFormasPagamento(total);
-    final double totalRecebido = formasPagamento.fold<double>(0, (soma, forma) => soma + forma.valor);
+    final double totalRecebido = formasPagamento.fold<double>(0, (double soma, FormaPagamentoSelecionada forma) => soma + forma.valor);
 
     if ((totalRecebido - total).abs() > 0.009) {
       _mostrarSnack('A soma das formas de pagamento deve ser igual ao total da venda.');
@@ -176,6 +180,29 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
 
     await _enviarVenda(formasPagamento);
+  }
+
+  Future<void> _avisarFormaPagamentoObrigatoria() async {
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    if (!_destacarPagamento && mounted) {
+      setState(() => _destacarPagamento = true);
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+
+    final BuildContext? pagamentoContext = _pagamentoKey.currentContext;
+    if (pagamentoContext != null && mounted) {
+      await Scrollable.ensureVisible(
+        pagamentoContext,
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOutCubic,
+        alignment: 0.08,
+      );
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    if (mounted) setState(() => _destacarPagamento = false);
   }
 
   Future<void> _enviarVenda(List<FormaPagamentoSelecionada> formasPagamento) async {
@@ -239,6 +266,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     setState(() {
       _produtosSelecionados.clear();
       _formasSelecionadas.clear();
+      _destacarPagamento = false;
       for (final TextEditingController controller in _valorPorForma.values) {
         controller.clear();
       }
@@ -288,7 +316,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   double _valorSelecionadoTotal() {
     if (_formasSelecionadas.isEmpty) return 0.0;
-    return _montarFormasPagamento(_calcularTotal()).fold<double>(0.0, (soma, forma) => soma + forma.valor);
+    return _montarFormasPagamento(_calcularTotal()).fold<double>(0.0, (double soma, FormaPagamentoSelecionada forma) => soma + forma.valor);
   }
 
   double _valorRestante() => _calcularTotal() - _valorSelecionadoTotal();
@@ -334,6 +362,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       controller.text = novoValor.toStringAsFixed(2);
       controller.selection = TextSelection.collapsed(offset: controller.text.length);
       _formasSelecionadas.add(codigoForma);
+      _destacarPagamento = false;
     });
   }
 
@@ -349,10 +378,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     await showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
+        final bool isErro = titulo.toLowerCase().contains('erro');
         return AlertDialog(
           icon: Icon(
-            titulo.toLowerCase().contains('erro') ? Icons.error_outline : Icons.check_circle_outline,
-            color: titulo.toLowerCase().contains('erro') ? Colors.redAccent : Theme.of(context).colorScheme.primary,
+            isErro ? Icons.error_outline : Icons.check_circle_outline,
+            color: isErro ? Colors.redAccent : Theme.of(context).colorScheme.primary,
           ),
           title: Text(titulo),
           content: Text(mensagem),
@@ -616,10 +646,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             const Center(
-              child: Text(
-                'RESUMO DA VENDA',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: Color(0xFF5C4B00)),
-              ),
+              child: Text('RESUMO DA VENDA', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: Color(0xFF5C4B00))),
             ),
             const SizedBox(height: 12),
             const Divider(color: Color(0xFFD8C67A), thickness: 1),
@@ -970,8 +997,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Widget _buildSecaoPagamento() {
-    final ThemeData theme = Theme.of(context);
     return _buildCardSecao(
+      sectionKey: _pagamentoKey,
+      destacar: _destacarPagamento,
       titulo: 'Formas de pagamento',
       subtitulo: 'Escolha uma ou mais opções para distribuir o valor.',
       icone: Icons.account_balance_wallet_outlined,
@@ -979,36 +1007,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _formasPagamento.map((_FormaPagamentoMobile forma) {
-              final bool selecionado = _formasSelecionadas.contains(forma.codigo);
-              return FilterChip(
-                label: Text(forma.titulo),
-                avatar: Icon(forma.icone, size: 18, color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.primary),
-                selected: selecionado,
-                onSelected: _finalizandoVenda
-                    ? null
-                    : (bool selected) => setState(() {
-                          if (selected) {
-                            _formasSelecionadas.add(forma.codigo);
-                          } else {
-                            _formasSelecionadas.remove(forma.codigo);
-                            _valorPorForma[forma.codigo]?.clear();
-                          }
-                        }),
-                selectedColor: theme.colorScheme.primary,
-                checkmarkColor: theme.colorScheme.onPrimary,
-                labelStyle: TextStyle(fontWeight: FontWeight.w800, color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface),
-                side: BorderSide(color: selecionado ? theme.colorScheme.primary : theme.colorScheme.outlineVariant),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-              );
-            }).toList(growable: false),
-          ),
+          _buildFormasPagamentoAdaptativas(),
           if (_formasSelecionadas.isEmpty) ...<Widget>[
             const SizedBox(height: 14),
-            _buildEstadoMenor(icone: Icons.touch_app_outlined, titulo: 'Nenhuma forma selecionada', mensagem: 'Toque em uma opção acima para habilitar o valor recebido.'),
+            _buildEstadoMenor(
+              icone: Icons.touch_app_outlined,
+              titulo: 'Selecione uma forma de pagamento',
+              mensagem: 'Toque em uma opção acima para liberar a conferência final da venda.',
+              destacado: _destacarPagamento,
+            ),
           ] else ...<Widget>[
             const SizedBox(height: 4),
             ..._formasSelecionadas.map(_buildPagamentoField),
@@ -1018,76 +1025,241 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  Widget _buildCardSecao({required String titulo, required String subtitulo, required IconData icone, required Widget child, Widget? trailing}) {
+  Widget _buildFormasPagamentoAdaptativas() {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final List<List<_FormaPagamentoMobile>> linhas = _montarLinhasPagamento(constraints.maxWidth);
+
+        return Column(
+          children: linhas.map((List<_FormaPagamentoMobile> linha) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: linha.asMap().entries.map((MapEntry<int, _FormaPagamentoMobile> entry) {
+                  final _FormaPagamentoMobile forma = entry.value;
+                  return Expanded(
+                    flex: _flexFormaPagamento(forma),
+                    child: Padding(
+                      padding: EdgeInsets.only(left: entry.key == 0 ? 0 : 8),
+                      child: _buildPillPagamento(forma),
+                    ),
+                  );
+                }).toList(growable: false),
+              ),
+            );
+          }).toList(growable: false),
+        );
+      },
+    );
+  }
+
+  List<List<_FormaPagamentoMobile>> _montarLinhasPagamento(double largura) {
+    if (largura < 340) {
+      return <List<_FormaPagamentoMobile>>[
+        <_FormaPagamentoMobile>[_formasPagamento[0], _formasPagamento[1]],
+        <_FormaPagamentoMobile>[_formasPagamento[2]],
+        <_FormaPagamentoMobile>[_formasPagamento[3], _formasPagamento[4]],
+        <_FormaPagamentoMobile>[_formasPagamento[5], _formasPagamento[6]],
+        <_FormaPagamentoMobile>[_formasPagamento[7], _formasPagamento[8], _formasPagamento[9]],
+      ];
+    }
+
+    if (largura < 430) {
+      return <List<_FormaPagamentoMobile>>[
+        <_FormaPagamentoMobile>[_formasPagamento[0], _formasPagamento[1], _formasPagamento[4]],
+        <_FormaPagamentoMobile>[_formasPagamento[2], _formasPagamento[3]],
+        <_FormaPagamentoMobile>[_formasPagamento[5], _formasPagamento[6], _formasPagamento[8]],
+        <_FormaPagamentoMobile>[_formasPagamento[7], _formasPagamento[9]],
+      ];
+    }
+
+    return <List<_FormaPagamentoMobile>>[
+      <_FormaPagamentoMobile>[_formasPagamento[0], _formasPagamento[1], _formasPagamento[4], _formasPagamento[9]],
+      <_FormaPagamentoMobile>[_formasPagamento[2], _formasPagamento[3], _formasPagamento[6]],
+      <_FormaPagamentoMobile>[_formasPagamento[5], _formasPagamento[7], _formasPagamento[8]],
+    ];
+  }
+
+  int _flexFormaPagamento(_FormaPagamentoMobile forma) {
+    final int tamanho = forma.titulo.length;
+    if (tamanho >= 17) return 18;
+    if (tamanho >= 12) return 14;
+    if (tamanho <= 4) return 8;
+    return 10;
+  }
+
+  Widget _buildPillPagamento(_FormaPagamentoMobile forma) {
     final ThemeData theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+    final bool selecionado = _formasSelecionadas.contains(forma.codigo);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      height: 34,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: <BoxShadow>[BoxShadow(color: Colors.black.withOpacity(0.035), blurRadius: 14, offset: const Offset(0, 8))],
+        color: selecionado ? theme.colorScheme.primary : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: selecionado ? theme.colorScheme.primary : theme.colorScheme.outline.withOpacity(0.42),
+          width: selecionado ? 1.2 : 1,
+        ),
+        boxShadow: selecionado
+            ? <BoxShadow>[BoxShadow(color: theme.colorScheme.primary.withOpacity(0.14), blurRadius: 10, offset: const Offset(0, 4))]
+            : const <BoxShadow>[],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.09), borderRadius: BorderRadius.circular(14)),
-                child: Icon(icone, color: theme.colorScheme.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(titulo, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 3),
-                    Text(subtitulo, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.3)),
-                  ],
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: _finalizandoVenda
+              ? null
+              : () {
+                  setState(() {
+                    if (selecionado) {
+                      _formasSelecionadas.remove(forma.codigo);
+                      _valorPorForma[forma.codigo]?.clear();
+                    } else {
+                      _formasSelecionadas.add(forma.codigo);
+                      _destacarPagamento = false;
+                    }
+                  });
+                },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: <Widget>[
+                Icon(
+                  forma.icone,
+                  size: 14,
+                  color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
                 ),
-              ),
-              if (trailing != null) trailing,
-            ],
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    forma.titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      color: selecionado ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
-          child,
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildEstadoMenor({required IconData icone, required String titulo, required String mensagem}) {
+  Widget _buildCardSecao({Key? sectionKey, required String titulo, required String subtitulo, required IconData icone, required Widget child, Widget? trailing, bool destacar = false}) {
     final ThemeData theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.38),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(icone, color: theme.colorScheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(titulo, style: const TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 2),
-                Text(mensagem, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.35)),
-              ],
-            ),
+    final Color borderColor = destacar ? const Color(0xFFF59E0B) : theme.colorScheme.outlineVariant;
+
+    return AnimatedScale(
+      key: sectionKey,
+      scale: destacar ? 1.015 : 1,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      child: AnimatedSlide(
+        offset: destacar ? const Offset(0, -0.012) : Offset.zero,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor, width: destacar ? 1.6 : 1),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: destacar ? const Color(0x40F59E0B) : Colors.black.withOpacity(0.035),
+                blurRadius: destacar ? 18 : 14,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.09), borderRadius: BorderRadius.circular(14)),
+                    child: Icon(icone, color: theme.colorScheme.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(titulo, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 3),
+                        Text(subtitulo, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.3)),
+                      ],
+                    ),
+                  ),
+                  if (trailing != null) trailing,
+                ],
+              ),
+              const SizedBox(height: 14),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEstadoMenor({required IconData icone, required String titulo, required String mensagem, bool destacado = false}) {
+    final ThemeData theme = Theme.of(context);
+    return AnimatedScale(
+      scale: destacado ? 1.02 : 1,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      child: AnimatedSlide(
+        offset: destacado ? const Offset(0, -0.035) : Offset.zero,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: destacado ? const Color(0xFFFFF7ED) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.38),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: destacado ? const Color(0xFFF59E0B) : theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(icone, color: destacado ? const Color(0xFFD97706) : theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(titulo, style: const TextStyle(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 2),
+                    Text(mensagem, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.35)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1267,6 +1439,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: EdgeInsets.fromLTRB(16, 16, 16, temItens ? 18 : 112),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
