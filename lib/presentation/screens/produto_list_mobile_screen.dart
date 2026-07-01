@@ -30,8 +30,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   final TextEditingController _controllerBusca = TextEditingController();
 
-  List<ProdutoModel> todosProdutos = [];
-  List<ProdutoModel> produtosFiltrados = [];
+  List<ProdutoModel> todosProdutos = <ProdutoModel>[];
+  List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
 
   String termoBusca = '';
   String tipoSelecionado = 'PRODUTO';
@@ -51,39 +51,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     super.dispose();
   }
 
-  void atualizarListaComProvider(List<ProdutoModel> listaDeProdutos) {
-    todosProdutos = listaDeProdutos;
-    aplicarFiltroOrdenacao();
-  }
-
-  void aplicarFiltroOrdenacao() {
-    final listaBase = ProdutoHelper.filtrarEOrdenarProdutos(
-      produtos: todosProdutos,
-      termoBusca: termoBusca,
-      ordenacao: ordenacao,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      produtosFiltrados = listaBase
-          .where((produto) => _matchesTipoSelecionado(produto, tipoSelecionado))
-          .toList();
-    });
-  }
-
-  bool _matchesTipoSelecionado(ProdutoModel produto, String tipo) {
-    final valor = produto.tipoProduto.trim();
-    if (valor.isEmpty) {
-      return tipo == 'PRODUTO';
-    }
-    final normalizado = valor.toUpperCase();
-    return normalizado == tipo.toUpperCase() ||
-        (tipo == 'SERVICO' && normalizado == 'SERVIÇO');
-  }
-
   Future<void> _recarregar() async {
     await ProdutoHelper.retornarProdutosList(
       context,
@@ -92,14 +59,47 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
+  void atualizarListaComProvider(List<ProdutoModel> listaDeProdutos) {
+    todosProdutos = listaDeProdutos;
+    aplicarFiltroOrdenacao();
+  }
+
+  void aplicarFiltroOrdenacao() {
+    final List<ProdutoModel> listaBase = ProdutoHelper.filtrarEOrdenarProdutos(
+      produtos: todosProdutos,
+      termoBusca: termoBusca,
+      ordenacao: ordenacao,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      produtosFiltrados = listaBase
+          .where((ProdutoModel produto) =>
+              _matchesTipoSelecionado(produto, tipoSelecionado))
+          .toList();
+    });
+  }
+
+  bool _matchesTipoSelecionado(ProdutoModel produto, String tipo) {
+    final String valor = produto.tipoProduto.trim();
+    if (valor.isEmpty) return tipo == 'PRODUTO';
+
+    final String normalizado = valor.toUpperCase();
+    return normalizado == tipo.toUpperCase() ||
+        (tipo == 'SERVICO' && normalizado == 'SERVIÇO');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
-    final itensDaLista = produtosFiltrados.isNotEmpty ||
+    final ProdutosListProvider<ProdutoModel> provider =
+        context.watch<ProdutosListProvider<ProdutoModel>>();
+    final List<ProdutoModel> itensDaLista = produtosFiltrados.isNotEmpty ||
             termoBusca.isNotEmpty ||
             todosProdutos.isNotEmpty
         ? produtosFiltrados
         : todosProdutos;
+    final bool isSelecao = widget.isSelecao;
 
     return Scaffold(
       backgroundColor: _backgroundColor,
@@ -108,11 +108,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
-        title: const Text(
-          'Produtos e serviços',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        title: Text(
+          isSelecao ? 'Selecionar item' : 'Produtos e serviços',
+          style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
         ),
-        actions: [
+        actions: <Widget>[
           IconButton(
             tooltip: 'Ordenar',
             icon: const Icon(Icons.swap_vert_rounded),
@@ -125,27 +125,31 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           onRefresh: _recarregar,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
-            children: [
-              SixStaggeredEntry(child: _buildHeaderCard()),
-              const SizedBox(height: 16),
+            padding: EdgeInsets.fromLTRB(16, isSelecao ? 12 : 14, 16, 96),
+            children: <Widget>[
+              if (!isSelecao) ...<Widget>[
+                SixStaggeredEntry(child: _buildHeaderCard()),
+                const SizedBox(height: 16),
+              ],
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 70),
-                child: _buildTabs(),
+                child: _buildTabs(compact: isSelecao),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 120),
                 child: _buildSearchField(),
               ),
-              const SizedBox(height: 14),
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 170),
-                child: _buildSummarySection(),
-              ),
-              const SizedBox(height: 18),
+              if (!isSelecao) ...<Widget>[
+                const SizedBox(height: 14),
+                SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 170),
+                  child: _buildSummarySection(),
+                ),
+              ],
+              SizedBox(height: isSelecao ? 14 : 18),
               _buildListHeader(itensDaLista.length, provider.isLoading),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               if (provider.isLoading && todosProdutos.isEmpty)
                 const _LoadingState()
               else if (provider.erro != null && todosProdutos.isEmpty)
@@ -153,12 +157,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               else if (itensDaLista.isEmpty)
                 const _EmptyState()
               else
-                ...itensDaLista.asMap().entries.map((entry) {
-                  final int itemDelay =
-                      210 + ((entry.key * 35).clamp(0, 220)).toInt();
-
+                ...itensDaLista.asMap().entries.map((MapEntry<int, ProdutoModel> entry) {
+                  final int itemDelay = 190 + ((entry.key * 28).clamp(0, 180)).toInt();
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.only(bottom: isSelecao ? 8 : 12),
                     child: SixStaggeredEntry(
                       delay: Duration(milliseconds: itemDelay),
                       child: _buildProdutoCard(entry.value),
@@ -169,7 +171,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ),
       ),
-      floatingActionButton: widget.isSelecao
+      floatingActionButton: isSelecao
           ? null
           : FloatingActionButton.extended(
               backgroundColor: _accentColor,
@@ -188,11 +190,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [_primaryColor, _secondaryColor],
+          colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: const [
+        boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x260B1F3A),
             blurRadius: 22,
@@ -201,7 +203,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         ],
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           Container(
             width: 50,
             height: 50,
@@ -221,7 +223,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Text(
                   _isProdutoSelecionado
                       ? 'Catálogo de produtos'
@@ -237,10 +239,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   _isProdutoSelecionado
                       ? 'Crie, edite e mantenha fotos, preços e estoque.'
                       : 'Crie e edite serviços com visual adequado ao mobile.',
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
-                    height: 1.35,
-                  ),
+                  style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
                 ),
               ],
             ),
@@ -250,21 +249,22 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
-  Widget _buildTabs() {
+  Widget _buildTabs({required bool compact}) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: _surfaceColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(compact ? 16 : 18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           Expanded(
             child: _SegmentButton(
               label: 'Produtos',
               icon: Icons.inventory_2_outlined,
               selected: _isProdutoSelecionado,
+              compact: compact,
               onTap: () => _selectTipo('PRODUTO'),
             ),
           ),
@@ -273,6 +273,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               label: 'Serviços',
               icon: Icons.design_services_outlined,
               selected: tipoSelecionado == 'SERVICO',
+              compact: compact,
               onTap: () => _selectTipo('SERVICO'),
             ),
           ),
@@ -286,7 +287,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
+        boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x14000000),
             blurRadius: 18,
@@ -296,13 +297,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       ),
       child: TextField(
         controller: _controllerBusca,
-        onChanged: (value) {
+        onChanged: (String value) {
           termoBusca = value;
           aplicarFiltroOrdenacao();
         },
         decoration: InputDecoration(
-          hintText:
-              _isProdutoSelecionado ? 'Buscar produto ou SKU' : 'Buscar serviço',
+          hintText: _isProdutoSelecionado ? 'Buscar produto ou código' : 'Buscar serviço',
           hintStyle: const TextStyle(color: _mutedTextColor),
           prefixIcon: const Icon(Icons.search_rounded, color: _accentColor),
           suffixIcon: _controllerBusca.text.isEmpty
@@ -319,8 +319,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   icon: const Icon(Icons.close_rounded, color: _mutedTextColor),
                 ),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         ),
       ),
     );
@@ -328,54 +327,54 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildSummarySection() {
     return Consumer<ProdutosListProvider<ProdutoModel>>(
-      builder: (context, provider, _) {
-        final response = provider.fullResponse;
-        if (response is! ProdutoResponseModel) {
-          return const SizedBox.shrink();
-        }
+      builder: (BuildContext context, ProdutosListProvider<ProdutoModel> provider, _) {
+        final Object? response = provider.fullResponse;
+        if (response is! ProdutoResponseModel) return const SizedBox.shrink();
 
-        final summaryCards = <Widget>[
-          Expanded(
-            child: _SummaryCard(
-              label: 'Itens',
-              value: response.skusTotaisNoEstoque.toString(),
-              icon: Icons.widgets_outlined,
+        return Row(
+          children: <Widget>[
+            Expanded(
+              child: _SummaryCard(
+                label: 'Itens',
+                value: response.skusTotaisNoEstoque.toString(),
+                icon: Icons.widgets_outlined,
+              ),
             ),
-          ),
-          if (_isProdutoSelecionado) ...[
+            if (_isProdutoSelecionado) ...<Widget>[
+              const SizedBox(width: 10),
+              Expanded(
+                child: _SummaryCard(
+                  label: 'Sem estoque',
+                  value: _formatNumber(response.qtSemEstoque),
+                  icon: Icons.inventory_outlined,
+                ),
+              ),
+            ],
             const SizedBox(width: 10),
             Expanded(
               child: _SummaryCard(
-                label: 'Sem estoque',
-                value: _formatNumber(response.qtSemEstoque),
-                icon: Icons.inventory_outlined,
+                label: 'Valor',
+                value: _formatCurrency(response.vlEstoqueEmGrana),
+                icon: Icons.payments_outlined,
+                compact: true,
               ),
             ),
           ],
-          const SizedBox(width: 10),
-          Expanded(
-            child: _SummaryCard(
-              label: 'Valor',
-              value: _formatCurrency(response.vlEstoqueEmGrana),
-              icon: Icons.payments_outlined,
-              compact: true,
-            ),
-          ),
-        ];
-
-        return Row(children: summaryCards);
+        );
       },
     );
   }
 
   Widget _buildListHeader(int count, bool isLoading) {
+    final String titulo = widget.isSelecao
+        ? (_isProdutoSelecionado ? 'Toque no produto para adicionar' : 'Toque no serviço para adicionar')
+        : (_isProdutoSelecionado ? 'Produtos cadastrados' : 'Serviços cadastrados');
+
     return Row(
-      children: [
+      children: <Widget>[
         Expanded(
           child: Text(
-            _isProdutoSelecionado
-                ? 'Produtos cadastrados'
-                : 'Serviços cadastrados',
+            titulo,
             style: const TextStyle(
               color: _titleTextColor,
               fontSize: 16,
@@ -383,7 +382,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ),
           ),
         ),
-        if (isLoading) ...[
+        if (isLoading) ...<Widget>[
           const SizedBox(
             width: 18,
             height: 18,
@@ -411,28 +410,24 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildProdutoCard(ProdutoModel produto) {
-    final ativo = produto.ativo == true;
+    if (widget.isSelecao) return _buildProdutoSelectionCard(produto);
+
+    final bool ativo = produto.ativo == true;
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
-    final imagensCount = produto.imagens?.length ?? 0;
+    final int imagensCount = produto.imagens?.length ?? 0;
 
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: () {
-          if (widget.isSelecao) {
-            Navigator.pop(context, produto);
-          } else {
-            _editarProduto(produto);
-          }
-        },
+        onTap: () => _editarProduto(produto),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
+            boxShadow: const <BoxShadow>[
               BoxShadow(
                 color: Color(0x0F000000),
                 blurRadius: 14,
@@ -442,16 +437,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildThumbnail(produto, isProduto),
+            children: <Widget>[
+              _buildThumbnail(produto, isProduto, size: 54),
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: Text(
                             produto.nomeProduto,
@@ -473,12 +468,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
-                      children: [
+                      children: <Widget>[
                         _InfoChip(
                           icon: Icons.qr_code_2_rounded,
                           label: produto.codigoDeBarras.isEmpty
-                              ? 'Sem SKU'
-                              : 'SKU ${produto.codigoDeBarras}',
+                              ? 'Sem código'
+                              : 'Código ${produto.codigoDeBarras}',
                         ),
                         if (produto.modeloProduto.isNotEmpty)
                           _InfoChip(
@@ -487,14 +482,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           ),
                         _InfoChip(
                           icon: Icons.photo_library_outlined,
-                          label:
-                              '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
+                          label: '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: Text(
                             _formatCurrency(produto.precoVenda),
@@ -505,25 +499,19 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             ),
                           ),
                         ),
-                        if (!widget.isSelecao)
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.edit_outlined,
-                              color: _accentColor,
-                              size: 19,
-                            ),
-                          )
-                        else
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: _mutedTextColor,
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: const Icon(
+                            Icons.edit_outlined,
+                            color: _accentColor,
+                            size: 19,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -536,20 +524,108 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
-  Widget _buildThumbnail(ProdutoModel produto, bool isProduto) {
-    final imagem =
-        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+  Widget _buildProdutoSelectionCard(ProdutoModel produto) {
+    final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
+    final String codigo = produto.codigoDeBarras.trim();
+
+    return Material(
+      color: _surfaceColor,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Navigator.pop(context, produto),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 74),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: <Widget>[
+              _buildThumbnail(produto, isProduto, size: 42),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      produto.nomeProduto.isEmpty ? 'Item sem nome' : produto.nomeProduto,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: _titleTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: <Widget>[
+                        Flexible(
+                          child: Text(
+                            codigo.isEmpty ? 'Sem código' : codigo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _formatCurrency(produto.precoVenda),
+                          style: const TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.add_rounded, color: _accentColor, size: 20),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThumbnail(ProdutoModel produto, bool isProduto, {required double size}) {
+    final dynamic imagem = produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+    final Uint8List? bytes =
+        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
 
     Widget content;
-    final bytes =
-        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
     if (bytes != null) {
       content = Image.memory(bytes, fit: BoxFit.cover);
     } else if (imagem?.url != null && imagem!.url!.trim().isNotEmpty) {
       content = Image.network(
         imagem.url!,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
+        loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
           if (loadingProgress == null) return child;
           return const Center(
             child: SizedBox(
@@ -565,16 +641,17 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       content = Icon(
         isProduto ? Icons.inventory_2_outlined : Icons.design_services_outlined,
         color: _accentColor,
+        size: size <= 44 ? 21 : 24,
       );
     }
 
     return Container(
-      width: 54,
-      height: 54,
+      width: size,
+      height: size,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(size <= 44 ? 14 : 17),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Center(child: content),
@@ -582,20 +659,15 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Uint8List? _decodeDataUrl(String? value) {
-    if (value == null || !value.startsWith('data:image')) {
-      return null;
-    }
-
+    if (value == null || !value.startsWith('data:image')) return null;
     return _decodeBase64Image(value);
   }
 
   Uint8List? _decodeBase64Image(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return null;
-    }
+    if (value == null || value.trim().isEmpty) return null;
 
     try {
-      final payload = value.contains(',') ? value.split(',').last : value;
+      final String payload = value.contains(',') ? value.split(',').last : value;
       return base64Decode(payload);
     } catch (_) {
       return null;
@@ -609,8 +681,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       tipoSelecionado = tipo;
       termoBusca = '';
       _controllerBusca.clear();
-      produtosFiltrados = [];
-      todosProdutos = [];
+      produtosFiltrados = <ProdutoModel>[];
+      todosProdutos = <ProdutoModel>[];
     });
     _recarregar();
   }
@@ -622,8 +694,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Future<void> _editarProduto(ProdutoModel produto) async {
     await _abrirCadastro(
       produto: produto,
-      tipoInicial:
-          produto.tipoProduto.trim().isEmpty ? tipoSelecionado : produto.tipoProduto,
+      tipoInicial: produto.tipoProduto.trim().isEmpty ? tipoSelecionado : produto.tipoProduto,
     );
   }
 
@@ -631,9 +702,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     ProdutoModel? produto,
     required String tipoInicial,
   }) async {
-    final atualizado = await Navigator.push<bool>(
+    final bool? atualizado = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
+      MaterialPageRoute<bool>(
         builder: (_) => CadastroProdutoMobileScreen(
           produtoParaEdicao: produto,
           tipoInicial: tipoInicial,
@@ -641,9 +712,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       ),
     );
 
-    if (atualizado == true && mounted) {
-      await _recarregar();
-    }
+    if (atualizado == true && mounted) await _recarregar();
   }
 
   void _showSortOptions() {
@@ -654,14 +723,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (BuildContext context) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 const Text(
                   'Ordenar catálogo',
                   style: TextStyle(
@@ -707,9 +776,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   String _formatNumber(double value) {
-    if (value % 1 == 0) {
-      return value.toInt().toString();
-    }
+    if (value % 1 == 0) return value.toInt().toString();
     return value.toStringAsFixed(1).replaceAll('.', ',');
   }
 }
@@ -720,12 +787,14 @@ class _SegmentButton extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.compact = false,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
+  final bool compact;
 
   static const Color _accentColor = Color(0xFF2563EB);
   static const Color _mutedTextColor = Color(0xFF64748B);
@@ -742,15 +811,11 @@ class _SegmentButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+            padding: EdgeInsets.symmetric(vertical: compact ? 9 : 11, horizontal: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color: selected ? Colors.white : _mutedTextColor,
-                ),
+              children: <Widget>[
+                Icon(icon, size: 18, color: selected ? Colors.white : _mutedTextColor),
                 const SizedBox(width: 7),
                 Flexible(
                   child: Text(
@@ -801,17 +866,13 @@ class _SummaryCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Container(
             width: 32,
             height: 32,
@@ -866,34 +927,22 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor =
-        ativo ? const Color(0xFFEAF8EE) : const Color(0xFFFEF2F2);
-    final Color foregroundColor =
-        ativo ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final Color backgroundColor = ativo ? const Color(0xFFEAF8EE) : const Color(0xFFFEF2F2);
+    final Color foregroundColor = ativo ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(999)),
       child: Text(
         ativo ? 'Ativo' : 'Inativo',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          color: foregroundColor,
-        ),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: foregroundColor),
       ),
     );
   }
 }
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -910,7 +959,7 @@ class _InfoChip extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: <Widget>[
           Icon(icon, size: 13, color: const Color(0xFF64748B)),
           const SizedBox(width: 5),
           Flexible(
@@ -955,26 +1004,21 @@ class _SortOptionTile extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected
-                  ? const Color(0xFF2563EB)
-                  : const Color(0xFFE2E8F0),
+              color: selected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: selected
-                        ? const Color(0xFF2563EB)
-                        : const Color(0xFF0F172A),
+                    color: selected ? const Color(0xFF2563EB) : const Color(0xFF0F172A),
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              if (selected)
-                const Icon(Icons.check_rounded, color: Color(0xFF2563EB)),
+              if (selected) const Icon(Icons.check_rounded, color: Color(0xFF2563EB)),
             ],
           ),
         ),
@@ -1010,17 +1054,13 @@ class _ErrorState extends StatelessWidget {
         border: Border.all(color: const Color(0xFFFECACA)),
       ),
       child: Column(
-        children: [
-          const Icon(Icons.wifi_off_outlined,
-              color: Color(0xFFDC2626), size: 34),
+        children: <Widget>[
+          const Icon(Icons.wifi_off_outlined, color: Color(0xFFDC2626), size: 34),
           const SizedBox(height: 10),
           const Text(
             'Não foi possível carregar o catálogo.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF0F172A),
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -1047,20 +1087,17 @@ class _EmptyState extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: const Column(
-        children: [
+        children: <Widget>[
           Icon(Icons.inventory_2_outlined, color: Color(0xFF2563EB), size: 34),
           SizedBox(height: 10),
           Text(
             'Nenhum item encontrado.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF0F172A),
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900),
           ),
           SizedBox(height: 4),
           Text(
-            'Use o botão de novo cadastro para começar.',
+            'Ajuste a busca ou atualize a listagem.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
           ),
