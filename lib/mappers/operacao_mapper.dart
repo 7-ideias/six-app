@@ -1,9 +1,9 @@
-
 import '../data/models/operacao_models.dart';
 
 class OperacaoRequestMapper {
   OperacaoInserirRequest toRequest(OperacaoVendaInput input) {
     final dataOperacao = (input.dataOperacao ?? DateTime.now()).toIso8601String();
+    final receberDepois = input.receberDepois;
 
     final vendaList = input.itens
         .where((item) => !item.ehServico)
@@ -48,36 +48,40 @@ class OperacaoRequestMapper {
       descricao: input.descricao,
       dataOperacao: dataOperacao,
       tipoDeOperacaoEnum: 'VENDA',
-      statusQuitada: true,
-      operacaoFinalizadaEProntaParaOCaixa: true,
+      statusQuitada: !receberDepois,
+      operacaoFinalizadaEProntaParaOCaixa: !receberDepois,
       clientePediuParaApagar: false,
       vendaList: vendaList,
       servicoList: servicoList,
-      objRecebimentosList: [
-        RecebimentoRequest(
-          localDateTimeDoRecebimento: dataOperacao,
-          idUnicoDoColaborador: input.idColaborador,
-          objGrana: GranaRequest(
-            tipo1: totalTIPO1,
-            tipo2: totalTIPO2,
-            tipo3: totalTIPO3,
-            tipo4: totalTIPO4,
-            tipo5: totalTIPO5,
-            tipo6: totalTIPO6,
-            tipo7: totalTIPO7,
-            tipo8: totalTIPO8,
-            tipo9: totalTIPO9,
-            tipo10: totalTIPO10,
-          ),
-        ),
-      ],
+      objRecebimentosList: receberDepois
+          ? <RecebimentoRequest>[]
+          : [
+              RecebimentoRequest(
+                localDateTimeDoRecebimento: dataOperacao,
+                idUnicoDoColaborador: input.idColaborador,
+                objGrana: GranaRequest(
+                  tipo1: totalTIPO1,
+                  tipo2: totalTIPO2,
+                  tipo3: totalTIPO3,
+                  tipo4: totalTIPO4,
+                  tipo5: totalTIPO5,
+                  tipo6: totalTIPO6,
+                  tipo7: totalTIPO7,
+                  tipo8: totalTIPO8,
+                  tipo9: totalTIPO9,
+                  tipo10: totalTIPO10,
+                ),
+              ),
+            ],
       objLogsList: [
         OperacaoLogRequest(
           objInformacoesDoCadastro: InformacoesCadastroRequest(
             idDeQuemCadastrou: input.idColaborador,
             dataCadastro: dataOperacao,
           ),
-          ocorrencia: 'OPERACAO_DE_VENDA',
+          ocorrencia: receberDepois
+              ? 'OPERACAO_DE_VENDA_NAO_LIQUIDADA'
+              : 'OPERACAO_DE_VENDA',
         ),
       ],
     );
