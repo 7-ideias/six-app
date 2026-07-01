@@ -23,6 +23,10 @@ class ProdutoDashboardWebPage extends StatefulWidget {
 }
 
 class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
+  static const Duration _entryDuration = Duration(milliseconds: 520);
+  static const Duration _chartDuration = Duration(milliseconds: 900);
+  static const Curve _entryCurve = Curves.easeOutCubic;
+
   final ProdutoService _produtoService = ProdutoService();
   late Future<ProdutoDashboardModel> _dashboardFuture;
 
@@ -65,18 +69,34 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
           Widget child;
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            child = const Center(child: CircularProgressIndicator());
+            child = KeyedSubtree(
+              key: const ValueKey<String>('produtos-dashboard-loading'),
+              child: _buildLoadingDashboard(),
+            );
           } else if (snapshot.hasError) {
-            child = _buildError(snapshot.error);
+            child = KeyedSubtree(
+              key: const ValueKey<String>('produtos-dashboard-error'),
+              child: _buildError(snapshot.error),
+            );
           } else {
             final ProdutoDashboardModel dashboard = snapshot.data ?? _emptyDashboard();
-            child = dashboard.isEmpty ? _buildEmpty() : _buildDashboard(dashboard);
+            child = KeyedSubtree(
+              key: const ValueKey<String>('produtos-dashboard-content'),
+              child: dashboard.isEmpty ? _buildEmpty() : _buildDashboard(dashboard),
+            );
           }
 
           return Column(
             children: <Widget>[
               _buildHeader(),
-              Expanded(child: child),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: _entryCurve,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: child,
+                ),
+              ),
             ],
           );
         },
@@ -181,6 +201,108 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     );
   }
 
+  Widget _buildLoadingDashboard() {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 1180;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 8,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: compact ? 2 : 4,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  mainAxisExtent: 118,
+                ),
+                itemBuilder: (BuildContext context, int index) {
+                  return _entry(
+                    order: index,
+                    child: _loadingKpiCard(highlight: index == 2),
+                  );
+                },
+              ),
+              const SizedBox(height: 18),
+              compact
+                  ? Column(
+                      children: <Widget>[
+                        _loadingChartCard(
+                          title: 'Produtos por categoria',
+                          subtitle: 'Quantidade em estoque por agrupamento.',
+                          order: 8,
+                        ),
+                        const SizedBox(height: 18),
+                        _loadingChartCard(
+                          title: 'Situação do estoque',
+                          subtitle: 'Distribuição por saúde operacional.',
+                          order: 9,
+                        ),
+                        const SizedBox(height: 18),
+                        _loadingChartCard(
+                          title: 'Valor por categoria',
+                          subtitle: 'Onde o dinheiro em estoque está concentrado.',
+                          order: 10,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: _loadingChartCard(
+                            title: 'Produtos por categoria',
+                            subtitle: 'Quantidade em estoque por agrupamento.',
+                            order: 8,
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: _loadingChartCard(
+                            title: 'Situação do estoque',
+                            subtitle: 'Distribuição por saúde operacional.',
+                            order: 9,
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: _loadingChartCard(
+                            title: 'Valor por categoria',
+                            subtitle: 'Onde o dinheiro em estoque está concentrado.',
+                            order: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+              const SizedBox(height: 18),
+              compact
+                  ? Column(
+                      children: <Widget>[
+                        _loadingSectionCard(title: 'Atenção necessária', order: 11),
+                        const SizedBox(height: 18),
+                        _loadingSectionCard(title: 'Produtos com estoque baixo', order: 12),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(child: _loadingSectionCard(title: 'Atenção necessária', order: 11)),
+                        const SizedBox(width: 18),
+                        Expanded(child: _loadingSectionCard(title: 'Produtos com estoque baixo', order: 12)),
+                      ],
+                    ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildDashboard(ProdutoDashboardModel dashboard) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -196,35 +318,8 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
               compact
                   ? Column(
                       children: <Widget>[
-                        _chartCard(
-                          title: 'Produtos por categoria',
-                          subtitle: 'Quantidade em estoque por agrupamento.',
-                          child: _barChart(
-                            dashboard.produtosPorCategoria,
-                            value: (ProdutoDashboardSerieItem item) => item.quantidade,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _chartCard(
-                          title: 'Situação do estoque',
-                          subtitle: 'Distribuição por saúde operacional.',
-                          child: _pieChart(dashboard.situacaoEstoque),
-                        ),
-                        const SizedBox(height: 18),
-                        _chartCard(
-                          title: 'Valor por categoria',
-                          subtitle: 'Onde o dinheiro em estoque está concentrado.',
-                          child: _barChart(
-                            dashboard.valorEstoquePorCategoria,
-                            value: (ProdutoDashboardSerieItem item) => item.valor,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
+                        _entry(
+                          order: 8,
                           child: _chartCard(
                             title: 'Produtos por categoria',
                             subtitle: 'Quantidade em estoque por agrupamento.',
@@ -234,16 +329,18 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 18),
-                        Expanded(
+                        const SizedBox(height: 18),
+                        _entry(
+                          order: 9,
                           child: _chartCard(
                             title: 'Situação do estoque',
                             subtitle: 'Distribuição por saúde operacional.',
                             child: _pieChart(dashboard.situacaoEstoque),
                           ),
                         ),
-                        const SizedBox(width: 18),
-                        Expanded(
+                        const SizedBox(height: 18),
+                        _entry(
+                          order: 10,
                           child: _chartCard(
                             title: 'Valor por categoria',
                             subtitle: 'Onde o dinheiro em estoque está concentrado.',
@@ -254,26 +351,69 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                           ),
                         ),
                       ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: _entry(
+                            order: 8,
+                            child: _chartCard(
+                              title: 'Produtos por categoria',
+                              subtitle: 'Quantidade em estoque por agrupamento.',
+                              child: _barChart(
+                                dashboard.produtosPorCategoria,
+                                value: (ProdutoDashboardSerieItem item) => item.quantidade,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: _entry(
+                            order: 9,
+                            child: _chartCard(
+                              title: 'Situação do estoque',
+                              subtitle: 'Distribuição por saúde operacional.',
+                              child: _pieChart(dashboard.situacaoEstoque),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: _entry(
+                            order: 10,
+                            child: _chartCard(
+                              title: 'Valor por categoria',
+                              subtitle: 'Onde o dinheiro em estoque está concentrado.',
+                              child: _barChart(
+                                dashboard.valorEstoquePorCategoria,
+                                value: (ProdutoDashboardSerieItem item) => item.valor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
               const SizedBox(height: 18),
               compact
                   ? Column(
                       children: <Widget>[
-                        _alerts(dashboard.alertas),
+                        _entry(order: 11, child: _alerts(dashboard.alertas)),
                         const SizedBox(height: 18),
-                        _lowStock(dashboard.produtosEstoqueBaixoLista),
+                        _entry(order: 12, child: _lowStock(dashboard.produtosEstoqueBaixoLista)),
                       ],
                     )
                   : Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Expanded(child: _alerts(dashboard.alertas)),
+                        Expanded(child: _entry(order: 11, child: _alerts(dashboard.alertas))),
                         const SizedBox(width: 18),
-                        Expanded(child: _lowStock(dashboard.produtosEstoqueBaixoLista)),
+                        Expanded(child: _entry(order: 12, child: _lowStock(dashboard.produtosEstoqueBaixoLista))),
                       ],
                     ),
               const SizedBox(height: 18),
-              _topStockValue(dashboard.topProdutosMaiorValorEstoque),
+              _entry(order: 13, child: _topStockValue(dashboard.topProdutosMaiorValorEstoque)),
             ],
           ),
         );
@@ -303,7 +443,9 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
         mainAxisSpacing: 14,
         mainAxisExtent: 118,
       ),
-      itemBuilder: (BuildContext context, int index) => _kpiCard(kpis[index]),
+      itemBuilder: (BuildContext context, int index) {
+        return _entry(order: index, child: _kpiCard(kpis[index]));
+      },
     );
   }
 
@@ -412,80 +554,87 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
       return math.max(max, value(item));
     });
 
-    return SizedBox(
-      height: 260,
-      child: BarChart(
-        BarChartData(
-          maxY: maxValue <= 0 ? 10.0 : maxValue * 1.18,
-          borderData: FlBorderData(show: false),
-          gridData: FlGridData(
-            show: true,
-            horizontalInterval: maxValue <= 0 ? 2.0 : math.max(1.0, maxValue / 4),
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.55),
-              strokeWidth: 1,
-            ),
-          ),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 46,
-                getTitlesWidget: (double axisValue, TitleMeta meta) => Text(
-                  axisValue >= 1000
-                      ? '${(axisValue / 1000).toStringAsFixed(0)}k'
-                      : axisValue.toInt().toString(),
-                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: _chartDuration,
+      curve: _entryCurve,
+      builder: (BuildContext context, double progress, Widget? child) {
+        return SizedBox(
+          height: 260,
+          child: BarChart(
+            BarChartData(
+              maxY: maxValue <= 0 ? 10.0 : maxValue * 1.18,
+              borderData: FlBorderData(show: false),
+              gridData: FlGridData(
+                show: true,
+                horizontalInterval: maxValue <= 0 ? 2.0 : math.max(1.0, maxValue / 4),
+                getDrawingHorizontalLine: (_) => FlLine(
+                  color: theme.colorScheme.outlineVariant.withOpacity(0.55),
+                  strokeWidth: 1,
                 ),
               ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 44,
-                getTitlesWidget: (double axisValue, TitleMeta meta) {
-                  final int index = axisValue.toInt();
-                  if (index < 0 || index >= chartItems.length) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: SizedBox(
-                      width: 72,
-                      child: Text(
-                        chartItems[index].label,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 46,
+                    getTitlesWidget: (double axisValue, TitleMeta meta) => Text(
+                      axisValue >= 1000
+                          ? '${(axisValue / 1000).toStringAsFixed(0)}k'
+                          : axisValue.toInt().toString(),
+                      style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
                     ),
-                  );
-                },
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 44,
+                    getTitlesWidget: (double axisValue, TitleMeta meta) {
+                      final int index = axisValue.toInt();
+                      if (index < 0 || index >= chartItems.length) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SizedBox(
+                          width: 72,
+                          child: Text(
+                            chartItems[index].label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
+              barGroups: List<BarChartGroupData>.generate(chartItems.length, (int index) {
+                return BarChartGroupData(
+                  x: index,
+                  barRods: <BarChartRodData>[
+                    BarChartRodData(
+                      toY: value(chartItems[index]) * progress,
+                      width: 22,
+                      borderRadius: BorderRadius.circular(8),
+                      color: _chartColor(theme, index),
+                    ),
+                  ],
+                );
+              }),
             ),
           ),
-          barGroups: List<BarChartGroupData>.generate(chartItems.length, (int index) {
-            return BarChartGroupData(
-              x: index,
-              barRods: <BarChartRodData>[
-                BarChartRodData(
-                  toY: value(chartItems[index]),
-                  width: 22,
-                  borderRadius: BorderRadius.circular(8),
-                  color: _chartColor(theme, index),
-                ),
-              ],
-            );
-          }),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -499,40 +648,51 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
       return _noData();
     }
 
-    return Column(
-      children: <Widget>[
-        SizedBox(
-          height: 230,
-          child: PieChart(
-            PieChartData(
-              centerSpaceRadius: 48,
-              sectionsSpace: 3,
-              sections: List<PieChartSectionData>.generate(chartItems.length, (int index) {
-                final ProdutoDashboardSerieItem item = chartItems[index];
-                return PieChartSectionData(
-                  value: item.quantidade,
-                  title: _qty(item.quantidade),
-                  radius: 66,
-                  color: _chartColor(theme, index),
-                  titleStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                );
-              }),
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: _chartDuration,
+      curve: _entryCurve,
+      builder: (BuildContext context, double progress, Widget? child) {
+        return Column(
+          children: <Widget>[
+            SizedBox(
+              height: 230,
+              child: PieChart(
+                PieChartData(
+                  centerSpaceRadius: 48,
+                  sectionsSpace: 3,
+                  sections: List<PieChartSectionData>.generate(chartItems.length, (int index) {
+                    final ProdutoDashboardSerieItem item = chartItems[index];
+                    return PieChartSectionData(
+                      value: math.max(0.001, item.quantidade * progress),
+                      title: progress > 0.72 ? _qty(item.quantidade) : '',
+                      radius: 54 + (12 * progress),
+                      color: _chartColor(theme, index),
+                      titleStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                      ),
+                    );
+                  }),
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: List<Widget>.generate(chartItems.length, (int index) {
-            return _legend(_chartColor(theme, index), chartItems[index].label);
-          }),
-        ),
-      ],
+            const SizedBox(height: 12),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 220),
+              opacity: progress > 0.65 ? 1 : 0,
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: List<Widget>.generate(chartItems.length, (int index) {
+                  return _legend(_chartColor(theme, index), chartItems[index].label);
+                }),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -747,6 +907,184 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     );
   }
 
+  Widget _entry({required int order, required Widget child}) {
+    final int stagger = order > 8 ? 8 : order;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: _entryDuration + Duration(milliseconds: stagger * 55),
+      curve: _entryCurve,
+      child: child,
+      builder: (BuildContext context, double progress, Widget? child) {
+        final double normalized = math.max(0.0, math.min(1.0, progress));
+        final double dy = 18 * (1 - normalized);
+
+        return Opacity(
+          opacity: normalized,
+          child: Transform.translate(
+            offset: Offset(0, dy),
+            child: Transform.scale(
+              alignment: Alignment.topCenter,
+              scale: 0.985 + (0.015 * normalized),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _loadingKpiCard({required bool highlight}) {
+    final ThemeData theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: highlight ? theme.colorScheme.primary.withOpacity(0.90) : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: highlight ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          _skeletonBox(
+            width: 48,
+            height: 48,
+            radius: 16,
+            color: highlight ? theme.colorScheme.onPrimary.withOpacity(0.16) : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _skeletonBox(width: 96, height: 10, color: highlight ? theme.colorScheme.onPrimary.withOpacity(0.22) : null),
+                const SizedBox(height: 10),
+                _skeletonBox(width: 134, height: 22, color: highlight ? theme.colorScheme.onPrimary.withOpacity(0.28) : null),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _loadingChartCard({
+    required String title,
+    required String subtitle,
+    required int order,
+  }) {
+    return _entry(
+      order: order,
+      child: _chartCard(
+        title: title,
+        subtitle: subtitle,
+        child: _chartSkeleton(),
+      ),
+    );
+  }
+
+  Widget _loadingSectionCard({required String title, required int order}) {
+    final ThemeData theme = Theme.of(context);
+
+    return _entry(
+      order: order,
+      child: _sectionCard(
+        title: title,
+        icon: Icons.hourglass_empty_rounded,
+        child: Column(
+          children: List<Widget>.generate(3, (int index) {
+            return Container(
+              width: double.infinity,
+              margin: EdgeInsets.only(bottom: index == 2 ? 0 : 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceVariant.withOpacity(0.28),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.70)),
+              ),
+              child: Row(
+                children: <Widget>[
+                  _skeletonBox(width: 34, height: 34, radius: 12),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _skeletonBox(width: 150, height: 12),
+                        const SizedBox(height: 8),
+                        _skeletonBox(width: double.infinity, height: 10),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _skeletonBox(width: 36, height: 18),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _chartSkeleton() {
+    final ThemeData theme = Theme.of(context);
+
+    return SizedBox(
+      height: 260,
+      child: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List<Widget>.generate(5, (int index) {
+                return Container(
+                  height: 1,
+                  color: theme.colorScheme.outlineVariant.withOpacity(0.55),
+                );
+              }),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                _skeletonBox(width: 22, height: 120, radius: 8),
+                _skeletonBox(width: 22, height: 180, radius: 8),
+                _skeletonBox(width: 22, height: 92, radius: 8),
+                _skeletonBox(width: 22, height: 150, radius: 8),
+                _skeletonBox(width: 22, height: 70, radius: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _skeletonBox({
+    double? width,
+    required double height,
+    double radius = 999,
+    Color? color,
+  }) {
+    final ThemeData theme = Theme.of(context);
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color ?? theme.colorScheme.surfaceVariant.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+
   Widget _noData({String text = 'Sem dados suficientes para exibir esta informação.'}) {
     final ThemeData theme = Theme.of(context);
 
@@ -773,37 +1111,40 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     final ThemeData theme = Theme.of(context);
 
     return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 560),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer.withOpacity(0.30),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: theme.colorScheme.error.withOpacity(0.25)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.cloud_off_rounded, size: 42, color: theme.colorScheme.error),
-            const SizedBox(height: 14),
-            Text(
-              'Não foi possível carregar o resumo de produtos.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error?.toString() ?? 'Erro desconhecido',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: _recarregar,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Tentar novamente'),
-            ),
-          ],
+      child: _entry(
+        order: 0,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 560),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.errorContainer.withOpacity(0.30),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: theme.colorScheme.error.withOpacity(0.25)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.cloud_off_rounded, size: 42, color: theme.colorScheme.error),
+              const SizedBox(height: 14),
+              Text(
+                'Não foi possível carregar o resumo de produtos.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error?.toString() ?? 'Erro desconhecido',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: _recarregar,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -813,38 +1154,41 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     final ThemeData theme = Theme.of(context);
 
     return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 560),
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.inventory_2_outlined, size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 14),
-            Text(
-              'Nenhum produto cadastrado ainda.',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Cadastre os primeiros itens para visualizar valor em estoque, categorias, margem e alertas executivos.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                height: 1.45,
+      child: _entry(
+        order: 0,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 560),
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.inventory_2_outlined, size: 48, color: theme.colorScheme.primary),
+              const SizedBox(height: 14),
+              Text(
+                'Nenhum produto cadastrado ainda.',
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: widget.onNovoProduto,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Cadastrar produto'),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'Cadastre os primeiros itens para visualizar valor em estoque, categorias, margem e alertas executivos.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: widget.onNovoProduto,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Cadastrar produto'),
+              ),
+            ],
+          ),
         ),
       ),
     );
