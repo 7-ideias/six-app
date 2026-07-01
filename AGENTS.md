@@ -114,6 +114,15 @@ Backend:
 * Telas mobile devem priorizar `ListView`, `Wrap`, `LayoutBuilder`, `SafeArea`, `Expanded` e `TextOverflow.ellipsis` para evitar overflow.
 * A navegação mobile deve ser clara e curta; evitar mais de 3 ou 4 destinos principais no menu inferior.
 
+### Ações rápidas e botões flutuantes no Mobile
+
+* Em telas mobile com conteúdo rolável e barra inferior fixa, evitar `FloatingActionButton.extended` sobre cards, resumos, listas ou mensagens, pois ele pode esconder textos e estados importantes.
+* Quando houver duas ou mais ações rápidas persistentes, preferir um dock/linha de ações integrado ao `bottomNavigationBar`, ao rodapé fixo da tela ou ao cabeçalho da seção, mantendo o conteúdo livre de sobreposição.
+* Reservar FAB para uma única ação primária, contextual e sem risco de cobrir informações relevantes.
+* Se o FAB for indispensável, garantir `SafeArea`, margem, padding inferior suficiente no scroll e validação em telas pequenas.
+* Botões de ação rápida devem ter tamanho compacto, ícone, texto curto, `TextOverflow.ellipsis` e estado de carregamento/desabilitado claro.
+* Nunca posicionar ações flutuantes sobre cards de resumo, alertas, valores financeiros ou textos de orientação do usuário.
+
 ## Movimento e microinterações no Mobile
 
 * Usar movimento de forma sutil, profissional e funcional.
