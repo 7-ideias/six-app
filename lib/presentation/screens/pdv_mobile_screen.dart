@@ -1461,7 +1461,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Widget _buildFloatingActions(ThemeData theme) {
-    final Color primary = theme.colorScheme.primary;
+    const Color fabColor = Color(0xFFFF4081);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1469,18 +1469,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       children: <Widget>[
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 230),
-          switchInCurve: Curves.easeOutCubic,
+          switchInCurve: Curves.easeOutBack,
           switchOutCurve: Curves.easeInCubic,
           transitionBuilder: (Widget child, Animation<double> animation) {
             return FadeTransition(
               opacity: animation,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
-                child: SizeTransition(
-                  sizeFactor: animation,
-                  axisAlignment: -1,
-                  child: child,
-                ),
+              child: SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: ScaleTransition(scale: Tween<double>(begin: 0.88, end: 1).animate(animation), child: child),
               ),
             );
           },
@@ -1494,41 +1491,43 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       theme: theme,
                       label: 'Código',
                       icon: Icons.qr_code_scanner_rounded,
+                      fabColor: fabColor,
                       onTap: _finalizandoVenda || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
                       loading: _buscandoCodigo,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 13),
                     _buildExpandableFabAction(
                       theme: theme,
                       label: 'Item',
                       icon: Icons.add_shopping_cart,
+                      fabColor: fabColor,
                       onTap: _finalizandoVenda ? null : _abrirSelecaoProduto,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                   ],
                 )
               : const SizedBox.shrink(key: ValueKey<String>('acoes-ocultas')),
         ),
         SizedBox(
-          width: 58,
-          height: 58,
+          width: 64,
+          height: 64,
           child: FloatingActionButton(
             heroTag: 'toggle-actions',
             tooltip: _acoesRapidasVisiveis ? 'Ocultar ações' : 'Mostrar ações',
             onPressed: () => setState(() => _acoesRapidasVisiveis = !_acoesRapidasVisiveis),
-            backgroundColor: primary,
-            foregroundColor: theme.colorScheme.onPrimary,
+            backgroundColor: fabColor,
+            foregroundColor: Colors.white,
             elevation: 8,
             shape: const CircleBorder(),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 160),
               transitionBuilder: (Widget child, Animation<double> animation) {
-                return RotationTransition(turns: Tween<double>(begin: -0.12, end: 0).animate(animation), child: FadeTransition(opacity: animation, child: child));
+                return RotationTransition(turns: Tween<double>(begin: -0.16, end: 0).animate(animation), child: FadeTransition(opacity: animation, child: child));
               },
               child: Icon(
-                _acoesRapidasVisiveis ? Icons.close_rounded : Icons.add_rounded,
+                _acoesRapidasVisiveis ? Icons.close_rounded : Icons.toys_rounded,
                 key: ValueKey<bool>(_acoesRapidasVisiveis),
-                size: 28,
+                size: 30,
               ),
             ),
           ),
@@ -1541,45 +1540,46 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     required ThemeData theme,
     required String label,
     required IconData icon,
+    required Color fabColor,
     required VoidCallback? onTap,
     bool loading = false,
   }) {
     final bool disabled = onTap == null;
-    final Color primary = theme.colorScheme.primary;
+    final Color actionColor = disabled ? theme.colorScheme.outlineVariant : fabColor;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        AnimatedOpacity(
-          duration: const Duration(milliseconds: 160),
-          opacity: disabled ? 0.58 : 1,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withOpacity(0.96),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.76)),
-              boxShadow: <BoxShadow>[BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 12, offset: const Offset(0, 5))],
+        SizedBox(
+          width: 96,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 160),
+            opacity: disabled ? 0.48 : 1,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black54, fontWeight: FontWeight.w800),
             ),
-            child: Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w900)),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Material(
-          color: theme.colorScheme.surface,
-          elevation: disabled ? 1 : 7,
-          shadowColor: Colors.black.withOpacity(0.22),
-          shape: CircleBorder(side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.92))),
+          color: actionColor,
+          elevation: disabled ? 1 : 6,
+          shadowColor: Colors.black.withOpacity(0.24),
+          shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: disabled ? null : onTap,
             child: SizedBox(
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               child: Center(
                 child: loading
-                    ? SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: primary))
-                    : Icon(icon, size: 20, color: disabled ? theme.colorScheme.onSurfaceVariant : primary),
+                    ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Icon(icon, size: 20, color: Colors.white),
               ),
             ),
           ),
