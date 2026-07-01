@@ -232,7 +232,6 @@ class OperacaoVendaInput {
     required this.itens,
     required this.formasPagamento,
     this.dataOperacao,
-    this.receberDepois = false,
   });
 
   final String descricao;
@@ -241,7 +240,6 @@ class OperacaoVendaInput {
   final List<ItemVendaAtual> itens;
   final List<FormaPagamentoSelecionada> formasPagamento;
   final DateTime? dataOperacao;
-  final bool receberDepois;
 }
 
 enum FormatoImpressaoOperacao {
