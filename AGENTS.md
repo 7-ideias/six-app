@@ -134,6 +134,19 @@ Backend:
 * Movimento deve comunicar estado, prioridade ou feedback de ação.
 * Não usar animação que prejudique leitura, acessibilidade ou performance em aparelhos simples.
 
+### Indicadores numéricos animados no Web e Mobile
+
+* Em cards de resumo, KPIs e dashboards, animar números importantes quando a tela carregar ou quando os dados forem atualizados.
+* A animação deve contar de zero até o valor final, com duração curta e curva suave, semelhante ao comportamento da Agenda Financeira.
+* Usar `TweenAnimationBuilder<double>` ou componente reutilizável equivalente para valores monetários, quantidades, percentuais e saldos.
+* O formatter deve respeitar o tipo do número: moeda, quantidade inteira, quantidade decimal ou percentual.
+* Para valores monetários, preservar locale e símbolo corretos; para percentuais, preservar casas decimais definidas pela tela.
+* Usar chaves estáveis baseadas no identificador do indicador e no valor final para que a animação rode novamente quando o dado mudar, sem reiniciar em rebuilds irrelevantes.
+* Combinar animação numérica com skeleton loading e entrada progressiva do card quando a tela depender do backend.
+* Aplicar apenas em indicadores que representam resumo, totalizador, saldo, contagem ou métrica executiva. Evitar em textos comuns, listas longas ou tabelas densas.
+* Garantir `TextOverflow.ellipsis`, `maxLines` e responsividade para números grandes e traduções maiores.
+* Não exagerar na duração nem criar efeito contínuo; depois de atingir o valor final, o número deve permanecer estável.
+
 ## Responsividade
 
 * Evitar overflow em web e mobile.
