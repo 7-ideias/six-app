@@ -28,6 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/core/services/firebase_push_notification_service.dart';
 
 import 'core/services/produto_service.dart';
+import 'core/ui/app_feedback.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -203,6 +204,7 @@ class MyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleSettingsProvider>();
 
     return MaterialApp(
+      scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
       onGenerateTitle:
           (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
       debugShowCheckedModeBanner: false,

@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../../firebase_options.dart';
 import '../config/app_config.dart';
+import '../ui/app_feedback.dart';
 import 'auth_service.dart';
 import 'notification_service.dart';
 import 'notificacao_service.dart';
@@ -52,6 +53,7 @@ class FirebasePushNotificationService {
       return true;
     } catch (e) {
       debugPrint('[FirebasePushNotificationService] Falha ao inicializar Firebase: $e');
+      AppFeedback.show('Falha ao inicializar Firebase. Notificações push podem não funcionar.');
       return false;
     }
   }
@@ -95,12 +97,15 @@ class FirebasePushNotificationService {
 
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
       debugPrint('[FirebasePushNotificationService] Permissão de push negada.');
-      return;
+      AppFeedback.show('Permissão de notificações negada.');
     }
 
     final String? token = await FirebaseMessaging.instance.getToken();
     if (token != null && token.trim().isNotEmpty) {
       await _registrarTokenNoBackend(token);
+    } else {
+      debugPrint('[FirebasePushNotificationService] Firebase não retornou token FCM.');
+      AppFeedback.show('Falha ao obter token de notificações. Notificações push podem não funcionar.');
     }
 
     _tokenRefreshSubscription ??=
@@ -124,6 +129,9 @@ class FirebasePushNotificationService {
         idUnicoDaEmpresa.trim().isEmpty) {
       debugPrint(
         '[FirebasePushNotificationService] Token FCM aguardando sessão autenticada.',
+      );
+      AppFeedback.show(
+        'Token FCM aguardando sessão autenticada.',
       );
       return;
     }
@@ -152,9 +160,15 @@ class FirebasePushNotificationService {
           '[FirebasePushNotificationService] Backend recusou token FCM: '
           '${response.statusCode} ${response.body}',
         );
+        AppFeedback.show(
+          'Backend recusou token FCM.',
+        );
       }
     } catch (e) {
       debugPrint('[FirebasePushNotificationService] Falha ao enviar token FCM: $e');
+      AppFeedback.show(
+        'Falha ao enviar token FCM.',
+      );
     }
   }
 
