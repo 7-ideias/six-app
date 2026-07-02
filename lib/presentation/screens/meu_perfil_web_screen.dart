@@ -287,7 +287,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: items.map((ProfileFormItem item) {
+          children: items.map((_ProfileFormItem item) {
             final int safeSpan = item.span < 1
                 ? 1
                 : item.span > columns
