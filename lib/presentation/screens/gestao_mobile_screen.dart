@@ -59,13 +59,21 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             letterSpacing: 0.2,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Notificações',
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () => _openNotifications(context),
+          ),
+        ],
       ),
       drawer: AppDrawerDoMobile(
         image: _image,
         onPickImage: _pickImage,
       ),
       body: _buildContent(context),
-      bottomNavigationBar: kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
+      bottomNavigationBar:
+          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
     );
   }
 
@@ -211,7 +219,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Notificações',
             subtitle: 'Eventos do backend, webhooks e canais',
             icon: Icons.notifications_active_outlined,
-            onTap: () => _navigateTo(context, const NotificacoesMobileScreen()),
+            onTap: () => _openNotifications(context),
           ),
           _ManagementItem(
             title: 'Modelos de PDF',
@@ -441,6 +449,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
       ),
     );
+  }
+
+  void _openNotifications(BuildContext context) {
+    _navigateTo(context, const NotificacoesMobileScreen());
   }
 
   void _navigateTo(BuildContext context, Widget page) {
