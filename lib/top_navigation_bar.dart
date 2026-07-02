@@ -8,6 +8,8 @@ import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 
+import 'core/config/app_config.dart';
+
 class TopNavItemData {
   final String title;
   final List<String> subItems;
@@ -456,6 +458,24 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     ];
   }
 
+  Widget _buildTrailingArea(ColorScheme colorScheme) {
+    final Widget notifications = notificationWidget ??
+        IconButton(
+          onPressed: onNotificationPressed,
+          icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
+          tooltip: 'Notificações',
+        );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        _AppVersionPill(colorScheme: colorScheme),
+        const SizedBox(width: 10),
+        notifications,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeProvider themeProvider = context.watch<ThemeProvider>();
@@ -503,12 +523,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      notificationWidget ??
-                          IconButton(
-                            onPressed: onNotificationPressed,
-                            icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
-                            tooltip: 'Notificações',
-                          ),
+                      _buildTrailingArea(colorScheme),
                     ],
                   ),
           );
@@ -601,6 +616,9 @@ class _CompactHeader extends StatelessWidget {
             icon: Icon(Icons.menu_rounded, color: colorScheme.onPrimary),
           ),
         ),
+        const SizedBox(width: 8),
+        _AppVersionPill(colorScheme: colorScheme, compact: true),
+        const SizedBox(width: 8),
         notificationWidget ??
             IconButton(
               onPressed: onNotificationPressed,
@@ -617,6 +635,53 @@ class _CompactMenuSelection {
   final String? subItem;
 
   const _CompactMenuSelection(this.menuIndex, [this.subItem]);
+}
+
+class _AppVersionPill extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final bool compact;
+
+  const _AppVersionPill({
+    required this.colorScheme,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String label = 'v${AppConfig.appVersion}';
+
+    return Tooltip(
+      message: 'Versão atual: ${AppConfig.appVersion}',
+      child: Container(
+        height: compact ? 34 : 36,
+        padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: colorScheme.onPrimary.withOpacity(0.18)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _TopNavigationMenuItem extends StatelessWidget {
