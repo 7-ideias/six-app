@@ -100,7 +100,7 @@ class SixWebEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
-      duration: duration + Duration(milliseconds: (order * 30).clamp(0, 300)),
+      duration: duration + Duration(milliseconds: (order * 30).clamp(0, 300).toInt()),
       curve: Curves.easeOutCubic,
       builder: (BuildContext context, double value, Widget? child) {
         return Opacity(
