@@ -234,6 +234,13 @@ class _RegrasOperacionaisConfiguracaoContentState
   bool _cadastroGradeProdutos = true;
   bool _controlarEstoquePorVariacao = true;
   bool _exigirGradeParaProdutoVariavel = false;
+  bool _vendaPorMesa = false;
+  bool _mesaObrigatoria = true;
+  bool _permitirTransferenciaMesa = true;
+  bool _permitirJuntarMesas = true;
+  bool _cobrarTaxaServicoMesa = true;
+  bool _imprimirComandaMesa = true;
+  bool _fecharMesaSomenteNoCaixa = true;
   bool _controlarEstoque = true;
   bool _venderComEstoqueNegativo = false;
   bool _concederDescontoNaVenda = true;
@@ -246,8 +253,11 @@ class _RegrasOperacionaisConfiguracaoContentState
 
   String _visibilidadeCatalogo = 'Público com link';
   String _validadeLinkCatalogo = 'Sem expiração';
+  String _modoAtendimentoMesa = 'Mesa e balcão';
+  String _statusInicialMesa = 'Livre';
   String _tipoDescontoSelecionado = 'Percentual e valor fixo';
   String _baseComissaoSelecionada = 'Valor líquido da venda';
+  double _taxaServicoMesaPercentual = 10;
   double _limiteDescontoPercentual = 10;
   double _percentualComissaoPadrao = 5;
 
@@ -255,6 +265,10 @@ class _RegrasOperacionaisConfiguracaoContentState
       TextEditingController(text: 'Catálogo Six Repair');
   final TextEditingController _slugCatalogoController =
       TextEditingController(text: 'six-repair-center');
+  final TextEditingController _prefixoMesaController =
+      TextEditingController(text: 'Mesa');
+  final TextEditingController _quantidadeMesasController =
+      TextEditingController(text: '20');
 
   final Set<String> _atributosGradeSelecionados = <String>{
     'Cor',
@@ -282,6 +296,22 @@ class _RegrasOperacionaisConfiguracaoContentState
     '24 horas',
     '7 dias',
     '30 dias',
+  ];
+
+  static const List<String> _modosAtendimentoMesa = <String>[
+    'Mesa e balcão',
+    'Somente mesa',
+    'Mesa, balcão e delivery',
+    'Comanda individual',
+  ];
+
+  static const List<String> _statusMesa = <String>[
+    'Livre',
+    'Ocupada',
+    'Aguardando pedido',
+    'Em consumo',
+    'Aguardando pagamento',
+    'Fechada',
   ];
 
   static const List<String> _tiposDesconto = <String>[
@@ -374,6 +404,8 @@ class _RegrasOperacionaisConfiguracaoContentState
   void dispose() {
     _nomeCatalogoController.dispose();
     _slugCatalogoController.dispose();
+    _prefixoMesaController.dispose();
+    _quantidadeMesasController.dispose();
     super.dispose();
   }
 
@@ -407,6 +439,8 @@ class _RegrasOperacionaisConfiguracaoContentState
                   const SizedBox(height: 18),
                   _buildCatalogoGradeCard(theme),
                   const SizedBox(height: 18),
+                  _buildVendaPorMesaCard(theme),
+                  const SizedBox(height: 18),
                   _buildEstoqueVendaCard(theme),
                   const SizedBox(height: 18),
                   _buildDescontoCard(theme),
@@ -429,6 +463,7 @@ class _RegrasOperacionaisConfiguracaoContentState
     final int regrasAtivas = <bool>[
       _permitirVendaCatalogoPorLink,
       _cadastroGradeProdutos,
+      _vendaPorMesa,
       _controlarEstoque,
       _venderComEstoqueNegativo,
       _concederDescontoNaVenda,
@@ -477,7 +512,7 @@ class _RegrasOperacionaisConfiguracaoContentState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Esta tela prepara campos para catálogo por link, grade de produtos, estoque, venda, caixa, desconto, comissão e unidades de medida. Nenhuma integração com backend foi adicionada nesta etapa.',
+                  'Esta tela prepara campos para catálogo por link, grade de produtos, venda por mesa, estoque, caixa, desconto, comissão e unidades de medida. Nenhuma integração com backend foi adicionada nesta etapa.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
@@ -491,6 +526,12 @@ class _RegrasOperacionaisConfiguracaoContentState
             icon: Icons.check_circle_outline_rounded,
             title: '$regrasAtivas regras ativas',
             subtitle: 'Mock local',
+          ),
+          _buildSummaryPill(
+            theme,
+            icon: Icons.table_restaurant_outlined,
+            title: _vendaPorMesa ? 'Mesa ativa' : 'Mesa inativa',
+            subtitle: _modoAtendimentoMesa,
           ),
           _buildSummaryPill(
             theme,
@@ -674,6 +715,155 @@ class _RegrasOperacionaisConfiguracaoContentState
                 },
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVendaPorMesaCard(ThemeData theme) {
+    return _buildSectionCard(
+      theme: theme,
+      title: 'Venda por mesa',
+      subtitle:
+          'Personalização para restaurante, lanchonete, bar ou atendimento em salão com mesa, comanda e fechamento no caixa.',
+      icon: Icons.table_restaurant_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: <Widget>[
+              _buildRuleSwitch(
+                theme: theme,
+                title: 'Permitir venda por mesa',
+                subtitle:
+                    'Habilita atendimento por mesa para registrar consumo aberto até o fechamento da conta.',
+                value: _vendaPorMesa,
+                onChanged: (bool value) {
+                  setState(() => _vendaPorMesa = value);
+                },
+              ),
+              _buildRuleSwitch(
+                theme: theme,
+                title: 'Mesa obrigatória na venda',
+                subtitle:
+                    'Exige seleção de mesa antes de lançar itens em operações de salão.',
+                value: _mesaObrigatoria,
+                enabled: _vendaPorMesa,
+                onChanged: (bool value) {
+                  setState(() => _mesaObrigatoria = value);
+                },
+              ),
+              _buildRuleSwitch(
+                theme: theme,
+                title: 'Permitir transferência de mesa',
+                subtitle:
+                    'Permite mover consumo de uma mesa para outra sem perder os itens lançados.',
+                value: _permitirTransferenciaMesa,
+                enabled: _vendaPorMesa,
+                onChanged: (bool value) {
+                  setState(() => _permitirTransferenciaMesa = value);
+                },
+              ),
+              _buildRuleSwitch(
+                theme: theme,
+                title: 'Permitir juntar mesas',
+                subtitle:
+                    'Permite combinar mesas para grupos, eventos ou atendimento compartilhado.',
+                value: _permitirJuntarMesas,
+                enabled: _vendaPorMesa,
+                onChanged: (bool value) {
+                  setState(() => _permitirJuntarMesas = value);
+                },
+              ),
+              _buildRuleSwitch(
+                theme: theme,
+                title: 'Imprimir comanda da mesa',
+                subtitle:
+                    'Prepara emissão de comanda para cozinha, balcão ou conferência do cliente.',
+                value: _imprimirComandaMesa,
+                enabled: _vendaPorMesa,
+                onChanged: (bool value) {
+                  setState(() => _imprimirComandaMesa = value);
+                },
+              ),
+              _buildRuleSwitch(
+                theme: theme,
+                title: 'Fechar mesa somente no caixa',
+                subtitle:
+                    'Mantém o fechamento centralizado no caixa para reduzir divergência de recebimento.',
+                value: _fecharMesaSomenteNoCaixa,
+                enabled: _vendaPorMesa,
+                onChanged: (bool value) {
+                  setState(() => _fecharMesaSomenteNoCaixa = value);
+                },
+              ),
+              _buildDropdownBox(
+                theme: theme,
+                label: 'Modo de atendimento',
+                value: _modoAtendimentoMesa,
+                items: _modosAtendimentoMesa,
+                enabled: _vendaPorMesa,
+                onChanged: (String? value) {
+                  if (value == null) return;
+                  setState(() => _modoAtendimentoMesa = value);
+                },
+              ),
+              _buildDropdownBox(
+                theme: theme,
+                label: 'Status inicial da mesa',
+                value: _statusInicialMesa,
+                items: _statusMesa,
+                enabled: _vendaPorMesa,
+                onChanged: (String? value) {
+                  if (value == null) return;
+                  setState(() => _statusInicialMesa = value);
+                },
+              ),
+              _buildTextBox(
+                theme: theme,
+                label: 'Prefixo de identificação',
+                controller: _prefixoMesaController,
+                helperText: 'Exemplo: Mesa 01, Balcão 02 ou Comanda 15',
+                enabled: _vendaPorMesa,
+              ),
+              _buildTextBox(
+                theme: theme,
+                label: 'Quantidade inicial de mesas',
+                controller: _quantidadeMesasController,
+                keyboardType: TextInputType.number,
+                enabled: _vendaPorMesa,
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _buildRuleSwitch(
+            theme: theme,
+            title: 'Cobrar taxa de serviço',
+            subtitle:
+                'Sugere percentual de serviço no fechamento da mesa, sem alterar valores no backend nesta etapa.',
+            value: _cobrarTaxaServicoMesa,
+            enabled: _vendaPorMesa,
+            onChanged: (bool value) {
+              setState(() => _cobrarTaxaServicoMesa = value);
+            },
+          ),
+          const SizedBox(height: 18),
+          _buildSliderBox(
+            theme: theme,
+            title: 'Taxa de serviço sugerida: ${_taxaServicoMesaPercentual.toStringAsFixed(0)}%',
+            subtitle:
+                'Campo pensado para restaurantes e lanchonetes que trabalham com taxa de atendimento no fechamento da mesa.',
+            value: _taxaServicoMesaPercentual,
+            min: 0,
+            max: 20,
+            divisions: 20,
+            enabled: _vendaPorMesa && _cobrarTaxaServicoMesa,
+            onChanged: (double value) {
+              setState(() => _taxaServicoMesaPercentual = value);
+            },
           ),
         ],
       ),
@@ -1102,6 +1292,7 @@ class _RegrasOperacionaisConfiguracaoContentState
     required TextEditingController controller,
     bool enabled = true,
     String? helperText,
+    TextInputType? keyboardType,
   }) {
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 160),
@@ -1111,6 +1302,7 @@ class _RegrasOperacionaisConfiguracaoContentState
         child: TextField(
           controller: controller,
           enabled: enabled,
+          keyboardType: keyboardType,
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             labelText: label,
