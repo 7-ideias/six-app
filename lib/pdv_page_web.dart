@@ -82,6 +82,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
 
   bool _mostrarDashboardLateral = true;
+  bool _cockpitAbertoEmDialog = false;
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
 
   final List<Map<String, dynamic>> _produtosSelecionados =
@@ -136,8 +137,57 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   void _voltarParaSeletor() {
+    if (_cockpitAbertoEmDialog) {
+      Navigator.of(context).pop();
+      return;
+    }
+
     setState(() {
       _moduloAtual = ModuloCentralPDV.seletor;
+    });
+  }
+
+  Future<void> _abrirCockpitEstrategico() async {
+    setState(() {
+      _cockpitCanalSelecionado = null;
+      _cockpitAtendimentoSelecionado = null;
+      _cockpitAbertoEmDialog = true;
+    });
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          backgroundColor: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: SizedBox(
+              width: size.width * 0.94,
+              height: size.height * 0.90,
+              child: Column(
+                children: <Widget>[
+                  _buildCockpitEstrategico(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _cockpitAbertoEmDialog = false;
     });
   }
 
@@ -1702,11 +1752,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   _buildModoOperacaoButton(
                     icon: Icons.space_dashboard_rounded,
                     label: 'Cockpit',
-                    onPressed: () {
-                      setState(() {
-                        _moduloAtual = ModuloCentralPDV.cockpit;
-                      });
-                    },
+                    onPressed: _abrirCockpitEstrategico,
                   ),
                   _buildModoOperacaoButton(
                     icon: Icons.point_of_sale,
