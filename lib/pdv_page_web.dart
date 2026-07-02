@@ -772,7 +772,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _abrirSelecaoProdutoWeb() async {
-    final ProdutoModel? result = await showDialog<ProdutoModel>(
+    final dynamic result = await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
@@ -782,14 +782,32 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.80,
             height: MediaQuery.of(context).size.height * 0.80,
-            child: SubPainelWebProdutoLista(isSelecao: true),
+            child: const SubPainelWebProdutoLista(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+            ),
           ),
         );
       },
     );
 
-    if (result != null) {
+    if (!mounted || result == null) {
+      return;
+    }
+
+    if (result is ProdutoModel) {
       _adicionarProdutoSelecionado(result);
+      return;
+    }
+
+    if (result is List) {
+      final List<ProdutoModel> produtos = result
+          .whereType<ProdutoModel>()
+          .toList(growable: false);
+
+      if (produtos.isNotEmpty) {
+        _adicionarProdutosSelecionados(produtos);
+      }
     }
   }
 
@@ -860,33 +878,45 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
     setState(() {
-      final int indexExistente = _produtosSelecionados.indexWhere(
-        (Map<String, dynamic> item) => _mesmoProduto(item, produto),
-      );
+      _adicionarProdutoNaListaSemSetState(produto);
+      _atualizarCamposDerivados();
+    });
+  }
 
-      if (indexExistente >= 0) {
-        _produtosSelecionados[indexExistente]['quantidade'] =
-            (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) + 1;
-      } else {
-        _produtosSelecionados.add(<String, dynamic>{
-          'id': _extrairIdProduto(produto),
-          'codigo': produto.codigoDeBarras,
-          'nome': produto.nomeProduto,
-          'preco': produto.precoVenda,
-          'quantidade': 1,
-          'produtoOriginal': produto,
-        });
+  void _adicionarProdutosSelecionados(List<ProdutoModel> produtos) {
+    if (produtos.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      for (final ProdutoModel produto in produtos) {
+        _adicionarProdutoNaListaSemSetState(produto);
       }
 
       _atualizarCamposDerivados();
     });
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Produto adicionado à venda.'),
-        behavior: SnackBarBehavior.floating,
-      ),
+  void _adicionarProdutoNaListaSemSetState(ProdutoModel produto) {
+    final int indexExistente = _produtosSelecionados.indexWhere(
+      (Map<String, dynamic> item) => _mesmoProduto(item, produto),
     );
+
+    if (indexExistente >= 0) {
+      final int quantidadeAtual =
+          (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) as int;
+      _produtosSelecionados[indexExistente]['quantidade'] = quantidadeAtual + 1;
+      return;
+    }
+
+    _produtosSelecionados.add(<String, dynamic>{
+      'id': _extrairIdProduto(produto),
+      'codigo': produto.codigoDeBarras,
+      'nome': produto.nomeProduto,
+      'preco': produto.precoVenda,
+      'quantidade': 1,
+      'produtoOriginal': produto,
+    });
   }
 
   bool _mesmoProduto(Map<String, dynamic> item, ProdutoModel produto) {
