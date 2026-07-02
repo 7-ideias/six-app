@@ -23,6 +23,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sixpos/core/services/firebase_push_notification_service.dart';
 
 import 'core/services/produto_service.dart';
 
@@ -30,6 +31,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) {
     usePathUrlStrategy();
+  } else {
+    await FirebasePushNotificationService.initializeOnAppStart();
   }
   final prefs = await SharedPreferences.getInstance();
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;

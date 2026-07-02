@@ -38,19 +38,18 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_ANDROID_API_KEY'),
-    appId: String.fromEnvironment('FIREBASE_ANDROID_APP_ID'),
-    messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
-    storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+    apiKey: 'AIzaSyA8Hq0Livcf2DyDzbM-mzauwxxQRmkzVB0',
+    appId: '1:841074493827:android:15e3b2e7d7b5c18cb98eb6',
+    messagingSenderId: '841074493827',
+    projectId: 'sixpos-cd87e',
+    storageBucket: 'sixpos-cd87e.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_IOS_API_KEY'),
-    appId: String.fromEnvironment('FIREBASE_IOS_APP_ID'),
-    messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
-    storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
-    iosBundleId: String.fromEnvironment('FIREBASE_IOS_BUNDLE_ID'),
+    apiKey: 'AIzaSyAeeAVUUO0xOOKw7ifDf0hGKumrnooBGiU',
+    appId: '1:841074493827:ios:9fbc8a60d3d7e6aeb98eb6',
+    messagingSenderId: '841074493827',
+    projectId: 'sixpos-cd87e',
+    storageBucket: 'sixpos-cd87e.firebasestorage.app',
+    iosBundleId: 'br.com.seteideias.appplanilha',
   );
 }
