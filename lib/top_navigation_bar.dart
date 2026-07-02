@@ -291,6 +291,12 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           subtitle: 'Métodos aceitos, recebimentos futuros e regras de liquidação.',
           icon: Icons.payments_rounded,
         );
+      case 'Regras operacionais':
+        return const _ConfiguracaoMenuData(
+          title: 'Regras operacionais',
+          subtitle: 'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.',
+          icon: Icons.rule_folder_outlined,
+        );
       case 'Notificações':
         return const _ConfiguracaoMenuData(
           title: 'Notificações',
@@ -424,6 +430,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Usuários e permissões',
           'Regionalização',
           'Formas de recebimento',
+          'Regras operacionais',
           'Notificações',
           'Modelos de PDF',
           'Integrações',
