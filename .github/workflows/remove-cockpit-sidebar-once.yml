@@ -1,0 +1,128 @@
+name: Remove cockpit sidebar once
+
+on:
+  push:
+    branches:
+      - feature/20260702-alteracoes-livres
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/20260702-alteracoes-livres
+
+      - name: Remove left cockpit summary from web page
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/pdv_page_web.dart')
+          source = path.read_text(encoding='utf-8')
+
+          def remove_once(text: str, target: str) -> str:
+              if target not in text:
+                  raise SystemExit(f'Target not found: {target!r}')
+              return text.replace(target, '', 1)
+
+          def remove_between(text: str, start_marker: str, end_marker: str) -> str:
+              start = text.find(start_marker)
+              if start == -1:
+                  raise SystemExit(f'Start marker not found: {start_marker!r}')
+              end = text.find(end_marker, start)
+              if end == -1:
+                  raise SystemExit(f'End marker not found after {start_marker!r}: {end_marker!r}')
+              return text[:start] + text[end:]
+
+          source = remove_once(source, '  bool _mostrarDashboardLateral = true;\n')
+          source = remove_once(source, '  final ScrollController _sidebarScrollController = ScrollController();\n')
+          source = remove_once(source, '    _sidebarScrollController.dispose();\n')
+          source = remove_between(
+              source,
+              '  List<Map<String, String>> get _dashboardData =>',
+              '  Widget _buildConteudoCentral',
+          )
+          source = remove_between(
+              source,
+              '  Widget _buildDashboardCard',
+              '  Widget _buildCardUltimoEvento',
+          )
+
+          old_body = '''        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (_mostrarDashboardLateral) ...<Widget>[
+                _buildResumoSidebar(),
+                const SizedBox(width: 20),
+              ] else ...<Widget>[_buildResumoSidebarCollapsed()],
+              Expanded(
+                child: Card(
+                  elevation: 6,
+                  color: _pdvTheme.backgroundSurface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    side: BorderSide(color: _pdvTheme.cardBorder),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      children: <Widget>[_buildConteudoCentral(total)],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+'''
+
+          new_body = '''        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Card(
+            elevation: 6,
+            color: _pdvTheme.backgroundSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+              side: BorderSide(color: _pdvTheme.cardBorder),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                children: <Widget>[_buildConteudoCentral(total)],
+              ),
+            ),
+          ),
+        ),
+'''
+          if old_body not in source:
+              raise SystemExit('Body block with cockpit sidebar not found')
+          source = source.replace(old_body, new_body, 1)
+
+          workflow = Path('.github/workflows/remove-cockpit-sidebar-once.yml')
+          if workflow.exists():
+              workflow.unlink()
+
+          path.write_text(source, encoding='utf-8')
+          PY
+
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git status --short
+          git add lib/pdv_page_web.dart .github/workflows/remove-cockpit-sidebar-once.yml
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "refactor(web): remove cockpit resumido lateral"
+            git push origin HEAD:feature/20260702-alteracoes-livres
+          fi
