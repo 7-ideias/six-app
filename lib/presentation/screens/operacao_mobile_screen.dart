@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/services/notificacao_service.dart';
+import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
@@ -26,15 +29,73 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
 
   final TelaInicialWebApiClient _telaInicialApiClient =
       HttpResumoDaEmpresaApiClient(canal: 'mobile');
+  final NotificacaoService _notificacaoService = NotificacaoService();
 
   TelaInicialModel? _resumoTelaInicial;
   bool _carregandoResumo = true;
   String? _erroResumo;
+  int _totalNotificacoesConhecidas = 0;
 
   @override
   void initState() {
     super.initState();
+    _totalNotificacoesConhecidas = _notificacaoService.total;
+    _notificacaoService.addListener(_onNotificacoesChanged);
+    _garantirWebSocketMobile();
     _carregarResumoAtendimento();
+  }
+
+  @override
+  void dispose() {
+    _notificacaoService.removeListener(_onNotificacoesChanged);
+    super.dispose();
+  }
+
+  void _onNotificacoesChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    final int totalAtual = _notificacaoService.total;
+    final bool recebeuNovaNotificacao =
+        totalAtual > _totalNotificacoesConhecidas;
+    _totalNotificacoesConhecidas = totalAtual;
+
+    setState(() {});
+
+    if (!recebeuNovaNotificacao) {
+      return;
+    }
+
+    final String? mensagem =
+        _notificacaoService.ultimaNotificacao?.description.trim();
+    if (mensagem == null || mensagem.isEmpty) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+      );
+    });
+  }
+
+  void _garantirWebSocketMobile() {
+    if (kIsWeb) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 180), () {
+        if (mounted) {
+          connectStomp();
+        }
+      });
+    });
   }
 
   Future<void> _carregarResumoAtendimento() async {
@@ -82,6 +143,13 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           'Atendimento',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Notificações',
+            icon: _buildNotificationIcon(),
+            onPressed: () => _openNotifications(context),
+          ),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -127,6 +195,45 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       ),
       bottomNavigationBar:
           kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
+    );
+  }
+
+  Widget _buildNotificationIcon() {
+    final int naoLidas = _notificacaoService.naoLidas;
+    final bool temNaoLidas = naoLidas > 0;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(
+          temNaoLidas
+              ? Icons.notifications_active_rounded
+              : Icons.notifications_none_rounded,
+        ),
+        if (temNaoLidas)
+          Positioned(
+            right: -6,
+            top: -6,
+            child: SixPulsingBadge(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Text(
+                  _badgeText(naoLidas),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -566,6 +673,18 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         letterSpacing: 0.1,
       ),
     );
+  }
+
+  String _badgeText(int count) {
+    if (count > 9) {
+      return '+9';
+    }
+
+    return count.toString();
+  }
+
+  void _openNotifications(BuildContext context) {
+    _navigateTo(context, const NotificacoesMobileScreen());
   }
 
   void _navigateTo(BuildContext context, Widget page) {

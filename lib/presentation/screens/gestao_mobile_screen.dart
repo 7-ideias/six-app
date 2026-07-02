@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sixpos/core/services/notificacao_service.dart';
+import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
@@ -33,6 +35,69 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
+  final NotificacaoService _notificacaoService = NotificacaoService();
+  int _totalNotificacoesConhecidas = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _totalNotificacoesConhecidas = _notificacaoService.total;
+    _notificacaoService.addListener(_onNotificacoesChanged);
+    _garantirWebSocketMobile();
+  }
+
+  @override
+  void dispose() {
+    _notificacaoService.removeListener(_onNotificacoesChanged);
+    super.dispose();
+  }
+
+  void _onNotificacoesChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    final int totalAtual = _notificacaoService.total;
+    final bool recebeuNovaNotificacao =
+        totalAtual > _totalNotificacoesConhecidas;
+    _totalNotificacoesConhecidas = totalAtual;
+
+    setState(() {});
+
+    if (!recebeuNovaNotificacao) {
+      return;
+    }
+
+    final String? mensagem =
+        _notificacaoService.ultimaNotificacao?.description.trim();
+    if (mensagem == null || mensagem.isEmpty) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+      );
+    });
+  }
+
+  void _garantirWebSocketMobile() {
+    if (kIsWeb) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 180), () {
+        if (mounted) {
+          connectStomp();
+        }
+      });
+    });
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     final XFile? selected = await _picker.pickImage(source: source);
@@ -59,13 +124,60 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             letterSpacing: 0.2,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Notificações',
+            icon: _buildNotificationIcon(),
+            onPressed: () => _openNotifications(context),
+          ),
+        ],
       ),
       drawer: AppDrawerDoMobile(
         image: _image,
         onPickImage: _pickImage,
       ),
       body: _buildContent(context),
-      bottomNavigationBar: kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
+      bottomNavigationBar:
+          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
+    );
+  }
+
+  Widget _buildNotificationIcon() {
+    final int naoLidas = _notificacaoService.naoLidas;
+    final bool temNaoLidas = naoLidas > 0;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(
+          temNaoLidas
+              ? Icons.notifications_active_rounded
+              : Icons.notifications_none_rounded,
+        ),
+        if (temNaoLidas)
+          Positioned(
+            right: -6,
+            top: -6,
+            child: SixPulsingBadge(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Text(
+                  _badgeText(naoLidas),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -211,7 +323,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Notificações',
             subtitle: 'Eventos do backend, webhooks e canais',
             icon: Icons.notifications_active_outlined,
-            onTap: () => _navigateTo(context, const NotificacoesMobileScreen()),
+            onTap: () => _openNotifications(context),
           ),
           _ManagementItem(
             title: 'Modelos de PDF',
@@ -441,6 +553,18 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
       ),
     );
+  }
+
+  String _badgeText(int count) {
+    if (count > 9) {
+      return '+9';
+    }
+
+    return count.toString();
+  }
+
+  void _openNotifications(BuildContext context) {
+    _navigateTo(context, const NotificacoesMobileScreen());
   }
 
   void _navigateTo(BuildContext context, Widget page) {

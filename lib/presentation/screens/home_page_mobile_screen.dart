@@ -34,7 +34,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
   static const Color _mutedTextColor = Color(0xFF64748B);
   static const Color _titleTextColor = Color(0xFF0F172A);
 
-  DateTimeRange? _selectedDateRange;
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
@@ -92,20 +91,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
     connectStomp();
   }
 
-  Future<void> _selectDateRange(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-
-    if (picked != null && picked != _selectedDateRange) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
-    }
-  }
-
   Future<void> _pickImage(ImageSource source) async {
     final XFile? selected = await _picker.pickImage(source: source);
     if (selected != null) {
@@ -135,9 +120,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ),
               actions: [
                 IconButton(
-                  tooltip: 'Período',
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  onPressed: () => _selectDateRange(context),
+                  tooltip: 'Configurações',
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: _showFeatureInProgress,
                 ),
                 IconButton(
                   tooltip: 'Notificações',
@@ -282,7 +267,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
               Expanded(
                 child: _buildSummaryPill(
                   label: 'Período',
-                  value: _dateRangeLabel,
+                  value: 'Hoje',
                 ),
               ),
               const SizedBox(width: 12),
@@ -386,11 +371,17 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       top: -2,
                       child: SixPulsingBadge(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFEF4444),
                             borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: Colors.white, width: 1.5),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 1.5,
+                            ),
                           ),
                           child: Text(
                             _badgeText(naoLidas),
@@ -447,7 +438,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       _QuickAction(
         label: 'Nova venda',
         icon: Icons.point_of_sale_rounded,
-        onTap: () => _navigateTo(context, PdvMobileScreen()),
+        onTap: () => _navigateTo(context, const PdvMobileScreen()),
       ),
       _QuickAction(
         label: 'Novo orçamento',
@@ -558,14 +549,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
         subtitle: 'Disponíveis no catálogo',
         count: '10',
         icon: Icons.inventory_2_outlined,
-        onTap: () => _navigateTo(context, CatalogoDisponivelMobileScreen()),
+        onTap: () => _navigateTo(context, const CatalogoDisponivelMobileScreen()),
       ),
       _DashboardMetric(
         title: 'Produtos inativos',
         subtitle: 'Fora do catálogo ativo',
         count: '0',
         icon: Icons.inventory_2_rounded,
-        onTap: () => _navigateTo(context, MeuCatalogoMobileScreen()),
+        onTap: () => _navigateTo(context, const MeuCatalogoMobileScreen()),
       ),
     ];
 
@@ -677,22 +668,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
         letterSpacing: 0.1,
       ),
     );
-  }
-
-  String get _dateRangeLabel {
-    if (_selectedDateRange == null) {
-      return 'Hoje';
-    }
-
-    final String start = _formatDate(_selectedDateRange!.start);
-    final String end = _formatDate(_selectedDateRange!.end);
-    return '$start - $end';
-  }
-
-  String _formatDate(DateTime value) {
-    final String day = value.day.toString().padLeft(2, '0');
-    final String month = value.month.toString().padLeft(2, '0');
-    return '$day/$month';
   }
 
   String _badgeText(int count) {

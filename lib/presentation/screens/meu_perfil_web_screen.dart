@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../data/models/usuario_model.dart';
@@ -8,13 +10,26 @@ void showMeuPerfilWebDialog(BuildContext context) {
   showDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (_) => const Dialog(
-      insetPadding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      child: SizedBox(
-        width: 980,
-        child: MeuPerfilWebScreen(),
-      ),
-    ),
+    builder: (BuildContext dialogContext) {
+      final Size size = MediaQuery.sizeOf(dialogContext);
+      final bool compact = size.width < 760;
+
+      return Dialog(
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: compact ? 16 : 32,
+          vertical: compact ? 16 : 24,
+        ),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 980,
+            maxHeight: size.height - (compact ? 32 : 48),
+          ),
+          child: const MeuPerfilWebScreen(),
+        ),
+      );
+    },
   );
 }
 
@@ -26,6 +41,9 @@ class MeuPerfilWebScreen extends StatefulWidget {
 }
 
 class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
+  static const Duration _entryDuration = Duration(milliseconds: 420);
+  static const Curve _entryCurve = Curves.easeOutCubic;
+
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   final TextEditingController _nomeController = TextEditingController();
@@ -60,10 +78,12 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
       }
       _preencherControllers(_usuarioProvider.usuario);
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao buscar dados: $e')),
+          const SnackBar(
+            content: Text('Não foi possível carregar seus dados. Tente novamente.'),
+          ),
         );
       }
     } finally {
@@ -122,23 +142,33 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   InputDecoration _inputDecoration(
     BuildContext context,
     String label, {
-    IconData? icon,
+    required IconData icon,
   }) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return InputDecoration(
       labelText: label,
-      prefixIcon: icon != null ? Icon(icon) : null,
+      prefixIcon: Icon(icon, size: 20),
+      prefixIconConstraints: const BoxConstraints(minWidth: 44),
       filled: true,
       fillColor: colorScheme.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22)),
+        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.24)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.error.withOpacity(0.70)),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.error, width: 1.5),
       ),
     );
   }
@@ -148,9 +178,13 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    TextInputType? keyboardType,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
       controller: controller,
+      keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
       decoration: _inputDecoration(context, label, icon: icon),
     );
   }
@@ -161,65 +195,109 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     required String subtitle,
     required IconData icon,
     required Widget child,
+    required int order,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(14),
+    return _entry(
+      order: order,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.86)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withOpacity(0.035),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: colorScheme.primary, size: 23),
                 ),
-                child: Icon(icon, color: colorScheme.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          child,
-        ],
+              ],
+            ),
+            const SizedBox(height: 18),
+            child,
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFieldGrid({
+    required List<_ProfileFormItem> items,
+    int desktopColumns = 4,
+  }) {
+    const double spacing = 12;
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double maxWidth = constraints.maxWidth;
+        final int columns = maxWidth >= 820
+            ? desktopColumns
+            : maxWidth >= 560
+                ? math.min(2, desktopColumns)
+                : 1;
+        final double columnWidth = (maxWidth - (spacing * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: items.map((_ProfileFormItem item) {
+            final int safeSpan = item.span < 1
+                ? 1
+                : item.span > columns
+                    ? columns
+                    : item.span;
+            final double width = (columnWidth * safeSpan) + (spacing * (safeSpan - 1));
+            return SizedBox(width: width, child: item.child);
+          }).toList(),
+        );
+      },
     );
   }
 
@@ -262,10 +340,12 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           const SnackBar(content: Text('Perfil atualizado com sucesso!')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao atualizar perfil: $e')),
+          const SnackBar(
+            content: Text('Não foi possível atualizar seu perfil. Tente novamente.'),
+          ),
         );
       }
     } finally {
@@ -275,237 +355,432 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _usuarioProvider,
-      builder: (BuildContext context, _) {
-        return Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 12, 8),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      'Meu Perfil',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
+    final ThemeData theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      child: ListenableBuilder(
+        listenable: _usuarioProvider,
+        builder: (BuildContext context, _) {
+          final Widget body = _usuarioProvider.isLoading
+              ? const KeyedSubtree(
+                  key: ValueKey<String>('meu-perfil-loading'),
+                  child: _MeuPerfilLoading(),
+                )
+              : KeyedSubtree(
+                  key: const ValueKey<String>('meu-perfil-form'),
+                  child: _buildFormContent(context),
+                );
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _buildHeader(context),
+              Flexible(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: _entryCurve,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: body,
+                ),
               ),
+              _buildFooter(context),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 22, 18, 18),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withOpacity(0.06),
+        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(18),
             ),
+            child: Icon(Icons.account_circle_outlined, color: colorScheme.primary, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Meu Perfil',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Dados de acesso, contato e localização do usuário.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          IconButton.filledTonal(
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Fechar',
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormContent(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      child: Column(
+        children: <Widget>[
+          _buildSectionCard(
+            context: context,
+            title: 'Dados pessoais',
+            subtitle: 'Atualize os dados principais usados em cadastros, vendas e atendimento.',
+            icon: Icons.person_outline_rounded,
+            order: 0,
+            child: _buildFieldGrid(
+              items: <_ProfileFormItem>[
+                _ProfileFormItem(
+                  span: 2,
+                  child: _buildTextField(
+                    context: context,
+                    controller: _nomeController,
+                    label: 'Primeiro nome',
+                    icon: Icons.badge_outlined,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                _ProfileFormItem(
+                  span: 2,
+                  child: _buildTextField(
+                    context: context,
+                    controller: _sobrenomeController,
+                    label: 'Sobrenome',
+                    icon: Icons.badge_outlined,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                _ProfileFormItem(
+                  span: 2,
+                  child: _buildTextField(
+                    context: context,
+                    controller: _nomeDeGuerraController,
+                    label: 'Nome de guerra',
+                    icon: Icons.account_circle_outlined,
+                    textCapitalization: TextCapitalization.characters,
+                  ),
+                ),
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _cpfController,
+                    label: 'CPF',
+                    icon: Icons.credit_card_outlined,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _rgController,
+                    label: 'RG',
+                    icon: Icons.perm_identity_outlined,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _dataNascimentoController,
+                    label: 'Data de nascimento',
+                    icon: Icons.cake_outlined,
+                    keyboardType: TextInputType.datetime,
+                  ),
+                ),
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _celularController,
+                    label: 'Celular',
+                    icon: Icons.phone_android_outlined,
+                    keyboardType: TextInputType.phone,
+                  ),
+                ),
+                _ProfileFormItem(
+                  span: 2,
+                  child: _buildTextField(
+                    context: context,
+                    controller: _registroController,
+                    label: 'Registro profissional',
+                    icon: Icons.assignment_ind_outlined,
+                  ),
+                ),
+                _ProfileFormItem(
+                  span: 4,
+                  child: _buildTextField(
+                    context: context,
+                    controller: _emailController,
+                    label: 'E-mail',
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            context: context,
+            title: 'Endereço',
+            subtitle: 'Dados de localização para contato, cadastro e documentos gerados pelo sistema.',
+            icon: Icons.location_on_outlined,
+            order: 1,
+            child: _buildFieldGrid(
+              items: <_ProfileFormItem>[
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _cepController,
+                    label: 'CEP',
+                    icon: Icons.pin_drop_outlined,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                _ProfileFormItem(
+                  span: 3,
+                  child: _buildTextField(
+                    context: context,
+                    controller: _logradouroController,
+                    label: 'Logradouro',
+                    icon: Icons.route_outlined,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                _ProfileFormItem(
+                  span: 2,
+                  child: _buildTextField(
+                    context: context,
+                    controller: _complementoController,
+                    label: 'Complemento',
+                    icon: Icons.add_home_outlined,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _bairroController,
+                    label: 'Bairro',
+                    icon: Icons.location_city_outlined,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _localidadeController,
+                    label: 'Localidade',
+                    icon: Icons.map_outlined,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                _ProfileFormItem(
+                  child: _buildTextField(
+                    context: context,
+                    controller: _ufController,
+                    label: 'UF',
+                    icon: Icons.flag_outlined,
+                    textCapitalization: TextCapitalization.characters,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+        ),
+        child: Row(
+          children: <Widget>[
             Expanded(
-              child: _usuarioProvider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                      child: Column(
-                        children: <Widget>[
-                          _buildSectionCard(
-                            context: context,
-                            title: 'Dados pessoais',
-                            subtitle: 'Atualize os dados principais do usuário.',
-                            icon: Icons.person_outline_rounded,
-                            child: Column(
-                              children: <Widget>[
-                                Row(
-                                  children: <Widget>[
-                                    Expanded(
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _nomeController,
-                                        label: 'Primeiro nome',
-                                        icon: Icons.badge_outlined,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _sobrenomeController,
-                                        label: 'Sobrenome',
-                                        icon: Icons.badge_outlined,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  runSpacing: 12,
-                                  spacing: 12,
-                                  children: <Widget>[
-                                    SizedBox(
-                                      width: 280,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _nomeDeGuerraController,
-                                        label: 'Nome de guerra',
-                                        icon: Icons.account_circle_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 220,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _cpfController,
-                                        label: 'CPF',
-                                        icon: Icons.credit_card_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 220,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _rgController,
-                                        label: 'RG',
-                                        icon: Icons.perm_identity_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 220,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _dataNascimentoController,
-                                        label: 'Data de nascimento',
-                                        icon: Icons.cake_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 220,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _celularController,
-                                        label: 'Celular',
-                                        icon: Icons.phone_android_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 240,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _registroController,
-                                        label: 'Registro profissional',
-                                        icon: Icons.assignment_ind_outlined,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                _buildTextField(
-                                  context: context,
-                                  controller: _emailController,
-                                  label: 'E-mail',
-                                  icon: Icons.email_outlined,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildSectionCard(
-                            context: context,
-                            title: 'Endereço',
-                            subtitle: 'Dados de localização para contato e cadastro.',
-                            icon: Icons.location_on_outlined,
-                            child: Column(
-                              children: <Widget>[
-                                Wrap(
-                                  runSpacing: 12,
-                                  spacing: 12,
-                                  children: <Widget>[
-                                    SizedBox(
-                                      width: 180,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _cepController,
-                                        label: 'CEP',
-                                        icon: Icons.pin_drop_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 420,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _logradouroController,
-                                        label: 'Logradouro',
-                                        icon: Icons.route_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 260,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _complementoController,
-                                        label: 'Complemento',
-                                        icon: Icons.add_home_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 240,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _bairroController,
-                                        label: 'Bairro',
-                                        icon: Icons.location_city_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 280,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _localidadeController,
-                                        label: 'Localidade',
-                                        icon: Icons.map_outlined,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: _buildTextField(
-                                        context: context,
-                                        controller: _ufController,
-                                        label: 'UF',
-                                        icon: Icons.flag_outlined,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-            ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    OutlinedButton(
-                      onPressed: _usuarioProvider.isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton.icon(
-                      onPressed: _usuarioProvider.isLoading ? null : _salvarPerfil,
-                      icon: const Icon(Icons.save_outlined),
-                      label: const Text('Salvar meu perfil'),
-                    ),
-                  ],
+              child: Text(
+                'Revise os dados antes de salvar.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+            const SizedBox(width: 12),
+            OutlinedButton(
+              onPressed: _usuarioProvider.isLoading ? null : () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.icon(
+              onPressed: _usuarioProvider.isLoading ? null : _salvarPerfil,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Salvar meu perfil'),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _entry({required int order, required Widget child}) {
+    final int stagger = order > 4 ? 4 : order;
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: _entryDuration + Duration(milliseconds: stagger * 60),
+      curve: _entryCurve,
+      child: child,
+      builder: (BuildContext context, double progress, Widget? child) {
+        final double normalized = progress.clamp(0.0, 1.0).toDouble();
+        return Opacity(
+          opacity: normalized,
+          child: Transform.translate(
+            offset: Offset(0, 14 * (1 - normalized)),
+            child: Transform.scale(
+              alignment: Alignment.topCenter,
+              scale: 0.988 + (0.012 * normalized),
+              child: child,
+            ),
+          ),
         );
       },
+    );
+  }
+}
+
+class _ProfileFormItem {
+  const _ProfileFormItem({required this.child, this.span = 1});
+
+  final Widget child;
+  final int span;
+}
+
+class _MeuPerfilLoading extends StatelessWidget {
+  const _MeuPerfilLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      child: Column(
+        children: const <Widget>[
+          _MeuPerfilSkeletonSection(rows: 3),
+          SizedBox(height: 16),
+          _MeuPerfilSkeletonSection(rows: 2),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeuPerfilSkeletonSection extends StatelessWidget {
+  const _MeuPerfilSkeletonSection({required this.rows});
+
+  final int rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.86)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              _skeletonBox(context, width: 44, height: 44, radius: 14),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _skeletonBox(context, width: 150, height: 14),
+                    const SizedBox(height: 8),
+                    _skeletonBox(context, width: 280, height: 10),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          ...List<Widget>.generate(rows, (int index) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: index == rows - 1 ? 0 : 12),
+              child: Row(
+                children: <Widget>[
+                  Expanded(child: _skeletonBox(context, height: 52, radius: 16)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _skeletonBox(context, height: 52, radius: 16)),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _skeletonBox(
+    BuildContext context, {
+    double? width,
+    required double height,
+    double radius = 999,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(radius),
+      ),
     );
   }
 }
