@@ -1,0 +1,79 @@
+name: Bump app version on main
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    if: github.actor != 'github-actions[bot]' && !startsWith(github.event.head_commit.message, 'chore(version):')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Increment minor version
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import os
+          import pathlib
+          import re
+
+          pubspec_path = pathlib.Path('pubspec.yaml')
+          pubspec_text = pubspec_path.read_text(encoding='utf-8')
+
+          version_pattern = re.compile(
+              r'^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$',
+              re.MULTILINE,
+          )
+          version_match = version_pattern.search(pubspec_text)
+          if not version_match:
+              raise SystemExit('Nao encontrei a linha version: x.y.z+build no pubspec.yaml')
+
+          major, minor, _patch, build = map(int, version_match.groups())
+          next_minor = minor + 1
+          next_build = build + 1
+          app_version = f'{major}.{next_minor}.0'
+          pubspec_version = f'{app_version}+{next_build}'
+
+          pubspec_text = version_pattern.sub(f'version: {pubspec_version}', pubspec_text, count=1)
+          pubspec_path.write_text(pubspec_text, encoding='utf-8')
+
+          config_path = pathlib.Path('lib/core/config/app_config.dart')
+          config_text = config_path.read_text(encoding='utf-8')
+          config_text = re.sub(
+              r"(APP_VERSION',\n\s+defaultValue: ')[^']+(')",
+              rf'\g<1>{app_version}\2',
+              config_text,
+              count=1,
+          )
+          config_text = re.sub(
+              r"(APP_BUILD_NUMBER',\n\s+defaultValue: ')[^']+(')",
+              rf'\g<1>{next_build}\2',
+              config_text,
+              count=1,
+          )
+          config_path.write_text(config_text, encoding='utf-8')
+
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env_file:
+              env_file.write(f'APP_VERSION={app_version}\n')
+          PY
+
+      - name: Commit version bump
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "Nenhuma alteracao de versao para commitar."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pubspec.yaml lib/core/config/app_config.dart
+          git commit -m "chore(version): bump app version to ${APP_VERSION}"
+          git push

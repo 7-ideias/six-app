@@ -3,4 +3,14 @@ class AppConfig {
     'API_BASE_URL',
     defaultValue: 'https://api.sixappback.com',
   );
+
+  static const String appVersion = String.fromEnvironment(
+    'APP_VERSION',
+    defaultValue: '1.0.0',
+  );
+
+  static const String appBuildNumber = String.fromEnvironment(
+    'APP_BUILD_NUMBER',
+    defaultValue: '1',
+  );
 }
