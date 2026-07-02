@@ -25,6 +25,7 @@ import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
 
 import 'data/models/cliente_usuario_model.dart';
 import 'data/models/produto_model.dart';
+import 'data/models/operacao_models.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/websocket_service.dart';
@@ -83,6 +84,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   final List<Map<String, dynamic>> _produtosSelecionados =
       <Map<String, dynamic>>[];
   final Set<String> _formasSelecionadas = <String>{};
+  bool _registrandoReceberDepois = false;
   ClienteUsuario? _clienteIdentificado;
   int _opcaoCockpitSelecionada = 0;
 
@@ -1100,11 +1102,160 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     return KeyEventResult.ignored;
   }
 
-  void _pausarVenda() {
-    _mostrarDialogMensagem(
-      'Pausar venda',
-      'A ideia aqui é deixar a venda aberta para continuar o atendimento depois.',
-    );
+  Future<void> _pausarVenda() => _registrarVendaParaReceberDepoisWeb();
+
+  List<ItemVendaAtual> _montarItensDaVendaParaOperacao() {
+    return _produtosSelecionados
+        .map((Map<String, dynamic> produto) {
+          final String idProduto =
+              (produto['id'] ?? produto['codigo'] ?? '').toString();
+
+          return ItemVendaAtual(
+            idProduto: idProduto,
+            nome: (produto['nome'] ?? '').toString(),
+            quantidade: (produto['quantidade'] ?? 1) as int,
+            valorUnitario: ((produto['preco'] ?? 0) as num).toDouble(),
+            ehServico: false,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  Future<void> _registrarVendaParaReceberDepoisWeb() async {
+    if (_registrandoReceberDepois) {
+      return;
+    }
+
+    if (_produtosSelecionados.isEmpty) {
+      _mostrarDialogMensagem(
+        'Venda vazia',
+        'Adicione pelo menos um item antes de registrar para receber depois.',
+      );
+      return;
+    }
+
+    final double total = _calcularTotal();
+    final int quantidadeItens = _calcularQuantidadeItens();
+
+    final bool confirmou =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              icon: Icon(
+                Icons.schedule_send_outlined,
+                color: _pdvTheme.actionButtonBackground,
+                size: 34,
+              ),
+              title: const Text('Receber depois'),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text(
+                      'A venda ficará em aberto para liquidação posterior no caixa.',
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _pdvTheme.iconColor.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: _pdvTheme.cardBorder),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              '$quantidadeItens item(ns)',
+                              style: TextStyle(
+                                color: _pdvTheme.primaryText,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _formatCurrency(total),
+                            style: TextStyle(
+                              color: _pdvTheme.primaryText,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Voltar'),
+                ),
+                FilledButton.icon(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Registrar para receber depois'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!confirmou || !mounted) {
+      return;
+    }
+
+    setState(() => _registrandoReceberDepois = true);
+
+    try {
+      final DateTime dataOperacao = DateTime.now();
+      final String idColaborador = await AuthService().getUserId() ?? '';
+
+      final OperacaoVendaInput input = OperacaoVendaInput(
+        descricao:
+            'Venda web para receber depois ${dataOperacao.toIso8601String()}',
+        idColaborador: idColaborador,
+        nomeColaborador: 'Colaborador',
+        itens: _montarItensDaVendaParaOperacao(),
+        formasPagamento: const <FormaPagamentoSelecionada>[],
+        dataOperacao: dataOperacao,
+        receberDepois: true,
+      );
+
+      await _operacaoService.finalizarVenda(input);
+
+      if (!mounted) {
+        return;
+      }
+
+      _limparVendaAposSucessoRecebimento();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Venda registrada para receber depois.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      _mostrarDialogMensagem(
+        'Erro ao registrar venda',
+        e.toString().replaceAll('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _registrandoReceberDepois = false);
+      }
+    }
   }
 
   void _abrirTelaRecebimento() {

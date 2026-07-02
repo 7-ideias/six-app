@@ -1226,11 +1226,25 @@ extension _PdvPageWebVendaSection on _PDVWebState {
             runSpacing: 12,
             children: <Widget>[
               OutlinedButton.icon(
-                onPressed: _pausarVenda,
-                icon: const Icon(Icons.pause_circle_outline_rounded),
-                label: const Text('Pausar'),
+                onPressed:
+                    _produtosSelecionados.isEmpty || _registrandoReceberDepois
+                        ? null
+                        : _pausarVenda,
+                icon:
+                    _registrandoReceberDepois
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.schedule_send_outlined),
+                label: Text(
+                  _registrandoReceberDepois
+                      ? 'Registrando...'
+                      : 'Receber depois',
+                ),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(150, 54),
+                  minimumSize: const Size(190, 54),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   side: BorderSide(
                     color: _pdvTheme.actionButtonBackground,
