@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class MeuCatalogoMobileScreen extends StatefulWidget {
+  const MeuCatalogoMobileScreen({super.key});
+
   @override
   State<StatefulWidget> createState() => _MeuCatalogoMobileScreenState();
 }
@@ -62,31 +64,30 @@ class _MeuCatalogoMobileScreenState extends State<MeuCatalogoMobileScreen> {
           Positioned(
             bottom: 30,
             right: 16,
-            child:
-                isLastPage
-                    ? ElevatedButton(
-                      onPressed: () async {
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('hasSeenOnboarding', true);
+            child: isLastPage
+                ? ElevatedButton(
+                    onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('hasSeenOnboarding', true);
 
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProdutolistMobileScreen(),
-                          ),
-                        );
-                      },
-                      child: Text("Começar"),
-                    )
-                    : TextButton(
-                      onPressed: () {
-                        _controller.nextPage(
-                          duration: Duration(milliseconds: 500),
-                          curve: Curves.ease,
-                        );
-                      },
-                      child: Text("Avançar"),
-                    ),
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProdutolistMobileScreen(),
+                        ),
+                      );
+                    },
+                    child: Text("Começar"),
+                  )
+                : TextButton(
+                    onPressed: () {
+                      _controller.nextPage(
+                        duration: Duration(milliseconds: 500),
+                        curve: Curves.ease,
+                      );
+                    },
+                    child: Text("Avançar"),
+                  ),
           ),
         ],
       ),
