@@ -67,6 +67,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   Timer? _monitoramentoComunicacaoTimer;
   DateTime? _ultimaTentativaReconexao;
 
+  int? _cockpitCanalSelecionado;
+  int? _cockpitAtendimentoSelecionado;
+
   late final AnimationController _bellAnimationController;
   late final Animation<double> _bellRotationAnimation;
 
@@ -1732,72 +1735,57 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   Widget _buildCockpitEstrategico() {
     return Expanded(
-      child: Container(
-        decoration: BoxDecoration(
-          color: _pdvTheme.backgroundSurface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _pdvTheme.cardBorder),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 920;
+          final horizontalPadding = isCompact ? 16.0 : 28.0;
+
+          return Container(
+            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.16),
+            child: Column(
+              children: <Widget>[
+                _buildCockpitHeader(context, isCompact),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      14,
+                      horizontalPadding,
+                      18,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text(
-                          'Cockpit estratégico',
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                            color: _pdvTheme.primaryText,
-                          ),
+                        _buildCockpitResumoKpis(),
+                        const SizedBox(height: 14),
+                        _buildCockpitFinanceiroChart(),
+                        const SizedBox(height: 14),
+                        isCompact
+                            ? Column(
+                          children: <Widget>[
+                            _buildCockpitVendasCanalChart(),
+                            const SizedBox(height: 14),
+                            _buildCockpitAtendimentoChart(),
+                          ],
+                        )
+                            : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(child: _buildCockpitVendasCanalChart()),
+                            const SizedBox(width: 14),
+                            Expanded(child: _buildCockpitAtendimentoChart()),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Visão de resultado financeiro, eficiência comercial e qualidade de atendimento para decisão de gestão.',
-                          style: TextStyle(
-                            color: _pdvTheme.secondaryText,
-                            height: 1.45,
-                          ),
-                        ),
+                        const SizedBox(height: 14),
+                        _buildCockpitOpcoesExemplo(),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _moduloAtual = ModuloCentralPDV.seletor;
-                      });
-                    },
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    label: const Text('Voltar'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _buildCockpitResumoKpis(),
-              const SizedBox(height: 18),
-              _buildCockpitFinanceiroChart(),
-              const SizedBox(height: 18),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: _buildCockpitVendasCanalChart()),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildCockpitAtendimentoChart()),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _buildCockpitOpcoesExemplo(),
-            ],
-          ),
-        ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -3900,5 +3888,149 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         _focarCodigoBarras();
       }
     });
+  }
+
+  Widget _buildCockpitHeader(BuildContext context, bool isCompact) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final titleBlock = Row(
+      children: <Widget>[
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            Icons.space_dashboard_rounded,
+            color: colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Cockpit estratégico',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: isCompact ? 21 : 24,
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                'Visão executiva de vendas, orçamentos, assistência e qualidade de atendimento.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colorScheme.onSurface.withOpacity(0.66),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final actions = Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      alignment: WrapAlignment.end,
+      children: <Widget>[
+        _cockpitHeaderButton(
+          context,
+          Icons.refresh_rounded,
+          'Atualizar',
+              () => setState(() {
+            _cockpitCanalSelecionado = null;
+            _cockpitAtendimentoSelecionado = null;
+          }),
+        ),
+        _cockpitHeaderButton(
+          context,
+          Icons.arrow_back_rounded,
+          'Voltar',
+              () => setState(() => _moduloAtual = ModuloCentralPDV.seletor),
+        ),
+        _cockpitCloseButton(context),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 16 : 28,
+        isCompact ? 16 : 22,
+        isCompact ? 16 : 28,
+        isCompact ? 14 : 18,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: isCompact
+          ? Column(
+        children: <Widget>[
+          titleBlock,
+          const SizedBox(height: 14),
+          Align(alignment: Alignment.centerRight, child: actions),
+        ],
+      )
+          : Row(
+        children: <Widget>[
+          Expanded(child: titleBlock),
+          const SizedBox(width: 16),
+          actions,
+        ],
+      ),
+    );
+  }
+
+  Widget _cockpitHeaderButton(
+      BuildContext context,
+      IconData icon,
+      String label,
+      VoidCallback? onPressed,
+      ) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
+
+  Widget _cockpitCloseButton(BuildContext context) {
+    return Material(
+      color: const Color(0xFFE53935),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => setState(() => _moduloAtual = ModuloCentralPDV.seletor),
+        child: const SizedBox(
+          width: 46,
+          height: 46,
+          child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
+        ),
+      ),
+    );
   }
 }
