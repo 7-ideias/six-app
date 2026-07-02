@@ -1,8 +1,7 @@
-
 import 'dart:convert';
 
-import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:http/http.dart' as http;
+import 'package:sixpos/data/models/tela_inicial_models.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
@@ -14,23 +13,34 @@ abstract class TelaInicialWebApiClient {
 class HttpResumoDaEmpresaApiClient implements TelaInicialWebApiClient {
   HttpResumoDaEmpresaApiClient({
     http.Client? httpClient,
+    this.canal = 'web',
   }) : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
+  final String canal;
 
   @override
   Future<TelaInicialModel> getResumo() async {
-
     final authService = AuthService();
     final jwtToken = await authService.getAccessToken();
     final idUnicoDaEmpresa = await authService.getEmpresaId();
 
-    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/web/telainicial');
+    if (jwtToken == null || idUnicoDaEmpresa == null) {
+      throw TelaInicialApiException(
+        statusCode: 401,
+        body: 'Credenciais não encontradas para buscar resumo da tela inicial.',
+      );
+    }
+
+    final canalNormalizado = canal.trim().isEmpty ? 'web' : canal.trim();
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/$canalNormalizado/telainicial',
+    );
 
     final response = await _httpClient.get(
       uri,
       headers: {
-        'idUnicoDaEmpresa': idUnicoDaEmpresa!,
+        'idUnicoDaEmpresa': idUnicoDaEmpresa,
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $jwtToken',
       },
