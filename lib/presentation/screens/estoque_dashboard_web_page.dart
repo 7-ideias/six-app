@@ -342,9 +342,15 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
   }
 
   String _compactMoney(double value) {
-    if (value >= 1000000) return 'R$ ${(value / 1000000).toStringAsFixed(1)}M';
-    if (value >= 1000) return 'R$ ${(value / 1000).toStringAsFixed(0)}k';
-    return 'R$ ${value.toStringAsFixed(0)}';
+    if (value >= 1000000) {
+      return 'R\$ ${(value / 1000000).toStringAsFixed(1)}M';
+    }
+
+    if (value >= 1000) {
+      return 'R\$ ${(value / 1000).toStringAsFixed(0)}k';
+    }
+
+    return 'R\$ ${value.toStringAsFixed(0)}';
   }
 
   String _dateLabel(DateTime? value) => value == null ? '-' : _date.format(value);
