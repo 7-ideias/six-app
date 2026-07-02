@@ -3865,30 +3865,19 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (_mostrarDashboardLateral) ...<Widget>[
-                _buildResumoSidebar(),
-                const SizedBox(width: 20),
-              ] else ...<Widget>[_buildResumoSidebarCollapsed()],
-              Expanded(
-                child: Card(
-                  elevation: 6,
-                  color: _pdvTheme.backgroundSurface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22),
-                    side: BorderSide(color: _pdvTheme.cardBorder),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      children: <Widget>[_buildConteudoCentral(total)],
-                    ),
-                  ),
-                ),
+          child: Card(
+            elevation: 6,
+            color: _pdvTheme.backgroundSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+              side: BorderSide(color: _pdvTheme.cardBorder),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                children: <Widget>[_buildConteudoCentral(total)],
               ),
-            ],
+            ),
           ),
         ),
       ),
