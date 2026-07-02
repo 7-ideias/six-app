@@ -187,7 +187,7 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
               children: visible.asMap().entries.map((MapEntry<int, EstoqueDashboardSerieItem> entry) {
                 final EstoqueDashboardSerieItem item = entry.value;
                 final double value = useValue ? item.valor : item.quantidade;
-                final double percent = maxValue <= 0 ? 0 : (value / maxValue).clamp(0, 1);
+                final double percent = maxValue <= 0 ? 0 : (value / maxValue).clamp(0.0, 1.0).toDouble();
                 return Padding(
                   padding: EdgeInsets.only(bottom: entry.key == visible.length - 1 ? 0 : 12),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
