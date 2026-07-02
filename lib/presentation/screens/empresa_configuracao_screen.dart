@@ -334,7 +334,7 @@ class _EmpresaConfiguracaoFormState extends State<EmpresaConfiguracaoForm> {
                     label: 'Razão social',
                     hint: 'Nome legal da empresa',
                     icon: Icons.apartment_rounded,
-                    required: true,
+                    isRequired: true,
                   ),
                 ),
                 SizedBox(
@@ -408,7 +408,7 @@ class _EmpresaConfiguracaoFormState extends State<EmpresaConfiguracaoForm> {
     required String label,
     required String hint,
     required IconData icon,
-    bool required = false,
+    bool isRequired = false,
     TextInputType? keyboardType,
   }) {
     return TextFormField(
@@ -422,7 +422,7 @@ class _EmpresaConfiguracaoFormState extends State<EmpresaConfiguracaoForm> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
       validator: (String? value) {
-        if (required && (value == null || value.trim().isEmpty)) {
+        if (isRequired && (value == null || value.trim().isEmpty)) {
           return 'Informe este campo.';
         }
         return null;
