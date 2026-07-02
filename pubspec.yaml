@@ -12,6 +12,8 @@ dependencies:
   flutter_web_plugins:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  firebase_core: ^4.11.0
+  firebase_messaging: ^16.4.1
   image_picker: ^1.1.2
   image_picker_for_web: ^3.0.6
   http: ^0.13.3

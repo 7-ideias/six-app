@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import 'firebase_push_notification_service.dart';
 import '../config/app_config.dart';
 import 'http_client_factory.dart';
 import '../../data/models/empresa_model.dart';
@@ -42,6 +43,10 @@ class EmpresaService {
 
         // Salvar em memória usando o Provider
         EmpresaProvider().setEmpresa(empresa);
+
+        if (!kIsWeb) {
+          await FirebasePushNotificationService().syncTokenForLoggedUser();
+        }
       } else {
         throw Exception('Falha ao buscar dados da empresa: ${response.statusCode}');
       }
