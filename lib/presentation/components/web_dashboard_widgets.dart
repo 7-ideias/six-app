@@ -93,7 +93,7 @@ class SixWebEntry extends StatelessWidget {
   });
 
   final Widget child;
-  final int order;
+  final num order;
   final Duration duration;
 
   @override
