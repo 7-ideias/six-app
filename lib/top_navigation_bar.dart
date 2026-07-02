@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/configuracao_secao_web_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
@@ -16,6 +17,18 @@ class TopNavItemData {
     required this.title,
     required this.subItems,
     this.onSelect,
+  });
+}
+
+class _ConfiguracaoMenuData {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _ConfiguracaoMenuData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
   });
 }
 
@@ -222,6 +235,87 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  Future<void> _abrirConfiguracao(BuildContext context, String value) async {
+    final _ConfiguracaoMenuData data = _configuracaoData(value);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: SizedBox(
+            width: size.width * 0.94,
+            height: size.height * 0.90,
+            child: ConfiguracaoSecaoWebPage(
+              title: data.title,
+              subtitle: data.subtitle,
+              icon: data.icon,
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  _ConfiguracaoMenuData _configuracaoData(String value) {
+    switch (value) {
+      case 'Empresa':
+        return const _ConfiguracaoMenuData(
+          title: 'Empresa',
+          subtitle: 'Dados institucionais, contatos e identidade do comércio.',
+          icon: Icons.storefront_rounded,
+        );
+      case 'Usuários e permissões':
+        return const _ConfiguracaoMenuData(
+          title: 'Usuários e permissões',
+          subtitle: 'Acessos, perfis de colaboradores e permissões operacionais.',
+          icon: Icons.admin_panel_settings_rounded,
+        );
+      case 'Regionalização':
+        return const _ConfiguracaoMenuData(
+          title: 'Regionalização',
+          subtitle: 'Idioma, país, moeda, data, hora e formatos locais.',
+          icon: Icons.public_rounded,
+        );
+      case 'Formas de recebimento':
+        return const _ConfiguracaoMenuData(
+          title: 'Formas de recebimento',
+          subtitle: 'Métodos aceitos, recebimentos futuros e regras de liquidação.',
+          icon: Icons.payments_rounded,
+        );
+      case 'Notificações':
+        return const _ConfiguracaoMenuData(
+          title: 'Notificações',
+          subtitle: 'Canais, mensagens e automações para clientes e equipe.',
+          icon: Icons.notifications_active_rounded,
+        );
+      case 'Modelos de PDF':
+        return const _ConfiguracaoMenuData(
+          title: 'Modelos de PDF',
+          subtitle: 'Modelos de comprovantes, orçamentos e ordens de serviço.',
+          icon: Icons.picture_as_pdf_rounded,
+        );
+      case 'Integrações':
+        return const _ConfiguracaoMenuData(
+          title: 'Integrações',
+          subtitle: 'Conexões externas para comunicação, pagamentos e automações.',
+          icon: Icons.hub_rounded,
+        );
+      default:
+        return _ConfiguracaoMenuData(
+          title: value,
+          subtitle: 'Configuração do Six preparada para evolução.',
+          icon: Icons.tune_rounded,
+        );
+    }
+  }
+
   List<TopNavItemData> _itemsEfetivos(BuildContext context) {
     if (!_usaNovoMenuSix) return items;
 
@@ -332,7 +426,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Modelos de PDF',
           'Integrações',
         ],
-        onSelect: (_) => _executarOriginal(context, 'Configurações', 'Preferências do Six'),
+        onSelect: (String value) => _abrirConfiguracao(context, value),
       ),
       TopNavItemData(
         title: 'Legado',
