@@ -10,9 +10,14 @@ import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart
 import 'package:sixpos/providers/produtos_list_provider.dart';
 
 class ProdutolistMobileScreen extends StatefulWidget {
-  const ProdutolistMobileScreen({super.key, this.isSelecao = false});
+  const ProdutolistMobileScreen({
+    super.key,
+    this.isSelecao = false,
+    this.permitirSelecaoMultipla = false,
+  });
 
   final bool isSelecao;
+  final bool permitirSelecaoMultipla;
 
   @override
   State<ProdutolistMobileScreen> createState() =>
@@ -29,6 +34,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final TextEditingController _controllerBusca = TextEditingController();
+  final List<ProdutoModel> _produtosSelecionados = <ProdutoModel>[];
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
@@ -38,6 +44,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String ordenacao = 'nome';
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
+
+  bool get _selecaoMultiplaAtiva =>
+      widget.isSelecao && widget.permitirSelecaoMultipla;
 
   @override
   void initState() {
@@ -74,10 +83,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (!mounted) return;
 
     setState(() {
-      produtosFiltrados = listaBase
-          .where((ProdutoModel produto) =>
-              _matchesTipoSelecionado(produto, tipoSelecionado))
-          .toList();
+      produtosFiltrados =
+          listaBase
+              .where(
+                (ProdutoModel produto) =>
+                    _matchesTipoSelecionado(produto, tipoSelecionado),
+              )
+              .toList();
     });
   }
 
@@ -94,12 +106,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Widget build(BuildContext context) {
     final ProdutosListProvider<ProdutoModel> provider =
         context.watch<ProdutosListProvider<ProdutoModel>>();
-    final List<ProdutoModel> itensDaLista = produtosFiltrados.isNotEmpty ||
-            termoBusca.isNotEmpty ||
-            todosProdutos.isNotEmpty
-        ? produtosFiltrados
-        : todosProdutos;
+    final List<ProdutoModel> itensDaLista =
+        produtosFiltrados.isNotEmpty ||
+                termoBusca.isNotEmpty ||
+                todosProdutos.isNotEmpty
+            ? produtosFiltrados
+            : todosProdutos;
     final bool isSelecao = widget.isSelecao;
+    final bool selecaoMultiplaAtiva = _selecaoMultiplaAtiva;
 
     return Scaffold(
       backgroundColor: _backgroundColor,
@@ -109,10 +123,43 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         title: Text(
-          isSelecao ? 'Selecionar item' : 'Produtos e serviços',
-          style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+          selecaoMultiplaAtiva
+              ? 'Selecionar itens'
+              : (isSelecao ? 'Selecionar item' : 'Produtos e serviços'),
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
         ),
         actions: <Widget>[
+          if (selecaoMultiplaAtiva)
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(right: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white.withOpacity(0.24)),
+                ),
+                child: Text(
+                  '${_produtosSelecionados.length}',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          if (selecaoMultiplaAtiva)
+            IconButton(
+              tooltip: 'Adicionar selecionados',
+              icon: const Icon(Icons.check_circle_outline_rounded),
+              onPressed:
+                  _produtosSelecionados.isEmpty
+                      ? null
+                      : _confirmarSelecaoMultipla,
+            ),
           IconButton(
             tooltip: 'Ordenar',
             icon: const Icon(Icons.swap_vert_rounded),
@@ -125,7 +172,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           onRefresh: _recarregar,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16, isSelecao ? 12 : 14, 16, 96),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              isSelecao ? 12 : 14,
+              16,
+              selecaoMultiplaAtiva ? 132 : 96,
+            ),
             children: <Widget>[
               if (!isSelecao) ...<Widget>[
                 SixStaggeredEntry(child: _buildHeaderCard()),
@@ -147,6 +199,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   child: _buildSummarySection(),
                 ),
               ],
+              if (selecaoMultiplaAtiva) ...<Widget>[
+                const SizedBox(height: 12),
+                _buildMultiSelectionHint(),
+              ],
               SizedBox(height: isSelecao ? 14 : 18),
               _buildListHeader(itensDaLista.length, provider.isLoading),
               const SizedBox(height: 10),
@@ -157,8 +213,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               else if (itensDaLista.isEmpty)
                 const _EmptyState()
               else
-                ...itensDaLista.asMap().entries.map((MapEntry<int, ProdutoModel> entry) {
-                  final int itemDelay = 190 + ((entry.key * 28).clamp(0, 180)).toInt();
+                ...itensDaLista.asMap().entries.map((
+                  MapEntry<int, ProdutoModel> entry,
+                ) {
+                  final int itemDelay =
+                      190 + ((entry.key * 28).clamp(0, 180)).toInt();
                   return Padding(
                     padding: EdgeInsets.only(bottom: isSelecao ? 8 : 12),
                     child: SixStaggeredEntry(
@@ -171,16 +230,35 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ),
       ),
-      floatingActionButton: isSelecao
-          ? null
-          : FloatingActionButton.extended(
-              backgroundColor: _accentColor,
-              foregroundColor: Colors.white,
-              elevation: 5,
-              onPressed: _criarProduto,
-              icon: const Icon(Icons.add_rounded),
-              label: Text(_isProdutoSelecionado ? 'Novo produto' : 'Novo serviço'),
-            ),
+      floatingActionButton:
+          selecaoMultiplaAtiva
+              ? FloatingActionButton.extended(
+                backgroundColor: _accentColor,
+                foregroundColor: Colors.white,
+                elevation: 5,
+                onPressed:
+                    _produtosSelecionados.isEmpty
+                        ? null
+                        : _confirmarSelecaoMultipla,
+                icon: const Icon(Icons.playlist_add_check_rounded),
+                label: Text(
+                  _produtosSelecionados.isEmpty
+                      ? 'Selecione itens'
+                      : 'Adicionar ${_produtosSelecionados.length}',
+                ),
+              )
+              : isSelecao
+              ? null
+              : FloatingActionButton.extended(
+                backgroundColor: _accentColor,
+                foregroundColor: Colors.white,
+                elevation: 5,
+                onPressed: _criarProduto,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(
+                  _isProdutoSelecionado ? 'Novo produto' : 'Novo serviço',
+                ),
+              ),
     );
   }
 
@@ -239,7 +317,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   _isProdutoSelecionado
                       ? 'Crie, edite e mantenha fotos, preços e estoque.'
                       : 'Crie e edite serviços com visual adequado ao mobile.',
-                  style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+                  style: const TextStyle(
+                    color: Color(0xFFD7E3F5),
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -302,24 +383,37 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           aplicarFiltroOrdenacao();
         },
         decoration: InputDecoration(
-          hintText: _isProdutoSelecionado ? 'Buscar produto ou código' : 'Buscar serviço',
+          hintText:
+              _isProdutoSelecionado
+                  ? 'Buscar produto ou código'
+                  : 'Buscar serviço',
           hintStyle: const TextStyle(color: _mutedTextColor),
           prefixIcon: const Icon(Icons.search_rounded, color: _accentColor),
-          suffixIcon: _controllerBusca.text.isEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.tune_rounded, color: _titleTextColor),
-                  onPressed: _showSortOptions,
-                )
-              : IconButton(
-                  onPressed: () {
-                    _controllerBusca.clear();
-                    termoBusca = '';
-                    aplicarFiltroOrdenacao();
-                  },
-                  icon: const Icon(Icons.close_rounded, color: _mutedTextColor),
-                ),
+          suffixIcon:
+              _controllerBusca.text.isEmpty
+                  ? IconButton(
+                    icon: const Icon(
+                      Icons.tune_rounded,
+                      color: _titleTextColor,
+                    ),
+                    onPressed: _showSortOptions,
+                  )
+                  : IconButton(
+                    onPressed: () {
+                      _controllerBusca.clear();
+                      termoBusca = '';
+                      aplicarFiltroOrdenacao();
+                    },
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: _mutedTextColor,
+                    ),
+                  ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 15,
+          ),
         ),
       ),
     );
@@ -327,7 +421,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildSummarySection() {
     return Consumer<ProdutosListProvider<ProdutoModel>>(
-      builder: (BuildContext context, ProdutosListProvider<ProdutoModel> provider, _) {
+      builder: (
+        BuildContext context,
+        ProdutosListProvider<ProdutoModel> provider,
+        _,
+      ) {
         final Object? response = provider.fullResponse;
         if (response is! ProdutoResponseModel) return const SizedBox.shrink();
 
@@ -366,9 +464,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildListHeader(int count, bool isLoading) {
-    final String titulo = widget.isSelecao
-        ? (_isProdutoSelecionado ? 'Toque no produto para adicionar' : 'Toque no serviço para adicionar')
-        : (_isProdutoSelecionado ? 'Produtos cadastrados' : 'Serviços cadastrados');
+    final String titulo =
+        _selecaoMultiplaAtiva
+            ? 'Toque para marcar os itens'
+            : widget.isSelecao
+            ? (_isProdutoSelecionado
+                ? 'Toque no produto para adicionar'
+                : 'Toque no serviço para adicionar')
+            : (_isProdutoSelecionado
+                ? 'Produtos cadastrados'
+                : 'Serviços cadastrados');
 
     return Row(
       children: <Widget>[
@@ -471,9 +576,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       children: <Widget>[
                         _InfoChip(
                           icon: Icons.qr_code_2_rounded,
-                          label: produto.codigoDeBarras.isEmpty
-                              ? 'Sem código'
-                              : 'Código ${produto.codigoDeBarras}',
+                          label:
+                              produto.codigoDeBarras.isEmpty
+                                  ? 'Sem código'
+                                  : 'Código ${produto.codigoDeBarras}',
                         ),
                         if (produto.modeloProduto.isNotEmpty)
                           _InfoChip(
@@ -482,7 +588,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           ),
                         _InfoChip(
                           icon: Icons.photo_library_outlined,
-                          label: '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
+                          label:
+                              '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
                         ),
                       ],
                     ),
@@ -527,94 +634,210 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Widget _buildProdutoSelectionCard(ProdutoModel produto) {
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
     final String codigo = produto.codigoDeBarras.trim();
+    final bool selecionado = _produtoEstaSelecionado(produto);
+    final bool selecaoMultiplaAtiva = _selecaoMultiplaAtiva;
 
-    return Material(
-      color: _surfaceColor,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutCubic,
+      scale: selecionado ? 1.015 : 1,
+      child: Material(
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
-        onTap: () => Navigator.pop(context, produto),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 74),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 10,
-                offset: Offset(0, 4),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            if (selecaoMultiplaAtiva) {
+              _toggleProdutoSelecionado(produto);
+              return;
+            }
+            Navigator.pop(context, produto);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            constraints: const BoxConstraints(minHeight: 74),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selecionado ? _accentColor : const Color(0xFFE2E8F0),
+                width: selecionado ? 1.5 : 1,
               ),
-            ],
-          ),
-          child: Row(
-            children: <Widget>[
-              _buildThumbnail(produto, isProduto, size: 42),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      produto.nomeProduto.isEmpty ? 'Item sem nome' : produto.nomeProduto,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        color: _titleTextColor,
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color:
+                      selecionado
+                          ? _accentColor.withOpacity(0.18)
+                          : const Color(0x0A000000),
+                  blurRadius: selecionado ? 16 : 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: <Widget>[
+                _buildThumbnail(produto, isProduto, size: 42),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        produto.nomeProduto.isEmpty
+                            ? 'Item sem nome'
+                            : produto.nomeProduto,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: _titleTextColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            codigo.isEmpty ? 'Sem código' : codigo,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _mutedTextColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                      const SizedBox(height: 4),
+                      Row(
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              codigo.isEmpty ? 'Sem código' : codigo,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          _formatCurrency(produto.precoVenda),
-                          style: const TextStyle(
-                            color: _titleTextColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
+                          const SizedBox(width: 10),
+                          Text(
+                            _formatCurrency(produto.precoVenda),
+                            style: const TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: selecionado ? _accentColor : const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        selecaoMultiplaAtiva
+                            ? Border.all(
+                              color:
+                                  selecionado
+                                      ? _accentColor
+                                      : const Color(0xFFBFDBFE),
+                            )
+                            : null,
+                  ),
+                  child: Icon(
+                    selecaoMultiplaAtiva
+                        ? (selecionado
+                            ? Icons.check_rounded
+                            : Icons.add_rounded)
+                        : Icons.add_rounded,
+                    color: selecionado ? Colors.white : _accentColor,
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(Icons.add_rounded, color: _accentColor, size: 20),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildThumbnail(ProdutoModel produto, bool isProduto, {required double size}) {
-    final dynamic imagem = produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+  Widget _buildMultiSelectionHint() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.playlist_add_check_rounded, color: _accentColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _produtosSelecionados.isEmpty
+                  ? 'Marque um ou mais itens e confirme para adicioná-los à venda.'
+                  : '${_produtosSelecionados.length} item(ns) marcado(s). Toque em Adicionar para enviar ao PDV.',
+              style: const TextStyle(
+                color: _titleTextColor,
+                height: 1.35,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _produtoEstaSelecionado(ProdutoModel produto) {
+    final String id = _identificadorProdutoSelecao(produto);
+    return _produtosSelecionados.any(
+      (ProdutoModel item) => _identificadorProdutoSelecao(item) == id,
+    );
+  }
+
+  void _toggleProdutoSelecionado(ProdutoModel produto) {
+    final String id = _identificadorProdutoSelecao(produto);
+
+    setState(() {
+      final int index = _produtosSelecionados.indexWhere(
+        (ProdutoModel item) => _identificadorProdutoSelecao(item) == id,
+      );
+
+      if (index >= 0) {
+        _produtosSelecionados.removeAt(index);
+      } else {
+        _produtosSelecionados.add(produto);
+      }
+    });
+  }
+
+  void _confirmarSelecaoMultipla() {
+    if (_produtosSelecionados.isEmpty) return;
+    Navigator.pop(
+      context,
+      List<ProdutoModel>.from(_produtosSelecionados, growable: false),
+    );
+  }
+
+  String _identificadorProdutoSelecao(ProdutoModel produto) {
+    final String id = produto.id?.trim() ?? '';
+    if (id.isNotEmpty) return id;
+
+    final String codigo = produto.codigoDeBarras.trim();
+    if (codigo.isNotEmpty) return codigo;
+
+    return produto.nomeProduto.trim().toLowerCase();
+  }
+
+  Widget _buildThumbnail(
+    ProdutoModel produto,
+    bool isProduto, {
+    required double size,
+  }) {
+    final dynamic imagem =
+        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
     final Uint8List? bytes =
         _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
 
@@ -625,7 +848,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       content = Image.network(
         imagem.url!,
         fit: BoxFit.cover,
-        loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+        loadingBuilder: (
+          BuildContext context,
+          Widget child,
+          ImageChunkEvent? loadingProgress,
+        ) {
           if (loadingProgress == null) return child;
           return const Center(
             child: SizedBox(
@@ -667,7 +894,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (value == null || value.trim().isEmpty) return null;
 
     try {
-      final String payload = value.contains(',') ? value.split(',').last : value;
+      final String payload =
+          value.contains(',') ? value.split(',').last : value;
       return base64Decode(payload);
     } catch (_) {
       return null;
@@ -694,7 +922,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Future<void> _editarProduto(ProdutoModel produto) async {
     await _abrirCadastro(
       produto: produto,
-      tipoInicial: produto.tipoProduto.trim().isEmpty ? tipoSelecionado : produto.tipoProduto,
+      tipoInicial:
+          produto.tipoProduto.trim().isEmpty
+              ? tipoSelecionado
+              : produto.tipoProduto,
     );
   }
 
@@ -705,10 +936,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     final bool? atualizado = await Navigator.push<bool>(
       context,
       MaterialPageRoute<bool>(
-        builder: (_) => CadastroProdutoMobileScreen(
-          produtoParaEdicao: produto,
-          tipoInicial: tipoInicial,
-        ),
+        builder:
+            (_) => CadastroProdutoMobileScreen(
+              produtoParaEdicao: produto,
+              tipoInicial: tipoInicial,
+            ),
       ),
     );
 
@@ -811,11 +1043,18 @@ class _SegmentButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: compact ? 9 : 11, horizontal: 8),
+            padding: EdgeInsets.symmetric(
+              vertical: compact ? 9 : 11,
+              horizontal: 8,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(icon, size: 18, color: selected ? Colors.white : _mutedTextColor),
+                Icon(
+                  icon,
+                  size: 18,
+                  color: selected ? Colors.white : _mutedTextColor,
+                ),
                 const SizedBox(width: 7),
                 Flexible(
                   child: Text(
@@ -867,7 +1106,11 @@ class _SummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
@@ -927,15 +1170,24 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = ativo ? const Color(0xFFEAF8EE) : const Color(0xFFFEF2F2);
-    final Color foregroundColor = ativo ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final Color backgroundColor =
+        ativo ? const Color(0xFFEAF8EE) : const Color(0xFFFEF2F2);
+    final Color foregroundColor =
+        ativo ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Text(
         ativo ? 'Ativo' : 'Inativo',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: foregroundColor),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: foregroundColor,
+        ),
       ),
     );
   }
@@ -1004,7 +1256,8 @@ class _SortOptionTile extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+              color:
+                  selected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(
@@ -1013,12 +1266,16 @@ class _SortOptionTile extends StatelessWidget {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: selected ? const Color(0xFF2563EB) : const Color(0xFF0F172A),
+                    color:
+                        selected
+                            ? const Color(0xFF2563EB)
+                            : const Color(0xFF0F172A),
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              if (selected) const Icon(Icons.check_rounded, color: Color(0xFF2563EB)),
+              if (selected)
+                const Icon(Icons.check_rounded, color: Color(0xFF2563EB)),
             ],
           ),
         ),
@@ -1055,12 +1312,19 @@ class _ErrorState extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          const Icon(Icons.wifi_off_outlined, color: Color(0xFFDC2626), size: 34),
+          const Icon(
+            Icons.wifi_off_outlined,
+            color: Color(0xFFDC2626),
+            size: 34,
+          ),
           const SizedBox(height: 10),
           const Text(
             'Não foi possível carregar o catálogo.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900),
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -1093,7 +1357,10 @@ class _EmptyState extends StatelessWidget {
           Text(
             'Nenhum item encontrado.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900),
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w900,
+            ),
           ),
           SizedBox(height: 4),
           Text(
