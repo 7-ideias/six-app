@@ -1,14 +1,21 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:sixpos/data/models/tela_inicial_models.dart';
+import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
 
-class OperacaoMobileScreen extends StatelessWidget {
+class OperacaoMobileScreen extends StatefulWidget {
   const OperacaoMobileScreen({super.key});
 
+  @override
+  State<OperacaoMobileScreen> createState() => _OperacaoMobileScreenState();
+}
+
+class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   static const Color _backgroundColor = Color(0xFFF4F7FB);
   static const Color _primaryColor = Color(0xFF0B1F3A);
   static const Color _secondaryColor = Color(0xFF123B69);
@@ -16,6 +23,51 @@ class OperacaoMobileScreen extends StatelessWidget {
   static const Color _surfaceColor = Colors.white;
   static const Color _mutedTextColor = Color(0xFF64748B);
   static const Color _titleTextColor = Color(0xFF0F172A);
+
+  final TelaInicialWebApiClient _telaInicialApiClient =
+      HttpResumoDaEmpresaApiClient(canal: 'mobile');
+
+  TelaInicialModel? _resumoTelaInicial;
+  bool _carregandoResumo = true;
+  String? _erroResumo;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarResumoAtendimento();
+  }
+
+  Future<void> _carregarResumoAtendimento() async {
+    if (mounted) {
+      setState(() {
+        _carregandoResumo = true;
+        _erroResumo = null;
+      });
+    }
+
+    try {
+      final TelaInicialModel resumo = await _telaInicialApiClient.getResumo();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _resumoTelaInicial = resumo;
+        _carregandoResumo = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _erroResumo = error.toString();
+        _carregandoResumo = false;
+      });
+
+      debugPrint('[OperacaoMobileScreen] Erro ao buscar resumo: $error');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,45 +84,49 @@ class OperacaoMobileScreen extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-          children: <Widget>[
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 70),
-              child: _buildQuickServiceHeader(),
-            ),
-            const SizedBox(height: 18),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 120),
-              child: _buildSectionTitle('Atendimento rápido'),
-            ),
-            const SizedBox(height: 12),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 170),
-              child: _buildQuickActions(context),
-            ),
-            const SizedBox(height: 24),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 230),
-              child: _buildSectionTitle('Acompanhamento'),
-            ),
-            const SizedBox(height: 12),
-            ..._buildTrackingTiles(context),
-            const SizedBox(height: 12),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 420),
-              child: _buildSectionTitle('Caixa'),
-            ),
-            const SizedBox(height: 12),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 470),
-              child: _buildCashTile(context),
-            ),
-          ],
+        child: RefreshIndicator(
+          onRefresh: _carregarResumoAtendimento,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            children: <Widget>[
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 70),
+                child: _buildQuickServiceHeader(),
+              ),
+              const SizedBox(height: 18),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 120),
+                child: _buildSectionTitle('Atendimento rápido'),
+              ),
+              const SizedBox(height: 12),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 170),
+                child: _buildQuickActions(context),
+              ),
+              const SizedBox(height: 24),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 230),
+                child: _buildSectionTitle('Acompanhamento'),
+              ),
+              const SizedBox(height: 12),
+              ..._buildTrackingTiles(context),
+              const SizedBox(height: 12),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 420),
+                child: _buildSectionTitle('Caixa'),
+              ),
+              const SizedBox(height: 12),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 470),
+                child: _buildCashTile(context),
+              ),
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
+      bottomNavigationBar:
+          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
     );
   }
 
@@ -85,7 +141,11 @@ class OperacaoMobileScreen extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x260B1F3A), blurRadius: 22, offset: Offset(0, 12)),
+          BoxShadow(
+            color: Color(0x260B1F3A),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
         ],
       ),
       child: Row(
@@ -107,7 +167,11 @@ class OperacaoMobileScreen extends StatelessWidget {
               children: <Widget>[
                 Text(
                   'Balcão digital',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 SizedBox(height: 6),
                 Text(
@@ -164,12 +228,19 @@ class OperacaoMobileScreen extends StatelessWidget {
   }
 
   List<Widget> _buildTrackingTiles(BuildContext context) {
+    final String totalVendasAReceber =
+        (_resumoTelaInicial?.totalVendasAbertas ?? 0).toString();
+
     final List<_TrackingItem> items = <_TrackingItem>[
       _TrackingItem(
         title: 'Vendas a receber',
-        subtitle: 'Vendas não liquidadas',
-        count: '0',
+        subtitle: _erroResumo == null
+            ? 'Vendas não liquidadas'
+            : 'Não foi possível atualizar agora',
+        count: totalVendasAReceber,
         icon: Icons.point_of_sale_outlined,
+        isLoading: _carregandoResumo,
+        hasError: _erroResumo != null,
         onTap: () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
       ),
       _TrackingItem(
@@ -225,12 +296,21 @@ class OperacaoMobileScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0xFFE2E8F0)),
             boxShadow: const <BoxShadow>[
-              BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
             ],
           ),
           child: Row(
             children: <Widget>[
-              _iconBox(icon, background: const Color(0xFFEFF6FF), color: _accentColor, size: 50),
+              _iconBox(
+                icon,
+                background: const Color(0xFFEFF6FF),
+                color: _accentColor,
+                size: 50,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -238,14 +318,21 @@ class OperacaoMobileScreen extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       title,
-                      style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 16),
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                      style: const TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -278,13 +365,22 @@ class OperacaoMobileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _iconBox(icon, background: const Color(0xFFEFF6FF), color: _accentColor, size: 42),
+              _iconBox(
+                icon,
+                background: const Color(0xFFEFF6FF),
+                color: _accentColor,
+                size: 42,
+              ),
               const SizedBox(height: 14),
               Text(
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800, height: 1.15),
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontWeight: FontWeight.w800,
+                  height: 1.15,
+                ),
               ),
             ],
           ),
@@ -304,14 +400,27 @@ class OperacaoMobileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: item.hasError
+                  ? const Color(0xFFFCA5A5)
+                  : const Color(0xFFE2E8F0),
+            ),
             boxShadow: const <BoxShadow>[
-              BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
             ],
           ),
           child: Row(
             children: <Widget>[
-              _iconBox(item.icon, background: const Color(0xFFF1F5F9), color: _primaryColor, size: 46),
+              _iconBox(
+                item.icon,
+                background: const Color(0xFFF1F5F9),
+                color: _primaryColor,
+                size: 46,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -321,29 +430,60 @@ class OperacaoMobileScreen extends StatelessWidget {
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800, fontSize: 15),
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                      style: TextStyle(
+                        color: item.hasError
+                            ? const Color(0xFFB91C1C)
+                            : _mutedTextColor,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
-              SixAnimatedNumberText(
-                value: item.count,
-                style: const TextStyle(color: _titleTextColor, fontSize: 24, fontWeight: FontWeight.w900),
-              ),
+              _buildTrackingCount(item),
               const SizedBox(width: 2),
               const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTrackingCount(_TrackingItem item) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: item.isLoading
+          ? Container(
+              key: const ValueKey<String>('loading-count'),
+              width: 34,
+              height: 22,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            )
+          : SixAnimatedNumberText(
+              key: ValueKey<String>('count-${item.title}-${item.count}'),
+              value: item.count,
+              style: const TextStyle(
+                color: _titleTextColor,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
     );
   }
 
@@ -362,7 +502,12 @@ class OperacaoMobileScreen extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              _iconBox(Icons.point_of_sale_outlined, background: const Color(0xFFEFF6FF), color: _accentColor, size: 46),
+              _iconBox(
+                Icons.point_of_sale_outlined,
+                background: const Color(0xFFEFF6FF),
+                color: _accentColor,
+                size: 46,
+              ),
               const SizedBox(width: 14),
               const Expanded(
                 child: Column(
@@ -370,7 +515,11 @@ class OperacaoMobileScreen extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       'Caixa a receber',
-                      style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800, fontSize: 15),
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -390,11 +539,19 @@ class OperacaoMobileScreen extends StatelessWidget {
     );
   }
 
-  Widget _iconBox(IconData icon, {required Color background, required Color color, required double size}) {
+  Widget _iconBox(
+    IconData icon, {
+    required Color background,
+    required Color color,
+    required double size,
+  }) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14)),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14),
+      ),
       child: Icon(icon, color: color, size: size >= 48 ? 24 : 22),
     );
   }
@@ -402,7 +559,12 @@ class OperacaoMobileScreen extends StatelessWidget {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(color: _titleTextColor, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.1),
+      style: const TextStyle(
+        color: _titleTextColor,
+        fontSize: 16,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.1,
+      ),
     );
   }
 
@@ -430,6 +592,8 @@ class _TrackingItem {
     required this.count,
     required this.icon,
     required this.onTap,
+    this.isLoading = false,
+    this.hasError = false,
   });
 
   final String title;
@@ -437,4 +601,6 @@ class _TrackingItem {
   final String count;
   final IconData icon;
   final VoidCallback onTap;
+  final bool isLoading;
+  final bool hasError;
 }
