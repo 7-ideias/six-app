@@ -88,33 +88,113 @@ class FirebasePushNotificationService {
 
   Future<void> syncTokenForLoggedUser() async {
     AppFeedback.show('Sincronizando notificações push...');
-    await initializeOnAppStart();
-    if (!_firebaseInicializado) {
-      AppFeedback.show('Firebase não inicializou no aparelho.');
+
+    final bool firebaseOk = await _inicializarFirebaseParaRegistro();
+    if (!firebaseOk) {
       return;
     }
 
-    final NotificationSettings settings = await FirebaseMessaging.instance
-        .requestPermission(alert: true, badge: true, sound: true);
+    _configurarListenersSemBloquear();
 
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      debugPrint('[FirebasePushNotificationService] Permissão de push negada.');
-      AppFeedback.show('Permissão de notificações negada.');
+    await _solicitarPermissaoSemBloquearRegistro();
+
+    final String? token = await _obterTokenFcm();
+    if (token == null || token.trim().isEmpty) {
+      AppFeedback.show('Firebase não retornou token FCM.');
+      return;
     }
 
-    final String? token = await FirebaseMessaging.instance.getToken();
-    if (token != null && token.trim().isNotEmpty) {
-      AppFeedback.show('Token Firebase obtido. Registrando no backend...');
-      await _registrarTokenNoBackend(token);
-    } else {
-      debugPrint('[FirebasePushNotificationService] Firebase não retornou token FCM.');
-      AppFeedback.show('Falha ao obter token de notificações. Notificações push podem não funcionar.');
-    }
+    AppFeedback.show('Token Firebase obtido. Registrando no backend...');
+    await _registrarTokenNoBackend(token);
 
     _tokenRefreshSubscription ??=
         FirebaseMessaging.instance.onTokenRefresh.listen((String novoToken) {
       _registrarTokenNoBackend(novoToken);
     });
+  }
+
+  Future<bool> _inicializarFirebaseParaRegistro() async {
+    try {
+      final bool inicializado = await initializeFirebaseIfConfigured().timeout(
+        const Duration(seconds: 8),
+      );
+
+      if (!inicializado) {
+        AppFeedback.show('Firebase não inicializou no aparelho.');
+      } else {
+        AppFeedback.show('Firebase inicializado no aparelho.');
+      }
+
+      return inicializado;
+    } on TimeoutException {
+      AppFeedback.show('Tempo esgotado ao inicializar Firebase.');
+      return false;
+    } catch (e) {
+      debugPrint('[FirebasePushNotificationService] Erro ao inicializar Firebase: $e');
+      AppFeedback.show('Erro ao inicializar Firebase.');
+      return false;
+    }
+  }
+
+  static void _configurarListenersSemBloquear() {
+    if (_listenersConfigurados) {
+      return;
+    }
+
+    unawaited(
+      initializeOnAppStart()
+          .timeout(const Duration(seconds: 8))
+          .catchError((Object e) {
+        debugPrint(
+          '[FirebasePushNotificationService] Listeners push não configurados: $e',
+        );
+        AppFeedback.show('Listeners push não configurados. Registro do token continuará.');
+      }),
+    );
+  }
+
+  Future<void> _solicitarPermissaoSemBloquearRegistro() async {
+    try {
+      final NotificationSettings settings = await FirebaseMessaging.instance
+          .requestPermission(alert: true, badge: true, sound: true)
+          .timeout(const Duration(seconds: 10));
+
+      switch (settings.authorizationStatus) {
+        case AuthorizationStatus.authorized:
+          AppFeedback.show('Permissão de notificações autorizada.');
+          break;
+        case AuthorizationStatus.provisional:
+          AppFeedback.show('Permissão provisória de notificações.');
+          break;
+        case AuthorizationStatus.denied:
+          debugPrint('[FirebasePushNotificationService] Permissão de push negada.');
+          AppFeedback.show('Permissão de notificações negada. Tentando registrar token mesmo assim.');
+          break;
+        case AuthorizationStatus.notDetermined:
+          AppFeedback.show('Permissão de notificações ainda não definida.');
+          break;
+      }
+    } on TimeoutException {
+      AppFeedback.show('Tempo esgotado ao solicitar permissão. Tentando registrar token.');
+    } catch (e) {
+      debugPrint('[FirebasePushNotificationService] Falha ao solicitar permissão: $e');
+      AppFeedback.show('Falha ao solicitar permissão. Tentando registrar token.');
+    }
+  }
+
+  Future<String?> _obterTokenFcm() async {
+    try {
+      return await FirebaseMessaging.instance.getToken().timeout(
+            const Duration(seconds: 12),
+          );
+    } on TimeoutException {
+      AppFeedback.show('Tempo esgotado ao obter token Firebase.');
+      return null;
+    } catch (e) {
+      debugPrint('[FirebasePushNotificationService] Firebase não retornou token FCM: $e');
+      AppFeedback.show('Erro ao obter token Firebase.');
+      return null;
+    }
   }
 
   Future<void> _registrarTokenNoBackend(String token) async {
