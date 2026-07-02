@@ -61,9 +61,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
                   OutlinedButton.icon(onPressed: widget.onOpenListaCompleta, icon: const Icon(Icons.table_rows_rounded), label: const Text('Lista completa')),
                 ],
               ),
-              Expanded(
-                child: AnimatedSwitcher(duration: const Duration(milliseconds: 280), child: child),
-              ),
+              Expanded(child: AnimatedSwitcher(duration: const Duration(milliseconds: 280), child: child)),
             ],
           );
         },
@@ -97,16 +95,9 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
             child: Column(children: <Widget>[
               _loadingKpis(compact),
               const SizedBox(height: 18),
-              sixWebResponsiveGroup(compact: compact, children: const <Widget>[
-                SixWebLoadingBlock(height: 280),
-                SixWebLoadingBlock(height: 280),
-                SixWebLoadingBlock(height: 280),
-              ]),
+              sixWebResponsiveGroup(compact: compact, children: const <Widget>[SixWebLoadingBlock(height: 280), SixWebLoadingBlock(height: 280), SixWebLoadingBlock(height: 280)]),
               const SizedBox(height: 18),
-              sixWebResponsiveGroup(compact: compact, children: const <Widget>[
-                SixWebLoadingBlock(height: 240),
-                SixWebLoadingBlock(height: 240),
-              ]),
+              sixWebResponsiveGroup(compact: compact, children: const <Widget>[SixWebLoadingBlock(height: 240), SixWebLoadingBlock(height: 240)]),
             ]),
           );
         },
@@ -116,12 +107,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 8,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: compact ? 2 : 4,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-          mainAxisExtent: 118,
-        ),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: compact ? 2 : 4, crossAxisSpacing: 14, mainAxisSpacing: 14, mainAxisExtent: 118),
         itemBuilder: (BuildContext context, int index) => SixWebEntry(order: index, child: SixWebLoadingBlock(height: 118, highlight: index == 2)),
       );
 
@@ -186,7 +172,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
           : Column(
               children: visible.asMap().entries.map((MapEntry<int, ServicoDashboardSerieItem> entry) {
                 final ServicoDashboardSerieItem item = entry.value;
-                final double percent = maxValue <= 0 ? 0 : (item.quantidade / maxValue).clamp(0, 1);
+                final double percent = maxValue <= 0 ? 0 : (item.quantidade / maxValue).clamp(0.0, 1.0).toDouble();
                 return Padding(
                   padding: EdgeInsets.only(bottom: entry.key == visible.length - 1 ? 0 : 12),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
@@ -220,12 +206,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
       icon: Icons.tips_and_updates_outlined,
       child: alerts.isEmpty
           ? const SixWebNoData(text: 'Nenhum alerta operacional encontrado.')
-          : Column(
-              children: alerts.map((ServicoDashboardAlerta alert) {
-                final Color color = _alertColor(theme, alert.tipo);
-                return _notice(icon: _alertIcon(alert.tipo), color: color, title: alert.titulo, subtitle: alert.descricao, value: _whole(alert.quantidade.toDouble()));
-              }).toList(),
-            ),
+          : Column(children: alerts.map((ServicoDashboardAlerta alert) => _notice(icon: _alertIcon(alert.tipo), color: _alertColor(theme, alert.tipo), title: alert.titulo, subtitle: alert.descricao, value: _whole(alert.quantidade.toDouble()))).toList()),
     );
   }
 
