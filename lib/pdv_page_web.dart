@@ -34,6 +34,9 @@ import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'top_navigation_bar.dart';
 
+part 'pdv_page_web_cockpit_section.dart';
+part 'pdv_page_web_venda_section.dart';
+
 class PDVWeb extends StatefulWidget {
   const PDVWeb({super.key});
 
@@ -82,7 +85,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
 
   final List<Map<String, dynamic>> _produtosSelecionados =
-  <Map<String, dynamic>>[];
+      <Map<String, dynamic>>[];
   final Set<String> _formasSelecionadas = <String>{};
   ClienteUsuario? _clienteIdentificado;
   int _opcaoCockpitSelecionada = 0;
@@ -92,7 +95,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     text: '0',
   );
   final TextEditingController _clienteIdentificadoController =
-  TextEditingController();
+      TextEditingController();
 
   final FocusNode _atalhosFocusNode = FocusNode(debugLabel: 'pdv-shortcuts');
   final FocusNode _codigoBarrasFocusNode = FocusNode(
@@ -116,6 +119,25 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         _themeResolver.paleta,
         tema: _themeResolver.tema,
       );
+    });
+  }
+
+  void _limparFiltrosCockpit() {
+    setState(() {
+      _cockpitCanalSelecionado = null;
+      _cockpitAtendimentoSelecionado = null;
+    });
+  }
+
+  void _selecionarOpcaoCockpit(int index) {
+    setState(() {
+      _opcaoCockpitSelecionada = index;
+    });
+  }
+
+  void _voltarParaSeletor() {
+    setState(() {
+      _moduloAtual = ModuloCentralPDV.seletor;
     });
   }
 
@@ -255,7 +277,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     _monitoramentoComunicacaoTimer?.cancel();
     _monitoramentoComunicacaoTimer = Timer.periodic(
       const Duration(seconds: 10),
-          (_) => _validarComunicacaoBackend(),
+      (_) => _validarComunicacaoBackend(),
     );
   }
 
@@ -279,8 +301,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     final DateTime agora = DateTime.now();
     final bool podeReconectar =
         _ultimaTentativaReconexao == null ||
-            agora.difference(_ultimaTentativaReconexao!) >=
-                const Duration(seconds: 20);
+        agora.difference(_ultimaTentativaReconexao!) >=
+            const Duration(seconds: 20);
 
     if (podeReconectar) {
       _ultimaTentativaReconexao = agora;
@@ -323,9 +345,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   Widget _buildIndicadorComunicacaoBackend() {
     final Color corStatus = _corStatusBackend();
     final String tooltip =
-    _ultimaValidacaoBackend == null
-        ? _textoStatusBackend()
-        : '${_textoStatusBackend()} • última validação: ${_ultimaValidacaoBackend!.toIso8601String()}';
+        _ultimaValidacaoBackend == null
+            ? _textoStatusBackend()
+            : '${_textoStatusBackend()} • última validação: ${_ultimaValidacaoBackend!.toIso8601String()}';
 
     return Tooltip(
       message: tooltip,
@@ -445,7 +467,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             );
           },
         ) ??
-            false;
+        false;
 
     if (!confirmar) return;
     await _executarLogout();
@@ -460,7 +482,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => const LoginPageWeb()),
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -534,98 +556,98 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 const SizedBox(height: 16),
                 Expanded(
                   child:
-                  _notificacoes.isEmpty
-                      ? Center(
-                    child: Text(
-                      'Nenhuma notificação recebida.',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )
-                      : ListView.separated(
-                    controller: _notificacoesScrollController,
-                    primary: false,
-                    itemCount: _notificacoes.length,
-                    separatorBuilder:
-                        (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (BuildContext context, int index) {
-                      final Map<String, dynamic> item =
-                      _notificacoes[index];
-                      final String ordemId =
-                          item['ordemId']?.toString() ?? '-';
-                      final String status =
-                          item['status']?.toString() ?? '-';
-                      final String mensagem =
-                          item['mensagem']?.toString() ??
-                              'Sem mensagem';
-                      final String recebidoEm =
-                          item['recebidoEm']?.toString() ?? '';
-
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.10),
-                                    borderRadius: BorderRadius.circular(
-                                      12,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.campaign_rounded,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    mensagem,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text('Ordem: $ordemId'),
-                            const SizedBox(height: 4),
-                            Text('Status: $status'),
-                            if (recebidoEm.isNotEmpty) ...<Widget>[
-                              const SizedBox(height: 8),
-                              Text(
-                                'Recebido em: $recebidoEm',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color:
-                                  theme
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
+                      _notificacoes.isEmpty
+                          ? Center(
+                            child: Text(
+                              'Nenhuma notificação recebida.',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
                               ),
-                            ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                            ),
+                          )
+                          : ListView.separated(
+                            controller: _notificacoesScrollController,
+                            primary: false,
+                            itemCount: _notificacoes.length,
+                            separatorBuilder:
+                                (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (BuildContext context, int index) {
+                              final Map<String, dynamic> item =
+                                  _notificacoes[index];
+                              final String ordemId =
+                                  item['ordemId']?.toString() ?? '-';
+                              final String status =
+                                  item['status']?.toString() ?? '-';
+                              final String mensagem =
+                                  item['mensagem']?.toString() ??
+                                  'Sem mensagem';
+                              final String recebidoEm =
+                                  item['recebidoEm']?.toString() ?? '';
+
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Row(
+                                      children: <Widget>[
+                                        Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primary
+                                                .withOpacity(0.10),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.campaign_rounded,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            mensagem,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text('Ordem: $ordemId'),
+                                    const SizedBox(height: 4),
+                                    Text('Status: $status'),
+                                    if (recebidoEm.isNotEmpty) ...<Widget>[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Recebido em: $recebidoEm',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                 ),
               ],
             ),
@@ -802,7 +824,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
     setState(() {
       final int indexExistente = _produtosSelecionados.indexWhere(
-            (Map<String, dynamic> item) => _mesmoProduto(item, produto),
+        (Map<String, dynamic> item) => _mesmoProduto(item, produto),
       );
 
       if (indexExistente >= 0) {
@@ -876,9 +898,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   double _calcularTotal() {
     return _produtosSelecionados.fold<double>(0, (
-        double soma,
-        Map<String, dynamic> item,
-        ) {
+      double soma,
+      Map<String, dynamic> item,
+    ) {
       return soma +
           (((item['preco'] ?? 0) as num).toDouble() *
               ((item['quantidade'] ?? 1) as int));
@@ -888,8 +910,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   int _calcularQuantidadeItens() {
     return _produtosSelecionados.fold<int>(
       0,
-          (int soma, Map<String, dynamic> item) =>
-      soma + ((item['quantidade'] ?? 1) as int),
+      (int soma, Map<String, dynamic> item) =>
+          soma + ((item['quantidade'] ?? 1) as int),
     );
   }
 
@@ -923,14 +945,14 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   Future<void> _abrirDialogClienteRapido() async {
     final ClienteIdentificacaoVendaResult? result =
-    await showDialog<ClienteIdentificacaoVendaResult>(
-      context: context,
-      builder: (BuildContext context) {
-        return PdvClienteIdentificacaoDialog(
-          clienteAtual: _clienteIdentificado,
+        await showDialog<ClienteIdentificacaoVendaResult>(
+          context: context,
+          builder: (BuildContext context) {
+            return PdvClienteIdentificacaoDialog(
+              clienteAtual: _clienteIdentificado,
+            );
+          },
         );
-      },
-    );
 
     if (result == null) {
       return;
@@ -945,9 +967,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
       final ClienteUsuario? cliente = result.cliente;
       _clienteIdentificado = cliente;
-      _clienteIdentificadoController.text = cliente?.nome.trim().isNotEmpty == true
-          ? cliente!.nome.trim()
-          : cliente?.documento.trim() ?? '';
+      _clienteIdentificadoController.text =
+          cliente?.nome.trim().isNotEmpty == true
+              ? cliente!.nome.trim()
+              : cliente?.documento.trim() ?? '';
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1067,15 +1090,15 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     <String, String>{
       'title': 'Vendas Abertas',
       'count':
-      TelaInicialWebProvider().telaInicialWeb?.totalVendasAbertas
-          .toString() ??
+          TelaInicialWebProvider().telaInicialWeb?.totalVendasAbertas
+              .toString() ??
           '0',
     },
     <String, String>{
       'title': 'Ordens Abertas',
       'count':
-      TelaInicialWebProvider().telaInicialWeb?.totalOrdensDeServicoAbertas
-          .toString() ??
+          TelaInicialWebProvider().telaInicialWeb?.totalOrdensDeServicoAbertas
+              .toString() ??
           '0',
     },
     <String, String>{'title': 'OTs em revisão', 'count': '33'},
@@ -1111,9 +1134,9 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             valorTotalVenda: _calcularTotal(),
             itensResumo: _montarItensResumoPagamento(),
             clienteNome:
-            _clienteIdentificado?.nome.trim().isNotEmpty == true
-                ? _clienteIdentificado!.nome.trim()
-                : _clienteIdentificadoController.text.trim(),
+                _clienteIdentificado?.nome.trim().isNotEmpty == true
+                    ? _clienteIdentificado!.nome.trim()
+                    : _clienteIdentificadoController.text.trim(),
             numeroVenda: '',
             idColaborador: 'idUnicoDoColaborador',
             nomeColaborador: 'Nome do colaborador',
@@ -1223,18 +1246,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       case 'Cockpit':
         badge = 'Gestão visionária';
         descricao =
-        'Antecipe riscos de margem, vendas e atendimento com foco em resultado sustentável.';
+            'Antecipe riscos de margem, vendas e atendimento com foco em resultado sustentável.';
         break;
       case 'Vendas':
         badge = 'Fluxo principal';
         descricao =
             l10n?.pdvQuickServiceDescription ??
-                'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
+            'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
         break;
       case 'Orçamento':
         badge = 'Assistência comercial';
         descricao =
-        'Monte propostas com organização, clareza e continuidade do atendimento.';
+            'Monte propostas com organização, clareza e continuidade do atendimento.';
         break;
       default:
         badge = 'Operação interna';
@@ -1733,2009 +1756,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   String labelAgendaFinanceira() => 'Agenda Financeira';
 
-  Widget _buildCockpitEstrategico() {
-    return Expanded(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 920;
-          final horizontalPadding = isCompact ? 16.0 : 28.0;
-
-          return Container(
-            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.16),
-            child: Column(
-              children: <Widget>[
-                _buildCockpitHeader(context, isCompact),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      14,
-                      horizontalPadding,
-                      18,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _buildCockpitResumoKpis(),
-                        const SizedBox(height: 14),
-                        _buildCockpitFinanceiroChart(),
-                        const SizedBox(height: 14),
-                        isCompact
-                            ? Column(
-                          children: <Widget>[
-                            _buildCockpitVendasCanalChart(),
-                            const SizedBox(height: 14),
-                            _buildCockpitAtendimentoChart(),
-                          ],
-                        )
-                            : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Expanded(child: _buildCockpitVendasCanalChart()),
-                            const SizedBox(width: 14),
-                            Expanded(child: _buildCockpitAtendimentoChart()),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        _buildCockpitOpcoesExemplo(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildCockpitResumoKpis() {
-    final List<Map<String, String>> kpis = <Map<String, String>>[
-      <String, String>{
-        'titulo': 'Receita líquida',
-        'valor': 'R\$ 486.300',
-        'delta': '+8,6% vs mês anterior',
-      },
-      <String, String>{
-        'titulo': 'Margem operacional',
-        'valor': '24,2%',
-        'delta': '+2,1 p.p',
-      },
-      <String, String>{
-        'titulo': 'Ticket médio',
-        'valor': 'R\$ 312',
-        'delta': '+5,4%',
-      },
-      <String, String>{
-        'titulo': 'NPS atendimento',
-        'valor': '74',
-        'delta': 'Meta: 80',
-      },
-    ];
-
-    return Wrap(
-      spacing: 14,
-      runSpacing: 14,
-      children:
-      kpis.map((Map<String, String> kpi) {
-        return Container(
-          width: 270,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _pdvTheme.cardBackground,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _pdvTheme.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                kpi['titulo'] ?? '',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: _pdvTheme.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                kpi['valor'] ?? '',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: _pdvTheme.primaryText,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                kpi['delta'] ?? '',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _pdvTheme.iconColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildCockpitFinanceiroChart() {
-    const List<FlSpot> receita = <FlSpot>[
-      FlSpot(0, 390),
-      FlSpot(1, 410),
-      FlSpot(2, 428),
-      FlSpot(3, 446),
-      FlSpot(4, 472),
-      FlSpot(5, 486),
-    ];
-    const List<FlSpot> meta = <FlSpot>[
-      FlSpot(0, 400),
-      FlSpot(1, 415),
-      FlSpot(2, 430),
-      FlSpot(3, 445),
-      FlSpot(4, 460),
-      FlSpot(5, 475),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Resultado financeiro (R\$ mil): receita x meta',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 260,
-            child: LineChart(
-              LineChartData(
-                minX: 0,
-                maxX: 5,
-                minY: 360,
-                maxY: 520,
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  show: true,
-                  horizontalInterval: 20,
-                  getDrawingHorizontalLine:
-                      (_) => FlLine(
-                    color: _pdvTheme.cardBorder.withValues(alpha: 0.50),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 48,
-                      interval: 40,
-                      getTitlesWidget:
-                          (double value, TitleMeta meta) => Text(
-                        value.toInt().toString(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _pdvTheme.secondaryText,
-                        ),
-                      ),
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        const List<String> meses = <String>[
-                          'Nov',
-                          'Dez',
-                          'Jan',
-                          'Fev',
-                          'Mar',
-                          'Abr',
-                        ];
-                        final int idx = value.toInt();
-                        if (idx < 0 || idx >= meses.length) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            meses[idx],
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _pdvTheme.secondaryText,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                lineBarsData: <LineChartBarData>[
-                  LineChartBarData(
-                    spots: receita,
-                    isCurved: true,
-                    barWidth: 3.5,
-                    color: _pdvTheme.highlightColor,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: _pdvTheme.highlightColor.withValues(alpha: 0.10),
-                    ),
-                  ),
-                  LineChartBarData(
-                    spots: meta,
-                    isCurved: true,
-                    barWidth: 2.5,
-                    color: Colors.orange.shade700,
-                    dashArray: const <int>[7, 4],
-                    dotData: const FlDotData(show: false),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 18,
-            runSpacing: 8,
-            children: <Widget>[
-              _buildLegendaGrafico(_pdvTheme.highlightColor, 'Receita'),
-              _buildLegendaGrafico(Colors.orange.shade700, 'Meta'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCockpitVendasCanalChart() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Vendas por canal (últimos 30 dias)',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 230,
-            child: BarChart(
-              BarChartData(
-                maxY: 220,
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  show: true,
-                  horizontalInterval: 40,
-                  getDrawingHorizontalLine:
-                      (_) => FlLine(
-                    color: _pdvTheme.cardBorder.withValues(alpha: 0.50),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 35,
-                      getTitlesWidget:
-                          (double value, TitleMeta meta) => Text(
-                        value.toInt().toString(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _pdvTheme.secondaryText,
-                        ),
-                      ),
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        const List<String> canais = <String>[
-                          'Loja',
-                          'Whats',
-                          'Site',
-                          'B2B',
-                        ];
-                        final int idx = value.toInt();
-                        if (idx < 0 || idx >= canais.length) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            canais[idx],
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _pdvTheme.secondaryText,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                barGroups: <BarChartGroupData>[
-                  BarChartGroupData(
-                    x: 0,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 198,
-                        width: 20,
-                        color: const Color(0xFF0EA5E9),
-                      ),
-                    ],
-                  ),
-                  BarChartGroupData(
-                    x: 1,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 172,
-                        width: 20,
-                        color: const Color(0xFF14B8A6),
-                      ),
-                    ],
-                  ),
-                  BarChartGroupData(
-                    x: 2,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 146,
-                        width: 20,
-                        color: const Color(0xFF6366F1),
-                      ),
-                    ],
-                  ),
-                  BarChartGroupData(
-                    x: 3,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 119,
-                        width: 20,
-                        color: const Color(0xFFF59E0B),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCockpitAtendimentoChart() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Qualidade de atendimento',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 230,
-            child: PieChart(
-              PieChartData(
-                centerSpaceRadius: 44,
-                sectionsSpace: 3,
-                sections: <PieChartSectionData>[
-                  PieChartSectionData(
-                    value: 58,
-                    title: '58%',
-                    radius: 62,
-                    color: const Color(0xFF22C55E),
-                    titleStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                  PieChartSectionData(
-                    value: 27,
-                    title: '27%',
-                    radius: 62,
-                    color: const Color(0xFFF59E0B),
-                    titleStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                  PieChartSectionData(
-                    value: 15,
-                    title: '15%',
-                    radius: 62,
-                    color: const Color(0xFFEF4444),
-                    titleStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: <Widget>[
-              _buildLegendaGrafico(const Color(0xFF22C55E), 'Satisfeitos'),
-              _buildLegendaGrafico(const Color(0xFFF59E0B), 'Neutros'),
-              _buildLegendaGrafico(const Color(0xFFEF4444), 'Insatisfeitos'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCockpitOpcoesExemplo() {
-    final List<Map<String, String>> opcoes = <Map<String, String>>[
-      <String, String>{
-        'titulo': 'Rentabilidade por cliente',
-        'descricao':
-        'Mostra clientes com alta receita e baixa margem para renegociação de mix ou política comercial.',
-      },
-      <String, String>{
-        'titulo': 'Conversão de orçamento em venda',
-        'descricao':
-        'Evidencia onde o funil trava e quais equipes/canais têm maior perda de fechamento.',
-      },
-      <String, String>{
-        'titulo': 'SLA e tempo de resposta',
-        'descricao':
-        'Aponta gargalos de atendimento que afetam NPS e recompra.',
-      },
-      <String, String>{
-        'titulo': 'Risco de churn',
-        'descricao':
-        'Detecta clientes com queda de frequência, aumento de reclamação e queda no ticket.',
-      },
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Opções de exemplo para priorização',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List<Widget>.generate(opcoes.length, (int index) {
-              return ChoiceChip(
-                label: Text(opcoes[index]['titulo'] ?? ''),
-                selected: _opcaoCockpitSelecionada == index,
-                onSelected: (_) {
-                  setState(() {
-                    _opcaoCockpitSelecionada = index;
-                  });
-                },
-              );
-            }),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: _pdvTheme.backgroundSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _pdvTheme.cardBorder),
-            ),
-            child: Text(
-              opcoes[_opcaoCockpitSelecionada]['descricao'] ?? '',
-              style: TextStyle(
-                height: 1.45,
-                color: _pdvTheme.secondaryText,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendaGrafico(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 7),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: _pdvTheme.secondaryText,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVendaHero() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[
-            _pdvTheme.highlightColor.withOpacity(0.10),
-            _pdvTheme.backgroundSurface,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          Container(
-            width: 62,
-            height: 62,
-            decoration: BoxDecoration(
-              color: _pdvTheme.iconColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              Icons.point_of_sale_rounded,
-              size: 32,
-              color: _pdvTheme.iconColor,
-            ),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 320, maxWidth: 560),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Frente de caixa',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: _pdvTheme.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Cockpit operacional para atendimento rápido, leitura de itens e fechamento sem fricção.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.40,
-                    color: _pdvTheme.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _buildTopBadge('F2 Buscar produto', Icons.search_rounded),
-          _buildTopBadge('F4 Identificar cliente', Icons.person_search_rounded),
-          _buildTopBadge('F8 Receber', Icons.payments_rounded),
-          _buildTopBadge('ESC Cancelar', Icons.close_rounded),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopBadge(String label, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _pdvTheme.backgroundSurface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 16, color: _pdvTheme.iconColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: _pdvTheme.primaryText,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    bool destaque = false,
-  }) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 84),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: destaque ? _pdvTheme.iconColor : _pdvTheme.backgroundSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: destaque ? _pdvTheme.iconColor : _pdvTheme.cardBorder,
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _pdvTheme.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color:
-              destaque
-                  ? Colors.white.withOpacity(0.18)
-                  : _pdvTheme.iconColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              icon,
-              color: destaque ? Colors.white : _pdvTheme.iconColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color:
-                    destaque
-                        ? Colors.white.withOpacity(0.85)
-                        : _pdvTheme.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    color: destaque ? Colors.white : _pdvTheme.primaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBarraOperacional() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _pdvTheme.cardBorder),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _pdvTheme.cardShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  'Faixa operacional',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: _pdvTheme.primaryText,
-                  ),
-                ),
-              ),
-              Text(
-                'Foco: velocidade, clareza e fechamento seguro',
-                style: TextStyle(
-                  color: _pdvTheme.secondaryText,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                flex: 5,
-                child: Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: _pdvTheme.backgroundPage,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _pdvTheme.cardBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Leitura / busca de item',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: _pdvTheme.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: TextField(
-                              controller: _codigoBarrasController,
-                              focusNode: _codigoBarrasFocusNode,
-                              autofocus: true,
-                              decoration: InputDecoration(
-                                hintText: 'Passe um item ou digite um código',
-                                labelText: 'Código de barras',
-                                prefixIcon: const Icon(
-                                  Icons.qr_code_scanner_rounded,
-                                ),
-                                suffixIcon: IconButton(
-                                  tooltip: 'Focar leitura',
-                                  onPressed: _focarCodigoBarras,
-                                  icon: const Icon(Icons.keyboard_alt_outlined),
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                  borderSide: BorderSide(
-                                    color: _pdvTheme.cardBorder,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          SizedBox(
-                            height: 58,
-                            child: OutlinedButton.icon(
-                              onPressed: _abrirSelecaoProdutoWeb,
-                              icon: const Icon(Icons.search_rounded),
-                              label: const Text('Buscar produto'),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color: _pdvTheme.actionButtonBackground,
-                                  width: 1.6,
-                                ),
-                                foregroundColor:
-                                _pdvTheme.actionButtonBackground,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 22,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 4,
-                child: Column(
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: _buildMetricCard(
-                            icon: Icons.shopping_bag_outlined,
-                            label: 'Itens',
-                            value: _itensTotalController.text,
-                            destaque: true,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildMetricCard(
-                            icon: Icons.person_outline_rounded,
-                            label: 'Cliente',
-                            value: _clienteAtualLabel(),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: _buildMetricCard(
-                            icon: Icons.point_of_sale_outlined,
-                            label: 'Caixa / sessão',
-                            value: 'Sessão ativa',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildMetricCard(
-                            icon: Icons.payments_outlined,
-                            label: 'Total parcial',
-                            value: _formatCurrency(_calcularTotal()),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderTabelaItens() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
-        color: _pdvTheme.backgroundPage,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Row(
-        children: <Widget>[
-          _buildHeaderCell('Produto', flex: 5),
-          _buildHeaderCell('Qtd', flex: 2, alignEnd: true),
-          _buildHeaderCell('Unitário', flex: 2, alignEnd: true),
-          _buildHeaderCell('Subtotal', flex: 2, alignEnd: true),
-          _buildHeaderCell('Ações', flex: 2, alignEnd: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderCell(
-      String label, {
-        required int flex,
-        bool alignEnd = false,
-      }) {
-    return Expanded(
-      flex: flex,
-      child: Align(
-        alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            letterSpacing: 0.4,
-            fontWeight: FontWeight.w800,
-            color: _pdvTheme.secondaryText,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLinhaTabelaItem(Map<String, dynamic> produto, int index) {
-    final int quantidade = (produto['quantidade'] ?? 1) as int;
-    final double preco = ((produto['preco'] ?? 0) as num).toDouble();
-    final double subtotal = _calcularSubtotal(produto);
-
-    return ZebraListItem(
-      index: index,
-      child: Container(
-        margin: const EdgeInsets.only(top: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _pdvTheme.cardBorder),
-          color:
-          index.isEven
-              ? _pdvTheme.backgroundSurface
-              : _pdvTheme.backgroundPage,
-        ),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              flex: 5,
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: _pdvTheme.iconColor.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      Icons.inventory_2_outlined,
-                      color: _pdvTheme.iconColor,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          produto['nome']?.toString() ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: _pdvTheme.primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Código: ${produto['codigo']?.toString().isNotEmpty == true ? produto['codigo'] : '-'}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _pdvTheme.secondaryText,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  quantidade.toString(),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: _pdvTheme.primaryText,
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  _formatCurrency(preco),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: _pdvTheme.primaryText,
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  _formatCurrency(subtotal),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    color: _pdvTheme.iconColor,
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Wrap(
-                  spacing: 4,
-                  children: <Widget>[
-                    IconButton(
-                      tooltip: 'Diminuir',
-                      onPressed: () => _alterarQuantidade(produto, -1),
-                      icon: const Icon(Icons.remove_circle_outline),
-                    ),
-                    IconButton(
-                      tooltip: 'Aumentar',
-                      onPressed: () => _alterarQuantidade(produto, 1),
-                      icon: const Icon(Icons.add_circle_outline),
-                    ),
-                    IconButton(
-                      tooltip: 'Remover',
-                      onPressed: () => _removerProduto(produto),
-                      icon: Icon(
-                        Icons.delete_outline_rounded,
-                        color: _pdvTheme.warningColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEstadoVazioGuiado() {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final Widget content = Container(
-          constraints: const BoxConstraints(maxWidth: 760),
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: _pdvTheme.backgroundPage,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: _pdvTheme.cardBorder),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(
-                width: 94,
-                height: 94,
-                decoration: BoxDecoration(
-                  color: _pdvTheme.iconColor.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Icon(
-                  Icons.shopping_cart_checkout_rounded,
-                  size: 46,
-                  color: _pdvTheme.iconColor,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Passe um item ou pesquise um produto',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: _pdvTheme.primaryText,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Quando a venda começar, esta área vira a grade operacional dos itens. Até lá, você pode disparar as ações rápidas abaixo.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.45,
-                  color: _pdvTheme.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 22),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: <Widget>[
-                  _buildQuickActionButton(
-                    icon: Icons.search_rounded,
-                    label: 'Buscar produto',
-                    onPressed: _abrirSelecaoProdutoWeb,
-                  ),
-                  _buildQuickActionButton(
-                    icon: Icons.person_add_alt_1_rounded,
-                    label: 'Identificar cliente',
-                    onPressed: _abrirDialogClienteRapido,
-                  ),
-                  _buildQuickActionButton(
-                    icon: Icons.build_circle_outlined,
-                    label: 'Adicionar serviço',
-                    onPressed: _adicionarServicoRapido,
-                  ),
-                  _buildQuickActionButton(
-                    icon: Icons.request_quote_outlined,
-                    label: 'Abrir orçamento',
-                    onPressed: _abrirOrcamento,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.center,
-                children: <Widget>[
-                  _buildHintChip('F2 buscar produto'),
-                  _buildHintChip('F4 identificar cliente'),
-                  _buildHintChip('F8 receber'),
-                  _buildHintChip('ESC cancelar venda'),
-                ],
-              ),
-            ],
-          ),
-        );
-
-        return ScrollConfiguration(
-          behavior: const MaterialScrollBehavior().copyWith(scrollbars: false),
-          child: SingleChildScrollView(
-            primary: false,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Center(child: content),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildQuickActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: _pdvTheme.actionButtonBackground,
-        side: BorderSide(color: _pdvTheme.actionButtonBackground),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-    );
-  }
-
-  Widget _buildHintChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: _pdvTheme.backgroundSurface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: _pdvTheme.secondaryText,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGradeOperacional() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Itens da venda',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: _pdvTheme.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Formato operacional com leitura rápida de produto, quantidade, preço e subtotal.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: _pdvTheme.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _buildTopBadge(
-                '${_calcularQuantidadeItens()} item(ns)',
-                Icons.shopping_basket_outlined,
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Expanded(
-            child:
-            _produtosSelecionados.isEmpty
-                ? _buildEstadoVazioGuiado()
-                : Column(
-              children: <Widget>[
-                _buildHeaderTabelaItens(),
-                const SizedBox(height: 2),
-                Expanded(
-                  child: ListView.builder(
-                    controller: _gradeItensScrollController,
-                    primary: false,
-                    itemCount: _produtosSelecionados.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return _buildLinhaTabelaItem(
-                        _produtosSelecionados[index],
-                        index,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResumoVendaLateral() {
-    final double total = _calcularTotal();
-    final int quantidadeItens = _calcularQuantidadeItens();
-
-    Widget buildHeader() {
-      return Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: _pdvTheme.cardBorder)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    'Venda atual',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: _pdvTheme.primaryText,
-                    ),
-                  ),
-                ),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _pdvTheme.successColor.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        'Em andamento',
-                        style: TextStyle(
-                          color: _pdvTheme.successColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildResumoInfoTile(
-              Icons.person_outline_rounded,
-              'Cliente',
-              _clienteAtualLabel(),
-            ),
-            const SizedBox(height: 10),
-            _buildResumoInfoTile(
-              Icons.payments_outlined,
-              'Pagamento',
-              _formasSelecionadas.isEmpty
-                  ? 'Não definido'
-                  : _formasSelecionadas.join(', '),
-            ),
-            const SizedBox(height: 10),
-            _buildResumoInfoTile(
-              Icons.receipt_long_outlined,
-              'Itens',
-              '$quantidadeItens item(ns)',
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget buildBody() {
-      return SingleChildScrollView(
-        controller: _resumoVendaScrollController,
-        primary: false,
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Resumo rápido',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: _pdvTheme.secondaryText,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (_produtosSelecionados.isEmpty) ...<Widget>[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _pdvTheme.backgroundPage,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: _pdvTheme.cardBorder),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Nenhum item adicionado ainda.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: _pdvTheme.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Enquanto a venda está vazia, use este painel como atalho operacional.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.40,
-                        color: _pdvTheme.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: <Widget>[
-                        _buildMiniAction(
-                          'Trocar cliente',
-                          Icons.person_search_rounded,
-                          _abrirDialogClienteRapido,
-                        ),
-                        _buildMiniAction(
-                          'Aplicar desconto',
-                          Icons.percent_rounded,
-                              () {
-                            _mostrarDialogMensagem(
-                              'Aplicar desconto',
-                              'Aqui você pode conectar a regra real de desconto.',
-                            );
-                          },
-                        ),
-                        _buildMiniAction(
-                          'Buscar produto',
-                          Icons.search_rounded,
-                          _abrirSelecaoProdutoWeb,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...<Widget>[
-              ..._produtosSelecionados.map((Map<String, dynamic> produto) {
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: _pdvTheme.backgroundPage,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _pdvTheme.cardBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        produto['nome']?.toString() ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: _pdvTheme.primaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              '${produto['quantidade']} x ${_formatCurrency(((produto['preco'] ?? 0) as num).toDouble())}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: _pdvTheme.secondaryText,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatCurrency(_calcularSubtotal(produto)),
-                            style: TextStyle(
-                              color: _pdvTheme.primaryText,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ],
-        ),
-      );
-    }
-
-    Widget buildFooter() {
-      return Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: _pdvTheme.backgroundPage,
-          borderRadius: const BorderRadius.vertical(
-            bottom: Radius.circular(24),
-          ),
-          border: Border(top: BorderSide(color: _pdvTheme.cardBorder)),
-        ),
-        child: Column(
-          children: <Widget>[
-            _buildResumoLinhaValor('Subtotal', _formatCurrency(total)),
-            const SizedBox(height: 10),
-            _buildResumoLinhaValor('Desconto', _formatCurrency(0)),
-            const SizedBox(height: 10),
-            _buildResumoLinhaValor('Acréscimo', _formatCurrency(0)),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _pdvTheme.iconColor,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          'Total',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.80),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0, end: total),
-                            duration: const Duration(milliseconds: 350),
-                            builder: (
-                                BuildContext context,
-                                double value,
-                                Widget? child,
-                                ) {
-                              return Text(
-                                _formatCurrency(value),
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.16),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.attach_money_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _pdvTheme.cardBorder),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _pdvTheme.cardShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxHeight < 560;
-
-          if (compact) {
-            return SingleChildScrollView(
-              controller: _resumoVendaScrollController,
-              primary: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[buildHeader(), buildBody(), buildFooter()],
-              ),
-            );
-          }
-
-          return Column(
-            children: <Widget>[
-              buildHeader(),
-              Expanded(child: buildBody()),
-              buildFooter(),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildResumoInfoTile(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: _pdvTheme.iconColor.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, size: 20, color: _pdvTheme.iconColor),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _pdvTheme.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: _pdvTheme.primaryText,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMiniAction(String label, IconData icon, VoidCallback onPressed) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
-  }
-
-  Widget _buildResumoLinhaValor(String label, String valor) {
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: _pdvTheme.secondaryText,
-            ),
-          ),
-        ),
-        Text(
-          valor,
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: _pdvTheme.primaryText,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBarraFechamento(double total) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _pdvTheme.cardBorder),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _pdvTheme.cardShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Wrap(
-        spacing: 18,
-        runSpacing: 14,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.spaceBetween,
-        children: <Widget>[
-          Wrap(
-            spacing: 18,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Barra de fechamento',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: _pdvTheme.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: total),
-                    duration: const Duration(milliseconds: 350),
-                    builder: (
-                        BuildContext context,
-                        double value,
-                        Widget? child,
-                        ) {
-                      return Text(
-                        _formatCurrency(value),
-                        style: TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                          color: _pdvTheme.iconColor,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              _buildFooterInfoCard('Subtotal', _formatCurrency(total)),
-              _buildFooterInfoCard('Desconto', _formatCurrency(0)),
-              _buildFooterInfoCard('Itens', '${_calcularQuantidadeItens()}'),
-            ],
-          ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _pausarVenda,
-                icon: const Icon(Icons.pause_circle_outline_rounded),
-                label: const Text('Pausar'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(150, 54),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  side: BorderSide(
-                    color: _pdvTheme.actionButtonBackground,
-                    width: 1.5,
-                  ),
-                  foregroundColor: _pdvTheme.actionButtonBackground,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-              FilledButton.icon(
-                onPressed:
-                _produtosSelecionados.isEmpty
-                    ? null
-                    : _abrirTelaRecebimento,
-                icon: const Icon(Icons.payments_rounded),
-                label: const Text('Receber'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(170, 54),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  backgroundColor: _pdvTheme.actionButtonBackground,
-                  foregroundColor: _pdvTheme.actionButtonForeground,
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _confirmarCancelamentoVenda,
-                icon: const Icon(Icons.cancel_outlined),
-                label: const Text('Cancelar'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(160, 54),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  side: BorderSide(color: _pdvTheme.warningColor, width: 1.5),
-                  foregroundColor: _pdvTheme.warningColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooterInfoCard(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _pdvTheme.backgroundPage,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: _pdvTheme.secondaryText,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              color: _pdvTheme.primaryText,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAreaVenda(double total) {
-    Widget buildScrollableContent() {
-      return Column(
-        children: <Widget>[
-          _buildVendaHero(),
-          const SizedBox(height: 18),
-          _buildBarraOperacional(),
-          const SizedBox(height: 18),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Expanded(flex: 7, child: _buildGradeOperacional()),
-                const SizedBox(width: 18),
-                SizedBox(width: 380, child: _buildResumoVendaLateral()),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          _buildBarraFechamento(total),
-        ],
-      );
-    }
-
-    return Expanded(
-      child: Focus(
-        autofocus: true,
-        focusNode: _atalhosFocusNode,
-        onKeyEvent: _handleAtalhoPdv,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool compactHeight = constraints.maxHeight < 760;
-            final bool compactWidth = constraints.maxWidth < 1360;
-
-            if (compactHeight || compactWidth) {
-              return ScrollConfiguration(
-                behavior: const MaterialScrollBehavior().copyWith(
-                  scrollbars: false,
-                ),
-                child: SingleChildScrollView(
-                  controller: _areaVendaScrollController,
-                  primary: false,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: compactHeight ? 920 : constraints.maxHeight,
-                    ),
-                    child: Column(
-                      children: <Widget>[
-                        _buildVendaHero(),
-                        const SizedBox(height: 18),
-                        _buildBarraOperacional(),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          height:
-                          compactHeight ? 560 : constraints.maxHeight - 280,
-                          child:
-                          compactWidth
-                              ? Column(
-                            children: <Widget>[
-                              Expanded(child: _buildGradeOperacional()),
-                              const SizedBox(height: 18),
-                              SizedBox(
-                                height: 420,
-                                child: _buildResumoVendaLateral(),
-                              ),
-                            ],
-                          )
-                              : Row(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              Expanded(
-                                flex: 7,
-                                child: _buildGradeOperacional(),
-                              ),
-                              const SizedBox(width: 18),
-                              SizedBox(
-                                width: 380,
-                                child: _buildResumoVendaLateral(),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _buildBarraFechamento(total),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return buildScrollableContent();
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final double total = _calcularTotal();
@@ -3862,9 +1882,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             ),
             child: Padding(
               padding: const EdgeInsets.all(18),
-              child: Column(
-                children: <Widget>[_buildConteudoCentral(total)],
-              ),
+              child: Column(children: <Widget>[_buildConteudoCentral(total)]),
             ),
           ),
         ),
@@ -3888,149 +1906,5 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         _focarCodigoBarras();
       }
     });
-  }
-
-  Widget _buildCockpitHeader(BuildContext context, bool isCompact) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final titleBlock = Row(
-      children: <Widget>[
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(
-            Icons.space_dashboard_rounded,
-            color: colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Cockpit estratégico',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isCompact ? 21 : 24,
-                  fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                'Visão executiva de vendas, orçamentos, assistência e qualidade de atendimento.',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    final actions = Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      alignment: WrapAlignment.end,
-      children: <Widget>[
-        _cockpitHeaderButton(
-          context,
-          Icons.refresh_rounded,
-          'Atualizar',
-              () => setState(() {
-            _cockpitCanalSelecionado = null;
-            _cockpitAtendimentoSelecionado = null;
-          }),
-        ),
-        _cockpitHeaderButton(
-          context,
-          Icons.arrow_back_rounded,
-          'Voltar',
-              () => setState(() => _moduloAtual = ModuloCentralPDV.seletor),
-        ),
-        _cockpitCloseButton(context),
-      ],
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 16 : 28,
-        isCompact ? 16 : 22,
-        isCompact ? 16 : 28,
-        isCompact ? 14 : 18,
-      ),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: isCompact
-          ? Column(
-        children: <Widget>[
-          titleBlock,
-          const SizedBox(height: 14),
-          Align(alignment: Alignment.centerRight, child: actions),
-        ],
-      )
-          : Row(
-        children: <Widget>[
-          Expanded(child: titleBlock),
-          const SizedBox(width: 16),
-          actions,
-        ],
-      ),
-    );
-  }
-
-  Widget _cockpitHeaderButton(
-      BuildContext context,
-      IconData icon,
-      String label,
-      VoidCallback? onPressed,
-      ) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
-  }
-
-  Widget _cockpitCloseButton(BuildContext context) {
-    return Material(
-      color: const Color(0xFFE53935),
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: () => setState(() => _moduloAtual = ModuloCentralPDV.seletor),
-        child: const SizedBox(
-          width: 46,
-          height: 46,
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
-        ),
-      ),
-    );
   }
 }
