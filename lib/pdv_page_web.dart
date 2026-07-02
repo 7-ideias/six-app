@@ -11,7 +11,6 @@ import 'package:sixpos/presentation/screens/pdv_cliente_identificacao_dialog.dar
 import 'package:sixpos/presentation/screens/pdv_page_web_orcamento.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
-import 'package:sixpos/providers/telainicial_web_provider.dart';
 import 'package:sixpos/sub_painel_cadastro_cliente.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
 import 'package:sixpos/sub_painel_configuracoes.dart';
@@ -70,9 +69,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   Timer? _monitoramentoComunicacaoTimer;
   DateTime? _ultimaTentativaReconexao;
 
-  int? _cockpitCanalSelecionado;
-  int? _cockpitAtendimentoSelecionado;
-
   late final AnimationController _bellAnimationController;
   late final Animation<double> _bellRotationAnimation;
 
@@ -81,7 +77,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
 
-  bool _mostrarDashboardLateral = true;
   bool _cockpitAbertoEmDialog = false;
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
 
@@ -104,7 +99,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   );
 
   final ScrollController _notificacoesScrollController = ScrollController();
-  final ScrollController _sidebarScrollController = ScrollController();
   final ScrollController _seletorScrollController = ScrollController();
   final ScrollController _gradeItensScrollController = ScrollController();
   final ScrollController _resumoVendaScrollController = ScrollController();
@@ -125,8 +119,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   void _limparFiltrosCockpit() {
     setState(() {
-      _cockpitCanalSelecionado = null;
-      _cockpitAtendimentoSelecionado = null;
+      _opcaoCockpitSelecionada = 0;
     });
   }
 
@@ -149,8 +142,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   Future<void> _abrirCockpitEstrategico() async {
     setState(() {
-      _cockpitCanalSelecionado = null;
-      _cockpitAtendimentoSelecionado = null;
+      _opcaoCockpitSelecionada = 0;
       _cockpitAbertoEmDialog = true;
     });
 
@@ -171,11 +163,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             child: SizedBox(
               width: size.width * 0.94,
               height: size.height * 0.90,
-              child: Column(
-                children: <Widget>[
-                  _buildCockpitEstrategico(),
-                ],
-              ),
+              child: Column(children: <Widget>[_buildCockpitEstrategico()]),
             ),
           ),
         );
@@ -253,7 +241,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     _itensTotalController.dispose();
     _clienteIdentificadoController.dispose();
     _notificacoesScrollController.dispose();
-    _sidebarScrollController.dispose();
     _seletorScrollController.dispose();
     _gradeItensScrollController.dispose();
     _resumoVendaScrollController.dispose();
@@ -654,7 +641,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                                           height: 42,
                                           decoration: BoxDecoration(
                                             color: theme.colorScheme.primary
-                                                .withOpacity(0.10),
+                                                .withValues(alpha: 0.10),
                                             borderRadius: BorderRadius.circular(
                                               12,
                                             ),
@@ -763,7 +750,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: _pdvTheme.warningColor.withOpacity(0.35),
+                      color: _pdvTheme.warningColor.withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -785,7 +772,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _abrirSelecaoProdutoWeb() async {
-    final ProdutoModel? result = await showDialog<ProdutoModel>(
+    final dynamic result = await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
@@ -795,14 +782,32 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.80,
             height: MediaQuery.of(context).size.height * 0.80,
-            child: SubPainelWebProdutoLista(isSelecao: true),
+            child: const SubPainelWebProdutoLista(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+            ),
           ),
         );
       },
     );
 
-    if (result != null) {
+    if (!mounted || result == null) {
+      return;
+    }
+
+    if (result is ProdutoModel) {
       _adicionarProdutoSelecionado(result);
+      return;
+    }
+
+    if (result is List) {
+      final List<ProdutoModel> produtos = result
+          .whereType<ProdutoModel>()
+          .toList(growable: false);
+
+      if (produtos.isNotEmpty) {
+        _adicionarProdutosSelecionados(produtos);
+      }
     }
   }
 
@@ -873,25 +878,44 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
     setState(() {
-      final int indexExistente = _produtosSelecionados.indexWhere(
-        (Map<String, dynamic> item) => _mesmoProduto(item, produto),
-      );
+      _adicionarProdutoNaListaSemSetState(produto);
+      _atualizarCamposDerivados();
+    });
+  }
 
-      if (indexExistente >= 0) {
-        _produtosSelecionados[indexExistente]['quantidade'] =
-            (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) + 1;
-      } else {
-        _produtosSelecionados.add(<String, dynamic>{
-          'id': _extrairIdProduto(produto),
-          'codigo': produto.codigoDeBarras,
-          'nome': produto.nomeProduto,
-          'preco': produto.precoVenda,
-          'quantidade': 1,
-          'produtoOriginal': produto,
-        });
+  void _adicionarProdutosSelecionados(List<ProdutoModel> produtos) {
+    if (produtos.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      for (final ProdutoModel produto in produtos) {
+        _adicionarProdutoNaListaSemSetState(produto);
       }
 
       _atualizarCamposDerivados();
+    });
+  }
+
+  void _adicionarProdutoNaListaSemSetState(ProdutoModel produto) {
+    final int indexExistente = _produtosSelecionados.indexWhere(
+      (Map<String, dynamic> item) => _mesmoProduto(item, produto),
+    );
+
+    if (indexExistente >= 0) {
+      final int quantidadeAtual =
+          (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) as int;
+      _produtosSelecionados[indexExistente]['quantidade'] = quantidadeAtual + 1;
+      return;
+    }
+
+    _produtosSelecionados.add(<String, dynamic>{
+      'id': _extrairIdProduto(produto),
+      'codigo': produto.codigoDeBarras,
+      'nome': produto.nomeProduto,
+      'preco': produto.precoVenda,
+      'quantidade': 1,
+      'produtoOriginal': produto,
     });
   }
 
@@ -904,11 +928,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     }
 
     final String? codigoItem = item['codigo']?.toString();
-    final String? codigoProduto = produto.codigoDeBarras.toString();
+    final String codigoProduto = produto.codigoDeBarras.toString();
 
     if (codigoItem != null &&
         codigoItem.isNotEmpty &&
-        codigoProduto!.isNotEmpty) {
+        codigoProduto.isNotEmpty) {
       return codigoItem == codigoProduto;
     }
 
@@ -1136,27 +1160,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     return nome.isEmpty ? 'Não identificado' : nome;
   }
 
-  List<Map<String, String>> get _dashboardData => <Map<String, String>>[
-    <String, String>{
-      'title': 'Vendas Abertas',
-      'count':
-          TelaInicialWebProvider().telaInicialWeb?.totalVendasAbertas
-              .toString() ??
-          '0',
-    },
-    <String, String>{
-      'title': 'Ordens Abertas',
-      'count':
-          TelaInicialWebProvider().telaInicialWeb?.totalOrdensDeServicoAbertas
-              .toString() ??
-          '0',
-    },
-    <String, String>{'title': 'OTs em revisão', 'count': '33'},
-    <String, String>{'title': 'OTs em processo', 'count': '27'},
-    <String, String>{'title': 'OTs finalizadas', 'count': '94'},
-    <String, String>{'title': 'OTs atrasadas', 'count': '10'},
-  ];
-
   Widget _buildConteudoCentral(double total) {
     switch (_moduloAtual) {
       case ModuloCentralPDV.cockpit:
@@ -1348,10 +1351,14 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: _pdvTheme.badgeBackground.withOpacity(0.10),
+                          color: _pdvTheme.badgeBackground.withValues(
+                            alpha: 0.10,
+                          ),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: _pdvTheme.badgeBackground.withOpacity(0.20),
+                            color: _pdvTheme.badgeBackground.withValues(
+                              alpha: 0.20,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -1393,10 +1400,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: _pdvTheme.iconColor.withOpacity(0.10),
+                      color: _pdvTheme.iconColor.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: _pdvTheme.iconColor.withOpacity(0.20),
+                        color: _pdvTheme.iconColor.withValues(alpha: 0.20),
                       ),
                     ),
                     child: Icon(icon, size: 34, color: _pdvTheme.iconColor),
@@ -1427,221 +1434,6 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDashboardCard(String title, String count) {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: _pdvTheme.cardBackground,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-        side: BorderSide(color: _pdvTheme.cardBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: _pdvTheme.iconColor.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Text(
-                  count,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: _pdvTheme.iconColor,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: _pdvTheme.primaryText,
-                  height: 1.25,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResumoSidebarHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              'Cockpit',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: _pdvTheme.iconColor,
-              ),
-            ),
-          ),
-          Tooltip(
-            message: 'Ocultar painel',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () {
-                setState(() {
-                  _mostrarDashboardLateral = false;
-                });
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _pdvTheme.backgroundSurface,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: _pdvTheme.cardBorder),
-                ),
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: _pdvTheme.iconColor,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResumoSidebar() {
-    return Container(
-      width: 320,
-      padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
-      decoration: BoxDecoration(
-        color: _pdvTheme.backgroundSurface,
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _buildResumoSidebarHeader(),
-          Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: <Color>[
-                  _pdvTheme.iconColor.withOpacity(0.08),
-                  _pdvTheme.backgroundPage.withOpacity(0.70),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: _pdvTheme.cardBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Painel operacional',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _pdvTheme.iconColor,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Visão rápida de vendas, ordens e indicadores para dar ritmo à operação.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _pdvTheme.secondaryText,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.separated(
-              controller: _sidebarScrollController,
-              primary: false,
-              padding: EdgeInsets.zero,
-              itemCount: _dashboardData.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (BuildContext context, int index) {
-                return _buildDashboardCard(
-                  _dashboardData[index]['title'] ?? '',
-                  _dashboardData[index]['count'] ?? '0',
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResumoSidebarCollapsed() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 14, right: 12),
-      child: Tooltip(
-        message: 'Mostrar painel',
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            setState(() {
-              _mostrarDashboardLateral = true;
-            });
-          },
-          child: Container(
-            width: 72,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
-            decoration: BoxDecoration(
-              color: _pdvTheme.backgroundSurface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _pdvTheme.cardBorder),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: _pdvTheme.cardShadow,
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              children: <Widget>[
-                Icon(
-                  Icons.dashboard_customize_outlined,
-                  color: _pdvTheme.iconColor,
-                ),
-                const SizedBox(height: 10),
-                RotatedBox(
-                  quarterTurns: 3,
-                  child: Text(
-                    'Cockpit',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: _pdvTheme.iconColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Icon(Icons.chevron_right_rounded, color: _pdvTheme.iconColor),
-              ],
             ),
           ),
         ),
@@ -1687,7 +1479,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _pdvTheme.highlightColor.withOpacity(0.06),
+        color: _pdvTheme.highlightColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _pdvTheme.cardBorder),
       ),

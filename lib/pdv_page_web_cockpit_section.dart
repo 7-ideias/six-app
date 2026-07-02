@@ -11,7 +11,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
           return Container(
             color: Theme.of(
               context,
-            ).colorScheme.surfaceVariant.withOpacity(0.16),
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
             child: Column(
               children: <Widget>[
                 _buildCockpitHeader(context, isCompact),
@@ -602,7 +602,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -631,7 +631,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
+                  color: colorScheme.onSurface.withValues(alpha: 0.66),
                 ),
               ),
             ],
@@ -673,11 +673,13 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
+          bottom: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.14),
+          ),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),

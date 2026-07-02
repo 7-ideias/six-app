@@ -8,7 +8,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: <Color>[
-            _pdvTheme.highlightColor.withOpacity(0.10),
+            _pdvTheme.highlightColor.withValues(alpha: 0.10),
             _pdvTheme.backgroundSurface,
           ],
         ),
@@ -24,7 +24,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
             width: 62,
             height: 62,
             decoration: BoxDecoration(
-              color: _pdvTheme.iconColor.withOpacity(0.10),
+              color: _pdvTheme.iconColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
@@ -123,8 +123,8 @@ extension _PdvPageWebVendaSection on _PDVWebState {
             decoration: BoxDecoration(
               color:
                   destaque
-                      ? Colors.white.withOpacity(0.18)
-                      : _pdvTheme.iconColor.withOpacity(0.10),
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : _pdvTheme.iconColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -145,7 +145,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                     fontWeight: FontWeight.w700,
                     color:
                         destaque
-                            ? Colors.white.withOpacity(0.85)
+                            ? Colors.white.withValues(alpha: 0.85)
                             : _pdvTheme.secondaryText,
                   ),
                 ),
@@ -417,7 +417,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: _pdvTheme.iconColor.withOpacity(0.10),
+                      color: _pdvTheme.iconColor.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
@@ -550,7 +550,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                 width: 94,
                 height: 94,
                 decoration: BoxDecoration(
-                  color: _pdvTheme.iconColor.withOpacity(0.10),
+                  color: _pdvTheme.iconColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(28),
                 ),
                 child: Icon(
@@ -777,7 +777,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: _pdvTheme.successColor.withOpacity(0.10),
+                      color: _pdvTheme.successColor.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: FittedBox(
@@ -986,7 +986,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                         Text(
                           'Total',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.80),
+                            color: Colors.white.withValues(alpha: 0.80),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1021,7 +1021,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.16),
+                      color: Colors.white.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
@@ -1086,7 +1086,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: _pdvTheme.iconColor.withOpacity(0.10),
+            color: _pdvTheme.iconColor.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, size: 20, color: _pdvTheme.iconColor),
