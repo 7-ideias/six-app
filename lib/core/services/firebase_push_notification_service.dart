@@ -93,7 +93,8 @@ class FirebasePushNotificationService {
   }
 
   Future<void> syncTokenForLoggedUser() async {
-    if (!await initializeFirebaseIfConfigured()) {
+    await initializeOnAppStart();
+    if (!_firebaseInicializado) {
       return;
     }
 
