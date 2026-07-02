@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
@@ -82,6 +83,13 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           'Atendimento',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Notificações',
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () => _openNotifications(context),
+          ),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -566,6 +574,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         letterSpacing: 0.1,
       ),
     );
+  }
+
+  void _openNotifications(BuildContext context) {
+    _navigateTo(context, const NotificacoesMobileScreen());
   }
 
   void _navigateTo(BuildContext context, Widget page) {
