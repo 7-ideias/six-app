@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
@@ -26,13 +28,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/core/services/firebase_push_notification_service.dart';
 
 import 'core/services/produto_service.dart';
+import 'core/ui/app_feedback.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) {
     usePathUrlStrategy();
-  } else {
-    await FirebasePushNotificationService.initializeOnAppStart();
   }
   final prefs = await SharedPreferences.getInstance();
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
@@ -61,6 +62,10 @@ void main() async {
       child: MyApp(hasSeenOnboarding: hasSeenOnboarding),
     ),
   );
+
+  if (!kIsWeb) {
+    unawaited(FirebasePushNotificationService.initializeOnAppStart());
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -199,6 +204,7 @@ class MyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleSettingsProvider>();
 
     return MaterialApp(
+      scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
       onGenerateTitle:
           (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
       debugShowCheckedModeBanner: false,
