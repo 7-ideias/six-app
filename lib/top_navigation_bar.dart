@@ -4,6 +4,7 @@ import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracao_secao_web_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
+import 'package:sixpos/presentation/screens/gestor_cockpit_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/providers/theme_provider.dart';
@@ -81,6 +82,29 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         content: Text('$value: menu criado. A implementação da tela será evoluída nos próximos passos.'),
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  Future<void> _abrirCockpitGestor(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: SizedBox(
+            width: size.width * 0.96,
+            height: size.height * 0.92,
+            child: GestorCockpitWebPage(
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -331,7 +355,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       TopNavItemData(
         title: 'Início',
         subItems: const <String>[],
-        onSelect: (_) => _mostrarRecursoEmPreparacao(context, 'Início'),
+        onSelect: (_) => _abrirCockpitGestor(context),
       ),
       TopNavItemData(
         title: 'Atendimento',
