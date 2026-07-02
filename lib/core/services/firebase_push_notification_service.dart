@@ -87,8 +87,10 @@ class FirebasePushNotificationService {
   }
 
   Future<void> syncTokenForLoggedUser() async {
+    AppFeedback.show('Sincronizando notificações push...');
     await initializeOnAppStart();
     if (!_firebaseInicializado) {
+      AppFeedback.show('Firebase não inicializou no aparelho.');
       return;
     }
 
@@ -102,6 +104,7 @@ class FirebasePushNotificationService {
 
     final String? token = await FirebaseMessaging.instance.getToken();
     if (token != null && token.trim().isNotEmpty) {
+      AppFeedback.show('Token Firebase obtido. Registrando no backend...');
       await _registrarTokenNoBackend(token);
     } else {
       debugPrint('[FirebasePushNotificationService] Firebase não retornou token FCM.');
@@ -161,8 +164,10 @@ class FirebasePushNotificationService {
           '${response.statusCode} ${response.body}',
         );
         AppFeedback.show(
-          'Backend recusou token FCM.',
+          'Backend recusou token FCM: ${response.statusCode}.',
         );
+      } else {
+        AppFeedback.show('Push registrado no backend.');
       }
     } catch (e) {
       debugPrint('[FirebasePushNotificationService] Falha ao enviar token FCM: $e');
