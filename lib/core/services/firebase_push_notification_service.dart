@@ -42,14 +42,6 @@ class FirebasePushNotificationService {
       return true;
     }
 
-    if (!DefaultFirebaseOptions.isConfigured) {
-      debugPrint(
-        '[FirebasePushNotificationService] Firebase não configurado. '
-        'Informe os dart-defines do Firebase para habilitar push.',
-      );
-      return false;
-    }
-
     try {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
