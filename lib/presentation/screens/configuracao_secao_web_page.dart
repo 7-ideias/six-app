@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'empresa_configuracao_screen.dart';
+import 'regras_operacionais_configuracao_content.dart';
+
 class ConfiguracaoSecaoWebPage extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -14,6 +17,9 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
     this.onBack,
   });
 
+  bool get _ehConfiguracaoEmpresa => title == 'Empresa';
+  bool get _ehRegrasOperacionais => title == 'Regras operacionais';
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -23,7 +29,7 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
       child: Column(
         children: <Widget>[
           _buildHeader(context),
-          Expanded(child: _buildBlankContent(context)),
+          Expanded(child: _buildContent(context)),
         ],
       ),
     );
@@ -114,6 +120,59 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    if (_ehConfiguracaoEmpresa) {
+      return _buildEmpresaContent(context);
+    }
+
+    if (_ehRegrasOperacionais) {
+      return const RegrasOperacionaisConfiguracaoContent();
+    }
+
+    return _buildBlankContent(context);
+  }
+
+  Widget _buildEmpresaContent(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+        builder: (BuildContext context, double value, Widget? child) {
+          return Opacity(
+            opacity: value,
+            child: Transform.translate(
+              offset: Offset(0, 18 * (1 - value)),
+              child: child,
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: const Padding(
+            padding: EdgeInsets.all(22),
+            child: EmpresaConfiguracaoForm(embedded: true),
+          ),
+        ),
+      ),
     );
   }
 

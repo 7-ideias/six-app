@@ -1,12 +1,14 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'auth_service.dart';
-import 'firebase_push_notification_service.dart';
-import '../config/app_config.dart';
-import 'http_client_factory.dart';
+
 import '../../data/models/empresa_model.dart';
 import '../../providers/empresa_provider.dart';
+import '../config/app_config.dart';
+import 'auth_service.dart';
+import 'firebase_push_notification_service.dart';
+import 'http_client_factory.dart';
 
 class EmpresaService {
   static final EmpresaService _instance = EmpresaService._internal();
@@ -15,7 +17,7 @@ class EmpresaService {
 
   http.Client _client() => createHttpClient();
 
-  Future<void> buscarDadosDaEmpresa() async {
+  Future<EmpresaModel> buscarDadosDaEmpresa() async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
     final empresaId = await authService.getEmpresaId();
@@ -38,25 +40,24 @@ class EmpresaService {
       );
 
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        final empresa = EmpresaModel.fromJson(decoded);
-
-        // Salvar em memória usando o Provider
+        final EmpresaModel empresa = _decodeEmpresa(response.body);
         EmpresaProvider().setEmpresa(empresa);
 
         if (!kIsWeb) {
           await FirebasePushNotificationService().syncTokenForLoggedUser();
         }
-      } else {
-        throw Exception('Falha ao buscar dados da empresa: ${response.statusCode}');
+
+        return empresa;
       }
+
+      throw Exception(_mensagemFalha('buscar', response.statusCode));
     } catch (e) {
       debugPrint('Erro na requisição de dados da empresa: $e');
       rethrow;
     }
   }
 
-  Future<void> atualizarDadosDaEmpresa(EmpresaModel empresa) async {
+  Future<EmpresaModel> atualizarDadosDaEmpresa(EmpresaModel empresa) async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
     final empresaId = await authService.getEmpresaId();
@@ -72,7 +73,7 @@ class EmpresaService {
       final response = await client.put(
         uri,
         headers: {
-          'accept': '*/*',
+          'accept': 'application/json',
           'Content-Type': 'application/json',
           'idUnicoDaEmpresa': empresaId,
           'Authorization': 'Bearer $token',
@@ -81,14 +82,34 @@ class EmpresaService {
       );
 
       if (response.statusCode == 200) {
-        // Atualizar em memória usando o Provider
-        EmpresaProvider().setEmpresa(empresa);
-      } else {
-        throw Exception('Falha ao atualizar dados da empresa: ${response.statusCode}');
+        final EmpresaModel empresaAtualizada = response.body.trim().isEmpty
+            ? empresa
+            : _decodeEmpresa(response.body);
+        EmpresaProvider().setEmpresa(empresaAtualizada);
+        return empresaAtualizada;
       }
+
+      throw Exception(_mensagemFalha('atualizar', response.statusCode));
     } catch (e) {
       debugPrint('Erro na atualização de dados da empresa: $e');
       rethrow;
     }
+  }
+
+  EmpresaModel _decodeEmpresa(String body) {
+    if (body.trim().isEmpty) {
+      throw Exception('Resposta de empresa vazia');
+    }
+
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Resposta de empresa inválida');
+    }
+
+    return EmpresaModel.fromJson(decoded);
+  }
+
+  String _mensagemFalha(String acao, int statusCode) {
+    return 'Falha ao $acao dados da empresa: $statusCode';
   }
 }
