@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 class ProdutolistMobileScreen extends StatefulWidget {
   const ProdutolistMobileScreen({super.key, this.isSelecao = false});
@@ -29,6 +32,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final TextEditingController _controllerBusca = TextEditingController();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
@@ -36,12 +40,21 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String termoBusca = '';
   String tipoSelecionado = 'PRODUTO';
   String ordenacao = 'nome';
+  bool _salvandoPreferencia = false;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
+
+  ModoDeExibicaoUsuario get _modoDeExibicaoProdutos => _usuarioProvider
+          .usuario?.preferenciasIndividuaisDoUsuario.modoDeExibicaoProdutos ??
+      ModoDeExibicaoUsuario.vertical;
+
+  bool get _exibicaoHorizontal =>
+      _modoDeExibicaoProdutos == ModoDeExibicaoUsuario.horizontal;
 
   @override
   void initState() {
     super.initState();
+    Future.microtask(_carregarPreferenciasDoUsuario);
     Future.microtask(_recarregar);
   }
 
@@ -49,6 +62,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   void dispose() {
     _controllerBusca.dispose();
     super.dispose();
+  }
+
+  Future<void> _carregarPreferenciasDoUsuario() async {
+    if (_usuarioProvider.usuario != null) return;
+    try {
+      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      if (mounted) setState(() {});
+    } catch (_) {
+      // A tela continua vertical caso nao consiga carregar a preferencia.
+    }
   }
 
   Future<void> _recarregar() async {
@@ -90,98 +113,217 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         (tipo == 'SERVICO' && normalizado == 'SERVIÇO');
   }
 
+  Future<void> _alterarModoExibicaoProdutos(
+    ModoDeExibicaoUsuario novoModo,
+  ) async {
+    if (_salvandoPreferencia || novoModo == _modoDeExibicaoProdutos) return;
+
+    UsuarioModel? usuarioAtual = _usuarioProvider.usuario;
+    if (usuarioAtual == null) {
+      await _carregarPreferenciasDoUsuario();
+      usuarioAtual = _usuarioProvider.usuario;
+    }
+
+    if (usuarioAtual == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível carregar suas preferências.'),
+        ),
+      );
+      return;
+    }
+
+    final PreferenciasIndividuaisDoUsuarioModel preferenciasAtualizadas =
+        usuarioAtual.preferenciasIndividuaisDoUsuario.copyWith(
+      modoDeExibicaoProdutos: novoModo,
+    );
+
+    final UsuarioModel usuarioAtualizado = UsuarioModel(
+      nome: usuarioAtual.nome,
+      sobrenome: usuarioAtual.sobrenome,
+      cpf: usuarioAtual.cpf,
+      registroProfissional: usuarioAtual.registroProfissional,
+      email: usuarioAtual.email,
+      nomeDeGuerra: usuarioAtual.nomeDeGuerra,
+      celular: usuarioAtual.celular,
+      senha: usuarioAtual.senha,
+      salt: usuarioAtual.salt,
+      rg: usuarioAtual.rg,
+      dataNascimento: usuarioAtual.dataNascimento,
+      objEndereco: usuarioAtual.objEndereco,
+      preferenciasIndividuaisDoUsuario: preferenciasAtualizadas,
+      enviarPreferenciasIndividuaisDoUsuario: true,
+    );
+
+    setState(() => _salvandoPreferencia = true);
+    try {
+      await UsuarioService().atualizarDadosDoUsuario(usuarioAtualizado);
+      if (!mounted) return;
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            novoModo == ModoDeExibicaoUsuario.horizontal
+                ? 'Produtos agora em visualização horizontal.'
+                : 'Produtos agora em visualização vertical.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar a preferência de visualização.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _salvandoPreferencia = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final ProdutosListProvider<ProdutoModel> provider =
-        context.watch<ProdutosListProvider<ProdutoModel>>();
-    final List<ProdutoModel> itensDaLista = produtosFiltrados.isNotEmpty ||
-            termoBusca.isNotEmpty ||
-            todosProdutos.isNotEmpty
-        ? produtosFiltrados
-        : todosProdutos;
-    final bool isSelecao = widget.isSelecao;
+    return ListenableBuilder(
+      listenable: _usuarioProvider,
+      builder: (BuildContext context, _) {
+        final ProdutosListProvider<ProdutoModel> provider =
+            context.watch<ProdutosListProvider<ProdutoModel>>();
+        final List<ProdutoModel> itensDaLista = produtosFiltrados.isNotEmpty ||
+                termoBusca.isNotEmpty ||
+                todosProdutos.isNotEmpty
+            ? produtosFiltrados
+            : todosProdutos;
+        final bool isSelecao = widget.isSelecao;
 
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: Text(
-          isSelecao ? 'Selecionar item' : 'Produtos e serviços',
-          style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Ordenar',
-            icon: const Icon(Icons.swap_vert_rounded),
-            onPressed: _showSortOptions,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _recarregar,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16, isSelecao ? 12 : 14, 16, 96),
-            children: <Widget>[
-              if (!isSelecao) ...<Widget>[
-                SixStaggeredEntry(child: _buildHeaderCard()),
-                const SizedBox(height: 16),
-              ],
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 70),
-                child: _buildTabs(compact: isSelecao),
+        return Scaffold(
+          backgroundColor: _backgroundColor,
+          appBar: AppBar(
+            elevation: 0,
+            centerTitle: true,
+            backgroundColor: _primaryColor,
+            foregroundColor: Colors.white,
+            title: Text(
+              isSelecao ? 'Selecionar item' : 'Produtos e serviços',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
               ),
-              const SizedBox(height: 12),
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 120),
-                child: _buildSearchField(),
+            ),
+            actions: <Widget>[
+              IconButton(
+                tooltip: 'Ordenar',
+                icon: const Icon(Icons.swap_vert_rounded),
+                onPressed: _showSortOptions,
               ),
-              if (!isSelecao) ...<Widget>[
-                const SizedBox(height: 14),
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 170),
-                  child: _buildSummarySection(),
-                ),
-              ],
-              SizedBox(height: isSelecao ? 14 : 18),
-              _buildListHeader(itensDaLista.length, provider.isLoading),
-              const SizedBox(height: 10),
-              if (provider.isLoading && todosProdutos.isEmpty)
-                const _LoadingState()
-              else if (provider.erro != null && todosProdutos.isEmpty)
-                _ErrorState(onRetry: _recarregar)
-              else if (itensDaLista.isEmpty)
-                const _EmptyState()
-              else
-                ...itensDaLista.asMap().entries.map((MapEntry<int, ProdutoModel> entry) {
-                  final int itemDelay = 190 + ((entry.key * 28).clamp(0, 180)).toInt();
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: isSelecao ? 8 : 12),
-                    child: SixStaggeredEntry(
-                      delay: Duration(milliseconds: itemDelay),
-                      child: _buildProdutoCard(entry.value),
-                    ),
-                  );
-                }),
             ],
           ),
-        ),
-      ),
-      floatingActionButton: isSelecao
-          ? null
-          : FloatingActionButton.extended(
-              backgroundColor: _accentColor,
-              foregroundColor: Colors.white,
-              elevation: 5,
-              onPressed: _criarProduto,
-              icon: const Icon(Icons.add_rounded),
-              label: Text(_isProdutoSelecionado ? 'Novo produto' : 'Novo serviço'),
+          body: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _recarregar,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, isSelecao ? 12 : 14, 16, 96),
+                children: <Widget>[
+                  if (!isSelecao) ...<Widget>[
+                    SixStaggeredEntry(child: _buildHeaderCard()),
+                    const SizedBox(height: 16),
+                  ],
+                  SixStaggeredEntry(
+                    delay: const Duration(milliseconds: 70),
+                    child: _buildTabs(compact: isSelecao),
+                  ),
+                  const SizedBox(height: 12),
+                  SixStaggeredEntry(
+                    delay: const Duration(milliseconds: 120),
+                    child: _buildSearchField(),
+                  ),
+                  if (!isSelecao) ...<Widget>[
+                    const SizedBox(height: 14),
+                    SixStaggeredEntry(
+                      delay: const Duration(milliseconds: 155),
+                      child: _buildModoExibicaoSelector(),
+                    ),
+                    const SizedBox(height: 14),
+                    SixStaggeredEntry(
+                      delay: const Duration(milliseconds: 190),
+                      child: _buildSummarySection(),
+                    ),
+                  ],
+                  SizedBox(height: isSelecao ? 14 : 18),
+                  _buildListHeader(itensDaLista.length, provider.isLoading),
+                  const SizedBox(height: 10),
+                  ..._buildListContent(provider, itensDaLista, isSelecao),
+                ],
+              ),
             ),
+          ),
+          floatingActionButton: isSelecao
+              ? null
+              : FloatingActionButton.extended(
+                  backgroundColor: _accentColor,
+                  foregroundColor: Colors.white,
+                  elevation: 5,
+                  onPressed: _criarProduto,
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(_isProdutoSelecionado ? 'Novo produto' : 'Novo serviço'),
+                ),
+        );
+      },
     );
+  }
+
+  List<Widget> _buildListContent(
+    ProdutosListProvider<ProdutoModel> provider,
+    List<ProdutoModel> itensDaLista,
+    bool isSelecao,
+  ) {
+    if (provider.isLoading && todosProdutos.isEmpty) {
+      return const <Widget>[_LoadingState()];
+    }
+
+    if (provider.erro != null && todosProdutos.isEmpty) {
+      return <Widget>[_ErrorState(onRetry: _recarregar)];
+    }
+
+    if (itensDaLista.isEmpty) {
+      return const <Widget>[_EmptyState()];
+    }
+
+    if (_exibicaoHorizontal) {
+      return <Widget>[
+        SizedBox(
+          height: isSelecao ? 108 : 228,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(right: 8),
+            itemCount: itensDaLista.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (BuildContext context, int index) {
+              final int itemDelay = 190 + ((index * 28).clamp(0, 180)).toInt();
+              return SizedBox(
+                width: isSelecao ? 292 : 336,
+                child: SixStaggeredEntry(
+                  delay: Duration(milliseconds: itemDelay),
+                  child: _buildProdutoCard(itensDaLista[index]),
+                ),
+              );
+            },
+          ),
+        ),
+      ];
+    }
+
+    return itensDaLista.asMap().entries.map((MapEntry<int, ProdutoModel> entry) {
+      final int itemDelay = 190 + ((entry.key * 28).clamp(0, 180)).toInt();
+      return Padding(
+        padding: EdgeInsets.only(bottom: isSelecao ? 8 : 12),
+        child: SixStaggeredEntry(
+          delay: Duration(milliseconds: itemDelay),
+          child: _buildProdutoCard(entry.value),
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildHeaderCard() {
@@ -325,6 +467,44 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
+  Widget _buildModoExibicaoSelector() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: _ViewModeButton(
+              label: 'Vertical',
+              icon: Icons.view_agenda_outlined,
+              selected: !_exibicaoHorizontal,
+              saving: _salvandoPreferencia && !_exibicaoHorizontal,
+              onTap: () => _alterarModoExibicaoProdutos(
+                ModoDeExibicaoUsuario.vertical,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _ViewModeButton(
+              label: 'Horizontal',
+              icon: Icons.view_carousel_outlined,
+              selected: _exibicaoHorizontal,
+              saving: _salvandoPreferencia && _exibicaoHorizontal,
+              onTap: () => _alterarModoExibicaoProdutos(
+                ModoDeExibicaoUsuario.horizontal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummarySection() {
     return Consumer<ProdutosListProvider<ProdutoModel>>(
       builder: (BuildContext context, ProdutosListProvider<ProdutoModel> provider, _) {
@@ -450,7 +630,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         Expanded(
                           child: Text(
                             produto.nomeProduto,
-                            maxLines: 2,
+                            maxLines: _exibicaoHorizontal ? 1 : 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 16,
@@ -778,6 +958,75 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String _formatNumber(double value) {
     if (value % 1 == 0) return value.toInt().toString();
     return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
+}
+
+class _ViewModeButton extends StatelessWidget {
+  const _ViewModeButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.saving,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool saving;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: selected ? _ProdutolistMobileScreenState._accentColor : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: saving ? null : onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                if (saving)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                else
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: selected ? Colors.white : _ProdutolistMobileScreenState._mutedTextColor,
+                  ),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      color: selected ? Colors.white : _ProdutolistMobileScreenState._mutedTextColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
