@@ -204,6 +204,8 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                       localidade: _localidadeController.text,
                       uf: _ufController.text,
                     ),
+                    preferenciasIndividuaisDoUsuario:
+                        usuarioAtual.preferenciasIndividuaisDoUsuario,
                   );
 
                   provider.setLoading(true);
