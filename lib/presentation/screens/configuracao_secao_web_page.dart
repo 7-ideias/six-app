@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'empresa_configuracao_screen.dart';
+import 'regionalizacao_configuracao_content.dart';
 import 'regras_operacionais_configuracao_content.dart';
 
 class ConfiguracaoSecaoWebPage extends StatelessWidget {
@@ -18,6 +19,7 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
   });
 
   bool get _ehConfiguracaoEmpresa => title == 'Empresa';
+  bool get _ehRegionalizacao => title == 'Regionalização';
   bool get _ehRegrasOperacionais => title == 'Regras operacionais';
 
   @override
@@ -128,6 +130,10 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
       return _buildEmpresaContent(context);
     }
 
+    if (_ehRegionalizacao) {
+      return _buildRegionalizacaoContent(context);
+    }
+
     if (_ehRegrasOperacionais) {
       return const RegrasOperacionaisConfiguracaoContent();
     }
@@ -173,6 +179,13 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRegionalizacaoContent(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(24),
+      child: RegionalizacaoConfiguracaoContent(embedded: true),
     );
   }
 
