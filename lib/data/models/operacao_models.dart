@@ -91,6 +91,8 @@ class ServicoItemRequest {
   Map<String, dynamic> toJson() {
     return {
       'idCodigoUnicoDoProduto': idCodigoUnicoDoProduto,
+      'idSKU': idCodigoUnicoDoProduto,
+      'codigoDeBarras': idCodigoUnicoDoProduto,
       'descricaoProduto': descricaoProduto,
       'qt': qt,
       'vlUnitario': vlUnitario,
