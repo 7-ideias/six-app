@@ -13,6 +13,8 @@ import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'l10n/six_i18n.dart';
+
 class SubPainelCadastroProduto extends SubPainelWebGeneral {
   const SubPainelCadastroProduto({
     super.key,
@@ -687,7 +689,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    _isModoEdicao ? 'Edição de produto' : 'Cadastro de produto',
+                    _isModoEdicao ? 'Edição de produto' : context.t('produtos.cadastroDeProdutos'),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
