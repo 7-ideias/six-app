@@ -346,10 +346,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       return const <Widget>[_EmptyState()];
     }
 
-    if (_exibicaoHorizontal) {
+    if (_exibicaoHorizontal && !_selecaoMultiplaAtiva) {
       return <Widget>[
         SizedBox(
-          height: isSelecao ? (_selecaoMultiplaAtiva ? 160 : 108) : 228,
+          height: isSelecao ? 108 : 228,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(right: 8),
@@ -373,7 +373,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return itensDaLista.asMap().entries.map((MapEntry<int, ProdutoModel> entry) {
       final int itemDelay = 190 + ((entry.key * 28).clamp(0, 180)).toInt();
       return Padding(
-        padding: EdgeInsets.only(bottom: isSelecao ? 8 : 12),
+        padding: EdgeInsets.only(bottom: _selecaoMultiplaAtiva ? 14 : (isSelecao ? 8 : 12)),
         child: SixStaggeredEntry(
           delay: Duration(milliseconds: itemDelay),
           child: _buildProdutoCard(entry.value),
@@ -734,33 +734,26 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildProdutoSelectionCard(ProdutoModel produto) {
+    if (!_selecaoMultiplaAtiva) return _buildProdutoSelectionCompactCard(produto);
+    return _buildProdutoSelectionExpandedCard(produto);
+  }
+
+  Widget _buildProdutoSelectionCompactCard(ProdutoModel produto) {
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
     final String codigo = produto.codigoDeBarras.trim();
-    final String chave = _chaveProduto(produto);
-    final _ProdutoSelecionadoMobile? selecionado = _selecionados[chave];
-    final bool estaSelecionado = selecionado != null;
-    final int quantidade = selecionado?.quantidade ?? 0;
 
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => _selecaoMultiplaAtiva
-            ? _alternarProdutoSelecionado(produto)
-            : Navigator.pop(context, produto),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          constraints: BoxConstraints(minHeight: _selecaoMultiplaAtiva ? 126 : 74),
+        onTap: () => Navigator.pop(context, produto),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 74),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: estaSelecionado ? const Color(0xFFEFF6FF) : _surfaceColor,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: estaSelecionado ? _accentColor : const Color(0xFFE2E8F0),
-              width: estaSelecionado ? 1.4 : 1,
-            ),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
             boxShadow: const <BoxShadow>[
               BoxShadow(
                 color: Color(0x0A000000),
@@ -769,110 +762,250 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  _buildThumbnail(produto, isProduto, size: 42),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              _buildThumbnail(produto, isProduto, size: 42),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      produto.nomeProduto.isEmpty ? 'Item sem nome' : produto.nomeProduto,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: _titleTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
                       children: <Widget>[
-                        Text(
-                          produto.nomeProduto.isEmpty
-                              ? 'Item sem nome'
-                              : produto.nomeProduto,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: _titleTextColor,
+                        Flexible(
+                          child: Text(
+                            codigo.isEmpty ? 'Sem código' : codigo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: <Widget>[
-                            Flexible(
-                              child: Text(
-                                codigo.isEmpty ? 'Sem código' : codigo,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: _mutedTextColor,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              _formatCurrency(produto.precoVenda),
-                              style: const TextStyle(
-                                color: _titleTextColor,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 10),
+                        Text(
+                          _formatCurrency(produto.precoVenda),
+                          style: const TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: estaSelecionado ? _accentColor : const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      estaSelecionado
-                          ? Icons.check_rounded
-                          : Icons.add_rounded,
-                      color: estaSelecionado ? Colors.white : _accentColor,
-                      size: 20,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              if (_selecaoMultiplaAtiva && estaSelecionado) ...<Widget>[
-                const SizedBox(height: 10),
-                Row(
+              const SizedBox(width: 8),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.add_rounded, color: _accentColor, size: 20),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProdutoSelectionExpandedCard(ProdutoModel produto) {
+    final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
+    final String codigo = produto.codigoDeBarras.trim();
+    final String chave = _chaveProduto(produto);
+    final _ProdutoSelecionadoMobile? selecionado = _selecionados[chave];
+    final bool estaSelecionado = selecionado != null;
+    final int quantidade = selecionado?.quantidade ?? 0;
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      scale: estaSelecionado ? 1.01 : 1,
+      child: Material(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(26),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(26),
+          onTap: () => _alternarProdutoSelecionado(produto),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 190),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: estaSelecionado ? const Color(0xFFF8FBFF) : _surfaceColor,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: estaSelecionado ? _accentColor : const Color(0xFFE2E8F0),
+                width: estaSelecionado ? 1.45 : 1,
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: estaSelecionado
+                      ? const Color(0x292563EB)
+                      : const Color(0x12000000),
+                  blurRadius: estaSelecionado ? 22 : 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Stack(
                   children: <Widget>[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
-                      ),
-                      child: Text(
-                        'Selecionado',
-                        style: TextStyle(
-                          color: _accentColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                    _buildProdutoHeroImage(produto, isProduto),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: estaSelecionado ? _accentColor : Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: estaSelecionado
+                                ? _accentColor
+                                : const Color(0xFFE2E8F0),
+                          ),
+                          boxShadow: const <BoxShadow>[
+                            BoxShadow(
+                              color: Color(0x24000000),
+                              blurRadius: 12,
+                              offset: Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          estaSelecionado
+                              ? Icons.check_rounded
+                              : Icons.add_rounded,
+                          color: estaSelecionado ? Colors.white : _accentColor,
+                          size: 24,
                         ),
                       ),
                     ),
-                    const Spacer(),
-                    _QuantidadeButton(
-                      icon: Icons.remove_rounded,
-                      onTap: () => _alterarQuantidadeSelecionada(produto, -1),
+                    if (estaSelecionado)
+                      Positioned(
+                        left: 10,
+                        bottom: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _accentColor,
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: const <BoxShadow>[
+                              BoxShadow(
+                                color: Color(0x302563EB),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: Colors.white,
+                                size: 15,
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                'Selecionado',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            produto.nomeProduto.isEmpty
+                                ? 'Item sem nome'
+                                : produto.nomeProduto,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 17,
+                              height: 1.16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: <Widget>[
+                              const Icon(
+                                Icons.qr_code_2_rounded,
+                                color: _mutedTextColor,
+                                size: 15,
+                              ),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  codigo.isEmpty ? 'Sem código' : codigo,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: _mutedTextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                       child: Text(
-                        '$quantidade',
+                        _formatCurrency(produto.precoVenda),
                         style: const TextStyle(
                           color: _titleTextColor,
                           fontSize: 15,
@@ -880,14 +1013,133 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         ),
                       ),
                     ),
-                    _QuantidadeButton(
-                      icon: Icons.add_rounded,
-                      onTap: () => _alterarQuantidadeSelecionada(produto, 1),
-                    ),
                   ],
                 ),
+                if (estaSelecionado) ...<Widget>[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            'Quantidade',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _accentColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        _QuantidadeButton(
+                          icon: Icons.remove_rounded,
+                          onTap: () => _alterarQuantidadeSelecionada(produto, -1),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Text(
+                            '$quantidade',
+                            style: const TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        _QuantidadeButton(
+                          icon: Icons.add_rounded,
+                          onTap: () => _alterarQuantidadeSelecionada(produto, 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProdutoHeroImage(ProdutoModel produto, bool isProduto) {
+    final dynamic imagem =
+        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+    final Uint8List? bytes =
+        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
+
+    Widget content;
+    if (bytes != null) {
+      content = Image.memory(bytes, fit: BoxFit.cover, width: double.infinity);
+    } else if (imagem?.url != null && imagem!.url!.trim().isNotEmpty) {
+      content = Image.network(
+        imagem.url!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        loadingBuilder: (
+          BuildContext context,
+          Widget child,
+          ImageChunkEvent? loadingProgress,
+        ) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => _buildHeroPlaceholder(isProduto),
+      );
+    } else {
+      content = _buildHeroPlaceholder(isProduto);
+    }
+
+    return AspectRatio(
+      aspectRatio: 16 / 8.6,
+      child: Container(
+        width: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: content,
+      ),
+    );
+  }
+
+  Widget _buildHeroPlaceholder(bool isProduto) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[Color(0xFFEFF6FF), Color(0xFFF8FAFC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 74,
+          height: 74,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFDDEBFF)),
+          ),
+          child: Icon(
+            isProduto ? Icons.inventory_2_outlined : Icons.design_services_outlined,
+            color: _accentColor,
+            size: 36,
           ),
         ),
       ),
