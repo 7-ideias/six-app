@@ -1,6 +1,7 @@
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
 import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -88,6 +89,13 @@ class _WebLanguageSwitcherState extends State<WebLanguageSwitcher> {
                             isDark: isDark,
                             onTap: () async {
                               await localeProvider.setUserLocale(opt.locale);
+                              try {
+                                await UsuarioService().atualizarPreferenciasIndividuais(
+                                  idiomaDePreferencia: opt.locale.toLanguageTag(),
+                                );
+                              } catch (e) {
+                                debugPrint('Idioma alterado localmente; preferencia remota nao sincronizada: $e');
+                              }
                               _removeOverlay();
                             },
                           );
