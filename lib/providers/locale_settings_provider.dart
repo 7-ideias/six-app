@@ -10,9 +10,10 @@ import '../l10n/web_i18n_store.dart';
 class LocaleSettingsProvider extends ChangeNotifier {
   LocaleSettingsProvider({
     required RegionalizacaoService regionalizacaoService,
+    SixI18nApiClient? i18nApiClient,
     WebI18nApiClient? webI18nApiClient,
   }) : _regionalizacaoService = regionalizacaoService,
-       _webI18nApiClient = webI18nApiClient ?? WebI18nApiClient();
+       _i18nApiClient = i18nApiClient ?? webI18nApiClient ?? SixI18nApiClient();
 
   static const List<Locale> supportedLocales = <Locale>[
     Locale('pt', 'BR'),
@@ -23,9 +24,10 @@ class LocaleSettingsProvider extends ChangeNotifier {
   static const Locale _systemFallbackLocale = Locale('pt', 'BR');
   static const String _languageCodeKey = 'user_language_code';
   static const String _countryCodeKey = 'user_country_code';
+  static const String idiomaPreferenciaDefault = 'DEFAULT';
 
   final RegionalizacaoService _regionalizacaoService;
-  final WebI18nApiClient _webI18nApiClient;
+  final SixI18nApiClient _i18nApiClient;
 
   ConfiguracaoRegionalizacaoSistema _companyConfig =
       ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
@@ -58,7 +60,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
     _initialized = true;
     notifyListeners();
 
-    await _loadWebTranslations(currentLocale, force: false);
+    await _loadTranslations(currentLocale, force: false);
   }
 
   Future<void> refreshCompanyConfig() async {
@@ -89,6 +91,34 @@ class LocaleSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Aplica a ordem de decisão do idioma para usuário autenticado:
+  /// 1. preferência individual, quando diferente de DEFAULT;
+  /// 2. regionalização da empresa;
+  /// 3. locale detectado anteriormente no sistema/navegador;
+  /// 4. pt-BR.
+  Future<void> applyAuthenticatedLocale({
+    String? idiomaDePreferencia,
+    ConfiguracaoRegionalizacaoResponse? regionalizacao,
+  }) async {
+    if (regionalizacao != null) {
+      _companyConfig = _regionalizacaoService.converterResponseParaDominio(
+        regionalizacao,
+      );
+    }
+
+    final preferenceLocale = _localeFromIdiomaDePreferencia(
+      idiomaDePreferencia,
+    );
+
+    if (preferenceLocale != null) {
+      await setUserLocale(preferenceLocale);
+      return;
+    }
+
+    await clearUserOverride(loadTranslations: false);
+    await _loadTranslations(currentLocale, force: true);
+  }
+
   Future<void> setUserLocale(Locale locale) async {
     final sanitized = _sanitizeLocale(locale);
     _userOverrideLocale = sanitized;
@@ -105,14 +135,16 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
     // Troca de idioma deve baixar o pacote completo do idioma ativo, persistir
     // localmente e remover os pacotes anteriores para economizar espaço.
-    await _loadWebTranslations(sanitized, force: true, alreadyLoading: true);
+    await _loadTranslations(sanitized, force: true, alreadyLoading: true);
   }
 
   /// Força uma nova busca das traduções do locale corrente.
-  Future<void> reloadWebTranslations() =>
-      _loadWebTranslations(currentLocale, force: true);
+  Future<void> reloadWebTranslations() => reloadTranslations();
 
-  Future<void> _loadWebTranslations(
+  Future<void> reloadTranslations() =>
+      _loadTranslations(currentLocale, force: true);
+
+  Future<void> _loadTranslations(
     Locale locale, {
     bool force = false,
     bool alreadyLoading = false,
@@ -125,10 +157,10 @@ class LocaleSettingsProvider extends ChangeNotifier {
     }
 
     try {
-      final messages = await _webI18nApiClient.fetchMessages(tag, force: force);
+      final messages = await _i18nApiClient.fetchMessages(tag, force: force);
       if (messages != null) {
-        WebI18nStore.instance.setMessages(tag, messages);
-        WebI18nStore.instance.keepOnly(tag);
+        SixI18nStore.instance.setMessages(tag, messages);
+        SixI18nStore.instance.keepOnly(tag);
       }
     } finally {
       _i18nLoading = false;
@@ -136,7 +168,7 @@ class LocaleSettingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> clearUserOverride() async {
+  Future<void> clearUserOverride({bool loadTranslations = true}) async {
     _userOverrideLocale = null;
 
     final prefs = await SharedPreferences.getInstance();
@@ -144,6 +176,10 @@ class LocaleSettingsProvider extends ChangeNotifier {
     await prefs.remove(_countryCodeKey);
 
     notifyListeners();
+
+    if (loadTranslations) {
+      await _loadTranslations(currentLocale, force: true);
+    }
   }
 
   Future<void> _loadUserOverride() async {
@@ -157,6 +193,29 @@ class LocaleSettingsProvider extends ChangeNotifier {
     }
 
     _userOverrideLocale = _sanitizeLocale(Locale(languageCode, countryCode));
+  }
+
+  Locale? _localeFromIdiomaDePreferencia(String? idiomaDePreferencia) {
+    if (idiomaDePreferencia == null || idiomaDePreferencia.trim().isEmpty) {
+      return null;
+    }
+
+    final normalized = idiomaDePreferencia.trim().replaceAll('_', '-');
+    if (normalized.toUpperCase() == idiomaPreferenciaDefault) {
+      return null;
+    }
+
+    if (normalized.toLowerCase().startsWith('en')) {
+      return const Locale('en', 'US');
+    }
+    if (normalized.toLowerCase().startsWith('es')) {
+      return const Locale('es', 'ES');
+    }
+    if (normalized.toLowerCase().startsWith('pt')) {
+      return const Locale('pt', 'BR');
+    }
+
+    return null;
   }
 
   Locale _sanitizeLocale(Locale locale) {
