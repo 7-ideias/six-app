@@ -75,8 +75,11 @@ class UsuarioService {
       );
 
       if (response.statusCode == 200) {
-        // Atualizar em memória usando o Provider
-        UsuarioProvider().setUsuario(usuario);
+        final decoded = jsonDecode(response.body);
+        final usuarioAtualizado = UsuarioModel.fromJson(decoded);
+
+        // Atualizar em memória usando o Provider com o retorno normalizado pelo backend
+        UsuarioProvider().setUsuario(usuarioAtualizado);
       } else {
         throw Exception('Falha ao atualizar dados do usuário: ${response.statusCode}');
       }
