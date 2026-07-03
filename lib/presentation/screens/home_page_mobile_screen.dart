@@ -143,48 +143,35 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   Widget _buildHomeContent(BuildContext context) {
     return SafeArea(
-      bottom: false,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        slivers: [
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SixLiquidHeaderDelegate(
-              minHeight: 76,
-              maxHeight: 214,
-              builder: _buildLiquidExecutiveSummary,
-            ),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: [
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 60),
+            child: _buildExecutiveSummary(),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate.fixed([
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 120),
-                  child: _buildNotificationsOverviewCard(context),
-                ),
-                const SizedBox(height: 22),
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 180),
-                  child: _buildSectionTitle('Ações rápidas'),
-                ),
-                const SizedBox(height: 12),
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 230),
-                  child: _buildQuickActions(context),
-                ),
-                const SizedBox(height: 24),
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 290),
-                  child: _buildSectionTitle('Pendências'),
-                ),
-                const SizedBox(height: 12),
-                ..._buildMetricTiles(context),
-              ]),
-            ),
+          const SizedBox(height: 16),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 120),
+            child: _buildNotificationsOverviewCard(context),
           ),
+          const SizedBox(height: 22),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 180),
+            child: _buildSectionTitle('Ações rápidas'),
+          ),
+          const SizedBox(height: 12),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 230),
+            child: _buildQuickActions(context),
+          ),
+          const SizedBox(height: 24),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 290),
+            child: _buildSectionTitle('Pendências'),
+          ),
+          const SizedBox(height: 12),
+          ..._buildMetricTiles(context),
         ],
       ),
     );
@@ -229,138 +216,72 @@ class _HomePageMobileState extends State<HomePageMobile> {
     );
   }
 
-  Widget _buildLiquidExecutiveSummary(double progress) {
-    final double easedProgress = Curves.easeOutCubic.transform(progress);
-    final double contentOpacity = (1 - (progress * 1.45)).clamp(0.0, 1.0);
-    final double waveProgress = (1 - ((progress * 2) - 1).abs()).clamp(0.0, 1.0);
-    final double horizontalMargin = _lerp(16, 0, easedProgress);
-    final double topMargin = _lerp(14, 0, easedProgress);
-    final double bottomMargin = _lerp(16, 0, easedProgress);
-    final double borderRadius = _lerp(24, 0, easedProgress);
-    final double verticalPadding = _lerp(20, 8, easedProgress);
-    final double horizontalPadding = _lerp(20, 16, easedProgress);
-
-    return SizedBox.expand(
-      child: DecoratedBox(
-        decoration: const BoxDecoration(color: _backgroundColor),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            horizontalMargin,
-            topMargin,
-            horizontalMargin,
-            bottomMargin,
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Color.lerp(
-                    const Color(0x260B1F3A),
-                    Colors.transparent,
-                    easedProgress,
-                  )!,
-                  blurRadius: _lerp(22, 0, easedProgress),
-                  offset: Offset(0, _lerp(12, 0, easedProgress)),
-                ),
-              ],
-            ),
-            child: ClipPath(
-              clipper: _SixLiquidHeaderClipper(
-                radius: borderRadius,
-                waveHeight: _lerp(0, 12, waveProgress),
-              ),
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_primaryColor, _secondaryColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: verticalPadding,
-                  ),
-                  child: Opacity(
-                    opacity: contentOpacity,
-                    child: IgnorePointer(
-                      ignoring: contentOpacity < 0.2,
-                      child: ClipRect(
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          heightFactor: contentOpacity,
-                          child: Transform.translate(
-                            offset: Offset(0, _lerp(0, -14, easedProgress)),
-                            child: _buildExecutiveSummaryContent(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+  Widget _buildExecutiveSummary() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [_primaryColor, _secondaryColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x260B1F3A),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.insights_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Hoje no Six',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Acompanhe as prioridades do atendimento sem sair do mobile.',
+            style: TextStyle(
+              color: Color(0xFFD7E3F5),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryPill(
+                  label: 'Período',
+                  value: 'Hoje',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSummaryPill(
+                  label: 'Vendas em aberto',
+                  value: '33',
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
-  }
-
-  Widget _buildExecutiveSummaryContent() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.insights_rounded, color: Colors.white),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Hoje no Six',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Acompanhe as prioridades do atendimento sem sair do mobile.',
-          style: TextStyle(
-            color: Color(0xFFD7E3F5),
-            height: 1.35,
-          ),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: _buildSummaryPill(
-                label: 'Período',
-                value: 'Hoje',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildSummaryPill(
-                label: 'Vendas em aberto',
-                value: '33',
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  double _lerp(double begin, double end, double progress) {
-    return begin + ((end - begin) * progress);
   }
 
   Widget _buildSummaryPill({required String label, required String value}) {
@@ -777,100 +698,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-  }
-}
-
-class _SixLiquidHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _SixLiquidHeaderDelegate({
-    required this.minHeight,
-    required this.maxHeight,
-    required this.builder,
-  });
-
-  final double minHeight;
-  final double maxHeight;
-  final Widget Function(double progress) builder;
-
-  @override
-  double get minExtent => minHeight;
-
-  @override
-  double get maxExtent => maxHeight;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    final double availableRange = maxExtent - minExtent;
-    final double progress = availableRange <= 0
-        ? 1
-        : (shrinkOffset / availableRange).clamp(0.0, 1.0);
-
-    return builder(progress);
-  }
-
-  @override
-  bool shouldRebuild(covariant _SixLiquidHeaderDelegate oldDelegate) {
-    return minHeight != oldDelegate.minHeight ||
-        maxHeight != oldDelegate.maxHeight ||
-        builder != oldDelegate.builder;
-  }
-}
-
-class _SixLiquidHeaderClipper extends CustomClipper<Path> {
-  const _SixLiquidHeaderClipper({
-    required this.radius,
-    required this.waveHeight,
-  });
-
-  final double radius;
-  final double waveHeight;
-
-  @override
-  Path getClip(Size size) {
-    final double effectiveRadius = radius.clamp(0.0, size.shortestSide / 2);
-    final double effectiveWave = waveHeight.clamp(0.0, 16.0);
-    final double bottom = size.height - effectiveWave;
-    final Path path = Path()
-      ..moveTo(effectiveRadius, 0)
-      ..lineTo(size.width - effectiveRadius, 0)
-      ..quadraticBezierTo(size.width, 0, size.width, effectiveRadius)
-      ..lineTo(size.width, bottom - effectiveRadius)
-      ..quadraticBezierTo(
-        size.width,
-        bottom,
-        size.width - effectiveRadius,
-        bottom,
-      )
-      ..cubicTo(
-        size.width * 0.76,
-        bottom + effectiveWave,
-        size.width * 0.58,
-        bottom - (effectiveWave * 0.55),
-        size.width * 0.43,
-        bottom + (effectiveWave * 0.2),
-      )
-      ..cubicTo(
-        size.width * 0.27,
-        bottom + (effectiveWave * 0.9),
-        size.width * 0.12,
-        bottom - (effectiveWave * 0.35),
-        effectiveRadius,
-        bottom,
-      )
-      ..quadraticBezierTo(0, bottom, 0, bottom - effectiveRadius)
-      ..lineTo(0, effectiveRadius)
-      ..quadraticBezierTo(0, 0, effectiveRadius, 0)
-      ..close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant _SixLiquidHeaderClipper oldClipper) {
-    return radius != oldClipper.radius || waveHeight != oldClipper.waveHeight;
   }
 }
 
