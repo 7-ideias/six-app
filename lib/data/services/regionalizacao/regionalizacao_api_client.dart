@@ -7,6 +7,8 @@ import '../../../core/services/auth_service.dart';
 import '../../models/regionalizacao_models.dart';
 
 abstract class RegionalizacaoApiClient {
+  Future<ConfiguracaoRegionalizacaoResponse> buscarRegionalizacao();
+
   Future<void> salvarRegionalizacao(
       SalvarConfiguracaoRegionalizacaoRequest request,
       );
@@ -29,6 +31,29 @@ class HttpRegionalizacaoApiClient implements RegionalizacaoApiClient {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $jwtToken',
     };
+  }
+
+  @override
+  Future<ConfiguracaoRegionalizacaoResponse> buscarRegionalizacao() async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/configuracoes/regionalizacao',
+    );
+
+    final response = await _httpClient.get(
+      uri,
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      return ConfiguracaoRegionalizacaoResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+    }
+
+    throw RegionalizacaoApiException(
+      statusCode: response.statusCode,
+      body: response.body,
+    );
   }
 
   @override
