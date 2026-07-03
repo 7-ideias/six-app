@@ -346,10 +346,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       return const <Widget>[_EmptyState()];
     }
 
-    if (_exibicaoHorizontal && !_selecaoMultiplaAtiva) {
+    if (_exibicaoHorizontal) {
       return <Widget>[
         SizedBox(
-          height: isSelecao ? 108 : 228,
+          height: isSelecao ? (_selecaoMultiplaAtiva ? 362 : 108) : 228,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(right: 8),
@@ -358,7 +358,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             itemBuilder: (BuildContext context, int index) {
               final int itemDelay = 190 + ((index * 28).clamp(0, 180)).toInt();
               return SizedBox(
-                width: isSelecao ? 292 : 336,
+                width: isSelecao ? (_selecaoMultiplaAtiva ? 340 : 292) : 336,
                 child: SixStaggeredEntry(
                   delay: Duration(milliseconds: itemDelay),
                   child: _buildProdutoCard(itensDaLista[index]),
@@ -373,7 +373,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return itensDaLista.asMap().entries.map((MapEntry<int, ProdutoModel> entry) {
       final int itemDelay = 190 + ((entry.key * 28).clamp(0, 180)).toInt();
       return Padding(
-        padding: EdgeInsets.only(bottom: _selecaoMultiplaAtiva ? 14 : (isSelecao ? 8 : 12)),
+        padding: EdgeInsets.only(bottom: isSelecao ? 8 : 12),
         child: SixStaggeredEntry(
           delay: Duration(milliseconds: itemDelay),
           child: _buildProdutoCard(entry.value),
@@ -734,26 +734,41 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildProdutoSelectionCard(ProdutoModel produto) {
-    if (!_selecaoMultiplaAtiva) return _buildProdutoSelectionCompactCard(produto);
-    return _buildProdutoSelectionExpandedCard(produto);
+    if (_selecaoMultiplaAtiva && _exibicaoHorizontal) {
+      return _buildProdutoSelectionExpandedCard(produto);
+    }
+
+    return _buildProdutoSelectionCompactCard(produto);
   }
 
   Widget _buildProdutoSelectionCompactCard(ProdutoModel produto) {
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
     final String codigo = produto.codigoDeBarras.trim();
+    final String chave = _chaveProduto(produto);
+    final _ProdutoSelecionadoMobile? selecionado = _selecionados[chave];
+    final bool estaSelecionado = selecionado != null;
+    final int quantidade = selecionado?.quantidade ?? 0;
 
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => Navigator.pop(context, produto),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 74),
+        onTap: () => _selecaoMultiplaAtiva
+            ? _alternarProdutoSelecionado(produto)
+            : Navigator.pop(context, produto),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          constraints: BoxConstraints(minHeight: _selecaoMultiplaAtiva ? 126 : 74),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
+            color: estaSelecionado ? const Color(0xFFEFF6FF) : _surfaceColor,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: estaSelecionado ? _accentColor : const Color(0xFFE2E8F0),
+              width: estaSelecionado ? 1.4 : 1,
+            ),
             boxShadow: const <BoxShadow>[
               BoxShadow(
                 color: Color(0x0A000000),
@@ -762,64 +777,124 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              _buildThumbnail(produto, isProduto, size: 42),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      produto.nomeProduto.isEmpty ? 'Item sem nome' : produto.nomeProduto,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        color: _titleTextColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+              Row(
+                children: <Widget>[
+                  _buildThumbnail(produto, isProduto, size: 42),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            codigo.isEmpty ? 'Sem código' : codigo,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _mutedTextColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        Text(
+                          produto.nomeProduto.isEmpty
+                              ? 'Item sem nome'
+                              : produto.nomeProduto,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: _titleTextColor,
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          _formatCurrency(produto.precoVenda),
-                          style: const TextStyle(
-                            color: _titleTextColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: <Widget>[
+                            Flexible(
+                              child: Text(
+                                codigo.isEmpty ? 'Sem código' : codigo,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: _mutedTextColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              _formatCurrency(produto.precoVenda),
+                              style: const TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: estaSelecionado ? _accentColor : const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      estaSelecionado
+                          ? Icons.check_rounded
+                          : Icons.add_rounded,
+                      color: estaSelecionado ? Colors.white : _accentColor,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+              if (_selecaoMultiplaAtiva && estaSelecionado) ...<Widget>[
+                const SizedBox(height: 10),
+                Row(
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Text(
+                        'Selecionado',
+                        style: TextStyle(
+                          color: _accentColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    _QuantidadeButton(
+                      icon: Icons.remove_rounded,
+                      onTap: () => _alterarQuantidadeSelecionada(produto, -1),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        '$quantidade',
+                        style: const TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    _QuantidadeButton(
+                      icon: Icons.add_rounded,
+                      onTap: () => _alterarQuantidadeSelecionada(produto, 1),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.add_rounded, color: _accentColor, size: 20),
-              ),
+              ],
             ],
           ),
         ),
