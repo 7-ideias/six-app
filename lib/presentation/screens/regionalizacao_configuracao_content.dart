@@ -111,7 +111,7 @@ class _RegionalizacaoConfiguracaoContentState
         SnackBar(
           content: Text(
             context.t(
-              'configuracoes.settingsSaved',
+              'common.savedSuccessfully',
               fallback: 'Configurações salvas com sucesso.',
             ),
           ),
