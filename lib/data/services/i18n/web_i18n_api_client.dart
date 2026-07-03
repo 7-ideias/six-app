@@ -14,8 +14,8 @@ import '../../../core/config/app_config.dart';
 /// - ao trocar de idioma, remove os caches dos demais idiomas suportados;
 /// - envia `If-None-Match` e trata `304 Not Modified` reutilizando o cache;
 /// - em qualquer falha retorna o cache local do idioma ativo se houver, ou `null`.
-class WebI18nApiClient {
-  WebI18nApiClient({http.Client? httpClient})
+class SixI18nApiClient {
+  SixI18nApiClient({http.Client? httpClient})
     : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
@@ -125,4 +125,10 @@ class WebI18nApiClient {
     }
     return null;
   }
+}
+
+/// Alias de compatibilidade para chamadas antigas enquanto o app migra de
+/// `WebI18n*` para `SixI18n*` em web, Android e iOS.
+class WebI18nApiClient extends SixI18nApiClient {
+  WebI18nApiClient({super.httpClient});
 }
