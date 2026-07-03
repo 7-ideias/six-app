@@ -15,15 +15,16 @@ class RegionalizacaoService {
   }
 
   ConfiguracaoRegionalizacaoSistema converterResponseParaDominio(
-      ConfiguracaoRegionalizacaoResponse response,
-      ) {
+    ConfiguracaoRegionalizacaoResponse response,
+  ) {
     return ConfiguracaoRegionalizacaoMapper.fromResponse(response);
   }
 
-  Future<void> salvarRegionalizacao(
-      ConfiguracaoRegionalizacaoSistema dominio,
-      ) async {
+  Future<ConfiguracaoRegionalizacaoSistema> salvarRegionalizacao(
+    ConfiguracaoRegionalizacaoSistema dominio,
+  ) async {
     final request = ConfiguracaoRegionalizacaoMapper.toRequest(dominio);
-    return _apiClient.salvarRegionalizacao(request);
+    final response = await _apiClient.salvarRegionalizacao(request);
+    return ConfiguracaoRegionalizacaoMapper.fromResponse(response);
   }
 }

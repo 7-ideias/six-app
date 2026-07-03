@@ -34,11 +34,20 @@ class LocaleSettingsProvider extends ChangeNotifier {
   Locale? _userOverrideLocale;
   bool _initialized = false;
   bool _i18nLoading = false;
+  bool _regionalizacaoLoading = false;
+  bool _regionalizacaoSaving = false;
+  String? _regionalizacaoError;
 
   bool get initialized => _initialized;
 
   /// `true` enquanto uma busca de traduções de UI está em andamento.
   bool get i18nLoading => _i18nLoading;
+
+  bool get regionalizacaoLoading => _regionalizacaoLoading;
+
+  bool get regionalizacaoSaving => _regionalizacaoSaving;
+
+  String? get regionalizacaoError => _regionalizacaoError;
 
   ConfiguracaoRegionalizacaoSistema get companyConfig => _companyConfig;
 
@@ -46,6 +55,32 @@ class LocaleSettingsProvider extends ChangeNotifier {
       _sanitizeLocale(_userOverrideLocale ?? _companyConfig.locale);
 
   AppRegionalFormatting get currentFormatting => _companyConfig.formatting;
+
+  String get languageCode => _companyConfig.languageCode;
+
+  String get countryCode => _companyConfig.countryCode;
+
+  String get currencyCode => currentFormatting.currencyCode;
+
+  String get timeZone => currentFormatting.timeZone;
+
+  String get dateFormat => currentFormatting.dateFormat;
+
+  String get timeFormat => currentFormatting.timeFormat;
+
+  String get decimalSeparator => currentFormatting.decimalSeparator;
+
+  String get thousandSeparator => currentFormatting.thousandSeparator;
+
+  String get firstDayOfWeek => currentFormatting.firstDayOfWeek;
+
+  String get numberPattern => currentFormatting.numberPattern;
+
+  int get decimalPlaces => currentFormatting.decimalPlaces;
+
+  bool get allowMultipleCurrencies => currentFormatting.allowMultipleCurrencies;
+
+  bool get applyFinancialRounding => currentFormatting.applyFinancialRounding;
 
   Future<void> initialize() async {
     await _loadUserOverride();
@@ -67,6 +102,27 @@ class LocaleSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<ConfiguracaoRegionalizacaoSistema> carregarRegionalizacaoDaEmpresa() async {
+    _regionalizacaoLoading = true;
+    _regionalizacaoError = null;
+    notifyListeners();
+
+    try {
+      final response = await _regionalizacaoService.buscarRegionalizacao();
+      final config = _regionalizacaoService.converterResponseParaDominio(
+        response,
+      );
+      _companyConfig = config;
+      return config;
+    } catch (e) {
+      _regionalizacaoError = _normalizarErro(e);
+      rethrow;
+    } finally {
+      _regionalizacaoLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> atualizarConfiguracaoDaEmpresaPorResponse(
     ConfiguracaoRegionalizacaoResponse response,
   ) async {
@@ -83,12 +139,13 @@ class LocaleSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveCompanyConfig(
+  Future<ConfiguracaoRegionalizacaoSistema> saveCompanyConfig(
     ConfiguracaoRegionalizacaoSistema config,
-  ) async {
-    await _regionalizacaoService.salvarRegionalizacao(config);
-    _companyConfig = config;
-    notifyListeners();
+  ) {
+    return _salvarConfiguracaoRegionalizacao(
+      config,
+      aplicarIdiomaDaEmpresa: false,
+    );
   }
 
   /// Salva a regionalização da empresa e aplica o idioma da empresa no app.
@@ -96,13 +153,44 @@ class LocaleSettingsProvider extends ChangeNotifier {
   /// Essa chamada é usada pela tela de Regionalização. Ela não persiste
   /// preferência individual de usuário; apenas remove o override local para que
   /// o locale corrente volte a ser o da configuração da empresa recém-salva.
-  Future<void> saveCompanyConfigAndApply(
+  Future<ConfiguracaoRegionalizacaoSistema> saveCompanyConfigAndApply(
     ConfiguracaoRegionalizacaoSistema config,
-  ) async {
-    await _regionalizacaoService.salvarRegionalizacao(config);
-    _companyConfig = config;
-    await clearUserOverride(loadTranslations: false);
-    await _loadTranslations(config.locale, force: true);
+  ) {
+    return _salvarConfiguracaoRegionalizacao(
+      config,
+      aplicarIdiomaDaEmpresa: true,
+    );
+  }
+
+  Future<ConfiguracaoRegionalizacaoSistema> _salvarConfiguracaoRegionalizacao(
+    ConfiguracaoRegionalizacaoSistema config, {
+    required bool aplicarIdiomaDaEmpresa,
+  }) async {
+    _regionalizacaoSaving = true;
+    _regionalizacaoError = null;
+    notifyListeners();
+
+    try {
+      final configSalva = await _regionalizacaoService.salvarRegionalizacao(
+        config,
+      );
+      _companyConfig = configSalva;
+
+      if (aplicarIdiomaDaEmpresa) {
+        await clearUserOverride(loadTranslations: false);
+        await _loadTranslations(configSalva.locale, force: true);
+      } else {
+        notifyListeners();
+      }
+
+      return configSalva;
+    } catch (e) {
+      _regionalizacaoError = _normalizarErro(e);
+      rethrow;
+    } finally {
+      _regionalizacaoSaving = false;
+      notifyListeners();
+    }
   }
 
   /// Aplica a ordem de decisão do idioma para usuário autenticado:
@@ -157,6 +245,56 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
   Future<void> reloadTranslations() =>
       _loadTranslations(currentLocale, force: true);
+
+  String formatDecimal(num value) {
+    final int casasDecimais = decimalPlaces.clamp(0, 6).toInt();
+    final String normalizado = value.toStringAsFixed(casasDecimais);
+    final bool negativo = normalizado.startsWith('-');
+    final List<String> partes = normalizado.replaceFirst('-', '').split('.');
+    final String inteiro = _aplicarSeparadorDeMilhar(partes.first);
+    final String decimal = casasDecimais > 0 && partes.length > 1
+        ? '$decimalSeparator${partes[1]}'
+        : '';
+
+    return '${negativo ? '-' : ''}$inteiro$decimal';
+  }
+
+  String formatCurrency(num value, {bool showCurrencyCode = true}) {
+    final String valor = formatDecimal(value);
+    return showCurrencyCode ? '$currencyCode $valor' : valor;
+  }
+
+  String formatDate(DateTime value) {
+    final String day = _twoDigits(value.day);
+    final String month = _twoDigits(value.month);
+    final String year = value.year.toString().padLeft(4, '0');
+
+    switch (dateFormat) {
+      case 'MM/dd/yyyy':
+        return '$month/$day/$year';
+      case 'yyyy-MM-dd':
+        return '$year-$month-$day';
+      case 'dd-MM-yyyy':
+        return '$day-$month-$year';
+      case 'dd/MM/yyyy':
+      default:
+        return '$day/$month/$year';
+    }
+  }
+
+  String formatTime(DateTime value) {
+    if (timeFormat.toLowerCase() == '12h') {
+      final bool afternoon = value.hour >= 12;
+      final int hour12 = value.hour == 0
+          ? 12
+          : value.hour > 12
+              ? value.hour - 12
+              : value.hour;
+      return '${_twoDigits(hour12)}:${_twoDigits(value.minute)} ${afternoon ? 'PM' : 'AM'}';
+    }
+
+    return '${_twoDigits(value.hour)}:${_twoDigits(value.minute)}';
+  }
 
   Future<void> _loadTranslations(
     Locale locale, {
@@ -260,5 +398,26 @@ class LocaleSettingsProvider extends ChangeNotifier {
     }
 
     return _systemFallbackLocale;
+  }
+
+  String _aplicarSeparadorDeMilhar(String value) {
+    final buffer = StringBuffer();
+    int contador = 0;
+
+    for (int i = value.length - 1; i >= 0; i--) {
+      if (contador > 0 && contador % 3 == 0) {
+        buffer.write(thousandSeparator);
+      }
+      buffer.write(value[i]);
+      contador++;
+    }
+
+    return buffer.toString().split('').reversed.join();
+  }
+
+  String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+  String _normalizarErro(Object error) {
+    return error.toString().replaceAll('Exception: ', '');
   }
 }

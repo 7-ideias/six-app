@@ -9,9 +9,9 @@ import '../../models/regionalizacao_models.dart';
 abstract class RegionalizacaoApiClient {
   Future<ConfiguracaoRegionalizacaoResponse> buscarRegionalizacao();
 
-  Future<void> salvarRegionalizacao(
-      SalvarConfiguracaoRegionalizacaoRequest request,
-      );
+  Future<ConfiguracaoRegionalizacaoResponse> salvarRegionalizacao(
+    SalvarConfiguracaoRegionalizacaoRequest request,
+  );
 }
 
 class HttpRegionalizacaoApiClient implements RegionalizacaoApiClient {
@@ -57,9 +57,9 @@ class HttpRegionalizacaoApiClient implements RegionalizacaoApiClient {
   }
 
   @override
-  Future<void> salvarRegionalizacao(
-      SalvarConfiguracaoRegionalizacaoRequest request,
-      ) async {
+  Future<ConfiguracaoRegionalizacaoResponse> salvarRegionalizacao(
+    SalvarConfiguracaoRegionalizacaoRequest request,
+  ) async {
     final uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/caixa/configuracoes/regionalizacao',
     );
@@ -70,14 +70,24 @@ class HttpRegionalizacaoApiClient implements RegionalizacaoApiClient {
       body: jsonEncode(request.toJson()),
     );
 
-    if (response.statusCode != 200 &&
-        response.statusCode != 201 &&
-        response.statusCode != 204) {
-      throw RegionalizacaoApiException(
-        statusCode: response.statusCode,
-        body: response.body,
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.trim().isEmpty) {
+        return ConfiguracaoRegionalizacaoResponse.fromJson(request.toJson());
+      }
+
+      return ConfiguracaoRegionalizacaoResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
       );
     }
+
+    if (response.statusCode == 204) {
+      return ConfiguracaoRegionalizacaoResponse.fromJson(request.toJson());
+    }
+
+    throw RegionalizacaoApiException(
+      statusCode: response.statusCode,
+      body: response.body,
+    );
   }
 }
 

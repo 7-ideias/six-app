@@ -36,10 +36,40 @@ class AppRegionalFormatting {
       decimalSeparator: ',',
       thousandSeparator: '.',
       firstDayOfWeek: 'MONDAY',
-      numberPattern: '#,##0.00',
+      numberPattern: '#.##0,00',
       decimalPlaces: 2,
       allowMultipleCurrencies: false,
       applyFinancialRounding: true,
+    );
+  }
+
+  AppRegionalFormatting copyWith({
+    String? currencyCode,
+    String? timeZone,
+    String? dateFormat,
+    String? timeFormat,
+    String? decimalSeparator,
+    String? thousandSeparator,
+    String? firstDayOfWeek,
+    String? numberPattern,
+    int? decimalPlaces,
+    bool? allowMultipleCurrencies,
+    bool? applyFinancialRounding,
+  }) {
+    return AppRegionalFormatting(
+      currencyCode: currencyCode ?? this.currencyCode,
+      timeZone: timeZone ?? this.timeZone,
+      dateFormat: dateFormat ?? this.dateFormat,
+      timeFormat: timeFormat ?? this.timeFormat,
+      decimalSeparator: decimalSeparator ?? this.decimalSeparator,
+      thousandSeparator: thousandSeparator ?? this.thousandSeparator,
+      firstDayOfWeek: firstDayOfWeek ?? this.firstDayOfWeek,
+      numberPattern: numberPattern ?? this.numberPattern,
+      decimalPlaces: decimalPlaces ?? this.decimalPlaces,
+      allowMultipleCurrencies:
+          allowMultipleCurrencies ?? this.allowMultipleCurrencies,
+      applyFinancialRounding:
+          applyFinancialRounding ?? this.applyFinancialRounding,
     );
   }
 }
