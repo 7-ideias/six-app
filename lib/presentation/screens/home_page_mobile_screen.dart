@@ -143,11 +143,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   Widget _buildHomeContent(BuildContext context) {
     return SafeArea(
+      top: false,
       bottom: false,
       child: CustomScrollView(
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
         slivers: [
           SliverPersistentHeader(
             pinned: true,
@@ -231,8 +229,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   Widget _buildLiquidExecutiveSummary(double progress) {
     final double easedProgress = Curves.easeOutCubic.transform(progress);
-    final double contentOpacity = (1 - (progress * 1.45)).clamp(0.0, 1.0);
-    final double waveProgress = (1 - ((progress * 2) - 1).abs()).clamp(0.0, 1.0);
+    final double contentOpacity =
+        (1 - (progress * 1.45)).clamp(0.0, 1.0).toDouble();
+    final double waveProgress =
+        (1 - ((progress * 2) - 1).abs()).clamp(0.0, 1.0).toDouble();
     final double horizontalMargin = _lerp(16, 0, easedProgress);
     final double topMargin = _lerp(14, 0, easedProgress);
     final double bottomMargin = _lerp(16, 0, easedProgress);
@@ -805,8 +805,8 @@ class _SixLiquidHeaderDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final double availableRange = maxExtent - minExtent;
     final double progress = availableRange <= 0
-        ? 1
-        : (shrinkOffset / availableRange).clamp(0.0, 1.0);
+        ? 1.0
+        : (shrinkOffset / availableRange).clamp(0.0, 1.0).toDouble();
 
     return builder(progress);
   }
@@ -830,8 +830,9 @@ class _SixLiquidHeaderClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    final double effectiveRadius = radius.clamp(0.0, size.shortestSide / 2);
-    final double effectiveWave = waveHeight.clamp(0.0, 16.0);
+    final double effectiveRadius =
+        radius.clamp(0.0, size.shortestSide / 2).toDouble();
+    final double effectiveWave = waveHeight.clamp(0.0, 16.0).toDouble();
     final double bottom = size.height - effectiveWave;
     final Path path = Path()
       ..moveTo(effectiveRadius, 0)
