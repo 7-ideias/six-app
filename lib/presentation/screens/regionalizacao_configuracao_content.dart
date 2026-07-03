@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../domain/models/regionalizacao_models.dart';
-import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/mobile_motion.dart';
@@ -23,12 +21,25 @@ class RegionalizacaoConfiguracaoContent extends StatefulWidget {
 
 class _RegionalizacaoConfiguracaoContentState
     extends State<RegionalizacaoConfiguracaoContent> {
-  late final RegionalizacaoService _regionalizacaoService;
+  final TextEditingController _numberPatternController =
+      TextEditingController();
 
   ConfiguracaoRegionalizacaoSistema? _configuracaoAtual;
   _LanguageOption _idiomaSelecionado = _LanguageOption.portugues;
+  _RegionalizacaoOption _paisSelecionado = _countryOptions.first;
+  _RegionalizacaoOption _moedaSelecionada = _currencyOptions.first;
+  _RegionalizacaoOption _timeZoneSelecionado = _timeZoneOptions.first;
+  _RegionalizacaoOption _dateFormatSelecionado = _dateFormatOptions.first;
+  _RegionalizacaoOption _timeFormatSelecionado = _timeFormatOptions.first;
+  _RegionalizacaoOption _decimalSeparatorSelecionado =
+      _decimalSeparatorOptions.first;
+  _RegionalizacaoOption _thousandSeparatorSelecionado =
+      _thousandSeparatorOptions.first;
+  _RegionalizacaoOption _firstDaySelecionado = _firstDayOptions.first;
+  int _decimalPlaces = 2;
+  bool _allowMultipleCurrencies = false;
+  bool _applyFinancialRounding = true;
   bool _carregando = true;
-  bool _salvando = false;
   String? _erro;
 
   static const List<_LanguageOption> _idiomas = <_LanguageOption>[
@@ -37,13 +48,198 @@ class _RegionalizacaoConfiguracaoContentState
     _LanguageOption.espanhol,
   ];
 
+  static const List<_RegionalizacaoOption> _countryOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: 'BR',
+      labelKey: 'configuracoes.countryBrazil',
+      labelFallback: 'Brasil',
+      subtitleFallback: 'pt-BR',
+    ),
+    _RegionalizacaoOption(
+      value: 'US',
+      labelKey: 'configuracoes.countryUnitedStates',
+      labelFallback: 'Estados Unidos',
+      subtitleFallback: 'en-US',
+    ),
+    _RegionalizacaoOption(
+      value: 'ES',
+      labelKey: 'configuracoes.countrySpain',
+      labelFallback: 'Espanha',
+      subtitleFallback: 'es-ES',
+    ),
+  ];
+
+  static const List<_RegionalizacaoOption> _currencyOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: 'BRL',
+      labelKey: 'configuracoes.currencyBrl',
+      labelFallback: 'Real brasileiro',
+      subtitleFallback: 'BRL',
+    ),
+    _RegionalizacaoOption(
+      value: 'USD',
+      labelKey: 'configuracoes.currencyUsd',
+      labelFallback: 'Dólar americano',
+      subtitleFallback: 'USD',
+    ),
+    _RegionalizacaoOption(
+      value: 'EUR',
+      labelKey: 'configuracoes.currencyEur',
+      labelFallback: 'Euro',
+      subtitleFallback: 'EUR',
+    ),
+    _RegionalizacaoOption(
+      value: 'ARS',
+      labelKey: 'configuracoes.currencyArs',
+      labelFallback: 'Peso argentino',
+      subtitleFallback: 'ARS',
+    ),
+    _RegionalizacaoOption(
+      value: 'MXN',
+      labelKey: 'configuracoes.currencyMxn',
+      labelFallback: 'Peso mexicano',
+      subtitleFallback: 'MXN',
+    ),
+  ];
+
+  static const List<_RegionalizacaoOption> _timeZoneOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: 'America/Sao_Paulo',
+      labelKey: 'configuracoes.timeZoneSaoPaulo',
+      labelFallback: 'São Paulo',
+      subtitleFallback: 'America/Sao_Paulo',
+    ),
+    _RegionalizacaoOption(
+      value: 'America/New_York',
+      labelKey: 'configuracoes.timeZoneNewYork',
+      labelFallback: 'Nova York',
+      subtitleFallback: 'America/New_York',
+    ),
+    _RegionalizacaoOption(
+      value: 'Europe/Madrid',
+      labelKey: 'configuracoes.timeZoneMadrid',
+      labelFallback: 'Madri',
+      subtitleFallback: 'Europe/Madrid',
+    ),
+    _RegionalizacaoOption(
+      value: 'UTC',
+      labelKey: 'configuracoes.timeZoneUtc',
+      labelFallback: 'UTC',
+      subtitleFallback: 'UTC',
+    ),
+  ];
+
+  static const List<_RegionalizacaoOption> _dateFormatOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: 'dd/MM/yyyy',
+      labelKey: 'configuracoes.dateFormatBr',
+      labelFallback: '31/12/2026',
+      subtitleFallback: 'dd/MM/yyyy',
+    ),
+    _RegionalizacaoOption(
+      value: 'MM/dd/yyyy',
+      labelKey: 'configuracoes.dateFormatUs',
+      labelFallback: '12/31/2026',
+      subtitleFallback: 'MM/dd/yyyy',
+    ),
+    _RegionalizacaoOption(
+      value: 'yyyy-MM-dd',
+      labelKey: 'configuracoes.dateFormatIso',
+      labelFallback: '2026-12-31',
+      subtitleFallback: 'yyyy-MM-dd',
+    ),
+  ];
+
+  static const List<_RegionalizacaoOption> _timeFormatOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: '24h',
+      labelKey: 'configuracoes.timeFormat24h',
+      labelFallback: '24 horas',
+      subtitleFallback: '18:30',
+    ),
+    _RegionalizacaoOption(
+      value: '12h',
+      labelKey: 'configuracoes.timeFormat12h',
+      labelFallback: '12 horas',
+      subtitleFallback: '06:30 PM',
+    ),
+  ];
+
+  static const List<_RegionalizacaoOption> _decimalSeparatorOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: ',',
+      labelKey: 'configuracoes.decimalComma',
+      labelFallback: 'Vírgula',
+      subtitleFallback: '10,50',
+    ),
+    _RegionalizacaoOption(
+      value: '.',
+      labelKey: 'configuracoes.decimalDot',
+      labelFallback: 'Ponto',
+      subtitleFallback: '10.50',
+    ),
+  ];
+
+  static const List<_RegionalizacaoOption> _thousandSeparatorOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: '.',
+      labelKey: 'configuracoes.thousandDot',
+      labelFallback: 'Ponto',
+      subtitleFallback: '1.000',
+    ),
+    _RegionalizacaoOption(
+      value: ',',
+      labelKey: 'configuracoes.thousandComma',
+      labelFallback: 'Vírgula',
+      subtitleFallback: '1,000',
+    ),
+    _RegionalizacaoOption(
+      value: ' ',
+      labelKey: 'configuracoes.thousandSpace',
+      labelFallback: 'Espaço',
+      subtitleFallback: '1 000',
+    ),
+  ];
+
+  static const List<_RegionalizacaoOption> _firstDayOptions =
+      <_RegionalizacaoOption>[
+    _RegionalizacaoOption(
+      value: 'MONDAY',
+      labelKey: 'common.monday',
+      labelFallback: 'Segunda-feira',
+      subtitleFallback: 'MONDAY',
+    ),
+    _RegionalizacaoOption(
+      value: 'SUNDAY',
+      labelKey: 'common.sunday',
+      labelFallback: 'Domingo',
+      subtitleFallback: 'SUNDAY',
+    ),
+    _RegionalizacaoOption(
+      value: 'SATURDAY',
+      labelKey: 'common.saturday',
+      labelFallback: 'Sábado',
+      subtitleFallback: 'SATURDAY',
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
-    _regionalizacaoService = RegionalizacaoService(
-      apiClient: HttpRegionalizacaoApiClient(),
-    );
     _carregarRegionalizacao();
+  }
+
+  @override
+  void dispose() {
+    _numberPatternController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarRegionalizacao() async {
@@ -53,26 +249,17 @@ class _RegionalizacaoConfiguracaoContentState
     });
 
     try {
-      final response = await _regionalizacaoService.buscarRegionalizacao();
-      final config = _regionalizacaoService.converterResponseParaDominio(
-        response,
-      );
+      final config = await context
+          .read<LocaleSettingsProvider>()
+          .carregarRegionalizacaoDaEmpresa();
 
       if (!mounted) return;
-      await context
-          .read<LocaleSettingsProvider>()
-          .atualizarConfiguracaoDaEmpresa(config);
-
-      setState(() {
-        _configuracaoAtual = config;
-        _idiomaSelecionado = _LanguageOption.fromConfig(config);
-      });
+      setState(() => _aplicarConfiguracao(config));
     } catch (e) {
       if (!mounted) return;
       final fallback = context.read<LocaleSettingsProvider>().companyConfig;
       setState(() {
-        _configuracaoAtual = fallback;
-        _idiomaSelecionado = _LanguageOption.fromConfig(fallback);
+        _aplicarConfiguracao(fallback);
         _erro = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
@@ -83,31 +270,21 @@ class _RegionalizacaoConfiguracaoContentState
   }
 
   Future<void> _salvar() async {
-    final config = _configuracaoAtual;
-    if (config == null || _salvando) return;
+    final provider = context.read<LocaleSettingsProvider>();
+    if (provider.regionalizacaoSaving) return;
 
-    final novaConfiguracao = config.copyWith(
-      languageCode: _idiomaSelecionado.locale.languageCode,
-      countryCode: _idiomaSelecionado.locale.countryCode,
-      formatting: config.formatting,
-    );
+    FocusScope.of(context).unfocus();
+    final novaConfiguracao = _montarConfiguracaoAtualizada();
 
-    setState(() {
-      _salvando = true;
-      _erro = null;
-    });
+    setState(() => _erro = null);
 
     try {
-      await context
-          .read<LocaleSettingsProvider>()
-          .saveCompanyConfigAndApply(novaConfiguracao);
+      final configSalva = await provider.saveCompanyConfigAndApply(
+        novaConfiguracao,
+      );
 
       if (!mounted) return;
-      setState(() {
-        _configuracaoAtual = novaConfiguracao;
-        _idiomaSelecionado = _LanguageOption.fromConfig(novaConfiguracao);
-      });
-
+      setState(() => _aplicarConfiguracao(configSalva));
       _mostrarMensagem(
         context.t(
           'common.savedSuccessfully',
@@ -116,20 +293,104 @@ class _RegionalizacaoConfiguracaoContentState
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _erro = e.toString().replaceAll('Exception: ', '');
-        _idiomaSelecionado = _LanguageOption.fromConfig(config);
-      });
-
+      setState(() => _erro = e.toString().replaceAll('Exception: ', ''));
       _mostrarMensagem(
         '${context.t('configuracoes.settingsSaveError', fallback: 'Erro ao salvar configurações')}: $_erro',
         erro: true,
       );
-    } finally {
-      if (mounted) {
-        setState(() => _salvando = false);
-      }
     }
+  }
+
+  void _aplicarConfiguracao(ConfiguracaoRegionalizacaoSistema config) {
+    final formatting = config.formatting;
+    _configuracaoAtual = config;
+    _idiomaSelecionado = _LanguageOption.fromConfig(config);
+    _paisSelecionado = _optionFromValue(_countryOptions, config.countryCode);
+    _moedaSelecionada = _optionFromValue(
+      _currencyOptions,
+      formatting.currencyCode,
+    );
+    _timeZoneSelecionado = _optionFromValue(
+      _timeZoneOptions,
+      formatting.timeZone,
+    );
+    _dateFormatSelecionado = _optionFromValue(
+      _dateFormatOptions,
+      formatting.dateFormat,
+    );
+    _timeFormatSelecionado = _optionFromValue(
+      _timeFormatOptions,
+      formatting.timeFormat,
+    );
+    _decimalSeparatorSelecionado = _optionFromValue(
+      _decimalSeparatorOptions,
+      formatting.decimalSeparator,
+    );
+    _thousandSeparatorSelecionado = _optionFromValue(
+      _thousandSeparatorOptions,
+      formatting.thousandSeparator,
+    );
+    _firstDaySelecionado = _optionFromValue(
+      _firstDayOptions,
+      formatting.firstDayOfWeek,
+    );
+    _decimalPlaces = formatting.decimalPlaces.clamp(0, 6).toInt();
+    _allowMultipleCurrencies = formatting.allowMultipleCurrencies;
+    _applyFinancialRounding = formatting.applyFinancialRounding;
+    _numberPatternController.text = formatting.numberPattern;
+  }
+
+  ConfiguracaoRegionalizacaoSistema _montarConfiguracaoAtualizada() {
+    final config = _configuracaoAtual ??
+        ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
+    final pattern = _numberPatternController.text.trim().isEmpty
+        ? _suggestNumberPattern()
+        : _numberPatternController.text.trim();
+
+    return config.copyWith(
+      languageCode: _idiomaSelecionado.locale.languageCode,
+      countryCode: _paisSelecionado.value,
+      formatting: config.formatting.copyWith(
+        currencyCode: _moedaSelecionada.value,
+        timeZone: _timeZoneSelecionado.value,
+        dateFormat: _dateFormatSelecionado.value,
+        timeFormat: _timeFormatSelecionado.value,
+        decimalSeparator: _decimalSeparatorSelecionado.value,
+        thousandSeparator: _thousandSeparatorSelecionado.value,
+        firstDayOfWeek: _firstDaySelecionado.value,
+        numberPattern: pattern,
+        decimalPlaces: _decimalPlaces,
+        allowMultipleCurrencies: _allowMultipleCurrencies,
+        applyFinancialRounding: _applyFinancialRounding,
+      ),
+    );
+  }
+
+  _RegionalizacaoOption _optionFromValue(
+    List<_RegionalizacaoOption> options,
+    String value,
+  ) {
+    for (final option in options) {
+      if (option.value == value) return option;
+    }
+
+    return _RegionalizacaoOption(
+      value: value,
+      labelKey: 'configuracoes.customRegionalValue',
+      labelFallback: value.isEmpty ? 'Não informado' : value,
+      subtitleFallback: value,
+    );
+  }
+
+  List<_RegionalizacaoOption> _optionsWithSelected(
+    List<_RegionalizacaoOption> options,
+    _RegionalizacaoOption selected,
+  ) {
+    if (options.any((option) => option.value == selected.value)) {
+      return options;
+    }
+
+    return <_RegionalizacaoOption>[selected, ...options];
   }
 
   void _mostrarMensagem(String mensagem, {bool erro = false}) {
@@ -147,6 +408,7 @@ class _RegionalizacaoConfiguracaoContentState
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<LocaleSettingsProvider>();
     final padding = widget.embedded
         ? EdgeInsets.zero
         : const EdgeInsets.fromLTRB(16, 16, 16, 24);
@@ -172,7 +434,11 @@ class _RegionalizacaoConfiguracaoContentState
                 delay: const Duration(milliseconds: 70),
                 child: LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints inner) {
-                    return _buildContent(context, inner.maxWidth);
+                    return _buildContent(
+                      context,
+                      inner.maxWidth,
+                      provider,
+                    );
                   },
                 ),
               ),
@@ -183,10 +449,14 @@ class _RegionalizacaoConfiguracaoContentState
     );
   }
 
-  Widget _buildContent(BuildContext context, double availableWidth) {
+  Widget _buildContent(
+    BuildContext context,
+    double availableWidth,
+    LocaleSettingsProvider provider,
+  ) {
     final theme = Theme.of(context);
 
-    if (_carregando) {
+    if (_carregando || provider.regionalizacaoLoading) {
       return _RegionalizacaoSkeleton(embedded: widget.embedded);
     }
 
@@ -195,13 +465,19 @@ class _RegionalizacaoConfiguracaoContentState
       children: <Widget>[
         if (!widget.embedded) _buildMobileHero(context),
         if (!widget.embedded) const SizedBox(height: 18),
+        _buildPreviewCard(context, theme, provider),
+        const SizedBox(height: 16),
         if (_erro != null && _erro!.isNotEmpty) ...<Widget>[
           _buildErro(context),
           const SizedBox(height: 16),
         ],
-        _buildIdiomaCard(context, theme),
+        _buildIdiomaLocalizacaoCard(context, theme),
         const SizedBox(height: 16),
-        _buildResumoRegionalizacao(context, theme),
+        _buildFormatosCard(context, theme),
+        const SizedBox(height: 16),
+        _buildFinanceiroCard(context, theme),
+        const SizedBox(height: 18),
+        _buildActions(context, provider),
       ],
     );
   }
@@ -269,7 +545,148 @@ class _RegionalizacaoConfiguracaoContentState
     );
   }
 
-  Widget _buildIdiomaCard(BuildContext context, ThemeData theme) {
+  Widget _buildPreviewCard(
+    BuildContext context,
+    ThemeData theme,
+    LocaleSettingsProvider provider,
+  ) {
+    final draft = _montarConfiguracaoAtualizada();
+    final sampleProvider = _RegionalizacaoPreviewFormatter(draft);
+    final now = DateTime(2026, 12, 31, 18, 30);
+
+    final items = <_RegionalizacaoPreviewItem>[
+      _RegionalizacaoPreviewItem(
+        icon: Icons.payments_rounded,
+        label: context.t('configuracoes.currencyPreview', fallback: 'Moeda'),
+        value: sampleProvider.formatCurrency(1234.5),
+      ),
+      _RegionalizacaoPreviewItem(
+        icon: Icons.calendar_month_rounded,
+        label: context.t('configuracoes.datePreview', fallback: 'Data'),
+        value: sampleProvider.formatDate(now),
+      ),
+      _RegionalizacaoPreviewItem(
+        icon: Icons.access_time_rounded,
+        label: context.t('configuracoes.timePreview', fallback: 'Hora'),
+        value: sampleProvider.formatTime(now),
+      ),
+      _RegionalizacaoPreviewItem(
+        icon: Icons.public_rounded,
+        label: context.t('configuracoes.activeLocale', fallback: 'Locale'),
+        value: '${_idiomaSelecionado.locale.languageCode}-${_paisSelecionado.value}',
+      ),
+    ];
+
+    return _RegionalizacaoCard(
+      embedded: widget.embedded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _buildSectionHeader(
+            context: context,
+            icon: Icons.visibility_rounded,
+            title: context.t(
+              'configuracoes.regionalizationPreview',
+              fallback: 'Prévia aplicada ao app',
+            ),
+            subtitle: context.t(
+              'configuracoes.regionalizationPreviewDescription',
+              fallback:
+                  'Esses exemplos mostram como moeda, números, datas e horas ficarão disponíveis para outras telas via Provider.',
+            ),
+            trailing: _buildStatusBadge(
+              context: context,
+              theme: theme,
+              icon: Icons.hub_rounded,
+              label: provider.currencyCode,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compact = constraints.maxWidth < 760;
+              final double spacing = 12;
+              final double itemWidth = compact
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - spacing) / 2;
+
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: items
+                    .map(
+                      (item) => SizedBox(
+                        width: itemWidth,
+                        child: _buildPreviewItem(context, theme, item),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewItem(
+    BuildContext context,
+    ThemeData theme,
+    _RegionalizacaoPreviewItem item,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Icon(item.icon, color: theme.colorScheme.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIdiomaLocalizacaoCard(BuildContext context, ThemeData theme) {
     return _RegionalizacaoCard(
       embedded: widget.embedded,
       child: Column(
@@ -279,48 +696,101 @@ class _RegionalizacaoConfiguracaoContentState
             context: context,
             icon: Icons.translate_rounded,
             title: context.t(
-              'configuracoes.systemLanguage',
-              fallback: 'Idioma do sistema',
+              'configuracoes.localeGroup',
+              fallback: 'Idioma e localização',
             ),
             subtitle: context.t(
-              'configuracoes.systemLanguageDescription',
+              'configuracoes.localeGroupDescription',
               fallback:
-                  'Escolha o idioma aplicado para a empresa. Os demais padrões continuam vindo da regionalização atual.',
+                  'Define o idioma da empresa, país/região, fuso horário e primeiro dia da semana.',
             ),
-            trailing: _buildEditableBadge(context, theme),
+            trailing: _buildStatusBadge(
+              context: context,
+              theme: theme,
+              icon: Icons.edit_rounded,
+              label: context.t('common.editable', fallback: 'Editável'),
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool compact = constraints.maxWidth < 720;
-              final double spacing = compact ? 10 : 12;
-              final double itemWidth = compact
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - (spacing * 2)) / 3;
-
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: _idiomas
-                    .map(
-                      (option) => SizedBox(
-                        width: itemWidth,
-                        child: _buildLanguageOption(
-                          context: context,
-                          theme: theme,
-                          option: option,
-                          selected: option == _idiomaSelecionado,
-                        ),
-                      ),
-                    )
-                    .toList(),
-              );
-            },
+          _buildLanguageOptions(context, theme),
+          const SizedBox(height: 18),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t('configuracoes.countryCode', fallback: 'País/região'),
+            icon: Icons.flag_rounded,
+            options: _optionsWithSelected(_countryOptions, _paisSelecionado),
+            selected: _paisSelecionado,
+            onSelected: (option) => setState(() => _paisSelecionado = option),
           ),
-          const SizedBox(height: 20),
-          _buildActions(context),
+          const SizedBox(height: 18),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t('configuracoes.timeZone', fallback: 'Fuso horário'),
+            icon: Icons.schedule_rounded,
+            options: _optionsWithSelected(_timeZoneOptions, _timeZoneSelecionado),
+            selected: _timeZoneSelecionado,
+            onSelected: (option) => setState(() => _timeZoneSelecionado = option),
+          ),
+          const SizedBox(height: 18),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t(
+              'configuracoes.firstDayOfWeek',
+              fallback: 'Primeiro dia da semana',
+            ),
+            icon: Icons.event_available_rounded,
+            options: _optionsWithSelected(_firstDayOptions, _firstDaySelecionado),
+            selected: _firstDaySelecionado,
+            onSelected: (option) => setState(() => _firstDaySelecionado = option),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLanguageOptions(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _buildGroupTitle(
+          context,
+          theme,
+          Icons.language_rounded,
+          context.t('configuracoes.systemLanguage', fallback: 'Idioma do sistema'),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 720;
+            final double spacing = compact ? 10 : 12;
+            final double itemWidth = compact
+                ? constraints.maxWidth
+                : (constraints.maxWidth - (spacing * 2)) / 3;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: _idiomas
+                  .map(
+                    (option) => SizedBox(
+                      width: itemWidth,
+                      child: _buildLanguageOption(
+                        context: context,
+                        theme: theme,
+                        option: option,
+                        selected: option == _idiomaSelecionado,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -330,114 +800,405 @@ class _RegionalizacaoConfiguracaoContentState
     required _LanguageOption option,
     required bool selected,
   }) {
-    final Color borderColor =
-        selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant;
-    final Color backgroundColor = selected
-        ? theme.colorScheme.primary.withOpacity(0.08)
-        : theme.colorScheme.surface;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor, width: selected ? 1.4 : 1),
-        boxShadow: selected
-            ? <BoxShadow>[
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.12),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: _salvando
-              ? null
-              : () => setState(() => _idiomaSelecionado = option),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
+    return _SelectableContainer(
+      selected: selected,
+      onTap: () => setState(() => _idiomaSelecionado = option),
+      child: Row(
+        children: <Widget>[
+          _buildOptionIcon(theme, option.badge, selected),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Container(
-                  width: 42,
-                  height: 42,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? theme.colorScheme.primary.withOpacity(0.12)
-                        : theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    option.badge,
-                    style: const TextStyle(fontSize: 20),
+                Text(
+                  option.label(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        option.label(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        option.description(context),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 3),
+                Text(
+                  option.description(context),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.25,
                   ),
-                ),
-                const SizedBox(width: 8),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 160),
-                  child: selected
-                      ? Icon(
-                          Icons.check_circle_rounded,
-                          key: const ValueKey<String>('selected'),
-                          color: theme.colorScheme.primary,
-                        )
-                      : Icon(
-                          Icons.radio_button_unchecked_rounded,
-                          key: const ValueKey<String>('unselected'),
-                          color: theme.colorScheme.outline,
-                        ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(width: 8),
+          _buildSelectedIcon(theme, selected),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormatosCard(BuildContext context, ThemeData theme) {
+    return _RegionalizacaoCard(
+      embedded: widget.embedded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _buildSectionHeader(
+            context: context,
+            icon: Icons.format_list_numbered_rounded,
+            title: context.t(
+              'configuracoes.formattingGroup',
+              fallback: 'Formatos',
+            ),
+            subtitle: context.t(
+              'configuracoes.formattingGroupDescription',
+              fallback:
+                  'Controla como datas, horas, números e casas decimais serão exibidos no app.',
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t('configuracoes.dateFormat', fallback: 'Formato de data'),
+            icon: Icons.calendar_month_rounded,
+            options: _optionsWithSelected(_dateFormatOptions, _dateFormatSelecionado),
+            selected: _dateFormatSelecionado,
+            onSelected: (option) => setState(() => _dateFormatSelecionado = option),
+          ),
+          const SizedBox(height: 18),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t('configuracoes.timeFormat', fallback: 'Formato de hora'),
+            icon: Icons.access_time_rounded,
+            options: _optionsWithSelected(_timeFormatOptions, _timeFormatSelecionado),
+            selected: _timeFormatSelecionado,
+            onSelected: (option) => setState(() => _timeFormatSelecionado = option),
+          ),
+          const SizedBox(height: 18),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t(
+              'configuracoes.decimalSeparator',
+              fallback: 'Separador decimal',
+            ),
+            icon: Icons.more_horiz_rounded,
+            options: _optionsWithSelected(
+              _decimalSeparatorOptions,
+              _decimalSeparatorSelecionado,
+            ),
+            selected: _decimalSeparatorSelecionado,
+            onSelected: (option) {
+              setState(() {
+                _decimalSeparatorSelecionado = option;
+                if (_thousandSeparatorSelecionado.value == option.value) {
+                  _thousandSeparatorSelecionado = _thousandSeparatorOptions
+                      .firstWhere((item) => item.value != option.value);
+                }
+                _numberPatternController.text = _suggestNumberPattern();
+              });
+            },
+          ),
+          const SizedBox(height: 18),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t(
+              'configuracoes.thousandSeparator',
+              fallback: 'Separador de milhar',
+            ),
+            icon: Icons.drag_indicator_rounded,
+            options: _optionsWithSelected(
+              _thousandSeparatorOptions,
+              _thousandSeparatorSelecionado,
+            ),
+            selected: _thousandSeparatorSelecionado,
+            onSelected: (option) {
+              setState(() {
+                _thousandSeparatorSelecionado = option;
+                if (_decimalSeparatorSelecionado.value == option.value) {
+                  _decimalSeparatorSelecionado = _decimalSeparatorOptions
+                      .firstWhere((item) => item.value != option.value);
+                }
+                _numberPatternController.text = _suggestNumberPattern();
+              });
+            },
+          ),
+          const SizedBox(height: 18),
+          _buildDecimalPlacesSelector(context, theme),
+          const SizedBox(height: 18),
+          _buildNumberPatternField(context, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinanceiroCard(BuildContext context, ThemeData theme) {
+    return _RegionalizacaoCard(
+      embedded: widget.embedded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _buildSectionHeader(
+            context: context,
+            icon: Icons.payments_rounded,
+            title: context.t(
+              'configuracoes.financialGroup',
+              fallback: 'Financeiro',
+            ),
+            subtitle: context.t(
+              'configuracoes.financialGroupDescription',
+              fallback:
+                  'Define a moeda principal e deixa regras financeiras disponíveis globalmente no app.',
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildOptionGroup(
+            context: context,
+            theme: theme,
+            title: context.t('configuracoes.currencyCode', fallback: 'Moeda'),
+            icon: Icons.account_balance_wallet_rounded,
+            options: _optionsWithSelected(_currencyOptions, _moedaSelecionada),
+            selected: _moedaSelecionada,
+            onSelected: (option) => setState(() => _moedaSelecionada = option),
+          ),
+          const SizedBox(height: 18),
+          _buildSwitchCard(
+            context: context,
+            theme: theme,
+            value: _allowMultipleCurrencies,
+            icon: Icons.currency_exchange_rounded,
+            title: context.t(
+              'configuracoes.allowMultipleCurrencies',
+              fallback: 'Permitir múltiplas moedas',
+            ),
+            subtitle: context.t(
+              'configuracoes.allowMultipleCurrenciesDescription',
+              fallback:
+                  'Apenas persiste a preferência. O fluxo de venda multi-moedas não é alterado nesta etapa.',
+            ),
+            onChanged: (value) => setState(() => _allowMultipleCurrencies = value),
+          ),
+          const SizedBox(height: 12),
+          _buildSwitchCard(
+            context: context,
+            theme: theme,
+            value: _applyFinancialRounding,
+            icon: Icons.calculate_rounded,
+            title: context.t(
+              'configuracoes.applyFinancialRounding',
+              fallback: 'Aplicar arredondamento financeiro',
+            ),
+            subtitle: context.t(
+              'configuracoes.applyFinancialRoundingDescription',
+              fallback:
+                  'Disponibiliza a regra para cálculos e formatações financeiras centralizadas.',
+            ),
+            onChanged: (value) => setState(() => _applyFinancialRounding = value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionGroup({
+    required BuildContext context,
+    required ThemeData theme,
+    required String title,
+    required IconData icon,
+    required List<_RegionalizacaoOption> options,
+    required _RegionalizacaoOption selected,
+    required ValueChanged<_RegionalizacaoOption> onSelected,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _buildGroupTitle(context, theme, icon, title),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 760;
+            final double spacing = 10;
+            final double itemWidth = compact
+                ? constraints.maxWidth
+                : (constraints.maxWidth - spacing) / 2;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: options
+                  .map(
+                    (option) => SizedBox(
+                      width: itemWidth,
+                      child: _SelectableContainer(
+                        selected: option.value == selected.value,
+                        onTap: () => onSelected(option),
+                        child: Row(
+                          children: <Widget>[
+                            _buildOptionIcon(
+                              theme,
+                              option.value.trim().isEmpty
+                                  ? '—'
+                                  : option.value.trim(),
+                              option.value == selected.value,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    option.label(context),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    option.subtitle(context),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildSelectedIcon(theme, option.value == selected.value),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDecimalPlacesSelector(BuildContext context, ThemeData theme) {
+    final options = <int>[0, 1, 2, 3, 4, 5, 6];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _buildGroupTitle(
+          context,
+          theme,
+          Icons.exposure_plus_1_rounded,
+          context.t('configuracoes.decimalPlaces', fallback: 'Casas decimais'),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options
+              .map(
+                (value) => ChoiceChip(
+                  label: Text(value.toString()),
+                  selected: _decimalPlaces == value,
+                  onSelected: (_) {
+                    setState(() {
+                      _decimalPlaces = value;
+                      _numberPatternController.text = _suggestNumberPattern();
+                    });
+                  },
+                  visualDensity: VisualDensity.compact,
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumberPatternField(BuildContext context, ThemeData theme) {
+    return TextField(
+      controller: _numberPatternController,
+      textInputAction: TextInputAction.done,
+      decoration: InputDecoration(
+        labelText: context.t(
+          'configuracoes.numberPattern',
+          fallback: 'Padrão numérico',
+        ),
+        helperText: context.t(
+          'configuracoes.numberPatternDescription',
+          fallback:
+              'Valor técnico enviado ao backend para futuras formatações avançadas.',
+        ),
+        prefixIcon: const Icon(Icons.pin_rounded),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      onChanged: (_) => setState(() {}),
+    );
+  }
+
+  Widget _buildSwitchCard({
+    required BuildContext context,
+    required ThemeData theme,
+    required bool value,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.24),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: SwitchListTile.adaptive(
+        value: value,
+        onChanged: onChanged,
+        contentPadding: const EdgeInsets.fromLTRB(14, 8, 12, 8),
+        secondary: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+        ),
+        title: Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.3,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildActions(BuildContext context) {
+  Widget _buildActions(BuildContext context, LocaleSettingsProvider provider) {
+    final bool saving = provider.regionalizacaoSaving;
+
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = constraints.maxWidth < 520;
 
         final Widget reloadButton = OutlinedButton.icon(
-          onPressed: _salvando ? null : _carregarRegionalizacao,
+          onPressed: saving ? null : _carregarRegionalizacao,
           icon: const Icon(Icons.refresh_rounded),
           label: Text(
             context.t('common.reload', fallback: 'Recarregar'),
@@ -445,8 +1206,8 @@ class _RegionalizacaoConfiguracaoContentState
         );
 
         final Widget saveButton = FilledButton.icon(
-          onPressed: _salvando ? null : _salvar,
-          icon: _salvando
+          onPressed: saving ? null : _salvar,
+          icon: saving
               ? const SizedBox(
                   width: 16,
                   height: 16,
@@ -454,7 +1215,7 @@ class _RegionalizacaoConfiguracaoContentState
                 )
               : const Icon(Icons.save_rounded),
           label: Text(
-            _salvando
+            saving
                 ? context.t('common.saving', fallback: 'Salvando...')
                 : context.t('common.saveChanges', fallback: 'Salvar alterações'),
           ),
@@ -480,183 +1241,6 @@ class _RegionalizacaoConfiguracaoContentState
           ],
         );
       },
-    );
-  }
-
-  Widget _buildResumoRegionalizacao(BuildContext context, ThemeData theme) {
-    final config = _configuracaoAtual;
-    if (config == null) return const SizedBox.shrink();
-
-    final formatting = config.formatting;
-    final groups = <_RegionalizacaoGroup>[
-      _RegionalizacaoGroup(
-        icon: Icons.public_rounded,
-        title: context.t(
-          'configuracoes.localeGroup',
-          fallback: 'Localização',
-        ),
-        subtitle: context.t(
-          'configuracoes.localeGroupDescription',
-          fallback: 'Códigos usados para idioma, país e calendário.',
-        ),
-        items: <_RegionalizacaoInfo>[
-          _RegionalizacaoInfo(
-            icon: Icons.language_rounded,
-            label: context.t('configuracoes.languageCode', fallback: 'Idioma'),
-            value: '${_idiomaSelecionado.label(context)} '
-                '(${_idiomaSelecionado.locale.languageCode})',
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.flag_rounded,
-            label: context.t('configuracoes.countryCode', fallback: 'País/região'),
-            value: _idiomaSelecionado.locale.countryCode ?? config.countryCode,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.schedule_rounded,
-            label: context.t('configuracoes.timeZone', fallback: 'Fuso horário'),
-            value: formatting.timeZone,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.event_available_rounded,
-            label: context.t(
-              'configuracoes.firstDayOfWeek',
-              fallback: 'Primeiro dia da semana',
-            ),
-            value: _formatFirstDayOfWeek(context, formatting.firstDayOfWeek),
-          ),
-        ],
-      ),
-      _RegionalizacaoGroup(
-        icon: Icons.format_list_numbered_rounded,
-        title: context.t(
-          'configuracoes.formattingGroup',
-          fallback: 'Formatos',
-        ),
-        subtitle: context.t(
-          'configuracoes.formattingGroupDescription',
-          fallback: 'Como datas, horas e números aparecem no app.',
-        ),
-        items: <_RegionalizacaoInfo>[
-          _RegionalizacaoInfo(
-            icon: Icons.calendar_month_rounded,
-            label: context.t('configuracoes.dateFormat', fallback: 'Formato de data'),
-            value: formatting.dateFormat,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.access_time_rounded,
-            label: context.t('configuracoes.timeFormat', fallback: 'Formato de hora'),
-            value: formatting.timeFormat,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.more_horiz_rounded,
-            label: context.t(
-              'configuracoes.decimalSeparator',
-              fallback: 'Separador decimal',
-            ),
-            value: formatting.decimalSeparator,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.drag_indicator_rounded,
-            label: context.t(
-              'configuracoes.thousandSeparator',
-              fallback: 'Separador de milhar',
-            ),
-            value: formatting.thousandSeparator,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.pin_rounded,
-            label: context.t('configuracoes.numberPattern', fallback: 'Padrão numérico'),
-            value: formatting.numberPattern,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.exposure_plus_1_rounded,
-            label: context.t('configuracoes.decimalPlaces', fallback: 'Casas decimais'),
-            value: formatting.decimalPlaces.toString(),
-          ),
-        ],
-      ),
-      _RegionalizacaoGroup(
-        icon: Icons.payments_rounded,
-        title: context.t(
-          'configuracoes.financialGroup',
-          fallback: 'Financeiro',
-        ),
-        subtitle: context.t(
-          'configuracoes.financialGroupDescription',
-          fallback: 'Moeda e regras de arredondamento aplicadas nas operações.',
-        ),
-        items: <_RegionalizacaoInfo>[
-          _RegionalizacaoInfo(
-            icon: Icons.account_balance_wallet_rounded,
-            label: context.t('configuracoes.currencyCode', fallback: 'Moeda'),
-            value: formatting.currencyCode,
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.currency_exchange_rounded,
-            label: context.t(
-              'configuracoes.allowMultipleCurrencies',
-              fallback: 'Permitir múltiplas moedas',
-            ),
-            value: _formatBool(context, formatting.allowMultipleCurrencies),
-          ),
-          _RegionalizacaoInfo(
-            icon: Icons.calculate_rounded,
-            label: context.t(
-              'configuracoes.applyFinancialRounding',
-              fallback: 'Arredondamento financeiro',
-            ),
-            value: _formatBool(context, formatting.applyFinancialRounding),
-          ),
-        ],
-      ),
-    ];
-
-    return _RegionalizacaoCard(
-      embedded: widget.embedded,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _buildSectionHeader(
-            context: context,
-            icon: Icons.tune_rounded,
-            title: context.t(
-              'configuracoes.currentRegionalization',
-              fallback: 'Configuração atual',
-            ),
-            subtitle: context.t(
-              'configuracoes.currentRegionalizationDescription',
-              fallback:
-                  'Resumo dos dados retornados pela API de regionalização. Campos não editáveis ficam disponíveis para conferência.',
-            ),
-            trailing: _buildReadOnlyBadge(context, theme),
-          ),
-          const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool compact = constraints.maxWidth < 820;
-              final double spacing = 14;
-              final double itemWidth = compact
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - spacing) / 2;
-
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: groups
-                    .map(
-                      (group) => SizedBox(
-                        width: group == groups.last && !compact
-                            ? constraints.maxWidth
-                            : itemWidth,
-                        child: _buildInfoGroup(context, theme, group),
-                      ),
-                    )
-                    .toList(),
-              );
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -737,139 +1321,70 @@ class _RegionalizacaoConfiguracaoContentState
     );
   }
 
-  Widget _buildInfoGroup(
+  Widget _buildGroupTitle(
     BuildContext context,
     ThemeData theme,
-    _RegionalizacaoGroup group,
+    IconData icon,
+    String title,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.28),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.09),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(group.icon, color: theme.colorScheme.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      group.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      group.subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ...group.items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _buildInfoRow(context, theme, item),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(
-    BuildContext context,
-    ThemeData theme,
-    _RegionalizacaoInfo item,
-  ) {
-    final value = item.value.trim().isEmpty
-        ? context.t('common.notInformed', fallback: 'Não informado')
-        : item.value;
-
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
-          child: Icon(item.icon, size: 17, color: theme.colorScheme.primary),
-        ),
-        const SizedBox(width: 10),
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        const SizedBox(width: 8),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildEditableBadge(BuildContext context, ThemeData theme) {
-    return _buildStatusBadge(
-      context: context,
-      theme: theme,
-      icon: Icons.edit_rounded,
-      label: context.t('common.editable', fallback: 'Editável'),
-      color: theme.colorScheme.primary,
+  Widget _buildOptionIcon(ThemeData theme, String value, bool selected) {
+    return Container(
+      width: 42,
+      height: 42,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: selected
+            ? theme.colorScheme.primary.withOpacity(0.12)
+            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: value.length > 3 ? 11 : 13,
+          fontWeight: FontWeight.w900,
+          color: selected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 
-  Widget _buildReadOnlyBadge(BuildContext context, ThemeData theme) {
-    return _buildStatusBadge(
-      context: context,
-      theme: theme,
-      icon: Icons.lock_outline_rounded,
-      label: context.t('common.readOnly', fallback: 'Somente leitura'),
-      color: theme.colorScheme.onSurfaceVariant,
+  Widget _buildSelectedIcon(ThemeData theme, bool selected) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 160),
+      child: selected
+          ? Icon(
+              Icons.check_circle_rounded,
+              key: const ValueKey<String>('selected'),
+              color: theme.colorScheme.primary,
+            )
+          : Icon(
+              Icons.radio_button_unchecked_rounded,
+              key: const ValueKey<String>('unselected'),
+              color: theme.colorScheme.outline,
+            ),
     );
   }
 
@@ -940,23 +1455,64 @@ class _RegionalizacaoConfiguracaoContentState
     );
   }
 
-  String _formatBool(BuildContext context, bool value) {
-    return value
-        ? context.t('common.yes', fallback: 'Sim')
-        : context.t('common.no', fallback: 'Não');
+  String _suggestNumberPattern() {
+    final decimals = _decimalPlaces <= 0
+        ? ''
+        : '${_decimalSeparatorSelecionado.value}${'0' * _decimalPlaces}';
+    return '#${_thousandSeparatorSelecionado.value}##0$decimals';
   }
+}
 
-  String _formatFirstDayOfWeek(BuildContext context, String value) {
-    switch (value.toUpperCase()) {
-      case 'MONDAY':
-        return context.t('common.monday', fallback: 'Segunda-feira');
-      case 'SUNDAY':
-        return context.t('common.sunday', fallback: 'Domingo');
-      case 'SATURDAY':
-        return context.t('common.saturday', fallback: 'Sábado');
-      default:
-        return value;
-    }
+class _SelectableContainer extends StatelessWidget {
+  const _SelectableContainer({
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final Color borderColor =
+        selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant;
+    final Color backgroundColor = selected
+        ? theme.colorScheme.primary.withOpacity(0.08)
+        : theme.colorScheme.surface;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor, width: selected ? 1.4 : 1),
+        boxShadow: selected
+            ? <BoxShadow>[
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.12),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: child,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1059,30 +1615,24 @@ class _RegionalizacaoSkeleton extends StatelessWidget {
   }
 }
 
-class _RegionalizacaoGroup {
-  const _RegionalizacaoGroup({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.items,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final List<_RegionalizacaoInfo> items;
-}
-
-class _RegionalizacaoInfo {
-  const _RegionalizacaoInfo({
-    required this.icon,
-    required this.label,
+class _RegionalizacaoOption {
+  const _RegionalizacaoOption({
     required this.value,
+    required this.labelKey,
+    required this.labelFallback,
+    required this.subtitleFallback,
   });
 
-  final IconData icon;
-  final String label;
   final String value;
+  final String labelKey;
+  final String labelFallback;
+  final String subtitleFallback;
+
+  String label(BuildContext context) {
+    return context.t(labelKey, fallback: labelFallback);
+  }
+
+  String subtitle(BuildContext context) => subtitleFallback;
 }
 
 class _LanguageOption {
@@ -1115,7 +1665,7 @@ class _LanguageOption {
     labelFallback: 'Português',
     descriptionKey: 'configuracoes.languagePortugueseDescription',
     descriptionFallback: 'Brasil • pt-BR',
-    badge: 'BR',
+    badge: 'PT',
     locale: Locale('pt', 'BR'),
   );
 
@@ -1124,7 +1674,7 @@ class _LanguageOption {
     labelFallback: 'English',
     descriptionKey: 'configuracoes.languageEnglishDescription',
     descriptionFallback: 'United States • en-US',
-    badge: 'US',
+    badge: 'EN',
     locale: Locale('en', 'US'),
   );
 
@@ -1156,4 +1706,90 @@ class _LanguageOption {
 
   @override
   int get hashCode => Object.hash(locale.languageCode, locale.countryCode);
+}
+
+class _RegionalizacaoPreviewItem {
+  const _RegionalizacaoPreviewItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+}
+
+class _RegionalizacaoPreviewFormatter {
+  const _RegionalizacaoPreviewFormatter(this.config);
+
+  final ConfiguracaoRegionalizacaoSistema config;
+
+  AppRegionalFormatting get formatting => config.formatting;
+
+  String formatDecimal(num value) {
+    final int casasDecimais = formatting.decimalPlaces.clamp(0, 6).toInt();
+    final String normalizado = value.toStringAsFixed(casasDecimais);
+    final bool negativo = normalizado.startsWith('-');
+    final List<String> partes = normalizado.replaceFirst('-', '').split('.');
+    final String inteiro = _aplicarSeparadorDeMilhar(partes.first);
+    final String decimal = casasDecimais > 0 && partes.length > 1
+        ? '${formatting.decimalSeparator}${partes[1]}'
+        : '';
+
+    return '${negativo ? '-' : ''}$inteiro$decimal';
+  }
+
+  String formatCurrency(num value) {
+    return '${formatting.currencyCode} ${formatDecimal(value)}';
+  }
+
+  String formatDate(DateTime value) {
+    final String day = _twoDigits(value.day);
+    final String month = _twoDigits(value.month);
+    final String year = value.year.toString().padLeft(4, '0');
+
+    switch (formatting.dateFormat) {
+      case 'MM/dd/yyyy':
+        return '$month/$day/$year';
+      case 'yyyy-MM-dd':
+        return '$year-$month-$day';
+      case 'dd-MM-yyyy':
+        return '$day-$month-$year';
+      case 'dd/MM/yyyy':
+      default:
+        return '$day/$month/$year';
+    }
+  }
+
+  String formatTime(DateTime value) {
+    if (formatting.timeFormat.toLowerCase() == '12h') {
+      final bool afternoon = value.hour >= 12;
+      final int hour12 = value.hour == 0
+          ? 12
+          : value.hour > 12
+              ? value.hour - 12
+              : value.hour;
+      return '${_twoDigits(hour12)}:${_twoDigits(value.minute)} ${afternoon ? 'PM' : 'AM'}';
+    }
+
+    return '${_twoDigits(value.hour)}:${_twoDigits(value.minute)}';
+  }
+
+  String _aplicarSeparadorDeMilhar(String value) {
+    final buffer = StringBuffer();
+    int contador = 0;
+
+    for (int i = value.length - 1; i >= 0; i--) {
+      if (contador > 0 && contador % 3 == 0) {
+        buffer.write(formatting.thousandSeparator);
+      }
+      buffer.write(value[i]);
+      contador++;
+    }
+
+    return buffer.toString().split('').reversed.join();
+  }
+
+  String _twoDigits(int value) => value.toString().padLeft(2, '0');
 }
