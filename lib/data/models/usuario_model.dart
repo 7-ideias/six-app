@@ -33,7 +33,7 @@ class UsuarioModel {
             PreferenciasIndividuaisDoUsuarioModel.padrao(),
         enviarPreferenciasIndividuaisDoUsuario =
             enviarPreferenciasIndividuaisDoUsuario ??
-                preferenciasIndividuaisDoUsuario != null;
+                (preferenciasIndividuaisDoUsuario != null);
 
   factory UsuarioModel.fromJson(Map<String, dynamic> json) {
     return UsuarioModel(
@@ -145,7 +145,10 @@ extension ModoDeExibicaoUsuarioApi on ModoDeExibicaoUsuario {
     }
   }
 
-  static ModoDeExibicaoUsuario fromCodigo(dynamic value, ModoDeExibicaoUsuario fallback) {
+  static ModoDeExibicaoUsuario fromCodigo(
+    dynamic value,
+    ModoDeExibicaoUsuario fallback,
+  ) {
     final String codigo = value?.toString().toUpperCase() ?? '';
     switch (codigo) {
       case 'HORIZONTAL':
