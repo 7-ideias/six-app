@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/six_i18n.dart';
 import 'empresa_configuracao_screen.dart';
 import 'regionalizacao_configuracao_content.dart';
 
@@ -101,8 +102,8 @@ class RegionalizacaoMobileScreen extends StatelessWidget {
         backgroundColor: ConfiguracoesMobileScreen.primaryColor,
         foregroundColor: Colors.white,
         leading: const BackButton(),
-        title: const Text(
-          'Regionalização',
+        title: Text(
+          context.t('regionalizacao.regionalizacao'),
           style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.2),
         ),
       ),
