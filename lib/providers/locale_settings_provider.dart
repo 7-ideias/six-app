@@ -91,6 +91,20 @@ class LocaleSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Salva a regionalização da empresa e aplica o idioma da empresa no app.
+  ///
+  /// Essa chamada é usada pela tela de Regionalização. Ela não persiste
+  /// preferência individual de usuário; apenas remove o override local para que
+  /// o locale corrente volte a ser o da configuração da empresa recém-salva.
+  Future<void> saveCompanyConfigAndApply(
+    ConfiguracaoRegionalizacaoSistema config,
+  ) async {
+    await _regionalizacaoService.salvarRegionalizacao(config);
+    _companyConfig = config;
+    await clearUserOverride(loadTranslations: false);
+    await _loadTranslations(config.locale, force: true);
+  }
+
   /// Aplica a ordem de decisão do idioma para usuário autenticado:
   /// 1. preferência individual, quando diferente de DEFAULT;
   /// 2. regionalização da empresa;
