@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../l10n/six_i18n.dart';
 import '../../../l10n/web_i18n_store.dart';
 import '../../../providers/locale_settings_provider.dart';
 
 /// Porta de carregamento para telas que dependem das traduções de UI do
-/// backend ([WebRootL10n]).
+/// backend.
 ///
-/// Como o app não tem mais textos embutidos, o conteúdo só é construído quando
-/// as mensagens do locale corrente já estão em memória ([WebI18nStore]). Até lá
-/// exibe um indicador de carregamento; se a busca terminou sem dados (backend
-/// indisponível e sem cache), exibe um estado de erro com "tentar novamente".
+/// Como os textos vêm do backend, o conteúdo só é construído quando as mensagens
+/// do locale corrente já estão em memória ([SixI18nStore]). Até lá exibe um
+/// indicador de carregamento; se a busca terminou sem dados (backend indisponível
+/// e sem cache), exibe um estado de erro com fallback mínimo embarcado.
 ///
-/// Usa um [WidgetBuilder] (não um `child` pronto) para que `WebRootL10n.of` só
-/// seja lido depois que o store estiver populado.
-class WebI18nGate extends StatelessWidget {
-  const WebI18nGate({super.key, required this.builder});
+/// Usa um [WidgetBuilder] (não um `child` pronto) para que os acessores de i18n
+/// só sejam lidos depois que o store estiver populado.
+class SixI18nGate extends StatelessWidget {
+  const SixI18nGate({super.key, required this.builder});
 
   final WidgetBuilder builder;
 
@@ -24,7 +25,7 @@ class WebI18nGate extends StatelessWidget {
     final provider = context.watch<LocaleSettingsProvider>();
     final code = provider.currentLocale.languageCode;
 
-    if (WebI18nStore.instance.hasLanguage(code)) {
+    if (SixI18nStore.instance.hasLanguage(code)) {
       return builder(context);
     }
 
@@ -45,16 +46,16 @@ class WebI18nGate extends StatelessWidget {
             children: [
               const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text(
-                'Não foi possível carregar.',
+              Text(
+                context.t('common.unableToLoad'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
-                onPressed: provider.reloadWebTranslations,
+                onPressed: provider.reloadTranslations,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Tentar novamente'),
+                label: Text(context.t('common.tryAgain')),
               ),
             ],
           ),
@@ -62,4 +63,9 @@ class WebI18nGate extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Alias de compatibilidade para telas antigas que ainda importam WebI18nGate.
+class WebI18nGate extends SixI18nGate {
+  const WebI18nGate({super.key, required super.builder});
 }
