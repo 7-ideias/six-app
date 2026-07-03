@@ -12,6 +12,7 @@ class UsuarioModel {
   final String dataNascimento;
   final EnderecoModel? objEndereco;
   final PreferenciasIndividuaisDoUsuarioModel preferenciasIndividuaisDoUsuario;
+  final bool enviarPreferenciasIndividuaisDoUsuario;
 
   UsuarioModel({
     required this.nome,
@@ -27,8 +28,12 @@ class UsuarioModel {
     this.dataNascimento = '',
     this.objEndereco,
     PreferenciasIndividuaisDoUsuarioModel? preferenciasIndividuaisDoUsuario,
-  }) : preferenciasIndividuaisDoUsuario = preferenciasIndividuaisDoUsuario ??
-            PreferenciasIndividuaisDoUsuarioModel.padrao();
+    bool? enviarPreferenciasIndividuaisDoUsuario,
+  })  : preferenciasIndividuaisDoUsuario = preferenciasIndividuaisDoUsuario ??
+            PreferenciasIndividuaisDoUsuarioModel.padrao(),
+        enviarPreferenciasIndividuaisDoUsuario =
+            enviarPreferenciasIndividuaisDoUsuario ??
+                preferenciasIndividuaisDoUsuario != null;
 
   factory UsuarioModel.fromJson(Map<String, dynamic> json) {
     return UsuarioModel(
@@ -50,11 +55,12 @@ class UsuarioModel {
           PreferenciasIndividuaisDoUsuarioModel.fromJson(
         json['preferenciasIndividuaisDoUsuario'],
       ),
+      enviarPreferenciasIndividuaisDoUsuario: true,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> json = {
       'nome': nome,
       'sobrenome': sobrenome,
       'cpf': cpf,
@@ -67,8 +73,14 @@ class UsuarioModel {
       'rg': rg,
       'dataNascimento': dataNascimento,
       'objEndereco': objEndereco?.toJson(),
-      'preferenciasIndividuaisDoUsuario': preferenciasIndividuaisDoUsuario.toJson(),
     };
+
+    if (enviarPreferenciasIndividuaisDoUsuario) {
+      json['preferenciasIndividuaisDoUsuario'] =
+          preferenciasIndividuaisDoUsuario.toJson();
+    }
+
+    return json;
   }
 }
 
