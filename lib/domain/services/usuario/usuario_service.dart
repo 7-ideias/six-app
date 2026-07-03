@@ -14,7 +14,7 @@ class UsuarioService {
 
   http.Client _client() => createHttpClient();
 
-  Future<void> buscarDadosDoUsuario_atualizaProviders() async {
+  Future<String?> buscarDadosDoUsuario_atualizaProviders() async {
     final authService = AuthService();
     final token = await authService.getAccessToken();
     final empresaId = await authService.getEmpresaId();
@@ -37,17 +37,67 @@ class UsuarioService {
       );
 
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         final usuario = UsuarioModel.fromJson(decoded);
 
         // Salvar em memória usando o Provider
         UsuarioProvider().setUsuario(usuario);
+
+        final preferencias = decoded['preferenciasIndividuaisDoUsuario'];
+        if (preferencias is Map<String, dynamic>) {
+          return preferencias['idiomaDePreferencia']?.toString();
+        }
+        return null;
       } else {
         throw Exception('Falha ao buscar dados do usuário: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Erro na requisição de dados do usuário: $e');
       rethrow;
+    }
+  }
+
+  Future<void> atualizarPreferenciasIndividuais({
+    String? idiomaDePreferencia,
+    String? modoDeExibicaoProdutos,
+    String? modoDeExibicaoServicos,
+    bool? ocultarValoresFinanceirosWeb,
+  }) async {
+    final authService = AuthService();
+    final token = await authService.getAccessToken();
+    final empresaId = await authService.getEmpresaId();
+
+    if (token == null || empresaId == null) {
+      throw Exception('Credenciais não encontradas USUARIO_SERVICE preferencias');
+    }
+
+    final body = <String, dynamic>{};
+    if (idiomaDePreferencia != null) {
+      body['idiomaDePreferencia'] = idiomaDePreferencia;
+    }
+    if (modoDeExibicaoProdutos != null) {
+      body['modoDeExibicaoProdutos'] = modoDeExibicaoProdutos;
+    }
+    if (modoDeExibicaoServicos != null) {
+      body['modoDeExibicaoServicos'] = modoDeExibicaoServicos;
+    }
+    if (ocultarValoresFinanceirosWeb != null) {
+      body['ocultarValoresFinanceirosWeb'] = ocultarValoresFinanceirosWeb;
+    }
+
+    final uri = Uri.parse('${AppConfig.baseUrl}/private/api/dados-pessoais/preferencias');
+    final response = await _client().patch(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'idUnicoDaEmpresa': empresaId,
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Falha ao atualizar preferências do usuário: ${response.statusCode}');
     }
   }
 

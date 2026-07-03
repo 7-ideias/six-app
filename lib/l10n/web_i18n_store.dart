@@ -3,10 +3,10 @@
 /// É um singleton síncrono lido durante o `build` dos widgets. O carregamento
 /// remoto assíncrono acontece no `LocaleSettingsProvider`, que escreve aqui via
 /// [setMessages] e dispara `notifyListeners()` para reconstruir a árvore.
-class WebI18nStore {
-  WebI18nStore._();
+class SixI18nStore {
+  SixI18nStore._();
 
-  static final WebI18nStore instance = WebI18nStore._();
+  static final SixI18nStore instance = SixI18nStore._();
 
   /// languageCode ('pt' | 'en' | 'es') -> árvore de mensagens (key -> valor).
   final Map<String, Map<String, dynamic>> _byCode = {};
@@ -83,4 +83,12 @@ class WebI18nStore {
     final sep = normalized.indexOf(RegExp('[-_]'));
     return sep > 0 ? normalized.substring(0, sep) : normalized;
   }
+}
+
+/// Alias de compatibilidade para chamadas antigas enquanto o app migra de
+/// `WebI18n*` para `SixI18n*` em web, Android e iOS.
+class WebI18nStore {
+  WebI18nStore._();
+
+  static final SixI18nStore instance = SixI18nStore.instance;
 }

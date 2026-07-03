@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/six_i18n.dart';
 import 'empresa_configuracao_screen.dart';
+import 'regionalizacao_configuracao_content.dart';
 import 'regras_operacionais_configuracao_content.dart';
 
 class ConfiguracaoSecaoWebPage extends StatelessWidget {
@@ -18,6 +20,7 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
   });
 
   bool get _ehConfiguracaoEmpresa => title == 'Empresa';
+  bool get _ehRegionalizacao => title == 'Regionalização';
   bool get _ehRegrasOperacionais => title == 'Regras operacionais';
 
   @override
@@ -81,7 +84,7 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
             alignment: compact ? Alignment.centerRight : Alignment.center,
             child: IconButton.filledTonal(
               onPressed: onBack,
-              tooltip: 'Fechar',
+              tooltip: context.t('common.close', fallback: 'Fechar'),
               icon: const Icon(Icons.close_rounded),
             ),
           );
@@ -126,6 +129,10 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
   Widget _buildContent(BuildContext context) {
     if (_ehConfiguracaoEmpresa) {
       return _buildEmpresaContent(context);
+    }
+
+    if (_ehRegionalizacao) {
+      return _buildRegionalizacaoContent(context);
     }
 
     if (_ehRegrasOperacionais) {
@@ -173,6 +180,13 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRegionalizacaoContent(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(24),
+      child: RegionalizacaoConfiguracaoContent(embedded: true),
     );
   }
 

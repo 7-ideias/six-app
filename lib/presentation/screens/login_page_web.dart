@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
 import '../../data/services/aparencia/aparencia_api_client.dart';
+import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../design_system/helpers/six_theme_resolver.dart';
 import '../../domain/services/aparencia/aparencia_service.dart';
+import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../providers/locale_settings_provider.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
 import '../components/web_root/web_i18n_gate.dart';
@@ -72,7 +76,23 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   Future<void> _afterLoginBootstrap() async {
-    await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+    final idiomaDePreferencia =
+        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+
+    try {
+      final regionalizacaoService = RegionalizacaoService(
+        apiClient: HttpRegionalizacaoApiClient(),
+      );
+      final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
+      if (mounted) {
+        await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
+          idiomaDePreferencia: idiomaDePreferencia,
+          regionalizacao: regionalizacao,
+        );
+      }
+    } catch (e) {
+      debugPrint('Erro ao aplicar idioma/regionalização no login: $e');
+    }
 
     try {
       final aparenciaService = AparenciaService(

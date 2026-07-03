@@ -317,7 +317,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Regionalização',
             subtitle: 'Idioma, moeda e formato local',
             icon: Icons.language_outlined,
-            onTap: _showFeatureInProgress,
+            onTap: () => _navigateTo(context, const RegionalizacaoMobileScreen()),
           ),
           _ManagementItem(
             title: 'Notificações',
