@@ -9,6 +9,9 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
   static const Color _backgroundColor = Color(0xFFF4F7FB);
   static const Color _primaryColor = Color(0xFF0B1F3A);
 
+  static const Color backgroundColor = _backgroundColor;
+  static const Color primaryColor = _primaryColor;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,7 +51,7 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => const _RegionalizacaoMobilePage(),
+                    builder: (_) => const RegionalizacaoMobileScreen(),
                   ),
                 );
               },
@@ -66,11 +69,11 @@ class _EmpresaMobilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ConfiguracoesMobileScreen._backgroundColor,
+      backgroundColor: ConfiguracoesMobileScreen.backgroundColor,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: ConfiguracoesMobileScreen._primaryColor,
+        backgroundColor: ConfiguracoesMobileScreen.primaryColor,
         foregroundColor: Colors.white,
         leading: const BackButton(),
         title: const Text(
@@ -85,17 +88,17 @@ class _EmpresaMobilePage extends StatelessWidget {
   }
 }
 
-class _RegionalizacaoMobilePage extends StatelessWidget {
-  const _RegionalizacaoMobilePage();
+class RegionalizacaoMobileScreen extends StatelessWidget {
+  const RegionalizacaoMobileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ConfiguracoesMobileScreen._backgroundColor,
+      backgroundColor: ConfiguracoesMobileScreen.backgroundColor,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: ConfiguracoesMobileScreen._primaryColor,
+        backgroundColor: ConfiguracoesMobileScreen.primaryColor,
         foregroundColor: Colors.white,
         leading: const BackButton(),
         title: const Text(
@@ -153,7 +156,10 @@ class _ConfigTile extends StatelessWidget {
                   color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: ConfiguracoesMobileScreen._primaryColor),
+                child: Icon(
+                  icon,
+                  color: ConfiguracoesMobileScreen.primaryColor,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
