@@ -30,24 +30,27 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
-  final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient = VendaNaoLiquidadaApiClient();
+  final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient =
+      VendaNaoLiquidadaApiClient();
   final List<_VendaItemMobile> _itens = <_VendaItemMobile>[];
   final Set<String> _formasSelecionadas = <String>{};
-  final Map<String, TextEditingController> _valorPorForma = <String, TextEditingController>{};
+  final Map<String, TextEditingController> _valorPorForma =
+      <String, TextEditingController>{};
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _pagamentoKey = GlobalKey();
 
-  final List<_FormaPagamentoMobile> _formasPagamento = const <_FormaPagamentoMobile>[
-    _FormaPagamentoMobile(codigo: 'TIPO1', titulo: 'Dinheiro', descricao: 'Recebimento no caixa com conferência imediata.', icone: Icons.payments_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO2', titulo: 'Pix', descricao: 'Confirmação rápida por chave, QR Code ou copia e cola.', icone: Icons.qr_code_2_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO3', titulo: 'Cartão de crédito', descricao: 'Recebimento à vista ou parcelado pela operadora.', icone: Icons.credit_card_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO4', titulo: 'Cartão de débito', descricao: 'Liquidação imediata pela maquininha.', icone: Icons.point_of_sale_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO5', titulo: 'Boleto', descricao: 'Pagamento posterior com baixa futura.', icone: Icons.receipt_long_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO6', titulo: 'Fiado', descricao: 'Lançamento em aberto para cobrança posterior.', icone: Icons.history_toggle_off_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO7', titulo: 'Crediário', descricao: 'Parcelamento próprio para cobrança futura.', icone: Icons.event_note_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO8', titulo: 'Convênio', descricao: 'Recebimento vinculado a convênio ou parceria.', icone: Icons.people_outline),
-    _FormaPagamentoMobile(codigo: 'TIPO9', titulo: 'Vale', descricao: 'Uso de vale, crédito interno ou voucher.', icone: Icons.confirmation_number_outlined),
-    _FormaPagamentoMobile(codigo: 'TIPO10', titulo: 'Outros', descricao: 'Outra forma de recebimento aceita pelo comércio.', icone: Icons.more_horiz_outlined),
+  final List<_FormaPagamentoMobile> _formasPagamento =
+      const <_FormaPagamentoMobile>[
+    _FormaPagamentoMobile('TIPO1', 'Dinheiro', Icons.payments_outlined),
+    _FormaPagamentoMobile('TIPO2', 'Pix', Icons.qr_code_2_outlined),
+    _FormaPagamentoMobile('TIPO3', 'Cartão crédito', Icons.credit_card_outlined),
+    _FormaPagamentoMobile('TIPO4', 'Cartão débito', Icons.point_of_sale_outlined),
+    _FormaPagamentoMobile('TIPO5', 'Boleto', Icons.receipt_long_outlined),
+    _FormaPagamentoMobile('TIPO6', 'Fiado', Icons.history_toggle_off_outlined),
+    _FormaPagamentoMobile('TIPO7', 'Crediário', Icons.event_note_outlined),
+    _FormaPagamentoMobile('TIPO8', 'Convênio', Icons.people_outline),
+    _FormaPagamentoMobile('TIPO9', 'Vale', Icons.confirmation_number_outlined),
+    _FormaPagamentoMobile('TIPO10', 'Outros', Icons.more_horiz_outlined),
   ];
 
   bool _enviando = false;
@@ -56,18 +59,17 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   bool _destacarPagamento = false;
 
   bool get _editandoVendaNaoLiquidada => widget.vendaNaoLiquidada != null;
+  double get _total => _itens.fold<double>(0, (s, item) => s + item.subtotal);
+  int get _quantidadeItens =>
+      _itens.fold<int>(0, (s, item) => s + item.quantidade);
 
   @override
   void initState() {
     super.initState();
-    _carregarVendaNaoLiquidadaInicial();
-  }
-
-  void _carregarVendaNaoLiquidadaInicial() {
     final venda = widget.vendaNaoLiquidada;
-    if (venda == null) return;
-
-    _itens.addAll(venda.itens.map(_VendaItemMobile.fromVendaNaoLiquidadaItem));
+    if (venda != null) {
+      _itens.addAll(venda.itens.map(_VendaItemMobile.fromVendaNaoLiquidadaItem));
+    }
   }
 
   @override
@@ -80,18 +82,33 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _abrirSelecaoProduto() async {
-    final ProdutoModel? produto = await Navigator.push<ProdutoModel>(
+    final dynamic result = await Navigator.push<dynamic>(
       context,
-      MaterialPageRoute<ProdutoModel>(builder: (_) => const ProdutolistMobileScreen(isSelecao: true)),
+      MaterialPageRoute<dynamic>(
+        builder: (_) => const ProdutolistMobileScreen(
+          isSelecao: true,
+          permitirSelecaoMultipla: true,
+        ),
+      ),
     );
-    if (produto == null) return;
-    _adicionarProdutoSelecionado(produto);
+
+    if (!mounted || result == null) return;
+
+    if (result is ProdutoModel) {
+      _adicionarProdutoSelecionado(result);
+      return;
+    }
+
+    if (result is List) {
+      final produtos = result.whereType<ProdutoModel>().toList(growable: false);
+      if (produtos.isNotEmpty) _adicionarProdutosSelecionados(produtos);
+    }
   }
 
   Future<void> _abrirScannerCodigoBarras() async {
     if (_enviando || _buscandoCodigo) return;
 
-    final String? codigo = await Navigator.push<String>(
+    final codigo = await Navigator.push<String>(
       context,
       MaterialPageRoute<String>(builder: (_) => const _BarcodeScannerMobileScreen()),
     );
@@ -109,12 +126,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       await ProdutoHelper.retornarProdutosList(
         context,
         tipo: 'PRODUTO',
-        onSucesso: (List<ProdutoModel> lista) => produtos = lista,
+        onSucesso: (lista) => produtos = lista,
       );
 
-      final String codigoNormalizado = codigo.toLowerCase();
+      final codigoNormalizado = codigo.toLowerCase();
       ProdutoModel? encontrado;
-      for (final ProdutoModel produto in produtos) {
+      for (final produto in produtos) {
         if (produto.codigoDeBarras.trim().toLowerCase() == codigoNormalizado) {
           encontrado = produto;
           break;
@@ -130,34 +147,47 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       _adicionarProdutoSelecionado(encontrado);
       _mostrarSnack('${encontrado.nomeProduto} adicionado à venda.');
     } catch (_) {
-      if (!mounted) return;
-      _mostrarSnack('Não foi possível buscar o produto pelo código.');
+      if (mounted) _mostrarSnack('Não foi possível buscar o produto pelo código.');
     } finally {
       if (mounted) setState(() => _buscandoCodigo = false);
     }
   }
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
-    final String idProduto = produto.id ?? produto.codigoDeBarras;
-    final String tipoNormalizado = produto.tipoProduto.toUpperCase();
-    final bool ehServico = tipoNormalizado == 'SERVICO' || tipoNormalizado == 'SERVIÇO';
+    setState(() => _adicionarProdutoNaListaSemSetState(produto));
+  }
 
+  void _adicionarProdutosSelecionados(List<ProdutoModel> produtos) {
+    if (produtos.isEmpty) return;
     setState(() {
-      final int index = _itens.indexWhere((item) => item.idProduto == idProduto);
-      if (index >= 0) {
-        _itens[index] = _itens[index].copyWith(quantidade: _itens[index].quantidade + 1);
-      } else {
-        _itens.add(
-          _VendaItemMobile(
-            idProduto: idProduto,
-            nome: produto.nomeProduto,
-            valorUnitario: produto.precoVenda,
-            quantidade: 1,
-            ehServico: ehServico,
-          ),
-        );
+      for (final produto in produtos) {
+        _adicionarProdutoNaListaSemSetState(produto);
       }
     });
+  }
+
+  void _adicionarProdutoNaListaSemSetState(ProdutoModel produto) {
+    final idProduto = produto.id ?? produto.codigoDeBarras;
+    final tipoNormalizado = produto.tipoProduto.toUpperCase();
+    final ehServico = tipoNormalizado == 'SERVICO' || tipoNormalizado == 'SERVIÇO';
+    final index = _itens.indexWhere((item) => item.idProduto == idProduto);
+
+    if (index >= 0) {
+      _itens[index] = _itens[index].copyWith(
+        quantidade: _itens[index].quantidade + 1,
+      );
+      return;
+    }
+
+    _itens.add(
+      _VendaItemMobile(
+        idProduto: idProduto,
+        nome: produto.nomeProduto,
+        valorUnitario: produto.precoVenda,
+        quantidade: 1,
+        ehServico: ehServico,
+      ),
+    );
   }
 
   Future<void> _finalizarVenda() async {
@@ -175,7 +205,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
 
     final formas = _montarFormasPagamento();
-    final double totalPago = formas.fold<double>(0, (soma, forma) => soma + forma.valor);
+    final totalPago = formas.fold<double>(0, (soma, forma) => soma + forma.valor);
     if ((totalPago - _total).abs() > 0.009) {
       _mostrarSnack('A soma dos pagamentos precisa fechar o total da venda.');
       return;
@@ -189,7 +219,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     if (!_destacarPagamento && mounted) setState(() => _destacarPagamento = true);
 
     await Future<void>.delayed(const Duration(milliseconds: 40));
-    final BuildContext? pagamentoContext = _pagamentoKey.currentContext;
+    final pagamentoContext = _pagamentoKey.currentContext;
     if (pagamentoContext != null && mounted) {
       await Scrollable.ensureVisible(
         pagamentoContext,
@@ -209,22 +239,24 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       Navigator.of(context).pop(false);
       return;
     }
-
     if (_itens.isEmpty) {
       _mostrarSnack('Inclua pelo menos um item para registrar a venda.');
       return;
     }
 
-    final bool? confirmou = await showModalBottomSheet<bool>(
+    final confirmou = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext bottomSheetContext) {
+      builder: (bottomSheetContext) {
         final theme = Theme.of(bottomSheetContext);
         return SafeArea(
           top: false,
           child: Container(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-            decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -234,7 +266,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     width: 46,
                     height: 5,
                     margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: theme.colorScheme.outlineVariant, borderRadius: BorderRadius.circular(999)),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                 ),
                 Row(
@@ -245,8 +280,18 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text('Receber depois', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-                          Text('A venda ficará em aberto para liquidação no caixa.', style: theme.textTheme.bodyMedium?.copyWith(color: _mutedTextColor)),
+                          Text(
+                            'Receber depois',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            'A venda ficará em aberto para liquidação no caixa.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: _mutedTextColor,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -259,14 +304,20 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   onPressed: () => Navigator.of(bottomSheetContext).pop(true),
                   icon: const Icon(Icons.check_circle_outline),
                   label: const Text('Registrar para receber depois'),
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(false),
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('Voltar'),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
                 ),
               ],
             ),
@@ -280,7 +331,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
   }
 
-  Future<void> _enviarVenda({required bool receberDepois, required List<FormaPagamentoSelecionada> formasPagamento}) async {
+  Future<void> _enviarVenda({
+    required bool receberDepois,
+    required List<FormaPagamentoSelecionada> formasPagamento,
+  }) async {
     setState(() => _enviando = true);
     try {
       if (_editandoVendaNaoLiquidada && !receberDepois) {
@@ -288,12 +342,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         return;
       }
 
-      final String idColaborador = await AuthService().getUserId() ?? '';
-      final String nomeColaborador = _nomeColaboradorAtual();
-      final DateTime dataOperacao = DateTime.now();
-
+      final idColaborador = await AuthService().getUserId() ?? '';
+      final nomeColaborador = _nomeColaboradorAtual();
+      final dataOperacao = DateTime.now();
       final input = OperacaoVendaInput(
-        descricao: receberDepois ? 'Venda mobile para receber depois ${dataOperacao.toIso8601String()}' : 'Venda mobile ${dataOperacao.toIso8601String()}',
+        descricao: receberDepois
+            ? 'Venda mobile para receber depois ${dataOperacao.toIso8601String()}'
+            : 'Venda mobile ${dataOperacao.toIso8601String()}',
         idColaborador: idColaborador,
         nomeColaborador: nomeColaborador,
         itens: _itens.map((item) => item.toInput()).toList(growable: false),
@@ -307,8 +362,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       _limparVenda();
       _mostrarSnack(receberDepois ? 'Venda registrada para receber depois.' : 'Venda finalizada com sucesso.');
     } catch (e) {
-      if (!mounted) return;
-      _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
+      if (mounted) _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
@@ -355,7 +409,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Container(
       width: 46,
       height: 46,
-      decoration: BoxDecoration(color: _accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: _accentColor.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Icon(icon, color: _accentColor),
     );
   }
@@ -363,11 +420,27 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Widget _buildResumoReceberDepois() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: _accentColor.withOpacity(0.07), borderRadius: BorderRadius.circular(22), border: Border.all(color: _accentColor.withOpacity(0.16))),
+      decoration: BoxDecoration(
+        color: _accentColor.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _accentColor.withOpacity(0.16)),
+      ),
       child: Row(
         children: <Widget>[
-          const Expanded(child: Text('Valor em aberto', style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900))),
-          Text(_formatarValor(_total), style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 18)),
+          const Expanded(
+            child: Text(
+              'Valor em aberto',
+              style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900),
+            ),
+          ),
+          Text(
+            _formatarValor(_total),
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+            ),
+          ),
         ],
       ),
     );
@@ -375,11 +448,18 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   List<FormaPagamentoSelecionada> _montarFormasPagamento() {
     if (_formasSelecionadas.length == 1) {
-      final String codigo = _formasSelecionadas.first;
-      final double valorDigitado = _valorDigitadoForma(codigo);
-      return <FormaPagamentoSelecionada>[FormaPagamentoSelecionada(codigo: codigo, valor: valorDigitado > 0 ? valorDigitado : _total)];
+      final codigo = _formasSelecionadas.first;
+      final valorDigitado = _valorDigitadoForma(codigo);
+      return <FormaPagamentoSelecionada>[
+        FormaPagamentoSelecionada(
+          codigo: codigo,
+          valor: valorDigitado > 0 ? valorDigitado : _total,
+        ),
+      ];
     }
-    return _formasSelecionadas.map((codigo) => FormaPagamentoSelecionada(codigo: codigo, valor: _valorDigitadoForma(codigo))).toList(growable: false);
+    return _formasSelecionadas
+        .map((codigo) => FormaPagamentoSelecionada(codigo: codigo, valor: _valorDigitadoForma(codigo)))
+        .toList(growable: false);
   }
 
   double _valorDigitadoForma(String codigoForma) {
@@ -390,17 +470,17 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   double _valorSelecionadoTotal() {
     if (_formasSelecionadas.isEmpty) return 0.0;
-    return _montarFormasPagamento().fold<double>(0.0, (double soma, FormaPagamentoSelecionada forma) => soma + forma.valor);
+    return _montarFormasPagamento().fold<double>(0.0, (soma, forma) => soma + forma.valor);
   }
 
   double _valorRestante() => _total - _valorSelecionadoTotal();
 
   void _preencherValorRestante(String codigoForma) {
     _valorPorForma.putIfAbsent(codigoForma, () => TextEditingController());
-    final TextEditingController controller = _valorPorForma[codigoForma]!;
-    final double atual = _valorDigitadoForma(codigoForma);
-    final double restante = _valorRestante();
-    final double novoValor = (atual + restante).clamp(0.0, _total).toDouble();
+    final controller = _valorPorForma[codigoForma]!;
+    final atual = _valorDigitadoForma(codigoForma);
+    final restante = _valorRestante();
+    final novoValor = (atual + restante).clamp(0.0, _total).toDouble();
 
     setState(() {
       controller.text = novoValor.toStringAsFixed(2);
@@ -418,20 +498,18 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return nomeCompleto.isEmpty ? 'Colaborador' : nomeCompleto;
   }
 
-  double get _total => _itens.fold<double>(0, (soma, item) => soma + item.subtotal);
-
-  int get _quantidadeItens => _itens.fold<int>(0, (soma, item) => soma + item.quantidade);
-
   String _formatarValor(double valor) => 'R\$ ${valor.toStringAsFixed(2)}';
 
   void _mostrarSnack(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool temItens = _itens.isNotEmpty;
-    final double bottomPadding = temItens ? (_acoesRapidasVisiveis ? 218 : 142) : 110;
+    final temItens = _itens.isNotEmpty;
+    final bottomPadding = temItens ? (_acoesRapidasVisiveis ? 218.0 : 142.0) : 110.0;
 
     return Scaffold(
       backgroundColor: _backgroundColor,
@@ -440,7 +518,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
-        title: Text(_editandoVendaNaoLiquidada ? 'Receber venda' : 'PDV - Ponto de Venda', style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(
+          _editandoVendaNaoLiquidada ? 'Receber venda' : 'PDV - Ponto de Venda',
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
       ),
       body: SafeArea(
         child: ListView(
@@ -449,7 +530,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           children: <Widget>[
             _buildHeader().animate().fade(duration: 320.ms).slideY(begin: 0.04, curve: Curves.easeOut),
             const SizedBox(height: 16),
-            if (_itens.isEmpty) _buildEstadoVazio() else ...<Widget>[_buildItensCard(), const SizedBox(height: 14), _buildPagamentoCard()],
+            if (_itens.isEmpty)
+              _buildEstadoVazio()
+            else ...<Widget>[
+              _buildItensCard(),
+              const SizedBox(height: 14),
+              _buildPagamentoCard(),
+            ],
           ],
         ),
       ),
@@ -462,21 +549,44 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [_primaryColor, Color(0xFF123B69)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: const LinearGradient(
+          colors: <Color>[_primaryColor, Color(0xFF123B69)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x260B1F3A), blurRadius: 20, offset: Offset(0, 10))],
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x260B1F3A), blurRadius: 20, offset: Offset(0, 10)),
+        ],
       ),
       child: Row(
         children: <Widget>[
-          Container(width: 50, height: 50, decoration: BoxDecoration(color: const Color(0x1AFFFFFF), borderRadius: BorderRadius.circular(18)), child: Icon(_editandoVendaNaoLiquidada ? Icons.receipt_long_outlined : Icons.point_of_sale_outlined, color: Colors.white)),
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0x1AFFFFFF),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              _editandoVendaNaoLiquidada ? Icons.receipt_long_outlined : Icons.point_of_sale_outlined,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(_editandoVendaNaoLiquidada ? 'Venda em aberto' : 'Balcão de venda', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                Text(
+                  _editandoVendaNaoLiquidada ? 'Venda em aberto' : 'Balcão de venda',
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                ),
                 const SizedBox(height: 4),
-                Text('$_quantidadeItens item(ns) • ${_formatarValor(_total)}', style: const TextStyle(color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700)),
+                Text(
+                  '$_quantidadeItens item(ns) • ${_formatarValor(_total)}',
+                  style: const TextStyle(color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700),
+                ),
               ],
             ),
           ),
@@ -488,16 +598,41 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Widget _buildEstadoVazio() {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(26), border: Border.all(color: const Color(0xFFE2E8F0))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
       child: Column(
         children: <Widget>[
-          Container(width: 76, height: 76, decoration: BoxDecoration(color: _accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(24)), child: const Icon(Icons.add_shopping_cart, color: _accentColor, size: 36)),
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: _accentColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(Icons.add_shopping_cart, color: _accentColor, size: 36),
+          ),
           const SizedBox(height: 16),
-          Text(_editandoVendaNaoLiquidada ? 'Venda sem itens carregados' : 'Venda ainda vazia', style: const TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w900)),
+          Text(
+            _editandoVendaNaoLiquidada ? 'Venda sem itens carregados' : 'Venda ainda vazia',
+            style: const TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text(_editandoVendaNaoLiquidada ? 'Inclua novamente os itens antes de receber esta venda.' : 'Inclua produtos ou serviços para liberar a finalização ou o recebimento posterior.', textAlign: TextAlign.center, style: const TextStyle(color: _mutedTextColor, height: 1.4)),
+          Text(
+            _editandoVendaNaoLiquidada
+                ? 'Inclua novamente os itens antes de receber esta venda.'
+                : 'Inclua produtos ou serviços para liberar a finalização ou o recebimento posterior.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _mutedTextColor, height: 1.4),
+          ),
           const SizedBox(height: 18),
-          FilledButton.icon(onPressed: _abrirSelecaoProduto, icon: const Icon(Icons.add_rounded), label: const Text('Adicionar produto ou serviço')),
+          FilledButton.icon(
+            onPressed: _abrirSelecaoProduto,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Adicionar produto ou serviço'),
+          ),
         ],
       ),
     );
@@ -535,16 +670,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildFormasPagamentoAdaptativas() {
     return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final List<List<_FormaPagamentoMobile>> linhas = _montarLinhasPagamento(constraints.maxWidth);
-
+      builder: (context, constraints) {
+        final linhas = _montarLinhasPagamento(constraints.maxWidth);
         return Column(
-          children: linhas.map((List<_FormaPagamentoMobile> linha) {
+          children: linhas.map((linha) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
-                children: linha.asMap().entries.map((MapEntry<int, _FormaPagamentoMobile> entry) {
-                  final _FormaPagamentoMobile forma = entry.value;
+                children: linha.asMap().entries.map((entry) {
+                  final forma = entry.value;
                   return Expanded(
                     flex: _flexFormaPagamento(forma),
                     child: Padding(
@@ -589,7 +723,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   int _flexFormaPagamento(_FormaPagamentoMobile forma) {
-    final int tamanho = forma.titulo.length;
+    final tamanho = forma.titulo.length;
     if (tamanho >= 17) return 18;
     if (tamanho >= 12) return 14;
     if (tamanho <= 4) return 8;
@@ -597,71 +731,76 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Widget _buildPillPagamento(_FormaPagamentoMobile forma) {
-    final bool selecionado = _formasSelecionadas.contains(forma.codigo);
-
+    final selecionado = _formasSelecionadas.contains(forma.codigo);
     return AnimatedScale(
       duration: const Duration(milliseconds: 160),
       curve: Curves.easeOutCubic,
       scale: selecionado ? 1.025 : 1,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
         height: 36,
         decoration: BoxDecoration(
           color: selecionado ? _accentColor : Colors.white,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selecionado ? _accentColor : const Color(0xFFCBD5E1), width: selecionado ? 1.25 : 1),
-          boxShadow: selecionado ? <BoxShadow>[BoxShadow(color: _accentColor.withOpacity(0.18), blurRadius: 10, offset: const Offset(0, 4))] : const <BoxShadow>[],
+          border: Border.all(color: selecionado ? _accentColor : const Color(0xFFCBD5E1)),
+          boxShadow: selecionado
+              ? <BoxShadow>[BoxShadow(color: _accentColor.withOpacity(0.18), blurRadius: 10, offset: const Offset(0, 4))]
+              : const <BoxShadow>[],
         ),
-        child: Material(
-          color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(999),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: _enviando
-                ? null
-                : () {
-                    setState(() {
-                      if (selecionado) {
-                        _formasSelecionadas.remove(forma.codigo);
-                        _valorPorForma[forma.codigo]?.clear();
-                      } else {
-                        if (_editandoVendaNaoLiquidada) {
-                          for (final codigo in List<String>.from(_formasSelecionadas)) {
-                            _valorPorForma[codigo]?.clear();
-                          }
-                          _formasSelecionadas.clear();
-                        }
-                        _formasSelecionadas.add(forma.codigo);
-                        _valorPorForma.putIfAbsent(forma.codigo, () => TextEditingController());
-                        _destacarPagamento = false;
-                        if (_editandoVendaNaoLiquidada) _preencherValorRestante(forma.codigo);
-                      }
-                    });
-                  },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Icon(forma.icone, size: 14, color: selecionado ? Colors.white : _accentColor),
-                  const SizedBox(width: 5),
-                  Flexible(
-                    child: Text(
-                      forma.titulo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, height: 1, fontWeight: FontWeight.w900, color: selecionado ? Colors.white : _titleTextColor),
+          onTap: _enviando ? null : () => _alternarFormaPagamento(forma),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(forma.icone, size: 14, color: selecionado ? Colors.white : _accentColor),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    forma.titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      color: selecionado ? Colors.white : _titleTextColor,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  void _alternarFormaPagamento(_FormaPagamentoMobile forma) {
+    final selecionado = _formasSelecionadas.contains(forma.codigo);
+    setState(() {
+      if (selecionado) {
+        _formasSelecionadas.remove(forma.codigo);
+        _valorPorForma[forma.codigo]?.clear();
+        return;
+      }
+      if (_editandoVendaNaoLiquidada) {
+        for (final codigo in List<String>.from(_formasSelecionadas)) {
+          _valorPorForma[codigo]?.clear();
+        }
+        _formasSelecionadas.clear();
+      }
+      _formasSelecionadas.add(forma.codigo);
+      _valorPorForma.putIfAbsent(forma.codigo, () => TextEditingController());
+      _destacarPagamento = false;
+    });
+
+    if (_editandoVendaNaoLiquidada && !selecionado) {
+      _preencherValorRestante(forma.codigo);
+    }
   }
 
   Widget _buildPagamentoHint() {
@@ -677,13 +816,26 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         children: <Widget>[
           const Icon(Icons.touch_app_outlined, color: _accentColor),
           const SizedBox(width: 10),
-          Expanded(child: Text(_editandoVendaNaoLiquidada ? 'Revise itens, quantidades e escolha uma forma para receber esta venda.' : 'Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.', style: const TextStyle(color: _mutedTextColor, height: 1.35, fontWeight: FontWeight.w700))),
+          Expanded(
+            child: Text(
+              _editandoVendaNaoLiquidada
+                  ? 'Revise itens, quantidades e escolha uma forma para receber esta venda.'
+                  : 'Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.',
+              style: const TextStyle(color: _mutedTextColor, height: 1.35, fontWeight: FontWeight.w700),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionCard({Key? sectionKey, required String titulo, required IconData icone, required Widget child, bool destacar = false}) {
+  Widget _buildSectionCard({
+    Key? sectionKey,
+    required String titulo,
+    required IconData icone,
+    required Widget child,
+    bool destacar = false,
+  }) {
     return AnimatedScale(
       key: sectionKey,
       scale: destacar ? 1.015 : 1,
@@ -701,7 +853,20 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Row(children: <Widget>[Icon(icone, color: _accentColor), const SizedBox(width: 8), Text(titulo, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 16))]),
+            Row(
+              children: <Widget>[
+                Icon(icone, color: _accentColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             child,
           ],
@@ -715,10 +880,21 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: <Widget>[
-          Container(width: 44, height: 44, decoration: BoxDecoration(color: _accentColor.withOpacity(0.08), borderRadius: BorderRadius.circular(14)), child: Icon(item.ehServico ? Icons.handyman_outlined : Icons.shopping_bag_outlined, color: _accentColor)),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(color: _accentColor.withOpacity(0.08), borderRadius: BorderRadius.circular(14)),
+            child: Icon(item.ehServico ? Icons.handyman_outlined : Icons.shopping_bag_outlined, color: _accentColor),
+          ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Text(item.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, color: _titleTextColor)), Text(_formatarValor(item.valorUnitario), style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w700))]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(item.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, color: _titleTextColor)),
+                Text(_formatarValor(item.valorUnitario), style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w700)),
+              ],
+            ),
           ),
           IconButton(onPressed: _enviando ? null : () => _alterarQuantidade(item, -1), icon: const Icon(Icons.remove_circle_outline)),
           Text('${item.quantidade}', style: const TextStyle(fontWeight: FontWeight.w900)),
@@ -738,10 +914,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       } else {
         _itens[index] = _itens[index].copyWith(quantidade: novaQuantidade);
       }
-      if (_editandoVendaNaoLiquidada && _formasSelecionadas.length == 1) {
-        _preencherValorRestante(_formasSelecionadas.first);
-      }
     });
+
+    if (_editandoVendaNaoLiquidada && _formasSelecionadas.length == 1) {
+      _preencherValorRestante(_formasSelecionadas.first);
+    }
   }
 
   Widget _buildValorFormaField(String codigo) {
@@ -763,8 +940,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 TextButton(onPressed: _enviando ? null : () => _preencherValorRestante(codigo), child: const Text('Completar')),
               ],
             ),
-            const SizedBox(height: 2),
-            Text(forma.descricao, style: const TextStyle(color: _mutedTextColor, height: 1.3, fontSize: 12)),
             const SizedBox(height: 8),
             TextField(
               controller: _valorPorForma[codigo],
@@ -794,9 +969,19 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Row(children: <Widget>[Expanded(child: Text('Total ${_formatarValor(_total)}', style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 16))), Text('$_quantidadeItens item(ns)', style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w800))]),
+            Row(
+              children: <Widget>[
+                Expanded(child: Text('Total ${_formatarValor(_total)}', style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 16))),
+                Text('$_quantidadeItens item(ns)', style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w800)),
+              ],
+            ),
             const SizedBox(height: 10),
-            FilledButton.icon(onPressed: _enviando ? null : _finalizarVenda, icon: _enviando ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(_editandoVendaNaoLiquidada ? Icons.point_of_sale_outlined : Icons.fact_check_outlined), label: Text(_enviando ? 'Enviando...' : (_editandoVendaNaoLiquidada ? 'Receber venda' : 'Finalizar venda')), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)))),
+            FilledButton.icon(
+              onPressed: _enviando ? null : _finalizarVenda,
+              icon: _enviando ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(_editandoVendaNaoLiquidada ? Icons.point_of_sale_outlined : Icons.fact_check_outlined),
+              label: Text(_enviando ? 'Enviando...' : (_editandoVendaNaoLiquidada ? 'Receber venda' : 'Finalizar venda')),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+            ),
             const SizedBox(height: 8),
             Row(
               children: <Widget>[
@@ -820,23 +1005,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         children: <Widget>[
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 230),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SizeTransition(
-                  sizeFactor: animation,
-                  axisAlignment: 1,
-                  child: ScaleTransition(scale: Tween<double>(begin: 0.92, end: 1).animate(animation), child: child),
-                ),
-              );
-            },
             child: _acoesRapidasVisiveis
                 ? Column(
                     key: const ValueKey<String>('acoes-visiveis'),
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
                       _buildExpandableFabAction(label: 'Código', icon: Icons.qr_code_scanner_rounded, onTap: _enviando || _buscandoCodigo ? null : _abrirScannerCodigoBarras, loading: _buscandoCodigo),
                       const SizedBox(height: 12),
@@ -857,13 +1029,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               foregroundColor: Colors.white,
               elevation: 8,
               shape: const CircleBorder(),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 160),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return RotationTransition(turns: Tween<double>(begin: -0.12, end: 0).animate(animation), child: FadeTransition(opacity: animation, child: child));
-                },
-                child: Icon(_acoesRapidasVisiveis ? Icons.close_rounded : Icons.add_rounded, key: ValueKey<bool>(_acoesRapidasVisiveis), size: 28),
-              ),
+              child: Icon(_acoesRapidasVisiveis ? Icons.close_rounded : Icons.add_rounded, size: 28),
             ),
           ),
         ],
@@ -871,8 +1037,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  Widget _buildExpandableFabAction({required String label, required IconData icon, required VoidCallback? onTap, bool loading = false}) {
-    final bool disabled = onTap == null;
+  Widget _buildExpandableFabAction({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onTap,
+    bool loading = false,
+  }) {
+    final disabled = onTap == null;
     return Tooltip(
       message: label,
       preferBelow: false,
@@ -906,7 +1077,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 }
 
 class _VendaItemMobile {
-  const _VendaItemMobile({required this.idProduto, required this.nome, required this.valorUnitario, required this.quantidade, required this.ehServico});
+  const _VendaItemMobile({
+    required this.idProduto,
+    required this.nome,
+    required this.valorUnitario,
+    required this.quantidade,
+    required this.ehServico,
+  });
 
   factory _VendaItemMobile.fromVendaNaoLiquidadaItem(VendaNaoLiquidadaItemModel item) {
     return _VendaItemMobile(
@@ -927,11 +1104,23 @@ class _VendaItemMobile {
   double get subtotal => valorUnitario * quantidade;
 
   _VendaItemMobile copyWith({int? quantidade}) {
-    return _VendaItemMobile(idProduto: idProduto, nome: nome, valorUnitario: valorUnitario, quantidade: quantidade ?? this.quantidade, ehServico: ehServico);
+    return _VendaItemMobile(
+      idProduto: idProduto,
+      nome: nome,
+      valorUnitario: valorUnitario,
+      quantidade: quantidade ?? this.quantidade,
+      ehServico: ehServico,
+    );
   }
 
   ItemVendaAtual toInput() {
-    return ItemVendaAtual(idProduto: idProduto, nome: nome, quantidade: quantidade, valorUnitario: valorUnitario, ehServico: ehServico);
+    return ItemVendaAtual(
+      idProduto: idProduto,
+      nome: nome,
+      quantidade: quantidade,
+      valorUnitario: valorUnitario,
+      ehServico: ehServico,
+    );
   }
 
   VendaNaoLiquidadaItemModel toVendaNaoLiquidadaItem() {
@@ -946,11 +1135,10 @@ class _VendaItemMobile {
 }
 
 class _FormaPagamentoMobile {
-  const _FormaPagamentoMobile({required this.codigo, required this.titulo, required this.descricao, required this.icone});
+  const _FormaPagamentoMobile(this.codigo, this.titulo, this.icone);
 
   final String codigo;
   final String titulo;
-  final String descricao;
   final IconData icone;
 }
 
@@ -990,11 +1178,11 @@ class _BarcodeScannerMobileScreenState extends State<_BarcodeScannerMobileScreen
         children: <Widget>[
           MobileScanner(
             controller: _controller,
-            onDetect: (BarcodeCapture capture) {
+            onDetect: (capture) {
               if (_codigoLido) return;
-              final List<Barcode> barcodes = capture.barcodes;
+              final barcodes = capture.barcodes;
               if (barcodes.isEmpty) return;
-              final String? codigo = barcodes.first.rawValue;
+              final codigo = barcodes.first.rawValue;
               if (codigo == null || codigo.trim().isEmpty) return;
               _codigoLido = true;
               Navigator.of(context).pop(codigo.trim());
@@ -1005,7 +1193,10 @@ class _BarcodeScannerMobileScreenState extends State<_BarcodeScannerMobileScreen
             child: Container(
               width: 260,
               height: 160,
-              decoration: BoxDecoration(border: Border.all(color: Colors.white, width: 2), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 2),
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
           ),
           Positioned(
@@ -1014,8 +1205,15 @@ class _BarcodeScannerMobileScreenState extends State<_BarcodeScannerMobileScreen
             bottom: 34,
             child: Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.58), borderRadius: BorderRadius.circular(18)),
-              child: const Text('Aponte a câmera para o código do produto.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.58),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Text(
+                'Aponte a câmera para o código do produto.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+              ),
             ),
           ),
         ],
