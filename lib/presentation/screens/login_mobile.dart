@@ -4,9 +4,15 @@ import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dar
 import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
 import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
+import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
+import '../../domain/services/regionalizacao/regionalizacao_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
+import '../../l10n/six_i18n.dart';
+import '../../providers/locale_settings_provider.dart';
 import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
 import 'home_page_mobile_screen.dart';
@@ -33,18 +39,40 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     super.dispose();
   }
 
+  Future<void> _afterLoginBootstrap() async {
+    final idiomaDePreferencia =
+        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+
+    try {
+      final regionalizacaoService = RegionalizacaoService(
+        apiClient: HttpRegionalizacaoApiClient(),
+      );
+      final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
+      if (mounted) {
+        await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
+          idiomaDePreferencia: idiomaDePreferencia,
+          regionalizacao: regionalizacao,
+        );
+      }
+    } catch (e) {
+      debugPrint('Erro ao aplicar idioma/regionalização no login mobile: $e');
+    }
+  }
+
   Future<void> _login() async {
     final login = _loginController.text.trim();
     final senha = _passwordController.text.trim();
 
     if (login.isEmpty || senha.isEmpty) {
-      _showSnack('Por favor, preencha o e-mail e a senha');
+      _showSnack(context.t('auth.loginRequiredFields'));
       return;
     }
 
     setState(() => _isLoading = true);
     try {
       await _authService.login(login, senha);
+      await _afterLoginBootstrap();
+      if (!mounted) return;
       _navigateToHome();
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''));
@@ -69,20 +97,21 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     setState(() => _isLoading = true);
     try {
       await _authService.loginWithGoogle();
+      await _afterLoginBootstrap();
       if (!mounted) return;
       _navigateToHome();
     } on GoogleAuthException catch (e) {
       if (e.code == GoogleAuthErrorCode.cancelledByUser) return;
       _showSnack(e.message);
     } catch (_) {
-      _showSnack('Não foi possível concluir o login com Google.');
+      _showSnack(context.t('auth.googleLoginError'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _loginWithApple() {
-    _showSnack('Login com Apple (mocked)');
+    _showSnack(context.t('auth.appleLoginMock'));
     _navigateToHome();
   }
 
@@ -119,29 +148,23 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── Título ──────────────────────────────────────────
-                      const SixAuthTitle(
-                        title: 'Entrar',
-                        subtitle:
-                            'Para entrar em sua conta, informe\nseu e-mail e senha',
+                      SixAuthTitle(
+                        title: context.t('auth.loginTitleMobile'),
+                        subtitle: context.t('auth.loginSubtitleMobile'),
                       ),
                       const SizedBox(height: 28),
-
-                      // ── E-mail ──────────────────────────────────────────
                       SixAuthInput(
                         controller: _loginController,
-                        hint: 'E-mail',
-                        label: 'E-mail',
+                        hint: context.t('auth.email'),
+                        label: context.t('auth.email'),
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
-
-                      // ── Senha ───────────────────────────────────────────
                       SixAuthInput(
                         controller: _passwordController,
-                        hint: 'Senha',
-                        label: 'Senha',
+                        hint: context.t('auth.password'),
+                        label: context.t('auth.password'),
                         obscure: _obscurePassword,
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => _login(),
@@ -159,8 +182,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // ── Esqueceu a senha ────────────────────────────────
                       Center(
                         child: TextButton(
                           onPressed: _forgotPassword,
@@ -171,7 +192,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                             ),
                           ),
                           child: Text(
-                            'Esqueceu a senha?',
+                            context.t('auth.forgotPassword'),
                             style: TextStyle(
                               color: primary,
                               fontWeight:
@@ -183,31 +204,23 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      // ── Botão Continuar ─────────────────────────────────
                       SixAuthPrimaryButton(
-                        label: 'Continuar',
+                        label: context.t('auth.continue'),
                         onPressed: _login,
                         isLoading: _isLoading,
                       ),
                       const SizedBox(height: 24),
-
-                      // ── Divider ─────────────────────────────────────────
-                      const SixAuthOrDivider(
-                        text: 'Ainda não tem uma conta?',
+                      SixAuthOrDivider(
+                        text: context.t('auth.noAccount'),
                       ),
                       const SizedBox(height: 16),
-
-                      // ── Criar conta ─────────────────────────────────────
                       _SocialButton(
-                        label: 'Criar conta',
+                        label: context.t('auth.createAccount'),
                         onPressed: _createAccount,
                       ),
                       const SizedBox(height: 12),
-
-                      // ── Apple ───────────────────────────────────────────
                       _SocialButton(
-                        label: 'Entrar com Apple',
+                        label: context.t('auth.signInWithApple'),
                         onPressed: _loginWithApple,
                         leading: const Icon(
                           Icons.apple,
@@ -216,36 +229,28 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // ── Google ──────────────────────────────────────────
                       _SocialButton(
-                        label: 'Entrar com Google',
+                        label: context.t('auth.signInWithGoogle'),
                         onPressed: _loginWithGoogle,
                         leading: const _GoogleGlyph(),
                       ),
-
                       const Spacer(),
                       const SizedBox(height: 16),
-
-                      // ── Disclaimer ──────────────────────────────────────
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: RichText(
                           textAlign: TextAlign.center,
-                          text: const TextSpan(
-                            style: TextStyle(
+                          text: TextSpan(
+                            style: const TextStyle(
                               fontSize: 12,
                               color: SixAuthTokens.colorDividerText,
                               height: 1.5,
                             ),
                             children: [
+                              TextSpan(text: context.t('auth.termsPrefix')),
                               TextSpan(
-                                text:
-                                    'Ao clicar em "Continuar", declaro ter lido e concordo com os ',
-                              ),
-                              TextSpan(
-                                text: 'Termos de Uso e Política de Privacidade',
-                                style: TextStyle(
+                                text: context.t('auth.terms'),
+                                style: const TextStyle(
                                   color: SixAuthTokens.colorTextPrimary,
                                   decoration: TextDecoration.underline,
                                   fontWeight: FontWeight.w500,
@@ -266,8 +271,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     );
   }
 }
-
-// ── Botão secundário (outline) ──────────────────────────────────────────────
 
 class _SocialButton extends StatelessWidget {
   const _SocialButton({
@@ -318,8 +321,6 @@ class _SocialButton extends StatelessWidget {
     );
   }
 }
-
-// ── Google "G" glyph ────────────────────────────────────────────────────────
 
 class _GoogleGlyph extends StatelessWidget {
   const _GoogleGlyph();
