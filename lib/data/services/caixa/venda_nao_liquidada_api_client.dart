@@ -76,6 +76,20 @@ class VendaNaoLiquidadaApiClient {
 
     return VendaNaoLiquidadaModel.fromJson(decoded);
   }
+
+  Future<void> cancelar({required String idRecebimento}) async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/vendas-nao-liquidadas/$idRecebimento/cancelar',
+    );
+    final response = await _httpClient.post(uri, headers: await _getHeaders());
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw VendaNaoLiquidadaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+  }
 }
 
 class VendaNaoLiquidadaApiException implements Exception {
