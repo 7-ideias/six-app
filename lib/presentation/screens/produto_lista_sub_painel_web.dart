@@ -6,6 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
 
 import '../../data/models/produto_model.dart';
@@ -51,8 +54,10 @@ class ProdutoListaBody extends StatefulWidget {
 
 class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final TextEditingController _controllerBusca = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _verticalScrollController = ScrollController();
+  final ScrollController _horizontalScrollController = ScrollController();
   final ProdutoService _produtoService = ProdutoService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
@@ -60,20 +65,40 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   String termoBusca = '';
   String ordenacao = 'nome';
   bool _isGerandoRelatorio = false;
+  bool _salvandoPreferencia = false;
   final Map<String, ProdutoModel> _produtosSelecionados =
       <String, ProdutoModel>{};
+
+  ModoDeExibicaoUsuario get _modoDeExibicaoProdutos => _usuarioProvider
+          .usuario?.preferenciasIndividuaisDoUsuario.modoDeExibicaoProdutos ??
+      ModoDeExibicaoUsuario.vertical;
+
+  bool get _exibicaoHorizontal =>
+      _modoDeExibicaoProdutos == ModoDeExibicaoUsuario.horizontal;
 
   @override
   void initState() {
     super.initState();
+    Future.microtask(_carregarPreferenciasDoUsuario);
     Future.microtask(_recarregar);
   }
 
   @override
   void dispose() {
     _controllerBusca.dispose();
-    _scrollController.dispose();
+    _verticalScrollController.dispose();
+    _horizontalScrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _carregarPreferenciasDoUsuario() async {
+    if (_usuarioProvider.usuario != null) return;
+    try {
+      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      if (mounted) setState(() {});
+    } catch (error, stackTrace) {
+      _logError('Erro ao carregar preferencias do usuario', error, stackTrace);
+    }
   }
 
   Future<void> _recarregar() async {
@@ -112,6 +137,76 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       termoBusca: termoBusca,
       ordenacao: ordenacao,
     );
+  }
+
+  Future<void> _alterarModoExibicaoProdutos(
+    ModoDeExibicaoUsuario novoModo,
+  ) async {
+    if (_salvandoPreferencia || novoModo == _modoDeExibicaoProdutos) return;
+
+    UsuarioModel? usuarioAtual = _usuarioProvider.usuario;
+    if (usuarioAtual == null) {
+      await _carregarPreferenciasDoUsuario();
+      usuarioAtual = _usuarioProvider.usuario;
+    }
+
+    if (usuarioAtual == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível carregar suas preferências.'),
+        ),
+      );
+      return;
+    }
+
+    final PreferenciasIndividuaisDoUsuarioModel preferenciasAtualizadas =
+        usuarioAtual.preferenciasIndividuaisDoUsuario.copyWith(
+      modoDeExibicaoProdutos: novoModo,
+    );
+
+    final UsuarioModel usuarioAtualizado = UsuarioModel(
+      nome: usuarioAtual.nome,
+      sobrenome: usuarioAtual.sobrenome,
+      cpf: usuarioAtual.cpf,
+      registroProfissional: usuarioAtual.registroProfissional,
+      email: usuarioAtual.email,
+      nomeDeGuerra: usuarioAtual.nomeDeGuerra,
+      celular: usuarioAtual.celular,
+      senha: usuarioAtual.senha,
+      salt: usuarioAtual.salt,
+      rg: usuarioAtual.rg,
+      dataNascimento: usuarioAtual.dataNascimento,
+      objEndereco: usuarioAtual.objEndereco,
+      preferenciasIndividuaisDoUsuario: preferenciasAtualizadas,
+      enviarPreferenciasIndividuaisDoUsuario: true,
+    );
+
+    setState(() => _salvandoPreferencia = true);
+    try {
+      await UsuarioService().atualizarDadosDoUsuario(usuarioAtualizado);
+      if (!mounted) return;
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            novoModo == ModoDeExibicaoUsuario.horizontal
+                ? 'Produtos agora em visualização horizontal.'
+                : 'Produtos agora em visualização vertical.',
+          ),
+        ),
+      );
+    } catch (error, stackTrace) {
+      _logError('Erro ao salvar preferencia de exibicao de produtos', error, stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar a preferência de visualização.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _salvandoPreferencia = false);
+    }
   }
 
   void _selecionarProduto(ProdutoModel produto) {
@@ -160,10 +255,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   void _limparSelecaoMultipla() {
-    if (_produtosSelecionados.isEmpty) {
-      return;
-    }
-
+    if (_produtosSelecionados.isEmpty) return;
     setState(_produtosSelecionados.clear);
   }
 
@@ -236,56 +328,60 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
-    final baseProdutos =
-        todosProdutos.isNotEmpty ? todosProdutos : provider.listaDeProdutos;
-    final itensDaLista =
-        baseProdutos.isEmpty && termoBusca.isEmpty
+    return ListenableBuilder(
+      listenable: _usuarioProvider,
+      builder: (BuildContext context, _) {
+        final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
+        final baseProdutos =
+            todosProdutos.isNotEmpty ? todosProdutos : provider.listaDeProdutos;
+        final itensDaLista = baseProdutos.isEmpty && termoBusca.isEmpty
             ? provider.listaDeProdutos
             : produtosFiltrados;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 920;
-        final horizontalPadding = isCompact ? 16.0 : 28.0;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 920;
+            final horizontalPadding = isCompact ? 16.0 : 28.0;
 
-        return Container(
-          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.16),
-          child: Column(
-            children: <Widget>[
-              _buildHeader(context, itensDaLista.length, isCompact),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  14,
-                  horizontalPadding,
-                  10,
-                ),
-                child: _buildSearchAndOrder(context, isCompact),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    0,
-                    horizontalPadding,
-                    14,
+            return Container(
+              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.16),
+              child: Column(
+                children: <Widget>[
+                  _buildHeader(context, itensDaLista.length, isCompact),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      14,
+                      horizontalPadding,
+                      10,
+                    ),
+                    child: _buildSearchOrderAndPreference(context, isCompact),
                   ),
-                  child: _buildList(context, provider, itensDaLista),
-                ),
-              ),
-              if (widget.isSelecao && widget.permitirSelecaoMultipla)
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    0,
-                    horizontalPadding,
-                    18,
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        0,
+                        horizontalPadding,
+                        14,
+                      ),
+                      child: _buildList(context, provider, itensDaLista),
+                    ),
                   ),
-                  child: _buildSelectionFooter(context),
-                ),
-            ],
-          ),
+                  if (widget.isSelecao && widget.permitirSelecaoMultipla)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        0,
+                        horizontalPadding,
+                        18,
+                      ),
+                      child: _buildSelectionFooter(context),
+                    ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -293,20 +389,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _buildHeader(BuildContext context, int totalItens, bool isCompact) {
     final colorScheme = Theme.of(context).colorScheme;
-    final title =
-        widget.isSelecao
-            ? widget.permitirSelecaoMultipla
-                ? 'Selecionar produtos'
-                : 'Selecionar produto'
-            : widget.modoEdicao
+    final title = widget.isSelecao
+        ? widget.permitirSelecaoMultipla
+            ? 'Selecionar produtos'
+            : 'Selecionar produto'
+        : widget.modoEdicao
             ? 'Editar produtos'
             : 'Produtos';
-    final subtitle =
-        widget.isSelecao
-            ? widget.permitirSelecaoMultipla
-                ? 'Marque um ou mais itens e adicione tudo na venda de uma vez.'
-                : 'Busca rápida para incluir item na venda.'
-            : widget.modoEdicao
+    final subtitle = widget.isSelecao
+        ? widget.permitirSelecaoMultipla
+            ? 'Marque um ou mais itens e adicione tudo na venda de uma vez.'
+            : 'Busca rápida para incluir item na venda.'
+        : widget.modoEdicao
             ? 'Lista compacta para revisar cadastro, estoque, preço e imagens.'
             : 'Consulta rápida do catálogo com ações de balcão.';
 
@@ -416,19 +510,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         children: <Widget>[
           isCompact
               ? Column(
-                children: <Widget>[
-                  titleBlock,
-                  const SizedBox(height: 14),
-                  Align(alignment: Alignment.centerRight, child: actions),
-                ],
-              )
+                  children: <Widget>[
+                    titleBlock,
+                    const SizedBox(height: 14),
+                    Align(alignment: Alignment.centerRight, child: actions),
+                  ],
+                )
               : Row(
-                children: <Widget>[
-                  Expanded(child: titleBlock),
-                  const SizedBox(width: 16),
-                  actions,
-                ],
-              ),
+                  children: <Widget>[
+                    Expanded(child: titleBlock),
+                    const SizedBox(width: 16),
+                    actions,
+                  ],
+                ),
           if (widget.modoEdicao && !widget.isSelecao) ...<Widget>[
             const SizedBox(height: 12),
             _editBanner(context, totalItens),
@@ -513,7 +607,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _buildSearchAndOrder(BuildContext context, bool isCompact) {
+  Widget _buildSearchOrderAndPreference(BuildContext context, bool isCompact) {
     final colorScheme = Theme.of(context).colorScheme;
 
     final search = TextField(
@@ -521,23 +615,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       decoration: InputDecoration(
         hintText: 'Buscar por nome ou código...',
         prefixIcon: Icon(Icons.search_rounded, color: colorScheme.primary),
-        suffixIcon:
-            termoBusca.isEmpty
-                ? null
-                : IconButton(
-                  icon: const Icon(Icons.clear_rounded),
-                  onPressed: () {
-                    _controllerBusca.clear();
-                    termoBusca = '';
-                    aplicarFiltroOrdenacao();
-                  },
-                ),
+        suffixIcon: termoBusca.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.clear_rounded),
+                onPressed: () {
+                  _controllerBusca.clear();
+                  termoBusca = '';
+                  aplicarFiltroOrdenacao();
+                },
+              ),
         filled: true,
         fillColor: colorScheme.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.12)),
@@ -580,16 +670,124 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ),
     );
 
-    if (isCompact)
+    final modo = _buildModoExibicaoSelector(context, compact: isCompact);
+
+    if (isCompact) {
       return Column(
-        children: <Widget>[search, const SizedBox(height: 10), order],
+        children: <Widget>[
+          search,
+          const SizedBox(height: 10),
+          order,
+          const SizedBox(height: 10),
+          modo,
+        ],
       );
+    }
+
     return Row(
       children: <Widget>[
         Expanded(child: search),
         const SizedBox(width: 12),
         SizedBox(width: 240, child: order),
+        const SizedBox(width: 12),
+        modo,
       ],
+    );
+  }
+
+  Widget _buildModoExibicaoSelector(BuildContext context, {required bool compact}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: BoxConstraints(minWidth: compact ? double.infinity : 246),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
+        children: <Widget>[
+          Expanded(
+            child: _modoButton(
+              context,
+              label: 'Vertical',
+              icon: Icons.view_agenda_outlined,
+              selected: !_exibicaoHorizontal,
+              onTap: () => _alterarModoExibicaoProdutos(
+                ModoDeExibicaoUsuario.vertical,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _modoButton(
+              context,
+              label: 'Horizontal',
+              icon: Icons.view_carousel_outlined,
+              selected: _exibicaoHorizontal,
+              onTap: () => _alterarModoExibicaoProdutos(
+                ModoDeExibicaoUsuario.horizontal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _modoButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: selected ? colorScheme.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: _salvandoPreferencia ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (_salvandoPreferencia && selected)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colorScheme.onPrimary,
+                  ),
+                )
+              else
+                Icon(
+                  icon,
+                  size: 17,
+                  color: selected ? colorScheme.onPrimary : colorScheme.primary,
+                ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: selected ? colorScheme.onPrimary : colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -601,19 +799,42 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     if (provider.isLoading && itens.isEmpty) return _loadingList(context);
     if (itens.isEmpty) return _emptyState(context);
 
+    if (_exibicaoHorizontal) {
+      return Scrollbar(
+        controller: _horizontalScrollController,
+        thumbVisibility: true,
+        thickness: 7,
+        radius: const Radius.circular(999),
+        child: ListView.separated(
+          controller: _horizontalScrollController,
+          primary: false,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(0, 0, 4, 12),
+          itemCount: itens.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) => SizedBox(
+            width: widget.isSelecao ? 340 : 430,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: _productCard(context, itens[index], index),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scrollbar(
-      controller: _scrollController,
+      controller: _verticalScrollController,
       thumbVisibility: true,
       thickness: 7,
       radius: const Radius.circular(999),
       child: ListView.separated(
-        controller: _scrollController,
+        controller: _verticalScrollController,
         primary: false,
         padding: const EdgeInsets.fromLTRB(0, 0, 12, 2),
         itemCount: itens.length,
         separatorBuilder: (_, __) => SizedBox(height: widget.isSelecao ? 7 : 8),
-        itemBuilder:
-            (context, index) => _productCard(context, itens[index], index),
+        itemBuilder: (context, index) => _productCard(context, itens[index], index),
       ),
     );
   }
@@ -630,10 +851,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color:
-              totalSelecionados > 0
-                  ? colorScheme.primary.withOpacity(0.22)
-                  : colorScheme.outline.withOpacity(0.12),
+          color: totalSelecionados > 0
+              ? colorScheme.primary.withOpacity(0.22)
+              : colorScheme.outline.withOpacity(0.12),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
@@ -663,8 +883,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               totalSelecionados == 0
                   ? 'Nenhum produto selecionado ainda.'
                   : totalSelecionados == 1
-                  ? '1 produto selecionado para a venda.'
-                  : '$totalSelecionados produtos selecionados para a venda.',
+                      ? '1 produto selecionado para a venda.'
+                      : '$totalSelecionados produtos selecionados para a venda.',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -675,8 +895,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           ),
           const SizedBox(width: 12),
           FilledButton.icon(
-            onPressed:
-                totalSelecionados == 0 ? null : _confirmarSelecaoMultipla,
+            onPressed: totalSelecionados == 0 ? null : _confirmarSelecaoMultipla,
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
             label: Text(
               totalSelecionados == 0
@@ -701,16 +920,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       padding: const EdgeInsets.fromLTRB(0, 0, 12, 2),
       itemCount: 6,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder:
-          (_, __) => Container(
-            height: widget.isSelecao ? 58 : 74,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
-            ),
-          ),
+      itemBuilder: (_, __) => Container(
+        height: widget.isSelecao ? 58 : 74,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+        ),
+      ),
     );
   }
 
@@ -767,8 +985,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   Widget _productCard(BuildContext context, ProdutoModel produto, int index) {
     final colorScheme = Theme.of(context).colorScheme;
     final duration = Duration(milliseconds: 120 + (index % 8) * 18);
-    final bool selecionado =
-        widget.isSelecao &&
+    final bool selecionado = widget.isSelecao &&
         widget.permitirSelecaoMultipla &&
         _produtosSelecionados.containsKey(_chaveProduto(produto));
 
@@ -776,14 +993,13 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       tween: Tween(begin: 0, end: 1),
       duration: duration,
       curve: Curves.easeOutCubic,
-      builder:
-          (context, value, child) => Opacity(
-            opacity: value,
-            child: Transform.translate(
-              offset: Offset(0, 8 * (1 - value)),
-              child: child,
-            ),
-          ),
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(_exibicaoHorizontal ? 10 * (1 - value) : 0, 8 * (1 - value)),
+          child: child,
+        ),
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -791,16 +1007,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           onTap: () => _selecionarProduto(produto),
           child: Ink(
             decoration: BoxDecoration(
-              color:
-                  selecionado
-                      ? colorScheme.primary.withOpacity(0.06)
-                      : colorScheme.surface,
+              color: selecionado
+                  ? colorScheme.primary.withOpacity(0.06)
+                  : colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color:
-                    selecionado
-                        ? colorScheme.primary.withOpacity(0.36)
-                        : colorScheme.outline.withOpacity(0.10),
+                color: selecionado
+                    ? colorScheme.primary.withOpacity(0.36)
+                    : colorScheme.outline.withOpacity(0.10),
                 width: selecionado ? 1.4 : 1,
               ),
               boxShadow: <BoxShadow>[
@@ -853,9 +1067,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
-          produto.nomeProduto.isEmpty
-              ? 'Produto sem nome'
-              : produto.nomeProduto,
+          produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -891,30 +1103,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ],
     );
 
-    final action = FilledButton.icon(
-      onPressed: () => _selecionarProduto(produto),
-      icon: Icon(
-        selecionado ? Icons.check_rounded : Icons.add_shopping_cart_rounded,
-        size: 17,
-      ),
-      label: Text(selecionado ? 'Selecionado' : 'Adicionar'),
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        backgroundColor: selecionado ? colorScheme.primary : null,
-      ),
-    );
-
     final marcadorCompacto = AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       curve: Curves.easeOutCubic,
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color:
-            selecionado
-                ? colorScheme.primary
-                : colorScheme.primary.withOpacity(0.08),
+        color: selecionado
+            ? colorScheme.primary
+            : colorScheme.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colorScheme.primary.withOpacity(0.16)),
       ),
@@ -924,25 +1121,13 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ),
     );
 
-    if (compact) {
-      return Row(
-        children: <Widget>[
-          _thumbnail(context, produto, size: 44),
-          const SizedBox(width: 10),
-          Expanded(child: info),
-          const SizedBox(width: 10),
-          marcadorCompacto,
-        ],
-      );
-    }
-
     return Row(
       children: <Widget>[
-        _thumbnail(context, produto, size: 46),
-        const SizedBox(width: 12),
+        _thumbnail(context, produto, size: 44),
+        const SizedBox(width: 10),
         Expanded(child: info),
-        const SizedBox(width: 12),
-        action,
+        const SizedBox(width: 10),
+        marcadorCompacto,
       ],
     );
   }
@@ -959,9 +1144,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                produto.nomeProduto.isEmpty
-                    ? 'Produto sem nome'
-                    : produto.nomeProduto,
+                produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -975,11 +1158,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 spacing: 7,
                 runSpacing: 7,
                 children: <Widget>[
-                  _pill(
-                    context,
-                    Icons.qr_code_2_rounded,
-                    _codigoLabel(produto),
-                  ),
+                  _pill(context, Icons.qr_code_2_rounded, _codigoLabel(produto)),
                   _pill(context, Icons.category_outlined, _tipoLabel(produto)),
                   if (_grupoLabel(produto).isNotEmpty)
                     _pill(context, Icons.folder_outlined, _grupoLabel(produto)),
@@ -1022,9 +1201,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                produto.nomeProduto.isEmpty
-                    ? 'Produto sem nome'
-                    : produto.nomeProduto,
+                produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -1045,11 +1222,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 spacing: 7,
                 runSpacing: 7,
                 children: <Widget>[
-                  _pill(
-                    context,
-                    Icons.qr_code_2_rounded,
-                    _codigoLabel(produto),
-                  ),
+                  _pill(context, Icons.qr_code_2_rounded, _codigoLabel(produto)),
                   _pill(
                     context,
                     Icons.sell_outlined,
@@ -1073,23 +1246,21 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final imageUrl = _primeiraImagemUrl(produto);
-    final child =
-        imageUrl == null
-            ? Icon(
+    final child = imageUrl == null
+        ? Icon(
+            _iconePorTipo(produto),
+            color: colorScheme.primary,
+            size: size <= 46 ? 21 : 24,
+          )
+        : Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Icon(
               _iconePorTipo(produto),
               color: colorScheme.primary,
-              size: size <= 46 ? 21 : 24,
-            )
-            : Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (_, __, ___) => Icon(
-                    _iconePorTipo(produto),
-                    color: colorScheme.primary,
-                    size: 24,
-                  ),
-            );
+              size: 24,
+            ),
+          );
 
     return Container(
       width: size,
@@ -1106,11 +1277,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _actionButton(BuildContext context, ProdutoModel produto) {
     return FilledButton.icon(
-      onPressed:
-          () =>
-              widget.modoEdicao
-                  ? _abrirCadastroParaEdicao(produto)
-                  : _selecionarProduto(produto),
+      onPressed: () => widget.modoEdicao
+          ? _abrirCadastroParaEdicao(produto)
+          : _selecionarProduto(produto),
       icon: Icon(
         widget.modoEdicao ? Icons.edit_rounded : Icons.visibility_outlined,
         size: 17,
@@ -1133,10 +1302,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color:
-            strong
-                ? colorScheme.primary.withOpacity(0.07)
-                : colorScheme.surfaceVariant.withOpacity(0.32),
+        color: strong
+            ? colorScheme.primary.withOpacity(0.07)
+            : colorScheme.surfaceVariant.withOpacity(0.32),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: colorScheme.outline.withOpacity(0.08)),
       ),
@@ -1200,9 +1368,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   String _tipoLabel(ProdutoModel produto) {
-    return produto.tipoProduto.toUpperCase() == 'SERVICO'
-        ? 'Serviço'
-        : 'Produto';
+    return produto.tipoProduto.toUpperCase() == 'SERVICO' ? 'Serviço' : 'Produto';
   }
 
   String _grupoLabel(ProdutoModel produto) {
@@ -1218,9 +1384,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   String _chaveProduto(ProdutoModel produto) {
     final codigo = produto.codigoDeBarras.trim();
-    if (codigo.isNotEmpty) {
-      return 'codigo:$codigo';
-    }
+    if (codigo.isNotEmpty) return 'codigo:$codigo';
 
     final nome = produto.nomeProduto.trim().toLowerCase();
     return 'nome:$nome|preco:${produto.precoVenda.toStringAsFixed(4)}';
