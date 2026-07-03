@@ -103,7 +103,7 @@ class RegionalizacaoMobileScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         leading: const BackButton(),
         title: Text(
-          context.t('regionalizacao.regionalizacao'),
+          'Regionalização',
           style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.2),
         ),
       ),
