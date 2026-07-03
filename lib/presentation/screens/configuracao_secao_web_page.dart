@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/six_i18n.dart';
 import 'empresa_configuracao_screen.dart';
 import 'regionalizacao_configuracao_content.dart';
 import 'regras_operacionais_configuracao_content.dart';
@@ -83,7 +84,7 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
             alignment: compact ? Alignment.centerRight : Alignment.center,
             child: IconButton.filledTonal(
               onPressed: onBack,
-              tooltip: 'Fechar',
+              tooltip: context.t('common.close', fallback: 'Fechar'),
               icon: const Icon(Icons.close_rounded),
             ),
           );
