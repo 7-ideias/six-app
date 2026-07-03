@@ -2,6 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+extension SixStringRepeat on String {
+  String operator *(int times) {
+    if (times <= 0) return '';
+    return List<String>.filled(times, this).join();
+  }
+}
+
 class SixStaggeredEntry extends StatefulWidget {
   const SixStaggeredEntry({
     super.key,
