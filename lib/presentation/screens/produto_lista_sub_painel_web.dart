@@ -61,13 +61,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
+  final Map<String, ProdutoModel> _produtosSelecionados = <String, ProdutoModel>{};
 
   String termoBusca = '';
   String ordenacao = 'nome';
   bool _isGerandoRelatorio = false;
   bool _salvandoPreferencia = false;
-  final Map<String, ProdutoModel> _produtosSelecionados =
-      <String, ProdutoModel>{};
 
   ModoDeExibicaoUsuario get _modoDeExibicaoProdutos => _usuarioProvider
           .usuario?.preferenciasIndividuaisDoUsuario.modoDeExibicaoProdutos ??
@@ -112,9 +111,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       _logError('Erro ao recarregar produtos', error, stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erro ao recarregar produtos. Veja os logs.'),
-        ),
+        const SnackBar(content: Text('Erro ao recarregar produtos. Veja os logs.')),
       );
     }
   }
@@ -153,9 +150,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     if (usuarioAtual == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível carregar suas preferências.'),
-        ),
+        const SnackBar(content: Text('Não foi possível carregar suas preferências.')),
       );
       return;
     }
@@ -200,9 +195,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       _logError('Erro ao salvar preferencia de exibicao de produtos', error, stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível salvar a preferência de visualização.'),
-        ),
+        const SnackBar(content: Text('Não foi possível salvar a preferência de visualização.')),
       );
     } finally {
       if (mounted) setState(() => _salvandoPreferencia = false);
@@ -215,7 +208,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         _alternarSelecaoProduto(produto);
         return;
       }
-
       Navigator.pop(context, produto);
       return;
     }
@@ -225,9 +217,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Clicou em ${produto.nomeProduto}')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Clicou em ${produto.nomeProduto}')),
+    );
   }
 
   void _alternarSelecaoProduto(ProdutoModel produto) {
@@ -248,10 +240,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       );
       return;
     }
-
-    Navigator.of(
-      context,
-    ).pop(_produtosSelecionados.values.toList(growable: false));
+    Navigator.of(context).pop(_produtosSelecionados.values.toList(growable: false));
   }
 
   void _limparSelecaoMultipla() {
@@ -274,7 +263,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Future<void> _imprimirRelatorioProdutos() async {
     if (_isGerandoRelatorio) return;
-
     setState(() => _isGerandoRelatorio = true);
 
     try {
@@ -291,7 +279,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       );
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -315,7 +302,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   void _logError(String context, Object error, StackTrace stackTrace) {
     debugPrint('[SubPainelWebProdutoLista][ERROR] $context');
     debugPrint('[SubPainelWebProdutoLista][ERROR] $error');
-    debugPrint('[SubPainelWebProdutoLista][STACK] $stackTrace');
     FlutterError.reportError(
       FlutterErrorDetails(
         exception: error,
@@ -332,8 +318,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       listenable: _usuarioProvider,
       builder: (BuildContext context, _) {
         final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
-        final baseProdutos =
-            todosProdutos.isNotEmpty ? todosProdutos : provider.listaDeProdutos;
+        final baseProdutos = todosProdutos.isNotEmpty ? todosProdutos : provider.listaDeProdutos;
         final itensDaLista = baseProdutos.isEmpty && termoBusca.isEmpty
             ? provider.listaDeProdutos
             : produtosFiltrados;
@@ -349,33 +334,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 children: <Widget>[
                   _buildHeader(context, itensDaLista.length, isCompact),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      14,
-                      horizontalPadding,
-                      10,
-                    ),
+                    padding: EdgeInsets.fromLTRB(horizontalPadding, 14, horizontalPadding, 10),
                     child: _buildSearchOrderAndPreference(context, isCompact),
                   ),
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        0,
-                        horizontalPadding,
-                        14,
-                      ),
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 14),
                       child: _buildList(context, provider, itensDaLista),
                     ),
                   ),
                   if (widget.isSelecao && widget.permitirSelecaoMultipla)
                     Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        0,
-                        horizontalPadding,
-                        18,
-                      ),
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 18),
                       child: _buildSelectionFooter(context),
                     ),
                 ],
@@ -414,9 +384,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
-            widget.isSelecao
-                ? Icons.add_shopping_cart_rounded
-                : Icons.inventory_2_outlined,
+            widget.isSelecao ? Icons.add_shopping_cart_rounded : Icons.inventory_2_outlined,
             color: colorScheme.primary,
           ),
         ),
@@ -440,9 +408,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 subtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
-                ),
+                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.66)),
               ),
             ],
           ),
@@ -457,23 +423,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       alignment: WrapAlignment.end,
       children: <Widget>[
         _headerButton(context, Icons.refresh_rounded, 'Atualizar', _recarregar),
-        if (widget.isSelecao &&
-            widget.permitirSelecaoMultipla &&
-            _produtosSelecionados.isNotEmpty)
-          _headerButton(
-            context,
-            Icons.cleaning_services_outlined,
-            'Limpar seleção',
-            _limparSelecaoMultipla,
-          ),
+        if (widget.isSelecao && widget.permitirSelecaoMultipla && _produtosSelecionados.isNotEmpty)
+          _headerButton(context, Icons.cleaning_services_outlined, 'Limpar seleção', _limparSelecaoMultipla),
         if (!widget.isSelecao) ...<Widget>[
-          _headerButton(
-            context,
-            Icons.add_rounded,
-            'Novo produto',
-            _abrirNovoProduto,
-            filled: true,
-          ),
+          _headerButton(context, Icons.add_rounded, 'Novo produto', _abrirNovoProduto, filled: true),
           _headerButton(
             context,
             Icons.picture_as_pdf_outlined,
@@ -487,23 +440,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 16 : 28,
-        isCompact ? 16 : 22,
-        isCompact ? 16 : 28,
-        isCompact ? 14 : 18,
-      ),
+      padding: EdgeInsets.fromLTRB(isCompact ? 16 : 28, isCompact ? 16 : 22, isCompact ? 16 : 28, isCompact ? 14 : 18),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
-        ),
+        border: Border(bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14))),
         boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 6)),
         ],
       ),
       child: Column(
@@ -532,16 +474,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _headerButton(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback? onPressed, {
-    bool filled = false,
-  }) {
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
-    );
+  Widget _headerButton(BuildContext context, IconData icon, String label, VoidCallback? onPressed, {bool filled = false}) {
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
     final padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 15);
 
     if (filled) {
@@ -596,10 +530,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               'Modo edição ativo - $totalItens itens encontrados - clique em um produto para alterar.',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface.withOpacity(0.74),
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, color: colorScheme.onSurface.withOpacity(0.74)),
             ),
           ),
         ],
@@ -670,8 +601,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ),
     );
 
-    final modo = _buildModoExibicaoSelector(context, compact: isCompact);
-
     if (isCompact) {
       return Column(
         children: <Widget>[
@@ -679,7 +608,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           const SizedBox(height: 10),
           order,
           const SizedBox(height: 10),
-          modo,
+          _buildModoExibicaoSelector(context, expand: true),
         ],
       );
     }
@@ -690,15 +619,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         const SizedBox(width: 12),
         SizedBox(width: 240, child: order),
         const SizedBox(width: 12),
-        modo,
+        SizedBox(width: 268, child: _buildModoExibicaoSelector(context, expand: false)),
       ],
     );
   }
 
-  Widget _buildModoExibicaoSelector(BuildContext context, {required bool compact}) {
+  Widget _buildModoExibicaoSelector(BuildContext context, {required bool expand}) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      constraints: BoxConstraints(minWidth: compact ? double.infinity : 246),
+      width: expand ? double.infinity : null,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -706,7 +635,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
       ),
       child: Row(
-        mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
         children: <Widget>[
           Expanded(
             child: _modoButton(
@@ -714,9 +642,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               label: 'Vertical',
               icon: Icons.view_agenda_outlined,
               selected: !_exibicaoHorizontal,
-              onTap: () => _alterarModoExibicaoProdutos(
-                ModoDeExibicaoUsuario.vertical,
-              ),
+              onTap: () => _alterarModoExibicaoProdutos(ModoDeExibicaoUsuario.vertical),
             ),
           ),
           const SizedBox(width: 4),
@@ -726,9 +652,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               label: 'Horizontal',
               icon: Icons.view_carousel_outlined,
               selected: _exibicaoHorizontal,
-              onTap: () => _alterarModoExibicaoProdutos(
-                ModoDeExibicaoUsuario.horizontal,
-              ),
+              onTap: () => _alterarModoExibicaoProdutos(ModoDeExibicaoUsuario.horizontal),
             ),
           ),
         ],
@@ -754,23 +678,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               if (_salvandoPreferencia && selected)
                 SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colorScheme.onPrimary,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary),
                 )
               else
-                Icon(
-                  icon,
-                  size: 17,
-                  color: selected ? colorScheme.onPrimary : colorScheme.primary,
-                ),
+                Icon(icon, size: 17, color: selected ? colorScheme.onPrimary : colorScheme.primary),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -791,11 +707,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _buildList(
-    BuildContext context,
-    ProdutosListProvider<ProdutoModel> provider,
-    List<ProdutoModel> itens,
-  ) {
+  Widget _buildList(BuildContext context, ProdutosListProvider<ProdutoModel> provider, List<ProdutoModel> itens) {
     if (provider.isLoading && itens.isEmpty) return _loadingList(context);
     if (itens.isEmpty) return _emptyState(context);
 
@@ -851,16 +763,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: totalSelecionados > 0
-              ? colorScheme.primary.withOpacity(0.22)
-              : colorScheme.outline.withOpacity(0.12),
+          color: totalSelecionados > 0 ? colorScheme.primary.withOpacity(0.22) : colorScheme.outline.withOpacity(0.12),
         ),
         boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 18, offset: const Offset(0, 8)),
         ],
       ),
       child: Row(
@@ -868,14 +774,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           Container(
             width: 38,
             height: 38,
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(
-              Icons.playlist_add_check_rounded,
-              color: colorScheme.primary,
-            ),
+            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(13)),
+            child: Icon(Icons.playlist_add_check_rounded, color: colorScheme.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -887,26 +787,17 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       : '$totalSelecionados produtos selecionados para a venda.',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w800),
             ),
           ),
           const SizedBox(width: 12),
           FilledButton.icon(
             onPressed: totalSelecionados == 0 ? null : _confirmarSelecaoMultipla,
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-            label: Text(
-              totalSelecionados == 0
-                  ? 'Adicionar selecionados'
-                  : 'Adicionar $totalSelecionados',
-            ),
+            label: Text(totalSelecionados == 0 ? 'Adicionar selecionados' : 'Adicionar $totalSelecionados'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ],
@@ -947,11 +838,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         ),
         child: Row(
           children: <Widget>[
-            Icon(
-              Icons.inventory_2_outlined,
-              color: colorScheme.primary,
-              size: 34,
-            ),
+            Icon(Icons.inventory_2_outlined, color: colorScheme.primary, size: 34),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -960,18 +847,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 children: <Widget>[
                   Text(
                     'Nenhum produto encontrado',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
-                    ),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: colorScheme.onSurface),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Ajuste a busca ou atualize a listagem.',
-                    style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.62),
-                    ),
+                    style: TextStyle(color: colorScheme.onSurface.withOpacity(0.62)),
                   ),
                 ],
               ),
@@ -1007,43 +888,25 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           onTap: () => _selecionarProduto(produto),
           child: Ink(
             decoration: BoxDecoration(
-              color: selecionado
-                  ? colorScheme.primary.withOpacity(0.06)
-                  : colorScheme.surface,
+              color: selecionado ? colorScheme.primary.withOpacity(0.06) : colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: selecionado
-                    ? colorScheme.primary.withOpacity(0.36)
-                    : colorScheme.outline.withOpacity(0.10),
+                color: selecionado ? colorScheme.primary.withOpacity(0.36) : colorScheme.outline.withOpacity(0.10),
                 width: selecionado ? 1.4 : 1,
               ),
               boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.035),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
-                ),
+                BoxShadow(color: Colors.black.withOpacity(0.035), blurRadius: 12, offset: const Offset(0, 5)),
               ],
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: widget.isSelecao ? 8 : 10,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: widget.isSelecao ? 8 : 10),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   if (widget.isSelecao) {
-                    return _productSelection(
-                      context,
-                      produto,
-                      constraints.maxWidth < 720,
-                      selecionado,
-                    );
+                    return _productSelection(context, produto, selecionado);
                   }
                   final compact = constraints.maxWidth < 760;
-                  return compact
-                      ? _productCompact(context, produto)
-                      : _productWide(context, produto);
+                  return compact ? _productCompact(context, produto) : _productWide(context, produto);
                 },
               ),
             ),
@@ -1053,81 +916,51 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _productSelection(
-    BuildContext context,
-    ProdutoModel produto,
-    bool compact,
-    bool selecionado,
-  ) {
+  Widget _productSelection(BuildContext context, ProdutoModel produto, bool selecionado) {
     final colorScheme = Theme.of(context).colorScheme;
-    final codigo = _codigoLabel(produto);
-
-    final info = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            Text(
-              codigo,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            Text(
-              _precoFormatado(produto.precoVenda),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-
-    final marcadorCompacto = AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOutCubic,
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: selecionado
-            ? colorScheme.primary
-            : colorScheme.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.16)),
-      ),
-      child: Icon(
-        selecionado ? Icons.check_rounded : Icons.add_rounded,
-        color: selecionado ? colorScheme.onPrimary : colorScheme.primary,
-      ),
-    );
-
     return Row(
       children: <Widget>[
         _thumbnail(context, produto, size: 44),
         const SizedBox(width: 10),
-        Expanded(child: info),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: <Widget>[
+                  Text(_codigoLabel(produto), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.onSurfaceVariant)),
+                  Text(_precoFormatado(produto.precoVenda), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: colorScheme.onSurface)),
+                ],
+              ),
+            ],
+          ),
+        ),
         const SizedBox(width: 10),
-        marcadorCompacto,
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: selecionado ? colorScheme.primary : colorScheme.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.16)),
+          ),
+          child: Icon(
+            selecionado ? Icons.check_rounded : Icons.add_rounded,
+            color: selecionado ? colorScheme.onPrimary : colorScheme.primary,
+          ),
+        ),
       ],
     );
   }
@@ -1147,11 +980,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: colorScheme.onSurface),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -1160,24 +989,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 children: <Widget>[
                   _pill(context, Icons.qr_code_2_rounded, _codigoLabel(produto)),
                   _pill(context, Icons.category_outlined, _tipoLabel(produto)),
-                  if (_grupoLabel(produto).isNotEmpty)
-                    _pill(context, Icons.folder_outlined, _grupoLabel(produto)),
-                  _pill(
-                    context,
-                    Icons.sell_outlined,
-                    _precoFormatado(produto.precoVenda),
-                    strong: true,
-                  ),
-                  _pill(
-                    context,
-                    Icons.low_priority_rounded,
-                    'Mín.: ${produto.estoqueMinimo}',
-                  ),
-                  _pill(
-                    context,
-                    Icons.trending_up_rounded,
-                    'Máx.: ${produto.estoqueMaximo}',
-                  ),
+                  if (_grupoLabel(produto).isNotEmpty) _pill(context, Icons.folder_outlined, _grupoLabel(produto)),
+                  _pill(context, Icons.sell_outlined, _precoFormatado(produto.precoVenda), strong: true),
+                  _pill(context, Icons.low_priority_rounded, 'Mín.: ${produto.estoqueMinimo}'),
+                  _pill(context, Icons.trending_up_rounded, 'Máx.: ${produto.estoqueMaximo}'),
                 ],
               ),
             ],
@@ -1204,11 +1019,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 produto.nomeProduto.isEmpty ? 'Produto sem nome' : produto.nomeProduto,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: colorScheme.onSurface),
               ),
             ),
             _statusPill(context, produto.ativo),
@@ -1223,12 +1034,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 runSpacing: 7,
                 children: <Widget>[
                   _pill(context, Icons.qr_code_2_rounded, _codigoLabel(produto)),
-                  _pill(
-                    context,
-                    Icons.sell_outlined,
-                    _precoFormatado(produto.precoVenda),
-                    strong: true,
-                  ),
+                  _pill(context, Icons.sell_outlined, _precoFormatado(produto.precoVenda), strong: true),
                 ],
               ),
             ),
@@ -1239,27 +1045,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _thumbnail(
-    BuildContext context,
-    ProdutoModel produto, {
-    double size = 52,
-  }) {
+  Widget _thumbnail(BuildContext context, ProdutoModel produto, {double size = 52}) {
     final colorScheme = Theme.of(context).colorScheme;
     final imageUrl = _primeiraImagemUrl(produto);
     final child = imageUrl == null
-        ? Icon(
-            _iconePorTipo(produto),
-            color: colorScheme.primary,
-            size: size <= 46 ? 21 : 24,
-          )
+        ? Icon(_iconePorTipo(produto), color: colorScheme.primary, size: size <= 46 ? 21 : 24)
         : Image.network(
             imageUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Icon(
-              _iconePorTipo(produto),
-              color: colorScheme.primary,
-              size: 24,
-            ),
+            errorBuilder: (_, __, ___) => Icon(_iconePorTipo(produto), color: colorScheme.primary, size: 24),
           );
 
     return Container(
@@ -1277,13 +1071,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   Widget _actionButton(BuildContext context, ProdutoModel produto) {
     return FilledButton.icon(
-      onPressed: () => widget.modoEdicao
-          ? _abrirCadastroParaEdicao(produto)
-          : _selecionarProduto(produto),
-      icon: Icon(
-        widget.modoEdicao ? Icons.edit_rounded : Icons.visibility_outlined,
-        size: 17,
-      ),
+      onPressed: () => widget.modoEdicao ? _abrirCadastroParaEdicao(produto) : _selecionarProduto(produto),
+      icon: Icon(widget.modoEdicao ? Icons.edit_rounded : Icons.visibility_outlined, size: 17),
       label: Text(widget.modoEdicao ? 'Editar' : 'Ver'),
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
@@ -1292,30 +1081,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _pill(
-    BuildContext context,
-    IconData icon,
-    String label, {
-    bool strong = false,
-  }) {
+  Widget _pill(BuildContext context, IconData icon, String label, {bool strong = false}) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: strong
-            ? colorScheme.primary.withOpacity(0.07)
-            : colorScheme.surfaceVariant.withOpacity(0.32),
+        color: strong ? colorScheme.primary.withOpacity(0.07) : colorScheme.surfaceVariant.withOpacity(0.32),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: colorScheme.outline.withOpacity(0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(
-            icon,
-            size: 14,
-            color: strong ? colorScheme.primary : colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 14, color: strong ? colorScheme.primary : colorScheme.onSurfaceVariant),
           const SizedBox(width: 5),
           Text(
             label,
@@ -1340,14 +1118,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withOpacity(0.18)),
       ),
-      child: Text(
-        active ? 'Ativo' : 'Inativo',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: color,
-        ),
-      ),
+      child: Text(active ? 'Ativo' : 'Inativo', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
     );
   }
 
@@ -1362,9 +1133,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   IconData _iconePorTipo(ProdutoModel produto) {
-    return produto.tipoProduto.toUpperCase() == 'SERVICO'
-        ? Icons.handyman_outlined
-        : Icons.shopping_bag_outlined;
+    return produto.tipoProduto.toUpperCase() == 'SERVICO' ? Icons.handyman_outlined : Icons.shopping_bag_outlined;
   }
 
   String _tipoLabel(ProdutoModel produto) {
@@ -1385,7 +1154,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   String _chaveProduto(ProdutoModel produto) {
     final codigo = produto.codigoDeBarras.trim();
     if (codigo.isNotEmpty) return 'codigo:$codigo';
-
     final nome = produto.nomeProduto.trim().toLowerCase();
     return 'nome:$nome|preco:${produto.precoVenda.toStringAsFixed(4)}';
   }
