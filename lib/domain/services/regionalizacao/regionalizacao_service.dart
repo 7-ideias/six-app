@@ -10,6 +10,10 @@ class RegionalizacaoService {
 
   final RegionalizacaoApiClient _apiClient;
 
+  Future<ConfiguracaoRegionalizacaoResponse> buscarRegionalizacao() {
+    return _apiClient.buscarRegionalizacao();
+  }
+
   ConfiguracaoRegionalizacaoSistema converterResponseParaDominio(
       ConfiguracaoRegionalizacaoResponse response,
       ) {
