@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
+
+import '../../providers/locale_settings_provider.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
   const AgendaFinanceiraWeb({super.key, this.embedded = false, this.onBack});
@@ -389,17 +392,27 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Future<void> _confirmarTotal(Map<String, dynamic> item, String label) async {
     final valor = _toDouble(item['valorRestante'] ?? item['valor']);
+
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Liquidar lançamento'),
-        content: Text('Confirmar liquidação de ${_formatarMoeda(valor)}?'),
+        content: Text(
+          'Confirmar liquidação de ${_formatarMoeda(valor)}?',
+        ),
         actions: <Widget>[
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(label)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(label),
+          ),
         ],
       ),
     );
+
     if (confirmado != true) return;
 
     await _executarComLoading(() async {
@@ -409,14 +422,21 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           tipoLiquidacao: 'TOTAL',
           dataLiquidacao: DateTime.now(),
           valorLiquidado: valor,
-          formaPagamentoRealizada: _formaPagamentoBackend(item['formaPagamento']?.toString() ?? 'Pix'),
+          formaPagamentoRealizada: _formaPagamentoBackend(
+            item['formaPagamento']?.toString() ?? 'Pix',
+          ),
           observacoes: 'Liquidação realizada pela agenda financeira.',
           referenciaExterna: item['id']?.toString(),
         ),
       );
+
       await _consultar();
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento liquidado com sucesso.')));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lançamento liquidado com sucesso.')),
+      );
     });
   }
 
@@ -480,7 +500,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                     LinearProgressIndicator(minHeight: 3),
                   ],
                   const SizedBox(height: 14),
-                  _buildResumo(theme),
+                  _buildResumo(context, theme),
                   const SizedBox(height: 18),
                   _buildAbas(theme),
                   const SizedBox(height: 16),
@@ -592,56 +612,112 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildResumo(ThemeData theme) {
+  Widget _buildResumo(BuildContext context, ThemeData theme) {
+    final regionalizacao = context.watch<LocaleSettingsProvider>();
+
     final cards = <Map<String, dynamic>>[
-      {'titulo': 'A receber aberto', 'valor': _totalReceberPrevisto, 'icone': Icons.south_west_rounded},
-      {'titulo': 'A pagar aberto', 'valor': _totalPagarPrevisto, 'icone': Icons.north_east_rounded},
-      {'titulo': 'Saldo previsto', 'valor': _saldoPrevisto, 'icone': Icons.query_stats_rounded},
-      {'titulo': 'Recebido confirmado', 'valor': _totalRecebidoConfirmado, 'icone': Icons.verified_rounded},
-      {'titulo': 'Pago confirmado', 'valor': _totalPagoConfirmado, 'icone': Icons.task_alt_rounded},
-      {'titulo': 'Saldo confirmado', 'valor': _saldoConfirmado, 'icone': Icons.account_balance_wallet_rounded},
+      {
+        'titulo': 'A receber aberto',
+        'valor': _totalReceberPrevisto,
+        'icone': Icons.south_west_rounded,
+      },
+      {
+        'titulo': 'A pagar aberto',
+        'valor': _totalPagarPrevisto,
+        'icone': Icons.north_east_rounded,
+      },
+      {
+        'titulo': 'Saldo previsto',
+        'valor': _saldoPrevisto,
+        'icone': Icons.query_stats_rounded,
+      },
+      {
+        'titulo': 'Recebido confirmado',
+        'valor': _totalRecebidoConfirmado,
+        'icone': Icons.verified_rounded,
+      },
+      {
+        'titulo': 'Pago confirmado',
+        'valor': _totalPagoConfirmado,
+        'icone': Icons.task_alt_rounded,
+      },
+      {
+        'titulo': 'Saldo confirmado',
+        'valor': _saldoConfirmado,
+        'icone': Icons.account_balance_wallet_rounded,
+      },
     ];
+
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: cards.map((card) => SizedBox(width: 260, child: _cardResumo(theme, card))).toList(),
+      children: cards
+          .map(
+            (card) => SizedBox(
+          width: 260,
+          child: _cardResumo(theme, card, regionalizacao),
+        ),
+      )
+          .toList(),
     );
   }
 
-  Widget _cardResumo(ThemeData theme, Map<String, dynamic> card) {
+  Widget _cardResumo(
+      ThemeData theme,
+      Map<String, dynamic> card,
+      LocaleSettingsProvider regionalizacao,
+      ) {
     final valor = _toDouble(card['valor']);
 
     return Card(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(children: <Widget>[
-          Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(card['titulo'] as String, style: const TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                _buildValorResumoAnimado(theme, valor),
-              ],
+        child: Row(
+          children: <Widget>[
+            Icon(
+              card['icone'] as IconData,
+              color: theme.colorScheme.primary,
             ),
-          ),
-        ]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    card['titulo'] as String,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  _buildValorResumoAnimado(
+                    theme,
+                    valor,
+                    regionalizacao,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildValorResumoAnimado(ThemeData theme, double valor) {
+  Widget _buildValorResumoAnimado(
+      ThemeData theme,
+      double valor,
+      LocaleSettingsProvider regionalizacao,
+      ) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: valor),
       duration: const Duration(milliseconds: 750),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Text(
-          _formatarMoeda(value),
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          regionalizacao.formatCurrency(value),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+          ),
         );
       },
     );
@@ -1048,17 +1124,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String _formatarMoeda(double valor) {
-    final negativo = valor < 0;
-    final absoluto = valor.abs();
-    final partes = absoluto.toStringAsFixed(2).split('.');
-    final inteiro = partes[0];
-    final decimal = partes[1];
-    final buffer = StringBuffer();
-    for (var i = 0; i < inteiro.length; i++) {
-      final indexInvertido = inteiro.length - i;
-      buffer.write(inteiro[i]);
-      if (indexInvertido > 1 && indexInvertido % 3 == 1) buffer.write('.');
-    }
-    return '${negativo ? '-R\$ ' : 'R\$ '}${buffer.toString()},$decimal';
+    final regionalizacao = context.read<LocaleSettingsProvider>();
+    return regionalizacao.formatCurrency(valor);
   }
 }

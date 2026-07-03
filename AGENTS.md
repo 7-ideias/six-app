@@ -147,6 +147,25 @@ Backend:
 * Garantir `TextOverflow.ellipsis`, `maxLines` e responsividade para números grandes e traduções maiores.
 * Não exagerar na duração nem criar efeito contínuo; depois de atingir o valor final, o número deve permanecer estável.
 
+## Regionalização, moeda e formatação global
+
+* Configurações de regionalização da empresa devem ser tratadas como estado global do app, não como dado isolado de uma tela.
+* Usar `LocaleSettingsProvider` como fonte principal para idioma, país, moeda, fuso horário, formatos de data/hora, separadores numéricos, casas decimais, múltiplas moedas e arredondamento financeiro.
+* Não instanciar `LocaleSettingsProvider()` manualmente dentro de telas, services ou helpers. Consumir sempre via `context.watch`, `context.read` ou `context.select`.
+* Não criar providers paralelos para os mesmos dados de idioma/regionalização sem integrar claramente com o provider global existente.
+* Para valores monetários na UI, não hardcodar `R$`, `BRL`, `USD`, separador decimal, separador de milhar ou casas decimais diretamente na tela.
+* Preferir `regionalizacao.formatCurrency(valor)` ou helper centralizado equivalente que consuma `LocaleSettingsProvider`.
+* Para indicadores monetários animados com `TweenAnimationBuilder<double>`, manter o valor bruto como `num/double` durante a animação e aplicar `formatCurrency(animatedValue)` apenas no momento de renderizar o texto.
+* Não misturar valor numérico e valor já formatado no mesmo campo de mapa/lista usado por cards. Se houver animação, o campo deve continuar numérico.
+* Ao salvar regionalização, enviar ao backend apenas códigos técnicos, como `BRL`, `USD`, `MONDAY`, `pt`, `BR`, e nunca labels traduzidos.
+* Após salvar regionalização, atualizar o provider global com a configuração persistida ou recarregada do backend antes de depender do novo valor em outras telas.
+* Quando uma tela precisar apenas ler a moeda atual, preferir `context.select<LocaleSettingsProvider, String>((p) => p.currencyCode)` para evitar rebuilds desnecessários.
+* Quando uma função de ação precisar formatar um valor fora do build, usar `context.read<LocaleSettingsProvider>()`.
+* Se uma tela ainda possuir método local como `_formatarMoeda`, ele deve delegar para o provider global ou para helper centralizado. Não manter implementação local fixa com símbolo ou separadores hardcoded.
+* Para datas e horas exibidas ao usuário, preferir helpers do provider global ou helper centralizado que respeite `dateFormat`, `timeFormat` e `timeZone`.
+* Alterações de regionalização não devem implementar automaticamente regras de negócio complexas, como venda multi-moeda, a menos que a tarefa peça explicitamente. A primeira responsabilidade é persistir, expor e formatar corretamente.
+* Ao testar moeda, validar o fluxo completo: salvar `currencyCode`, recarregar a tela, confirmar o valor no provider e verificar se os textos monetários exibem a nova moeda.
+
 ## Responsividade
 
 * Evitar overflow em web e mobile.
