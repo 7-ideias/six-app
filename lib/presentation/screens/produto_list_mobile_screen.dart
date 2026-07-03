@@ -219,28 +219,27 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               ),
             ),
             actions: <Widget>[
-              if (!isSelecao)
-                IconButton(
-                  tooltip: _exibicaoHorizontal
-                      ? 'Usar visualização vertical'
-                      : 'Usar visualização horizontal',
-                  icon: _salvandoPreferencia
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(
-                          _exibicaoHorizontal
-                              ? Icons.view_agenda_outlined
-                              : Icons.view_carousel_outlined,
+              IconButton(
+                tooltip: _exibicaoHorizontal
+                    ? 'Usar visualização vertical'
+                    : 'Usar visualização horizontal',
+                icon: _salvandoPreferencia
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                  onPressed:
-                      _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
-                ),
+                      )
+                    : Icon(
+                        _exibicaoHorizontal
+                            ? Icons.view_agenda_outlined
+                            : Icons.view_carousel_outlined,
+                      ),
+                onPressed:
+                    _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
+              ),
               IconButton(
                 tooltip: 'Ordenar',
                 icon: const Icon(Icons.swap_vert_rounded),
