@@ -70,7 +70,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
       if (mounted) setState(() {});
     } catch (_) {
-      // A tela continua vertical caso nao consiga carregar a preferencia.
+      // Mantem a visualizacao vertical quando as preferencias ainda nao carregaram.
     }
   }
 
@@ -111,6 +111,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     final String normalizado = valor.toUpperCase();
     return normalizado == tipo.toUpperCase() ||
         (tipo == 'SERVICO' && normalizado == 'SERVIÇO');
+  }
+
+  Future<void> _alternarModoExibicaoProdutos() async {
+    await _alterarModoExibicaoProdutos(
+      _exibicaoHorizontal
+          ? ModoDeExibicaoUsuario.vertical
+          : ModoDeExibicaoUsuario.horizontal,
+    );
   }
 
   Future<void> _alterarModoExibicaoProdutos(
@@ -211,6 +219,28 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               ),
             ),
             actions: <Widget>[
+              if (!isSelecao)
+                IconButton(
+                  tooltip: _exibicaoHorizontal
+                      ? 'Usar visualização vertical'
+                      : 'Usar visualização horizontal',
+                  icon: _salvandoPreferencia
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          _exibicaoHorizontal
+                              ? Icons.view_agenda_outlined
+                              : Icons.view_carousel_outlined,
+                        ),
+                  onPressed:
+                      _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
+                ),
               IconButton(
                 tooltip: 'Ordenar',
                 icon: const Icon(Icons.swap_vert_rounded),
@@ -242,11 +272,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     const SizedBox(height: 14),
                     SixStaggeredEntry(
                       delay: const Duration(milliseconds: 155),
-                      child: _buildModoExibicaoSelector(),
-                    ),
-                    const SizedBox(height: 14),
-                    SixStaggeredEntry(
-                      delay: const Duration(milliseconds: 190),
                       child: _buildSummarySection(),
                     ),
                   ],
@@ -463,44 +488,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         ),
-      ),
-    );
-  }
-
-  Widget _buildModoExibicaoSelector() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: _ViewModeButton(
-              label: 'Vertical',
-              icon: Icons.view_agenda_outlined,
-              selected: !_exibicaoHorizontal,
-              saving: _salvandoPreferencia && !_exibicaoHorizontal,
-              onTap: () => _alterarModoExibicaoProdutos(
-                ModoDeExibicaoUsuario.vertical,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _ViewModeButton(
-              label: 'Horizontal',
-              icon: Icons.view_carousel_outlined,
-              selected: _exibicaoHorizontal,
-              saving: _salvandoPreferencia && _exibicaoHorizontal,
-              onTap: () => _alterarModoExibicaoProdutos(
-                ModoDeExibicaoUsuario.horizontal,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -958,75 +945,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String _formatNumber(double value) {
     if (value % 1 == 0) return value.toInt().toString();
     return value.toStringAsFixed(1).replaceAll('.', ',');
-  }
-}
-
-class _ViewModeButton extends StatelessWidget {
-  const _ViewModeButton({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.saving,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final bool saving;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      child: Material(
-        color: selected ? _ProdutolistMobileScreenState._accentColor : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: saving ? null : onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                if (saving)
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                else
-                  Icon(
-                    icon,
-                    size: 18,
-                    color: selected ? Colors.white : _ProdutolistMobileScreenState._mutedTextColor,
-                  ),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: selected ? Colors.white : _ProdutolistMobileScreenState._mutedTextColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
