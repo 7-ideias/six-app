@@ -22,6 +22,7 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
   final VendaNaoLiquidadaApiClient _apiClient = VendaNaoLiquidadaApiClient();
 
   bool _loading = true;
+  bool _cancelando = false;
   String? _erro;
   List<VendaNaoLiquidadaModel> _vendas = <VendaNaoLiquidadaModel>[];
 
@@ -57,8 +58,134 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
       ),
     );
 
+    if (!mounted) return;
+
     if (recebeu == true) {
       await _carregar();
+      return;
+    }
+
+    if (recebeu == false) {
+      await _confirmarCancelamentoVenda(venda);
+    }
+  }
+
+  Future<void> _confirmarCancelamentoVenda(VendaNaoLiquidadaModel venda) async {
+    final bool? confirmou = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext bottomSheetContext) {
+        final theme = Theme.of(bottomSheetContext);
+        return SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 46,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: <Widget>[
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text('Cancelar venda em aberto?', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                          Text(
+                            'Esta ação apaga a operação e devolve os produtos ao estoque quando aplicável.',
+                            style: theme.textTheme.bodyMedium?.copyWith(color: _mutedTextColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFFED7AA)),
+                  ),
+                  child: Text(
+                    '${venda.descricao}\n${_formatarValor(venda.valorAberto)} • ${venda.itens.fold<int>(0, (soma, item) => soma + item.quantidade)} item(ns)',
+                    style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800, height: 1.35),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: _cancelando ? null : () => Navigator.of(bottomSheetContext).pop(true),
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: const Text('Confirmar cancelamento'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _cancelando ? null : () => Navigator.of(bottomSheetContext).pop(false),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('Apenas voltar'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmou == true) {
+      await _cancelarVendaNaoLiquidada(venda);
+    }
+  }
+
+  Future<void> _cancelarVendaNaoLiquidada(VendaNaoLiquidadaModel venda) async {
+    if (_cancelando) return;
+
+    setState(() => _cancelando = true);
+    try {
+      await _apiClient.cancelar(idRecebimento: venda.idRecebimento);
+      if (!mounted) return;
+      _mostrarSnack('Venda em aberto cancelada.');
+      await _carregar();
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _cancelando = false);
     }
   }
 
@@ -87,7 +214,7 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
         foregroundColor: Colors.white,
         title: const Text('Vendas a receber', style: TextStyle(fontWeight: FontWeight.w800)),
         actions: <Widget>[
-          IconButton(onPressed: _loading ? null : _carregar, icon: const Icon(Icons.refresh_rounded)),
+          IconButton(onPressed: _loading || _cancelando ? null : _carregar, icon: const Icon(Icons.refresh_rounded)),
         ],
       ),
       body: SafeArea(child: _buildBody()),
@@ -107,22 +234,33 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
       return _buildEstadoMensagem(Icons.check_circle_outline, 'Nenhuma venda em aberto', 'Quando uma venda for marcada para receber depois, ela aparecerá aqui.', recarregar: true);
     }
 
-    return RefreshIndicator(
-      onRefresh: _carregar,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-        children: <Widget>[
-          _buildHeaderResumo().animate().fade(duration: 350.ms).slideY(begin: 0.05, curve: Curves.easeOut),
-          const SizedBox(height: 16),
-          ..._vendas.asMap().entries.map((entry) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildVendaCard(entry.value).animate().fade(duration: 320.ms, delay: (70 + entry.key * 35).ms).slideY(begin: 0.04, curve: Curves.easeOut),
-            );
-          }),
-        ],
-      ),
+    return Stack(
+      children: <Widget>[
+        RefreshIndicator(
+          onRefresh: _carregar,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            children: <Widget>[
+              _buildHeaderResumo().animate().fade(duration: 350.ms).slideY(begin: 0.05, curve: Curves.easeOut),
+              const SizedBox(height: 16),
+              ..._vendas.asMap().entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildVendaCard(entry.value).animate().fade(duration: 320.ms, delay: (70 + entry.key * 35).ms).slideY(begin: 0.04, curve: Curves.easeOut),
+                );
+              }),
+            ],
+          ),
+        ),
+        if (_cancelando)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.08),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+      ],
     );
   }
 
@@ -166,7 +304,7 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: () => _abrirVendaNoPdv(venda),
+        onTap: _cancelando ? null : () => _abrirVendaNoPdv(venda),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
