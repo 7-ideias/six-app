@@ -38,15 +38,10 @@ class WebAuthShell extends StatelessWidget {
       backgroundColor: SixAuthTokens.colorShellBackground,
       body: Row(
         children: [
-          if (showBrandPanel)
-            const Expanded(flex: 5, child: _BrandPanel()),
+          if (showBrandPanel) const Expanded(flex: 5, child: _BrandPanel()),
           Expanded(
             flex: showBrandPanel ? 4 : 10,
-            child: _FormPane(
-              showBack: showBack,
-              onBack: onBack,
-              child: child,
-            ),
+            child: _FormPane(showBack: showBack, onBack: onBack, child: child),
           ),
         ],
       ),
@@ -261,10 +256,7 @@ class _BrandPanelState extends State<_BrandPanel> {
                       padding: EdgeInsets.only(
                         right: i == _brandSlides.length - 1 ? 0 : 6,
                       ),
-                      child: _Dot(
-                        active: active,
-                        onTap: () => _goTo(i),
-                      ),
+                      child: _Dot(active: active, onTap: () => _goTo(i)),
                     );
                   }),
                 ),
@@ -294,10 +286,7 @@ class _Blob extends StatelessWidget {
 }
 
 class _Dot extends StatelessWidget {
-  const _Dot({
-    required this.active,
-    required this.onTap,
-  });
+  const _Dot({required this.active, required this.onTap});
 
   final bool active;
   final VoidCallback onTap;
@@ -315,9 +304,10 @@ class _Dot extends StatelessWidget {
           width: active ? 32 : 18,
           height: 4,
           decoration: BoxDecoration(
-            color: active
-                ? const Color(0xE6FFFFFF) // 90% white
-                : const Color(0x59FFFFFF), // 35% white
+            color:
+                active
+                    ? const Color(0xE6FFFFFF) // 90% white
+                    : const Color(0x59FFFFFF), // 35% white
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -369,7 +359,8 @@ class _FormPane extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
-                            onPressed: onBack ?? () => Navigator.maybePop(context),
+                            onPressed:
+                                onBack ?? () => Navigator.maybePop(context),
                             icon: const Icon(
                               Icons.arrow_back_rounded,
                               size: 18,
@@ -505,10 +496,7 @@ class WebAuthSecondaryButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (leading != null) ...[
-              leading!,
-              const SizedBox(width: 10),
-            ],
+            if (leading != null) ...[leading!, const SizedBox(width: 10)],
             Text(
               label,
               style: const TextStyle(

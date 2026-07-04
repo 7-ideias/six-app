@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
@@ -10,6 +12,7 @@ import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
+import '../components/drawer_mobile.dart';
 
 class OperacaoMobileScreen extends StatefulWidget {
   const OperacaoMobileScreen({super.key});
@@ -26,6 +29,9 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   static const Color _surfaceColor = Colors.white;
   static const Color _mutedTextColor = Color(0xFF64748B);
   static const Color _titleTextColor = Color(0xFF0F172A);
+
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
 
   final TelaInicialWebApiClient _telaInicialApiClient =
       HttpResumoDaEmpresaApiClient(canal: 'mobile');
@@ -130,6 +136,16 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     }
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? selected = await _picker.pickImage(source: source);
+
+    if (selected == null) {
+      return;
+    }
+
+    setState(() => _image = File(selected.path));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,6 +167,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           ),
         ],
       ),
+      drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _carregarResumoAtendimento,
@@ -341,14 +358,16 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     final List<_TrackingItem> items = <_TrackingItem>[
       _TrackingItem(
         title: 'Vendas a receber',
-        subtitle: _erroResumo == null
-            ? 'Vendas não liquidadas'
-            : 'Não foi possível atualizar agora',
+        subtitle:
+            _erroResumo == null
+                ? 'Vendas não liquidadas'
+                : 'Não foi possível atualizar agora',
         count: totalVendasAReceber,
         icon: Icons.point_of_sale_outlined,
         isLoading: _carregandoResumo,
         hasError: _erroResumo != null,
-        onTap: () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
+        onTap:
+            () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
       ),
       _TrackingItem(
         title: 'Orçamentos pendentes',
@@ -373,16 +392,20 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       ),
     ];
 
-    return items.asMap().entries.map((MapEntry<int, _TrackingItem> entry) {
-      final int delay = 280 + (entry.key * 45);
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: SixStaggeredEntry(
-          delay: Duration(milliseconds: delay),
-          child: _buildTrackingTile(entry.value),
-        ),
-      );
-    }).toList(growable: false);
+    return items
+        .asMap()
+        .entries
+        .map((MapEntry<int, _TrackingItem> entry) {
+          final int delay = 280 + (entry.key * 45);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SixStaggeredEntry(
+              delay: Duration(milliseconds: delay),
+              child: _buildTrackingTile(entry.value),
+            ),
+          );
+        })
+        .toList(growable: false);
   }
 
   Widget _buildPrimaryActionCard({
@@ -508,9 +531,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: item.hasError
-                  ? const Color(0xFFFCA5A5)
-                  : const Color(0xFFE2E8F0),
+              color:
+                  item.hasError
+                      ? const Color(0xFFFCA5A5)
+                      : const Color(0xFFE2E8F0),
             ),
             boxShadow: const <BoxShadow>[
               BoxShadow(
@@ -549,9 +573,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: item.hasError
-                            ? const Color(0xFFB91C1C)
-                            : _mutedTextColor,
+                        color:
+                            item.hasError
+                                ? const Color(0xFFB91C1C)
+                                : _mutedTextColor,
                         fontSize: 12,
                       ),
                     ),
@@ -572,25 +597,26 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   Widget _buildTrackingCount(_TrackingItem item) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
-      child: item.isLoading
-          ? Container(
-              key: const ValueKey<String>('loading-count'),
-              width: 34,
-              height: 22,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(999),
+      child:
+          item.isLoading
+              ? Container(
+                key: const ValueKey<String>('loading-count'),
+                width: 34,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              )
+              : SixAnimatedNumberText(
+                key: ValueKey<String>('count-${item.title}-${item.count}'),
+                value: item.count,
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            )
-          : SixAnimatedNumberText(
-              key: ValueKey<String>('count-${item.title}-${item.count}'),
-              value: item.count,
-              style: const TextStyle(
-                color: _titleTextColor,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
     );
   }
 
@@ -600,7 +626,8 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
+        onTap:
+            () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
