@@ -266,36 +266,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       ),
                     )
                     : null,
-            actions: <Widget>[
-              IconButton(
-                tooltip:
-                    _exibicaoHorizontal
-                        ? 'Usar visualização vertical'
-                        : 'Usar visualização horizontal',
-                icon:
-                    _salvandoPreferencia
-                        ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                        : Icon(
-                          _exibicaoHorizontal
-                              ? Icons.view_agenda_outlined
-                              : Icons.view_carousel_outlined,
-                        ),
-                onPressed:
-                    _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
-              ),
-              IconButton(
-                tooltip: 'Ordenar',
-                icon: const Icon(Icons.swap_vert_rounded),
-                onPressed: _showSortOptions,
-              ),
-            ],
+            actions: const <Widget>[],
           ),
           body: SafeArea(
             child: Stack(
@@ -651,26 +622,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           _formatCurrency(response.vlEstoqueEmGrana),
         );
 
-        return Row(
+        return Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            Expanded(child: _SummaryCard(label: 'Itens', value: itensResumo)),
-            const SizedBox(width: 6),
-            Expanded(
-              child: _SummaryCard(
-                label: 'Sem estoque',
-                value: semEstoqueResumo,
-              ),
+            _SummaryCard(label: 'Itens', value: itensResumo),
+            _SummaryCard(label: 'Sem estoque', value: semEstoqueResumo),
+            _SummaryCard(label: 'Valor', value: valorResumo, compact: true),
+            Padding(
+              padding: const EdgeInsets.only(left: 2),
+              child: _buildExibirValoresHeaderButton(),
             ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: _SummaryCard(
-                label: 'Valor',
-                value: valorResumo,
-                compact: true,
-              ),
-            ),
-            const SizedBox(width: 8),
-            _buildExibirValoresHeaderButton(),
           ],
         );
       },
@@ -732,6 +695,35 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           child: const Icon(
             Icons.search_rounded,
             color: _accentColor,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFiltroListHeaderButton() {
+    final bool ordenacaoAlterada = ordenacao != 'nome';
+
+    return Tooltip(
+      message: 'Ordenar catálogo',
+      child: InkWell(
+        onTap: _showSortOptions,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color:
+                ordenacaoAlterada
+                    ? const Color(0xFFDDEBFF)
+                    : const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Icon(
+            Icons.tune_rounded,
+            color: ordenacaoAlterada ? _secondaryColor : _accentColor,
             size: 18,
           ),
         ),
@@ -854,9 +846,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 : (_isProdutoSelecionado
                     ? 'Toque no produto para adicionar'
                     : 'Toque no serviço para adicionar'))
-            : (_isProdutoSelecionado
-                ? 'Produtos cadastrados'
-                : 'Serviços cadastrados');
+            : (_isProdutoSelecionado ? 'Produtos' : 'Serviços');
 
     return Row(
       children: <Widget>[
@@ -879,6 +869,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           const SizedBox(width: 10),
         ],
         _buildBuscaListHeaderButton(),
+        const SizedBox(width: 8),
+        _buildFiltroListHeaderButton(),
         const SizedBox(width: 8),
         _buildModoExibicaoListHeaderButton(),
         const SizedBox(width: 8),
