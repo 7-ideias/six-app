@@ -2058,42 +2058,106 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   void _showSortOptions() {
     showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x47000000),
       builder: (BuildContext context) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          top: false,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 28,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text(
-                  'Ordenar catálogo',
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
+                Row(
+                  children: <Widget>[
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: _accentColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            'Organizar catálogo',
+                            style: TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Escolha como os itens aparecem na lista.',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 _SortOptionTile(
+                  icon: Icons.sort_by_alpha_rounded,
                   title: 'Nome',
+                  subtitle: 'Ordem alfabética',
                   selected: ordenacao == 'nome',
                   onTap: () => _changeSort('nome'),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 _SortOptionTile(
+                  icon: Icons.south_west_rounded,
                   title: 'Menor preço',
+                  subtitle: 'Do mais barato ao mais caro',
                   selected: ordenacao == 'precoAsc',
                   onTap: () => _changeSort('precoAsc'),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 _SortOptionTile(
+                  icon: Icons.north_east_rounded,
                   title: 'Maior preço',
+                  subtitle: 'Do mais caro ao mais barato',
                   selected: ordenacao == 'precoDesc',
                   onTap: () => _changeSort('precoDesc'),
                 ),
@@ -2449,50 +2513,119 @@ class _InfoChip extends StatelessWidget {
 
 class _SortOptionTile extends StatelessWidget {
   const _SortOptionTile({
+    required this.icon,
     required this.title,
+    required this.subtitle,
     required this.selected,
     required this.onTap,
   });
 
+  final IconData icon;
   final String title;
+  final String subtitle;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? const Color(0xFFEFF6FF) : Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color:
-                  selected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+            width: selected ? 1.3 : 1,
           ),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color:
-                        selected
-                            ? const Color(0xFF2563EB)
-                            : const Color(0xFF0F172A),
-                    fontWeight: FontWeight.w800,
-                  ),
+          boxShadow:
+              selected
+                  ? const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x142563EB),
+                      blurRadius: 14,
+                      offset: Offset(0, 6),
+                    ),
+                  ]
+                  : const <BoxShadow>[],
+        ),
+        child: Row(
+          children: <Widget>[
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: selected ? const Color(0xFF2563EB) : Colors.white,
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(
+                  color:
+                      selected
+                          ? const Color(0xFF2563EB)
+                          : const Color(0xFFE2E8F0),
                 ),
               ),
-              if (selected)
-                const Icon(Icons.check_rounded, color: Color(0xFF2563EB)),
-            ],
-          ),
+              child: Icon(
+                icon,
+                color: selected ? Colors.white : const Color(0xFF64748B),
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color:
+                          selected
+                              ? const Color(0xFF1D4ED8)
+                              : const Color(0xFF0F172A),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedScale(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              scale: selected ? 1 : 0,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2563EB),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
