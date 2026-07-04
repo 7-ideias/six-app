@@ -47,6 +47,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   final Map<String, _ProdutoSelecionadoMobile> _selecionados =
       <String, _ProdutoSelecionadoMobile>{};
   final Set<String> _favoritosVisuais = <String>{};
+  final Map<String, int> _indiceImagemHorizontal = <String, int>{};
 
   static const double _horizontalViewportFraction = 0.90;
 
@@ -909,7 +910,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Widget _buildProdutoCard(ProdutoModel produto) {
     if (widget.isSelecao) return _buildProdutoSelectionCard(produto);
 
-    if (_exibicaoHorizontal && _produtoTemImagem(produto)) {
+    if (_exibicaoHorizontal) {
       return _buildProdutoHorizontalComFotoCard(produto);
     }
 
@@ -1035,8 +1036,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   ) {
     if (isSelecao) return _selecaoMultiplaAtiva ? 376 : 118;
 
-    final bool possuiFoto = itensDaLista.any(_produtoTemImagem);
-    final double alturaMinima = possuiFoto ? 318 : 238;
+    const double alturaMinima = 318;
 
     final MediaQueryData media = MediaQuery.of(context);
     const double alturaReservadaPeloFab = 96;
@@ -1054,15 +1054,20 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   bool _produtoTemImagem(ProdutoModel produto) {
-    final dynamic imagem =
-        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+    return _imagensValidasProduto(produto).isNotEmpty;
+  }
 
-    if (imagem == null) return false;
+  List<dynamic> _imagensValidasProduto(ProdutoModel produto) {
+    final List<dynamic> imagens = List<dynamic>.from(
+      produto.imagens ?? const <dynamic>[],
+    );
 
-    final String imagemBase64 = (imagem.imagemBase64 ?? '').toString().trim();
-    final String url = (imagem.url ?? '').toString().trim();
+    return imagens.where((dynamic imagem) {
+      final String imagemBase64 = (imagem.imagemBase64 ?? '').toString().trim();
+      final String url = (imagem.url ?? '').toString().trim();
 
-    return imagemBase64.isNotEmpty || url.isNotEmpty;
+      return imagemBase64.isNotEmpty || url.isNotEmpty;
+    }).toList();
   }
 
   Widget _buildProdutoHorizontalComFotoCard(ProdutoModel produto) {
@@ -1184,46 +1189,79 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildProdutoHorizontalImagem(ProdutoModel produto, bool isProduto) {
-    final dynamic imagem =
-        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
-    final Uint8List? bytes =
-        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
+    final List<dynamic> imagens = _imagensValidasProduto(produto);
+    final String chave = _chaveProduto(produto);
 
-    Widget content;
-
-    if (bytes != null) {
-      content = Image.memory(
-        bytes,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
+    if (imagens.isEmpty) {
+      return _buildProdutoHorizontalImagemContainer(
+        _buildHeroPlaceholder(isProduto),
       );
-    } else if (imagem?.url != null && imagem!.url!.trim().isNotEmpty) {
-      content = Image.network(
-        imagem.url!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        loadingBuilder: (
-          BuildContext context,
-          Widget child,
-          ImageChunkEvent? loadingProgress,
-        ) {
-          if (loadingProgress == null) return child;
-          return const Center(
-            child: SizedBox(
-              height: 22,
-              width: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) => _buildHeroPlaceholder(isProduto),
-      );
-    } else {
-      content = _buildHeroPlaceholder(isProduto);
     }
 
+    final int indiceAtual = (_indiceImagemHorizontal[chave] ?? 0).clamp(
+      0,
+      imagens.length - 1,
+    );
+
+    return _buildProdutoHorizontalImagemContainer(
+      Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child:
+                imagens.length == 1
+                    ? _buildImagemProdutoContent(imagens.first, isProduto)
+                    : PageView.builder(
+                      key: PageStorageKey<String>(
+                        'produto-horizontal-imagens-$chave',
+                      ),
+                      itemCount: imagens.length,
+                      onPageChanged: (int index) {
+                        if (_indiceImagemHorizontal[chave] == index) return;
+                        setState(() => _indiceImagemHorizontal[chave] = index);
+                      },
+                      itemBuilder: (BuildContext context, int index) {
+                        return _buildImagemProdutoContent(
+                          imagens[index],
+                          isProduto,
+                        );
+                      },
+                    ),
+          ),
+          if (imagens.length > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 9,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List<Widget>.generate(imagens.length, (int index) {
+                  final bool ativo = index == indiceAtual;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: ativo ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: ativo ? Colors.white : const Color(0x99FFFFFF),
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: const <BoxShadow>[
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProdutoHorizontalImagemContainer(Widget child) {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -1231,7 +1269,46 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: content,
+      child: child,
+    );
+  }
+
+  Widget _buildImagemProdutoContent(dynamic imagem, bool isProduto) {
+    final Uint8List? bytes =
+        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
+
+    if (bytes != null) {
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    final String url = (imagem?.url ?? '').toString().trim();
+    if (url.isEmpty) return _buildHeroPlaceholder(isProduto);
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      loadingBuilder: (
+        BuildContext context,
+        Widget child,
+        ImageChunkEvent? loadingProgress,
+      ) {
+        if (loadingProgress == null) return child;
+        return const Center(
+          child: SizedBox(
+            height: 22,
+            width: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      },
+      errorBuilder: (_, __, ___) => _buildHeroPlaceholder(isProduto),
     );
   }
 
