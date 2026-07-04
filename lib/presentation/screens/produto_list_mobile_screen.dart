@@ -38,6 +38,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final TextEditingController _controllerBusca = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final FocusNode _focusBusca = FocusNode();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
@@ -59,6 +60,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String tipoSelecionado = 'PRODUTO';
   String ordenacao = 'nome';
   bool _salvandoPreferencia = false;
+  bool _fixarHeaderLista = false;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
@@ -88,6 +90,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_atualizarHeaderListaFixo);
     Future.microtask(_carregarPreferenciasDoUsuario);
     Future.microtask(_recarregar);
   }
@@ -95,6 +98,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   @override
   void dispose() {
     _timerOcultarBusca?.cancel();
+    _scrollController.dispose();
     _horizontalProdutosController.dispose();
     _focusBusca.dispose();
     _controllerBusca.dispose();
@@ -288,40 +292,55 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ],
           ),
           body: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _recarregar,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  isSelecao ? 12 : 14,
-                  16,
-                  bottomPadding,
-                ),
-                children: <Widget>[
-                  if (!isSelecao) ...<Widget>[
-                    SixStaggeredEntry(child: _buildHeaderCard()),
-                    const SizedBox(height: 16),
-                  ],
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 70),
-                    child: _buildTabs(compact: isSelecao),
-                  ),
-                  if (_exibirCampoBusca) ...<Widget>[
-                    const SizedBox(height: 12),
-                    SixStaggeredEntry(
-                      delay: const Duration(milliseconds: 120),
-                      child: _buildSearchField(),
+            child: Stack(
+              children: <Widget>[
+                RefreshIndicator(
+                  onRefresh: _recarregar,
+                  child: ListView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      isSelecao ? 12 : 14,
+                      16,
+                      bottomPadding,
                     ),
-                  ],
-                  SizedBox(
-                    height: _exibirCampoBusca ? (isSelecao ? 14 : 18) : 14,
+                    children: <Widget>[
+                      if (!isSelecao) ...<Widget>[
+                        SixStaggeredEntry(child: _buildHeaderCard()),
+                        const SizedBox(height: 16),
+                      ],
+                      SixStaggeredEntry(
+                        delay: const Duration(milliseconds: 70),
+                        child: _buildTabs(compact: isSelecao),
+                      ),
+                      if (_exibirCampoBusca) ...<Widget>[
+                        const SizedBox(height: 12),
+                        SixStaggeredEntry(
+                          delay: const Duration(milliseconds: 120),
+                          child: _buildSearchField(),
+                        ),
+                      ],
+                      SizedBox(
+                        height: _exibirCampoBusca ? (isSelecao ? 14 : 18) : 14,
+                      ),
+                      _buildListHeader(itensDaLista.length, provider.isLoading),
+                      const SizedBox(height: 10),
+                      ..._buildListContent(provider, itensDaLista, isSelecao),
+                    ],
                   ),
-                  _buildListHeader(itensDaLista.length, provider.isLoading),
-                  const SizedBox(height: 10),
-                  ..._buildListContent(provider, itensDaLista, isSelecao),
-                ],
-              ),
+                ),
+                if (_deveExibirHeaderListaFixo(isSelecao))
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildHeaderListaFixo(
+                      itensDaLista.length,
+                      provider.isLoading,
+                    ),
+                  ),
+              ],
             ),
           ),
           floatingActionButton:
@@ -341,6 +360,43 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               _selecaoMultiplaAtiva ? _buildBarraSelecaoMultipla() : null,
         );
       },
+    );
+  }
+
+  void _atualizarHeaderListaFixo() {
+    const double offsetParaFixarHeader = 180;
+
+    final bool deveFixar =
+        _scrollController.hasClients &&
+        _scrollController.offset >= offsetParaFixarHeader;
+
+    if (deveFixar == _fixarHeaderLista) return;
+
+    setState(() => _fixarHeaderLista = deveFixar);
+  }
+
+  bool _deveExibirHeaderListaFixo(bool isSelecao) {
+    return !isSelecao && !_exibicaoHorizontal && _fixarHeaderLista;
+  }
+
+  Widget _buildHeaderListaFixo(int count, bool isLoading) {
+    return Material(
+      color: _backgroundColor,
+      elevation: 8,
+      shadowColor: const Color(0x1A000000),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _buildListHeader(count, isLoading),
+            if (_exibirCampoBusca) ...<Widget>[
+              const SizedBox(height: 10),
+              _buildSearchField(),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
