@@ -2303,7 +2303,12 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int? numericValue = int.tryParse(value);
+    final TextStyle valueStyle = TextStyle(
+      fontSize: compact ? 10.5 : 12,
+      height: 1,
+      fontWeight: FontWeight.w900,
+      color: Colors.white,
+    );
 
     return Container(
       height: 34,
@@ -2329,31 +2334,99 @@ class _SummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          if (numericValue == null)
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: compact ? 10.5 : 12,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
-            )
-          else
-            SixAnimatedNumberText(
-              value: value,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
-            ),
+          _ResumoAnimatedValue(value: value, style: valueStyle),
         ],
       ),
     );
+  }
+}
+
+class _ResumoAnimatedValue extends StatelessWidget {
+  const _ResumoAnimatedValue({required this.value, required this.style});
+
+  final String value;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final _ResumoNumberValue? parsed = _ResumoNumberValue.tryParse(value);
+
+    if (parsed == null) {
+      return Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: parsed.number),
+      duration: const Duration(milliseconds: 650),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double animatedValue, Widget? child) {
+        return Text(
+          parsed.format(animatedValue),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        );
+      },
+    );
+  }
+}
+
+class _ResumoNumberValue {
+  const _ResumoNumberValue({
+    required this.number,
+    required this.isCurrency,
+    required this.hasDecimal,
+  });
+
+  final double number;
+  final bool isCurrency;
+  final bool hasDecimal;
+
+  static _ResumoNumberValue? tryParse(String value) {
+    final String trimmed = value.trim();
+
+    if (trimmed.isEmpty || trimmed.contains('•') || trimmed == '-') {
+      return null;
+    }
+
+    final bool isCurrency = trimmed.startsWith('R\$');
+    final bool hasDecimal = trimmed.contains(',');
+
+    final String numericText =
+        trimmed
+            .replaceAll('R\$', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '.')
+            .replaceAll(RegExp(r'[^0-9\.-]'), '')
+            .trim();
+
+    if (numericText.isEmpty) return null;
+
+    final double? number = double.tryParse(numericText);
+    if (number == null) return null;
+
+    return _ResumoNumberValue(
+      number: number,
+      isCurrency: isCurrency,
+      hasDecimal: hasDecimal,
+    );
+  }
+
+  String format(double value) {
+    if (isCurrency) {
+      return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+    }
+
+    if (hasDecimal) {
+      return value.toStringAsFixed(1).replaceAll('.', ',');
+    }
+
+    return value.round().toString();
   }
 }
 
