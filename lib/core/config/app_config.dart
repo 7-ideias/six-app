@@ -6,7 +6,7 @@ class AppConfig {
 
   static const String autoCustomerBaseUrl = String.fromEnvironment(
     'PUBLIC_FRONTEND_URL',
-    defaultValue: '',
+    defaultValue: 'https://six-app-iota.vercel.app/cliente/auto-cadastro',
   );
 
   static const String appVersion = String.fromEnvironment(
