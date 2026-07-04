@@ -138,12 +138,15 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   bool _matchesTipoSelecionado(ProdutoModel produto, String tipo) {
-    final String valor = produto.tipoProduto.trim();
-    if (valor.isEmpty) return tipo == 'PRODUTO';
+    return _normalizarTipoProduto(produto.tipoProduto) ==
+        _normalizarTipoProduto(tipo);
+  }
 
-    final String normalizado = valor.toUpperCase();
-    return normalizado == tipo.toUpperCase() ||
-        (tipo == 'SERVICO' && normalizado == 'SERVIÇO');
+  String _normalizarTipoProduto(String tipo) {
+    final String normalizado = tipo.trim().toUpperCase();
+    if (normalizado.isEmpty) return 'PRODUTO';
+    if (normalizado == 'SERVIÇO') return 'SERVICO';
+    return normalizado;
   }
 
   Future<void> _alternarModoExibicaoProdutos() async {
@@ -1386,13 +1389,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   String _chaveProduto(ProdutoModel produto) {
+    final String tipo = _normalizarTipoProduto(produto.tipoProduto);
+    final String prefixo = 'tipo:$tipo';
     final String? id = produto.id;
-    if (id != null && id.trim().isNotEmpty) return 'id:${id.trim()}';
+    if (id != null && id.trim().isNotEmpty) return '$prefixo|id:${id.trim()}';
 
     final String codigo = produto.codigoDeBarras.trim();
-    if (codigo.isNotEmpty) return 'codigo:$codigo';
+    if (codigo.isNotEmpty) return '$prefixo|codigo:$codigo';
 
-    return 'nome:${produto.nomeProduto.trim()}|preco:${produto.precoVenda}';
+    final String nome = produto.nomeProduto.trim().toLowerCase();
+    return '$prefixo|nome:$nome|preco:${produto.precoVenda}';
   }
 
   Widget _buildThumbnail(
@@ -1475,7 +1481,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       _controllerBusca.clear();
       produtosFiltrados = <ProdutoModel>[];
       todosProdutos = <ProdutoModel>[];
-      if (_selecaoMultiplaAtiva) _selecionados.clear();
     });
     _recarregar();
   }
