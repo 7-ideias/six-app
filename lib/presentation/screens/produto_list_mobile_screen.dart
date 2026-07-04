@@ -314,7 +314,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         delay: const Duration(milliseconds: 70),
                         child: _buildTabs(compact: isSelecao),
                       ),
-                      if (_exibirCampoBusca) ...<Widget>[
+                      if (_exibirCampoBusca &&
+                          !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
                         const SizedBox(height: 12),
                         SixStaggeredEntry(
                           delay: const Duration(milliseconds: 120),
@@ -322,10 +323,19 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         ),
                       ],
                       SizedBox(
-                        height: _exibirCampoBusca ? (isSelecao ? 14 : 18) : 14,
+                        height:
+                            _exibirCampoBusca &&
+                                    !_deveExibirHeaderListaFixo(isSelecao)
+                                ? (isSelecao ? 14 : 18)
+                                : 14,
                       ),
-                      _buildListHeader(itensDaLista.length, provider.isLoading),
-                      const SizedBox(height: 10),
+                      if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
+                        _buildListHeader(
+                          itensDaLista.length,
+                          provider.isLoading,
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                       ..._buildListContent(provider, itensDaLista, isSelecao),
                     ],
                   ),
@@ -453,26 +463,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         ),
       );
     }).toList();
-  }
-
-  double _calcularAlturaCatalogoDisponivel() {
-    final MediaQueryData media = MediaQuery.of(context);
-
-    const double alturaMinimaCatalogo = 238;
-    const double alturaReservadaPeloFab = 96;
-    const double espacamentoAteCatalogo = 312;
-
-    final double alturaDisponivel =
-        media.size.height -
-        media.padding.top -
-        media.padding.bottom -
-        kToolbarHeight -
-        alturaReservadaPeloFab -
-        espacamentoAteCatalogo;
-
-    return alturaDisponivel < alturaMinimaCatalogo
-        ? alturaMinimaCatalogo
-        : alturaDisponivel;
   }
 
   Widget _buildHeaderCard() {
@@ -709,7 +699,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   void _reiniciarTimerOcultarBusca() {
     _timerOcultarBusca?.cancel();
     _timerOcultarBusca = Timer(
-      const Duration(seconds: 5),
+      const Duration(seconds: 10),
       _ocultarCampoBuscaPorInatividade,
     );
   }
@@ -717,20 +707,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   void _ocultarCampoBuscaPorInatividade() {
     if (!mounted) return;
 
-    final bool tinhaBusca =
+    final bool temBusca =
         termoBusca.trim().isNotEmpty || _controllerBusca.text.trim().isNotEmpty;
 
     FocusManager.instance.primaryFocus?.unfocus();
 
-    if (tinhaBusca) {
-      _controllerBusca.clear();
-      termoBusca = '';
-      aplicarFiltroOrdenacao();
-    }
+    if (temBusca) return;
 
-    if (mounted) {
-      setState(() => _exibirCampoBusca = false);
-    }
+    setState(() => _exibirCampoBusca = false);
   }
 
   Widget _buildBuscaListHeaderButton() {
