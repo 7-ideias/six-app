@@ -622,16 +622,29 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           _formatCurrency(response.vlEstoqueEmGrana),
         );
 
-        return Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        return Stack(
+          clipBehavior: Clip.none,
           children: <Widget>[
-            _SummaryCard(label: 'Itens', value: itensResumo),
-            _SummaryCard(label: 'Sem estoque', value: semEstoqueResumo),
-            _SummaryCard(label: 'Valor', value: valorResumo, compact: true),
             Padding(
-              padding: const EdgeInsets.only(left: 2),
+              padding: const EdgeInsets.only(right: 44),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  _SummaryCard(label: 'Itens', value: itensResumo),
+                  _SummaryCard(label: 'Sem estoque', value: semEstoqueResumo),
+                  _SummaryCard(
+                    label: 'Valor',
+                    value: valorResumo,
+                    compact: true,
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
               child: _buildExibirValoresHeaderButton(),
             ),
           ],
