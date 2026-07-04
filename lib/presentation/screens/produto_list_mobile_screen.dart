@@ -399,7 +399,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
@@ -575,27 +575,32 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         if (response is! ProdutoResponseModel) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
             children: <Widget>[
-              _SummaryCard(
-                label: 'Itens',
-                value: response.skusTotaisNoEstoque.toString(),
-                icon: Icons.widgets_outlined,
-              ),
-              if (_isProdutoSelecionado)
-                _SummaryCard(
-                  label: 'Sem estoque',
-                  value: _formatNumber(response.qtSemEstoque),
-                  icon: Icons.inventory_outlined,
+              Expanded(
+                child: _SummaryCard(
+                  label: 'Itens',
+                  value: response.skusTotaisNoEstoque.toString(),
                 ),
-              _SummaryCard(
-                label: 'Valor',
-                value: _formatCurrency(response.vlEstoqueEmGrana),
-                icon: Icons.payments_outlined,
-                compact: true,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _SummaryCard(
+                  label: 'Sem estoque',
+                  value:
+                      _isProdutoSelecionado
+                          ? _formatNumber(response.qtSemEstoque)
+                          : '-',
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _SummaryCard(
+                  label: 'Valor',
+                  value: _formatCurrency(response.vlEstoqueEmGrana),
+                  compact: true,
+                ),
               ),
             ],
           ),
@@ -1698,85 +1703,64 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.label,
     required this.value,
-    required this.icon,
     this.compact = false,
   });
 
   final String label;
   final String value;
-  final IconData icon;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final int? numericValue = int.tryParse(value);
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: compact ? 112 : 94,
-        maxWidth: compact ? 132 : 120,
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: const Color(0x14FFFFFF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x22FFFFFF)),
       ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
-        decoration: BoxDecoration(
-          color: const Color(0x1AFFFFFF),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0x26FFFFFF)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                color: const Color(0x1FFFFFFF),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: Colors.white, size: 15),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 9,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFD7E3F5),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFFD7E3F5),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  if (numericValue == null)
-                    Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: compact ? 12 : 13,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    )
-                  else
-                    SixAnimatedNumberText(
-                      value: value,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                ],
+          ),
+          const SizedBox(height: 3),
+          if (numericValue == null)
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 10.5 : 12,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            )
+          else
+            SixAnimatedNumberText(
+              value: value,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
