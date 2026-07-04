@@ -46,6 +46,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   bool _exibirCampoBusca = false;
   final Map<String, _ProdutoSelecionadoMobile> _selecionados =
       <String, _ProdutoSelecionadoMobile>{};
+  final Set<String> _favoritosVisuais = <String>{};
 
   static const double _horizontalViewportFraction = 0.90;
 
@@ -743,6 +744,76 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
+  bool _produtoFavoritoVisual(ProdutoModel produto) {
+    return _favoritosVisuais.contains(_chaveProduto(produto));
+  }
+
+  void _alternarFavoritoVisual(ProdutoModel produto) {
+    final String chave = _chaveProduto(produto);
+
+    setState(() {
+      if (_favoritosVisuais.contains(chave)) {
+        _favoritosVisuais.remove(chave);
+        return;
+      }
+
+      _favoritosVisuais.add(chave);
+    });
+  }
+
+  Widget _buildFavoritoVisualButton(
+    ProdutoModel produto, {
+    bool sobreImagem = false,
+  }) {
+    final bool favorito = _produtoFavoritoVisual(produto);
+
+    return Tooltip(
+      message: favorito ? 'Remover dos favoritos' : 'Marcar como favorito',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _alternarFavoritoVisual(produto),
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color:
+                  favorito
+                      ? const Color(0xFFEF4444)
+                      : sobreImagem
+                      ? const Color(0xD9FFFFFF)
+                      : Colors.white,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color:
+                    favorito
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFFFCA5A5),
+              ),
+              boxShadow:
+                  sobreImagem
+                      ? const <BoxShadow>[
+                        BoxShadow(
+                          color: Color(0x26000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ]
+                      : const <BoxShadow>[],
+            ),
+            child: Icon(
+              favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: favorito ? Colors.white : const Color(0xFFEF4444),
+              size: 19,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildModoExibicaoListHeaderButton() {
     return Tooltip(
       message:
@@ -891,6 +962,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        _buildFavoritoVisualButton(produto),
+                        const SizedBox(width: 8),
                         _StatusChip(ativo: ativo),
                       ],
                     ),
@@ -1030,6 +1103,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       top: 9,
                       left: 9,
                       child: _StatusChip(ativo: ativo),
+                    ),
+                    Positioned(
+                      top: 9,
+                      right: 9,
+                      child: _buildFavoritoVisualButton(
+                        produto,
+                        sobreImagem: true,
+                      ),
                     ),
                     Positioned(
                       right: 9,
