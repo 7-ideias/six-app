@@ -115,30 +115,29 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
   void _openAutoCadastro() {
     showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: false,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext bottomSheetContext) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.86,
-          minChildSize: 0.56,
-          maxChildSize: 0.94,
-          expand: false,
-          builder: (BuildContext context, ScrollController scrollController) {
-            return Container(
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
               decoration: const BoxDecoration(
                 color: _backgroundColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
-              child: ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 5,
-                      decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(999)),
+                  Container(
+                    width: 42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -147,7 +146,10 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
                       Container(
                         width: 44,
                         height: 44,
-                        decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(16)),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: const Icon(Icons.link_outlined, color: _primaryColor),
                       ),
                       const SizedBox(width: 12),
@@ -155,21 +157,37 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Text('Auto cadastro', style: TextStyle(color: _titleTextColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                            Text(
+                              'Auto cadastro',
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                             SizedBox(height: 3),
-                            Text('Gere e compartilhe o link público do cliente.', style: TextStyle(color: _mutedTextColor, height: 1.25)),
+                            Text(
+                              'Gere, copie ou compartilhe o link.',
+                              style: TextStyle(color: _mutedTextColor, height: 1.25),
+                            ),
                           ],
                         ),
                       ),
-                      IconButton(onPressed: () => Navigator.of(bottomSheetContext).pop(), icon: const Icon(Icons.close_rounded)),
+                      IconButton(
+                        onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 18),
-                  const ClienteAutoCadastroLinkSection(showAsCard: true),
+                  const ClienteAutoCadastroLinkSection(
+                    showAsCard: true,
+                    actionsOnly: true,
+                  ),
                 ],
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );

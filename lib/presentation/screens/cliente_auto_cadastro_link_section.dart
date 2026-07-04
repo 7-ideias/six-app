@@ -322,11 +322,12 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
 
   Widget _buildContent(BoxConstraints constraints) {
     final bool compact = constraints.maxWidth < 560;
+    final bool actionsOnly = widget.actionsOnly || compact;
     final double smallFieldWidth = compact ? double.infinity : 220;
     final double largeFieldWidth = compact ? double.infinity : 320;
     final List<Widget> actions = _buildActions(compact);
 
-    if (widget.actionsOnly) {
+    if (actionsOnly) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -387,6 +388,7 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        final bool actionsOnly = widget.actionsOnly || constraints.maxWidth < 560;
         final Widget content = _buildContent(constraints);
         if (!widget.showAsCard) return content;
 
@@ -402,7 +404,7 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              if (!widget.actionsOnly) ...<Widget>[
+              if (!actionsOnly) ...<Widget>[
                 Row(
                   children: <Widget>[
                     Container(
