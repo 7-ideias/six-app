@@ -113,7 +113,7 @@ class UsuarioService {
       headers: {
         'Content-Type': 'application/json',
         'idUnicoDaEmpresa': empresaId,
-        'Authorization': 'Bearer ' + token,
+        'Authorization': 'Bearer $token',
       },
       body: jsonEncode(body),
     );
