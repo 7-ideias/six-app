@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class UsuarioModel {
   final String nome;
   final String sobrenome;
@@ -145,10 +147,7 @@ extension ModoDeExibicaoUsuarioApi on ModoDeExibicaoUsuario {
     }
   }
 
-  static ModoDeExibicaoUsuario fromCodigo(
-    dynamic value,
-    ModoDeExibicaoUsuario fallback,
-  ) {
+  static ModoDeExibicaoUsuario? tryFromCodigo(dynamic value) {
     final String codigo = value?.toString().toUpperCase() ?? '';
     switch (codigo) {
       case 'HORIZONTAL':
@@ -160,26 +159,58 @@ extension ModoDeExibicaoUsuarioApi on ModoDeExibicaoUsuario {
       case 'LISTA':
         return ModoDeExibicaoUsuario.lista;
       default:
-        return fallback;
+        return null;
     }
+  }
+
+  static ModoDeExibicaoUsuario fromCodigo(
+    dynamic value,
+    ModoDeExibicaoUsuario fallback,
+  ) {
+    return tryFromCodigo(value) ?? fallback;
   }
 }
 
 class PreferenciasIndividuaisDoUsuarioModel {
-  final ModoDeExibicaoUsuario modoDeExibicaoProdutos;
-  final ModoDeExibicaoUsuario modoDeExibicaoServicos;
+  final ModoDeExibicaoUsuario modoDeExibicaoProdutosWeb;
+  final ModoDeExibicaoUsuario modoDeExibicaoProdutosMobile;
+  final ModoDeExibicaoUsuario modoDeExibicaoServicosWeb;
+  final ModoDeExibicaoUsuario modoDeExibicaoServicosMobile;
   final bool ocultarValoresFinanceirosWeb;
 
   PreferenciasIndividuaisDoUsuarioModel({
-    required this.modoDeExibicaoProdutos,
-    required this.modoDeExibicaoServicos,
+    ModoDeExibicaoUsuario? modoDeExibicaoProdutos,
+    ModoDeExibicaoUsuario? modoDeExibicaoServicos,
+    ModoDeExibicaoUsuario? modoDeExibicaoProdutosWeb,
+    ModoDeExibicaoUsuario? modoDeExibicaoProdutosMobile,
+    ModoDeExibicaoUsuario? modoDeExibicaoServicosWeb,
+    ModoDeExibicaoUsuario? modoDeExibicaoServicosMobile,
     required this.ocultarValoresFinanceirosWeb,
-  });
+  })  : modoDeExibicaoProdutosWeb = modoDeExibicaoProdutosWeb ??
+            modoDeExibicaoProdutos ??
+            ModoDeExibicaoUsuario.vertical,
+        modoDeExibicaoProdutosMobile = modoDeExibicaoProdutosMobile ??
+            modoDeExibicaoProdutos ??
+            ModoDeExibicaoUsuario.vertical,
+        modoDeExibicaoServicosWeb = modoDeExibicaoServicosWeb ??
+            modoDeExibicaoServicos ??
+            ModoDeExibicaoUsuario.grade,
+        modoDeExibicaoServicosMobile = modoDeExibicaoServicosMobile ??
+            modoDeExibicaoServicos ??
+            ModoDeExibicaoUsuario.vertical;
+
+  ModoDeExibicaoUsuario get modoDeExibicaoProdutos =>
+      kIsWeb ? modoDeExibicaoProdutosWeb : modoDeExibicaoProdutosMobile;
+
+  ModoDeExibicaoUsuario get modoDeExibicaoServicos =>
+      kIsWeb ? modoDeExibicaoServicosWeb : modoDeExibicaoServicosMobile;
 
   factory PreferenciasIndividuaisDoUsuarioModel.padrao() {
     return PreferenciasIndividuaisDoUsuarioModel(
-      modoDeExibicaoProdutos: ModoDeExibicaoUsuario.horizontal,
-      modoDeExibicaoServicos: ModoDeExibicaoUsuario.grade,
+      modoDeExibicaoProdutosWeb: ModoDeExibicaoUsuario.vertical,
+      modoDeExibicaoProdutosMobile: ModoDeExibicaoUsuario.vertical,
+      modoDeExibicaoServicosWeb: ModoDeExibicaoUsuario.grade,
+      modoDeExibicaoServicosMobile: ModoDeExibicaoUsuario.vertical,
       ocultarValoresFinanceirosWeb: false,
     );
   }
@@ -192,15 +223,40 @@ class PreferenciasIndividuaisDoUsuarioModel {
       return padrao;
     }
 
+    final ModoDeExibicaoUsuario? modoProdutosLegado =
+        ModoDeExibicaoUsuarioApi.tryFromCodigo(
+      json['modoDeExibicaoProdutos'],
+    );
+    final ModoDeExibicaoUsuario? modoServicosLegado =
+        ModoDeExibicaoUsuarioApi.tryFromCodigo(
+      json['modoDeExibicaoServicos'],
+    );
+
     return PreferenciasIndividuaisDoUsuarioModel(
-      modoDeExibicaoProdutos: ModoDeExibicaoUsuarioApi.fromCodigo(
-        json['modoDeExibicaoProdutos'],
-        padrao.modoDeExibicaoProdutos,
-      ),
-      modoDeExibicaoServicos: ModoDeExibicaoUsuarioApi.fromCodigo(
-        json['modoDeExibicaoServicos'],
-        padrao.modoDeExibicaoServicos,
-      ),
+      modoDeExibicaoProdutosWeb:
+          ModoDeExibicaoUsuarioApi.tryFromCodigo(
+                json['modoDeExibicaoProdutosWeb'],
+              ) ??
+              modoProdutosLegado ??
+              padrao.modoDeExibicaoProdutosWeb,
+      modoDeExibicaoProdutosMobile:
+          ModoDeExibicaoUsuarioApi.tryFromCodigo(
+                json['modoDeExibicaoProdutosMobile'],
+              ) ??
+              modoProdutosLegado ??
+              padrao.modoDeExibicaoProdutosMobile,
+      modoDeExibicaoServicosWeb:
+          ModoDeExibicaoUsuarioApi.tryFromCodigo(
+                json['modoDeExibicaoServicosWeb'],
+              ) ??
+              modoServicosLegado ??
+              padrao.modoDeExibicaoServicosWeb,
+      modoDeExibicaoServicosMobile:
+          ModoDeExibicaoUsuarioApi.tryFromCodigo(
+                json['modoDeExibicaoServicosMobile'],
+              ) ??
+              modoServicosLegado ??
+              padrao.modoDeExibicaoServicosMobile,
       ocultarValoresFinanceirosWeb:
           json['ocultarValoresFinanceirosWeb'] == true,
     );
@@ -210,6 +266,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
     return {
       'modoDeExibicaoProdutos': modoDeExibicaoProdutos.codigo,
       'modoDeExibicaoServicos': modoDeExibicaoServicos.codigo,
+      'modoDeExibicaoProdutosWeb': modoDeExibicaoProdutosWeb.codigo,
+      'modoDeExibicaoProdutosMobile': modoDeExibicaoProdutosMobile.codigo,
+      'modoDeExibicaoServicosWeb': modoDeExibicaoServicosWeb.codigo,
+      'modoDeExibicaoServicosMobile': modoDeExibicaoServicosMobile.codigo,
       'ocultarValoresFinanceirosWeb': ocultarValoresFinanceirosWeb,
     };
   }
@@ -217,13 +277,29 @@ class PreferenciasIndividuaisDoUsuarioModel {
   PreferenciasIndividuaisDoUsuarioModel copyWith({
     ModoDeExibicaoUsuario? modoDeExibicaoProdutos,
     ModoDeExibicaoUsuario? modoDeExibicaoServicos,
+    ModoDeExibicaoUsuario? modoDeExibicaoProdutosWeb,
+    ModoDeExibicaoUsuario? modoDeExibicaoProdutosMobile,
+    ModoDeExibicaoUsuario? modoDeExibicaoServicosWeb,
+    ModoDeExibicaoUsuario? modoDeExibicaoServicosMobile,
     bool? ocultarValoresFinanceirosWeb,
   }) {
     return PreferenciasIndividuaisDoUsuarioModel(
-      modoDeExibicaoProdutos:
-          modoDeExibicaoProdutos ?? this.modoDeExibicaoProdutos,
-      modoDeExibicaoServicos:
-          modoDeExibicaoServicos ?? this.modoDeExibicaoServicos,
+      modoDeExibicaoProdutosWeb: modoDeExibicaoProdutosWeb ??
+          (modoDeExibicaoProdutos != null && kIsWeb
+              ? modoDeExibicaoProdutos
+              : this.modoDeExibicaoProdutosWeb),
+      modoDeExibicaoProdutosMobile: modoDeExibicaoProdutosMobile ??
+          (modoDeExibicaoProdutos != null && !kIsWeb
+              ? modoDeExibicaoProdutos
+              : this.modoDeExibicaoProdutosMobile),
+      modoDeExibicaoServicosWeb: modoDeExibicaoServicosWeb ??
+          (modoDeExibicaoServicos != null && kIsWeb
+              ? modoDeExibicaoServicos
+              : this.modoDeExibicaoServicosWeb),
+      modoDeExibicaoServicosMobile: modoDeExibicaoServicosMobile ??
+          (modoDeExibicaoServicos != null && !kIsWeb
+              ? modoDeExibicaoServicos
+              : this.modoDeExibicaoServicosMobile),
       ocultarValoresFinanceirosWeb:
           ocultarValoresFinanceirosWeb ?? this.ocultarValoresFinanceirosWeb,
     );
