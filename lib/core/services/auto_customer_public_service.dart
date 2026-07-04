@@ -24,6 +24,32 @@ class AutoCustomerPublicService {
   Uri get _endpoint =>
       Uri.parse('${AppConfig.baseUrl}/public/api/auto-customer');
 
+  Future<AutoCustomerPublicResponse> validarToken({
+    required String idUnicoDaEmpresa,
+    required String token,
+  }) async {
+    final Uri endpoint = Uri.parse(
+      '${AppConfig.baseUrl}/public/api/auto-customer/token',
+    ).replace(
+      queryParameters: <String, String>{
+        'idUnicoDaEmpresa': idUnicoDaEmpresa,
+        'token': token,
+      },
+    );
+
+    final http.Response response = await _client.get(
+      endpoint,
+      headers: <String, String>{
+        'idUnicoDaEmpresa': idUnicoDaEmpresa,
+      },
+    );
+
+    return AutoCustomerPublicResponse(
+      statusCode: response.statusCode,
+      body: response.body,
+    );
+  }
+
   Future<AutoCustomerPublicResponse> enviarAutoCadastro({
     required String idUnicoDaEmpresa,
     required String token,
