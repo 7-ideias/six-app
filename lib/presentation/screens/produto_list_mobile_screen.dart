@@ -63,6 +63,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String ordenacao = 'nome';
   bool _salvandoPreferencia = false;
   bool _fixarHeaderLista = false;
+  bool _exibirValores = true;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
@@ -255,13 +256,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             centerTitle: true,
             backgroundColor: _primaryColor,
             foregroundColor: Colors.white,
-            title: Text(
-              isSelecao ? 'Selecionar item' : 'Produtos e serviços',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
-              ),
-            ),
+            title:
+                isSelecao
+                    ? const Text(
+                      'Selecionar item',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    )
+                    : null,
             actions: <Widget>[
               IconButton(
                 tooltip:
@@ -490,22 +494,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0x1AFFFFFF),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0x33FFFFFF)),
-                ),
-                child: Icon(
-                  _isProdutoSelecionado
-                      ? Icons.inventory_2_outlined
-                      : Icons.design_services_outlined,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,6 +562,58 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _alternarExibicaoValores() {
+    setState(() => _exibirValores = !_exibirValores);
+  }
+
+  Widget _buildExibirValoresHeaderButton() {
+    return Tooltip(
+      message: _exibirValores ? 'Esconder resumo' : 'Revelar resumo',
+      child: InkWell(
+        onTap: _alternarExibicaoValores,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color:
+                _exibirValores
+                    ? const Color(0x26FFFFFF)
+                    : const Color(0x1AFFFFFF),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0x3DFFFFFF)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 160),
+                child: Icon(
+                  _exibirValores
+                      ? Icons.visibility_rounded
+                      : Icons.visibility_off_rounded,
+                  key: ValueKey<bool>(_exibirValores),
+                  color: Colors.white,
+                  size: 15,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _exibirValores ? 'Resumo visível' : 'Resumo oculto',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -648,33 +688,44 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         final Object? response = provider.fullResponse;
         if (response is! ProdutoResponseModel) return const SizedBox.shrink();
 
+        final String itensResumo = _formatResumoValorVisivel(
+          response.skusTotaisNoEstoque.toString(),
+        );
+        final String semEstoqueResumo = _formatResumoValorVisivel(
+          _isProdutoSelecionado ? _formatNumber(response.qtSemEstoque) : '-',
+        );
+        final String valorResumo = _formatResumoValorVisivel(
+          _formatCurrency(response.vlEstoqueEmGrana),
+        );
+
         return Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
+          padding: const EdgeInsets.only(top: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
-              Expanded(
-                child: _SummaryCard(
-                  label: 'Itens',
-                  value: response.skusTotaisNoEstoque.toString(),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _SummaryCard(
-                  label: 'Sem estoque',
-                  value:
-                      _isProdutoSelecionado
-                          ? _formatNumber(response.qtSemEstoque)
-                          : '-',
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _SummaryCard(
-                  label: 'Valor',
-                  value: _formatCurrency(response.vlEstoqueEmGrana),
-                  compact: true,
-                ),
+              _buildExibirValoresHeaderButton(),
+              const SizedBox(height: 8),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _SummaryCard(label: 'Itens', value: itensResumo),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'Sem estoque',
+                      value: semEstoqueResumo,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'Valor',
+                      value: valorResumo,
+                      compact: true,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -2110,6 +2161,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     Navigator.pop(context);
     ordenacao = value;
     aplicarFiltroOrdenacao();
+  }
+
+  String _formatResumoValorVisivel(String value) {
+    if (_exibirValores) return value;
+    return '••••';
   }
 
   String _formatCurrency(double value) {
