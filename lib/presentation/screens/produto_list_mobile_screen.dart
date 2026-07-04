@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -37,7 +38,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static const Color _titleTextColor = Color(0xFF0F172A);
 
   final TextEditingController _controllerBusca = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusBusca = FocusNode();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+
+  Timer? _timerOcultarBusca;
+  bool _exibirCampoBusca = false;
   final Map<String, _ProdutoSelecionadoMobile> _selecionados =
       <String, _ProdutoSelecionadoMobile>{};
 
@@ -54,6 +60,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String tipoSelecionado = 'PRODUTO';
   String ordenacao = 'nome';
   bool _salvandoPreferencia = false;
+  bool _fixarHeaderLista = false;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
@@ -83,13 +90,17 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_atualizarHeaderListaFixo);
     Future.microtask(_carregarPreferenciasDoUsuario);
     Future.microtask(_recarregar);
   }
 
   @override
   void dispose() {
+    _timerOcultarBusca?.cancel();
+    _scrollController.dispose();
     _horizontalProdutosController.dispose();
+    _focusBusca.dispose();
     _controllerBusca.dispose();
     super.dispose();
   }
@@ -205,15 +216,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       await UsuarioService().atualizarDadosDoUsuario(usuarioAtualizado);
       if (!mounted) return;
       setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            novoModo == ModoDeExibicaoUsuario.horizontal
-                ? 'Produtos agora em visualização horizontal.'
-                : 'Produtos agora em visualização vertical.',
-          ),
-        ),
-      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -290,43 +292,65 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ],
           ),
           body: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _recarregar,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  isSelecao ? 12 : 14,
-                  16,
-                  bottomPadding,
-                ),
-                children: <Widget>[
-                  if (!isSelecao) ...<Widget>[
-                    SixStaggeredEntry(child: _buildHeaderCard()),
-                    const SizedBox(height: 16),
-                  ],
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 70),
-                    child: _buildTabs(compact: isSelecao),
-                  ),
-                  const SizedBox(height: 12),
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 120),
-                    child: _buildSearchField(),
-                  ),
-                  if (!isSelecao) ...<Widget>[
-                    const SizedBox(height: 14),
-                    SixStaggeredEntry(
-                      delay: const Duration(milliseconds: 155),
-                      child: _buildSummarySection(),
+            child: Stack(
+              children: <Widget>[
+                RefreshIndicator(
+                  onRefresh: _recarregar,
+                  child: ListView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      isSelecao ? 12 : 14,
+                      16,
+                      bottomPadding,
                     ),
-                  ],
-                  SizedBox(height: isSelecao ? 14 : 18),
-                  _buildListHeader(itensDaLista.length, provider.isLoading),
-                  const SizedBox(height: 10),
-                  ..._buildListContent(provider, itensDaLista, isSelecao),
-                ],
-              ),
+                    children: <Widget>[
+                      if (!isSelecao) ...<Widget>[
+                        SixStaggeredEntry(child: _buildHeaderCard()),
+                        const SizedBox(height: 16),
+                      ],
+                      SixStaggeredEntry(
+                        delay: const Duration(milliseconds: 70),
+                        child: _buildTabs(compact: isSelecao),
+                      ),
+                      if (_exibirCampoBusca &&
+                          !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
+                        const SizedBox(height: 12),
+                        SixStaggeredEntry(
+                          delay: const Duration(milliseconds: 120),
+                          child: _buildSearchField(),
+                        ),
+                      ],
+                      SizedBox(
+                        height:
+                            _exibirCampoBusca &&
+                                    !_deveExibirHeaderListaFixo(isSelecao)
+                                ? (isSelecao ? 14 : 18)
+                                : 14,
+                      ),
+                      if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
+                        _buildListHeader(
+                          itensDaLista.length,
+                          provider.isLoading,
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      ..._buildListContent(provider, itensDaLista, isSelecao),
+                    ],
+                  ),
+                ),
+                if (_deveExibirHeaderListaFixo(isSelecao))
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildHeaderListaFixo(
+                      itensDaLista.length,
+                      provider.isLoading,
+                    ),
+                  ),
+              ],
             ),
           ),
           floatingActionButton:
@@ -346,6 +370,43 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               _selecaoMultiplaAtiva ? _buildBarraSelecaoMultipla() : null,
         );
       },
+    );
+  }
+
+  void _atualizarHeaderListaFixo() {
+    const double offsetParaFixarHeader = 180;
+
+    final bool deveFixar =
+        _scrollController.hasClients &&
+        _scrollController.offset >= offsetParaFixarHeader;
+
+    if (deveFixar == _fixarHeaderLista) return;
+
+    setState(() => _fixarHeaderLista = deveFixar);
+  }
+
+  bool _deveExibirHeaderListaFixo(bool isSelecao) {
+    return !isSelecao && !_exibicaoHorizontal && _fixarHeaderLista;
+  }
+
+  Widget _buildHeaderListaFixo(int count, bool isLoading) {
+    return Material(
+      color: _backgroundColor,
+      elevation: 8,
+      shadowColor: const Color(0x1A000000),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _buildListHeader(count, isLoading),
+            if (_exibirCampoBusca) ...<Widget>[
+              const SizedBox(height: 10),
+              _buildSearchField(),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -369,7 +430,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (_exibicaoHorizontal) {
       return <Widget>[
         SizedBox(
-          height: isSelecao ? (_selecaoMultiplaAtiva ? 376 : 118) : 238,
+          height: _calcularAlturaCatalogoHorizontal(itensDaLista, isSelecao),
           child: PageView.builder(
             controller: _horizontalProdutosController,
             clipBehavior: Clip.none,
@@ -406,7 +467,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
@@ -422,51 +483,61 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x33FFFFFF)),
-            ),
-            child: Icon(
-              _isProdutoSelecionado
-                  ? Icons.inventory_2_outlined
-                  : Icons.design_services_outlined,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  _isProdutoSelecionado
-                      ? 'Catálogo de produtos'
-                      : 'Catálogo de serviços',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0x1AFFFFFF),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0x33FFFFFF)),
                 ),
-                const SizedBox(height: 6),
-                Text(
+                child: Icon(
                   _isProdutoSelecionado
-                      ? 'Crie, edite e mantenha fotos, preços e estoque.'
-                      : 'Crie e edite serviços com visual adequado ao mobile.',
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
-                    height: 1.35,
-                  ),
+                      ? Icons.inventory_2_outlined
+                      : Icons.design_services_outlined,
+                  color: Colors.white,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _isProdutoSelecionado
+                          ? 'Catálogo de produtos'
+                          : 'Catálogo de serviços',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _isProdutoSelecionado
+                          ? 'Crie, edite e mantenha fotos, preços e estoque.'
+                          : 'Crie e edite serviços com visual adequado ao mobile.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFD7E3F5),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+          _buildSummarySection(),
         ],
       ),
     );
@@ -520,9 +591,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       ),
       child: TextField(
         controller: _controllerBusca,
+        focusNode: _focusBusca,
+        onTap: _reiniciarTimerOcultarBusca,
         onChanged: (String value) {
           termoBusca = value;
           aplicarFiltroOrdenacao();
+          _reiniciarTimerOcultarBusca();
         },
         decoration: InputDecoration(
           hintText:
@@ -545,6 +619,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       _controllerBusca.clear();
                       termoBusca = '';
                       aplicarFiltroOrdenacao();
+                      _reiniciarTimerOcultarBusca();
                     },
                     icon: const Icon(
                       Icons.close_rounded,
@@ -571,37 +646,137 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         final Object? response = provider.fullResponse;
         if (response is! ProdutoResponseModel) return const SizedBox.shrink();
 
-        return Row(
-          children: <Widget>[
-            Expanded(
-              child: _SummaryCard(
-                label: 'Itens',
-                value: response.skusTotaisNoEstoque.toString(),
-                icon: Icons.widgets_outlined,
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: _SummaryCard(
+                  label: 'Itens',
+                  value: response.skusTotaisNoEstoque.toString(),
+                ),
               ),
-            ),
-            if (_isProdutoSelecionado) ...<Widget>[
-              const SizedBox(width: 10),
+              const SizedBox(width: 6),
               Expanded(
                 child: _SummaryCard(
                   label: 'Sem estoque',
-                  value: _formatNumber(response.qtSemEstoque),
-                  icon: Icons.inventory_outlined,
+                  value:
+                      _isProdutoSelecionado
+                          ? _formatNumber(response.qtSemEstoque)
+                          : '-',
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _SummaryCard(
+                  label: 'Valor',
+                  value: _formatCurrency(response.vlEstoqueEmGrana),
+                  compact: true,
                 ),
               ),
             ],
-            const SizedBox(width: 10),
-            Expanded(
-              child: _SummaryCard(
-                label: 'Valor',
-                value: _formatCurrency(response.vlEstoqueEmGrana),
-                icon: Icons.payments_outlined,
-                compact: true,
-              ),
-            ),
-          ],
+          ),
         );
       },
+    );
+  }
+
+  void _abrirCampoBusca() {
+    _timerOcultarBusca?.cancel();
+
+    if (!_exibirCampoBusca) {
+      setState(() => _exibirCampoBusca = true);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _focusBusca.requestFocus();
+    });
+
+    _reiniciarTimerOcultarBusca();
+  }
+
+  void _reiniciarTimerOcultarBusca() {
+    _timerOcultarBusca?.cancel();
+    _timerOcultarBusca = Timer(
+      const Duration(seconds: 10),
+      _ocultarCampoBuscaPorInatividade,
+    );
+  }
+
+  void _ocultarCampoBuscaPorInatividade() {
+    if (!mounted) return;
+
+    final bool temBusca =
+        termoBusca.trim().isNotEmpty || _controllerBusca.text.trim().isNotEmpty;
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    if (temBusca) return;
+
+    setState(() => _exibirCampoBusca = false);
+  }
+
+  Widget _buildBuscaListHeaderButton() {
+    return Tooltip(
+      message: _isProdutoSelecionado ? 'Buscar produtos' : 'Buscar serviços',
+      child: InkWell(
+        onTap: _abrirCampoBusca,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color:
+                _exibirCampoBusca
+                    ? const Color(0xFFDDEBFF)
+                    : const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const Icon(
+            Icons.search_rounded,
+            color: _accentColor,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModoExibicaoListHeaderButton() {
+    return Tooltip(
+      message:
+          _exibicaoHorizontal
+              ? 'Usar visualização vertical'
+              : 'Usar visualização horizontal',
+      child: InkWell(
+        onTap: _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child:
+              _salvandoPreferencia
+                  ? const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                  : Icon(
+                    _exibicaoHorizontal
+                        ? Icons.view_agenda_outlined
+                        : Icons.view_carousel_outlined,
+                    color: _accentColor,
+                    size: 18,
+                  ),
+        ),
+      ),
     );
   }
 
@@ -637,6 +812,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
           const SizedBox(width: 10),
         ],
+        _buildBuscaListHeaderButton(),
+        const SizedBox(width: 8),
+        _buildModoExibicaoListHeaderButton(),
+        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -658,6 +837,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildProdutoCard(ProdutoModel produto) {
     if (widget.isSelecao) return _buildProdutoSelectionCard(produto);
+
+    if (_exibicaoHorizontal && _produtoTemImagem(produto)) {
+      return _buildProdutoHorizontalComFotoCard(produto);
+    }
 
     final bool ativo = produto.ativo == true;
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
@@ -770,6 +953,204 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  double _calcularAlturaCatalogoHorizontal(
+    List<ProdutoModel> itensDaLista,
+    bool isSelecao,
+  ) {
+    if (isSelecao) return _selecaoMultiplaAtiva ? 376 : 118;
+
+    final bool possuiFoto = itensDaLista.any(_produtoTemImagem);
+    final double alturaMinima = possuiFoto ? 318 : 238;
+
+    final MediaQueryData media = MediaQuery.of(context);
+    const double alturaReservadaPeloFab = 96;
+    const double espacamentoAteCatalogo = 312;
+
+    final double alturaDisponivel =
+        media.size.height -
+        media.padding.top -
+        media.padding.bottom -
+        kToolbarHeight -
+        alturaReservadaPeloFab -
+        espacamentoAteCatalogo;
+
+    return alturaDisponivel < alturaMinima ? alturaMinima : alturaDisponivel;
+  }
+
+  bool _produtoTemImagem(ProdutoModel produto) {
+    final dynamic imagem =
+        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+
+    if (imagem == null) return false;
+
+    final String imagemBase64 = (imagem.imagemBase64 ?? '').toString().trim();
+    final String url = (imagem.url ?? '').toString().trim();
+
+    return imagemBase64.isNotEmpty || url.isNotEmpty;
+  }
+
+  Widget _buildProdutoHorizontalComFotoCard(ProdutoModel produto) {
+    final bool ativo = produto.ativo == true;
+    final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
+    final String codigo = produto.codigoDeBarras.trim();
+    final int imagensCount = produto.imagens?.length ?? 0;
+
+    return Material(
+      color: _surfaceColor,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => _editarProduto(produto),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Stack(
+                  children: <Widget>[
+                    Positioned.fill(
+                      child: _buildProdutoHorizontalImagem(produto, isProduto),
+                    ),
+                    Positioned(
+                      top: 9,
+                      left: 9,
+                      child: _StatusChip(ativo: ativo),
+                    ),
+                    Positioned(
+                      right: 9,
+                      bottom: 9,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: const <BoxShadow>[
+                            BoxShadow(
+                              color: Color(0x26000000),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          _formatCurrency(produto.precoVenda),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                produto.nomeProduto.isEmpty
+                    ? 'Item sem nome'
+                    : produto.nomeProduto,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.15,
+                  fontWeight: FontWeight.w900,
+                  color: _titleTextColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _InfoChip(
+                      icon: Icons.qr_code_2_rounded,
+                      label: codigo.isEmpty ? 'Sem código' : 'Código $codigo',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _InfoChip(
+                    icon: Icons.photo_library_outlined,
+                    label: '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProdutoHorizontalImagem(ProdutoModel produto, bool isProduto) {
+    final dynamic imagem =
+        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+    final Uint8List? bytes =
+        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
+
+    Widget content;
+
+    if (bytes != null) {
+      content = Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    } else if (imagem?.url != null && imagem!.url!.trim().isNotEmpty) {
+      content = Image.network(
+        imagem.url!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        loadingBuilder: (
+          BuildContext context,
+          Widget child,
+          ImageChunkEvent? loadingProgress,
+        ) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => _buildHeroPlaceholder(isProduto),
+      );
+    } else {
+      content = _buildHeroPlaceholder(isProduto);
+    }
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: content,
     );
   }
 
@@ -1699,79 +2080,61 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.label,
     required this.value,
-    required this.icon,
     this.compact = false,
   });
 
   final String label;
   final String value;
-  final IconData icon;
   final bool compact;
-
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
 
   @override
   Widget build(BuildContext context) {
     final int? numericValue = int.tryParse(value);
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
+        color: const Color(0x14FFFFFF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x22FFFFFF)),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: _accentColor, size: 18),
-          ),
-          const SizedBox(height: 10),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 9,
+              height: 1,
               fontWeight: FontWeight.w800,
-              color: _mutedTextColor,
+              color: Color(0xFFD7E3F5),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           if (numericValue == null)
             Text(
               value,
-              maxLines: compact ? 2 : 1,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: compact ? 13 : 15,
+                fontSize: compact ? 10.5 : 12,
+                height: 1,
                 fontWeight: FontWeight.w900,
-                color: _titleTextColor,
+                color: Colors.white,
               ),
             )
           else
             SixAnimatedNumberText(
               value: value,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 12,
+                height: 1,
                 fontWeight: FontWeight.w900,
-                color: _titleTextColor,
+                color: Colors.white,
               ),
             ),
         ],
