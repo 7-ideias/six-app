@@ -69,8 +69,12 @@ class AutoCustomerTokenService {
     }
 
     final String baseUrlLimpa = (baseUrl ?? '').trim();
-    if (baseUrlLimpa.isNotEmpty) {
-      body['baseUrl'] = baseUrlLimpa;
+    final String publicBaseUrl =
+        baseUrlLimpa.isNotEmpty
+            ? baseUrlLimpa
+            : AppConfig.autoCustomerBaseUrl.trim();
+    if (publicBaseUrl.isNotEmpty) {
+      body['baseUrl'] = publicBaseUrl;
     }
 
     final http.Response response = await _client.post(
