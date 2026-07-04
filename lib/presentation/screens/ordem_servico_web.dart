@@ -141,7 +141,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   int _okTarefas() => _tarefas.where((Map<String, dynamic> e) => e['ok'] == true).length;
   bool get _last => _step == _steps.length - 1;
 
-  String _link() => 'http://localhost:39441/ordem-servico/${_osController.text.trim().toLowerCase().replaceAll(' ', '-').replaceAll('/', '-')}';
+  String _link() => 'https://six-app-iota.vercel.app/ordem-servico/${_osController.text.trim().toLowerCase().replaceAll(' ', '-').replaceAll('/', '-')}';
 
   String _dt(DateTime? dateTime) {
     if (dateTime == null) {
