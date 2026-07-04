@@ -362,10 +362,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (_exibicaoHorizontal) {
       return <Widget>[
         SizedBox(
-          height:
-              isSelecao
-                  ? (_selecaoMultiplaAtiva ? 376 : 118)
-                  : _calcularAlturaCatalogoDisponivel(),
+          height: isSelecao ? (_selecaoMultiplaAtiva ? 376 : 118) : 238,
           child: PageView.builder(
             controller: _horizontalProdutosController,
             clipBehavior: Clip.none,
@@ -398,26 +395,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         ),
       );
     }).toList();
-  }
-
-  double _calcularAlturaCatalogoDisponivel() {
-    final MediaQueryData media = MediaQuery.of(context);
-
-    const double alturaMinimaCatalogo = 238;
-    const double alturaReservadaPeloFab = 96;
-    const double espacamentoAteCatalogo = 312;
-
-    final double alturaDisponivel =
-        media.size.height -
-        media.padding.top -
-        media.padding.bottom -
-        kToolbarHeight -
-        alturaReservadaPeloFab -
-        espacamentoAteCatalogo;
-
-    return alturaDisponivel < alturaMinimaCatalogo
-        ? alturaMinimaCatalogo
-        : alturaDisponivel;
   }
 
   Widget _buildHeaderCard() {
