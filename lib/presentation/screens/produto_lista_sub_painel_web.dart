@@ -66,8 +66,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
-  final Map<String, ProdutoModel> _produtosSelecionados =
-      <String, ProdutoModel>{};
+  final Map<String, _ProdutoSelecionadoWeb> _produtosSelecionados =
+      <String, _ProdutoSelecionadoWeb>{};
 
   String termoBusca = '';
   String ordenacao = 'nome';
@@ -86,6 +86,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       _modoDeExibicaoProdutos == ModoDeExibicaoUsuario.horizontal;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
+
+  int get _quantidadeSelecionadaTotal => _produtosSelecionados.values.fold<int>(
+    0,
+    (int total, _ProdutoSelecionadoWeb item) => total + item.quantidade,
+  );
+
+  double get _totalSelecionado => _produtosSelecionados.values.fold<double>(
+    0,
+    (double total, _ProdutoSelecionadoWeb item) => total + item.total,
+  );
 
   @override
   void initState() {
@@ -277,8 +287,29 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       if (_produtosSelecionados.containsKey(chave)) {
         _produtosSelecionados.remove(chave);
       } else {
-        _produtosSelecionados[chave] = produto;
+        _produtosSelecionados[chave] = _ProdutoSelecionadoWeb(
+          produto: produto,
+          quantidade: 1,
+        );
       }
+    });
+  }
+
+  void _alterarQuantidadeSelecionada(ProdutoModel produto, int delta) {
+    final String chave = _chaveProduto(produto);
+    final _ProdutoSelecionadoWeb? selecionado = _produtosSelecionados[chave];
+    if (selecionado == null) return;
+
+    setState(() {
+      final int novaQuantidade = selecionado.quantidade + delta;
+      if (novaQuantidade <= 0) {
+        _produtosSelecionados.remove(chave);
+        return;
+      }
+
+      _produtosSelecionados[chave] = selecionado.copyWith(
+        quantidade: novaQuantidade,
+      );
     });
   }
 
@@ -289,9 +320,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       );
       return;
     }
-    Navigator.of(
-      context,
-    ).pop(_produtosSelecionados.values.toList(growable: false));
+
+    final List<ProdutoModel> produtosSelecionados = <ProdutoModel>[];
+    for (final _ProdutoSelecionadoWeb item in _produtosSelecionados.values) {
+      produtosSelecionados.addAll(
+        List<ProdutoModel>.filled(item.quantidade, item.produto),
+      );
+    }
+
+    Navigator.of(context).pop(produtosSelecionados);
   }
 
   void _limparSelecaoMultipla() {
@@ -987,8 +1024,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildSelectionFooter(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final int totalSelecionados = _produtosSelecionados.length;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final int totalSelecionados = _quantidadeSelecionadaTotal;
+    final bool possuiSelecionados = totalSelecionados > 0;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -999,7 +1037,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color:
-              totalSelecionados > 0
+              possuiSelecionados
                   ? colorScheme.primary.withOpacity(0.22)
                   : colorScheme.outline.withOpacity(0.12),
         ),
@@ -1028,11 +1066,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              totalSelecionados == 0
+              !possuiSelecionados
                   ? 'Nenhum item selecionado ainda.'
                   : totalSelecionados == 1
-                  ? '1 item selecionado para a venda.'
-                  : '$totalSelecionados itens selecionados para a venda.',
+                  ? '1 item selecionado • ${_precoFormatado(_totalSelecionado)}'
+                  : '$totalSelecionados itens selecionados • ${_precoFormatado(_totalSelecionado)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -1043,13 +1081,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           ),
           const SizedBox(width: 12),
           FilledButton.icon(
-            onPressed:
-                totalSelecionados == 0 ? null : _confirmarSelecaoMultipla,
+            onPressed: possuiSelecionados ? _confirmarSelecaoMultipla : null,
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
             label: Text(
-              totalSelecionados == 0
-                  ? 'Adicionar selecionados'
-                  : 'Adicionar $totalSelecionados',
+              possuiSelecionados
+                  ? 'Adicionar $totalSelecionados'
+                  : 'Adicionar selecionados',
             ),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
@@ -1214,73 +1251,157 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     ProdutoModel produto,
     bool selecionado,
   ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final _ProdutoSelecionadoWeb? itemSelecionado =
+        _produtosSelecionados[_chaveProduto(produto)];
+    final int quantidade = itemSelecionado?.quantidade ?? 0;
+
+    Widget quantidadeButton({
+      required IconData icon,
+      required VoidCallback onTap,
+    }) {
+      return Material(
+        color: colorScheme.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: Icon(icon, size: 18, color: colorScheme.primary),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _thumbnail(context, produto, size: 44),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                produto.nomeProduto.isEmpty
-                    ? 'Item sem nome'
-                    : produto.nomeProduto,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
+        Row(
+          children: <Widget>[
+            _thumbnail(context, produto, size: 44),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Text(
-                    _codigoLabel(produto),
+                    produto.nomeProduto.isEmpty
+                        ? 'Item sem nome'
+                        : produto.nomeProduto,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  Text(
-                    _precoFormatado(produto.precoVenda),
-                    style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 15,
                       fontWeight: FontWeight.w900,
                       color: colorScheme.onSurface,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: <Widget>[
+                      Text(
+                        _codigoLabel(produto),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        _precoFormatado(produto.precoVenda),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 10),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color:
+                    selecionado
+                        ? colorScheme.primary
+                        : colorScheme.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.16),
+                ),
+              ),
+              child: Icon(
+                selecionado ? Icons.check_rounded : Icons.add_rounded,
+                color:
+                    selecionado ? colorScheme.onPrimary : colorScheme.primary,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color:
-                selecionado
-                    ? colorScheme.primary
-                    : colorScheme.primary.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colorScheme.primary.withOpacity(0.16)),
+        if (selecionado) ...<Widget>[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: colorScheme.primary.withOpacity(0.18)),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'Selecionado',
+                    style: TextStyle(
+                      color: colorScheme.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                quantidadeButton(
+                  icon: Icons.remove_rounded,
+                  onTap: () => _alterarQuantidadeSelecionada(produto, -1),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 13),
+                  child: Text(
+                    '$quantidade',
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                quantidadeButton(
+                  icon: Icons.add_rounded,
+                  onTap: () => _alterarQuantidadeSelecionada(produto, 1),
+                ),
+              ],
+            ),
           ),
-          child: Icon(
-            selecionado ? Icons.check_rounded : Icons.add_rounded,
-            color: selecionado ? colorScheme.onPrimary : colorScheme.primary,
-          ),
-        ),
+        ],
       ],
     );
   }
@@ -1583,5 +1704,24 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   String _precoFormatado(double valor) {
     return 'R\$ ${valor.toStringAsFixed(2)}';
+  }
+}
+
+class _ProdutoSelecionadoWeb {
+  const _ProdutoSelecionadoWeb({
+    required this.produto,
+    required this.quantidade,
+  });
+
+  final ProdutoModel produto;
+  final int quantidade;
+
+  double get total => produto.precoVenda * quantidade;
+
+  _ProdutoSelecionadoWeb copyWith({int? quantidade}) {
+    return _ProdutoSelecionadoWeb(
+      produto: produto,
+      quantidade: quantidade ?? this.quantidade,
+    );
   }
 }
