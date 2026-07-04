@@ -51,7 +51,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(56);
 
   bool get _usaNovoMenuSix {
-    final Set<String> titulos = items.map((TopNavItemData item) => item.title).toSet();
+    final Set<String> titulos =
+        items.map((TopNavItemData item) => item.title).toSet();
     return titulos.contains('Cadastros') &&
         titulos.contains('Configurações') &&
         titulos.contains('Início');
@@ -75,11 +76,15 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _mostrarRecursoEmPreparacao(BuildContext context, String value) {
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
+    );
     messenger?.hideCurrentSnackBar();
     messenger?.showSnackBar(
       SnackBar(
-        content: Text('$value: menu criado. A implementação da tela será evoluída nos próximos passos.'),
+        content: Text(
+          '$value: menu criado. A implementação da tela será evoluída nos próximos passos.',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -93,9 +98,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         final Size size = MediaQuery.of(dialogContext).size;
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: SizedBox(
             width: size.width * 0.96,
             height: size.height * 0.92,
@@ -123,16 +133,22 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         }
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: SizedBox(
             width: size.width * 0.94,
             height: size.height * 0.90,
             child: ProdutoDashboardWebPage(
               onBack: () => Navigator.of(dialogContext).pop(),
               onNovoProduto: () => fecharEExecutar('Cadastros', 'Produtos'),
-              onOpenListaCompleta: () => fecharEExecutar('Cadastros', 'Produtos List'),
+              onOpenListaCompleta:
+                  () => fecharEExecutar('Cadastros', 'Produtos List'),
             ),
           ),
         );
@@ -155,16 +171,22 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         }
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: SizedBox(
             width: size.width * 0.94,
             height: size.height * 0.90,
             child: ServicoDashboardWebPage(
               onBack: () => Navigator.of(dialogContext).pop(),
               onNovoServico: () => fecharEExecutar('Cadastros', 'Produtos'),
-              onOpenListaCompleta: () => fecharEExecutar('Cadastros', 'Produtos List'),
+              onOpenListaCompleta:
+                  () => fecharEExecutar('Cadastros', 'Produtos List'),
             ),
           ),
         );
@@ -194,9 +216,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         }
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: SizedBox(
             width: size.width * 0.94,
             height: size.height * 0.90,
@@ -205,7 +232,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
               onEntradaEstoque: () => fecharEPreparar('Entrada de estoque'),
               onSaidaEstoque: () => fecharEPreparar('Saída de estoque'),
               onAjusteEstoque: () => fecharEPreparar('Ajuste de estoque'),
-              onOpenListaCompleta: () => fecharEExecutar('Cadastros', 'Produtos List'),
+              onOpenListaCompleta:
+                  () => fecharEExecutar('Cadastros', 'Produtos List'),
             ),
           ),
         );
@@ -221,9 +249,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         final Size size = MediaQuery.of(dialogContext).size;
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: SizedBox(
             width: size.width * 0.94,
             height: size.height * 0.90,
@@ -245,9 +278,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         final Size size = MediaQuery.of(dialogContext).size;
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: SizedBox(
             width: size.width * 0.94,
             height: size.height * 0.90,
@@ -271,9 +309,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         final Size size = MediaQuery.of(dialogContext).size;
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: SizedBox(
             width: size.width * 0.94,
             height: size.height * 0.90,
@@ -300,7 +343,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       case 'Usuários e permissões':
         return const _ConfiguracaoMenuData(
           title: 'Usuários e permissões',
-          subtitle: 'Acessos, perfis de colaboradores e permissões operacionais.',
+          subtitle:
+              'Acessos, perfis de colaboradores e permissões operacionais.',
           icon: Icons.admin_panel_settings_rounded,
         );
       case 'Regionalização':
@@ -312,13 +356,15 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       case 'Formas de recebimento':
         return const _ConfiguracaoMenuData(
           title: 'Formas de recebimento',
-          subtitle: 'Métodos aceitos, recebimentos futuros e regras de liquidação.',
+          subtitle:
+              'Métodos aceitos, recebimentos futuros e regras de liquidação.',
           icon: Icons.payments_rounded,
         );
       case 'Regras operacionais':
         return const _ConfiguracaoMenuData(
           title: 'Regras operacionais',
-          subtitle: 'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.',
+          subtitle:
+              'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.',
           icon: Icons.rule_folder_outlined,
         );
       case 'Notificações':
@@ -336,7 +382,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       case 'Integrações':
         return const _ConfiguracaoMenuData(
           title: 'Integrações',
-          subtitle: 'Conexões externas para comunicação, pagamentos e automações.',
+          subtitle:
+              'Conexões externas para comunicação, pagamentos e automações.',
           icon: Icons.hub_rounded,
         );
       default:
@@ -371,7 +418,12 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       TopNavItemData(
         title: 'Catálogo',
-        subItems: const <String>['Produtos', 'Serviços', 'Categorias', 'Estoque'],
+        subItems: const <String>[
+          'Produtos',
+          'Serviços',
+          'Categorias',
+          'Estoque',
+        ],
         onSelect: (String value) {
           if (value == 'Produtos') {
             _abrirResumoExecutivoProdutos(context);
@@ -379,6 +431,10 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           }
           if (value == 'Serviços') {
             _abrirResumoExecutivoServicos(context);
+            return;
+          }
+          if (value == 'Categorias') {
+            _executarOriginal(context, 'Cadastros', 'Categorias');
             return;
           }
           if (value == 'Estoque') {
@@ -445,7 +501,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Produtos',
           'Clientes',
         ],
-        onSelect: (String value) => _mostrarRecursoEmPreparacao(context, 'Relatório de $value'),
+        onSelect:
+            (String value) =>
+                _mostrarRecursoEmPreparacao(context, 'Relatório de $value'),
       ),
       TopNavItemData(
         title: 'Configurações',
@@ -468,6 +526,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Clientes',
           'Clientes List',
           'Produtos',
+          'Categorias',
           'Colaboradores',
           'Colaboradores List',
           'Fornecedores',
@@ -490,7 +549,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildTrailingArea(ColorScheme colorScheme) {
-    final Widget notifications = notificationWidget ??
+    final Widget notifications =
+        notificationWidget ??
         IconButton(
           onPressed: onNotificationPressed,
           icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
@@ -511,7 +571,10 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final ThemeProvider themeProvider = context.watch<ThemeProvider>();
     final Brightness brightness = Theme.of(context).brightness;
-    final ThemeData currentTheme = brightness == Brightness.dark ? themeProvider.darkTheme : themeProvider.lightTheme;
+    final ThemeData currentTheme =
+        brightness == Brightness.dark
+            ? themeProvider.darkTheme
+            : themeProvider.lightTheme;
     final ColorScheme colorScheme = currentTheme.colorScheme;
     final List<TopNavItemData> effectiveItems = _itemsEfetivos(context);
 
@@ -527,36 +590,38 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
             elevation: 0,
             automaticallyImplyLeading: false,
             titleSpacing: compact ? 12 : 24,
-            title: veryCompact
-                ? _CompactHeader(
-                    items: effectiveItems,
-                    colorScheme: colorScheme,
-                    onNotificationPressed: onNotificationPressed,
-                    notificationWidget: notificationWidget,
-                  )
-                : Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: effectiveItems.map((TopNavItemData item) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 4),
-                                child: _TopNavigationMenuItem(
-                                  data: item,
-                                  colorScheme: colorScheme,
-                                  compactMode: compact,
-                                ),
-                              );
-                            }).toList(),
+            title:
+                veryCompact
+                    ? _CompactHeader(
+                      items: effectiveItems,
+                      colorScheme: colorScheme,
+                      onNotificationPressed: onNotificationPressed,
+                      notificationWidget: notificationWidget,
+                    )
+                    : Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children:
+                                  effectiveItems.map((TopNavItemData item) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: _TopNavigationMenuItem(
+                                        data: item,
+                                        colorScheme: colorScheme,
+                                        compactMode: compact,
+                                      ),
+                                    );
+                                  }).toList(),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      _buildTrailingArea(colorScheme),
-                    ],
-                  ),
+                        const SizedBox(width: 12),
+                        _buildTrailingArea(colorScheme),
+                      ],
+                    ),
           );
         },
       ),
@@ -609,7 +674,8 @@ class _CompactHeader extends StatelessWidget {
               item.onSelect?.call(selection.subItem!);
             },
             itemBuilder: (BuildContext context) {
-              final List<PopupMenuEntry<_CompactMenuSelection>> entries = <PopupMenuEntry<_CompactMenuSelection>>[];
+              final List<PopupMenuEntry<_CompactMenuSelection>> entries =
+                  <PopupMenuEntry<_CompactMenuSelection>>[];
 
               for (int menuIndex = 0; menuIndex < items.length; menuIndex++) {
                 final TopNavItemData item = items[menuIndex];
@@ -633,13 +699,17 @@ class _CompactHeader extends StatelessWidget {
                       value: _CompactMenuSelection(menuIndex, subItem),
                       child: Padding(
                         padding: const EdgeInsets.only(left: 12),
-                        child: Text(subItem, style: TextStyle(color: colorScheme.onSurface)),
+                        child: Text(
+                          subItem,
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
                       ),
                     ),
                   );
                 }
 
-                if (menuIndex < items.length - 1) entries.add(const PopupMenuDivider(height: 8));
+                if (menuIndex < items.length - 1)
+                  entries.add(const PopupMenuDivider(height: 8));
               }
 
               return entries;
@@ -653,7 +723,10 @@ class _CompactHeader extends StatelessWidget {
         notificationWidget ??
             IconButton(
               onPressed: onNotificationPressed,
-              icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
+              icon: Icon(
+                Icons.notifications_none,
+                color: colorScheme.onPrimary,
+              ),
               tooltip: 'Notificações',
             ),
       ],
@@ -672,10 +745,7 @@ class _AppVersionPill extends StatelessWidget {
   final ColorScheme colorScheme;
   final bool compact;
 
-  const _AppVersionPill({
-    required this.colorScheme,
-    this.compact = false,
-  });
+  const _AppVersionPill({required this.colorScheme, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -744,10 +814,7 @@ class _TopNavigationMenuItem extends StatelessWidget {
       onSelected: (String value) => data.onSelect?.call(value),
       itemBuilder: (BuildContext context) {
         return data.subItems.map((String subItem) {
-          return PopupMenuItem<String>(
-            value: subItem,
-            child: Text(subItem),
-          );
+          return PopupMenuItem<String>(value: subItem, child: Text(subItem));
         }).toList();
       },
       child: _TopNavChip(
@@ -798,13 +865,20 @@ class _TopNavChipState extends State<_TopNavChip> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 8,
+          ),
           decoration: BoxDecoration(
-            color: active ? widget.colorScheme.onPrimary.withOpacity(0.12) : Colors.transparent,
+            color:
+                active
+                    ? widget.colorScheme.onPrimary.withOpacity(0.12)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border(
               bottom: BorderSide(
-                color: active ? widget.colorScheme.onPrimary : Colors.transparent,
+                color:
+                    active ? widget.colorScheme.onPrimary : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -822,7 +896,11 @@ class _TopNavChipState extends State<_TopNavChip> {
               ),
               if (widget.hasMenu) ...<Widget>[
                 const SizedBox(width: 4),
-                Icon(Icons.keyboard_arrow_down_rounded, color: widget.colorScheme.onPrimary, size: 18),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: widget.colorScheme.onPrimary,
+                  size: 18,
+                ),
               ],
             ],
           ),
