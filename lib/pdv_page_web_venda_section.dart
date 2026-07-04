@@ -58,7 +58,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
               ],
             ),
           ),
-          _buildTopBadge('F2 Buscar produto', Icons.search_rounded),
+          _buildTopBadge('F2 Buscar item', Icons.search_rounded),
           _buildTopBadge('F4 Identificar cliente', Icons.person_search_rounded),
           _buildTopBadge('F8 Receber', Icons.payments_rounded),
           _buildTopBadge('ESC Cancelar', Icons.close_rounded),
@@ -269,7 +269,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                             child: OutlinedButton.icon(
                               onPressed: _abrirSelecaoProdutoWeb,
                               icon: const Icon(Icons.search_rounded),
-                              label: const Text('Buscar produto'),
+                              label: const Text('Buscar item'),
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(
                                   color: _pdvTheme.actionButtonBackground,
@@ -357,7 +357,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
       ),
       child: Row(
         children: <Widget>[
-          _buildHeaderCell('Produto', flex: 5),
+          _buildHeaderCell('Item', flex: 5),
           _buildHeaderCell('Qtd', flex: 2, alignEnd: true),
           _buildHeaderCell('Unitário', flex: 2, alignEnd: true),
           _buildHeaderCell('Subtotal', flex: 2, alignEnd: true),
@@ -421,7 +421,9 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
-                      Icons.inventory_2_outlined,
+                      _ehServicoItem(produto)
+                          ? Icons.design_services_outlined
+                          : Icons.inventory_2_outlined,
                       color: _pdvTheme.iconColor,
                     ),
                   ),
@@ -442,7 +444,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Código: ${produto['codigo']?.toString().isNotEmpty == true ? produto['codigo'] : '-'}',
+                          '${_ehServicoItem(produto) ? 'Serviço' : 'Produto'} • Código: ${produto['codigo']?.toString().isNotEmpty == true ? produto['codigo'] : '-'}',
                           style: TextStyle(
                             fontSize: 12,
                             color: _pdvTheme.secondaryText,
@@ -561,7 +563,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
               ),
               const SizedBox(height: 20),
               Text(
-                'Passe um item ou pesquise um produto',
+                'Passe um item ou pesquise produto/serviço',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
@@ -587,7 +589,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                 children: <Widget>[
                   _buildQuickActionButton(
                     icon: Icons.search_rounded,
-                    label: 'Buscar produto',
+                    label: 'Buscar item',
                     onPressed: _abrirSelecaoProdutoWeb,
                   ),
                   _buildQuickActionButton(
@@ -700,7 +702,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Formato operacional com leitura rápida de produto, quantidade, preço e subtotal.',
+                      'Formato operacional com leitura rápida de item, quantidade, preço e subtotal.',
                       style: TextStyle(
                         fontSize: 13,
                         color: _pdvTheme.secondaryText,
@@ -886,7 +888,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
                           },
                         ),
                         _buildMiniAction(
-                          'Buscar produto',
+                          'Buscar item',
                           Icons.search_rounded,
                           _abrirSelecaoProdutoWeb,
                         ),

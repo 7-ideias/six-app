@@ -773,7 +773,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     );
   }
 
-  Future<void> _abrirSelecaoProdutoWeb() async {
+  Future<void> _abrirSelecaoProdutoWeb({String tipoInicial = 'PRODUTO'}) async {
     final dynamic result = await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) {
@@ -784,9 +784,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.80,
             height: MediaQuery.of(context).size.height * 0.80,
-            child: const SubPainelWebProdutoLista(
+            child: SubPainelWebProdutoLista(
               isSelecao: true,
               permitirSelecaoMultipla: true,
+              tipoInicial: tipoInicial,
             ),
           ),
         );
@@ -900,6 +901,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   void _adicionarProdutoNaListaSemSetState(ProdutoModel produto) {
+    final String tipoNormalizado = _normalizarTipoProdutoWeb(
+      produto.tipoProduto,
+    );
+    final String chaveProduto = _chaveProdutoVenda(produto);
+
     final int indexExistente = _produtosSelecionados.indexWhere(
       (Map<String, dynamic> item) => _mesmoProduto(item, produto),
     );
@@ -917,24 +923,38 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
       'nome': produto.nomeProduto,
       'preco': produto.precoVenda,
       'quantidade': 1,
+      'tipoProduto': tipoNormalizado,
+      'ehServico': _ehServicoTipoWeb(tipoNormalizado),
+      'chaveItem': chaveProduto,
       'produtoOriginal': produto,
     });
   }
 
   bool _mesmoProduto(Map<String, dynamic> item, ProdutoModel produto) {
+    final String chaveItem = item['chaveItem']?.toString() ?? '';
+    final String chaveProduto = _chaveProdutoVenda(produto);
+    if (chaveItem.isNotEmpty) {
+      return chaveItem == chaveProduto;
+    }
+
+    final String tipoItem = _normalizarTipoProdutoWeb(
+      item['tipoProduto']?.toString() ??
+          ((item['ehServico'] ?? false) == true ? 'SERVICO' : 'PRODUTO'),
+    );
+    final String tipoProduto = _normalizarTipoProdutoWeb(produto.tipoProduto);
+    if (tipoItem != tipoProduto) return false;
+
     final dynamic idItem = item['id'];
     final dynamic idProduto = _extrairIdProduto(produto);
 
     if (idItem != null && idProduto != null) {
-      return idItem == idProduto;
+      return idItem.toString() == idProduto.toString();
     }
 
-    final String? codigoItem = item['codigo']?.toString();
-    final String codigoProduto = produto.codigoDeBarras.toString();
+    final String codigoItem = item['codigo']?.toString().trim() ?? '';
+    final String codigoProduto = produto.codigoDeBarras.trim();
 
-    if (codigoItem != null &&
-        codigoItem.isNotEmpty &&
-        codigoProduto.isNotEmpty) {
+    if (codigoItem.isNotEmpty && codigoProduto.isNotEmpty) {
       return codigoItem == codigoProduto;
     }
 
@@ -942,8 +962,45 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   dynamic _extrairIdProduto(ProdutoModel produto) {
-    final dynamic p = produto;
-    return p.id ?? p.uuid ?? p.idUnico ?? p.codigo;
+    final String? id = produto.id;
+    if (id != null && id.trim().isNotEmpty) {
+      return id.trim();
+    }
+    return null;
+  }
+
+  String _normalizarTipoProdutoWeb(String tipo) {
+    final String normalizado = tipo.trim().toUpperCase();
+    if (normalizado == 'SERVICO' || normalizado == 'SERVIÇO') {
+      return 'SERVICO';
+    }
+    return 'PRODUTO';
+  }
+
+  bool _ehServicoTipoWeb(String tipo) {
+    return _normalizarTipoProdutoWeb(tipo) == 'SERVICO';
+  }
+
+  bool _ehServicoItem(Map<String, dynamic> item) {
+    final Object? valor = item['ehServico'];
+    if (valor == true) return true;
+    return _ehServicoTipoWeb(item['tipoProduto']?.toString() ?? '');
+  }
+
+  String _chaveProdutoVenda(ProdutoModel produto) {
+    final String tipo = _normalizarTipoProdutoWeb(produto.tipoProduto);
+    final dynamic id = _extrairIdProduto(produto);
+    if (id != null && id.toString().trim().isNotEmpty) {
+      return '$tipo:id:${id.toString().trim()}';
+    }
+
+    final String codigo = produto.codigoDeBarras.trim();
+    if (codigo.isNotEmpty) {
+      return '$tipo:codigo:$codigo';
+    }
+
+    final String nome = produto.nomeProduto.trim().toLowerCase();
+    return '$tipo:nome:$nome|preco:${produto.precoVenda.toStringAsFixed(4)}';
   }
 
   void _alterarQuantidade(Map<String, dynamic> produto, int delta) {
@@ -1063,10 +1120,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
   }
 
   void _adicionarServicoRapido() {
-    _mostrarDialogMensagem(
-      'Adicionar serviço',
-      'Aqui você pode plugar a abertura rápida de um serviço e incluir o item na venda.',
-    );
+    _abrirSelecaoProdutoWeb(tipoInicial: 'SERVICO');
   }
 
   KeyEventResult _handleAtalhoPdv(FocusNode node, KeyEvent event) {
@@ -1115,7 +1169,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
             nome: (produto['nome'] ?? '').toString(),
             quantidade: (produto['quantidade'] ?? 1) as int,
             valorUnitario: ((produto['preco'] ?? 0) as num).toDouble(),
-            ehServico: false,
+            ehServico: _ehServicoItem(produto),
           );
         })
         .toList(growable: false);
@@ -1284,7 +1338,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         'quantidade': quantidade,
         'valor': precoUnitario,
         'subtotal': precoUnitario * quantidade,
-        'ehServico': false,
+        'ehServico': _ehServicoItem(produto),
       };
     }).toList();
   }
