@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
-import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
-import 'package:sixpos/presentation/screens/perfil_do_meu_negocio_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/precos_e_planos_mobile_screen.dart';
 
 import '../screens/meu_perfil_mobile_screen.dart';
 import '../screens/preferencias_mobile_screen.dart';
@@ -56,43 +56,11 @@ class AppDrawerDoMobile extends StatelessWidget {
                   ),
                   _buildDrawerItem(
                     context,
-                    icon: Icons.work_outline,
-                    title: 'Perfil do meu negócio',
-                    subtitle: 'Identidade e dados do comércio',
-                    onTap:
-                        () => _openScreen(
-                          context,
-                          const PerfilDoMeuNegocioMobileScreen(),
-                        ),
-                  ),
-                  _buildDrawerItem(
-                    context,
                     icon: Icons.edit_outlined,
                     title: 'Preferências',
                     subtitle: 'Ajustes individuais do app',
                     onTap:
                         () => _openScreen(context, PreferencesMobileScreen()),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildSectionLabel('Gestão'),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.emoji_events_outlined,
-                    title: 'Preços e planos',
-                    subtitle: 'Recursos, limites e upgrades',
-                    highlighted: true,
-                    onTap: () => _openScreen(context, PlanosCarrosselScreen()),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.settings_outlined,
-                    title: 'Configurações',
-                    subtitle: 'Empresa, regionalização e integrações',
-                    onTap:
-                        () => _openScreen(
-                          context,
-                          const ConfiguracoesMobileScreen(),
-                        ),
                   ),
                   const SizedBox(height: 14),
                   _buildSectionLabel('Suporte e segurança'),
@@ -137,87 +105,152 @@ class AppDrawerDoMobile extends StatelessWidget {
     );
   }
 
+  Future<void> _carregarUsuarioSeNecessario() async {
+    final UsuarioProvider provider = UsuarioProvider();
+
+    if (provider.usuario != null) {
+      return;
+    }
+
+    try {
+      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+    } catch (_) {
+      // O drawer deve continuar abrindo mesmo se os dados do usuário não carregarem.
+    }
+  }
+
+  String _nomeDoUsuario(UsuarioModel? usuario) {
+    final String nomeDeGuerra = usuario?.nomeDeGuerra.trim() ?? '';
+
+    if (nomeDeGuerra.isNotEmpty) {
+      return nomeDeGuerra;
+    }
+
+    final String nomeCompleto =
+        <String>[
+          usuario?.nome.trim() ?? '',
+          usuario?.sobrenome.trim() ?? '',
+        ].where((String parte) => parte.isNotEmpty).join(' ').trim();
+
+    if (nomeCompleto.isNotEmpty) {
+      return nomeCompleto;
+    }
+
+    return 'Usuário';
+  }
+
+  String _emailDoUsuario(UsuarioModel? usuario) {
+    final String email = usuario?.email.trim() ?? '';
+
+    if (email.isNotEmpty) {
+      return email;
+    }
+
+    return 'E-mail não informado';
+  }
+
   Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        18,
-        MediaQuery.of(context).padding.top + 18,
-        18,
-        18,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              _buildAvatar(context),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Nome do Usuário',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'email@exemplo.com',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Color(0xFFDCEBFF),
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ],
+    final UsuarioProvider usuarioProvider = UsuarioProvider();
+
+    return FutureBuilder<void>(
+      future: _carregarUsuarioSeNecessario(),
+      builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+        return ListenableBuilder(
+          listenable: usuarioProvider,
+          builder: (BuildContext context, Widget? child) {
+            final UsuarioModel? usuario = usuarioProvider.usuario;
+
+            return Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(
+                18,
+                MediaQuery.of(context).padding.top + 18,
+                18,
+                18,
+              ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: <Color>[_primaryColor, _secondaryColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.16)),
-            ),
-            child: const Row(
-              children: <Widget>[
-                Icon(Icons.storefront_rounded, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Gestão rápida do seu comércio',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      _buildAvatar(context),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              _nomeDoUsuario(usuario),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _emailDoUsuario(usuario),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFDCEBFF),
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.16)),
+                    ),
+                    child: const Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.storefront_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Gestão rápida do seu comércio',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

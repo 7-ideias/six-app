@@ -12,11 +12,10 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       brightness: colorScheme.brightness,
-      scaffoldBackgroundColor: isDark
-          ? colorScheme.surfaceContainerLowest
-          : colorScheme.surface,
+      scaffoldBackgroundColor:
+          isDark ? colorScheme.surfaceContainerLowest : colorScheme.surface,
       visualDensity: visualDensity,
-      
+
       // AppBar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: isDark ? colorScheme.surface : colorScheme.primary,
@@ -27,9 +26,7 @@ class AppTheme {
 
       // Card Theme
       cardTheme: CardThemeData(
-        color: isDark
-            ? colorScheme.surfaceContainerLow
-            : colorScheme.surface,
+        color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surface,
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -40,7 +37,9 @@ class AppTheme {
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
           minimumSize: const Size.fromHeight(50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
@@ -54,19 +53,28 @@ class AppTheme {
           elevation: 0,
           shadowColor: Colors.transparent,
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          backgroundColor: colorScheme.surface.withOpacity(isDark ? 0.22 : 0.78),
+          backgroundColor: colorScheme.surface.withOpacity(
+            isDark ? 0.22 : 0.78,
+          ),
           foregroundColor: colorScheme.primary,
           minimumSize: const Size(0, 46),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          side: BorderSide(color: colorScheme.primary.withOpacity(0.28), width: 1.1),
+          side: BorderSide(
+            color: colorScheme.primary.withOpacity(0.28),
+            width: 1.1,
+          ),
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
 
@@ -80,9 +88,10 @@ class AppTheme {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark
-            ? colorScheme.surfaceContainerHigh
-            : colorScheme.surfaceContainerHighest,
+        fillColor:
+            isDark
+                ? colorScheme.surfaceContainerHigh
+                : colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -125,16 +134,19 @@ class AppTheme {
   }
 
   static ThemeData getTheme(AppPalette palette, {required bool isDark}) {
-    final colorScheme = isDark 
-        ? AppColorSchemes.getDarkScheme(palette) 
-        : AppColorSchemes.getLightScheme(palette);
+    final colorScheme =
+        isDark
+            ? AppColorSchemes.getDarkScheme(palette)
+            : AppColorSchemes.getLightScheme(palette);
 
     return getThemeWithScheme(colorScheme, isDark: isDark);
   }
 
   // Mantendo as referências antigas para não quebrar o código temporariamente durante a transição
-  static ThemeData get lightTheme => getTheme(AppPalette.corporate, isDark: false);
-  static ThemeData get darkTheme => getTheme(AppPalette.corporate, isDark: true);
+  static ThemeData get lightTheme =>
+      getTheme(AppPalette.corporate, isDark: false);
+  static ThemeData get darkTheme =>
+      getTheme(AppPalette.corporate, isDark: true);
 }
 
 // Para manter compatibilidade com main.dart enquanto não refatoramos tudo
