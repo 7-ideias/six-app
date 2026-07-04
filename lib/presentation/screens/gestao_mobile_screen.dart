@@ -56,19 +56,23 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     if (!mounted) return;
 
     final int totalAtual = _notificacaoService.total;
-    final bool recebeuNovaNotificacao = totalAtual > _totalNotificacoesConhecidas;
+    final bool recebeuNovaNotificacao =
+        totalAtual > _totalNotificacoesConhecidas;
     _totalNotificacoesConhecidas = totalAtual;
 
     setState(() {});
 
     if (!recebeuNovaNotificacao) return;
 
-    final String? mensagem = _notificacaoService.ultimaNotificacao?.description.trim();
+    final String? mensagem =
+        _notificacaoService.ultimaNotificacao?.description.trim();
     if (mensagem == null || mensagem.isEmpty) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+      );
     });
   }
 
@@ -98,7 +102,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
-        title: const Text('Gestão', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+        title: const Text(
+          'Gestão',
+          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        ),
         actions: <Widget>[
           IconButton(
             tooltip: 'Notificações',
@@ -109,7 +116,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       ),
       drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
       body: _buildContent(context),
-      bottomNavigationBar: kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
+      bottomNavigationBar:
+          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
     );
   }
 
@@ -120,7 +128,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     return Stack(
       clipBehavior: Clip.none,
       children: <Widget>[
-        Icon(temNaoLidas ? Icons.notifications_active_rounded : Icons.notifications_none_rounded),
+        Icon(
+          temNaoLidas
+              ? Icons.notifications_active_rounded
+              : Icons.notifications_none_rounded,
+        ),
         if (temNaoLidas)
           Positioned(
             right: -6,
@@ -135,7 +147,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 ),
                 child: Text(
                   _badgeText(naoLidas),
-                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
@@ -151,16 +167,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         icon: Icons.inventory_2_outlined,
         items: <_ManagementItem>[
           _ManagementItem(
-            title: 'Produtos',
-            subtitle: 'Cadastro, preço e disponibilidade',
+            title: 'Produtos e Serviços',
+            subtitle: 'Cadastro, preço, disponibilidade e serviços técnicos',
             icon: Icons.shopping_bag_outlined,
             onTap: () => _navigateTo(context, const ProdutolistMobileScreen()),
-          ),
-          _ManagementItem(
-            title: 'Serviços',
-            subtitle: 'Mão de obra e serviços técnicos',
-            icon: Icons.design_services_outlined,
-            onTap: _showFeatureInProgress,
           ),
           _ManagementItem(
             title: 'Categorias',
@@ -184,13 +194,16 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Clientes',
             subtitle: 'Base de atendimento e relacionamento',
             icon: Icons.people_alt_outlined,
-            onTap: () => _navigateTo(context, const ClientesUsuarioMobileScreen()),
+            onTap:
+                () => _navigateTo(context, const ClientesUsuarioMobileScreen()),
           ),
           _ManagementItem(
             title: 'Colaboradores',
             subtitle: 'Equipe, acessos e responsabilidades',
             icon: Icons.badge_outlined,
-            onTap: () => _navigateTo(context, const ColaboradoresUsuarioListPage()),
+            onTap:
+                () =>
+                    _navigateTo(context, const ColaboradoresUsuarioListPage()),
           ),
           _ManagementItem(
             title: 'Fornecedores',
@@ -204,25 +217,62 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         title: 'Financeiro',
         icon: Icons.account_balance_wallet_outlined,
         items: <_ManagementItem>[
-          _ManagementItem(title: 'Contas a receber', subtitle: 'Recebíveis e cobranças em aberto', icon: Icons.south_west_rounded, onTap: _showFeatureInProgress),
-          _ManagementItem(title: 'Contas a pagar', subtitle: 'Despesas e compromissos', icon: Icons.north_east_rounded, onTap: _showFeatureInProgress),
+          _ManagementItem(
+            title: 'Contas a receber',
+            subtitle: 'Recebíveis e cobranças em aberto',
+            icon: Icons.south_west_rounded,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Contas a pagar',
+            subtitle: 'Despesas e compromissos',
+            icon: Icons.north_east_rounded,
+            onTap: _showFeatureInProgress,
+          ),
           _ManagementItem(
             title: 'Agenda financeira',
             subtitle: 'Previsões, fiado e crediário',
             icon: Icons.event_note_outlined,
-            onTap: () => _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+            onTap:
+                () =>
+                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
           ),
-          _ManagementItem(title: 'Formas de recebimento', subtitle: 'Dinheiro, cartão, Pix e outros meios', icon: Icons.payments_outlined, onTap: _showFeatureInProgress),
+          _ManagementItem(
+            title: 'Formas de recebimento',
+            subtitle: 'Dinheiro, cartão, Pix e outros meios',
+            icon: Icons.payments_outlined,
+            onTap: _showFeatureInProgress,
+          ),
         ],
       ),
       _ManagementSection(
         title: 'Relatórios',
         icon: Icons.analytics_outlined,
         items: <_ManagementItem>[
-          _ManagementItem(title: 'Vendas', subtitle: 'Resultados e histórico comercial', icon: Icons.bar_chart_rounded, onTap: _showFeatureInProgress),
-          _ManagementItem(title: 'Assistências', subtitle: 'Ordens, prazos e produtividade', icon: Icons.handyman_outlined, onTap: _showFeatureInProgress),
-          _ManagementItem(title: 'Caixa', subtitle: 'Aberturas, fechamentos e movimentações', icon: Icons.point_of_sale_outlined, onTap: _showFeatureInProgress),
-          _ManagementItem(title: 'Financeiro', subtitle: 'Receitas, despesas e fluxo de caixa', icon: Icons.query_stats_rounded, onTap: _showFeatureInProgress),
+          _ManagementItem(
+            title: 'Vendas',
+            subtitle: 'Resultados e histórico comercial',
+            icon: Icons.bar_chart_rounded,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Assistências',
+            subtitle: 'Ordens, prazos e produtividade',
+            icon: Icons.handyman_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Caixa',
+            subtitle: 'Aberturas, fechamentos e movimentações',
+            icon: Icons.point_of_sale_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Financeiro',
+            subtitle: 'Receitas, despesas e fluxo de caixa',
+            icon: Icons.query_stats_rounded,
+            onTap: _showFeatureInProgress,
+          ),
         ],
       ),
       _ManagementSection(
@@ -233,14 +283,21 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             title: 'Empresa',
             subtitle: 'Dados do comércio e identidade',
             icon: Icons.storefront_outlined,
-            onTap: () => _navigateTo(context, const ConfiguracoesMobileScreen()),
+            onTap:
+                () => _navigateTo(context, const ConfiguracoesMobileScreen()),
           ),
-          _ManagementItem(title: 'Usuários e permissões', subtitle: 'Acessos por perfil e colaborador', icon: Icons.admin_panel_settings_outlined, onTap: _showFeatureInProgress),
+          _ManagementItem(
+            title: 'Usuários e permissões',
+            subtitle: 'Acessos por perfil e colaborador',
+            icon: Icons.admin_panel_settings_outlined,
+            onTap: _showFeatureInProgress,
+          ),
           _ManagementItem(
             title: 'Regionalização',
             subtitle: 'Idioma, moeda e formato local',
             icon: Icons.language_outlined,
-            onTap: () => _navigateTo(context, const RegionalizacaoMobileScreen()),
+            onTap:
+                () => _navigateTo(context, const RegionalizacaoMobileScreen()),
           ),
           _ManagementItem(
             title: 'Notificações',
@@ -248,8 +305,18 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.notifications_active_outlined,
             onTap: () => _openNotifications(context),
           ),
-          _ManagementItem(title: 'Modelos de PDF', subtitle: 'Comprovantes, relatórios e OS', icon: Icons.picture_as_pdf_outlined, onTap: _showFeatureInProgress),
-          _ManagementItem(title: 'Integrações', subtitle: 'Serviços externos e automações', icon: Icons.hub_outlined, onTap: _showFeatureInProgress),
+          _ManagementItem(
+            title: 'Modelos de PDF',
+            subtitle: 'Comprovantes, relatórios e OS',
+            icon: Icons.picture_as_pdf_outlined,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: 'Integrações',
+            subtitle: 'Serviços externos e automações',
+            icon: Icons.hub_outlined,
+            onTap: _showFeatureInProgress,
+          ),
         ],
       ),
     ];
@@ -259,11 +326,19 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: <Widget>[
-          SixStaggeredEntry(delay: const Duration(milliseconds: 70), child: _buildManagementHeader()),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 70),
+            child: _buildManagementHeader(),
+          ),
           const SizedBox(height: 22),
-          ...sections.asMap().entries.map((MapEntry<int, _ManagementSection> entry) {
+          ...sections.asMap().entries.map((
+            MapEntry<int, _ManagementSection> entry,
+          ) {
             final int delay = 130 + (entry.key * 65);
-            return SixStaggeredEntry(delay: Duration(milliseconds: delay), child: _buildManagementSection(entry.value));
+            return SixStaggeredEntry(
+              delay: Duration(milliseconds: delay),
+              child: _buildManagementSection(entry.value),
+            );
           }),
         ],
       ),
@@ -275,8 +350,18 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(colors: <Color>[_primaryColor, _secondaryColor], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x260B1F3A), blurRadius: 22, offset: Offset(0, 12))],
+        gradient: const LinearGradient(
+          colors: <Color>[_primaryColor, _secondaryColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x260B1F3A),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       child: Row(
         children: <Widget>[
@@ -288,16 +373,29 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: const Color(0x33FFFFFF)),
             ),
-            child: const Icon(Icons.business_center_outlined, color: Colors.white),
+            child: const Icon(
+              Icons.business_center_outlined,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(width: 14),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Administração do negócio', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(
+                  'Administração do negócio',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 SizedBox(height: 6),
-                Text('Organize cadastros, financeiro, relatórios e configurações do comércio.', style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35)),
+                Text(
+                  'Organize cadastros, financeiro, relatórios e configurações do comércio.',
+                  style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+                ),
               ],
             ),
           ),
@@ -317,11 +415,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               Container(
                 width: 32,
                 height: 32,
-                decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(section.icon, color: _accentColor, size: 18),
               ),
               const SizedBox(width: 10),
-              Text(section.title, style: const TextStyle(color: _titleTextColor, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.1)),
+              Text(
+                section.title,
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.1,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -330,13 +439,26 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               color: _surfaceColor,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x0F000000),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
             child: Column(
-              children: section.items.asMap().entries.map((MapEntry<int, _ManagementItem> entry) {
-                final int index = entry.key;
-                return _buildManagementTile(entry.value, isFirst: index == 0, isLast: index == section.items.length - 1);
-              }).toList(),
+              children:
+                  section.items.asMap().entries.map((
+                    MapEntry<int, _ManagementItem> entry,
+                  ) {
+                    final int index = entry.key;
+                    return _buildManagementTile(
+                      entry.value,
+                      isFirst: index == 0,
+                      isLast: index == section.items.length - 1,
+                    );
+                  }).toList(),
             ),
           ),
         ],
@@ -344,21 +466,38 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
-  Widget _buildManagementTile(_ManagementItem item, {required bool isFirst, required bool isLast}) {
+  Widget _buildManagementTile(
+    _ManagementItem item, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(isFirst ? 22 : 0), bottom: Radius.circular(isLast ? 22 : 0)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(isFirst ? 22 : 0),
+          bottom: Radius.circular(isLast ? 22 : 0),
+        ),
         onTap: item.onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFE2E8F0)))),
+          decoration: BoxDecoration(
+            border:
+                isLast
+                    ? null
+                    : const Border(
+                      bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+          ),
           child: Row(
             children: <Widget>[
               Container(
                 width: 42,
                 height: 42,
-                decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 child: Icon(item.icon, color: _primaryColor, size: 21),
               ),
               const SizedBox(width: 12),
@@ -366,9 +505,26 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _titleTextColor, fontSize: 15, fontWeight: FontWeight.w800)),
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(item.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _mutedTextColor, fontSize: 12)),
+                    Text(
+                      item.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -388,17 +544,29 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   }
 
   void _navigateTo(BuildContext context, Widget page) {
-    Navigator.push(context, MaterialPageRoute<void>(builder: (BuildContext context) => page));
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (BuildContext context) => page),
+    );
   }
 
   void _showFeatureInProgress() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fluxo mobile em evolução.'), behavior: SnackBarBehavior.floating));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fluxo mobile em evolução.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
 
 class _ManagementSection {
-  const _ManagementSection({required this.title, required this.icon, required this.items});
+  const _ManagementSection({
+    required this.title,
+    required this.icon,
+    required this.items,
+  });
 
   final String title;
   final IconData icon;
@@ -406,7 +574,12 @@ class _ManagementSection {
 }
 
 class _ManagementItem {
-  const _ManagementItem({required this.title, required this.subtitle, required this.icon, required this.onTap});
+  const _ManagementItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
 
   final String title;
   final String subtitle;

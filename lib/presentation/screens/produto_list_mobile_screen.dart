@@ -46,8 +46,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   bool _exibirCampoBusca = false;
   final Map<String, _ProdutoSelecionadoMobile> _selecionados =
       <String, _ProdutoSelecionadoMobile>{};
+  final Set<String> _favoritosVisuais = <String>{};
+  final Map<String, int> _indiceImagemHorizontal = <String, int>{};
 
-  static const double _horizontalViewportFraction = 0.90;
+  static const double _horizontalViewportFraction = 0.94;
 
   final PageController _horizontalProdutosController = PageController(
     viewportFraction: _horizontalViewportFraction,
@@ -61,6 +63,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String ordenacao = 'nome';
   bool _salvandoPreferencia = false;
   bool _fixarHeaderLista = false;
+  bool _exibirValores = true;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
@@ -253,13 +256,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             centerTitle: true,
             backgroundColor: _primaryColor,
             foregroundColor: Colors.white,
-            title: Text(
-              isSelecao ? 'Selecionar item' : 'Produtos e serviços',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
-              ),
-            ),
+            title:
+                isSelecao
+                    ? const Text(
+                      'Selecionar item',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    )
+                    : null,
             actions: <Widget>[
               IconButton(
                 tooltip:
@@ -467,9 +473,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
@@ -477,69 +483,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         ),
         boxShadow: const <BoxShadow>[
           BoxShadow(
-            color: Color(0x260B1F3A),
-            blurRadius: 22,
-            offset: Offset(0, 12),
+            color: Color(0x220B1F3A),
+            blurRadius: 18,
+            offset: Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0x1AFFFFFF),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0x33FFFFFF)),
-                ),
-                child: Icon(
-                  _isProdutoSelecionado
-                      ? Icons.inventory_2_outlined
-                      : Icons.design_services_outlined,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      _isProdutoSelecionado
-                          ? 'Catálogo de produtos'
-                          : 'Catálogo de serviços',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _isProdutoSelecionado
-                          ? 'Crie, edite e mantenha fotos, preços e estoque.'
-                          : 'Crie e edite serviços com visual adequado ao mobile.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD7E3F5),
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          _buildSummarySection(),
-        ],
-      ),
+      child: _buildSummarySection(),
     );
   }
 
@@ -572,6 +522,51 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _alternarExibicaoValores() {
+    setState(() => _exibirValores = !_exibirValores);
+  }
+
+  Widget _buildExibirValoresHeaderButton() {
+    return Tooltip(
+      message: _exibirValores ? 'Esconder resumo' : 'Revelar resumo',
+      child: InkWell(
+        onTap: _alternarExibicaoValores,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color:
+                _exibirValores
+                    ? const Color(0x26FFFFFF)
+                    : const Color(0x14FFFFFF),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0x3DFFFFFF)),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x18000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: Icon(
+              _exibirValores
+                  ? Icons.visibility_rounded
+                  : Icons.visibility_off_rounded,
+              key: ValueKey<bool>(_exibirValores),
+              color: Colors.white,
+              size: 17,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -646,36 +641,37 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         final Object? response = provider.fullResponse;
         if (response is! ProdutoResponseModel) return const SizedBox.shrink();
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: _SummaryCard(
-                  label: 'Itens',
-                  value: response.skusTotaisNoEstoque.toString(),
-                ),
+        final String itensResumo = _formatResumoValorVisivel(
+          response.skusTotaisNoEstoque.toString(),
+        );
+        final String semEstoqueResumo = _formatResumoValorVisivel(
+          _isProdutoSelecionado ? _formatNumber(response.qtSemEstoque) : '-',
+        );
+        final String valorResumo = _formatResumoValorVisivel(
+          _formatCurrency(response.vlEstoqueEmGrana),
+        );
+
+        return Row(
+          children: <Widget>[
+            Expanded(child: _SummaryCard(label: 'Itens', value: itensResumo)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _SummaryCard(
+                label: 'Sem estoque',
+                value: semEstoqueResumo,
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _SummaryCard(
-                  label: 'Sem estoque',
-                  value:
-                      _isProdutoSelecionado
-                          ? _formatNumber(response.qtSemEstoque)
-                          : '-',
-                ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _SummaryCard(
+                label: 'Valor',
+                value: valorResumo,
+                compact: true,
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _SummaryCard(
-                  label: 'Valor',
-                  value: _formatCurrency(response.vlEstoqueEmGrana),
-                  compact: true,
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            _buildExibirValoresHeaderButton(),
+          ],
         );
       },
     );
@@ -737,6 +733,76 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             Icons.search_rounded,
             color: _accentColor,
             size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _produtoFavoritoVisual(ProdutoModel produto) {
+    return _favoritosVisuais.contains(_chaveProduto(produto));
+  }
+
+  void _alternarFavoritoVisual(ProdutoModel produto) {
+    final String chave = _chaveProduto(produto);
+
+    setState(() {
+      if (_favoritosVisuais.contains(chave)) {
+        _favoritosVisuais.remove(chave);
+        return;
+      }
+
+      _favoritosVisuais.add(chave);
+    });
+  }
+
+  Widget _buildFavoritoVisualButton(
+    ProdutoModel produto, {
+    bool sobreImagem = false,
+  }) {
+    final bool favorito = _produtoFavoritoVisual(produto);
+
+    return Tooltip(
+      message: favorito ? 'Remover dos favoritos' : 'Marcar como favorito',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _alternarFavoritoVisual(produto),
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color:
+                  favorito
+                      ? const Color(0xFFEF4444)
+                      : sobreImagem
+                      ? const Color(0xD9FFFFFF)
+                      : Colors.white,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color:
+                    favorito
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFFFCA5A5),
+              ),
+              boxShadow:
+                  sobreImagem
+                      ? const <BoxShadow>[
+                        BoxShadow(
+                          color: Color(0x26000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ]
+                      : const <BoxShadow>[],
+            ),
+            child: Icon(
+              favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: favorito ? Colors.white : const Color(0xFFEF4444),
+              size: 19,
+            ),
           ),
         ),
       ),
@@ -838,7 +904,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Widget _buildProdutoCard(ProdutoModel produto) {
     if (widget.isSelecao) return _buildProdutoSelectionCard(produto);
 
-    if (_exibicaoHorizontal && _produtoTemImagem(produto)) {
+    if (_exibicaoHorizontal) {
       return _buildProdutoHorizontalComFotoCard(produto);
     }
 
@@ -890,6 +956,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        _buildFavoritoVisualButton(produto),
                         const SizedBox(width: 8),
                         _StatusChip(ativo: ativo),
                       ],
@@ -962,12 +1030,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   ) {
     if (isSelecao) return _selecaoMultiplaAtiva ? 376 : 118;
 
-    final bool possuiFoto = itensDaLista.any(_produtoTemImagem);
-    final double alturaMinima = possuiFoto ? 318 : 238;
+    const double alturaMinima = 390;
 
     final MediaQueryData media = MediaQuery.of(context);
     const double alturaReservadaPeloFab = 96;
-    const double espacamentoAteCatalogo = 312;
+    const double espacamentoAteCatalogo = 230;
 
     final double alturaDisponivel =
         media.size.height -
@@ -981,15 +1048,20 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   bool _produtoTemImagem(ProdutoModel produto) {
-    final dynamic imagem =
-        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
+    return _imagensValidasProduto(produto).isNotEmpty;
+  }
 
-    if (imagem == null) return false;
+  List<dynamic> _imagensValidasProduto(ProdutoModel produto) {
+    final List<dynamic> imagens = List<dynamic>.from(
+      produto.imagens ?? const <dynamic>[],
+    );
 
-    final String imagemBase64 = (imagem.imagemBase64 ?? '').toString().trim();
-    final String url = (imagem.url ?? '').toString().trim();
+    return imagens.where((dynamic imagem) {
+      final String imagemBase64 = (imagem.imagemBase64 ?? '').toString().trim();
+      final String url = (imagem.url ?? '').toString().trim();
 
-    return imagemBase64.isNotEmpty || url.isNotEmpty;
+      return imagemBase64.isNotEmpty || url.isNotEmpty;
+    }).toList();
   }
 
   Widget _buildProdutoHorizontalComFotoCard(ProdutoModel produto) {
@@ -1030,6 +1102,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       top: 9,
                       left: 9,
                       child: _StatusChip(ativo: ativo),
+                    ),
+                    Positioned(
+                      top: 9,
+                      right: 9,
+                      child: _buildFavoritoVisualButton(
+                        produto,
+                        sobreImagem: true,
+                      ),
                     ),
                     Positioned(
                       right: 9,
@@ -1103,46 +1183,79 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildProdutoHorizontalImagem(ProdutoModel produto, bool isProduto) {
-    final dynamic imagem =
-        produto.imagens?.isNotEmpty == true ? produto.imagens!.first : null;
-    final Uint8List? bytes =
-        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
+    final List<dynamic> imagens = _imagensValidasProduto(produto);
+    final String chave = _chaveProduto(produto);
 
-    Widget content;
-
-    if (bytes != null) {
-      content = Image.memory(
-        bytes,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
+    if (imagens.isEmpty) {
+      return _buildProdutoHorizontalImagemContainer(
+        _buildHeroPlaceholder(isProduto),
       );
-    } else if (imagem?.url != null && imagem!.url!.trim().isNotEmpty) {
-      content = Image.network(
-        imagem.url!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        loadingBuilder: (
-          BuildContext context,
-          Widget child,
-          ImageChunkEvent? loadingProgress,
-        ) {
-          if (loadingProgress == null) return child;
-          return const Center(
-            child: SizedBox(
-              height: 22,
-              width: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) => _buildHeroPlaceholder(isProduto),
-      );
-    } else {
-      content = _buildHeroPlaceholder(isProduto);
     }
 
+    final int indiceAtual = (_indiceImagemHorizontal[chave] ?? 0).clamp(
+      0,
+      imagens.length - 1,
+    );
+
+    return _buildProdutoHorizontalImagemContainer(
+      Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child:
+                imagens.length == 1
+                    ? _buildImagemProdutoContent(imagens.first, isProduto)
+                    : PageView.builder(
+                      key: PageStorageKey<String>(
+                        'produto-horizontal-imagens-$chave',
+                      ),
+                      itemCount: imagens.length,
+                      onPageChanged: (int index) {
+                        if (_indiceImagemHorizontal[chave] == index) return;
+                        setState(() => _indiceImagemHorizontal[chave] = index);
+                      },
+                      itemBuilder: (BuildContext context, int index) {
+                        return _buildImagemProdutoContent(
+                          imagens[index],
+                          isProduto,
+                        );
+                      },
+                    ),
+          ),
+          if (imagens.length > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 9,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List<Widget>.generate(imagens.length, (int index) {
+                  final bool ativo = index == indiceAtual;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: ativo ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: ativo ? Colors.white : const Color(0x99FFFFFF),
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: const <BoxShadow>[
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProdutoHorizontalImagemContainer(Widget child) {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -1150,7 +1263,46 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: content,
+      child: child,
+    );
+  }
+
+  Widget _buildImagemProdutoContent(dynamic imagem, bool isProduto) {
+    final Uint8List? bytes =
+        _decodeBase64Image(imagem?.imagemBase64) ?? _decodeDataUrl(imagem?.url);
+
+    if (bytes != null) {
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    final String url = (imagem?.url ?? '').toString().trim();
+    if (url.isEmpty) return _buildHeroPlaceholder(isProduto);
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      loadingBuilder: (
+        BuildContext context,
+        Widget child,
+        ImageChunkEvent? loadingProgress,
+      ) {
+        if (loadingProgress == null) return child;
+        return const Center(
+          child: SizedBox(
+            height: 22,
+            width: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      },
+      errorBuilder: (_, __, ___) => _buildHeroPlaceholder(isProduto),
     );
   }
 
@@ -1954,6 +2106,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     aplicarFiltroOrdenacao();
   }
 
+  String _formatResumoValorVisivel(String value) {
+    if (_exibirValores) return value;
+    return '••••';
+  }
+
   String _formatCurrency(double value) {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
   }
@@ -2089,15 +2246,20 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int? numericValue = int.tryParse(value);
+    final TextStyle valueStyle = TextStyle(
+      fontSize: compact ? 10.5 : 12,
+      height: 1,
+      fontWeight: FontWeight.w900,
+      color: Colors.white,
+    );
 
     return Container(
-      height: 34,
+      height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0x14FFFFFF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x22FFFFFF)),
+        color: const Color(0x18FFFFFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x2EFFFFFF)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2108,38 +2270,106 @@ class _SummaryCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 9,
+              fontSize: 8.5,
               height: 1,
               fontWeight: FontWeight.w800,
               color: Color(0xFFD7E3F5),
             ),
           ),
           const SizedBox(height: 3),
-          if (numericValue == null)
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: compact ? 10.5 : 12,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
-            )
-          else
-            SixAnimatedNumberText(
-              value: value,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
-            ),
+          _ResumoAnimatedValue(value: value, style: valueStyle),
         ],
       ),
     );
+  }
+}
+
+class _ResumoAnimatedValue extends StatelessWidget {
+  const _ResumoAnimatedValue({required this.value, required this.style});
+
+  final String value;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final _ResumoNumberValue? parsed = _ResumoNumberValue.tryParse(value);
+
+    if (parsed == null) {
+      return Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: parsed.number),
+      duration: const Duration(milliseconds: 650),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double animatedValue, Widget? child) {
+        return Text(
+          parsed.format(animatedValue),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        );
+      },
+    );
+  }
+}
+
+class _ResumoNumberValue {
+  const _ResumoNumberValue({
+    required this.number,
+    required this.isCurrency,
+    required this.hasDecimal,
+  });
+
+  final double number;
+  final bool isCurrency;
+  final bool hasDecimal;
+
+  static _ResumoNumberValue? tryParse(String value) {
+    final String trimmed = value.trim();
+
+    if (trimmed.isEmpty || trimmed.contains('•') || trimmed == '-') {
+      return null;
+    }
+
+    final bool isCurrency = trimmed.startsWith('R\$');
+    final bool hasDecimal = trimmed.contains(',');
+
+    final String numericText =
+        trimmed
+            .replaceAll('R\$', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '.')
+            .replaceAll(RegExp(r'[^0-9\.-]'), '')
+            .trim();
+
+    if (numericText.isEmpty) return null;
+
+    final double? number = double.tryParse(numericText);
+    if (number == null) return null;
+
+    return _ResumoNumberValue(
+      number: number,
+      isCurrency: isCurrency,
+      hasDecimal: hasDecimal,
+    );
+  }
+
+  String format(double value) {
+    if (isCurrency) {
+      return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+    }
+
+    if (hasDecimal) {
+      return value.toStringAsFixed(1).replaceAll('.', ',');
+    }
+
+    return value.round().toString();
   }
 }
 
