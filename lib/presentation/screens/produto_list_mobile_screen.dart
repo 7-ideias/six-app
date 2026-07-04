@@ -314,13 +314,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     delay: const Duration(milliseconds: 120),
                     child: _buildSearchField(),
                   ),
-                  if (!isSelecao) ...<Widget>[
-                    const SizedBox(height: 14),
-                    SixStaggeredEntry(
-                      delay: const Duration(milliseconds: 155),
-                      child: _buildSummarySection(),
-                    ),
-                  ],
                   SizedBox(height: isSelecao ? 14 : 18),
                   _buildListHeader(itensDaLista.length, provider.isLoading),
                   const SizedBox(height: 10),
@@ -406,7 +399,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
@@ -422,51 +415,61 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x33FFFFFF)),
-            ),
-            child: Icon(
-              _isProdutoSelecionado
-                  ? Icons.inventory_2_outlined
-                  : Icons.design_services_outlined,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  _isProdutoSelecionado
-                      ? 'Catálogo de produtos'
-                      : 'Catálogo de serviços',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0x1AFFFFFF),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0x33FFFFFF)),
                 ),
-                const SizedBox(height: 6),
-                Text(
+                child: Icon(
                   _isProdutoSelecionado
-                      ? 'Crie, edite e mantenha fotos, preços e estoque.'
-                      : 'Crie e edite serviços com visual adequado ao mobile.',
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
-                    height: 1.35,
-                  ),
+                      ? Icons.inventory_2_outlined
+                      : Icons.design_services_outlined,
+                  color: Colors.white,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _isProdutoSelecionado
+                          ? 'Catálogo de produtos'
+                          : 'Catálogo de serviços',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _isProdutoSelecionado
+                          ? 'Crie, edite e mantenha fotos, preços e estoque.'
+                          : 'Crie e edite serviços com visual adequado ao mobile.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFD7E3F5),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+          _buildSummarySection(),
         ],
       ),
     );
@@ -571,35 +574,31 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         final Object? response = provider.fullResponse;
         if (response is! ProdutoResponseModel) return const SizedBox.shrink();
 
-        return Row(
-          children: <Widget>[
-            Expanded(
-              child: _SummaryCard(
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _SummaryCard(
                 label: 'Itens',
                 value: response.skusTotaisNoEstoque.toString(),
                 icon: Icons.widgets_outlined,
               ),
-            ),
-            if (_isProdutoSelecionado) ...<Widget>[
-              const SizedBox(width: 10),
-              Expanded(
-                child: _SummaryCard(
+              if (_isProdutoSelecionado)
+                _SummaryCard(
                   label: 'Sem estoque',
                   value: _formatNumber(response.qtSemEstoque),
                   icon: Icons.inventory_outlined,
                 ),
-              ),
-            ],
-            const SizedBox(width: 10),
-            Expanded(
-              child: _SummaryCard(
+              _SummaryCard(
                 label: 'Valor',
                 value: _formatCurrency(response.vlEstoqueEmGrana),
                 icon: Icons.payments_outlined,
                 compact: true,
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -1708,73 +1707,76 @@ class _SummaryCard extends StatelessWidget {
   final IconData icon;
   final bool compact;
 
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-
   @override
   Widget build(BuildContext context) {
     final int? numericValue = int.tryParse(value);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: compact ? 112 : 94,
+        maxWidth: compact ? 132 : 120,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: _accentColor, size: 18),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: _mutedTextColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (numericValue == null)
-            Text(
-              value,
-              maxLines: compact ? 2 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: compact ? 13 : 15,
-                fontWeight: FontWeight.w900,
-                color: _titleTextColor,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
+        decoration: BoxDecoration(
+          color: const Color(0x1AFFFFFF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x26FFFFFF)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: const Color(0x1FFFFFFF),
+                borderRadius: BorderRadius.circular(10),
               ),
-            )
-          else
-            SixAnimatedNumberText(
-              value: value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: _titleTextColor,
+              child: Icon(icon, color: Colors.white, size: 15),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFD7E3F5),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  if (numericValue == null)
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: compact ? 12 : 13,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    )
+                  else
+                    SixAnimatedNumberText(
+                      value: value,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
