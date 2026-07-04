@@ -27,7 +27,6 @@ class SubPainelWebProdutoLista extends StatelessWidget {
   final bool modoEdicao;
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
-  final String tipoInicial;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +51,7 @@ class ProdutoListaBody extends StatefulWidget {
   final bool isSelecao;
   final bool modoEdicao;
   final bool permitirSelecaoMultipla;
+  final String tipoInicial;
 
   @override
   State<ProdutoListaBody> createState() => _ProdutoListaBodyState();
