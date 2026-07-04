@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart' as sharing;
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/auto_customer_token_service.dart';
 
@@ -7,6 +8,7 @@ Future<void> showClienteAutoCadastroLinkDialog(
   BuildContext context, {
   String? initialTipoPessoa,
   String? initialDocumento,
+  bool actionsOnly = false,
 }) {
   return showDialog<void>(
     context: context,
@@ -60,6 +62,7 @@ Future<void> showClienteAutoCadastroLinkDialog(
                   initialTipoPessoa: initialTipoPessoa,
                   initialDocumento: initialDocumento,
                   showAsCard: false,
+                  actionsOnly: actionsOnly,
                 ),
               ],
             ),
@@ -76,11 +79,13 @@ class ClienteAutoCadastroLinkSection extends StatefulWidget {
     this.initialTipoPessoa,
     this.initialDocumento,
     this.showAsCard = true,
+    this.actionsOnly = false,
   });
 
   final String? initialTipoPessoa;
   final String? initialDocumento;
   final bool showAsCard;
+  final bool actionsOnly;
 
   @override
   State<ClienteAutoCadastroLinkSection> createState() => _ClienteAutoCadastroLinkSectionState();
@@ -171,11 +176,11 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
   }
 
-  Future<void> _gerarLink() async {
+  Future<String?> _gerarLink({bool mostrarMensagem = true}) async {
     final String empresaId = _empresaController.text.trim();
     if (empresaId.isEmpty) {
       _showSnack('Não foi possível identificar a empresa para gerar o link.');
-      return;
+      return null;
     }
 
     setState(() => _loading = true);
@@ -187,55 +192,49 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
         validadeMinutos: 1440,
       );
 
-      if (!mounted) return;
+      if (!mounted) return null;
       final String message = response.message.trim().isNotEmpty
           ? response.message.trim()
           : (response.isSuccess ? 'Token de auto-cadastro criado com sucesso.' : _fallbackErroGeracaoLink(response));
 
       if (!response.isSuccess) {
         _showSnack(message);
-        return;
+        return null;
       }
 
       await Clipboard.setData(ClipboardData(text: response.link));
       setState(() => _linkController.text = response.link);
-      _showSnack('$message Link copiado para a área de transferência.');
+      if (mostrarMensagem) _showSnack('$message Link copiado para a área de transferência.');
+      return response.link;
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted) return null;
       _showSnack('Falha ao gerar link: $error');
+      return null;
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _copiarLink() async {
-    final String link = _linkController.text.trim();
-    if (link.isEmpty) {
-      _showSnack('Gere o link antes de copiar.');
-      return;
-    }
+    String link = _linkController.text.trim();
+    if (link.isEmpty) link = (await _gerarLink(mostrarMensagem: false)) ?? '';
+    if (link.isEmpty) return;
 
     await Clipboard.setData(ClipboardData(text: link));
     if (!mounted) return;
     _showSnack('Link de auto-cadastro copiado para a área de transferência.');
   }
 
-  void _enviarLink() {
-    final String link = _linkController.text.trim();
-    if (link.isEmpty) {
-      _showSnack('Gere o link antes de enviar para o cliente.');
-      return;
-    }
+  Future<void> _enviarLink() async {
+    String link = _linkController.text.trim();
+    if (link.isEmpty) link = (await _gerarLink(mostrarMensagem: false)) ?? '';
+    if (link.isEmpty) return;
 
-    final String destino = _destinoController.text.trim();
-    if (destino.isEmpty) {
-      _showSnack('Informe o destino para envio do link.');
-      return;
-    }
-
-    final String canal = _canalController.text.trim().isEmpty ? 'canal informado' : _canalController.text.trim();
-    final String mensagem = _mensagemController.text.trim();
-    _showSnack('Link enviado via $canal para $destino. Mensagem: $mensagem');
+    final String mensagem = _mensagemController.text.trim().isEmpty
+        ? 'Use este link para concluir seu auto-cadastro.'
+        : _mensagemController.text.trim();
+    final String textoCompartilhamento = <String>[mensagem, link].join('\n\n');
+    await sharing.Share.share(textoCompartilhamento, subject: 'Auto-cadastro de cliente');
   }
 
   Widget _switchTile() {
@@ -290,16 +289,12 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
     );
   }
 
-  Widget _buildContent(BoxConstraints constraints) {
-    final bool compact = constraints.maxWidth < 560;
-    final double smallFieldWidth = compact ? double.infinity : 220;
-    final double largeFieldWidth = compact ? double.infinity : 320;
-
-    final List<Widget> actions = <Widget>[
+  List<Widget> _buildActions(bool compact) {
+    return <Widget>[
       SizedBox(
         width: compact ? double.infinity : null,
         child: OutlinedButton.icon(
-          onPressed: !_habilitado || _loading ? null : _gerarLink,
+          onPressed: _loading ? null : () => _gerarLink(),
           icon: _loading
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.auto_awesome_outlined),
@@ -309,7 +304,7 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
       SizedBox(
         width: compact ? double.infinity : null,
         child: OutlinedButton.icon(
-          onPressed: !_habilitado || _loading ? null : _copiarLink,
+          onPressed: _loading ? null : _copiarLink,
           icon: const Icon(Icons.copy_outlined),
           label: const Text('Copiar link'),
         ),
@@ -317,12 +312,31 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
       SizedBox(
         width: compact ? double.infinity : null,
         child: FilledButton.icon(
-          onPressed: !_habilitado || _loading ? null : _enviarLink,
+          onPressed: _loading ? null : _enviarLink,
           icon: const Icon(Icons.send_outlined),
           label: const Text('Enviar para cliente'),
         ),
       ),
     ];
+  }
+
+  Widget _buildContent(BoxConstraints constraints) {
+    final bool compact = constraints.maxWidth < 560;
+    final double smallFieldWidth = compact ? double.infinity : 220;
+    final double largeFieldWidth = compact ? double.infinity : 320;
+    final List<Widget> actions = _buildActions(compact);
+
+    if (widget.actionsOnly) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int index = 0; index < actions.length; index++) ...<Widget>[
+            actions[index],
+            if (index < actions.length - 1) const SizedBox(height: 12),
+          ],
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,10 +360,7 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
                 onChanged: !_habilitado || _loading ? null : (String? value) => setState(() => _tipoPessoa = value ?? 'PF'),
               ),
             ),
-            SizedBox(
-              width: smallFieldWidth,
-              child: _field(_canalController, 'Canal de envio', Icons.alt_route_outlined, hintText: 'WhatsApp, E-mail, SMS'),
-            ),
+            SizedBox(width: smallFieldWidth, child: _field(_canalController, 'Canal de envio', Icons.alt_route_outlined, hintText: 'WhatsApp, E-mail, SMS')),
             SizedBox(
               width: largeFieldWidth,
               child: _field(
@@ -391,34 +402,30 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(14),
+              if (!widget.actionsOnly) ...<Widget>[
+                Row(
+                  children: <Widget>[
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(14)),
+                      child: Icon(Icons.link_outlined, color: colorScheme.primary),
                     ),
-                    child: Icon(Icons.link_outlined, color: colorScheme.primary),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text('Auto-cadastro por link', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Gere, copie e envie o link para o cliente finalizar cadastro.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text('Auto-cadastro por link', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 4),
+                          Text('Gere, copie e envie o link para o cliente finalizar cadastro.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
+                  ],
+                ),
+                const SizedBox(height: 18),
+              ],
               content,
             ],
           ),
