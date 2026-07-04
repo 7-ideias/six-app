@@ -632,6 +632,43 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
+  Widget _buildModoExibicaoListHeaderButton() {
+    return Tooltip(
+      message:
+          _exibicaoHorizontal
+              ? 'Usar visualização vertical'
+              : 'Usar visualização horizontal',
+      child: InkWell(
+        onTap: _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child:
+              _salvandoPreferencia
+                  ? const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                  : Icon(
+                    _exibicaoHorizontal
+                        ? Icons.view_agenda_outlined
+                        : Icons.view_carousel_outlined,
+                    color: _accentColor,
+                    size: 18,
+                  ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildListHeader(int count, bool isLoading) {
     final String titulo =
         widget.isSelecao
@@ -664,6 +701,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
           const SizedBox(width: 10),
         ],
+        _buildModoExibicaoListHeaderButton(),
+        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
