@@ -49,7 +49,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   final Set<String> _favoritosVisuais = <String>{};
   final Map<String, int> _indiceImagemHorizontal = <String, int>{};
 
-  static const double _horizontalViewportFraction = 0.90;
+  static const double _horizontalViewportFraction = 0.94;
 
   final PageController _horizontalProdutosController = PageController(
     viewportFraction: _horizontalViewportFraction,
@@ -473,9 +473,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
@@ -483,53 +483,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         ),
         boxShadow: const <BoxShadow>[
           BoxShadow(
-            color: Color(0x260B1F3A),
-            blurRadius: 22,
-            offset: Offset(0, 12),
+            color: Color(0x220B1F3A),
+            blurRadius: 18,
+            offset: Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      _isProdutoSelecionado
-                          ? 'Catálogo de produtos'
-                          : 'Catálogo de serviços',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _isProdutoSelecionado
-                          ? 'Crie, edite e mantenha fotos, preços e estoque.'
-                          : 'Crie e edite serviços com visual adequado ao mobile.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD7E3F5),
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          _buildSummarySection(),
-        ],
-      ),
+      child: _buildSummarySection(),
     );
   }
 
@@ -578,40 +538,33 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         borderRadius: BorderRadius.circular(999),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
             color:
                 _exibirValores
                     ? const Color(0x26FFFFFF)
-                    : const Color(0x1AFFFFFF),
-            borderRadius: BorderRadius.circular(999),
+                    : const Color(0x14FFFFFF),
+            shape: BoxShape.circle,
             border: Border.all(color: const Color(0x3DFFFFFF)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 160),
-                child: Icon(
-                  _exibirValores
-                      ? Icons.visibility_rounded
-                      : Icons.visibility_off_rounded,
-                  key: ValueKey<bool>(_exibirValores),
-                  color: Colors.white,
-                  size: 15,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _exibirValores ? 'Resumo visível' : 'Resumo oculto',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.1,
-                ),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x18000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
             ],
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: Icon(
+              _exibirValores
+                  ? Icons.visibility_rounded
+                  : Icons.visibility_off_rounded,
+              key: ValueKey<bool>(_exibirValores),
+              color: Colors.white,
+              size: 17,
+            ),
           ),
         ),
       ),
@@ -698,37 +651,27 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           _formatCurrency(response.vlEstoqueEmGrana),
         );
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: <Widget>[
-              _buildExibirValoresHeaderButton(),
-              const SizedBox(height: 8),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _SummaryCard(label: 'Itens', value: itensResumo),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _SummaryCard(
-                      label: 'Sem estoque',
-                      value: semEstoqueResumo,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _SummaryCard(
-                      label: 'Valor',
-                      value: valorResumo,
-                      compact: true,
-                    ),
-                  ),
-                ],
+        return Row(
+          children: <Widget>[
+            Expanded(child: _SummaryCard(label: 'Itens', value: itensResumo)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _SummaryCard(
+                label: 'Sem estoque',
+                value: semEstoqueResumo,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _SummaryCard(
+                label: 'Valor',
+                value: valorResumo,
+                compact: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildExibirValoresHeaderButton(),
+          ],
         );
       },
     );
@@ -1087,11 +1030,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   ) {
     if (isSelecao) return _selecaoMultiplaAtiva ? 376 : 118;
 
-    const double alturaMinima = 318;
+    const double alturaMinima = 390;
 
     final MediaQueryData media = MediaQuery.of(context);
     const double alturaReservadaPeloFab = 96;
-    const double espacamentoAteCatalogo = 312;
+    const double espacamentoAteCatalogo = 230;
 
     final double alturaDisponivel =
         media.size.height -
@@ -2311,12 +2254,12 @@ class _SummaryCard extends StatelessWidget {
     );
 
     return Container(
-      height: 34,
+      height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0x14FFFFFF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x22FFFFFF)),
+        color: const Color(0x18FFFFFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x2EFFFFFF)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2327,7 +2270,7 @@ class _SummaryCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 9,
+              fontSize: 8.5,
               height: 1,
               fontWeight: FontWeight.w800,
               color: Color(0xFFD7E3F5),
