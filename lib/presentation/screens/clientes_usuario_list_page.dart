@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
 import 'package:sixpos/data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/screens/cliente_auto_cadastro_link_section.dart';
+import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_web_dialog.dart';
 
 class ClientesUsuarioListPage extends StatefulWidget {
@@ -92,7 +94,22 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     }
   }
 
+  bool _useMobileForm(BuildContext context) => !widget.embedded && MediaQuery.of(context).size.width < 720;
+
   void _openForm({ClienteUsuario? cliente}) {
+    if (_useMobileForm(context)) {
+      Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => ClienteUsuarioCadastroMobileScreen(cliente: cliente, apiClient: _api),
+        ),
+      ).then((bool? saved) {
+        if (saved == true && mounted) {
+          _reload();
+        }
+      });
+      return;
+    }
+
     showClienteUsuarioCadastroWebDialog(
       context,
       cliente: cliente,
@@ -101,15 +118,29 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     );
   }
 
+  void _openAutoCadastro() {
+    showClienteAutoCadastroLinkDialog(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final Widget content = Column(children: <Widget>[_header(), Expanded(child: _body())]);
     if (widget.embedded) return Material(color: Theme.of(context).colorScheme.surface, child: content);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(title: const Text('Clientes'), actions: <Widget>[IconButton(onPressed: _reload, icon: const Icon(Icons.refresh_rounded))]),
+      appBar: AppBar(
+        title: const Text('Clientes'),
+        actions: <Widget>[
+          IconButton(onPressed: _loading ? null : _reload, icon: const Icon(Icons.refresh_rounded)),
+          IconButton(onPressed: _loading ? null : _openAutoCadastro, icon: const Icon(Icons.link_outlined), tooltip: 'Auto cadastro'),
+        ],
+      ),
       body: SafeArea(child: _body()),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _openForm(), icon: const Icon(Icons.person_add_alt_1_rounded), label: const Text('Novo cliente')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openForm(),
+        icon: const Icon(Icons.person_add_alt_1_rounded),
+        label: const Text('Novo cliente'),
+      ),
     );
   }
 
@@ -121,6 +152,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
       onBack: widget.onBack,
       actions: <Widget>[
         OutlinedButton.icon(onPressed: _loading ? null : _reload, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
+        OutlinedButton.icon(onPressed: _loading ? null : _openAutoCadastro, icon: const Icon(Icons.link_outlined), label: const Text('Auto cadastro')),
         FilledButton.icon(onPressed: _loading ? null : () => _openForm(), icon: const Icon(Icons.person_add_alt_1_rounded), label: const Text('Novo cliente')),
       ],
     );
@@ -187,7 +219,15 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
         decoration: InputDecoration(
           hintText: 'Buscar nome, documento, telefone ou e-mail...',
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: _search.text.isEmpty ? null : IconButton(icon: const Icon(Icons.close_rounded), onPressed: () { _search.clear(); setState(() => _filter = ''); }),
+          suffixIcon: _search.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    _search.clear();
+                    setState(() => _filter = '');
+                  },
+                ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
@@ -217,13 +257,21 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
                 const SizedBox(height: 4),
                 Text('${cliente.tipoPessoa.isEmpty ? 'PF' : cliente.tipoPessoa} • ${cliente.documento.isEmpty ? 'Documento não informado' : cliente.documento}', maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 12),
-                Wrap(spacing: 8, runSpacing: 8, children: <Widget>[_info(Icons.phone_outlined, cliente.telefone.isEmpty ? 'Sem telefone' : cliente.telefone), _info(Icons.mail_outline, cliente.email.isEmpty ? 'Sem e-mail' : cliente.email), _info(Icons.location_on_outlined, _location(cliente))]),
+                Wrap(spacing: 8, runSpacing: 8, children: <Widget>[
+                  _info(Icons.phone_outlined, cliente.telefone.isEmpty ? 'Sem telefone' : cliente.telefone),
+                  _info(Icons.mail_outline, cliente.email.isEmpty ? 'Sem e-mail' : cliente.email),
+                  _info(Icons.location_on_outlined, _location(cliente)),
+                ]),
                 const SizedBox(height: 12),
                 _credit(cliente, fiadoOk),
               ])),
             ]);
-            final Widget buttons = compact ? Row(children: <Widget>[Expanded(child: _historyButton(cliente)), const SizedBox(width: 10), Expanded(child: _editButton(cliente))]) : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[_historyButton(cliente), const SizedBox(height: 10), _editButton(cliente)]);
-            return compact ? Column(children: <Widget>[data, const SizedBox(height: 14), buttons]) : Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Expanded(child: data), const SizedBox(width: 16), SizedBox(width: 210, child: buttons)]);
+            final Widget buttons = compact
+                ? Row(children: <Widget>[Expanded(child: _historyButton(cliente)), const SizedBox(width: 10), Expanded(child: _editButton(cliente))])
+                : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[_historyButton(cliente), const SizedBox(height: 10), _editButton(cliente)]);
+            return compact
+                ? Column(children: <Widget>[data, const SizedBox(height: 14), buttons])
+                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Expanded(child: data), const SizedBox(width: 16), SizedBox(width: 210, child: buttons)]);
           }),
         ),
       ),
@@ -267,7 +315,11 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
 
   String _location(ClienteUsuario c) => c.cidade.isEmpty && c.uf.isEmpty ? 'Sem cidade' : c.uf.isEmpty ? c.cidade : c.cidade.isEmpty ? c.uf : '${c.cidade}/${c.uf}';
   String _address(ClienteUsuario c) => <String>[c.logradouro, c.numero, c.bairro, c.cidade, c.uf, c.cep].where((String item) => item.trim().isNotEmpty).join(', ').isEmpty ? 'Endereço não informado.' : <String>[c.logradouro, c.numero, c.bairro, c.cidade, c.uf, c.cep].where((String item) => item.trim().isNotEmpty).join(', ');
-  String _initials(String name) { final List<String> parts = name.trim().split(' ').where((String item) => item.isNotEmpty).toList(); if (parts.isEmpty) return 'CL'; return parts.length == 1 ? parts.first[0].toUpperCase() : '${parts.first[0]}${parts.last[0]}'.toUpperCase(); }
+  String _initials(String name) {
+    final List<String> parts = name.trim().split(' ').where((String item) => item.isNotEmpty).toList();
+    if (parts.isEmpty) return 'CL';
+    return parts.length == 1 ? parts.first[0].toUpperCase() : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
 }
 
 class _LoadingClientes extends StatelessWidget {
