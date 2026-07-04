@@ -32,7 +32,7 @@ class UsuarioService {
         headers: {
           'accept': 'application/json',
           'idUnicoDaEmpresa': empresaId,
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer ' + token,
         },
       );
 
@@ -61,6 +61,10 @@ class UsuarioService {
     String? idiomaDePreferencia,
     String? modoDeExibicaoProdutos,
     String? modoDeExibicaoServicos,
+    String? modoDeExibicaoProdutosWeb,
+    String? modoDeExibicaoProdutosMobile,
+    String? modoDeExibicaoServicosWeb,
+    String? modoDeExibicaoServicosMobile,
     bool? ocultarValoresFinanceirosWeb,
   }) async {
     final authService = AuthService();
@@ -76,10 +80,28 @@ class UsuarioService {
       body['idiomaDePreferencia'] = idiomaDePreferencia;
     }
     if (modoDeExibicaoProdutos != null) {
-      body['modoDeExibicaoProdutos'] = modoDeExibicaoProdutos;
+      final campo = kIsWeb
+          ? 'modoDeExibicaoProdutosWeb'
+          : 'modoDeExibicaoProdutosMobile';
+      body[campo] = modoDeExibicaoProdutos;
     }
     if (modoDeExibicaoServicos != null) {
-      body['modoDeExibicaoServicos'] = modoDeExibicaoServicos;
+      final campo = kIsWeb
+          ? 'modoDeExibicaoServicosWeb'
+          : 'modoDeExibicaoServicosMobile';
+      body[campo] = modoDeExibicaoServicos;
+    }
+    if (modoDeExibicaoProdutosWeb != null) {
+      body['modoDeExibicaoProdutosWeb'] = modoDeExibicaoProdutosWeb;
+    }
+    if (modoDeExibicaoProdutosMobile != null) {
+      body['modoDeExibicaoProdutosMobile'] = modoDeExibicaoProdutosMobile;
+    }
+    if (modoDeExibicaoServicosWeb != null) {
+      body['modoDeExibicaoServicosWeb'] = modoDeExibicaoServicosWeb;
+    }
+    if (modoDeExibicaoServicosMobile != null) {
+      body['modoDeExibicaoServicosMobile'] = modoDeExibicaoServicosMobile;
     }
     if (ocultarValoresFinanceirosWeb != null) {
       body['ocultarValoresFinanceirosWeb'] = ocultarValoresFinanceirosWeb;
@@ -91,7 +113,7 @@ class UsuarioService {
       headers: {
         'Content-Type': 'application/json',
         'idUnicoDaEmpresa': empresaId,
-        'Authorization': 'Bearer $token',
+        'Authorization': 'Bearer ' + token,
       },
       body: jsonEncode(body),
     );
@@ -119,7 +141,7 @@ class UsuarioService {
         headers: {
           'Content-Type': 'application/json',
           'idUnicoDaEmpresa': empresaId,
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer ' + token,
         },
         body: jsonEncode(usuario.toJson()),
       );
