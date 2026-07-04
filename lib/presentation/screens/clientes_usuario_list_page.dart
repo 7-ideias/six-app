@@ -6,6 +6,7 @@ import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_link_section.dart';
 import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_usuario_cadastro_web_dialog.dart';
+import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
 
 class ClientesUsuarioListPage extends StatefulWidget {
   const ClientesUsuarioListPage({super.key, this.embedded = false, this.onBack, this.apiClient});
@@ -94,10 +95,10 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     }
   }
 
-  bool _useMobileForm(BuildContext context) => !widget.embedded && MediaQuery.of(context).size.width < 720;
+  bool _useMobileLayout(BuildContext context) => !widget.embedded && MediaQuery.of(context).size.width < 720;
 
   void _openForm({ClienteUsuario? cliente}) {
-    if (_useMobileForm(context)) {
+    if (_useMobileLayout(context)) {
       Navigator.of(context).push<bool>(
         MaterialPageRoute<bool>(
           builder: (_) => ClienteUsuarioCadastroMobileScreen(cliente: cliente, apiClient: _api),
@@ -124,6 +125,10 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_useMobileLayout(context)) {
+      return ClientesUsuarioMobileScreen(apiClient: _api);
+    }
+
     final Widget content = Column(children: <Widget>[_header(), Expanded(child: _body())]);
     if (widget.embedded) return Material(color: Theme.of(context).colorScheme.surface, child: content);
     return Scaffold(
