@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
-import 'package:sixpos/pdv_page_web.dart';
+import 'package:sixpos/pdv_page_web_atendimento.dart';
 import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:sixpos/presentation/screens/register_page_web.dart';
@@ -119,7 +119,7 @@ class MyApp extends StatelessWidget {
     if (routeUri.path == '/app') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const PDVWeb(),
+        builder: (_) => const PDVWebAtendimento(),
       );
     }
 
