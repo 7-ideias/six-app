@@ -13,6 +13,7 @@ import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.d
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
+import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_web_page.dart';
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
@@ -132,6 +133,13 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const AtendimentosTecnicosListaWebPage(),
+      );
+    }
+
+    if (routeUri.path == '/app/configuracoes/status-atendimento-tecnico') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const StatusAtendimentoTecnicoConfigWebPage(),
       );
     }
 
