@@ -160,6 +160,82 @@ class AtendimentoTecnicoApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> gerarLinkAssinatura({
+    required String id,
+    required String baseUrl,
+  }) async {
+    final response = await _httpClient.post(
+      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/' + id + '/assinatura/link'),
+      headers: await _headers(),
+      body: jsonEncode(<String, dynamic>{
+        'baseUrl': baseUrl,
+        'validadeMinutos': 1440,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+
+    return jsonDecode(_decodeBody(response)) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> consultarAssinaturaPublica({
+    required String idUnicoDaEmpresa,
+    required String token,
+  }) async {
+    final uri = Uri.parse('${AppConfig.baseUrl}/public/api/atendimentos-tecnicos/assinatura')
+        .replace(queryParameters: <String, String>{
+      'idUnicoDaEmpresa': idUnicoDaEmpresa,
+      'token': token,
+    });
+    final response = await _httpClient.get(uri, headers: _publicHeaders());
+
+    if (response.statusCode != 200) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+
+    return jsonDecode(_decodeBody(response)) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> aprovarAssinaturaPublica({
+    required String idUnicoDaEmpresa,
+    required String token,
+    required String nomeAssinante,
+    required String? documentoAssinante,
+    required String assinaturaDataUrl,
+    required String? observacao,
+  }) async {
+    final response = await _httpClient.post(
+      Uri.parse('${AppConfig.baseUrl}/public/api/atendimentos-tecnicos/assinatura/aprovar'),
+      headers: _publicHeaders(),
+      body: jsonEncode(<String, dynamic>{
+        'idUnicoDaEmpresa': idUnicoDaEmpresa,
+        'token': token,
+        'nomeAssinante': nomeAssinante,
+        'documentoAssinante': documentoAssinante,
+        'assinaturaDataUrl': assinaturaDataUrl,
+        'aceitouTermos': true,
+        'observacao': observacao,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+
+    return jsonDecode(_decodeBody(response)) as Map<String, dynamic>;
+  }
+
   Future<Map<String, String>> _headers() async {
     final authService = AuthService();
     final jwtToken = await authService.getAccessToken();
@@ -170,6 +246,13 @@ class AtendimentoTecnicoApiClient {
       'Content-Type': 'application/json; charset=utf-8',
       'Accept': 'application/json; charset=utf-8',
       'Authorization': 'Bearer ' + (jwtToken ?? ''),
+    };
+  }
+
+  Map<String, String> _publicHeaders() {
+    return const <String, String>{
+      'Content-Type': 'application/json; charset=utf-8',
+      'Accept': 'application/json; charset=utf-8',
     };
   }
 
