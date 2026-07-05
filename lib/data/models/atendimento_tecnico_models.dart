@@ -214,6 +214,7 @@ class AtendimentoTecnicoModel {
     this.assinaturaAprovada = false,
     this.assinaturaNomeAssinante,
     this.assinaturaDataHora,
+    this.validadeOrcamentoEm,
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
@@ -237,6 +238,7 @@ class AtendimentoTecnicoModel {
   final bool assinaturaAprovada;
   final String? assinaturaNomeAssinante;
   final DateTime? assinaturaDataHora;
+  final DateTime? validadeOrcamentoEm;
   final AtendimentoTecnicoEquipamentoModel? equipamento;
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
@@ -263,6 +265,7 @@ class AtendimentoTecnicoModel {
       assinaturaAprovada: json['assinaturaAprovada'] == true,
       assinaturaNomeAssinante: json['assinaturaNomeAssinante']?.toString(),
       assinaturaDataHora: DateTime.tryParse(json['assinaturaDataHora']?.toString() ?? ''),
+      validadeOrcamentoEm: DateTime.tryParse(json['validadeOrcamentoEm']?.toString() ?? ''),
       equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(
         json['equipamento'] is Map<String, dynamic>
             ? json['equipamento'] as Map<String, dynamic>
@@ -292,6 +295,7 @@ class AtendimentoTecnicoModel {
 
 class AtendimentoTecnicoCreateInput {
   const AtendimentoTecnicoCreateInput({
+    required this.validadeOrcamentoEm,
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
@@ -304,6 +308,7 @@ class AtendimentoTecnicoCreateInput {
     this.itens = const <AtendimentoTecnicoItemInput>[],
   });
 
+  final DateTime validadeOrcamentoEm;
   final String? descricao;
   final String? idCliente;
   final String? nomeClienteSnapshot;
@@ -323,10 +328,18 @@ class AtendimentoTecnicoCreateInput {
       'prioridadeId': prioridadeId,
       'prioridadeCodigo': prioridadeCodigo,
       'origemCodigo': origemCodigo,
+      'validadeOrcamentoEm': _dateOnly(validadeOrcamentoEm),
       'equipamento': equipamento?.toJson(),
       'defeitoRelatado': defeitoRelatado,
       'diagnosticoTecnico': diagnosticoTecnico,
       'itens': itens.map((item) => item.toJson()).toList(),
     };
+  }
+
+  static String _dateOnly(DateTime value) {
+    final year = value.year.toString().padLeft(4, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 }
