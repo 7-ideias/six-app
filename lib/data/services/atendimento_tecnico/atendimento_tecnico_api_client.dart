@@ -22,13 +22,71 @@ class AtendimentoTecnicoApiClient {
     if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
-        body: response.body,
+        body: _decodeBody(response),
       );
     }
 
     return AtendimentoTecnicoDominiosBaseModel.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
+      jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
+  }
+
+  Future<List<DominioStatusAtendimentoCustomizacaoModel>>
+  listarCustomizacoesStatusAtendimento() async {
+    final response = await _httpClient.get(
+      Uri.parse(
+        '${AppConfig.baseUrl}/dominios/atendimento-tecnico/status/customizacoes',
+      ),
+      headers: await _headers(),
+    );
+
+    if (response.statusCode == 204) {
+      return <DominioStatusAtendimentoCustomizacaoModel>[];
+    }
+    if (response.statusCode != 200) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+
+    final decoded = jsonDecode(_decodeBody(response));
+    if (decoded is! List) {
+      return <DominioStatusAtendimentoCustomizacaoModel>[];
+    }
+    return decoded
+        .whereType<Map<String, dynamic>>()
+        .map(DominioStatusAtendimentoCustomizacaoModel.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<List<DominioStatusAtendimentoCustomizacaoModel>>
+  salvarCustomizacoesStatusAtendimento(
+    List<Map<String, dynamic>> customizacoes,
+  ) async {
+    final response = await _httpClient.put(
+      Uri.parse(
+        '${AppConfig.baseUrl}/dominios/atendimento-tecnico/status/customizacoes',
+      ),
+      headers: await _headers(),
+      body: jsonEncode(customizacoes),
+    );
+
+    if (response.statusCode != 200) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+
+    final decoded = jsonDecode(_decodeBody(response));
+    if (decoded is! List) {
+      return <DominioStatusAtendimentoCustomizacaoModel>[];
+    }
+    return decoded
+        .whereType<Map<String, dynamic>>()
+        .map(DominioStatusAtendimentoCustomizacaoModel.fromJson)
+        .toList(growable: false);
   }
 
   Future<List<AtendimentoTecnicoModel>> listar() async {
@@ -41,11 +99,11 @@ class AtendimentoTecnicoApiClient {
     if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
-        body: response.body,
+        body: _decodeBody(response),
       );
     }
 
-    final decoded = jsonDecode(response.body);
+    final decoded = jsonDecode(_decodeBody(response));
     if (decoded is! List) return <AtendimentoTecnicoModel>[];
     return decoded
         .whereType<Map<String, dynamic>>()
@@ -63,12 +121,12 @@ class AtendimentoTecnicoApiClient {
     if (response.statusCode != 201) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
-        body: response.body,
+        body: _decodeBody(response),
       );
     }
 
     return AtendimentoTecnicoModel.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
+      jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
   }
 
@@ -93,12 +151,12 @@ class AtendimentoTecnicoApiClient {
     if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
-        body: response.body,
+        body: _decodeBody(response),
       );
     }
 
     return AtendimentoTecnicoModel.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
+      jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
   }
 
@@ -109,9 +167,14 @@ class AtendimentoTecnicoApiClient {
 
     return <String, String>{
       'idUnicoDaEmpresa': idUnicoDaEmpresa ?? '',
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
+      'Accept': 'application/json; charset=utf-8',
       'Authorization': 'Bearer ' + (jwtToken ?? ''),
     };
+  }
+
+  String _decodeBody(http.Response response) {
+    return utf8.decode(response.bodyBytes);
   }
 }
 
