@@ -25,6 +25,7 @@ class _AtendimentosTecnicosListaWebPageState
   final TextEditingController _buscaController = TextEditingController();
 
   late Future<_ListaAtendimentosState> _future;
+  bool _alterandoStatus = false;
 
   @override
   void initState() {
@@ -84,15 +85,23 @@ class _AtendimentosTecnicosListaWebPageState
     }).toList(growable: false);
   }
 
-  String _statusLabel(
+  DominioOpcaoModel? _statusAtual(
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
     for (final opcao in status) {
-      if (opcao.id == atendimento.statusId &&
-          opcao.nomePadraoPtBr.trim().isNotEmpty) {
-        return opcao.nomePadraoPtBr;
-      }
+      if (opcao.id == atendimento.statusId) return opcao;
+    }
+    return status.isEmpty ? null : status.first;
+  }
+
+  String _statusLabel(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final atual = _statusAtual(atendimento, status);
+    if (atual != null && atual.nomePadraoPtBr.trim().isNotEmpty) {
+      return atual.nomePadraoPtBr;
     }
     return atendimento.statusCodigo;
   }
@@ -122,6 +131,120 @@ class _AtendimentosTecnicosListaWebPageState
     ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
 
     return partes.isEmpty ? atendimento.numero : partes.join(' ');
+  }
+
+  Future<void> _abrirAlterarStatusDialog(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) async {
+    if (status.isEmpty || _alterandoStatus) return;
+
+    final observacaoController = TextEditingController();
+    DominioOpcaoModel? statusSelecionado = _statusAtual(atendimento, status);
+
+    final bool? alterou = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Mudar status'),
+              content: SizedBox(
+                width: 460,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      atendimento.numero,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<DominioOpcaoModel>(
+                      value: statusSelecionado,
+                      decoration: const InputDecoration(
+                        labelText: 'Novo status',
+                      ),
+                      items: status.map((opcao) {
+                        return DropdownMenuItem<DominioOpcaoModel>(
+                          value: opcao,
+                          child: Text(opcao.nomePadraoPtBr),
+                        );
+                      }).toList(),
+                      onChanged: (opcao) {
+                        setDialogState(() => statusSelecionado = opcao);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: observacaoController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Observação',
+                        hintText: 'Ex.: Cliente aprovou o orçamento pelo WhatsApp.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton.icon(
+                  onPressed: statusSelecionado == null
+                      ? null
+                      : () async {
+                          setState(() => _alterandoStatus = true);
+                          try {
+                            await _service.alterarStatus(
+                              id: atendimento.id,
+                              status: statusSelecionado!,
+                              observacao: observacaoController.text.trim().isEmpty
+                                  ? null
+                                  : observacaoController.text.trim(),
+                            );
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop(true);
+                            }
+                          } catch (error) {
+                            if (dialogContext.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Não foi possível alterar o status: $error',
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _alterandoStatus = false);
+                          }
+                        },
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Salvar status'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    observacaoController.dispose();
+
+    if (alterou == true && mounted) {
+      _recarregar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Status do atendimento atualizado.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -305,7 +428,7 @@ class _AtendimentosTecnicosListaWebPageState
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: () => _abrirDetalhes(atendimento, statusTexto),
+        onTap: () => _abrirDetalhes(atendimento, statusTexto, status),
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -389,6 +512,11 @@ class _AtendimentosTecnicosListaWebPageState
                     _formatarData(atendimento.dataAtualizacao),
                     Icons.schedule_outlined,
                   ),
+                  OutlinedButton.icon(
+                    onPressed: () => _abrirAlterarStatusDialog(atendimento, status),
+                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                    label: const Text('Mudar status'),
+                  ),
                 ],
               );
 
@@ -405,7 +533,7 @@ class _AtendimentosTecnicosListaWebPageState
                   Expanded(child: info),
                   const SizedBox(width: 14),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
+                    constraints: const BoxConstraints(maxWidth: 520),
                     child: chips,
                   ),
                 ],
@@ -420,6 +548,7 @@ class _AtendimentosTecnicosListaWebPageState
   Future<void> _abrirDetalhes(
     AtendimentoTecnicoModel atendimento,
     String statusTexto,
+    List<DominioOpcaoModel> status,
   ) async {
     await showDialog<void>(
       context: context,
@@ -448,6 +577,15 @@ class _AtendimentosTecnicosListaWebPageState
                           ),
                         ),
                       ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(dialogContext).pop();
+                          _abrirAlterarStatusDialog(atendimento, status);
+                        },
+                        icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                        label: const Text('Mudar status'),
+                      ),
+                      const SizedBox(width: 8),
                       IconButton(
                         onPressed: () => Navigator.of(dialogContext).pop(),
                         icon: const Icon(Icons.close_rounded),
