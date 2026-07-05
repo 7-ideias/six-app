@@ -54,8 +54,8 @@ class AtendimentoTecnicoApiClient {
     return decoded.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoModel.fromJson).toList(growable: false);
   }
 
-  Future<AtendimentoTecnicoModel> criar(AtendimentoTecnicoCreateInput input, {required DateTime dataVencimentoEm}) async {
-    final body = input.toJson()..['dataVencimentoEm'] = _dateOnly(dataVencimentoEm);
+  Future<AtendimentoTecnicoModel> criar(AtendimentoTecnicoCreateInput input, {DateTime? dataVencimentoEm}) async {
+    final body = input.toJson()..['dataVencimentoEm'] = _dateOnly(dataVencimentoEm ?? input.validadeOrcamentoEm);
     final response = await _httpClient.post(
       Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos'),
       headers: await _headers(),
@@ -65,8 +65,8 @@ class AtendimentoTecnicoApiClient {
     return AtendimentoTecnicoModel.fromJson(jsonDecode(_decodeBody(response)) as Map<String, dynamic>);
   }
 
-  Future<AtendimentoTecnicoModel> atualizar({required String id, required AtendimentoTecnicoUpdateInput input, required DateTime dataVencimentoEm}) async {
-    final body = input.toJson()..['dataVencimentoEm'] = _dateOnly(dataVencimentoEm);
+  Future<AtendimentoTecnicoModel> atualizar({required String id, required AtendimentoTecnicoUpdateInput input, DateTime? dataVencimentoEm}) async {
+    final body = input.toJson()..['dataVencimentoEm'] = _dateOnly(dataVencimentoEm ?? input.validadeOrcamentoEm);
     final response = await _httpClient.put(
       Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/' + id),
       headers: await _headers(),
