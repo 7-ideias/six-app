@@ -54,21 +54,23 @@ class AtendimentoTecnicoApiClient {
     return decoded.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoModel.fromJson).toList(growable: false);
   }
 
-  Future<AtendimentoTecnicoModel> criar(AtendimentoTecnicoCreateInput input) async {
+  Future<AtendimentoTecnicoModel> criar(AtendimentoTecnicoCreateInput input, {required DateTime dataVencimentoEm}) async {
+    final body = input.toJson()..['dataVencimentoEm'] = _dateOnly(dataVencimentoEm);
     final response = await _httpClient.post(
       Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos'),
       headers: await _headers(),
-      body: jsonEncode(input.toJson()),
+      body: jsonEncode(body),
     );
     if (response.statusCode != 201) throw AtendimentoTecnicoApiException(statusCode: response.statusCode, body: _decodeBody(response));
     return AtendimentoTecnicoModel.fromJson(jsonDecode(_decodeBody(response)) as Map<String, dynamic>);
   }
 
-  Future<AtendimentoTecnicoModel> atualizar({required String id, required AtendimentoTecnicoUpdateInput input}) async {
+  Future<AtendimentoTecnicoModel> atualizar({required String id, required AtendimentoTecnicoUpdateInput input, required DateTime dataVencimentoEm}) async {
+    final body = input.toJson()..['dataVencimentoEm'] = _dateOnly(dataVencimentoEm);
     final response = await _httpClient.put(
       Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/' + id),
       headers: await _headers(),
-      body: jsonEncode(input.toJson()),
+      body: jsonEncode(body),
     );
     if (response.statusCode != 200) throw AtendimentoTecnicoApiException(statusCode: response.statusCode, body: _decodeBody(response));
     return AtendimentoTecnicoModel.fromJson(jsonDecode(_decodeBody(response)) as Map<String, dynamic>);
@@ -131,6 +133,13 @@ class AtendimentoTecnicoApiClient {
   Map<String, String> _publicHeaders() => const <String, String>{'Content-Type': 'application/json; charset=utf-8', 'Accept': 'application/json; charset=utf-8'};
 
   String _decodeBody(http.Response response) => utf8.decode(response.bodyBytes);
+
+  String _dateOnly(DateTime value) {
+    final year = value.year.toString().padLeft(4, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
 }
 
 class AtendimentoTecnicoApiException implements Exception {
