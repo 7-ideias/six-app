@@ -30,17 +30,15 @@ class AtendimentoTecnicoEquipamentoModel {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'tipo': tipo,
-      'marca': marca,
-      'modelo': modelo,
-      'numeroSerie': numeroSerie,
-      'imei': imei,
-      'acessorios': acessorios,
-      'observacoesEntrada': observacoesEntrada,
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'tipo': tipo,
+        'marca': marca,
+        'modelo': modelo,
+        'numeroSerie': numeroSerie,
+        'imei': imei,
+        'acessorios': acessorios,
+        'observacoesEntrada': observacoesEntrada,
+      };
 }
 
 class AtendimentoTecnicoItemModel {
@@ -124,20 +122,18 @@ class AtendimentoTecnicoItemInput {
   final String? nomeTecnicoResponsavel;
   final bool? movimentaEstoque;
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'tipoItemId': tipoItemId,
-      'tipoItemCodigo': tipoItemCodigo,
-      'idSku': idSku,
-      'descricaoSnapshot': descricaoSnapshot,
-      'quantidade': quantidade,
-      'valorUnitario': valorUnitario,
-      'desconto': desconto,
-      'idTecnicoResponsavel': idTecnicoResponsavel,
-      'nomeTecnicoResponsavel': nomeTecnicoResponsavel,
-      'movimentaEstoque': movimentaEstoque,
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'tipoItemId': tipoItemId,
+        'tipoItemCodigo': tipoItemCodigo,
+        'idSku': idSku,
+        'descricaoSnapshot': descricaoSnapshot,
+        'quantidade': quantidade,
+        'valorUnitario': valorUnitario,
+        'desconto': desconto,
+        'idTecnicoResponsavel': idTecnicoResponsavel,
+        'nomeTecnicoResponsavel': nomeTecnicoResponsavel,
+        'movimentaEstoque': movimentaEstoque,
+      };
 }
 
 class AtendimentoTecnicoHistoricoStatusModel {
@@ -231,6 +227,38 @@ class AtendimentoTecnicoAuditoriaModel {
   }
 }
 
+class AtendimentoTecnicoRecebimentoModel {
+  const AtendimentoTecnicoRecebimentoModel({
+    required this.id,
+    required this.codigoFormaRecebimento,
+    required this.nomeFormaRecebimento,
+    required this.valor,
+    this.observacao,
+    this.idUsuario,
+    this.dataHora,
+  });
+
+  final String id;
+  final String codigoFormaRecebimento;
+  final String nomeFormaRecebimento;
+  final double valor;
+  final String? observacao;
+  final String? idUsuario;
+  final DateTime? dataHora;
+
+  factory AtendimentoTecnicoRecebimentoModel.fromJson(Map<String, dynamic> json) {
+    return AtendimentoTecnicoRecebimentoModel(
+      id: json['id']?.toString() ?? '',
+      codigoFormaRecebimento: json['codigoFormaRecebimento']?.toString() ?? '',
+      nomeFormaRecebimento: json['nomeFormaRecebimento']?.toString() ?? '',
+      valor: (json['valor'] as num?)?.toDouble() ?? 0,
+      observacao: json['observacao']?.toString(),
+      idUsuario: json['idUsuario']?.toString(),
+      dataHora: DateTime.tryParse(json['dataHora']?.toString() ?? ''),
+    );
+  }
+}
+
 class AtendimentoTecnicoModel {
   const AtendimentoTecnicoModel({
     required this.id,
@@ -241,9 +269,14 @@ class AtendimentoTecnicoModel {
     required this.valorTotalProdutos,
     required this.valorTotalServicos,
     required this.valorTotalAtendimento,
+    required this.valorRecebido,
+    required this.valorEmAberto,
+    required this.operacaoLiquidada,
+    required this.statusLiquidacaoCodigo,
     required this.itens,
     required this.historicoStatus,
     required this.historicoAuditoria,
+    required this.recebimentos,
     this.statusNomePtBr,
     this.statusNomeEnUs,
     this.statusNomeEsEs,
@@ -287,9 +320,14 @@ class AtendimentoTecnicoModel {
   final double valorTotalProdutos;
   final double valorTotalServicos;
   final double valorTotalAtendimento;
+  final double valorRecebido;
+  final double valorEmAberto;
+  final bool operacaoLiquidada;
+  final String statusLiquidacaoCodigo;
   final List<AtendimentoTecnicoItemModel> itens;
   final List<AtendimentoTecnicoHistoricoStatusModel> historicoStatus;
   final List<AtendimentoTecnicoAuditoriaModel> historicoAuditoria;
+  final List<AtendimentoTecnicoRecebimentoModel> recebimentos;
   final DateTime? dataAtualizacao;
 
   factory AtendimentoTecnicoModel.fromJson(Map<String, dynamic> json) {
@@ -312,17 +350,20 @@ class AtendimentoTecnicoModel {
       validadeOrcamentoEm: DateTime.tryParse(json['validadeOrcamentoEm']?.toString() ?? ''),
       versaoOrcamento: (json['versaoOrcamento'] as num?)?.toInt() ?? 1,
       dataUltimaAlteracaoOrcamento: DateTime.tryParse(json['dataUltimaAlteracaoOrcamento']?.toString() ?? ''),
-      equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(
-        json['equipamento'] is Map<String, dynamic> ? json['equipamento'] as Map<String, dynamic> : null,
-      ),
+      equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(json['equipamento'] is Map<String, dynamic> ? json['equipamento'] as Map<String, dynamic> : null),
       defeitoRelatado: json['defeitoRelatado']?.toString(),
       diagnosticoTecnico: json['diagnosticoTecnico']?.toString(),
       valorTotalProdutos: (json['valorTotalProdutos'] as num?)?.toDouble() ?? 0,
       valorTotalServicos: (json['valorTotalServicos'] as num?)?.toDouble() ?? 0,
       valorTotalAtendimento: (json['valorTotalAtendimento'] as num?)?.toDouble() ?? 0,
+      valorRecebido: (json['valorRecebido'] as num?)?.toDouble() ?? 0,
+      valorEmAberto: (json['valorEmAberto'] as num?)?.toDouble() ?? 0,
+      operacaoLiquidada: json['operacaoLiquidada'] == true,
+      statusLiquidacaoCodigo: json['statusLiquidacaoCodigo']?.toString() ?? 'NAO_LIQUIDADA',
       itens: _parseItens(json['itens']),
       historicoStatus: _parseHistoricoStatus(json['historicoStatus']),
       historicoAuditoria: _parseHistoricoAuditoria(json['historicoAuditoria']),
+      recebimentos: _parseRecebimentos(json['recebimentos']),
       dataAtualizacao: DateTime.tryParse(json['dataAtualizacao']?.toString() ?? ''),
     );
   }
@@ -340,6 +381,11 @@ class AtendimentoTecnicoModel {
   static List<AtendimentoTecnicoAuditoriaModel> _parseHistoricoAuditoria(dynamic value) {
     if (value is! List) return <AtendimentoTecnicoAuditoriaModel>[];
     return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoAuditoriaModel.fromJson).toList(growable: false);
+  }
+
+  static List<AtendimentoTecnicoRecebimentoModel> _parseRecebimentos(dynamic value) {
+    if (value is! List) return <AtendimentoTecnicoRecebimentoModel>[];
+    return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoRecebimentoModel.fromJson).toList(growable: false);
   }
 }
 
@@ -370,21 +416,19 @@ class AtendimentoTecnicoCreateInput {
   final String? diagnosticoTecnico;
   final List<AtendimentoTecnicoItemInput> itens;
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'descricao': descricao,
-      'idCliente': idCliente,
-      'nomeClienteSnapshot': nomeClienteSnapshot,
-      'prioridadeId': prioridadeId,
-      'prioridadeCodigo': prioridadeCodigo,
-      'origemCodigo': origemCodigo,
-      'validadeOrcamentoEm': _dateOnly(validadeOrcamentoEm),
-      'equipamento': equipamento?.toJson(),
-      'defeitoRelatado': defeitoRelatado,
-      'diagnosticoTecnico': diagnosticoTecnico,
-      'itens': itens.map((item) => item.toJson()).toList(),
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'descricao': descricao,
+        'idCliente': idCliente,
+        'nomeClienteSnapshot': nomeClienteSnapshot,
+        'prioridadeId': prioridadeId,
+        'prioridadeCodigo': prioridadeCodigo,
+        'origemCodigo': origemCodigo,
+        'validadeOrcamentoEm': _dateOnly(validadeOrcamentoEm),
+        'equipamento': equipamento?.toJson(),
+        'defeitoRelatado': defeitoRelatado,
+        'diagnosticoTecnico': diagnosticoTecnico,
+        'itens': itens.map((item) => item.toJson()).toList(),
+      };
 
   static String _dateOnly(DateTime value) {
     final year = value.year.toString().padLeft(4, '0');
@@ -413,15 +457,34 @@ class AtendimentoTecnicoUpdateInput {
   final List<AtendimentoTecnicoItemInput> itens;
   final String? observacaoAuditoria;
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'descricao': descricao,
-      'validadeOrcamentoEm': AtendimentoTecnicoCreateInput._dateOnly(validadeOrcamentoEm),
-      'equipamento': equipamento?.toJson(),
-      'defeitoRelatado': defeitoRelatado,
-      'diagnosticoTecnico': diagnosticoTecnico,
-      'itens': itens.map((item) => item.toJson()).toList(),
-      'observacaoAuditoria': observacaoAuditoria,
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'descricao': descricao,
+        'validadeOrcamentoEm': AtendimentoTecnicoCreateInput._dateOnly(validadeOrcamentoEm),
+        'equipamento': equipamento?.toJson(),
+        'defeitoRelatado': defeitoRelatado,
+        'diagnosticoTecnico': diagnosticoTecnico,
+        'itens': itens.map((item) => item.toJson()).toList(),
+        'observacaoAuditoria': observacaoAuditoria,
+      };
+}
+
+class AtendimentoTecnicoRecebimentoInput {
+  const AtendimentoTecnicoRecebimentoInput({
+    required this.codigoFormaRecebimento,
+    required this.nomeFormaRecebimento,
+    required this.valor,
+    this.observacao,
+  });
+
+  final String codigoFormaRecebimento;
+  final String nomeFormaRecebimento;
+  final double valor;
+  final String? observacao;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'codigoFormaRecebimento': codigoFormaRecebimento,
+        'nomeFormaRecebimento': nomeFormaRecebimento,
+        'valor': valor,
+        'observacao': observacao,
+      };
 }
