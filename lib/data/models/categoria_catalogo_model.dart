@@ -21,7 +21,7 @@ class CategoriaCatalogoModel {
   final DateTime? atualizadoEm;
   factory CategoriaCatalogoModel.fromJson(Map<String, dynamic> json) {
     return CategoriaCatalogoModel(
-      id: json['id']?.toString() ?? '',
+      id: json['id']?.toString() ?? json['idCategoria']?.toString() ?? '',
       idUnicoDaEmpresa: json['idUnicoDaEmpresa']?.toString() ?? '',
       nome: json['nome']?.toString() ?? '',
       descricao: json['descricao']?.toString() ?? '',
