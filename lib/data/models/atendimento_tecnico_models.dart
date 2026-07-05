@@ -175,9 +175,7 @@ class AtendimentoTecnicoHistoricoStatusModel {
   final String? idUsuario;
   final DateTime? dataHora;
 
-  factory AtendimentoTecnicoHistoricoStatusModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory AtendimentoTecnicoHistoricoStatusModel.fromJson(Map<String, dynamic> json) {
     return AtendimentoTecnicoHistoricoStatusModel(
       statusAnteriorId: (json['statusAnteriorId'] as num?)?.toInt(),
       statusAnteriorCodigo: json['statusAnteriorCodigo']?.toString(),
@@ -213,6 +211,9 @@ class AtendimentoTecnicoModel {
     this.statusNomePtBr,
     this.statusNomeEnUs,
     this.statusNomeEsEs,
+    this.assinaturaAprovada = false,
+    this.assinaturaNomeAssinante,
+    this.assinaturaDataHora,
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
@@ -233,6 +234,9 @@ class AtendimentoTecnicoModel {
   final String? statusNomePtBr;
   final String? statusNomeEnUs;
   final String? statusNomeEsEs;
+  final bool assinaturaAprovada;
+  final String? assinaturaNomeAssinante;
+  final DateTime? assinaturaDataHora;
   final AtendimentoTecnicoEquipamentoModel? equipamento;
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
@@ -256,6 +260,9 @@ class AtendimentoTecnicoModel {
       statusNomePtBr: json['statusNomePtBr']?.toString(),
       statusNomeEnUs: json['statusNomeEnUs']?.toString(),
       statusNomeEsEs: json['statusNomeEsEs']?.toString(),
+      assinaturaAprovada: json['assinaturaAprovada'] == true,
+      assinaturaNomeAssinante: json['assinaturaNomeAssinante']?.toString(),
+      assinaturaDataHora: DateTime.tryParse(json['assinaturaDataHora']?.toString() ?? ''),
       equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(
         json['equipamento'] is Map<String, dynamic>
             ? json['equipamento'] as Map<String, dynamic>
@@ -265,32 +272,21 @@ class AtendimentoTecnicoModel {
       diagnosticoTecnico: json['diagnosticoTecnico']?.toString(),
       valorTotalProdutos: (json['valorTotalProdutos'] as num?)?.toDouble() ?? 0,
       valorTotalServicos: (json['valorTotalServicos'] as num?)?.toDouble() ?? 0,
-      valorTotalAtendimento:
-          (json['valorTotalAtendimento'] as num?)?.toDouble() ?? 0,
+      valorTotalAtendimento: (json['valorTotalAtendimento'] as num?)?.toDouble() ?? 0,
       itens: _parseItens(json['itens']),
       historicoStatus: _parseHistoricoStatus(json['historicoStatus']),
-      dataAtualizacao: DateTime.tryParse(
-        json['dataAtualizacao']?.toString() ?? '',
-      ),
+      dataAtualizacao: DateTime.tryParse(json['dataAtualizacao']?.toString() ?? ''),
     );
   }
 
   static List<AtendimentoTecnicoItemModel> _parseItens(dynamic value) {
     if (value is! List) return <AtendimentoTecnicoItemModel>[];
-    return value
-        .whereType<Map<String, dynamic>>()
-        .map(AtendimentoTecnicoItemModel.fromJson)
-        .toList(growable: false);
+    return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoItemModel.fromJson).toList(growable: false);
   }
 
-  static List<AtendimentoTecnicoHistoricoStatusModel> _parseHistoricoStatus(
-    dynamic value,
-  ) {
+  static List<AtendimentoTecnicoHistoricoStatusModel> _parseHistoricoStatus(dynamic value) {
     if (value is! List) return <AtendimentoTecnicoHistoricoStatusModel>[];
-    return value
-        .whereType<Map<String, dynamic>>()
-        .map(AtendimentoTecnicoHistoricoStatusModel.fromJson)
-        .toList(growable: false);
+    return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoHistoricoStatusModel.fromJson).toList(growable: false);
   }
 }
 
