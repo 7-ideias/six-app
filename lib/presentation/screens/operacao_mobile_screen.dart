@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +8,7 @@ import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
@@ -58,9 +60,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   }
 
   void _onNotificacoesChanged() {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     final int totalAtual = _notificacaoService.total;
     final bool recebeuNovaNotificacao =
@@ -69,21 +69,14 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
 
     setState(() {});
 
-    if (!recebeuNovaNotificacao) {
-      return;
-    }
+    if (!recebeuNovaNotificacao) return;
 
     final String? mensagem =
         _notificacaoService.ultimaNotificacao?.description.trim();
-    if (mensagem == null || mensagem.isEmpty) {
-      return;
-    }
+    if (mensagem == null || mensagem.isEmpty) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
       );
@@ -91,15 +84,11 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   }
 
   void _garantirWebSocketMobile() {
-    if (kIsWeb) {
-      return;
-    }
+    if (kIsWeb) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(milliseconds: 180), () {
-        if (mounted) {
-          connectStomp();
-        }
+        if (mounted) connectStomp();
       });
     });
   }
@@ -114,18 +103,14 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
 
     try {
       final TelaInicialModel resumo = await _telaInicialApiClient.getResumo();
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _resumoTelaInicial = resumo;
         _carregandoResumo = false;
       });
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _erroResumo = error.toString();
@@ -138,11 +123,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final XFile? selected = await _picker.pickImage(source: source);
-
-    if (selected == null) {
-      return;
-    }
-
+    if (selected == null) return;
     setState(() => _image = File(selected.path));
   }
 
@@ -322,11 +303,25 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final double width = (constraints.maxWidth - 12) / 2;
+            final bool compact = constraints.maxWidth < 360;
+            final double width = compact
+                ? constraints.maxWidth
+                : (constraints.maxWidth - 12) / 2;
             return Wrap(
               spacing: 12,
               runSpacing: 12,
               children: <Widget>[
+                SizedBox(
+                  width: width,
+                  child: _buildSecondaryActionCard(
+                    title: 'Atendimento técnico',
+                    icon: Icons.build_circle_rounded,
+                    onTap: () => _navigateTo(
+                      context,
+                      const AtendimentosTecnicosWebPage(),
+                    ),
+                  ),
+                ),
                 SizedBox(
                   width: width,
                   child: _buildSecondaryActionCard(
@@ -340,7 +335,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                   child: _buildSecondaryActionCard(
                     title: 'Nova assistência',
                     icon: Icons.handyman_rounded,
-                    onTap: () => _showFeatureInProgress(context),
+                    onTap: () => _navigateTo(
+                      context,
+                      const AtendimentosTecnicosWebPage(),
+                    ),
                   ),
                 ),
               ],
@@ -358,16 +356,21 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     final List<_TrackingItem> items = <_TrackingItem>[
       _TrackingItem(
         title: 'Vendas a receber',
-        subtitle:
-            _erroResumo == null
-                ? 'Vendas não liquidadas'
-                : 'Não foi possível atualizar agora',
+        subtitle: _erroResumo == null
+            ? 'Vendas não liquidadas'
+            : 'Não foi possível atualizar agora',
         count: totalVendasAReceber,
         icon: Icons.point_of_sale_outlined,
         isLoading: _carregandoResumo,
         hasError: _erroResumo != null,
-        onTap:
-            () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
+        onTap: () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
+      ),
+      _TrackingItem(
+        title: 'Atendimentos técnicos',
+        subtitle: 'Diagnóstico, orçamento e execução',
+        count: '0',
+        icon: Icons.build_circle_outlined,
+        onTap: () => _navigateTo(context, const AtendimentosTecnicosWebPage()),
       ),
       _TrackingItem(
         title: 'Orçamentos pendentes',
@@ -377,18 +380,11 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         onTap: () => _showFeatureInProgress(context),
       ),
       _TrackingItem(
-        title: 'Assistências em revisão',
-        subtitle: 'Aguardando análise técnica',
-        count: '9',
-        icon: Icons.fact_check_outlined,
-        onTap: () => _showFeatureInProgress(context),
-      ),
-      _TrackingItem(
         title: 'Assistências em execução',
         subtitle: 'Serviços técnicos em andamento',
         count: '27',
-        icon: Icons.build_circle_outlined,
-        onTap: () => _showFeatureInProgress(context),
+        icon: Icons.engineering_outlined,
+        onTap: () => _navigateTo(context, const AtendimentosTecnicosWebPage()),
       ),
     ];
 
@@ -531,10 +527,9 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color:
-                  item.hasError
-                      ? const Color(0xFFFCA5A5)
-                      : const Color(0xFFE2E8F0),
+              color: item.hasError
+                  ? const Color(0xFFFCA5A5)
+                  : const Color(0xFFE2E8F0),
             ),
             boxShadow: const <BoxShadow>[
               BoxShadow(
@@ -573,10 +568,9 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color:
-                            item.hasError
-                                ? const Color(0xFFB91C1C)
-                                : _mutedTextColor,
+                        color: item.hasError
+                            ? const Color(0xFFB91C1C)
+                            : _mutedTextColor,
                         fontSize: 12,
                       ),
                     ),
@@ -597,26 +591,25 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   Widget _buildTrackingCount(_TrackingItem item) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
-      child:
-          item.isLoading
-              ? Container(
-                key: const ValueKey<String>('loading-count'),
-                width: 34,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              )
-              : SixAnimatedNumberText(
-                key: ValueKey<String>('count-${item.title}-${item.count}'),
-                value: item.count,
-                style: const TextStyle(
-                  color: _titleTextColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
+      child: item.isLoading
+          ? Container(
+              key: const ValueKey<String>('loading-count'),
+              width: 34,
+              height: 22,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(999),
               ),
+            )
+          : SixAnimatedNumberText(
+              key: ValueKey<String>('count-${item.title}-${item.count}'),
+              value: item.count,
+              style: const TextStyle(
+                color: _titleTextColor,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
     );
   }
 
@@ -626,8 +619,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap:
-            () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
+        onTap: () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -703,10 +695,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   }
 
   String _badgeText(int count) {
-    if (count > 9) {
-      return '+9';
-    }
-
+    if (count > 9) return '+9';
     return count.toString();
   }
 
