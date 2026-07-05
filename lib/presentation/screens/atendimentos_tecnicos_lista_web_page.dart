@@ -5,13 +5,10 @@ import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/dominio_models.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
+import 'atendimento_tecnico_receber_dialog.dart';
 
 class AtendimentosTecnicosListaWebPage extends StatefulWidget {
-  const AtendimentosTecnicosListaWebPage({
-    super.key,
-    this.embedded = false,
-    this.onBack,
-  });
+  const AtendimentosTecnicosListaWebPage({super.key, this.embedded = false, this.onBack});
 
   final bool embedded;
   final VoidCallback? onBack;
@@ -43,15 +40,8 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
   }
 
   Future<_ListaAtendimentosState> _carregar() async {
-    final results = await Future.wait<dynamic>(<Future<dynamic>>[
-      _service.buscarDominiosBase(),
-      _service.listar(),
-    ]);
-
-    return _ListaAtendimentosState(
-      dominios: results[0] as AtendimentoTecnicoDominiosBaseModel,
-      atendimentos: results[1] as List<AtendimentoTecnicoModel>,
-    );
+    final results = await Future.wait<dynamic>(<Future<dynamic>>[_service.buscarDominiosBase(), _service.listar()]);
+    return _ListaAtendimentosState(dominios: results[0] as AtendimentoTecnicoDominiosBaseModel, atendimentos: results[1] as List<AtendimentoTecnicoModel>);
   }
 
   void _onBuscaChanged() {
@@ -76,6 +66,8 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
         atendimento.statusNomePtBr ?? '',
         atendimento.assinaturaAprovada ? 'assinado assinatura aprovado' : '',
         atendimento.requerNovaAssinatura ? 'nova assinatura pendente assinatura' : '',
+        atendimento.operacaoLiquidada ? 'liquidada pago recebido' : 'nao liquidada não liquidada aberto pendente',
+        atendimento.statusLiquidacaoCodigo,
         'versao ${atendimento.versaoOrcamento}',
         equipamento?.tipo ?? '',
         equipamento?.marca ?? '',
@@ -143,22 +135,27 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
 
   String _equipamentoTitulo(AtendimentoTecnicoModel atendimento) {
     final equipamento = atendimento.equipamento;
-    final partes = <String>[
-      equipamento?.tipo ?? '',
-      equipamento?.marca ?? '',
-      equipamento?.modelo ?? '',
-    ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
+    final partes = <String>[equipamento?.tipo ?? '', equipamento?.marca ?? '', equipamento?.modelo ?? ''].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
     return partes.isEmpty ? atendimento.numero : partes.join(' ');
   }
 
   Future<void> _abrirEditarAtendimento(AtendimentoTecnicoModel atendimento) async {
-    final alterou = await showDialog<bool>(
-      context: context,
-      builder: (_) => AtendimentoTecnicoEditarDialog(atendimento: atendimento),
-    );
+    final alterou = await showDialog<bool>(context: context, builder: (_) => AtendimentoTecnicoEditarDialog(atendimento: atendimento));
     if (alterou == true && mounted) {
       _recarregar();
       _mostrarMensagem('Atendimento atualizado. O histórico de auditoria foi registrado e uma nova assinatura pode ser solicitada.');
+    }
+  }
+
+  Future<void> _abrirRecebimento(AtendimentoTecnicoModel atendimento) async {
+    if (atendimento.operacaoLiquidada || atendimento.valorEmAberto <= 0) {
+      _mostrarMensagem('Este atendimento já está liquidado.');
+      return;
+    }
+    final recebeu = await showDialog<bool>(context: context, builder: (_) => AtendimentoTecnicoReceberDialog(atendimento: atendimento));
+    if (recebeu == true && mounted) {
+      _recarregar();
+      _mostrarMensagem('Recebimento lançado e auditoria registrada.');
     }
   }
 
@@ -186,17 +183,11 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
                 const SizedBox(height: 12),
                 SelectableText(link),
                 const SizedBox(height: 12),
-                Text(
-                  atendimento.requerNovaAssinatura
-                      ? 'Este atendimento foi alterado depois da última assinatura. Envie este novo link para o cliente assinar a versão atual.'
-                      : 'Envie este link ao cliente por WhatsApp ou e-mail para aprovação e assinatura do serviço.',
-                ),
+                Text(atendimento.requerNovaAssinatura ? 'Este atendimento foi alterado depois da última assinatura. Envie este novo link para o cliente assinar a versão atual.' : 'Envie este link ao cliente por WhatsApp ou e-mail para aprovação e assinatura do serviço.'),
               ],
             ),
           ),
-          actions: <Widget>[
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Fechar')),
-          ],
+          actions: <Widget>[TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Fechar'))],
         ),
       );
     } catch (error) {
@@ -231,12 +222,7 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
                       onChanged: (opcao) => setDialogState(() => statusSelecionado = opcao),
                     ),
                     const SizedBox(height: 14),
-                    TextField(
-                      controller: observacaoController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: const InputDecoration(labelText: 'Observação da mudança'),
-                    ),
+                    TextField(controller: observacaoController, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Observação da mudança')),
                   ],
                 ),
               ),
@@ -248,11 +234,7 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
                       : () async {
                           setState(() => _alterandoStatus = true);
                           try {
-                            await _service.alterarStatus(
-                              id: atendimento.id,
-                              status: statusSelecionado!,
-                              observacao: observacaoController.text.trim().isEmpty ? null : observacaoController.text.trim(),
-                            );
+                            await _service.alterarStatus(id: atendimento.id, status: statusSelecionado!, observacao: observacaoController.text.trim().isEmpty ? null : observacaoController.text.trim());
                             if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
                           } catch (error) {
                             if (mounted) _mostrarMensagem('Não foi possível alterar o status: $error');
@@ -312,10 +294,7 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
 
     if (widget.embedded) return Padding(padding: const EdgeInsets.all(20), child: content);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Atendimentos criados'),
-        leading: widget.onBack == null ? null : IconButton(onPressed: widget.onBack, icon: const Icon(Icons.arrow_back_rounded)),
-      ),
+      appBar: AppBar(title: const Text('Atendimentos criados'), leading: widget.onBack == null ? null : IconButton(onPressed: widget.onBack, icon: const Icon(Icons.arrow_back_rounded))),
       body: Padding(padding: const EdgeInsets.all(20), child: content),
     );
   }
@@ -330,29 +309,20 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
         crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
           SizedBox(
-            width: 440,
+            width: 460,
             child: Row(
               children: <Widget>[
                 Icon(Icons.fact_check_outlined, color: theme.colorScheme.primary, size: 42),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text('Atendimentos criados', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-                      Text('Consulte, edite, audite e gere nova assinatura.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-                    ],
-                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Text('Atendimentos criados', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)), Text('Consulte, receba, edite, audite e gere assinatura.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant))]),
                 ),
               ],
             ),
           ),
           _chip(theme, '$total total', Icons.assignment_outlined),
           _chip(theme, '$filtrados visíveis', Icons.filter_alt_outlined),
-          SizedBox(
-            width: 320,
-            child: TextField(controller: _buscaController, decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), labelText: 'Buscar atendimento')),
-          ),
+          SizedBox(width: 320, child: TextField(controller: _buscaController, decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), labelText: 'Buscar atendimento'))),
           OutlinedButton.icon(onPressed: _recarregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
         ],
       ),
@@ -376,44 +346,33 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
               Icon(Icons.devices_other_outlined, color: theme.colorScheme.primary, size: 42),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(_equipamentoTitulo(atendimento), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 4),
-                    Text('${atendimento.numero} • ${atendimento.nomeClienteSnapshot ?? 'Cliente não informado'}', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
-                    if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 8),
-                      Text(atendimento.defeitoRelatado!, maxLines: 2, overflow: TextOverflow.ellipsis),
-                    ],
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: <Widget>[
-                        if (atendimento.assinaturaAprovada) _signedChip(theme),
-                        if (atendimento.requerNovaAssinatura) _pendingSignatureChip(theme),
-                        _chip(theme, statusTexto, Icons.flag_outlined),
-                        _chip(theme, 'v${atendimento.versaoOrcamento}', Icons.tag_outlined),
-                        _chip(theme, '${atendimento.itens.length} item(ns)', Icons.inventory_2_outlined),
-                        _chip(theme, '${atendimento.historicoAuditoria.length} aud.', Icons.manage_history_rounded),
-                        _chip(theme, _formatarMoeda(atendimento.valorTotalAtendimento), Icons.payments_outlined),
-                        _chip(theme, 'Validade ${_formatarDataCurta(atendimento.validadeOrcamentoEm)}', Icons.event_available_outlined),
-                      ],
-                    ),
-                  ],
-                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                  Text(_equipamentoTitulo(atendimento), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 4),
+                  Text('${atendimento.numero} • ${atendimento.nomeClienteSnapshot ?? 'Cliente não informado'}', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
+                  if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) ...<Widget>[const SizedBox(height: 8), Text(atendimento.defeitoRelatado!, maxLines: 2, overflow: TextOverflow.ellipsis)],
+                  const SizedBox(height: 12),
+                  Wrap(spacing: 8, runSpacing: 8, children: <Widget>[
+                    atendimento.operacaoLiquidada ? _liquidadaChip(theme) : _naoLiquidadaChip(theme),
+                    if (atendimento.assinaturaAprovada) _signedChip(theme),
+                    if (atendimento.requerNovaAssinatura) _pendingSignatureChip(theme),
+                    _chip(theme, statusTexto, Icons.flag_outlined),
+                    _chip(theme, 'v${atendimento.versaoOrcamento}', Icons.tag_outlined),
+                    _chip(theme, '${atendimento.itens.length} item(ns)', Icons.inventory_2_outlined),
+                    _chip(theme, '${atendimento.historicoAuditoria.length} aud.', Icons.manage_history_rounded),
+                    _chip(theme, 'Total ${_formatarMoeda(atendimento.valorTotalAtendimento)}', Icons.payments_outlined),
+                    _chip(theme, 'Aberto ${_formatarMoeda(atendimento.valorEmAberto)}', Icons.account_balance_wallet_outlined),
+                    _chip(theme, 'Validade ${_formatarDataCurta(atendimento.validadeOrcamentoEm)}', Icons.event_available_outlined),
+                  ]),
+                ]),
               ),
               const SizedBox(width: 12),
-              Wrap(
-                direction: Axis.vertical,
-                spacing: 8,
-                children: <Widget>[
-                  FilledButton.icon(onPressed: () => _abrirEditarAtendimento(atendimento), icon: const Icon(Icons.edit_note_rounded, size: 18), label: const Text('Editar')),
-                  OutlinedButton.icon(onPressed: () => _gerarLinkAssinatura(atendimento), icon: const Icon(Icons.draw_outlined, size: 18), label: Text(_gerandoLink ? 'Gerando...' : 'Link assinatura')),
-                  OutlinedButton.icon(onPressed: () => _abrirAlterarStatusDialog(atendimento, status), icon: const Icon(Icons.swap_horiz_rounded, size: 18), label: const Text('Mudar status')),
-                ],
-              ),
+              Wrap(direction: Axis.vertical, spacing: 8, children: <Widget>[
+                FilledButton.icon(onPressed: atendimento.operacaoLiquidada ? null : () => _abrirRecebimento(atendimento), icon: const Icon(Icons.payments_outlined, size: 18), label: const Text('Receber')),
+                OutlinedButton.icon(onPressed: () => _abrirEditarAtendimento(atendimento), icon: const Icon(Icons.edit_note_rounded, size: 18), label: const Text('Editar')),
+                OutlinedButton.icon(onPressed: () => _gerarLinkAssinatura(atendimento), icon: const Icon(Icons.draw_outlined, size: 18), label: Text(_gerandoLink ? 'Gerando...' : 'Link assinatura')),
+                OutlinedButton.icon(onPressed: () => _abrirAlterarStatusDialog(atendimento, status), icon: const Icon(Icons.swap_horiz_rounded, size: 18), label: const Text('Mudar status')),
+              ]),
             ],
           ),
         ),
@@ -427,57 +386,56 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
       builder: (dialogContext) => AlertDialog(
         title: Text('${atendimento.numero} • versão ${atendimento.versaoOrcamento}'),
         content: SizedBox(
-          width: 820,
+          width: 860,
           child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (atendimento.assinaturaAprovada) _detailLine('Assinatura', _assinaturaResumo(atendimento)),
-                if (atendimento.requerNovaAssinatura) _detailLine('Assinatura', 'Pendente para a versão atual do orçamento'),
-                _detailLine('Cliente', atendimento.nomeClienteSnapshot ?? 'Cliente não informado'),
-                _detailLine('Status', _statusLabel(atendimento, status)),
-                _detailLine('Validade', _formatarDataCurta(atendimento.validadeOrcamentoEm)),
-                _detailLine('Total', _formatarMoeda(atendimento.valorTotalAtendimento)),
-                if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) _detailLine('Defeito', atendimento.defeitoRelatado!),
-                if ((atendimento.diagnosticoTecnico ?? '').trim().isNotEmpty) _detailLine('Diagnóstico', atendimento.diagnosticoTecnico!),
-                const SizedBox(height: 16),
-                const Text('Itens', style: TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 8),
-                if (atendimento.itens.isEmpty)
-                  const Text('Nenhum item vinculado.')
-                else
-                  ...atendimento.itens.map((item) => _detailLine(item.tipoItemCodigo == 'SERVICE' ? 'Serviço' : 'Produto', '${item.descricaoSnapshot} • ${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}')),
-                const SizedBox(height: 16),
-                const Text('Histórico de auditoria', style: TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 8),
-                if (atendimento.historicoAuditoria.isEmpty)
-                  const Text('Nenhuma auditoria registrada.')
-                else
-                  ...atendimento.historicoAuditoria.reversed.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text('${_formatarData(item.dataHora)} • v${item.versaoOrcamento} • ${item.tipo}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}'),
-                      )),
-                const SizedBox(height: 16),
-                const Text('Histórico de status', style: TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 8),
-                if (atendimento.historicoStatus.isEmpty)
-                  const Text('Nenhuma mudança registrada.')
-                else
-                  ...atendimento.historicoStatus.reversed.map((item) {
-                    final anterior = item.statusAnteriorNomePtBr ?? _statusLabelPorCodigo(item.statusAnteriorCodigo, status);
-                    final novo = item.statusNomePtBr ?? _statusLabelPorCodigo(item.statusCodigo, status);
-                    final observacao = item.observacao?.trim() ?? '';
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text('${_formatarData(item.dataHora)} • $anterior → $novo${observacao.isEmpty ? '' : ' • $observacao'}'),
-                    );
-                  }),
-              ],
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+              _detailLine('Liquidação', atendimento.operacaoLiquidada ? 'Liquidada' : 'Não liquidada'),
+              _detailLine('Total', _formatarMoeda(atendimento.valorTotalAtendimento)),
+              _detailLine('Recebido', _formatarMoeda(atendimento.valorRecebido)),
+              _detailLine('Em aberto', _formatarMoeda(atendimento.valorEmAberto)),
+              if (atendimento.assinaturaAprovada) _detailLine('Assinatura', _assinaturaResumo(atendimento)),
+              if (atendimento.requerNovaAssinatura) _detailLine('Assinatura', 'Pendente para a versão atual do orçamento'),
+              _detailLine('Cliente', atendimento.nomeClienteSnapshot ?? 'Cliente não informado'),
+              _detailLine('Status', _statusLabel(atendimento, status)),
+              _detailLine('Validade', _formatarDataCurta(atendimento.validadeOrcamentoEm)),
+              if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) _detailLine('Defeito', atendimento.defeitoRelatado!),
+              if ((atendimento.diagnosticoTecnico ?? '').trim().isNotEmpty) _detailLine('Diagnóstico', atendimento.diagnosticoTecnico!),
+              const SizedBox(height: 16),
+              const Text('Recebimentos', style: TextStyle(fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              if (atendimento.recebimentos.isEmpty)
+                const Text('Nenhum recebimento lançado.')
+              else
+                ...atendimento.recebimentos.reversed.map((item) => _detailLine(item.nomeFormaRecebimento, '${_formatarMoeda(item.valor)} • ${_formatarData(item.dataHora)}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}')),
+              const SizedBox(height: 16),
+              const Text('Itens', style: TextStyle(fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              if (atendimento.itens.isEmpty) const Text('Nenhum item vinculado.') else ...atendimento.itens.map((item) => _detailLine(item.tipoItemCodigo == 'SERVICE' ? 'Serviço' : 'Produto', '${item.descricaoSnapshot} • ${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}')),
+              const SizedBox(height: 16),
+              const Text('Histórico de auditoria', style: TextStyle(fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              if (atendimento.historicoAuditoria.isEmpty)
+                const Text('Nenhuma auditoria registrada.')
+              else
+                ...atendimento.historicoAuditoria.reversed.map((item) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${_formatarData(item.dataHora)} • v${item.versaoOrcamento} • ${item.tipo}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}'))),
+              const SizedBox(height: 16),
+              const Text('Histórico de status', style: TextStyle(fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              if (atendimento.historicoStatus.isEmpty)
+                const Text('Nenhuma mudança registrada.')
+              else
+                ...atendimento.historicoStatus.reversed.map((item) {
+                  final anterior = item.statusAnteriorNomePtBr ?? _statusLabelPorCodigo(item.statusAnteriorCodigo, status);
+                  final novo = item.statusNomePtBr ?? _statusLabelPorCodigo(item.statusCodigo, status);
+                  final observacao = item.observacao?.trim() ?? '';
+                  return Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${_formatarData(item.dataHora)} • $anterior → $novo${observacao.isEmpty ? '' : ' • $observacao'}'));
+                }),
+            ]),
           ),
         ),
         actions: <Widget>[
-          FilledButton.icon(onPressed: () => _abrirEditarAtendimento(atendimento), icon: const Icon(Icons.edit_note_rounded), label: const Text('Editar')),
+          FilledButton.icon(onPressed: atendimento.operacaoLiquidada ? null : () => _abrirRecebimento(atendimento), icon: const Icon(Icons.payments_outlined), label: const Text('Receber')),
+          OutlinedButton.icon(onPressed: () => _abrirEditarAtendimento(atendimento), icon: const Icon(Icons.edit_note_rounded), label: const Text('Editar')),
           OutlinedButton.icon(onPressed: () => _gerarLinkAssinatura(atendimento), icon: const Icon(Icons.draw_outlined), label: const Text('Link assinatura')),
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Fechar')),
         ],
@@ -486,10 +444,7 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
   }
 
   Widget _detailLine(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[SizedBox(width: 130, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))), Expanded(child: Text(value))]),
-    );
+    return Padding(padding: const EdgeInsets.only(bottom: 7), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[SizedBox(width: 130, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))), Expanded(child: Text(value))]));
   }
 
   Widget _chip(ThemeData theme, String label, IconData icon) {
@@ -500,13 +455,13 @@ class _AtendimentosTecnicosListaWebPageState extends State<AtendimentosTecnicosL
     );
   }
 
-  Widget _signedChip(ThemeData theme) {
-    return _coloredChip(theme, 'Assinado', Icons.verified_rounded, theme.colorScheme.primary);
-  }
+  Widget _signedChip(ThemeData theme) => _coloredChip(theme, 'Assinado', Icons.verified_rounded, theme.colorScheme.primary);
 
-  Widget _pendingSignatureChip(ThemeData theme) {
-    return _coloredChip(theme, 'Nova assinatura pendente', Icons.pending_actions_rounded, theme.colorScheme.error);
-  }
+  Widget _pendingSignatureChip(ThemeData theme) => _coloredChip(theme, 'Nova assinatura pendente', Icons.pending_actions_rounded, theme.colorScheme.error);
+
+  Widget _liquidadaChip(ThemeData theme) => _coloredChip(theme, 'Liquidada', Icons.price_check_rounded, theme.colorScheme.primary);
+
+  Widget _naoLiquidadaChip(ThemeData theme) => _coloredChip(theme, 'Não liquidada', Icons.account_balance_wallet_outlined, theme.colorScheme.error);
 
   Widget _coloredChip(ThemeData theme, String label, IconData icon, Color color) {
     return Container(
@@ -525,16 +480,7 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text('Não foi possível carregar os atendimentos.\n$mensagem', textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente')),
-        ],
-      ),
-    );
+    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[Text('Não foi possível carregar os atendimentos.\n$mensagem', textAlign: TextAlign.center), const SizedBox(height: 12), OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente'))]));
   }
 }
 
