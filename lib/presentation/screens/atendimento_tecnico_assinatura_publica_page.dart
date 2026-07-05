@@ -58,6 +58,12 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
     );
   }
 
+  void _recarregarAssinatura() {
+    setState(() {
+      _future = _carregar();
+    });
+  }
+
   Future<void> _aprovar() async {
     if (_salvando) return;
     final nome = _nomeController.text.trim();
@@ -74,7 +80,9 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
       return;
     }
 
-    setState(() => _salvando = true);
+    setState(() {
+      _salvando = true;
+    });
     try {
       await _service.aprovarAssinaturaPublica(
         idUnicoDaEmpresa: _idUnicoDaEmpresa,
@@ -85,13 +93,17 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
         observacao: _observacaoController.text.trim().isEmpty ? null : _observacaoController.text.trim(),
       );
       if (!mounted) return;
-      setState(() => _future = _carregar());
+      _recarregarAssinatura();
       _mostrarMensagem('Serviço aprovado e assinatura salva.');
     } catch (error) {
       if (!mounted) return;
       _mostrarMensagem('Não foi possível aprovar: $error');
     } finally {
-      if (mounted) setState(() => _salvando = false);
+      if (mounted) {
+        setState(() {
+          _salvando = false;
+        });
+      }
     }
   }
 
@@ -127,7 +139,7 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return _ErroPublico(mensagem: snapshot.error.toString(), onRetry: () => setState(() => _future = _carregar()));
+          if (snapshot.hasError) return _ErroPublico(mensagem: snapshot.error.toString(), onRetry: _recarregarAssinatura);
           final state = snapshot.data!;
           final atendimento = state.atendimento;
           return Center(
