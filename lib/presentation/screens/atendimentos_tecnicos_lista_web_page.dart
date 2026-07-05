@@ -99,11 +99,21 @@ class _AtendimentosTecnicosListaWebPageState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
-    final atual = _statusAtual(atendimento, status);
-    if (atual != null && atual.nomePadraoPtBr.trim().isNotEmpty) {
-      return atual.nomePadraoPtBr;
+    return _statusLabelPorCodigo(atendimento.statusCodigo, status);
+  }
+
+  String _statusLabelPorCodigo(String? codigo, List<DominioOpcaoModel> status) {
+    final codigoNormalizado = codigo?.trim().toUpperCase() ?? '';
+    if (codigoNormalizado.isEmpty) return 'Sem status anterior';
+
+    for (final opcao in status) {
+      if (opcao.codigo.trim().toUpperCase() == codigoNormalizado) {
+        return opcao.nomePadraoPtBr.trim().isEmpty
+            ? opcao.codigo
+            : opcao.nomePadraoPtBr;
+      }
     }
-    return atendimento.statusCodigo;
+    return codigoNormalizado;
   }
 
   String _formatarMoeda(double value) {
@@ -162,9 +172,7 @@ class _AtendimentosTecnicosListaWebPageState
                     const SizedBox(height: 14),
                     DropdownButtonFormField<DominioOpcaoModel>(
                       value: statusSelecionado,
-                      decoration: const InputDecoration(
-                        labelText: 'Novo status',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Novo status'),
                       items: status.map((opcao) {
                         return DropdownMenuItem<DominioOpcaoModel>(
                           value: opcao,
@@ -181,8 +189,8 @@ class _AtendimentosTecnicosListaWebPageState
                       minLines: 2,
                       maxLines: 4,
                       decoration: const InputDecoration(
-                        labelText: 'Observação',
-                        hintText: 'Ex.: Cliente aprovou o orçamento pelo WhatsApp.',
+                        labelText: 'Observação da mudança',
+                        hintText: 'Ex.: Cliente pediu para voltar para diagnóstico.',
                       ),
                     ),
                   ],
@@ -206,20 +214,17 @@ class _AtendimentosTecnicosListaWebPageState
                                   ? null
                                   : observacaoController.text.trim(),
                             );
-                            if (dialogContext.mounted) {
-                              Navigator.of(dialogContext).pop(true);
-                            }
+                            Navigator.of(dialogContext).pop(true);
                           } catch (error) {
-                            if (dialogContext.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Não foi possível alterar o status: $error',
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Não foi possível alterar o status: $error',
                                 ),
-                              );
-                            }
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                           } finally {
                             if (mounted) setState(() => _alterandoStatus = false);
                           }
@@ -240,7 +245,7 @@ class _AtendimentosTecnicosListaWebPageState
       _recarregar();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Status do atendimento atualizado.'),
+          content: Text('Status do atendimento atualizado no histórico.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -422,6 +427,7 @@ class _AtendimentosTecnicosListaWebPageState
   ) {
     final statusTexto = _statusLabel(atendimento, status);
     final quantidadeItens = atendimento.itens.length;
+    final quantidadeHistorico = atendimento.historicoStatus.length;
 
     return Material(
       color: theme.colorScheme.surface,
@@ -504,6 +510,11 @@ class _AtendimentosTecnicosListaWebPageState
                   ),
                   _smallChip(
                     theme,
+                    '$quantidadeHistorico mov.',
+                    Icons.history_rounded,
+                  ),
+                  _smallChip(
+                    theme,
                     _formatarMoeda(atendimento.valorTotalAtendimento),
                     Icons.payments_outlined,
                   ),
@@ -533,7 +544,7 @@ class _AtendimentosTecnicosListaWebPageState
                   Expanded(child: info),
                   const SizedBox(width: 14),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
+                    constraints: const BoxConstraints(maxWidth: 560),
                     child: chips,
                   ),
                 ],
@@ -560,7 +571,7 @@ class _AtendimentosTecnicosListaWebPageState
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 860, maxHeight: 760),
+            constraints: const BoxConstraints(maxWidth: 920, maxHeight: 820),
             child: Column(
               children: <Widget>[
                 Padding(
@@ -670,6 +681,8 @@ class _AtendimentosTecnicosListaWebPageState
                         )
                       else
                         ...atendimento.itens.map((item) => _detailItem(theme, item)),
+                      const SizedBox(height: 18),
+                      _buildHistoricoStatus(theme, atendimento, status),
                     ],
                   ),
                 ),
@@ -678,6 +691,97 @@ class _AtendimentosTecnicosListaWebPageState
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHistoricoStatus(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final historico = atendimento.historicoStatus.reversed.toList(growable: false);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(Icons.history_rounded, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Histórico de status',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (historico.isEmpty)
+            Text(
+              'Nenhuma mudança de status registrada.',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            )
+          else
+            ...historico.map((item) => _historicoStatusItem(theme, item, status)),
+        ],
+      ),
+    );
+  }
+
+  Widget _historicoStatusItem(
+    ThemeData theme,
+    AtendimentoTecnicoHistoricoStatusModel item,
+    List<DominioOpcaoModel> status,
+  ) {
+    final anterior = _statusLabelPorCodigo(item.statusAnteriorCodigo, status);
+    final novo = _statusLabelPorCodigo(item.statusCodigo, status);
+    final observacao = item.observacao?.trim() ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _smallChip(theme, anterior, Icons.flag_outlined),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              _smallChip(theme, novo, Icons.flag_circle_outlined),
+              _smallChip(theme, _formatarData(item.dataHora), Icons.schedule_outlined),
+            ],
+          ),
+          if (observacao.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              observacao,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
