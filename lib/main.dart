@@ -11,6 +11,7 @@ import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
 import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
@@ -116,6 +117,13 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const PDVWeb(),
+      );
+    }
+
+    if (routeUri.path == '/app/atendimentos-tecnicos') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AtendimentosTecnicosWebPage(),
       );
     }
 
