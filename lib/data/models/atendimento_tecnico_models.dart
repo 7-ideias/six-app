@@ -277,6 +277,7 @@ class AtendimentoTecnicoModel {
     required this.historicoStatus,
     required this.historicoAuditoria,
     required this.recebimentos,
+    this.idOperacaoFinanceira,
     this.statusNomePtBr,
     this.statusNomeEnUs,
     this.statusNomeEsEs,
@@ -285,6 +286,7 @@ class AtendimentoTecnicoModel {
     this.assinaturaNomeAssinante,
     this.assinaturaDataHora,
     this.validadeOrcamentoEm,
+    this.dataVencimentoEm,
     this.versaoOrcamento = 1,
     this.dataUltimaAlteracaoOrcamento,
     this.descricao,
@@ -297,6 +299,7 @@ class AtendimentoTecnicoModel {
   });
 
   final String id;
+  final String? idOperacaoFinanceira;
   final String numero;
   final String? descricao;
   final String? idCliente;
@@ -312,6 +315,7 @@ class AtendimentoTecnicoModel {
   final String? assinaturaNomeAssinante;
   final DateTime? assinaturaDataHora;
   final DateTime? validadeOrcamentoEm;
+  final DateTime? dataVencimentoEm;
   final int versaoOrcamento;
   final DateTime? dataUltimaAlteracaoOrcamento;
   final AtendimentoTecnicoEquipamentoModel? equipamento;
@@ -333,6 +337,7 @@ class AtendimentoTecnicoModel {
   factory AtendimentoTecnicoModel.fromJson(Map<String, dynamic> json) {
     return AtendimentoTecnicoModel(
       id: json['id']?.toString() ?? '',
+      idOperacaoFinanceira: json['idOperacaoFinanceira']?.toString(),
       numero: json['numero']?.toString() ?? '',
       descricao: json['descricao']?.toString(),
       idCliente: json['idCliente']?.toString(),
@@ -348,6 +353,7 @@ class AtendimentoTecnicoModel {
       assinaturaNomeAssinante: json['assinaturaNomeAssinante']?.toString(),
       assinaturaDataHora: DateTime.tryParse(json['assinaturaDataHora']?.toString() ?? ''),
       validadeOrcamentoEm: DateTime.tryParse(json['validadeOrcamentoEm']?.toString() ?? ''),
+      dataVencimentoEm: DateTime.tryParse(json['dataVencimentoEm']?.toString() ?? ''),
       versaoOrcamento: (json['versaoOrcamento'] as num?)?.toInt() ?? 1,
       dataUltimaAlteracaoOrcamento: DateTime.tryParse(json['dataUltimaAlteracaoOrcamento']?.toString() ?? ''),
       equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(json['equipamento'] is Map<String, dynamic> ? json['equipamento'] as Map<String, dynamic> : null),
