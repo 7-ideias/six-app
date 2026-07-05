@@ -32,6 +32,13 @@ class AtendimentoTecnicoService {
     return _apiClient.criar(input);
   }
 
+  Future<AtendimentoTecnicoModel> atualizar({
+    required String id,
+    required AtendimentoTecnicoUpdateInput input,
+  }) {
+    return _apiClient.atualizar(id: id, input: input);
+  }
+
   Future<AtendimentoTecnicoModel> alterarStatus({
     required String id,
     required DominioOpcaoModel status,
