@@ -73,6 +73,7 @@ class _AtendimentosTecnicosListaWebPageState
         atendimento.nomeClienteSnapshot ?? '',
         atendimento.statusCodigo,
         atendimento.statusNomePtBr ?? '',
+        atendimento.assinaturaAprovada ? 'assinado assinatura aprovado' : '',
         equipamento?.tipo ?? '',
         equipamento?.marca ?? '',
         equipamento?.modelo ?? '',
@@ -126,6 +127,15 @@ class _AtendimentosTecnicosListaWebPageState
     final hora = value.hour.toString().padLeft(2, '0');
     final minuto = value.minute.toString().padLeft(2, '0');
     return '$dia/$mes/$ano $hora:$minuto';
+  }
+
+  String _assinaturaResumo(AtendimentoTecnicoModel atendimento) {
+    final nome = atendimento.assinaturaNomeAssinante?.trim() ?? '';
+    final data = _formatarData(atendimento.assinaturaDataHora);
+    if (nome.isEmpty && data == '-') return 'Assinado';
+    if (nome.isEmpty) return 'Assinado em $data';
+    if (data == '-') return 'Assinado por $nome';
+    return 'Assinado por $nome em $data';
   }
 
   String _equipamentoTitulo(AtendimentoTecnicoModel atendimento) {
@@ -414,6 +424,8 @@ class _AtendimentosTecnicosListaWebPageState
                       spacing: 8,
                       runSpacing: 8,
                       children: <Widget>[
+                        if (atendimento.assinaturaAprovada)
+                          _signedChip(theme),
                         _chip(theme, statusTexto, Icons.flag_outlined),
                         _chip(theme, '${atendimento.itens.length} item(ns)', Icons.inventory_2_outlined),
                         _chip(theme, '${atendimento.historicoStatus.length} mov.', Icons.history_rounded),
@@ -459,6 +471,8 @@ class _AtendimentosTecnicosListaWebPageState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                if (atendimento.assinaturaAprovada)
+                  _detailLine('Assinatura', _assinaturaResumo(atendimento)),
                 _detailLine('Cliente', atendimento.nomeClienteSnapshot ?? 'Cliente não informado'),
                 _detailLine('Status', _statusLabel(atendimento, status)),
                 _detailLine('Total', _formatarMoeda(atendimento.valorTotalAtendimento)),
@@ -528,6 +542,32 @@ class _AtendimentosTecnicosListaWebPageState
           Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _signedChip(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(Icons.verified_rounded, size: 15, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            'Assinado',
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
