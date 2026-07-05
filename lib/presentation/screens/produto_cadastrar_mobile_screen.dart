@@ -5,8 +5,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/produto_service.dart';
+import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
+import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 
 class CadastroProdutoMobileScreen extends StatefulWidget {
   const CadastroProdutoMobileScreen({
@@ -51,6 +54,8 @@ class _CadastroProdutoMobileScreenState
 
   final _formKey = GlobalKey<FormState>();
   final ProdutoService _produtoService = ProdutoService();
+  final CategoriaCatalogoApiClient _categoriaApiClient =
+      HttpCategoriaCatalogoApiClient();
   final ImagePicker _imagePicker = ImagePicker();
   final ScrollController _slotsScrollController = ScrollController();
 
@@ -69,6 +74,12 @@ class _CadastroProdutoMobileScreenState
 
   late String _tipoSelecionado;
   String? _produtoEmEdicaoId;
+  List<CategoriaCatalogoModel> _categoriasCatalogo =
+      const <CategoriaCatalogoModel>[];
+  bool _carregandoCategorias = false;
+  String? _erroCategorias;
+  String? _categoriaSelecionadaId;
+  String? _categoriaSelecionadaNome;
 
   bool _ativo = true;
   bool _podeAlterarValorNaHora = false;
@@ -78,10 +89,10 @@ class _CadastroProdutoMobileScreenState
 
   final List<_ProdutoImagemSlot> _imagemSlots =
       List<_ProdutoImagemSlot>.generate(
-    _maxImageSlots,
-    (_) => _ProdutoImagemSlot(),
-    growable: false,
-  );
+        _maxImageSlots,
+        (_) => _ProdutoImagemSlot(),
+        growable: false,
+      );
 
   int _slotSelecionadoIndex = 0;
 
@@ -104,6 +115,7 @@ class _CadastroProdutoMobileScreenState
     super.initState();
     _tipoSelecionado = _normalizarTipo(widget.tipoInicial);
     _preencherCamposSeModoEdicao();
+    _carregarCategoriasCatalogo();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _playSlotsHint();
@@ -147,8 +159,12 @@ class _CadastroProdutoMobileScreenState
     _codigoController.text = produto.codigoDeBarras;
     _nomeController.text = produto.nomeProduto;
     _tipoSelecionado = _normalizarTipo(produto.tipoProduto);
+    _categoriaSelecionadaId = produto.objCategoria?.idCategoria;
+    _categoriaSelecionadaNome = produto.objCategoria?.nomeCategoria;
     _modeloController.text =
-        produto.modeloProduto.trim().isEmpty ? 'UNIDADE' : produto.modeloProduto;
+        produto.modeloProduto.trim().isEmpty
+            ? 'UNIDADE'
+            : produto.modeloProduto;
     _grupoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
     _estoqueMaxController.text = produto.estoqueMaximo.toString();
     _estoqueMinController.text = produto.estoqueMinimo.toString();
@@ -160,8 +176,7 @@ class _CadastroProdutoMobileScreenState
 
     if (produto.objetoServico != null) {
       _tempoGarantiaController.text = produto.objetoServico!.tempoDaGarantia;
-      _podeAlterarValorNaHora =
-          produto.objetoServico!.podeAlterarOValorNaHora;
+      _podeAlterarValorNaHora = produto.objetoServico!.podeAlterarOValorNaHora;
     }
 
     if (produto.objEntradaSaidaProduto != null &&
@@ -175,6 +190,111 @@ class _CadastroProdutoMobileScreenState
     final imagens = produto.imagens ?? const <ProdutoImagemModel>[];
     for (int i = 0; i < imagens.length && i < _imagemSlots.length; i++) {
       _imagemSlots[i].image = imagens[i];
+    }
+  }
+
+  Future<void> _carregarCategoriasCatalogo() async {
+    setState(() {
+      _carregandoCategorias = true;
+      _erroCategorias = null;
+    });
+
+    try {
+      final CategoriaCatalogoListResponse response =
+          await _categoriaApiClient.listarCategorias();
+      if (!mounted) return;
+
+      setState(() {
+        _categoriasCatalogo = response.categorias;
+        _carregandoCategorias = false;
+        _validarCategoriaSelecionadaComTipoAtual();
+        _sincronizarNomeCategoriaSelecionada();
+      });
+    } on CategoriaCatalogoApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _carregandoCategorias = false;
+        _erroCategorias =
+            'Erro ao carregar categorias (HTTP ${error.statusCode}).';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _carregandoCategorias = false;
+        _erroCategorias = 'Não foi possível carregar categorias.';
+      });
+    }
+  }
+
+  void _sincronizarNomeCategoriaSelecionada() {
+    final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
+    if (categoria != null) {
+      _categoriaSelecionadaNome = categoria.nome;
+    }
+  }
+
+  CategoriaCatalogoModel? get _categoriaSelecionadaEncontrada {
+    final String? id = _categoriaSelecionadaId;
+    if (id == null || id.trim().isEmpty) return null;
+
+    for (final CategoriaCatalogoModel categoria in _categoriasCatalogo) {
+      if (categoria.id == id) return categoria;
+    }
+
+    return null;
+  }
+
+  bool _categoriaCompativelComTipoAtual(CategoriaCatalogoModel categoria) {
+    return categoria.tipo == 'AMBOS' || categoria.tipo == _tipoSelecionado;
+  }
+
+  void _validarCategoriaSelecionadaComTipoAtual() {
+    final String? id = _categoriaSelecionadaId;
+    if (id == null || id.trim().isEmpty) return;
+
+    final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
+    if (categoria == null && _categoriasCatalogo.isNotEmpty) {
+      _categoriaSelecionadaId = null;
+      _categoriaSelecionadaNome = null;
+      return;
+    }
+
+    if (categoria != null && !_categoriaCompativelComTipoAtual(categoria)) {
+      _categoriaSelecionadaId = null;
+      _categoriaSelecionadaNome = null;
+    }
+  }
+
+  List<CategoriaCatalogoModel> get _categoriasCompativeis {
+    return _categoriasCatalogo
+        .where(
+          (CategoriaCatalogoModel categoria) =>
+              categoria.ativo || categoria.id == _categoriaSelecionadaId,
+        )
+        .where(_categoriaCompativelComTipoAtual)
+        .toList(growable: false);
+  }
+
+  ObjCategoria? _montarObjCategoria() {
+    final String? id = _categoriaSelecionadaId;
+    if (id == null || id.trim().isEmpty) return null;
+
+    final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
+    return ObjCategoria(
+      idCategoria: id.trim(),
+      nomeCategoria: categoria?.nome ?? _categoriaSelecionadaNome ?? '',
+    );
+  }
+
+  Future<void> _abrirGestaoCategorias() async {
+    final bool? alterouCategorias = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => const CategoriasProdutosServicosMobileScreen(),
+      ),
+    );
+
+    if (alterouCategorias == true && mounted) {
+      await _carregarCategoriasCatalogo();
     }
   }
 
@@ -217,9 +337,11 @@ class _CadastroProdutoMobileScreenState
   }
 
   ProdutoModel _montarProduto() {
-    final valorVendaEntrada = _valorVendaEntradaController.text.trim().isEmpty
-        ? _toDouble(_precoVendaController)
-        : _toDouble(_valorVendaEntradaController);
+    final valorVendaEntrada =
+        _valorVendaEntradaController.text.trim().isEmpty
+            ? _toDouble(_precoVendaController)
+            : _toDouble(_valorVendaEntradaController);
+    final ObjCategoria? objCategoria = _montarObjCategoria();
 
     return ProdutoModel(
       id: _produtoEmEdicaoId,
@@ -227,20 +349,24 @@ class _CadastroProdutoMobileScreenState
       codigoDeBarras: _codigoController.text.trim(),
       nomeProduto: _nomeController.text.trim(),
       tipoProduto: _tipoSelecionado,
+      objCategoria: objCategoria,
       objAgrupamento: ObjAgrupamento(
-        grupoDoProduto: _grupoController.text.trim().isEmpty
-            ? 'Sem grupo'
-            : _grupoController.text.trim(),
+        grupoDoProduto:
+            _grupoController.text.trim().isEmpty
+                ? 'Sem grupo'
+                : _grupoController.text.trim(),
       ),
       objetoServico: ObjetoServico(
-        tempoDaGarantia: _tempoGarantiaController.text.trim().isEmpty
-            ? 'Sem garantia'
-            : _tempoGarantiaController.text.trim(),
+        tempoDaGarantia:
+            _tempoGarantiaController.text.trim().isEmpty
+                ? 'Sem garantia'
+                : _tempoGarantiaController.text.trim(),
         podeAlterarOValorNaHora: _podeAlterarValorNaHora,
       ),
-      modeloProduto: _modeloController.text.trim().isEmpty
-          ? 'UNIDADE'
-          : _modeloController.text.trim(),
+      modeloProduto:
+          _modeloController.text.trim().isEmpty
+              ? 'UNIDADE'
+              : _modeloController.text.trim(),
       estoqueMaximo: _toInt(_estoqueMaxController),
       estoqueMinimo: _toInt(_estoqueMinController),
       precoVenda: _toDouble(_precoVendaController),
@@ -346,9 +472,10 @@ class _CadastroProdutoMobileScreenState
         throw Exception('Arquivo vazio.');
       }
 
-      final nomeArquivo = arquivo.name.trim().isEmpty
-          ? 'produto-${DateTime.now().millisecondsSinceEpoch}.jpg'
-          : arquivo.name.trim();
+      final nomeArquivo =
+          arquivo.name.trim().isEmpty
+              ? 'produto-${DateTime.now().millisecondsSinceEpoch}.jpg'
+              : arquivo.name.trim();
 
       setState(() {
         final slot = _imagemSlots[slotIndex];
@@ -503,14 +630,135 @@ class _CadastroProdutoMobileScreenState
       controller: controller,
       keyboardType: keyboardType,
       decoration: _inputDecoration(label, hintText: hintText),
-      validator: requiredField
-          ? (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Campo obrigatório';
+      validator:
+          requiredField
+              ? (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Campo obrigatório';
+                }
+                return null;
               }
-              return null;
-            }
-          : null,
+              : null,
+    );
+  }
+
+  Widget _buildCategoriaField() {
+    final List<CategoriaCatalogoModel> categorias = _categoriasCompativeis;
+    final bool categoriaSelecionadaExiste = categorias.any(
+      (CategoriaCatalogoModel categoria) =>
+          categoria.id == _categoriaSelecionadaId,
+    );
+    final String? valor =
+        categoriaSelecionadaExiste ? _categoriaSelecionadaId : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        DropdownButtonFormField<String?>(
+          value: valor,
+          decoration: _inputDecoration(
+            'Categoria',
+            hintText:
+                _carregandoCategorias
+                    ? 'Carregando categorias...'
+                    : 'Selecione uma categoria',
+          ),
+          items: <DropdownMenuItem<String?>>[
+            const DropdownMenuItem<String?>(
+              value: null,
+              child: Text('Sem categoria'),
+            ),
+            ...categorias.map(
+              (CategoriaCatalogoModel categoria) => DropdownMenuItem<String?>(
+                value: categoria.id,
+                child: Text(
+                  categoria.ativo
+                      ? categoria.nome
+                      : '${categoria.nome} (Inativa)',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+          onChanged:
+              _isLoading || _carregandoCategorias
+                  ? null
+                  : (String? value) {
+                    setState(() {
+                      _categoriaSelecionadaId = value;
+                      final CategoriaCatalogoModel? categoria =
+                          _categoriaSelecionadaEncontrada;
+                      _categoriaSelecionadaNome = categoria?.nome;
+                    });
+                  },
+        ),
+        if (_carregandoCategorias)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Row(
+              children: <Widget>[
+                SizedBox(
+                  height: 14,
+                  width: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Buscando categorias...',
+                    style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (_erroCategorias != null && !_carregandoCategorias)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(
+                  _erroCategorias!,
+                  style: const TextStyle(
+                    color: Color(0xFFB91C1C),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _carregarCategoriasCatalogo,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          ),
+        if (!_carregandoCategorias &&
+            _erroCategorias == null &&
+            categorias.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                const Text(
+                  'Nenhuma categoria disponível para este tipo.',
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                ),
+                TextButton.icon(
+                  onPressed: _isLoading ? null : _abrirGestaoCategorias,
+                  icon: const Icon(Icons.category_outlined, size: 18),
+                  label: const Text('Gerenciar categorias'),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
@@ -683,9 +931,10 @@ class _CadastroProdutoMobileScreenState
             runSpacing: 10,
             children: [
               FilledButton.icon(
-                onPressed: _isLoading || slot.isLoading
-                    ? null
-                    : () => _selecionarImagem(
+                onPressed:
+                    _isLoading || slot.isLoading
+                        ? null
+                        : () => _selecionarImagem(
                           ImageSource.camera,
                           _slotSelecionadoIndex,
                         ),
@@ -693,9 +942,10 @@ class _CadastroProdutoMobileScreenState
                 label: const Text('Tirar foto'),
               ),
               OutlinedButton.icon(
-                onPressed: _isLoading || slot.isLoading
-                    ? null
-                    : () => _selecionarImagem(
+                onPressed:
+                    _isLoading || slot.isLoading
+                        ? null
+                        : () => _selecionarImagem(
                           ImageSource.gallery,
                           _slotSelecionadoIndex,
                         ),
@@ -704,9 +954,10 @@ class _CadastroProdutoMobileScreenState
               ),
               if (slot.image != null)
                 TextButton.icon(
-                  onPressed: _isLoading || slot.isLoading
-                      ? null
-                      : () => _removerImagemDoSlot(_slotSelecionadoIndex),
+                  onPressed:
+                      _isLoading || slot.isLoading
+                          ? null
+                          : () => _removerImagemDoSlot(_slotSelecionadoIndex),
                   icon: const Icon(Icons.delete_outline),
                   label: const Text('Remover'),
                 ),
@@ -749,9 +1000,10 @@ class _CadastroProdutoMobileScreenState
         child: Stack(
           children: [
             Positioned.fill(
-              child: hasImage
-                  ? _buildImageContent(slot, fit: BoxFit.cover)
-                  : _buildImagePlaceholder(),
+              child:
+                  hasImage
+                      ? _buildImageContent(slot, fit: BoxFit.cover)
+                      : _buildImagePlaceholder(),
             ),
             if (slot.isLoading)
               Positioned.fill(
@@ -767,8 +1019,10 @@ class _CadastroProdutoMobileScreenState
                 left: 10,
                 bottom: 10,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.56),
                     borderRadius: BorderRadius.circular(999),
@@ -808,18 +1062,11 @@ class _CadastroProdutoMobileScreenState
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: const [
-        Icon(
-          Icons.add_photo_alternate_outlined,
-          size: 42,
-          color: _accentColor,
-        ),
+        Icon(Icons.add_photo_alternate_outlined, size: 42, color: _accentColor),
         SizedBox(height: 10),
         Text(
           'Nenhuma imagem neste slot',
-          style: TextStyle(
-            color: _titleTextColor,
-            fontWeight: FontWeight.w900,
-          ),
+          style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900),
         ),
         SizedBox(height: 4),
         Text(
@@ -860,23 +1107,24 @@ class _CadastroProdutoMobileScreenState
                   color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: slot.isLoading
-                    ? const Center(
-                        child: SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : hasImage
+                child:
+                    slot.isLoading
+                        ? const Center(
+                          child: SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                        : hasImage
                         ? _buildImageContent(slot, fit: BoxFit.cover)
                         : const Center(
-                            child: Icon(
-                              Icons.add_photo_alternate_outlined,
-                              color: _mutedTextColor,
-                              size: 20,
-                            ),
+                          child: Icon(
+                            Icons.add_photo_alternate_outlined,
+                            color: _mutedTextColor,
+                            size: 20,
                           ),
+                        ),
               ),
             ),
             const SizedBox(height: 5),
@@ -895,7 +1143,8 @@ class _CadastroProdutoMobileScreenState
   }
 
   Widget _buildImageContent(_ProdutoImagemSlot slot, {required BoxFit fit}) {
-    final bytes = slot.previewBytes ??
+    final bytes =
+        slot.previewBytes ??
         _decodeBase64Image(slot.image?.imagemBase64) ??
         _decodeDataUrl(slot.image?.url);
 
@@ -972,13 +1221,19 @@ class _CadastroProdutoMobileScreenState
               DropdownMenuItem(value: 'PRODUTO', child: Text('Produto')),
               DropdownMenuItem(value: 'SERVICO', child: Text('Serviço')),
             ],
-            onChanged: _isLoading
-                ? null
-                : (value) {
-                    if (value == null) return;
-                    setState(() => _tipoSelecionado = value);
-                  },
+            onChanged:
+                _isLoading
+                    ? null
+                    : (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _tipoSelecionado = value;
+                        _validarCategoriaSelecionadaComTipoAtual();
+                      });
+                    },
           ),
+          const SizedBox(height: 12),
+          _buildCategoriaField(),
           const SizedBox(height: 12),
           _buildTextField(
             controller: _modeloController,
@@ -1036,8 +1291,9 @@ class _CadastroProdutoMobileScreenState
                 child: _buildTextField(
                   controller: _quantidadeEntradaController,
                   label: 'Entrada',
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1045,8 +1301,9 @@ class _CadastroProdutoMobileScreenState
                 child: _buildTextField(
                   controller: _valorCustoController,
                   label: 'Custo',
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
               ),
             ],
@@ -1087,26 +1344,30 @@ class _CadastroProdutoMobileScreenState
             title: 'Produto ativo',
             subtitle: 'Disponível para venda e listagens.',
             value: _ativo,
-            onChanged: _isLoading ? null : (value) => setState(() => _ativo = value),
+            onChanged:
+                _isLoading ? null : (value) => setState(() => _ativo = value),
           ),
           const SizedBox(height: 10),
           _SwitchCard(
             title: 'Alterar valor na hora',
             subtitle: 'Permite ajustar o valor durante o atendimento.',
             value: _podeAlterarValorNaHora,
-            onChanged: _isLoading
-                ? null
-                : (value) => setState(() => _podeAlterarValorNaHora = value),
+            onChanged:
+                _isLoading
+                    ? null
+                    : (value) =>
+                        setState(() => _podeAlterarValorNaHora = value),
           ),
           const SizedBox(height: 10),
           _SwitchCard(
             title: 'Comissão especial',
             subtitle: 'Aplica comissão específica para este item.',
             value: _produtoTemComissaoEspecial,
-            onChanged: _isLoading
-                ? null
-                : (value) =>
-                    setState(() => _produtoTemComissaoEspecial = value),
+            onChanged:
+                _isLoading
+                    ? null
+                    : (value) =>
+                        setState(() => _produtoTemComissaoEspecial = value),
           ),
         ],
       ),
@@ -1166,7 +1427,10 @@ class _CadastroProdutoMobileScreenState
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(false),
                   child: const Text('Cancelar'),
                 ),
               ),
@@ -1175,16 +1439,17 @@ class _CadastroProdutoMobileScreenState
                 flex: 2,
                 child: FilledButton.icon(
                   onPressed: _isLoading ? null : _salvar,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.save_outlined),
+                  icon:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Icon(Icons.save_outlined),
                   label: Text(
                     _isLoading
                         ? 'Salvando...'
@@ -1226,10 +1491,7 @@ class _StatusPill extends StatelessWidget {
 }
 
 class _SmallInfoPill extends StatelessWidget {
-  const _SmallInfoPill({
-    required this.icon,
-    required this.label,
-  });
+  const _SmallInfoPill({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -1246,7 +1508,11 @@ class _SmallInfoPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: _CadastroProdutoMobileScreenState._accentColor),
+            Icon(
+              icon,
+              size: 14,
+              color: _CadastroProdutoMobileScreenState._accentColor,
+            ),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
@@ -1284,8 +1550,10 @@ class _ImageActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = isDanger ? const Color(0xFFDC2626) : const Color(0xFF2563EB);
-    final background = isDanger ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF);
+    final foreground =
+        isDanger ? const Color(0xFFDC2626) : const Color(0xFF2563EB);
+    final background =
+        isDanger ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF);
 
     return Material(
       color: Colors.white,
@@ -1318,9 +1586,11 @@ class _ImageActionTile extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        color: isDanger
-                            ? const Color(0xFFB91C1C)
-                            : _CadastroProdutoMobileScreenState._titleTextColor,
+                        color:
+                            isDanger
+                                ? const Color(0xFFB91C1C)
+                                : _CadastroProdutoMobileScreenState
+                                    ._titleTextColor,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -1328,7 +1598,8 @@ class _ImageActionTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: _CadastroProdutoMobileScreenState._mutedTextColor,
+                        color:
+                            _CadastroProdutoMobileScreenState._mutedTextColor,
                         fontSize: 12,
                       ),
                     ),

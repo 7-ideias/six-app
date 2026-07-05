@@ -10,6 +10,7 @@ import 'package:sixpos/presentation/screens/ordem_servico_web.dart';
 import 'package:sixpos/presentation/screens/pdv_cliente_identificacao_dialog.dart';
 import 'package:sixpos/presentation/screens/pdv_page_web_orcamento.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
+import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/sub_painel_cadastro_cliente.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
@@ -55,6 +56,7 @@ enum ModuloCentralPDV {
   operacoesCaixa,
   ordemServico,
   agendaFinanceira,
+  categorias,
   configuracoes,
 }
 
@@ -1486,6 +1488,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           ),
         );
 
+      case ModuloCentralPDV.categorias:
+        return Expanded(
+          child: CategoriasProdutosServicosWebPage(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
+        );
+
       case ModuloCentralPDV.seletor:
         return _buildSeletorModoOperacao();
     }
@@ -1839,6 +1853,7 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 'Clientes',
                 'Clientes List',
                 'Produtos',
+                'Categorias',
                 'Colaboradores',
                 'Colaboradores List',
                 'Fornecedores',
@@ -1874,6 +1889,12 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
 
                 if (value == 'Produtos List') {
                   _abrirListaProdutosParaEdicao();
+                }
+
+                if (value == 'Categorias') {
+                  setState(() {
+                    _moduloAtual = ModuloCentralPDV.categorias;
+                  });
                 }
               },
             ),
