@@ -140,6 +140,46 @@ class AtendimentoTecnicoItemInput {
   }
 }
 
+class AtendimentoTecnicoHistoricoStatusModel {
+  const AtendimentoTecnicoHistoricoStatusModel({
+    this.statusAnteriorId,
+    this.statusAnteriorCodigo,
+    this.statusAnteriorI18nKey,
+    required this.statusId,
+    required this.statusCodigo,
+    required this.statusI18nKey,
+    this.observacao,
+    this.idUsuario,
+    this.dataHora,
+  });
+
+  final int? statusAnteriorId;
+  final String? statusAnteriorCodigo;
+  final String? statusAnteriorI18nKey;
+  final int statusId;
+  final String statusCodigo;
+  final String statusI18nKey;
+  final String? observacao;
+  final String? idUsuario;
+  final DateTime? dataHora;
+
+  factory AtendimentoTecnicoHistoricoStatusModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AtendimentoTecnicoHistoricoStatusModel(
+      statusAnteriorId: (json['statusAnteriorId'] as num?)?.toInt(),
+      statusAnteriorCodigo: json['statusAnteriorCodigo']?.toString(),
+      statusAnteriorI18nKey: json['statusAnteriorI18nKey']?.toString(),
+      statusId: (json['statusId'] as num?)?.toInt() ?? 0,
+      statusCodigo: json['statusCodigo']?.toString() ?? '',
+      statusI18nKey: json['statusI18nKey']?.toString() ?? '',
+      observacao: json['observacao']?.toString(),
+      idUsuario: json['idUsuario']?.toString(),
+      dataHora: DateTime.tryParse(json['dataHora']?.toString() ?? ''),
+    );
+  }
+}
+
 class AtendimentoTecnicoModel {
   const AtendimentoTecnicoModel({
     required this.id,
@@ -151,6 +191,7 @@ class AtendimentoTecnicoModel {
     required this.valorTotalServicos,
     required this.valorTotalAtendimento,
     required this.itens,
+    required this.historicoStatus,
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
@@ -175,6 +216,7 @@ class AtendimentoTecnicoModel {
   final double valorTotalServicos;
   final double valorTotalAtendimento;
   final List<AtendimentoTecnicoItemModel> itens;
+  final List<AtendimentoTecnicoHistoricoStatusModel> historicoStatus;
   final DateTime? dataAtualizacao;
 
   factory AtendimentoTecnicoModel.fromJson(Map<String, dynamic> json) {
@@ -199,6 +241,7 @@ class AtendimentoTecnicoModel {
       valorTotalAtendimento:
           (json['valorTotalAtendimento'] as num?)?.toDouble() ?? 0,
       itens: _parseItens(json['itens']),
+      historicoStatus: _parseHistoricoStatus(json['historicoStatus']),
       dataAtualizacao: DateTime.tryParse(
         json['dataAtualizacao']?.toString() ?? '',
       ),
@@ -210,6 +253,16 @@ class AtendimentoTecnicoModel {
     return value
         .whereType<Map<String, dynamic>>()
         .map(AtendimentoTecnicoItemModel.fromJson)
+        .toList(growable: false);
+  }
+
+  static List<AtendimentoTecnicoHistoricoStatusModel> _parseHistoricoStatus(
+    dynamic value,
+  ) {
+    if (value is! List) return <AtendimentoTecnicoHistoricoStatusModel>[];
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoHistoricoStatusModel.fromJson)
         .toList(growable: false);
   }
 }
