@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracao_secao_web_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
@@ -71,14 +73,11 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       item!.onSelect!(value);
       return;
     }
-
     _mostrarRecursoEmPreparacao(context, value);
   }
 
   void _mostrarRecursoEmPreparacao(BuildContext context, String value) {
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
-      context,
-    );
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     messenger?.hideCurrentSnackBar();
     messenger?.showSnackBar(
       SnackBar(
@@ -90,245 +89,206 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Future<void> _abrirCockpitGestor(BuildContext context) async {
+  Future<void> _abrirDialogTela({
+    required BuildContext context,
+    required Widget child,
+    double widthFactor = 0.94,
+    double heightFactor = 0.90,
+  }) async {
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         final Size size = MediaQuery.of(dialogContext).size;
-
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
           child: SizedBox(
-            width: size.width * 0.96,
-            height: size.height * 0.92,
-            child: GestorCockpitWebPage(
-              onBack: () => Navigator.of(dialogContext).pop(),
-            ),
+            width: size.width * widthFactor,
+            height: size.height * heightFactor,
+            child: child,
           ),
         );
       },
+    );
+  }
+
+  Future<void> _abrirCockpitGestor(BuildContext context) async {
+    await _abrirDialogTela(
+      context: context,
+      widthFactor: 0.96,
+      heightFactor: 0.92,
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          return GestorCockpitWebPage(
+            onBack: () => Navigator.of(dialogContext).pop(),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _abrirAtendimentoTecnico(BuildContext context) async {
+    await _abrirDialogTela(
+      context: context,
+      widthFactor: 0.96,
+      heightFactor: 0.92,
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          return AtendimentosTecnicosWebPage(
+            embedded: true,
+            onBack: () => Navigator.of(dialogContext).pop(),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _abrirAtendimentosCriados(BuildContext context) async {
+    await _abrirDialogTela(
+      context: context,
+      widthFactor: 0.96,
+      heightFactor: 0.92,
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          return AtendimentosTecnicosListaWebPage(
+            embedded: true,
+            onBack: () => Navigator.of(dialogContext).pop(),
+          );
+        },
+      ),
     );
   }
 
   Future<void> _abrirResumoExecutivoProdutos(BuildContext context) async {
-    await showDialog<void>(
+    await _abrirDialogTela(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          void fecharEExecutar(String title, String value) {
+            Navigator.of(dialogContext).pop();
+            Future<void>.delayed(const Duration(milliseconds: 80), () {
+              _executarOriginal(context, title, value);
+            });
+          }
 
-        void fecharEExecutar(String title, String value) {
-          Navigator.of(dialogContext).pop();
-          Future<void>.delayed(const Duration(milliseconds: 80), () {
-            _executarOriginal(context, title, value);
-          });
-        }
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.94,
-            height: size.height * 0.90,
-            child: ProdutoDashboardWebPage(
-              onBack: () => Navigator.of(dialogContext).pop(),
-              onNovoProduto: () => fecharEExecutar('Cadastros', 'Produtos'),
-              onOpenListaCompleta:
-                  () => fecharEExecutar('Cadastros', 'Produtos List'),
+          return ProdutoDashboardWebPage(
+            onBack: () => Navigator.of(dialogContext).pop(),
+            onNovoProduto: () => fecharEExecutar('Cadastros', 'Produtos'),
+            onOpenListaCompleta: () => fecharEExecutar(
+              'Cadastros',
+              'Produtos List',
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Future<void> _abrirResumoExecutivoServicos(BuildContext context) async {
-    await showDialog<void>(
+    await _abrirDialogTela(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          void fecharEExecutar(String title, String value) {
+            Navigator.of(dialogContext).pop();
+            Future<void>.delayed(const Duration(milliseconds: 80), () {
+              _executarOriginal(context, title, value);
+            });
+          }
 
-        void fecharEExecutar(String title, String value) {
-          Navigator.of(dialogContext).pop();
-          Future<void>.delayed(const Duration(milliseconds: 80), () {
-            _executarOriginal(context, title, value);
-          });
-        }
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.94,
-            height: size.height * 0.90,
-            child: ServicoDashboardWebPage(
-              onBack: () => Navigator.of(dialogContext).pop(),
-              onNovoServico: () => fecharEExecutar('Cadastros', 'Produtos'),
-              onOpenListaCompleta:
-                  () => fecharEExecutar('Cadastros', 'Produtos List'),
+          return ServicoDashboardWebPage(
+            onBack: () => Navigator.of(dialogContext).pop(),
+            onNovoServico: () => fecharEExecutar('Cadastros', 'Produtos'),
+            onOpenListaCompleta: () => fecharEExecutar(
+              'Cadastros',
+              'Produtos List',
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Future<void> _abrirResumoOperacionalEstoque(BuildContext context) async {
-    await showDialog<void>(
+    await _abrirDialogTela(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          void fecharEExecutar(String title, String value) {
+            Navigator.of(dialogContext).pop();
+            Future<void>.delayed(const Duration(milliseconds: 80), () {
+              _executarOriginal(context, title, value);
+            });
+          }
 
-        void fecharEExecutar(String title, String value) {
-          Navigator.of(dialogContext).pop();
-          Future<void>.delayed(const Duration(milliseconds: 80), () {
-            _executarOriginal(context, title, value);
-          });
-        }
+          void fecharEPreparar(String value) {
+            Navigator.of(dialogContext).pop();
+            Future<void>.delayed(const Duration(milliseconds: 80), () {
+              _mostrarRecursoEmPreparacao(context, value);
+            });
+          }
 
-        void fecharEPreparar(String value) {
-          Navigator.of(dialogContext).pop();
-          Future<void>.delayed(const Duration(milliseconds: 80), () {
-            _mostrarRecursoEmPreparacao(context, value);
-          });
-        }
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.94,
-            height: size.height * 0.90,
-            child: EstoqueDashboardWebPage(
-              onBack: () => Navigator.of(dialogContext).pop(),
-              onEntradaEstoque: () => fecharEPreparar('Entrada de estoque'),
-              onSaidaEstoque: () => fecharEPreparar('Saída de estoque'),
-              onAjusteEstoque: () => fecharEPreparar('Ajuste de estoque'),
-              onOpenListaCompleta:
-                  () => fecharEExecutar('Cadastros', 'Produtos List'),
+          return EstoqueDashboardWebPage(
+            onBack: () => Navigator.of(dialogContext).pop(),
+            onEntradaEstoque: () => fecharEPreparar('Entrada de estoque'),
+            onSaidaEstoque: () => fecharEPreparar('Saída de estoque'),
+            onAjusteEstoque: () => fecharEPreparar('Ajuste de estoque'),
+            onOpenListaCompleta: () => fecharEExecutar(
+              'Cadastros',
+              'Produtos List',
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Future<void> _abrirGestaoClientes(BuildContext context) async {
-    await showDialog<void>(
+    await _abrirDialogTela(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.94,
-            height: size.height * 0.90,
-            child: ClientesUsuarioListPage(
-              embedded: true,
-              onBack: () => Navigator.of(dialogContext).pop(),
-            ),
-          ),
-        );
-      },
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          return ClientesUsuarioListPage(
+            embedded: true,
+            onBack: () => Navigator.of(dialogContext).pop(),
+          );
+        },
+      ),
     );
   }
 
   Future<void> _abrirAgendaFinanceira(BuildContext context) async {
-    await showDialog<void>(
+    await _abrirDialogTela(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.94,
-            height: size.height * 0.90,
-            child: AgendaFinanceiraWeb(
-              embedded: true,
-              onBack: () => Navigator.of(dialogContext).pop(),
-            ),
-          ),
-        );
-      },
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          return AgendaFinanceiraWeb(
+            embedded: true,
+            onBack: () => Navigator.of(dialogContext).pop(),
+          );
+        },
+      ),
     );
   }
 
   Future<void> _abrirConfiguracao(BuildContext context, String value) async {
     final _ConfiguracaoMenuData data = _configuracaoData(value);
-
-    await showDialog<void>(
+    await _abrirDialogTela(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.94,
-            height: size.height * 0.90,
-            child: ConfiguracaoSecaoWebPage(
-              title: data.title,
-              subtitle: data.subtitle,
-              icon: data.icon,
-              onBack: () => Navigator.of(dialogContext).pop(),
-            ),
-          ),
-        );
-      },
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          return ConfiguracaoSecaoWebPage(
+            title: data.title,
+            subtitle: data.subtitle,
+            icon: data.icon,
+            onBack: () => Navigator.of(dialogContext).pop(),
+          );
+        },
+      ),
     );
   }
 
@@ -343,8 +303,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       case 'Usuários e permissões':
         return const _ConfiguracaoMenuData(
           title: 'Usuários e permissões',
-          subtitle:
-              'Acessos, perfis de colaboradores e permissões operacionais.',
+          subtitle: 'Acessos, perfis de colaboradores e permissões operacionais.',
           icon: Icons.admin_panel_settings_rounded,
         );
       case 'Regionalização':
@@ -356,15 +315,13 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       case 'Formas de recebimento':
         return const _ConfiguracaoMenuData(
           title: 'Formas de recebimento',
-          subtitle:
-              'Métodos aceitos, recebimentos futuros e regras de liquidação.',
+          subtitle: 'Métodos aceitos, recebimentos futuros e regras de liquidação.',
           icon: Icons.payments_rounded,
         );
       case 'Regras operacionais':
         return const _ConfiguracaoMenuData(
           title: 'Regras operacionais',
-          subtitle:
-              'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.',
+          subtitle: 'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.',
           icon: Icons.rule_folder_outlined,
         );
       case 'Notificações':
@@ -382,8 +339,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       case 'Integrações':
         return const _ConfiguracaoMenuData(
           title: 'Integrações',
-          subtitle:
-              'Conexões externas para comunicação, pagamentos e automações.',
+          subtitle: 'Conexões externas para comunicação, pagamentos e automações.',
           icon: Icons.hub_rounded,
         );
       default:
@@ -408,13 +364,25 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         title: 'Atendimento',
         subItems: const <String>[
           'Nova venda',
+          'Atendimento técnico',
+          'Atendimentos criados',
           'Novo orçamento',
           'Nova assistência técnica',
           'Vendas',
           'Orçamentos',
           'Assistências técnicas',
         ],
-        onSelect: (String value) => _mostrarRecursoEmPreparacao(context, value),
+        onSelect: (String value) {
+          if (value == 'Atendimento técnico' || value == 'Nova assistência técnica') {
+            _abrirAtendimentoTecnico(context);
+            return;
+          }
+          if (value == 'Atendimentos criados' || value == 'Assistências técnicas') {
+            _abrirAtendimentosCriados(context);
+            return;
+          }
+          _mostrarRecursoEmPreparacao(context, value);
+        },
       ),
       TopNavItemData(
         title: 'Catálogo',
@@ -501,9 +469,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Produtos',
           'Clientes',
         ],
-        onSelect:
-            (String value) =>
-                _mostrarRecursoEmPreparacao(context, 'Relatório de $value'),
+        onSelect: (String value) =>
+            _mostrarRecursoEmPreparacao(context, 'Relatório de $value'),
       ),
       TopNavItemData(
         title: 'Configurações',
@@ -549,8 +516,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildTrailingArea(ColorScheme colorScheme) {
-    final Widget notifications =
-        notificationWidget ??
+    final Widget notifications = notificationWidget ??
         IconButton(
           onPressed: onNotificationPressed,
           icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
@@ -571,10 +537,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final ThemeProvider themeProvider = context.watch<ThemeProvider>();
     final Brightness brightness = Theme.of(context).brightness;
-    final ThemeData currentTheme =
-        brightness == Brightness.dark
-            ? themeProvider.darkTheme
-            : themeProvider.lightTheme;
+    final ThemeData currentTheme = brightness == Brightness.dark
+        ? themeProvider.darkTheme
+        : themeProvider.lightTheme;
     final ColorScheme colorScheme = currentTheme.colorScheme;
     final List<TopNavItemData> effectiveItems = _itemsEfetivos(context);
 
@@ -590,38 +555,36 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
             elevation: 0,
             automaticallyImplyLeading: false,
             titleSpacing: compact ? 12 : 24,
-            title:
-                veryCompact
-                    ? _CompactHeader(
-                      items: effectiveItems,
-                      colorScheme: colorScheme,
-                      onNotificationPressed: onNotificationPressed,
-                      notificationWidget: notificationWidget,
-                    )
-                    : Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children:
-                                  effectiveItems.map((TopNavItemData item) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: _TopNavigationMenuItem(
-                                        data: item,
-                                        colorScheme: colorScheme,
-                                        compactMode: compact,
-                                      ),
-                                    );
-                                  }).toList(),
-                            ),
+            title: veryCompact
+                ? _CompactHeader(
+                    items: effectiveItems,
+                    colorScheme: colorScheme,
+                    onNotificationPressed: onNotificationPressed,
+                    notificationWidget: notificationWidget,
+                  )
+                : Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: effectiveItems.map((TopNavItemData item) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: _TopNavigationMenuItem(
+                                  data: item,
+                                  colorScheme: colorScheme,
+                                  compactMode: compact,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        _buildTrailingArea(colorScheme),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildTrailingArea(colorScheme),
+                    ],
+                  ),
           );
         },
       ),
@@ -708,8 +671,9 @@ class _CompactHeader extends StatelessWidget {
                   );
                 }
 
-                if (menuIndex < items.length - 1)
+                if (menuIndex < items.length - 1) {
                   entries.add(const PopupMenuDivider(height: 8));
+                }
               }
 
               return entries;
@@ -723,10 +687,7 @@ class _CompactHeader extends StatelessWidget {
         notificationWidget ??
             IconButton(
               onPressed: onNotificationPressed,
-              icon: Icon(
-                Icons.notifications_none,
-                color: colorScheme.onPrimary,
-              ),
+              icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
               tooltip: 'Notificações',
             ),
       ],
@@ -865,20 +826,15 @@ class _TopNavChipState extends State<_TopNavChip> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: 8,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
           decoration: BoxDecoration(
-            color:
-                active
-                    ? widget.colorScheme.onPrimary.withOpacity(0.12)
-                    : Colors.transparent,
+            color: active
+                ? widget.colorScheme.onPrimary.withOpacity(0.12)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border(
               bottom: BorderSide(
-                color:
-                    active ? widget.colorScheme.onPrimary : Colors.transparent,
+                color: active ? widget.colorScheme.onPrimary : Colors.transparent,
                 width: 3,
               ),
             ),
