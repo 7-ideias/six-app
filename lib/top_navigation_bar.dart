@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracao_secao_web_page.dart';
@@ -138,6 +139,22 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       child: Builder(
         builder: (BuildContext dialogContext) {
           return AtendimentosTecnicosWebPage(
+            embedded: true,
+            onBack: () => Navigator.of(dialogContext).pop(),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _abrirAtendimentosCriados(BuildContext context) async {
+    await _abrirDialogTela(
+      context: context,
+      widthFactor: 0.96,
+      heightFactor: 0.92,
+      child: Builder(
+        builder: (BuildContext dialogContext) {
+          return AtendimentosTecnicosListaWebPage(
             embedded: true,
             onBack: () => Navigator.of(dialogContext).pop(),
           );
@@ -348,6 +365,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         subItems: const <String>[
           'Nova venda',
           'Atendimento técnico',
+          'Atendimentos criados',
           'Novo orçamento',
           'Nova assistência técnica',
           'Vendas',
@@ -355,10 +373,12 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Assistências técnicas',
         ],
         onSelect: (String value) {
-          if (value == 'Atendimento técnico' ||
-              value == 'Nova assistência técnica' ||
-              value == 'Assistências técnicas') {
+          if (value == 'Atendimento técnico' || value == 'Nova assistência técnica') {
             _abrirAtendimentoTecnico(context);
+            return;
+          }
+          if (value == 'Atendimentos criados' || value == 'Assistências técnicas') {
+            _abrirAtendimentosCriados(context);
             return;
           }
           _mostrarRecursoEmPreparacao(context, value);
@@ -517,8 +537,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final ThemeProvider themeProvider = context.watch<ThemeProvider>();
     final Brightness brightness = Theme.of(context).brightness;
-    final ThemeData currentTheme =
-        brightness == Brightness.dark ? themeProvider.darkTheme : themeProvider.lightTheme;
+    final ThemeData currentTheme = brightness == Brightness.dark
+        ? themeProvider.darkTheme
+        : themeProvider.lightTheme;
     final ColorScheme colorScheme = currentTheme.colorScheme;
     final List<TopNavItemData> effectiveItems = _itemsEfetivos(context);
 
