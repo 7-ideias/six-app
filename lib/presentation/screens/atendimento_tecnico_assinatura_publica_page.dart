@@ -66,7 +66,7 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
       return;
     }
     if (!_aceitou) {
-      _mostrarMensagem('Confirme que aprova os produtos, serviços e valores.');
+      _mostrarMensagem('Confirme que aprova os produtos, serviços, valores e validade do orçamento.');
       return;
     }
     if (_pontosAssinatura.whereType<Offset>().length < 4) {
@@ -110,6 +110,14 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
 
   String _formatarMoeda(double value) => 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
 
+  String _formatarData(DateTime? value) {
+    if (value == null) return 'Não informada';
+    final dia = value.day.toString().padLeft(2, '0');
+    final mes = value.month.toString().padLeft(2, '0');
+    final ano = value.year.toString();
+    return '$dia/$mes/$ano';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -140,7 +148,7 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
                             children: <Widget>[
                               Text('Aprovação de serviço', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
                               const SizedBox(height: 4),
-                              Text(state.utilizado ? 'Este link já foi utilizado.' : 'Confira o atendimento e assine para aprovar.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                              Text(state.utilizado ? 'Este link já foi utilizado.' : 'Confira o atendimento, a validade do orçamento e assine para aprovar.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
                             ],
                           ),
                         ),
@@ -177,6 +185,7 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
           _linha('Número', atendimento.numero),
           _linha('Cliente', atendimento.nomeClienteSnapshot ?? 'Cliente não informado'),
           _linha('Status', atendimento.statusNomePtBr ?? atendimento.statusCodigo),
+          _linha('Validade', _formatarData(atendimento.validadeOrcamentoEm)),
           _linha('Equipamento', equipamentoTexto.isEmpty ? 'Não informado' : equipamentoTexto),
           if ((equipamento?.imei ?? '').trim().isNotEmpty) _linha('IMEI', equipamento!.imei!),
           if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) _linha('Defeito', atendimento.defeitoRelatado!),
@@ -249,7 +258,7 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
             contentPadding: EdgeInsets.zero,
             value: _aceitou,
             onChanged: (value) => setState(() => _aceitou = value == true),
-            title: const Text('Aprovo os produtos, serviços, valores e condições apresentados neste atendimento.'),
+            title: const Text('Aprovo os produtos, serviços, valores, condições e validade apresentados neste atendimento.'),
             controlAffinity: ListTileControlAffinity.leading,
           ),
           const SizedBox(height: 14),
