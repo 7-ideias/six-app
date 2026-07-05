@@ -145,9 +145,15 @@ class AtendimentoTecnicoHistoricoStatusModel {
     this.statusAnteriorId,
     this.statusAnteriorCodigo,
     this.statusAnteriorI18nKey,
+    this.statusAnteriorNomePtBr,
+    this.statusAnteriorNomeEnUs,
+    this.statusAnteriorNomeEsEs,
     required this.statusId,
     required this.statusCodigo,
     required this.statusI18nKey,
+    this.statusNomePtBr,
+    this.statusNomeEnUs,
+    this.statusNomeEsEs,
     this.observacao,
     this.idUsuario,
     this.dataHora,
@@ -156,9 +162,15 @@ class AtendimentoTecnicoHistoricoStatusModel {
   final int? statusAnteriorId;
   final String? statusAnteriorCodigo;
   final String? statusAnteriorI18nKey;
+  final String? statusAnteriorNomePtBr;
+  final String? statusAnteriorNomeEnUs;
+  final String? statusAnteriorNomeEsEs;
   final int statusId;
   final String statusCodigo;
   final String statusI18nKey;
+  final String? statusNomePtBr;
+  final String? statusNomeEnUs;
+  final String? statusNomeEsEs;
   final String? observacao;
   final String? idUsuario;
   final DateTime? dataHora;
@@ -170,9 +182,15 @@ class AtendimentoTecnicoHistoricoStatusModel {
       statusAnteriorId: (json['statusAnteriorId'] as num?)?.toInt(),
       statusAnteriorCodigo: json['statusAnteriorCodigo']?.toString(),
       statusAnteriorI18nKey: json['statusAnteriorI18nKey']?.toString(),
+      statusAnteriorNomePtBr: json['statusAnteriorNomePtBr']?.toString(),
+      statusAnteriorNomeEnUs: json['statusAnteriorNomeEnUs']?.toString(),
+      statusAnteriorNomeEsEs: json['statusAnteriorNomeEsEs']?.toString(),
       statusId: (json['statusId'] as num?)?.toInt() ?? 0,
       statusCodigo: json['statusCodigo']?.toString() ?? '',
       statusI18nKey: json['statusI18nKey']?.toString() ?? '',
+      statusNomePtBr: json['statusNomePtBr']?.toString(),
+      statusNomeEnUs: json['statusNomeEnUs']?.toString(),
+      statusNomeEsEs: json['statusNomeEsEs']?.toString(),
       observacao: json['observacao']?.toString(),
       idUsuario: json['idUsuario']?.toString(),
       dataHora: DateTime.tryParse(json['dataHora']?.toString() ?? ''),
@@ -192,6 +210,9 @@ class AtendimentoTecnicoModel {
     required this.valorTotalAtendimento,
     required this.itens,
     required this.historicoStatus,
+    this.statusNomePtBr,
+    this.statusNomeEnUs,
+    this.statusNomeEsEs,
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
@@ -209,6 +230,9 @@ class AtendimentoTecnicoModel {
   final int statusId;
   final String statusCodigo;
   final String statusI18nKey;
+  final String? statusNomePtBr;
+  final String? statusNomeEnUs;
+  final String? statusNomeEsEs;
   final AtendimentoTecnicoEquipamentoModel? equipamento;
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
@@ -229,6 +253,9 @@ class AtendimentoTecnicoModel {
       statusId: (json['statusId'] as num?)?.toInt() ?? 0,
       statusCodigo: json['statusCodigo']?.toString() ?? '',
       statusI18nKey: json['statusI18nKey']?.toString() ?? '',
+      statusNomePtBr: json['statusNomePtBr']?.toString(),
+      statusNomeEnUs: json['statusNomeEnUs']?.toString(),
+      statusNomeEsEs: json['statusNomeEsEs']?.toString(),
       equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(
         json['equipamento'] is Map<String, dynamic>
             ? json['equipamento'] as Map<String, dynamic>
