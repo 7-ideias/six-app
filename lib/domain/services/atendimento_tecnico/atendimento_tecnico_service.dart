@@ -45,4 +45,39 @@ class AtendimentoTecnicoService {
       observacao: observacao,
     );
   }
+
+  Future<Map<String, dynamic>> gerarLinkAssinatura({
+    required String id,
+    required String baseUrl,
+  }) {
+    return _apiClient.gerarLinkAssinatura(id: id, baseUrl: baseUrl);
+  }
+
+  Future<Map<String, dynamic>> consultarAssinaturaPublica({
+    required String idUnicoDaEmpresa,
+    required String token,
+  }) {
+    return _apiClient.consultarAssinaturaPublica(
+      idUnicoDaEmpresa: idUnicoDaEmpresa,
+      token: token,
+    );
+  }
+
+  Future<Map<String, dynamic>> aprovarAssinaturaPublica({
+    required String idUnicoDaEmpresa,
+    required String token,
+    required String nomeAssinante,
+    required String? documentoAssinante,
+    required String assinaturaDataUrl,
+    required String? observacao,
+  }) {
+    return _apiClient.aprovarAssinaturaPublica(
+      idUnicoDaEmpresa: idUnicoDaEmpresa,
+      token: token,
+      nomeAssinante: nomeAssinante,
+      documentoAssinante: documentoAssinante,
+      assinaturaDataUrl: assinaturaDataUrl,
+      observacao: observacao,
+    );
+  }
 }
