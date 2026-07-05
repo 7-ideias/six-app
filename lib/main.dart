@@ -11,6 +11,7 @@ import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
 import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
+import 'package:sixpos/presentation/screens/atendimento_tecnico_assinatura_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_web_page.dart';
@@ -140,6 +141,13 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const StatusAtendimentoTecnicoConfigWebPage(),
+      );
+    }
+
+    if (routeUri.path == '/atendimento/assinatura') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
       );
     }
 
