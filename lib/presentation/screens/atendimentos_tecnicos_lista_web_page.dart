@@ -24,7 +24,7 @@ class _AtendimentosTecnicosListaWebPageState
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final TextEditingController _buscaController = TextEditingController();
 
-  late Future<_AtendimentosListaState> _future;
+  late Future<_ListaAtendimentosState> _future;
 
   @override
   void initState() {
@@ -40,13 +40,13 @@ class _AtendimentosTecnicosListaWebPageState
     super.dispose();
   }
 
-  Future<_AtendimentosListaState> _carregar() async {
+  Future<_ListaAtendimentosState> _carregar() async {
     final results = await Future.wait<dynamic>(<Future<dynamic>>[
       _service.buscarDominiosBase(),
       _service.listar(),
     ]);
 
-    return _AtendimentosListaState(
+    return _ListaAtendimentosState(
       dominios: results[0] as AtendimentoTecnicoDominiosBaseModel,
       atendimentos: results[1] as List<AtendimentoTecnicoModel>,
     );
@@ -57,9 +57,7 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   void _recarregar() {
-    setState(() {
-      _future = _carregar();
-    });
+    setState(() => _future = _carregar());
   }
 
   List<AtendimentoTecnicoModel> _filtrar(
@@ -123,14 +121,14 @@ class _AtendimentosTecnicosListaWebPageState
       equipamento.modelo ?? '',
     ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
 
-    if (partes.isEmpty) return atendimento.numero;
-    return partes.join(' ');
+    return partes.isEmpty ? atendimento.numero : partes.join(' ');
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final content = FutureBuilder<_AtendimentosListaState>(
+
+    final content = FutureBuilder<_ListaAtendimentosState>(
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -278,7 +276,7 @@ class _AtendimentosTecnicosListaWebPageState
 
   Widget _buildList(
     ThemeData theme,
-    _AtendimentosListaState state,
+    _ListaAtendimentosState state,
     List<AtendimentoTecnicoModel> atendimentos,
   ) {
     return ListView.separated(
@@ -299,7 +297,6 @@ class _AtendimentosTecnicosListaWebPageState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
-    final equipamento = atendimento.equipamento;
     final statusTexto = _statusLabel(atendimento, status);
     final quantidadeItens = atendimento.itens.length;
 
@@ -432,9 +429,7 @@ class _AtendimentosTecnicosListaWebPageState
         return Dialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(26),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 860, maxHeight: 760),
             child: Column(
@@ -443,10 +438,7 @@ class _AtendimentosTecnicosListaWebPageState
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: <Widget>[
-                      Icon(
-                        Icons.assignment_outlined,
-                        color: theme.colorScheme.primary,
-                      ),
+                      Icon(Icons.assignment_outlined, color: theme.colorScheme.primary),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -536,14 +528,10 @@ class _AtendimentosTecnicosListaWebPageState
                       if (atendimento.itens.isEmpty)
                         Text(
                           'Nenhum item vinculado.',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                         )
                       else
-                        ...atendimento.itens.map(
-                          (item) => _detailItem(theme, item),
-                        ),
+                        ...atendimento.itens.map((item) => _detailItem(theme, item)),
                     ],
                   ),
                 ),
@@ -574,10 +562,7 @@ class _AtendimentosTecnicosListaWebPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
           if (visibleLines.isEmpty)
             Text(
@@ -656,9 +641,7 @@ class _AtendimentosTecnicosListaWebPageState
             const SizedBox(height: 14),
             Text(
               'Nenhum atendimento criado ainda',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -736,3 +719,50 @@ class _ListaErrorState extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: theme.colorScheme.error.withValues(alpha: 0.30),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 42),
+            const SizedBox(height: 12),
+            Text(
+              'Não foi possível carregar os atendimentos.',
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(mensagem, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ListaAtendimentosState {
+  const _ListaAtendimentosState({
+    required this.dominios,
+    required this.atendimentos,
+  });
+
+  final AtendimentoTecnicoDominiosBaseModel dominios;
+  final List<AtendimentoTecnicoModel> atendimentos;
+}
