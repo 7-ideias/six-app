@@ -6,6 +6,7 @@ import '../../data/models/dominio_models.dart';
 import '../../data/models/produto_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import 'pdv_cliente_identificacao_dialog.dart';
 import 'produto_lista_sub_painel_web.dart';
 
 class AtendimentosTecnicosWebPage extends StatefulWidget {
@@ -29,7 +30,7 @@ class _AtendimentosTecnicosWebPageState
   final ClienteUsuarioApiClient _clienteApiClient =
       HttpClienteUsuarioApiClient();
 
-  final TextEditingController _buscaClienteController = TextEditingController();
+  final TextEditingController _clienteController = TextEditingController();
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _tipoEquipamentoController =
       TextEditingController(text: 'SMARTPHONE');
@@ -45,25 +46,32 @@ class _AtendimentosTecnicosWebPageState
 
   late Future<_AtendimentoTecnicoViewState> _future;
   DateTime _validadeOrcamentoEm = _defaultValidadeOrcamento();
+  DateTime _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
   String? _clienteSelecionadoId;
   bool _salvando = false;
 
-  static DateTime _defaultValidadeOrcamento() {
+  static DateTime _inicioHoje() {
     final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day).add(const Duration(days: 7));
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  static DateTime _defaultValidadeOrcamento() {
+    return _inicioHoje().add(const Duration(days: 7));
+  }
+
+  static DateTime _defaultVencimentoFinanceiro() {
+    return _inicioHoje().add(const Duration(days: 7));
   }
 
   @override
   void initState() {
     super.initState();
     _future = _carregar();
-    _buscaClienteController.addListener(_onBuscaClienteChanged);
   }
 
   @override
   void dispose() {
-    _buscaClienteController.removeListener(_onBuscaClienteChanged);
-    _buscaClienteController.dispose();
+    _clienteController.dispose();
     _descricaoController.dispose();
     _tipoEquipamentoController.dispose();
     _marcaController.dispose();
@@ -90,17 +98,13 @@ class _AtendimentosTecnicosWebPageState
     );
   }
 
-  void _onBuscaClienteChanged() {
-    if (mounted) setState(() {});
-  }
-
   void _recarregar() {
     setState(() => _future = _carregar());
   }
 
   void _limparFormulario() {
     _clienteSelecionadoId = null;
-    _buscaClienteController.clear();
+    _clienteController.clear();
     _descricaoController.clear();
     _tipoEquipamentoController.text = 'SMARTPHONE';
     _marcaController.clear();
@@ -111,6 +115,7 @@ class _AtendimentosTecnicosWebPageState
     _defeitoController.clear();
     _diagnosticoController.clear();
     _validadeOrcamentoEm = _defaultValidadeOrcamento();
+    _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
     _itens.clear();
   }
 
@@ -123,44 +128,63 @@ class _AtendimentosTecnicosWebPageState
     return null;
   }
 
-  List<ClienteUsuario> _clientesFiltrados(List<ClienteUsuario> clientes) {
-    final termo = _buscaClienteController.text.trim().toLowerCase();
-    final ativos = clientes.where((cliente) => cliente.ativo).toList();
-    if (termo.isEmpty) return ativos.take(12).toList(growable: false);
-    return ativos.where((cliente) {
-      final base = <String>[
-        cliente.nome,
-        cliente.documento,
-        cliente.telefone,
-        cliente.email,
-      ].join(' ').toLowerCase();
-      return base.contains(termo);
-    }).take(12).toList(growable: false);
-  }
+  Future<void> _abrirIdentificacaoCliente(List<ClienteUsuario> clientes) async {
+    final atual = _clienteSelecionado(clientes);
+    final result = await showDialog<ClienteIdentificacaoVendaResult>(
+      context: context,
+      builder: (_) => PdvClienteIdentificacaoDialog(clienteAtual: atual),
+    );
 
-  void _selecionarCliente(ClienteUsuario cliente) {
+    if (!mounted || result == null) return;
+
+    if (result.limpar) {
+      setState(() {
+        _clienteSelecionadoId = null;
+        _clienteController.clear();
+      });
+      return;
+    }
+
+    final cliente = result.cliente;
+    if (cliente == null) return;
     setState(() {
       _clienteSelecionadoId = cliente.id;
-      _buscaClienteController.text = cliente.nome;
+      _clienteController.text = cliente.nome;
     });
   }
 
   Future<void> _selecionarValidadeOrcamento() async {
-    final hoje = DateTime.now();
-    final inicio = DateTime(hoje.year, hoje.month, hoje.day);
-    final data = await showDatePicker(
-      context: context,
-      initialDate: _validadeOrcamentoEm.isBefore(inicio)
-          ? inicio
-          : _validadeOrcamentoEm,
-      firstDate: inicio,
-      lastDate: inicio.add(const Duration(days: 365)),
+    final data = await _selecionarData(
+      initialDate: _validadeOrcamentoEm,
       helpText: 'Validade do orçamento',
     );
     if (data == null) return;
-    setState(
-      () => _validadeOrcamentoEm = DateTime(data.year, data.month, data.day),
+    setState(() => _validadeOrcamentoEm = data);
+  }
+
+  Future<void> _selecionarVencimentoFinanceiro() async {
+    final data = await _selecionarData(
+      initialDate: _vencimentoFinanceiroEm,
+      helpText: 'Vencimento financeiro',
     );
+    if (data == null) return;
+    setState(() => _vencimentoFinanceiroEm = data);
+  }
+
+  Future<DateTime?> _selecionarData({
+    required DateTime initialDate,
+    required String helpText,
+  }) async {
+    final inicio = _inicioHoje();
+    final data = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(inicio) ? inicio : initialDate,
+      firstDate: inicio,
+      lastDate: inicio.add(const Duration(days: 365)),
+      helpText: helpText,
+    );
+    if (data == null) return null;
+    return DateTime(data.year, data.month, data.day);
   }
 
   Future<void> _abrirSelecaoItens(String tipoInicial) async {
@@ -277,10 +301,13 @@ class _AtendimentosTecnicosWebPageState
       return;
     }
 
-    final hoje = DateTime.now();
-    final inicioHoje = DateTime(hoje.year, hoje.month, hoje.day);
+    final inicioHoje = _inicioHoje();
     if (_validadeOrcamentoEm.isBefore(inicioHoje)) {
       _mostrarMensagem('A validade do orçamento não pode ser anterior à data atual.');
+      return;
+    }
+    if (_vencimentoFinanceiroEm.isBefore(inicioHoje)) {
+      _mostrarMensagem('O vencimento financeiro não pode ser anterior à data atual.');
       return;
     }
 
@@ -305,12 +332,13 @@ class _AtendimentosTecnicosWebPageState
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
           itens: _itens.map((item) => item.toInput()).toList(growable: false),
         ),
+        dataVencimentoEm: _vencimentoFinanceiroEm,
       );
 
       if (!mounted) return;
       setState(_limparFormulario);
       _recarregar();
-      _mostrarMensagem('Atendimento técnico criado com validade de orçamento definida.');
+      _mostrarMensagem('Atendimento técnico criado com vencimento financeiro definido.');
     } catch (error) {
       if (!mounted) return;
       _mostrarMensagem('Não foi possível criar o atendimento: $error');
@@ -333,21 +361,6 @@ class _AtendimentosTecnicosWebPageState
     final mes = value.month.toString().padLeft(2, '0');
     final ano = value.year.toString();
     return '$dia/$mes/$ano';
-  }
-
-  String _statusLabel(
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    final nomeBackend = atendimento.statusNomePtBr?.trim() ?? '';
-    if (nomeBackend.isNotEmpty) return nomeBackend;
-    for (final opcao in status) {
-      if (opcao.id == atendimento.statusId &&
-          opcao.nomePadraoPtBr.trim().isNotEmpty) {
-        return opcao.nomePadraoPtBr;
-      }
-    }
-    return atendimento.statusCodigo;
   }
 
   int _totalClientesAtivos(List<ClienteUsuario> clientes) =>
@@ -412,7 +425,7 @@ class _AtendimentosTecnicosWebPageState
                         horizontalPadding,
                         16,
                       ),
-                      child: _buildConteudoPrincipal(theme, state, isCompact),
+                      child: _buildFluxoAtendimento(theme, state, isCompact: isCompact),
                     ),
                   ),
                 ],
@@ -504,7 +517,7 @@ class _AtendimentosTecnicosWebPageState
               ),
               const SizedBox(height: 3),
               Text(
-                'Fluxo com cliente, equipamento, diagnóstico, itens e validade obrigatória do orçamento.',
+                'Fluxo com cliente, equipamento, diagnóstico, itens e vencimento financeiro.',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: colorScheme.onSurface.withOpacity(0.66)),
@@ -526,11 +539,6 @@ class _AtendimentosTecnicosWebPageState
           theme,
           '${_totalClientesAtivos(state.clientes)} clientes',
           Icons.people_alt_outlined,
-        ),
-        _headerBadge(
-          theme,
-          '${state.atendimentos.length} atendimentos',
-          Icons.assignment_outlined,
         ),
         if (widget.onBack != null) _closeButton(context),
       ],
@@ -600,17 +608,17 @@ class _AtendimentosTecnicosWebPageState
             _summaryCard(
               theme,
               width: cardWidth,
-              label: 'Atendimentos',
-              value: '${state.atendimentos.length}',
-              helper: 'Criados no endpoint',
-              icon: Icons.assignment_turned_in_outlined,
+              label: 'Vencimento financeiro',
+              value: _formatarData(_vencimentoFinanceiroEm),
+              helper: 'Data da cobrança',
+              icon: Icons.event_available_outlined,
             ),
             _summaryCard(
               theme,
               width: cardWidth,
-              label: 'Abertos',
-              value: '${_totalAbertos(state.atendimentos)}',
-              helper: 'Pendentes de recebimento',
+              label: 'Em aberto',
+              value: _formatarMoeda(_valorAberto(state.atendimentos)),
+              helper: '${_totalAbertos(state.atendimentos)} pendente(s)',
               icon: Icons.account_balance_wallet_outlined,
             ),
             _summaryCard(
@@ -625,57 +633,6 @@ class _AtendimentosTecnicosWebPageState
           ],
         );
       },
-    );
-  }
-
-  Widget _buildConteudoPrincipal(
-    ThemeData theme,
-    _AtendimentoTecnicoViewState state,
-    bool isCompact,
-  ) {
-    if (isCompact) {
-      return ListView(
-        children: <Widget>[
-          _buildFluxoAtendimento(theme, state, isCompact: true),
-          const SizedBox(height: 14),
-          _buildClientesCadastrados(theme, state.clientes, isCompact: true),
-          const SizedBox(height: 14),
-          _buildAtendimentosCriados(theme, state, isCompact: true),
-        ],
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Expanded(
-          flex: 7,
-          child: _buildFluxoAtendimento(theme, state, isCompact: false),
-        ),
-        const SizedBox(width: 16),
-        SizedBox(
-          width: 460,
-          child: Column(
-            children: <Widget>[
-              Expanded(
-                child: _buildClientesCadastrados(
-                  theme,
-                  state.clientes,
-                  isCompact: false,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _buildAtendimentosCriados(
-                  theme,
-                  state,
-                  isCompact: false,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -696,7 +653,7 @@ class _AtendimentosTecnicosWebPageState
           icon: Icons.assignment_add,
         ),
         const SizedBox(height: 18),
-        _buildClienteSelecionadoCard(theme, cliente),
+        _buildClienteSelecionadoCard(theme, state.clientes, cliente),
         const SizedBox(height: 18),
         _buildFormGrid(
           children: <Widget>[
@@ -721,6 +678,22 @@ class _AtendimentosTecnicosWebPageState
                 ),
                 child: Text(
                   _formatarData(_validadeOrcamentoEm),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: _selecionarVencimentoFinanceiro,
+              child: InputDecorator(
+                decoration: _inputDecoration(
+                  theme,
+                  label: 'Vencimento financeiro',
+                  helper: 'Data prevista para cobrança/recebimento.',
+                  icon: Icons.account_balance_wallet_outlined,
+                ),
+                child: Text(
+                  _formatarData(_vencimentoFinanceiroEm),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -822,192 +795,87 @@ class _AtendimentosTecnicosWebPageState
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: isCompact ? content : SingleChildScrollView(child: content),
+        child: SingleChildScrollView(child: content),
       ),
     );
   }
 
-  Widget _buildClienteSelecionadoCard(ThemeData theme, ClienteUsuario? cliente) {
-    final selected = cliente != null;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: selected
-            ? theme.colorScheme.primary.withOpacity(0.07)
-            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.58),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: selected
-              ? theme.colorScheme.primary.withOpacity(0.24)
-              : theme.colorScheme.outline.withOpacity(0.12),
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: selected
-                  ? theme.colorScheme.primary.withOpacity(0.10)
-                  : theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              selected
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.person_pin_circle_outlined,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  cliente?.nome.isNotEmpty == true
-                      ? cliente!.nome
-                      : 'Nenhum cliente selecionado',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  cliente == null
-                      ? 'Escolha um cliente cadastrado no painel ao lado.'
-                      : '${cliente.telefone.isEmpty ? 'sem telefone' : cliente.telefone} • ${cliente.email.isEmpty ? 'sem e-mail' : cliente.email}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClientesCadastrados(
+  Widget _buildClienteSelecionadoCard(
     ThemeData theme,
-    List<ClienteUsuario> clientes, {
-    required bool isCompact,
-  }) {
-    final filtrados = _clientesFiltrados(clientes);
-    final list = filtrados.isEmpty
-        ? _emptyInline(theme, 'Nenhum cliente encontrado.')
-        : ListView.separated(
-            primary: false,
-            shrinkWrap: isCompact,
-            itemCount: filtrados.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final cliente = filtrados[index];
-              final selected = cliente.id == _clienteSelecionadoId;
-              return Material(
-                color: selected
-                    ? theme.colorScheme.primary.withOpacity(0.08)
-                    : theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => _selecionarCliente(cliente),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: <Widget>[
-                        CircleAvatar(
-                          radius: 18,
-                          child: Text(
-                            cliente.nome.trim().isEmpty
-                                ? '?'
-                                : cliente.nome.trim()[0].toUpperCase(),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                cliente.nome.isEmpty
-                                    ? 'Cliente sem nome'
-                                    : cliente.nome,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w900),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                cliente.telefone.isNotEmpty
-                                    ? cliente.telefone
-                                    : cliente.email.isNotEmpty
-                                        ? cliente.email
-                                        : cliente.documento,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (selected)
-                          Icon(
-                            Icons.check_circle_rounded,
-                            color: theme.colorScheme.primary,
-                          ),
-                      ],
-                    ),
-                  ),
+    List<ClienteUsuario> clientes,
+    ClienteUsuario? cliente,
+  ) {
+    final selected = cliente != null;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _abrirIdentificacaoCliente(clientes),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: selected
+                ? theme.colorScheme.primary.withOpacity(0.07)
+                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.58),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? theme.colorScheme.primary.withOpacity(0.24)
+                  : theme.colorScheme.outline.withOpacity(0.12),
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? theme.colorScheme.primary.withOpacity(0.10)
+                      : theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              );
-            },
-          );
-
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.13)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _sectionHeader(
-              theme,
-              title: 'Clientes cadastrados',
-              subtitle: '${clientes.length} cliente(s) encontrados no cadastro.',
-              icon: Icons.people_alt_outlined,
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _buscaClienteController,
-              decoration: _inputDecoration(
-                theme,
-                label: 'Buscar cliente',
-                hint: 'Nome, telefone, e-mail ou documento',
-                icon: Icons.search_rounded,
+                child: Icon(
+                  selected
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.person_search_outlined,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            if (isCompact)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 360),
-                child: list,
-              )
-            else
-              Expanded(child: list),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      selected ? cliente!.nome : 'Identificar cliente',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      selected
+                          ? '${cliente.telefone.isEmpty ? 'sem telefone' : cliente.telefone} • ${cliente.email.isEmpty ? 'sem e-mail' : cliente.email}'
+                          : 'Clique para buscar e selecionar um cliente cadastrado.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => _abrirIdentificacaoCliente(clientes),
+                icon: Icon(selected ? Icons.swap_horiz_rounded : Icons.search_rounded),
+                label: Text(selected ? 'Trocar cliente' : 'Buscar cliente'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1204,8 +1072,14 @@ class _AtendimentosTecnicosWebPageState
         _metricChip(
           theme,
           _formatarData(_validadeOrcamentoEm),
-          'validade',
+          'validade orçamento',
           Icons.event_available_outlined,
+        ),
+        _metricChip(
+          theme,
+          _formatarData(_vencimentoFinanceiroEm),
+          'vencimento financeiro',
+          Icons.account_balance_wallet_outlined,
         ),
         _metricChip(
           theme,
@@ -1262,137 +1136,6 @@ class _AtendimentosTecnicosWebPageState
                 action,
               ],
             ),
-    );
-  }
-
-  Widget _buildAtendimentosCriados(
-    ThemeData theme,
-    _AtendimentoTecnicoViewState state, {
-    required bool isCompact,
-  }) {
-    final list = state.atendimentos.isEmpty
-        ? _emptyInline(theme, 'Nenhum atendimento técnico ainda.')
-        : ListView.separated(
-            primary: false,
-            shrinkWrap: isCompact,
-            itemCount: state.atendimentos.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) => _buildAtendimentoCard(
-              theme,
-              state.atendimentos[index],
-              state.dominios.statusAtendimentoTecnico,
-            ),
-          );
-
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.13)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _sectionHeader(
-              theme,
-              title: 'Atendimentos criados',
-              subtitle: 'Lista gravada no novo endpoint de atendimento técnico.',
-              icon: Icons.fact_check_outlined,
-            ),
-            const SizedBox(height: 14),
-            if (isCompact)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 360),
-                child: list,
-              )
-            else
-              Expanded(child: list),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAtendimentoCard(
-    ThemeData theme,
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    final equipamento = atendimento.equipamento;
-    final titulo = equipamento == null
-        ? atendimento.numero
-        : '${equipamento.tipo ?? ''} ${equipamento.marca ?? ''} ${equipamento.modelo ?? ''}'
-            .trim();
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.devices_other_outlined,
-                  color: theme.colorScheme.primary,
-                  size: 19,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  titulo.isEmpty ? atendimento.numero : titulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${atendimento.numero} • ${atendimento.nomeClienteSnapshot ?? 'Cliente não informado'}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              _smallChip(theme, _statusLabel(atendimento, status), Icons.flag_outlined),
-              _smallChip(
-                theme,
-                'Validade ${_formatarData(atendimento.validadeOrcamentoEm)}',
-                Icons.event_available_outlined,
-              ),
-              _smallChip(
-                theme,
-                _formatarMoeda(atendimento.valorTotalAtendimento),
-                Icons.payments_outlined,
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -1673,45 +1416,6 @@ class _AtendimentosTecnicosWebPageState
           const SizedBox(width: 5),
           Text(label, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
         ],
-      ),
-    );
-  }
-
-  Widget _smallChip(ThemeData theme, String label, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _emptyInline(ThemeData theme, String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-        ),
       ),
     );
   }
