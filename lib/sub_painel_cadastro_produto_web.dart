@@ -7,7 +7,9 @@ import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/imagem_sugestao_model.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
+import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
 import 'package:flutter/material.dart';
@@ -77,6 +79,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   final ProdutoService _produtoService = ProdutoService();
   final ImagemSugestaoApiClient _imagemSugestaoApiClient =
       HttpImagemSugestaoApiClient();
+  final CategoriaCatalogoApiClient _categoriaApiClient =
+      HttpCategoriaCatalogoApiClient();
 
   final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _nomeProdutoController = TextEditingController();
@@ -109,14 +113,20 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   bool _produtoTemComissaoEspecial = false;
   bool _isLoading = false;
   String _tipoSelecionado = 'PRODUTO';
+  List<CategoriaCatalogoModel> _categoriasCatalogo =
+      const <CategoriaCatalogoModel>[];
+  bool _carregandoCategorias = false;
+  String? _erroCategorias;
+  String? _categoriaSelecionadaId;
+  String? _categoriaSelecionadaNome;
 
   static const int _maxImageSlots = 5;
   final List<_ProdutoImagemSlot> _imagemSlots =
       List<_ProdutoImagemSlot>.generate(
-    _maxImageSlots,
-    (_) => _ProdutoImagemSlot(),
-    growable: false,
-  );
+        _maxImageSlots,
+        (_) => _ProdutoImagemSlot(),
+        growable: false,
+      );
 
   bool _isSugestoesLoading = false;
   bool _jaBuscouSugestoes = false;
@@ -131,11 +141,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   int get _totalImagensSelecionadas =>
       _imagemSlots.where((slot) => slot.image != null).length;
 
-  List<ProdutoImagemModel> get _imagensParaEnvio =>
-      _imagemSlots
-          .map((slot) => slot.image)
-          .whereType<ProdutoImagemModel>()
-          .toList(growable: false);
+  List<ProdutoImagemModel> get _imagensParaEnvio => _imagemSlots
+      .map((slot) => slot.image)
+      .whereType<ProdutoImagemModel>()
+      .toList(growable: false);
 
   Set<int> get _sugestoesAplicadasIds =>
       _imagemSlots
@@ -148,7 +157,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   bool get _temSlotLivre => _indicePrimeiroSlotLivre != -1;
 
-  _ProdutoImagemSlot get _slotSelecionado => _imagemSlots[_slotSelecionadoIndex];
+  _ProdutoImagemSlot get _slotSelecionado =>
+      _imagemSlots[_slotSelecionadoIndex];
 
   bool get _isModoEdicao =>
       widget.modoEdicao && widget.produtoParaEdicao != null;
@@ -157,6 +167,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   void initState() {
     super.initState();
     _preencherCamposSeModoEdicao();
+    _carregarCategoriasCatalogo();
     _nomeProdutoController.addListener(_onCamposSugestoesAlterados);
     _grupoProdutoController.addListener(_onCamposSugestoesAlterados);
     _tempoGarantiaController.addListener(_onCamposSugestoesAlterados);
@@ -296,7 +307,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     return ImagemSugestaoRequest(
       titulo: _nomeProdutoController.text.trim(),
       descricao: descricao,
-      categoria: _grupoProdutoController.text.trim(),
+      categoria:
+          _categoriaSelecionadaNome ?? _grupoProdutoController.text.trim(),
       tipo: _tipoSelecionado == 'SERVICO' ? 'servico' : 'produto',
       quantidade: 6,
     );
@@ -371,16 +383,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'Você já atingiu o limite de 5 imagens. Remova uma para adicionar outra.'),
+            'Você já atingiu o limite de 5 imagens. Remova uma para adicionar outra.',
+          ),
         ),
       );
       return;
     }
 
     final bool slotAtivoLivre = _slotSelecionado.image == null;
-    final int slotIndex = slotAtivoLivre
-        ? _slotSelecionadoIndex
-        : _indicePrimeiroSlotLivre;
+    final int slotIndex =
+        slotAtivoLivre ? _slotSelecionadoIndex : _indicePrimeiroSlotLivre;
     setState(() {
       final slot = _imagemSlots[slotIndex];
       slot.image = ProdutoImagemModel(
@@ -407,6 +419,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _tipoSelecionado =
         produto.tipoProduto.isEmpty ? 'PRODUTO' : produto.tipoProduto;
     _grupoProdutoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
+    _categoriaSelecionadaId = produto.objCategoria?.idCategoria;
+    _categoriaSelecionadaNome = produto.objCategoria?.nomeCategoria;
     _modeloProdutoController.text = produto.modeloProduto;
     _estoqueMaximoController.text = produto.estoqueMaximo.toString();
     _estoqueMinimoController.text = produto.estoqueMinimo.toString();
@@ -438,20 +452,148 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final List<ProdutoImagemModel> imagensDoProduto =
         produto.imagens ?? const <ProdutoImagemModel>[];
 
-    for (int i = 0;
-        i < imagensDoProduto.length && i < _imagemSlots.length;
-        i++) {
+    for (
+      int i = 0;
+      i < imagensDoProduto.length && i < _imagemSlots.length;
+      i++
+    ) {
       _imagemSlots[i].image = imagensDoProduto[i];
     }
   }
 
+  Future<void> _carregarCategoriasCatalogo() async {
+    setState(() {
+      _carregandoCategorias = true;
+      _erroCategorias = null;
+    });
+
+    try {
+      final CategoriaCatalogoListResponse response =
+          await _categoriaApiClient.listarCategorias();
+
+      if (!mounted) return;
+
+      setState(() {
+        _categoriasCatalogo = response.categorias;
+        _carregandoCategorias = false;
+        _sincronizarNomeCategoriaSelecionada();
+      });
+    } on CategoriaCatalogoApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _carregandoCategorias = false;
+        _erroCategorias =
+            'Erro ao carregar categorias (HTTP ${error.statusCode}).';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _carregandoCategorias = false;
+        _erroCategorias = 'Não foi possível carregar categorias.';
+      });
+    }
+  }
+
+  void _sincronizarNomeCategoriaSelecionada() {
+    final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
+    if (categoria != null) {
+      _categoriaSelecionadaNome = categoria.nome;
+    }
+  }
+
+  CategoriaCatalogoModel? get _categoriaSelecionadaEncontrada {
+    final String? id = _categoriaSelecionadaId;
+    if (id == null || id.trim().isEmpty) return null;
+
+    for (final CategoriaCatalogoModel categoria in _categoriasCatalogo) {
+      if (categoria.id == id) return categoria;
+    }
+
+    return null;
+  }
+
+  List<CategoriaCatalogoModel> get _categoriasCompativeis {
+    return _categoriasCatalogo
+        .where((CategoriaCatalogoModel categoria) => categoria.ativo)
+        .where(_categoriaCompativelComTipoAtual)
+        .toList(growable: false);
+  }
+
+  bool _categoriaCompativelComTipoAtual(CategoriaCatalogoModel categoria) {
+    return categoria.tipo == 'AMBOS' || categoria.tipo == _tipoSelecionado;
+  }
+
+  ObjCategoria? _montarObjCategoria() {
+    final String? id = _categoriaSelecionadaId;
+    if (id == null || id.trim().isEmpty) return null;
+
+    final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
+
+    return ObjCategoria(
+      idCategoria: id.trim(),
+      nomeCategoria: categoria?.nome ?? _categoriaSelecionadaNome ?? '',
+    );
+  }
+
+  Widget _buildCategoriaDropdown(BuildContext context, double width) {
+    final List<CategoriaCatalogoModel> categorias = _categoriasCompativeis;
+    final bool categoriaSelecionadaExiste = categorias.any(
+      (CategoriaCatalogoModel categoria) =>
+          categoria.id == _categoriaSelecionadaId,
+    );
+    final String? valor =
+        categoriaSelecionadaExiste ? _categoriaSelecionadaId : null;
+
+    return SizedBox(
+      width: width,
+      child: DropdownButtonFormField<String?>(
+        value: valor,
+        decoration: _inputDecoration(
+          context,
+          'Categoria',
+          hintText:
+              _carregandoCategorias
+                  ? 'Carregando...'
+                  : 'Selecione uma categoria',
+        ),
+        items: <DropdownMenuItem<String?>>[
+          const DropdownMenuItem<String?>(
+            value: null,
+            child: Text('Sem categoria'),
+          ),
+          ...categorias.map(
+            (CategoriaCatalogoModel categoria) => DropdownMenuItem<String?>(
+              value: categoria.id,
+              child: Text(categoria.nome, overflow: TextOverflow.ellipsis),
+            ),
+          ),
+        ],
+        onChanged:
+            _carregandoCategorias
+                ? null
+                : (String? value) {
+                  setState(() {
+                    _categoriaSelecionadaId = value;
+                    final CategoriaCatalogoModel? categoria =
+                        _categoriaSelecionadaEncontrada;
+                    _categoriaSelecionadaNome = categoria?.nome;
+                  });
+                  _onCamposSugestoesAlterados();
+                },
+      ),
+    );
+  }
+
   ProdutoModel _montarProduto() {
+    final ObjCategoria? objCategoria = _montarObjCategoria();
+
     return ProdutoModel(
       id: _produtoEmEdicaoId,
       ativo: _ativo,
       codigoDeBarras: _codigoBarrasController.text.trim(),
       nomeProduto: _nomeProdutoController.text.trim(),
       tipoProduto: _tipoSelecionado,
+      objCategoria: objCategoria,
       objAgrupamento: ObjAgrupamento(
         grupoDoProduto:
             _grupoProdutoController.text.trim().isEmpty
@@ -689,7 +831,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    _isModoEdicao ? 'Edição de produto' : context.t('produtos.cadastroDeProdutos'),
+                    _isModoEdicao
+                        ? 'Edição de produto'
+                        : context.t('produtos.cadastroDeProdutos'),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -863,8 +1007,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     return _buildSectionCard(
       context: context,
       title: 'Fotos do produto',
-      subtitle:
-          'Fluxo de galeria: selecione um slot e adicione a imagem.',
+      subtitle: 'Fluxo de galeria: selecione um slot e adicione a imagem.',
       icon: Icons.photo_camera_back_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -880,7 +1023,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(999),
@@ -902,19 +1048,23 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           Row(
             children: <Widget>[
               FilledButton.icon(
-                onPressed: _isLoading || slotAtivo.isLoading
-                    ? null
-                    : () => _selecionarFotoParaSlot(_slotSelecionadoIndex),
+                onPressed:
+                    _isLoading || slotAtivo.isLoading
+                        ? null
+                        : () => _selecionarFotoParaSlot(_slotSelecionadoIndex),
                 icon: const Icon(Icons.upload_file_outlined),
                 label: Text(
-                  slotAtivo.image == null ? 'Adicionar no slot ativo' : 'Trocar imagem',
+                  slotAtivo.image == null
+                      ? 'Adicionar no slot ativo'
+                      : 'Trocar imagem',
                 ),
               ),
               const SizedBox(width: 10),
               OutlinedButton.icon(
-                onPressed: _isLoading || slotAtivo.image == null
-                    ? null
-                    : () => _removerImagemDoSlot(_slotSelecionadoIndex),
+                onPressed:
+                    _isLoading || slotAtivo.image == null
+                        ? null
+                        : () => _removerImagemDoSlot(_slotSelecionadoIndex),
                 icon: const Icon(Icons.delete_outline),
                 label: const Text('Remover do slot ativo'),
               ),
@@ -935,7 +1085,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               children: List<Widget>.generate(
                 _maxImageSlots,
                 (int index) => Padding(
-                  padding: EdgeInsets.only(right: index == _maxImageSlots - 1 ? 0 : 10),
+                  padding: EdgeInsets.only(
+                    right: index == _maxImageSlots - 1 ? 0 : 10,
+                  ),
                   child: _buildMiniaturaSlot(context, index),
                 ),
               ),
@@ -974,9 +1126,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           }
           return const Center(child: CircularProgressIndicator(strokeWidth: 2));
         },
-        errorBuilder: (_, __, ___) => const Center(
-          child: Icon(Icons.broken_image_outlined),
-        ),
+        errorBuilder:
+            (_, __, ___) =>
+                const Center(child: Icon(Icons.broken_image_outlined)),
       );
     } else {
       imageContent = Column(
@@ -1013,7 +1165,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSugestao ? colorScheme.primary : colorScheme.outline.withOpacity(0.2),
+          color:
+              isSugestao
+                  ? colorScheme.primary
+                  : colorScheme.outline.withOpacity(0.2),
           width: isSugestao ? 2 : 1,
         ),
         color: colorScheme.surfaceVariant,
@@ -1036,7 +1191,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               left: 10,
               bottom: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.55),
                   borderRadius: BorderRadius.circular(999),
@@ -1097,10 +1255,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isAtivo ? colorScheme.primary : colorScheme.outline.withOpacity(0.24),
+            color:
+                isAtivo
+                    ? colorScheme.primary
+                    : colorScheme.outline.withOpacity(0.24),
             width: isAtivo ? 2 : 1,
           ),
-          color: isAtivo ? colorScheme.primary.withOpacity(0.05) : colorScheme.surface,
+          color:
+              isAtivo
+                  ? colorScheme.primary.withOpacity(0.05)
+                  : colorScheme.surface,
         ),
         child: Column(
           children: <Widget>[
@@ -1112,15 +1276,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 color: colorScheme.surfaceVariant,
               ),
               clipBehavior: Clip.antiAlias,
-              child: slot.isLoading
-                  ? const Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : Center(child: thumb),
+              child:
+                  slot.isLoading
+                      ? const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                      : Center(child: thumb),
             ),
             const SizedBox(height: 6),
             Text(
@@ -1162,6 +1327,20 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 : _nomeProdutoController.text.trim(),
           ),
           _buildInfoRow('Tipo', _tipoSelecionado),
+          _buildInfoRow(
+            'Categoria',
+            _categoriaSelecionadaNome == null ||
+                    _categoriaSelecionadaNome!.trim().isEmpty
+                ? '-'
+                : _categoriaSelecionadaNome!,
+          ),
+          _buildInfoRow(
+            'Categoria',
+            _categoriaSelecionadaNome == null ||
+                    _categoriaSelecionadaNome!.trim().isEmpty
+                ? '-'
+                : _categoriaSelecionadaNome!,
+          ),
           _buildInfoRow(
             'Modelo',
             _modeloProdutoController.text.trim().isEmpty
@@ -1328,10 +1507,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   @override
   Widget build(BuildContext context) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final bool telaGrande = constraints.maxWidth >= 1080;
-            final bool telaMedia = constraints.maxWidth >= 760;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool telaGrande = constraints.maxWidth >= 1080;
+        final bool telaMedia = constraints.maxWidth >= 760;
 
         final Widget dadosPrincipais = _buildSectionCard(
           context: context,
@@ -1375,10 +1554,25 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     if (value == null) return;
                     setState(() {
                       _tipoSelecionado = value;
+                      if (_categoriaSelecionadaEncontrada != null &&
+                          !_categoriaCompativelComTipoAtual(
+                            _categoriaSelecionadaEncontrada!,
+                          )) {
+                        _categoriaSelecionadaId = null;
+                        _categoriaSelecionadaNome = null;
+                      }
                     });
                     _onCamposSugestoesAlterados();
                   },
                 ),
+              ),
+              _buildCategoriaDropdown(
+                context,
+                telaGrande ? 280 : (telaMedia ? 260 : double.infinity),
+              ),
+              _buildCategoriaDropdown(
+                context,
+                telaGrande ? 280 : (telaMedia ? 260 : double.infinity),
               ),
               SizedBox(
                 width: telaGrande ? 180 : (telaMedia ? 160 : double.infinity),
@@ -1393,6 +1587,34 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             ],
           ),
         );
+
+        final Widget categoriasAviso =
+            _erroCategorias == null
+                ? const SizedBox.shrink()
+                : Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    _erroCategorias!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                );
+
+        // final Widget categoriasAviso =
+        //     _erroCategorias == null
+        //         ? const SizedBox.shrink()
+        //         : Padding(
+        //           padding: const EdgeInsets.only(top: 12),
+        //           child: Text(
+        //             _erroCategorias!,
+        //             style: TextStyle(
+        //               color: Theme.of(context).colorScheme.error,
+        //               fontWeight: FontWeight.w700,
+        //             ),
+        //           ),
+        //         );
 
         final Widget estoquePreco = _buildSectionCard(
           context: context,

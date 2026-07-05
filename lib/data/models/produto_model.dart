@@ -6,6 +6,7 @@ class ProdutoModel {
   final String codigoDeBarras;
   final String nomeProduto;
   final String tipoProduto;
+  final ObjCategoria? objCategoria;
   final ObjAgrupamento? objAgrupamento;
   final ObjetoServico? objetoServico;
   final String modeloProduto;
@@ -22,6 +23,7 @@ class ProdutoModel {
     required this.codigoDeBarras,
     required this.nomeProduto,
     required this.tipoProduto,
+    this.objCategoria,
     this.objAgrupamento,
     this.objetoServico,
     required this.modeloProduto,
@@ -34,36 +36,58 @@ class ProdutoModel {
   });
 
   factory ProdutoModel.fromJson(Map<String, dynamic> json) {
-    final dynamic objetoServicoJson = json['objetoServico'] ?? json['objServico'];
+    final dynamic objetoServicoJson =
+        json['objetoServico'] ?? json['objServico'];
 
     return ProdutoModel(
       id: json['id']?.toString(),
       ativo: json['ativo'] ?? true,
       codigoDeBarras: json['codigoDeBarras'] ?? '',
       nomeProduto: json['nomeProduto'] ?? '',
-      tipoProduto: json['tipoPoduto'] ?? 'PRODUTO', // Note o 'tipoPoduto' do curl
-      objAgrupamento: json['objAgrupamento'] != null
-          ? ObjAgrupamento.fromJson(Map<String, dynamic>.from(json['objAgrupamento']))
-          : null,
-      objetoServico: objetoServicoJson != null
-          ? ObjetoServico.fromJson(Map<String, dynamic>.from(objetoServicoJson))
-          : null,
+      tipoProduto:
+          json['tipoPoduto'] ?? 'PRODUTO', // Note o 'tipoPoduto' do curl
+      objCategoria:
+          json['objCategoria'] != null
+              ? ObjCategoria.fromJson(
+                Map<String, dynamic>.from(json['objCategoria']),
+              )
+              : null,
+      objAgrupamento:
+          json['objAgrupamento'] != null
+              ? ObjAgrupamento.fromJson(
+                Map<String, dynamic>.from(json['objAgrupamento']),
+              )
+              : null,
+      objetoServico:
+          objetoServicoJson != null
+              ? ObjetoServico.fromJson(
+                Map<String, dynamic>.from(objetoServicoJson),
+              )
+              : null,
       modeloProduto: json['modeloProduto'] ?? 'UNIDADE',
       estoqueMaximo: (json['estoqueMaximo'] ?? 0).toInt(),
       estoqueMinimo: (json['estoqueMinimo'] ?? 0).toInt(),
       precoVenda: (json['precoVenda'] ?? 0.0).toDouble(),
-      objComissao: json['objComissao'] != null
-          ? ObjComissao.fromJson(Map<String, dynamic>.from(json['objComissao']))
-          : ObjComissao(
-              produtoTemComissaoEspecial: false,
-              valorFixoDeComissaoParaEsseProduto: 0,
-            ),
-      objEntradaSaidaProduto: json['objEntradaSaidaProduto'] != null
-          ? (json['objEntradaSaidaProduto'] as List)
-              .where((i) => i is Map)
-              .map((i) => ObjEntradaSaidaProduto.fromJson(Map<String, dynamic>.from(i as Map)))
-              .toList()
-          : null,
+      objComissao:
+          json['objComissao'] != null
+              ? ObjComissao.fromJson(
+                Map<String, dynamic>.from(json['objComissao']),
+              )
+              : ObjComissao(
+                produtoTemComissaoEspecial: false,
+                valorFixoDeComissaoParaEsseProduto: 0,
+              ),
+      objEntradaSaidaProduto:
+          json['objEntradaSaidaProduto'] != null
+              ? (json['objEntradaSaidaProduto'] as List)
+                  .where((i) => i is Map)
+                  .map(
+                    (i) => ObjEntradaSaidaProduto.fromJson(
+                      Map<String, dynamic>.from(i as Map),
+                    ),
+                  )
+                  .toList()
+              : null,
       imagens: _imagensFromJson(json),
     );
   }
@@ -92,7 +116,8 @@ class ProdutoModel {
         .where((value) => value.isNotEmpty)
         .take(5)
         .map((value) {
-          final bool isUrl = value.startsWith('http://') ||
+          final bool isUrl =
+              value.startsWith('http://') ||
               value.startsWith('https://') ||
               value.startsWith('data:image');
 
@@ -113,6 +138,7 @@ class ProdutoModel {
       'codigoDeBarras': codigoDeBarras,
       'nomeProduto': nomeProduto,
       'tipoPoduto': tipoProduto, // Note o 'tipoPoduto' do curl
+      'objCategoria': objCategoria?.toJson(),
       'objAgrupamento': objAgrupamento?.toJson(),
       'objetoServico': objetoServico?.toJson(),
       'modeloProduto': modeloProduto,
@@ -151,11 +177,14 @@ class ProdutoResponseModel {
       erroNoEstoque: (json['erroNoEstoque'] ?? false) as bool,
       qtSemEstoque: (json['qtSemEstoque'] ?? 0.0).toDouble(),
       vlEstoqueEmGrana: (json['vlEstoqueEmGrana'] ?? 0.0).toDouble(),
-      produtosList: json['produtosList'] != null
-          ? (json['produtosList'] as List)
-              .map((i) => ProdutoModel.fromJson(Map<String, dynamic>.from(i)))
-              .toList()
-          : [],
+      produtosList:
+          json['produtosList'] != null
+              ? (json['produtosList'] as List)
+                  .map(
+                    (i) => ProdutoModel.fromJson(Map<String, dynamic>.from(i)),
+                  )
+                  .toList()
+              : [],
     );
   }
 
@@ -171,15 +200,32 @@ class ProdutoResponseModel {
   }
 }
 
+class ObjCategoria {
+  final String idCategoria;
+  final String nomeCategoria;
+
+  ObjCategoria({required this.idCategoria, required this.nomeCategoria});
+
+  factory ObjCategoria.fromJson(Map<String, dynamic> json) {
+    return ObjCategoria(
+      idCategoria: json['idCategoria']?.toString() ?? '',
+      nomeCategoria: json['nomeCategoria']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'idCategoria': idCategoria,
+    'nomeCategoria': nomeCategoria,
+  };
+}
+
 class ObjAgrupamento {
   final String grupoDoProduto;
 
   ObjAgrupamento({required this.grupoDoProduto});
 
   factory ObjAgrupamento.fromJson(Map<String, dynamic> json) {
-    return ObjAgrupamento(
-      grupoDoProduto: json['grupoDoProduto'] ?? '',
-    );
+    return ObjAgrupamento(grupoDoProduto: json['grupoDoProduto'] ?? '');
   }
 
   Map<String, dynamic> toJson() => {'grupoDoProduto': grupoDoProduto};
@@ -202,9 +248,9 @@ class ObjetoServico {
   }
 
   Map<String, dynamic> toJson() => {
-        'tempoDaGarantia': tempoDaGarantia,
-        'podeAlterarOValorNaHora': podeAlterarOValorNaHora,
-      };
+    'tempoDaGarantia': tempoDaGarantia,
+    'podeAlterarOValorNaHora': podeAlterarOValorNaHora,
+  };
 }
 
 class ObjComissao {
@@ -225,9 +271,9 @@ class ObjComissao {
   }
 
   Map<String, dynamic> toJson() => {
-        'produtoTemComissaoEspecial': produtoTemComissaoEspecial,
-        'valorFixoDeComissaoParaEsseProduto': valorFixoDeComissaoParaEsseProduto,
-      };
+    'produtoTemComissaoEspecial': produtoTemComissaoEspecial,
+    'valorFixoDeComissaoParaEsseProduto': valorFixoDeComissaoParaEsseProduto,
+  };
 }
 
 class ObjEntradaSaidaProduto {
@@ -250,8 +296,8 @@ class ObjEntradaSaidaProduto {
   }
 
   Map<String, dynamic> toJson() => {
-        'quantidade': quantidade,
-        'valorCusto': valorCusto,
-        'valorDaVenda': valorDaVenda,
-      };
+    'quantidade': quantidade,
+    'valorCusto': valorCusto,
+    'valorDaVenda': valorDaVenda,
+  };
 }
