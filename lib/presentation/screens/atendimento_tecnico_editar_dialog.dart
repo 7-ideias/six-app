@@ -28,6 +28,7 @@ class _AtendimentoTecnicoEditarDialogState extends State<AtendimentoTecnicoEdita
   final TextEditingController _observacaoAuditoriaController = TextEditingController();
 
   late DateTime _validadeOrcamentoEm;
+  late DateTime _dataVencimentoEm;
   final List<_AtendimentoItemEditavel> _itens = <_AtendimentoItemEditavel>[];
   bool _salvando = false;
 
@@ -45,7 +46,8 @@ class _AtendimentoTecnicoEditarDialogState extends State<AtendimentoTecnicoEdita
     _acessoriosController.text = equipamento?.acessorios ?? equipamento?.observacoesEntrada ?? '';
     _defeitoController.text = atendimento.defeitoRelatado ?? '';
     _diagnosticoController.text = atendimento.diagnosticoTecnico ?? '';
-    _validadeOrcamentoEm = atendimento.validadeOrcamentoEm ?? DateTime.now().add(const Duration(days: 7));
+    _validadeOrcamentoEm = _normalizarData(atendimento.validadeOrcamentoEm ?? DateTime.now().add(const Duration(days: 7)));
+    _dataVencimentoEm = _normalizarData(atendimento.dataVencimentoEm ?? atendimento.validadeOrcamentoEm ?? DateTime.now().add(const Duration(days: 7)));
     _itens.addAll(atendimento.itens.map(_AtendimentoItemEditavel.fromModel));
   }
 
@@ -64,6 +66,8 @@ class _AtendimentoTecnicoEditarDialogState extends State<AtendimentoTecnicoEdita
     super.dispose();
   }
 
+  DateTime _normalizarData(DateTime value) => DateTime(value.year, value.month, value.day);
+
   Future<void> _selecionarValidade() async {
     final hoje = DateTime.now();
     final inicio = DateTime(hoje.year, hoje.month, hoje.day);
@@ -76,7 +80,23 @@ class _AtendimentoTecnicoEditarDialogState extends State<AtendimentoTecnicoEdita
     );
     if (selecionada == null) return;
     setState(() {
-      _validadeOrcamentoEm = DateTime(selecionada.year, selecionada.month, selecionada.day);
+      _validadeOrcamentoEm = _normalizarData(selecionada);
+    });
+  }
+
+  Future<void> _selecionarVencimentoFinanceiro() async {
+    final hoje = DateTime.now();
+    final inicio = DateTime(hoje.year, hoje.month, hoje.day);
+    final selecionada = await showDatePicker(
+      context: context,
+      initialDate: _dataVencimentoEm.isBefore(inicio) ? inicio : _dataVencimentoEm,
+      firstDate: inicio,
+      lastDate: inicio.add(const Duration(days: 3650)),
+      helpText: 'Vencimento financeiro',
+    );
+    if (selecionada == null) return;
+    setState(() {
+      _dataVencimentoEm = _normalizarData(selecionada);
     });
   }
 
@@ -159,11 +179,16 @@ class _AtendimentoTecnicoEditarDialogState extends State<AtendimentoTecnicoEdita
       _mostrarMensagem('A validade do orçamento não pode ser anterior à data atual.');
       return;
     }
+    if (_dataVencimentoEm.isBefore(inicioHoje)) {
+      _mostrarMensagem('O vencimento financeiro não pode ser anterior à data atual.');
+      return;
+    }
 
     setState(() => _salvando = true);
     try {
       await _service.atualizar(
         id: widget.atendimento.id,
+        dataVencimentoEm: _dataVencimentoEm,
         input: AtendimentoTecnicoUpdateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
           descricao: _textoOuNulo(_descricaoController.text),
@@ -253,7 +278,7 @@ class _AtendimentoTecnicoEditarDialogState extends State<AtendimentoTecnicoEdita
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Text(
-                        'Ao salvar alterações de produtos, serviços, validade ou observações, esta versão do orçamento exigirá nova assinatura do cliente.',
+                        'Ao salvar alterações de produtos, serviços, validade, vencimento financeiro ou observações, esta versão do orçamento exigirá nova assinatura do cliente.',
                         style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -263,8 +288,16 @@ class _AtendimentoTecnicoEditarDialogState extends State<AtendimentoTecnicoEdita
                       onTap: _selecionarValidade,
                       borderRadius: BorderRadius.circular(12),
                       child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Validade do orçamento', suffixIcon: Icon(Icons.event_outlined)),
+                        decoration: const InputDecoration(labelText: 'Validade do orçamento', helperText: 'Prazo para aprovação do cliente.', suffixIcon: Icon(Icons.event_available_outlined)),
                         child: Text(_formatarData(_validadeOrcamentoEm), style: const TextStyle(fontWeight: FontWeight.w900)),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: _selecionarVencimentoFinanceiro,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Vencimento financeiro', helperText: 'Data usada na agenda financeira.', suffixIcon: Icon(Icons.event_note_outlined)),
+                        child: Text(_formatarData(_dataVencimentoEm), style: const TextStyle(fontWeight: FontWeight.w900)),
                       ),
                     ),
                     TextField(controller: _tipoEquipamentoController, decoration: const InputDecoration(labelText: 'Tipo de equipamento')),
