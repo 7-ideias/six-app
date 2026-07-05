@@ -12,6 +12,18 @@ class AtendimentoTecnicoService {
     return _apiClient.buscarDominiosBase();
   }
 
+  Future<List<DominioStatusAtendimentoCustomizacaoModel>>
+  listarCustomizacoesStatusAtendimento() {
+    return _apiClient.listarCustomizacoesStatusAtendimento();
+  }
+
+  Future<List<DominioStatusAtendimentoCustomizacaoModel>>
+  salvarCustomizacoesStatusAtendimento(
+    List<Map<String, dynamic>> customizacoes,
+  ) {
+    return _apiClient.salvarCustomizacoesStatusAtendimento(customizacoes);
+  }
+
   Future<List<AtendimentoTecnicoModel>> listar() {
     return _apiClient.listar();
   }
