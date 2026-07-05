@@ -24,11 +24,11 @@ class AtendimentoTecnicoService {
     return _apiClient.listar();
   }
 
-  Future<AtendimentoTecnicoModel> criar(AtendimentoTecnicoCreateInput input, {required DateTime dataVencimentoEm}) {
+  Future<AtendimentoTecnicoModel> criar(AtendimentoTecnicoCreateInput input, {DateTime? dataVencimentoEm}) {
     return _apiClient.criar(input, dataVencimentoEm: dataVencimentoEm);
   }
 
-  Future<AtendimentoTecnicoModel> atualizar({required String id, required AtendimentoTecnicoUpdateInput input, required DateTime dataVencimentoEm}) {
+  Future<AtendimentoTecnicoModel> atualizar({required String id, required AtendimentoTecnicoUpdateInput input, DateTime? dataVencimentoEm}) {
     return _apiClient.atualizar(id: id, input: input, dataVencimentoEm: dataVencimentoEm);
   }
 
