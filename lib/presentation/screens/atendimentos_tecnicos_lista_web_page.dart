@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/dominio_models.dart';
@@ -26,6 +27,7 @@ class _AtendimentosTecnicosListaWebPageState
 
   late Future<_ListaAtendimentosState> _future;
   bool _alterandoStatus = false;
+  bool _gerandoLink = false;
 
   @override
   void initState() {
@@ -61,19 +63,16 @@ class _AtendimentosTecnicosListaWebPageState
     setState(() => _future = _carregar());
   }
 
-  List<AtendimentoTecnicoModel> _filtrar(
-    List<AtendimentoTecnicoModel> atendimentos,
-  ) {
+  List<AtendimentoTecnicoModel> _filtrar(List<AtendimentoTecnicoModel> itens) {
     final termo = _buscaController.text.trim().toLowerCase();
-    if (termo.isEmpty) return atendimentos;
-
-    return atendimentos.where((atendimento) {
+    if (termo.isEmpty) return itens;
+    return itens.where((atendimento) {
       final equipamento = atendimento.equipamento;
       final texto = <String>[
         atendimento.numero,
-        atendimento.descricao ?? '',
         atendimento.nomeClienteSnapshot ?? '',
         atendimento.statusCodigo,
+        atendimento.statusNomePtBr ?? '',
         equipamento?.tipo ?? '',
         equipamento?.marca ?? '',
         equipamento?.modelo ?? '',
@@ -99,21 +98,20 @@ class _AtendimentosTecnicosListaWebPageState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
+    final nomeBackend = atendimento.statusNomePtBr?.trim() ?? '';
+    if (nomeBackend.isNotEmpty) return nomeBackend;
     return _statusLabelPorCodigo(atendimento.statusCodigo, status);
   }
 
   String _statusLabelPorCodigo(String? codigo, List<DominioOpcaoModel> status) {
-    final codigoNormalizado = codigo?.trim().toUpperCase() ?? '';
-    if (codigoNormalizado.isEmpty) return 'Sem status anterior';
-
+    final normalizado = codigo?.trim().toUpperCase() ?? '';
+    if (normalizado.isEmpty) return 'Sem status anterior';
     for (final opcao in status) {
-      if (opcao.codigo.trim().toUpperCase() == codigoNormalizado) {
-        return opcao.nomePadraoPtBr.trim().isEmpty
-            ? opcao.codigo
-            : opcao.nomePadraoPtBr;
+      if (opcao.codigo.trim().toUpperCase() == normalizado) {
+        return opcao.nomePadraoPtBr.trim().isEmpty ? opcao.codigo : opcao.nomePadraoPtBr;
       }
     }
-    return codigoNormalizado;
+    return normalizado;
   }
 
   String _formatarMoeda(double value) {
@@ -132,15 +130,63 @@ class _AtendimentosTecnicosListaWebPageState
 
   String _equipamentoTitulo(AtendimentoTecnicoModel atendimento) {
     final equipamento = atendimento.equipamento;
-    if (equipamento == null) return atendimento.numero;
-
     final partes = <String>[
-      equipamento.tipo ?? '',
-      equipamento.marca ?? '',
-      equipamento.modelo ?? '',
+      equipamento?.tipo ?? '',
+      equipamento?.marca ?? '',
+      equipamento?.modelo ?? '',
     ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
-
     return partes.isEmpty ? atendimento.numero : partes.join(' ');
+  }
+
+  Future<void> _gerarLinkAssinatura(AtendimentoTecnicoModel atendimento) async {
+    if (_gerandoLink) return;
+    setState(() => _gerandoLink = true);
+    try {
+      final baseUrl = '${Uri.base.origin}/atendimento/assinatura';
+      final response = await _service.gerarLinkAssinatura(
+        id: atendimento.id,
+        baseUrl: baseUrl,
+      );
+      final link = response['link']?.toString() ?? '';
+      if (link.isEmpty) {
+        throw Exception('Link não retornado pelo backend.');
+      }
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Link de assinatura'),
+          content: SizedBox(
+            width: 560,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text('Link copiado para a área de transferência.'),
+                const SizedBox(height: 12),
+                SelectableText(link),
+                const SizedBox(height: 12),
+                const Text(
+                  'Envie este link ao cliente por WhatsApp ou e-mail para aprovação e assinatura do serviço.',
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem('Não foi possível gerar o link: $error');
+    } finally {
+      if (mounted) setState(() => _gerandoLink = false);
+    }
   }
 
   Future<void> _abrirAlterarStatusDialog(
@@ -148,11 +194,10 @@ class _AtendimentosTecnicosListaWebPageState
     List<DominioOpcaoModel> status,
   ) async {
     if (status.isEmpty || _alterandoStatus) return;
-
     final observacaoController = TextEditingController();
     DominioOpcaoModel? statusSelecionado = _statusAtual(atendimento, status);
 
-    final bool? alterou = await showDialog<bool>(
+    final alterou = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
@@ -163,13 +208,7 @@ class _AtendimentosTecnicosListaWebPageState
                 width: 460,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      atendimento.numero,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 14),
                     DropdownButtonFormField<DominioOpcaoModel>(
                       value: statusSelecionado,
                       decoration: const InputDecoration(labelText: 'Novo status'),
@@ -179,9 +218,7 @@ class _AtendimentosTecnicosListaWebPageState
                           child: Text(opcao.nomePadraoPtBr),
                         );
                       }).toList(),
-                      onChanged: (opcao) {
-                        setDialogState(() => statusSelecionado = opcao);
-                      },
+                      onChanged: (opcao) => setDialogState(() => statusSelecionado = opcao),
                     ),
                     const SizedBox(height: 14),
                     TextField(
@@ -190,7 +227,6 @@ class _AtendimentosTecnicosListaWebPageState
                       maxLines: 4,
                       decoration: const InputDecoration(
                         labelText: 'Observação da mudança',
-                        hintText: 'Ex.: Cliente pediu para voltar para diagnóstico.',
                       ),
                     ),
                   ],
@@ -214,23 +250,15 @@ class _AtendimentosTecnicosListaWebPageState
                                   ? null
                                   : observacaoController.text.trim(),
                             );
-                            Navigator.of(dialogContext).pop(true);
+                            if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
                           } catch (error) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Não foi possível alterar o status: $error',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            if (mounted) _mostrarMensagem('Não foi possível alterar o status: $error');
                           } finally {
                             if (mounted) setState(() => _alterandoStatus = false);
                           }
                         },
                   icon: const Icon(Icons.check_rounded),
-                  label: const Text('Salvar status'),
+                  label: const Text('Salvar'),
                 ),
               ],
             );
@@ -240,49 +268,49 @@ class _AtendimentosTecnicosListaWebPageState
     );
 
     observacaoController.dispose();
-
     if (alterou == true && mounted) {
       _recarregar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Status do atendimento atualizado no histórico.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _mostrarMensagem('Status atualizado no histórico.');
     }
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     final content = FutureBuilder<_ListaAtendimentosState>(
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
         }
-
         if (snapshot.hasError) {
-          return _ListaErrorState(
-            mensagem: snapshot.error.toString(),
-            onRetry: _recarregar,
-          );
+          return _ErrorState(mensagem: snapshot.error.toString(), onRetry: _recarregar);
         }
-
         final state = snapshot.data!;
         final atendimentos = _filtrar(state.atendimentos);
-
         return Column(
           children: <Widget>[
             _buildHeader(theme, state.atendimentos.length, atendimentos.length),
             const SizedBox(height: 18),
             Expanded(
-              child: state.atendimentos.isEmpty
-                  ? _buildEmptyState(theme)
-                  : atendimentos.isEmpty
-                      ? _buildNoResultsState(theme)
-                      : _buildList(theme, state, atendimentos),
+              child: atendimentos.isEmpty
+                  ? Center(child: Text('Nenhum atendimento encontrado.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)))
+                  : ListView.separated(
+                      itemCount: atendimentos.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) => _buildAtendimentoCard(
+                        theme,
+                        atendimentos[index],
+                        state.dominios.statusAtendimentoTecnico,
+                      ),
+                    ),
             ),
           ],
         );
@@ -292,16 +320,10 @@ class _AtendimentosTecnicosListaWebPageState
     if (widget.embedded) {
       return Padding(padding: const EdgeInsets.all(20), child: content);
     }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Atendimentos criados'),
-        leading: widget.onBack == null
-            ? null
-            : IconButton(
-                onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
-              ),
+        leading: widget.onBack == null ? null : IconButton(onPressed: widget.onBack, icon: const Icon(Icons.arrow_back_rounded)),
       ),
       body: Padding(padding: const EdgeInsets.all(20), child: content),
     );
@@ -309,114 +331,47 @@ class _AtendimentosTecnicosListaWebPageState
 
   Widget _buildHeader(ThemeData theme, int total, int filtrados) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 860;
-          final title = Row(
-            children: <Widget>[
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(
-                  Icons.fact_check_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Atendimentos criados',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Consulte os atendimentos técnicos gravados no backend.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-
-          final actions = Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              _metricChip(theme, '$total', 'total', Icons.assignment_outlined),
-              _metricChip(theme, '$filtrados', 'visíveis', Icons.filter_alt_outlined),
-              SizedBox(
-                width: compact ? double.infinity : 320,
-                child: TextField(
-                  controller: _buscaController,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search_rounded),
-                    labelText: 'Buscar atendimento',
-                    hintText: 'Cliente, número, status, equipamento...',
+      child: Wrap(
+        spacing: 14,
+        runSpacing: 14,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          SizedBox(
+            width: 420,
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.fact_check_outlined, color: theme.colorScheme.primary, size: 42),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text('Atendimentos criados', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                      Text('Consulte, altere status e gere link de assinatura.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                    ],
                   ),
                 ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _recarregar,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Atualizar'),
-              ),
-            ],
-          );
-
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[title, const SizedBox(height: 16), actions],
-            );
-          }
-
-          return Row(
-            children: <Widget>[
-              Expanded(child: title),
-              const SizedBox(width: 18),
-              actions,
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+          _chip(theme, '$total total', Icons.assignment_outlined),
+          _chip(theme, '$filtrados visíveis', Icons.filter_alt_outlined),
+          SizedBox(
+            width: 320,
+            child: TextField(
+              controller: _buscaController,
+              decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), labelText: 'Buscar atendimento'),
+            ),
+          ),
+          OutlinedButton.icon(onPressed: _recarregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
+        ],
       ),
-    );
-  }
-
-  Widget _buildList(
-    ThemeData theme,
-    _ListaAtendimentosState state,
-    List<AtendimentoTecnicoModel> atendimentos,
-  ) {
-    return ListView.separated(
-      itemCount: atendimentos.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _buildAtendimentoCard(
-          theme,
-          atendimentos[index],
-          state.dominios.statusAtendimentoTecnico,
-        );
-      },
     );
   }
 
@@ -426,102 +381,58 @@ class _AtendimentosTecnicosListaWebPageState
     List<DominioOpcaoModel> status,
   ) {
     final statusTexto = _statusLabel(atendimento, status);
-    final quantidadeItens = atendimento.itens.length;
-    final quantidadeHistorico = atendimento.historicoStatus.length;
-
     return Material(
       color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: () => _abrirDetalhes(atendimento, statusTexto, status),
+        onTap: () => _abrirDetalhes(atendimento, status),
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 760;
-              final info = Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      Icons.devices_other_outlined,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(Icons.devices_other_outlined, color: theme.colorScheme.primary, size: 42),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(_equipamentoTitulo(atendimento), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    Text('${atendimento.numero} • ${atendimento.nomeClienteSnapshot ?? 'Cliente não informado'}', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
+                    if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 8),
+                      Text(atendimento.defeitoRelatado!, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    ],
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: <Widget>[
-                        Text(
-                          _equipamentoTitulo(atendimento),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${atendimento.numero} • ${atendimento.nomeClienteSnapshot ?? 'Cliente não informado'}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) ...<Widget>[
-                          const SizedBox(height: 8),
-                          Text(
-                            atendimento.defeitoRelatado!.trim(),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ],
+                        _chip(theme, statusTexto, Icons.flag_outlined),
+                        _chip(theme, '${atendimento.itens.length} item(ns)', Icons.inventory_2_outlined),
+                        _chip(theme, '${atendimento.historicoStatus.length} mov.', Icons.history_rounded),
+                        _chip(theme, _formatarMoeda(atendimento.valorTotalAtendimento), Icons.payments_outlined),
+                        _chip(theme, _formatarData(atendimento.dataAtualizacao), Icons.schedule_outlined),
                       ],
                     ),
-                  ),
-                ],
-              );
-
-              final chips = Wrap(
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Wrap(
+                direction: Axis.vertical,
                 spacing: 8,
-                runSpacing: 8,
-                alignment: compact ? WrapAlignment.start : WrapAlignment.end,
                 children: <Widget>[
-                  _smallChip(theme, statusTexto, Icons.flag_outlined),
-                  _smallChip(
-                    theme,
-                    '$quantidadeItens item(ns)',
-                    Icons.inventory_2_outlined,
-                  ),
-                  _smallChip(
-                    theme,
-                    '$quantidadeHistorico mov.',
-                    Icons.history_rounded,
-                  ),
-                  _smallChip(
-                    theme,
-                    _formatarMoeda(atendimento.valorTotalAtendimento),
-                    Icons.payments_outlined,
-                  ),
-                  _smallChip(
-                    theme,
-                    _formatarData(atendimento.dataAtualizacao),
-                    Icons.schedule_outlined,
+                  OutlinedButton.icon(
+                    onPressed: () => _gerarLinkAssinatura(atendimento),
+                    icon: const Icon(Icons.draw_outlined, size: 18),
+                    label: Text(_gerandoLink ? 'Gerando...' : 'Link assinatura'),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => _abrirAlterarStatusDialog(atendimento, status),
@@ -529,387 +440,84 @@ class _AtendimentosTecnicosListaWebPageState
                     label: const Text('Mudar status'),
                   ),
                 ],
-              );
-
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[info, const SizedBox(height: 14), chips],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: info),
-                  const SizedBox(width: 14),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: chips,
-                  ),
-                ],
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Future<void> _abrirDetalhes(
-    AtendimentoTecnicoModel atendimento,
-    String statusTexto,
-    List<DominioOpcaoModel> status,
-  ) async {
+  Future<void> _abrirDetalhes(AtendimentoTecnicoModel atendimento, List<DominioOpcaoModel> status) async {
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) {
-        final theme = Theme.of(dialogContext);
-        final equipamento = atendimento.equipamento;
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920, maxHeight: 820),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(atendimento.numero),
+        content: SizedBox(
+          width: 760,
+          child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(Icons.assignment_outlined, color: theme.colorScheme.primary),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          atendimento.numero,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.of(dialogContext).pop();
-                          _abrirAlterarStatusDialog(atendimento, status);
-                        },
-                        icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                        label: const Text('Mudar status'),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: <Widget>[
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: <Widget>[
-                          _smallChip(theme, statusTexto, Icons.flag_outlined),
-                          _smallChip(
-                            theme,
-                            _formatarMoeda(atendimento.valorTotalAtendimento),
-                            Icons.payments_outlined,
-                          ),
-                          _smallChip(
-                            theme,
-                            _formatarData(atendimento.dataAtualizacao),
-                            Icons.schedule_outlined,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      _detailSection(
-                        theme,
-                        title: 'Cliente',
-                        lines: <String>[
-                          atendimento.nomeClienteSnapshot ?? 'Cliente não informado',
-                          if ((atendimento.idCliente ?? '').isNotEmpty)
-                            'ID: ${atendimento.idCliente}',
-                        ],
-                      ),
-                      _detailSection(
-                        theme,
-                        title: 'Equipamento',
-                        lines: <String>[
-                          if ((equipamento?.tipo ?? '').trim().isNotEmpty)
-                            'Tipo: ${equipamento!.tipo}',
-                          if ((equipamento?.marca ?? '').trim().isNotEmpty)
-                            'Marca: ${equipamento!.marca}',
-                          if ((equipamento?.modelo ?? '').trim().isNotEmpty)
-                            'Modelo: ${equipamento!.modelo}',
-                          if ((equipamento?.numeroSerie ?? '').trim().isNotEmpty)
-                            'Número de série: ${equipamento!.numeroSerie}',
-                          if ((equipamento?.imei ?? '').trim().isNotEmpty)
-                            'IMEI: ${equipamento!.imei}',
-                          if ((equipamento?.acessorios ?? '').trim().isNotEmpty)
-                            'Acessórios: ${equipamento!.acessorios}',
-                        ],
-                      ),
-                      _detailSection(
-                        theme,
-                        title: 'Defeito e diagnóstico',
-                        lines: <String>[
-                          atendimento.defeitoRelatado?.trim().isNotEmpty == true
-                              ? 'Defeito: ${atendimento.defeitoRelatado}'
-                              : 'Defeito não informado',
-                          atendimento.diagnosticoTecnico?.trim().isNotEmpty == true
-                              ? 'Diagnóstico: ${atendimento.diagnosticoTecnico}'
-                              : 'Diagnóstico não informado',
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Itens',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (atendimento.itens.isEmpty)
-                        Text(
-                          'Nenhum item vinculado.',
-                          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                        )
-                      else
-                        ...atendimento.itens.map((item) => _detailItem(theme, item)),
-                      const SizedBox(height: 18),
-                      _buildHistoricoStatus(theme, atendimento, status),
-                    ],
-                  ),
-                ),
+                _detailLine('Cliente', atendimento.nomeClienteSnapshot ?? 'Cliente não informado'),
+                _detailLine('Status', _statusLabel(atendimento, status)),
+                _detailLine('Total', _formatarMoeda(atendimento.valorTotalAtendimento)),
+                if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) _detailLine('Defeito', atendimento.defeitoRelatado!),
+                if ((atendimento.diagnosticoTecnico ?? '').trim().isNotEmpty) _detailLine('Diagnóstico', atendimento.diagnosticoTecnico!),
+                const SizedBox(height: 16),
+                const Text('Itens', style: TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                if (atendimento.itens.isEmpty)
+                  const Text('Nenhum item vinculado.')
+                else
+                  ...atendimento.itens.map((item) => _detailLine(item.tipoItemCodigo == 'SERVICE' ? 'Serviço' : 'Produto', '${item.descricaoSnapshot} • ${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}')),
+                const SizedBox(height: 16),
+                const Text('Histórico de status', style: TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                if (atendimento.historicoStatus.isEmpty)
+                  const Text('Nenhuma mudança registrada.')
+                else
+                  ...atendimento.historicoStatus.reversed.map((item) {
+                    final anterior = item.statusAnteriorNomePtBr ?? _statusLabelPorCodigo(item.statusAnteriorCodigo, status);
+                    final novo = item.statusNomePtBr ?? _statusLabelPorCodigo(item.statusCodigo, status);
+                    final observacao = item.observacao?.trim() ?? '';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text('${_formatarData(item.dataHora)} • $anterior → $novo${observacao.isEmpty ? '' : ' • $observacao'}'),
+                    );
+                  }),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHistoricoStatus(
-    ThemeData theme,
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    final historico = atendimento.historicoStatus.reversed.toList(growable: false);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(Icons.history_rounded, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Histórico de status',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
+        ),
+        actions: <Widget>[
+          OutlinedButton.icon(
+            onPressed: () => _gerarLinkAssinatura(atendimento),
+            icon: const Icon(Icons.draw_outlined),
+            label: const Text('Link assinatura'),
           ),
-          const SizedBox(height: 12),
-          if (historico.isEmpty)
-            Text(
-              'Nenhuma mudança de status registrada.',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-            )
-          else
-            ...historico.map((item) => _historicoStatusItem(theme, item, status)),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Fechar')),
         ],
       ),
     );
   }
 
-  Widget _historicoStatusItem(
-    ThemeData theme,
-    AtendimentoTecnicoHistoricoStatusModel item,
-    List<DominioOpcaoModel> status,
-  ) {
-    final anterior = _statusLabelPorCodigo(item.statusAnteriorCodigo, status);
-    final novo = _statusLabelPorCodigo(item.statusCodigo, status);
-    final observacao = item.observacao?.trim() ?? '';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              _smallChip(theme, anterior, Icons.flag_outlined),
-              Icon(
-                Icons.arrow_forward_rounded,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              _smallChip(theme, novo, Icons.flag_circle_outlined),
-              _smallChip(theme, _formatarData(item.dataHora), Icons.schedule_outlined),
-            ],
-          ),
-          if (observacao.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 8),
-            Text(
-              observacao,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _detailSection(
-    ThemeData theme, {
-    required String title,
-    required List<String> lines,
-  }) {
-    final visibleLines = lines
-        .where((line) => line.trim().isNotEmpty)
-        .toList(growable: false);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.36),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 8),
-          if (visibleLines.isEmpty)
-            Text(
-              'Não informado',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-            )
-          else
-            ...visibleLines.map(
-              (line) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(line),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _detailItem(ThemeData theme, AtendimentoTecnicoItemModel item) {
-    final isServico = item.tipoItemCodigo == 'SERVICE';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
+  Widget _detailLine(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(
-            isServico ? Icons.handyman_outlined : Icons.inventory_2_outlined,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              item.descricaoSnapshot,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-          ),
-          Text(
-            '${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}',
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 100,
-            child: Text(
-              _formatarMoeda(item.valorTotal),
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w900),
-            ),
-          ),
+          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))),
+          Expanded(child: Text(value)),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 560),
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.assignment_late_outlined,
-              size: 52,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Nenhum atendimento criado ainda',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Crie um atendimento técnico pelo fluxo de abertura para ele aparecer aqui.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoResultsState(ThemeData theme) {
-    return Center(
-      child: Text(
-        'Nenhum atendimento encontrado para a busca.',
-        style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-      ),
-    );
-  }
-
-  Widget _metricChip(ThemeData theme, String value, String label, IconData icon) {
+  Widget _chip(ThemeData theme, String label, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
@@ -917,93 +525,38 @@ class _AtendimentosTecnicosListaWebPageState
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 7),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
-          const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-
-  Widget _smallChip(ThemeData theme, String label, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
           Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
         ],
       ),
     );
   }
 }
 
-class _ListaErrorState extends StatelessWidget {
-  const _ListaErrorState({required this.mensagem, required this.onRetry});
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.mensagem, required this.onRetry});
 
   final String mensagem;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 560),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: theme.colorScheme.error.withValues(alpha: 0.30),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 42),
-            const SizedBox(height: 12),
-            Text(
-              'Não foi possível carregar os atendimentos.',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(mensagem, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Tentar novamente'),
-            ),
-          ],
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text('Não foi possível carregar os atendimentos.\n$mensagem', textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente')),
+        ],
       ),
     );
   }
 }
 
 class _ListaAtendimentosState {
-  const _ListaAtendimentosState({
-    required this.dominios,
-    required this.atendimentos,
-  });
+  const _ListaAtendimentosState({required this.dominios, required this.atendimentos});
 
   final AtendimentoTecnicoDominiosBaseModel dominios;
   final List<AtendimentoTecnicoModel> atendimentos;
