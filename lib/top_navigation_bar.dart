@@ -95,58 +95,82 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     Future<void>.delayed(const Duration(milliseconds: 80), () => _mostrarPreparacao(context, value));
   }
 
-  Future<void> _abrirAtendimentoTecnico(BuildContext context) => _abrirOverlay(
-        context,
-        (dialogContext) => AtendimentosTecnicosWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()),
-        widthFactor: 0.96,
-        heightFactor: 0.92,
-      );
+  void _abrirAtendimentoTecnico(BuildContext context) {
+    _abrirOverlay(
+      context,
+      (dialogContext) => AtendimentosTecnicosWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()),
+      widthFactor: 0.96,
+      heightFactor: 0.92,
+    );
+  }
 
-  Future<void> _abrirAtendimentosCriados(BuildContext context) => _abrirOverlay(
-        context,
-        (dialogContext) => AtendimentosTecnicosListaWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()),
-        widthFactor: 0.96,
-        heightFactor: 0.92,
-      );
+  void _abrirAtendimentosCriados(BuildContext context) {
+    _abrirOverlay(
+      context,
+      (dialogContext) => AtendimentosTecnicosListaWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()),
+      widthFactor: 0.96,
+      heightFactor: 0.92,
+    );
+  }
 
-  Future<void> _abrirProdutos(BuildContext context) => _abrirOverlay(
-        context,
-        (dialogContext) => ProdutoDashboardWebPage(
-          onBack: () => Navigator.of(dialogContext).pop(),
-          onNovoProduto: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos'),
-          onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
-        ),
-      );
+  void _abrirProdutos(BuildContext context) {
+    _abrirOverlay(
+      context,
+      (dialogContext) => ProdutoDashboardWebPage(
+        onBack: () => Navigator.of(dialogContext).pop(),
+        onNovoProduto: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos'),
+        onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
+      ),
+    );
+  }
 
-  Future<void> _abrirServicos(BuildContext context) => _abrirOverlay(
-        context,
-        (dialogContext) => ServicoDashboardWebPage(
-          onBack: () => Navigator.of(dialogContext).pop(),
-          onNovoServico: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos'),
-          onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
-        ),
-      );
+  void _abrirServicos(BuildContext context) {
+    _abrirOverlay(
+      context,
+      (dialogContext) => ServicoDashboardWebPage(
+        onBack: () => Navigator.of(dialogContext).pop(),
+        onNovoServico: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos'),
+        onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
+      ),
+    );
+  }
 
-  Future<void> _abrirEstoque(BuildContext context) => _abrirOverlay(
-        context,
-        (dialogContext) => EstoqueDashboardWebPage(
-          onBack: () => Navigator.of(dialogContext).pop(),
-          onEntradaEstoque: () => _fecharEPreparar(dialogContext, context, 'Entrada de estoque'),
-          onSaidaEstoque: () => _fecharEPreparar(dialogContext, context, 'Saída de estoque'),
-          onAjusteEstoque: () => _fecharEPreparar(dialogContext, context, 'Ajuste de estoque'),
-          onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
-        ),
-      );
+  void _abrirEstoque(BuildContext context) {
+    _abrirOverlay(
+      context,
+      (dialogContext) => EstoqueDashboardWebPage(
+        onBack: () => Navigator.of(dialogContext).pop(),
+        onEntradaEstoque: () => _fecharEPreparar(dialogContext, context, 'Entrada de estoque'),
+        onSaidaEstoque: () => _fecharEPreparar(dialogContext, context, 'Saída de estoque'),
+        onAjusteEstoque: () => _fecharEPreparar(dialogContext, context, 'Ajuste de estoque'),
+        onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
+      ),
+    );
+  }
 
-  Future<void> _abrirClientes(BuildContext context) => _abrirOverlay(context, (dialogContext) => ClientesUsuarioListPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
-  Future<void> _abrirCategorias(BuildContext context) => _abrirOverlay(context, (dialogContext) => CategoriasProdutosServicosWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
-  Future<void> _abrirColaboradores(BuildContext context) => _abrirOverlay(context, (dialogContext) => ColaboradoresUsuarioListPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
-  Future<void> _abrirFornecedores(BuildContext context) => _abrirOverlay(context, (dialogContext) => FornecedoresWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
-  Future<void> _abrirAgenda(BuildContext context) => _abrirOverlay(context, (dialogContext) => AgendaFinanceiraWeb(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
+  void _abrirClientes(BuildContext context) {
+    _abrirOverlay(context, (dialogContext) => ClientesUsuarioListPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
+  }
 
-  Future<void> _abrirConfiguracao(BuildContext context, String value) {
+  void _abrirCategorias(BuildContext context) {
+    _abrirOverlay(context, (dialogContext) => CategoriasProdutosServicosWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
+  }
+
+  void _abrirColaboradores(BuildContext context) {
+    _abrirOverlay(context, (dialogContext) => ColaboradoresUsuarioListPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
+  }
+
+  void _abrirFornecedores(BuildContext context) {
+    _abrirOverlay(context, (dialogContext) => FornecedoresWebPage(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
+  }
+
+  void _abrirAgenda(BuildContext context) {
+    _abrirOverlay(context, (dialogContext) => AgendaFinanceiraWeb(embedded: true, onBack: () => Navigator.of(dialogContext).pop()));
+  }
+
+  void _abrirConfiguracao(BuildContext context, String value) {
     final data = _config(value);
-    return _abrirOverlay(context, (dialogContext) => ConfiguracaoSecaoWebPage(title: data.title, subtitle: data.subtitle, icon: data.icon, onBack: () => Navigator.of(dialogContext).pop()));
+    _abrirOverlay(context, (dialogContext) => ConfiguracaoSecaoWebPage(title: data.title, subtitle: data.subtitle, icon: data.icon, onBack: () => Navigator.of(dialogContext).pop()));
   }
 
   _MenuConfigData _config(String value) {
