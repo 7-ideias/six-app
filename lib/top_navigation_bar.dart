@@ -199,7 +199,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   List<TopNavItemData> _itemsEfetivos(BuildContext context) {
     if (!_usaNovoMenuSix) return items;
     return <TopNavItemData>[
-      TopNavItemData(title: 'Início', subItems: const <String>[], onSelect: (_) => Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/app', (_) => false)),
+      TopNavItemData(title: 'Início', subItems: const <String>[], onSelect: (_) {
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/app', (_) => false);
+      }),
       TopNavItemData(title: 'Atendimento', subItems: const <String>['Nova venda', 'Atendimento técnico', 'Atendimentos criados', 'Novo orçamento', 'Nova assistência técnica', 'Vendas', 'Orçamentos', 'Assistências técnicas'], onSelect: (value) {
         if (value == 'Atendimento técnico' || value == 'Nova assistência técnica') return _abrirAtendimentoTecnico(context);
         if (value == 'Atendimentos criados' || value == 'Assistências técnicas') return _abrirAtendimentosCriados(context);
