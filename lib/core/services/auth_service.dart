@@ -246,4 +246,23 @@ class AuthService {
       return null;
     }
   }
+
+  Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString(_userDataKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+      final String email = decoded['email']?.toString().trim() ?? '';
+      return email.isEmpty ? null : email.toLowerCase();
+    } catch (_) {
+      return null;
+    }
+  }
 }
