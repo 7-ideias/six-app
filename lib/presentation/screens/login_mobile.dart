@@ -293,15 +293,15 @@ class _SocialButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: SixAuthTokens.socialButtonHeight,
+      height: SixAuthTokens.heightButtonGoogle,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: SixAuthTokens.colorInputBackground,
+          backgroundColor: SixAuthTokens.colorButtonGoogleBg,
           foregroundColor: SixAuthTokens.colorTextPrimary,
-          side: const BorderSide(color: SixAuthTokens.colorInputBorder),
+          side: const BorderSide(color: SixAuthTokens.colorButtonGoogleBorder),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(SixAuthTokens.borderRadiusInput),
+            borderRadius: BorderRadius.circular(SixAuthTokens.radiusButtonGoogle),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14),
         ),
@@ -318,8 +318,8 @@ class _SocialButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontWeight: SixAuthTokens.fontWeightSocialButton,
-                  fontSize: SixAuthTokens.fontSizeSocialButton,
+                  fontWeight: FontWeight.w600,
+                  fontSize: SixAuthTokens.fontSizeBody,
                 ),
               ),
             ),
