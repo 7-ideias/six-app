@@ -61,6 +61,26 @@ class ColaboradorConviteWebService {
     );
   }
 
+  Future<ColaboradorConviteResponse> confirmarEmailConvite(
+    String codigo,
+    String email,
+  ) async {
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/public/api/colaborador/convites/$codigo/confirmar-email');
+    final http.Response response = await _client.post(
+      uri,
+      headers: const <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(<String, String>{'email': email.trim()}),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Erro ao confirmar e-mail do convite: ${response.statusCode} ${response.body}');
+    }
+
+    return ColaboradorConviteResponse.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
   Future<void> aceitarConvite(String codigo) async {
     final String? token = await _authService.getAccessToken();
     if (token == null || token.trim().isEmpty) {
