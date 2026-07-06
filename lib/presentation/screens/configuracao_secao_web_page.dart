@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../l10n/six_i18n.dart';
+import '../../providers/locale_settings_provider.dart';
 import 'empresa_configuracao_screen.dart';
 import 'regionalizacao_configuracao_content.dart';
 import 'regras_operacionais_configuracao_content.dart';
 
-class ConfiguracaoSecaoWebPage extends StatelessWidget {
+class ConfiguracaoSecaoWebPage extends StatefulWidget {
   final String title;
   final String subtitle;
   final IconData icon;
@@ -19,9 +21,81 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
     this.onBack,
   });
 
-  bool get _ehConfiguracaoEmpresa => title == 'Empresa';
-  bool get _ehRegionalizacao => title == 'Regionalização';
-  bool get _ehRegrasOperacionais => title == 'Regras operacionais';
+  @override
+  State<ConfiguracaoSecaoWebPage> createState() =>
+      _ConfiguracaoSecaoWebPageState();
+}
+
+class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
+  bool _regionalizacaoComAlteracaoPendente = false;
+
+  bool get _ehConfiguracaoEmpresa => widget.title == 'Empresa';
+  bool get _ehRegionalizacao => widget.title == 'Regionalização';
+  bool get _ehRegrasOperacionais => widget.title == 'Regras operacionais';
+
+  Future<void> _handleBack() async {
+    if (_ehRegionalizacao && _regionalizacaoComAlteracaoPendente) {
+      final bool sairSemSalvar = await _confirmarSaidaSemSalvar();
+      if (!sairSemSalvar) return;
+    }
+
+    widget.onBack?.call();
+  }
+
+  Future<bool> _confirmarSaidaSemSalvar() async {
+    final bool? confirmado = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        final ThemeData theme = Theme.of(dialogContext);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange.shade800,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('Sair sem salvar?')),
+            ],
+          ),
+          content: Text(
+            'Existem alterações de regionalização que ainda não foram salvas. Se você sair agora, essas alterações não serão aplicadas.',
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Continuar editando'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text('Sair sem salvar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmado ?? false;
+  }
+
+  void _atualizarRegionalizacaoPendente(bool pendente) {
+    if (_regionalizacaoComAlteracaoPendente == pendente || !mounted) return;
+    setState(() => _regionalizacaoComAlteracaoPendente = pendente);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +119,9 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withOpacity(0.06),
-        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+        border: Border(
+          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -59,14 +135,16 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      title,
+                      widget.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      subtitle,
+                      widget.subtitle,
                       maxLines: compact ? 3 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -83,7 +161,7 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
           final Widget closeButton = Align(
             alignment: compact ? Alignment.centerRight : Alignment.center,
             child: IconButton.filledTonal(
-              onPressed: onBack,
+              onPressed: _handleBack,
               tooltip: context.t('common.close', fallback: 'Fechar'),
               icon: const Icon(Icons.close_rounded),
             ),
@@ -122,7 +200,7 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
         color: theme.colorScheme.primary.withOpacity(0.12),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+      child: Icon(widget.icon, color: theme.colorScheme.primary, size: 28),
     );
   }
 
@@ -184,10 +262,11 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
   }
 
   Widget _buildRegionalizacaoContent(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(24),
+    return Padding(
+      padding: const EdgeInsets.all(24),
       child: _RegionalizacaoConfirmacaoScope(
-        child: RegionalizacaoConfiguracaoContent(embedded: true),
+        onDirtyChanged: _atualizarRegionalizacaoPendente,
+        child: const RegionalizacaoConfiguracaoContent(embedded: true),
       ),
     );
   }
@@ -236,9 +315,13 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
 }
 
 class _RegionalizacaoConfirmacaoScope extends StatefulWidget {
-  const _RegionalizacaoConfirmacaoScope({required this.child});
+  const _RegionalizacaoConfirmacaoScope({
+    required this.child,
+    required this.onDirtyChanged,
+  });
 
   final Widget child;
+  final ValueChanged<bool> onDirtyChanged;
 
   @override
   State<_RegionalizacaoConfirmacaoScope> createState() =>
@@ -248,14 +331,31 @@ class _RegionalizacaoConfirmacaoScope extends StatefulWidget {
 class _RegionalizacaoConfirmacaoScopeState
     extends State<_RegionalizacaoConfirmacaoScope> {
   bool _mostrarAvisoDeConfirmacao = false;
+  bool _salvandoAnteriormente = false;
 
   void _registrarPossivelAlteracao() {
     if (_mostrarAvisoDeConfirmacao || !mounted) return;
     setState(() => _mostrarAvisoDeConfirmacao = true);
+    widget.onDirtyChanged(true);
+  }
+
+  void _marcarComoConfirmado() {
+    if (!_mostrarAvisoDeConfirmacao || !mounted) return;
+    setState(() => _mostrarAvisoDeConfirmacao = false);
+    widget.onDirtyChanged(false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool salvando = context.select<LocaleSettingsProvider, bool>(
+      (LocaleSettingsProvider provider) => provider.regionalizacaoSaving,
+    );
+
+    if (_salvandoAnteriormente && !salvando) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _marcarComoConfirmado());
+    }
+    _salvandoAnteriormente = salvando;
+
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerUp: (_) => _registrarPossivelAlteracao(),
