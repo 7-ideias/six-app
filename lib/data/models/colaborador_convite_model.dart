@@ -64,6 +64,35 @@ class ColaboradorConviteResponse {
   }
 }
 
+class ColaboradorConvitePublicoResponse {
+  const ColaboradorConvitePublicoResponse({
+    required this.emailConvidado,
+    required this.nomeConvidado,
+    required this.idUnicoDaEmpresa,
+    required this.nomeFantasia,
+    required this.status,
+    required this.expiraEm,
+  });
+
+  final String emailConvidado;
+  final String nomeConvidado;
+  final String idUnicoDaEmpresa;
+  final String nomeFantasia;
+  final String status;
+  final DateTime? expiraEm;
+
+  factory ColaboradorConvitePublicoResponse.fromJson(Map<String, dynamic> json) {
+    return ColaboradorConvitePublicoResponse(
+      emailConvidado: json['emailConvidado']?.toString() ?? '',
+      nomeConvidado: json['nomeConvidado']?.toString() ?? '',
+      idUnicoDaEmpresa: json['idUnicoDaEmpresa']?.toString() ?? '',
+      nomeFantasia: json['nomeFantasia']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      expiraEm: DateTime.tryParse(json['expiraEm']?.toString() ?? ''),
+    );
+  }
+}
+
 class EmpresaVinculoWebModel {
   const EmpresaVinculoWebModel({
     required this.idUnicoDaEmpresa,
