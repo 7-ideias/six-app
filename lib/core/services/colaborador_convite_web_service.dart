@@ -43,6 +43,44 @@ class ColaboradorConviteWebService {
     );
   }
 
+  Future<ColaboradorConvitePublicoResponse> validarConvitePublico(
+    String codigo,
+  ) async {
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/public/api/colaborador/convites/$codigo');
+    final http.Response response = await _client.get(
+      uri,
+      headers: const <String, String>{'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Erro ao validar convite de colaborador: ${response.statusCode} ${response.body}');
+    }
+
+    return ColaboradorConvitePublicoResponse.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<void> aceitarConvite(String codigo) async {
+    final String? token = await _authService.getAccessToken();
+    if (token == null || token.trim().isEmpty) {
+      throw Exception('Faça login com o e-mail convidado para aceitar este convite.');
+    }
+
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/convites/$codigo/aceitar');
+    final http.Response response = await _client.post(
+      uri,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Erro ao aceitar convite de colaborador: ${response.statusCode} ${response.body}');
+    }
+  }
+
   Future<List<EmpresaVinculoWebModel>> listarVinculos() async {
     final String? token = await _authService.getAccessToken();
     final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/usuario/empresas-vinculos');
