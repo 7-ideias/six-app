@@ -188,17 +188,20 @@ class _ColaboradoresUsuarioListPageState
         Expanded(child: _body()),
       ],
     );
+    final Widget closeAwareContent = widget.onBack == null
+        ? content
+        : _EscCloseScope(onEscape: widget.onBack, child: content);
 
     if (widget.embedded) {
       return Material(
         color: Theme.of(context).colorScheme.surface,
-        child: content,
+        child: closeAwareContent,
       );
     }
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(child: content),
+      body: SafeArea(child: closeAwareContent),
     );
   }
 
@@ -640,9 +643,10 @@ class _CloseDialogIntent extends Intent {
 }
 
 class _EscCloseScope extends StatelessWidget {
-  const _EscCloseScope({required this.child});
+  const _EscCloseScope({required this.child, this.onEscape});
 
   final Widget child;
+  final VoidCallback? onEscape;
 
   @override
   Widget build(BuildContext context) {
@@ -654,7 +658,12 @@ class _EscCloseScope extends StatelessWidget {
         actions: <Type, Action<Intent>>{
           _CloseDialogIntent: CallbackAction<_CloseDialogIntent>(
             onInvoke: (_) {
-              Navigator.of(context).maybePop();
+              final VoidCallback? handler = onEscape;
+              if (handler != null) {
+                handler();
+              } else {
+                Navigator.of(context).maybePop();
+              }
               return null;
             },
           ),
