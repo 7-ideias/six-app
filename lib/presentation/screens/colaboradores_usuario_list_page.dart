@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
@@ -108,14 +109,16 @@ class _ColaboradoresUsuarioListPageState
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         final Size size = MediaQuery.of(dialogContext).size;
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          child: SizedBox(
-            width: size.width * 0.78,
-            height: size.height * 0.84,
-            child: const ColaboradorConviteWebBody(),
+        return _EscCloseScope(
+          child: Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            child: SizedBox(
+              width: size.width * 0.78,
+              height: size.height * 0.84,
+              child: const ColaboradorConviteWebBody(),
+            ),
           ),
         );
       },
@@ -136,9 +139,11 @@ class _ColaboradoresUsuarioListPageState
         context: context,
         barrierDismissible: true,
         builder: (BuildContext dialogContext) {
-          return _EditarColaboradorDialog(
-            resumo: resumo,
-            detalhe: detalhe,
+          return _EscCloseScope(
+            child: _EditarColaboradorDialog(
+              resumo: resumo,
+              detalhe: detalhe,
+            ),
           );
         },
       );
@@ -340,13 +345,7 @@ class _ColaboradoresUsuarioListPageState
       padding: const EdgeInsets.only(bottom: 12),
       child: SixWebEntry(
         order: 6,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
+        child: _HoverableColaboradorCard(
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool compact = constraints.maxWidth < 760;
@@ -561,17 +560,20 @@ class _ColaboradoresUsuarioListPageState
   void _showDetails(ColaboradorUsuarioResumo colaborador) {
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(colaborador.nome.isEmpty ? 'Colaborador' : colaborador.nome),
-        content: Text(
-          'Nome de guerra: ${colaborador.nomeDeGuerra.isEmpty ? '-' : colaborador.nomeDeGuerra}\n'
-          'Celular: ${colaborador.celularDeAcesso.isEmpty ? '-' : colaborador.celularDeAcesso}\n'
-          'E-mail: ${colaborador.email.isEmpty ? '-' : colaborador.email}\n'
-          'Identificador: ${colaborador.idUnicoPessoal}',
+      barrierDismissible: true,
+      builder: (_) => _EscCloseScope(
+        child: AlertDialog(
+          title: Text(colaborador.nome.isEmpty ? 'Colaborador' : colaborador.nome),
+          content: Text(
+            'Nome de guerra: ${colaborador.nomeDeGuerra.isEmpty ? '-' : colaborador.nomeDeGuerra}\n'
+            'Celular: ${colaborador.celularDeAcesso.isEmpty ? '-' : colaborador.celularDeAcesso}\n'
+            'E-mail: ${colaborador.email.isEmpty ? '-' : colaborador.email}\n'
+            'Identificador: ${colaborador.idUnicoPessoal}',
+          ),
+          actions: <Widget>[
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Fechar')),
+          ],
         ),
-        actions: <Widget>[
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Fechar')),
-        ],
       ),
     );
   }
@@ -580,6 +582,86 @@ class _ColaboradoresUsuarioListPageState
     final List<String> parts = name.trim().split(' ').where((String item) => item.isNotEmpty).toList();
     if (parts.isEmpty) return 'CO';
     return parts.length == 1 ? parts.first[0].toUpperCase() : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+}
+
+class _HoverableColaboradorCard extends StatefulWidget {
+  const _HoverableColaboradorCard({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_HoverableColaboradorCard> createState() => _HoverableColaboradorCardState();
+}
+
+class _HoverableColaboradorCardState extends State<_HoverableColaboradorCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _hovered
+              ? theme.colorScheme.primary.withOpacity(0.025)
+              : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: _hovered
+                ? theme.colorScheme.primary.withOpacity(0.30)
+                : theme.colorScheme.outlineVariant,
+          ),
+          boxShadow: _hovered
+              ? <BoxShadow>[
+                  BoxShadow(
+                    color: theme.colorScheme.shadow.withOpacity(0.10),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : const <BoxShadow>[],
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _CloseDialogIntent extends Intent {
+  const _CloseDialogIntent();
+}
+
+class _EscCloseScope extends StatelessWidget {
+  const _EscCloseScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.escape): _CloseDialogIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _CloseDialogIntent: CallbackAction<_CloseDialogIntent>(
+            onInvoke: (_) {
+              Navigator.of(context).maybePop();
+              return null;
+            },
+          ),
+        },
+        child: Focus(autofocus: true, child: child),
+      ),
+    );
   }
 }
 
