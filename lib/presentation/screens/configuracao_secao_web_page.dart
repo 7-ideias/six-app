@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/six_i18n.dart';
@@ -101,13 +102,31 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Material(
-      color: theme.colorScheme.surface,
-      child: Column(
-        children: <Widget>[
-          _buildHeader(context),
-          Expanded(child: _buildContent(context)),
-        ],
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.escape): _SairConfiguracaoSecaoIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _SairConfiguracaoSecaoIntent: CallbackAction<Intent>(
+            onInvoke: (Intent intent) {
+              _handleBack();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Material(
+            color: theme.colorScheme.surface,
+            child: Column(
+              children: <Widget>[
+                _buildHeader(context),
+                Expanded(child: _buildContent(context)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -423,4 +442,8 @@ class _RegionalizacaoConfirmacaoBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SairConfiguracaoSecaoIntent extends Intent {
+  const _SairConfiguracaoSecaoIntent();
 }
