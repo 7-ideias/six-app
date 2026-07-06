@@ -73,6 +73,20 @@ Backend:
 * Evitar animação contínua em dashboards; o movimento deve acontecer na entrada, atualização, mudança de estado ou feedback de ação.
 * Não sacrificar leitura, acessibilidade, performance ou estabilidade de layout para adicionar movimento.
 
+### Loading de mensagens do backend
+
+* Para estados onde mensagens, notificações ou eventos ainda estão sendo carregados do backend, usar o componente reutilizável `SixBackendLoading`.
+* O componente fica em `lib/presentation/components/six_backend_loading.dart`.
+* Evitar criar loading local com `CircularProgressIndicator` solto em telas de negócio.
+* Preferir:
+  * `SixBackendLoading.messages()` para carregamento padrão de mensagens/eventos;
+  * `compact: true` em cards mobile ou áreas pequenas;
+  * `animation: SixBackendLoadingAnimation.skeletonPulse` para telas executivas;
+  * `animation: SixBackendLoadingAnimation.waveDots` para cards compactos;
+  * `animation: SixBackendLoadingAnimation.progressSweep` quando a tela precisar comunicar sincronização linear.
+* Para trocar globalmente a animação padrão, alterar apenas `SixBackendLoadingDefaults.messageLoadingAnimation`.
+* O loading deve ser usado apenas enquanto o backend ainda não respondeu ou a sincronização inicial ainda está acontecendo. Depois disso, exibir estado vazio real, erro ou dados carregados.
+
 ### Gráficos animados e interativos no Web
 
 * Em dashboards web, gráficos devem parecer vivos e responsivos, nunca meramente estáticos quando houver dados carregados.
