@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/services/auth_service.dart';
 import '../../core/services/empresa_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import 'home_page_mobile_screen.dart';
 import 'login_mobile.dart';
 
@@ -41,6 +43,11 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
 
       try {
         await EmpresaService().buscarDadosDaEmpresa();
+        if (mounted) {
+          await context
+              .read<ColaboradorAutorizacoesProvider>()
+              .carregarAutorizacoesDoUsuarioLogado(force: true);
+        }
         await FirebasePushNotificationService().syncTokenForLoggedUser();
       } catch (e) {
         debugPrint('[AuthGateMobile] Erro ao restaurar dados da empresa: $e');
