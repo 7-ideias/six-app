@@ -12,6 +12,7 @@ import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
@@ -42,6 +43,12 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   Future<void> _afterLoginBootstrap() async {
     final idiomaDePreferencia =
         await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+
+    if (mounted) {
+      await context
+          .read<ColaboradorAutorizacoesProvider>()
+          .carregarAutorizacoesDoUsuarioLogado(force: true);
+    }
 
     try {
       final regionalizacaoService = RegionalizacaoService(
@@ -286,19 +293,17 @@ class _SocialButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: SixAuthTokens.heightButtonGoogle,
+      height: SixAuthTokens.socialButtonHeight,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: SixAuthTokens.colorButtonGoogleBg,
+          backgroundColor: SixAuthTokens.colorInputBackground,
           foregroundColor: SixAuthTokens.colorTextPrimary,
-          elevation: 0,
-          side: const BorderSide(color: SixAuthTokens.colorButtonGoogleBorder),
+          side: const BorderSide(color: SixAuthTokens.colorInputBorder),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              SixAuthTokens.radiusButtonGoogle,
-            ),
+            borderRadius: BorderRadius.circular(SixAuthTokens.borderRadiusInput),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -307,12 +312,15 @@ class _SocialButton extends StatelessWidget {
               leading!,
               const SizedBox(width: 10),
             ],
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: SixAuthTokens.fontSizeBody,
-                fontWeight: FontWeight.w600,
-                color: SixAuthTokens.colorTextPrimary,
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: SixAuthTokens.fontWeightSocialButton,
+                  fontSize: SixAuthTokens.fontSizeSocialButton,
+                ),
               ),
             ),
           ],
@@ -331,9 +339,8 @@ class _GoogleGlyph extends StatelessWidget {
       'G',
       style: TextStyle(
         fontSize: 20,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w800,
         color: Color(0xFF4285F4),
-        height: 1,
       ),
     );
   }
