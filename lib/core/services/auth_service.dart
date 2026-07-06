@@ -231,6 +231,13 @@ class AuthService {
 
   Future<String?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
+
+    final String? token = prefs.getString(_accessTokenKey);
+    final String? idUnicoDoUsuario = _extrairSubjectDoJwt(token);
+    if (idUnicoDoUsuario != null && idUnicoDoUsuario.trim().isNotEmpty) {
+      return idUnicoDoUsuario;
+    }
+
     final String? raw = prefs.getString(_userDataKey);
     if (raw == null || raw.trim().isEmpty) {
       return null;
@@ -241,7 +248,37 @@ class AuthService {
       if (decoded is! Map<String, dynamic>) {
         return null;
       }
+
+      final String keycloakId = decoded['keycloakId']?.toString().trim() ?? '';
+      if (keycloakId.isNotEmpty) {
+        return keycloakId;
+      }
+
       return decoded['id']?.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extrairSubjectDoJwt(String? token) {
+    if (token == null || token.trim().isEmpty) {
+      return null;
+    }
+
+    final List<String> parts = token.split('.');
+    if (parts.length < 2) {
+      return null;
+    }
+
+    try {
+      final String normalized = base64Url.normalize(parts[1]);
+      final String payload = utf8.decode(base64Url.decode(normalized));
+      final dynamic decoded = jsonDecode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+      final String subject = decoded['sub']?.toString().trim() ?? '';
+      return subject.isEmpty ? null : subject;
     } catch (_) {
       return null;
     }
