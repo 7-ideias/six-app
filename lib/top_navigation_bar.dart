@@ -6,7 +6,6 @@ import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart'
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracao_secao_web_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
-import 'package:sixpos/presentation/screens/gestor_cockpit_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/providers/theme_provider.dart';
@@ -76,6 +75,13 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     _mostrarRecursoEmPreparacao(context, value);
   }
 
+  void _restaurarTelaInicial(BuildContext context) {
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      '/app',
+      (Route<dynamic> route) => false,
+    );
+  }
+
   void _mostrarRecursoEmPreparacao(BuildContext context, String value) {
     final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     messenger?.hideCurrentSnackBar();
@@ -113,21 +119,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         );
       },
-    );
-  }
-
-  Future<void> _abrirCockpitGestor(BuildContext context) async {
-    await _abrirDialogTela(
-      context: context,
-      widthFactor: 0.96,
-      heightFactor: 0.92,
-      child: Builder(
-        builder: (BuildContext dialogContext) {
-          return GestorCockpitWebPage(
-            onBack: () => Navigator.of(dialogContext).pop(),
-          );
-        },
-      ),
     );
   }
 
@@ -358,7 +349,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       TopNavItemData(
         title: 'Início',
         subItems: const <String>[],
-        onSelect: (_) => _abrirCockpitGestor(context),
+        onSelect: (_) => _restaurarTelaInicial(context),
       ),
       TopNavItemData(
         title: 'Atendimento',
@@ -373,11 +364,13 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Assistências técnicas',
         ],
         onSelect: (String value) {
-          if (value == 'Atendimento técnico' || value == 'Nova assistência técnica') {
+          if (value == 'Atendimento técnico' ||
+              value == 'Nova assistência técnica') {
             _abrirAtendimentoTecnico(context);
             return;
           }
-          if (value == 'Atendimentos criados' || value == 'Assistências técnicas') {
+          if (value == 'Atendimentos criados' ||
+              value == 'Assistências técnicas') {
             _abrirAtendimentosCriados(context);
             return;
           }
@@ -826,7 +819,10 @@ class _TopNavChipState extends State<_TopNavChip> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 8,
+          ),
           decoration: BoxDecoration(
             color: active
                 ? widget.colorScheme.onPrimary.withOpacity(0.12)
