@@ -129,8 +129,31 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     }
   }
 
+  String? _redirectAfterLogin() {
+    final String routeName = ModalRoute.of(context)?.settings.name ?? Uri.base.toString();
+    final Uri uri = Uri.parse(routeName);
+    final String redirect = uri.queryParameters['redirect'] ?? '';
+    if (redirect.trim().isEmpty) {
+      return null;
+    }
+
+    final String decoded = Uri.decodeComponent(redirect).trim();
+    final Uri redirectUri = Uri.parse(decoded);
+    final String safePath = redirectUri.hasScheme || redirectUri.hasAuthority
+        ? redirectUri.path
+        : decoded;
+
+    if (!safePath.startsWith('/')) {
+      return null;
+    }
+    return safePath;
+  }
+
   void _navigateToHome() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/app', (route) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      _redirectAfterLogin() ?? '/app',
+      (route) => false,
+    );
   }
 
   void _forgotPassword() {
@@ -239,17 +262,17 @@ class _LoginPageWebState extends State<LoginPageWeb> {
               behavior: HitTestBehavior.opaque,
               child: RichText(
                 text: TextSpan(
+                  text: _l10n.authNoAccountPrefix,
                   style: TextStyle(
-                    fontSize: 14,
                     color: WebAuthShell.labelGrey(),
+                    fontSize: 14,
                   ),
                   children: [
-                    TextSpan(text: _l10n.authNoAccount),
                     TextSpan(
-                      text: _l10n.authCreateAccountLink,
+                      text: _l10n.authCreateAccount,
                       style: TextStyle(
                         color: primary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
@@ -257,8 +280,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
               ),
             ),
           ),
-            ],
-          ),
+        ],
+      ),
         );
       },
     );
