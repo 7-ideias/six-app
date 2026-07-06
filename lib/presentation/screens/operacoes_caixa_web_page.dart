@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/di/caixa_module.dart';
@@ -189,9 +190,35 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
+  void _sairDaTela() {
+    if (widget.onBack != null) {
+      widget.onBack!.call();
+      return;
+    }
+    Navigator.of(context).maybePop();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final content = _buildContent(context);
+    final content = Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.escape): _SairDaTelaIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _SairDaTelaIntent: CallbackAction<Intent>(
+            onInvoke: (Intent intent) {
+              _sairDaTela();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: _buildContent(context),
+        ),
+      ),
+    );
     if (widget.embedded) return content;
 
     return Scaffold(
@@ -2386,6 +2413,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return false;
     }
   }
+}
+
+class _SairDaTelaIntent extends Intent {
+  const _SairDaTelaIntent();
 }
 
 enum OperacaoCaixaTipo {
