@@ -19,11 +19,21 @@ class ColaboradorConvitePublicoWebPage extends StatefulWidget {
 }
 
 class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePublicoWebPage> {
+  final AuthService _authService = AuthService();
   final ColaboradorConviteWebService _service = ColaboradorConviteWebService();
   ColaboradorConvitePublicoResponse? _convite;
   bool _loading = true;
   bool _aceitando = false;
   String? _erro;
+  String? _emailSessao;
+
+  bool get _temSessao => _emailSessao != null && _emailSessao!.trim().isNotEmpty;
+
+  bool get _sessaoEhDoEmailConvidado {
+    final String emailConvite = _convite?.emailConvidado.trim().toLowerCase() ?? '';
+    final String emailSessao = _emailSessao?.trim().toLowerCase() ?? '';
+    return emailConvite.isNotEmpty && emailSessao.isNotEmpty && emailConvite == emailSessao;
+  }
 
   @override
   void initState() {
@@ -39,9 +49,11 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
 
     try {
       final ColaboradorConvitePublicoResponse convite = await _service.validarConvitePublico(widget.codigo);
+      final String? emailSessao = await _authService.getUserEmail();
       if (!mounted) return;
       setState(() {
         _convite = convite;
+        _emailSessao = emailSessao;
         _loading = false;
       });
     } catch (error) {
@@ -54,6 +66,25 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
   }
 
   Future<void> _aceitar() async {
+    final ColaboradorConvitePublicoResponse? convite = _convite;
+    if (convite == null) {
+      return;
+    }
+
+    if (!_temSessao) {
+      setState(() {
+        _erro = 'Faça login com o e-mail ${convite.emailConvidado} para aceitar este convite.';
+      });
+      return;
+    }
+
+    if (!_sessaoEhDoEmailConvidado) {
+      setState(() {
+        _erro = 'Este convite foi enviado para ${convite.emailConvidado}, mas a sessão atual é ${_emailSessao ?? '-'}. Entre com o e-mail convidado para aceitar.';
+      });
+      return;
+    }
+
     setState(() {
       _aceitando = true;
       _erro = null;
@@ -73,13 +104,28 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
       if (!mounted) return;
       setState(() {
         _aceitando = false;
-        _erro = error.toString().replaceAll('Exception: ', '');
+        _erro = _mensagemAmigavel(error);
       });
     }
   }
 
+  String _mensagemAmigavel(Object error) {
+    final String message = error.toString().replaceAll('Exception: ', '');
+    if (message.contains('CONVITE_EMAIL_DIVERGENTE')) {
+      final String email = _convite?.emailConvidado ?? 'o e-mail convidado';
+      return 'Este convite só pode ser aceito por $email. Entre com esse e-mail para continuar.';
+    }
+    if (message.contains('CONVITE_EXPIRADO')) {
+      return 'Este convite expirou. Solicite um novo convite ao administrador.';
+    }
+    if (message.contains('CONVITE_JA_UTILIZADO')) {
+      return 'Este convite já foi utilizado.';
+    }
+    return message;
+  }
+
   Future<void> _login() async {
-    await AuthService().logout();
+    await _authService.logout();
     if (!mounted) return;
     final String redirect = Uri.encodeComponent(widget.initialUri.toString());
     Navigator.of(context).pushNamed('/login?redirect=$redirect');
@@ -172,6 +218,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
           const SizedBox(height: 24),
           _info(theme, Icons.storefront_outlined, 'Comércio', convite?.nomeFantasia ?? '-'),
           _info(theme, Icons.mail_outline, 'E-mail convidado', convite?.emailConvidado ?? '-'),
+          _info(theme, Icons.account_circle_outlined, 'Sessão atual', _emailSessao ?? 'Nenhuma sessão ativa'),
           _info(theme, Icons.verified_user_outlined, 'Status', convite?.status ?? '-'),
           _info(theme, Icons.schedule_outlined, 'Validade', _formatDate(convite?.expiraEm)),
           if (_erro != null) ...<Widget>[
@@ -201,7 +248,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
               OutlinedButton.icon(
                 onPressed: _login,
                 icon: const Icon(Icons.login_rounded),
-                label: const Text('Entrar com outro e-mail'),
+                label: Text(_temSessao ? 'Entrar com o e-mail convidado' : 'Fazer login'),
               ),
             ],
           ),
