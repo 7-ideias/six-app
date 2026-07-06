@@ -18,9 +18,8 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     Future<String?> Function()? accessTokenProvider,
     Future<String?> Function()? empresaIdProvider,
   }) : _httpClient = httpClient ?? http.Client(),
-       _accessTokenProvider =
-           accessTokenProvider ?? AuthService().getAccessToken,
-       _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
+        _accessTokenProvider = accessTokenProvider ?? AuthService().getAccessToken,
+        _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
 
   final http.Client _httpClient;
   final Future<String?> Function() _accessTokenProvider;
@@ -39,13 +38,15 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
 
   @override
   Future<List<ColaboradorUsuarioResumo>> listarColaboradores() async {
-    final Uri uri = Uri.parse(
-      '${AppConfig.baseUrl}/private/api/colaborador/listar',
-    );
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/listar');
     final http.Response response = await _httpClient.get(
       uri,
       headers: await _getHeaders(),
     );
+
+    if (response.statusCode == 204) {
+      return const <ColaboradorUsuarioResumo>[];
+    }
 
     if (response.statusCode != 200) {
       throw ColaboradorUsuarioApiException(
@@ -78,12 +79,8 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
   }
 
   @override
-  Future<ColaboradorUsuarioDetalhe> buscarColaborador(
-    String idUnicoDoUsuario,
-  ) async {
-    final Uri uri = Uri.parse(
-      '${AppConfig.baseUrl}/private/api/colaborador/buscar',
-    ).replace(
+  Future<ColaboradorUsuarioDetalhe> buscarColaborador(String idUnicoDoUsuario) async {
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/buscar').replace(
       queryParameters: <String, String>{'idUnicoDoUsuario': idUnicoDoUsuario},
     );
 
@@ -112,9 +109,7 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
 
   @override
   Future<void> editarColaborador(Map<String, dynamic> payload) async {
-    final Uri uri = Uri.parse(
-      '${AppConfig.baseUrl}/private/api/colaborador/editar',
-    );
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/editar');
 
     final http.Response response = await _httpClient.post(
       uri,
