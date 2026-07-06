@@ -19,6 +19,7 @@ import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_we
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
@@ -54,6 +55,7 @@ void main() async {
               ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
+        ChangeNotifierProvider(create: (_) => ColaboradorAutorizacoesProvider()),
         ChangeNotifierProvider(
           lazy: false,
           create:
