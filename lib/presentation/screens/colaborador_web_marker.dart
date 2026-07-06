@@ -1,0 +1,3 @@
+class ColaboradorWebMarker {
+  const ColaboradorWebMarker();
+}
