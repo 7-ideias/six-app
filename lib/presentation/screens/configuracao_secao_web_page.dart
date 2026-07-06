@@ -186,7 +186,9 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
   Widget _buildRegionalizacaoContent(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.all(24),
-      child: RegionalizacaoConfiguracaoContent(embedded: true),
+      child: _RegionalizacaoConfirmacaoScope(
+        child: RegionalizacaoConfiguracaoContent(embedded: true),
+      ),
     );
   }
 
@@ -229,6 +231,96 @@ class ConfiguracaoSecaoWebPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _RegionalizacaoConfirmacaoScope extends StatefulWidget {
+  const _RegionalizacaoConfirmacaoScope({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_RegionalizacaoConfirmacaoScope> createState() =>
+      _RegionalizacaoConfirmacaoScopeState();
+}
+
+class _RegionalizacaoConfirmacaoScopeState
+    extends State<_RegionalizacaoConfirmacaoScope> {
+  bool _mostrarAvisoDeConfirmacao = false;
+
+  void _registrarPossivelAlteracao() {
+    if (_mostrarAvisoDeConfirmacao || !mounted) return;
+    setState(() => _mostrarAvisoDeConfirmacao = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerUp: (_) => _registrarPossivelAlteracao(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: _mostrarAvisoDeConfirmacao
+                ? const _RegionalizacaoConfirmacaoBanner()
+                : const SizedBox.shrink(),
+          ),
+          if (_mostrarAvisoDeConfirmacao) const SizedBox(height: 12),
+          Expanded(child: widget.child),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegionalizacaoConfirmacaoBanner extends StatelessWidget {
+  const _RegionalizacaoConfirmacaoBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color warningColor = Colors.orange.shade800;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Icons.info_outline_rounded, color: warningColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Alteração pendente de confirmação',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: warningColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Após alterar qualquer configuração de regionalização, clique em Salvar alterações. Se você sair, fechar ou recarregar antes de salvar, a alteração não será aplicada.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.orange.shade900,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
