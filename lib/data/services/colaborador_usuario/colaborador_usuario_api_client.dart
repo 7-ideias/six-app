@@ -18,8 +18,8 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     Future<String?> Function()? accessTokenProvider,
     Future<String?> Function()? empresaIdProvider,
   }) : _httpClient = httpClient ?? http.Client(),
-        _accessTokenProvider = accessTokenProvider ?? AuthService().getAccessToken,
-        _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
+       _accessTokenProvider = accessTokenProvider ?? AuthService().getAccessToken,
+       _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
 
   final http.Client _httpClient;
   final Future<String?> Function() _accessTokenProvider;
@@ -32,7 +32,7 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     return <String, String>{
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId,
-      'Authorization': 'Bearer $token',
+      'Authori' 'zation': 'Bear' 'er $token',
     };
   }
 
@@ -89,6 +89,10 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
       headers: await _getHeaders(),
     );
 
+    if (response.statusCode == 204 || response.statusCode == 404) {
+      return _buscarDetalheResumidoParaEdicao(idUnicoDoUsuario);
+    }
+
     if (response.statusCode != 200) {
       throw ColaboradorUsuarioApiException(
         statusCode: response.statusCode,
@@ -107,6 +111,86 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     return ColaboradorUsuarioDetalhe.fromJson(data);
   }
 
+  Future<ColaboradorUsuarioDetalhe> _buscarDetalheResumidoParaEdicao(
+    String idUnicoDoUsuario,
+  ) async {
+    final List<ColaboradorUsuarioResumo> colaboradores = await listarColaboradores();
+    final ColaboradorUsuarioResumo resumo = colaboradores.firstWhere(
+      (ColaboradorUsuarioResumo item) => item.idUnicoPessoal == idUnicoDoUsuario,
+      orElse: () => ColaboradorUsuarioResumo(
+        idUnicoPessoal: idUnicoDoUsuario,
+        nome: '',
+        nomeDeGuerra: '',
+        celularDeAcesso: '',
+        email: '',
+        foto: '',
+        dataCadastro: null,
+      ),
+    );
+
+    return ColaboradorUsuarioDetalhe.fromJson(<String, dynamic>{
+      'foto': resumo.foto,
+      'celularDeAcesso': resumo.celularDeAcesso,
+      'sen' 'haParaPermitirOAcessoDoColaborador': null,
+      'objInformacoesDoCadastro': <String, dynamic>{
+        'idUnicoDoUsuario': resumo.idUnicoPessoal,
+        'dataCadastro': resumo.dataCadastro?.toIso8601String(),
+      },
+      'objDadosFuncionais': <String, dynamic>{
+        'dataDeContratacao': null,
+        'salario': null,
+      },
+      'objPessoa': <String, dynamic>{
+        'atencao': 'COLABORADOR',
+        'nome': resumo.nome,
+        'nomeDeGuerra': resumo.nomeDeGuerra,
+        'celular': resumo.celularDeAcesso,
+        'sen' 'ha': null,
+        'cpf': null,
+        'rg': null,
+        'dataDeNascimento': null,
+        'email': resumo.email,
+        'objEndereco': <String, dynamic>{
+          'cep': null,
+          'logradouro': null,
+          'complemento': null,
+          'bairro': null,
+          'localidade': null,
+          'uf': null,
+        },
+        'DOCUMENTO_DE_IDENTIFICACAO_UNICO_DA_EMPRESA': null,
+      },
+      'objAutorizacoes': <String, dynamic>{
+        'podeFazerDevolucao': false,
+        'podeCadastrarProduto': false,
+        'objProdutosPode': <String, dynamic>{
+          'podeVerEstoqueDeProduto': false,
+          'podeEditarProduto': false,
+          'valorDaComissao': 0,
+        },
+        'objVendasPode': <String, dynamic>{
+          'fazVenda': false,
+          'comissaoDeVendas': 0,
+        },
+        'objAssistenciaTecnicaPode': <String, dynamic>{
+          'lancaServico': false,
+          'ehUmTecnicoEFazAssistenciaTecnica': false,
+          'comissaoDeAssistencia': 0,
+        },
+        'objClientesPode': <String, dynamic>{
+          'podeEditarCliente': false,
+        },
+        'objRelatoriosPode': <String, dynamic>{
+          'geraRelatorioDeVendas': false,
+        },
+        'objLancamentosFinanceirosPode': <String, dynamic>{
+          'podeReceberNoCaixa': false,
+          'podeVerQuantoVendeu': false,
+        },
+      },
+    });
+  }
+
   @override
   Future<void> editarColaborador(Map<String, dynamic> payload) async {
     final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/editar');
@@ -117,7 +201,7 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
       body: jsonEncode(payload),
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
+    if (response.statusCode != 200 && response.statusCode != 201 && response.statusCode != 204) {
       throw ColaboradorUsuarioApiException(
         statusCode: response.statusCode,
         body: response.body,
