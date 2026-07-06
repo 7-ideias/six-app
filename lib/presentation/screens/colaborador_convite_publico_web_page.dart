@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/services/auth_service.dart';
 import '../../core/services/colaborador_convite_web_service.dart';
 import '../../data/models/colaborador_convite_model.dart';
 
@@ -19,26 +18,24 @@ class ColaboradorConvitePublicoWebPage extends StatefulWidget {
 }
 
 class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePublicoWebPage> {
-  final AuthService _authService = AuthService();
   final ColaboradorConviteWebService _service = ColaboradorConviteWebService();
+  final TextEditingController _emailController = TextEditingController();
   ColaboradorConvitePublicoResponse? _convite;
   bool _loading = true;
-  bool _aceitando = false;
+  bool _confirmando = false;
+  bool _emailConfirmado = false;
   String? _erro;
-  String? _emailSessao;
-
-  bool get _temSessao => _emailSessao != null && _emailSessao!.trim().isNotEmpty;
-
-  bool get _sessaoEhDoEmailConvidado {
-    final String emailConvite = _convite?.emailConvidado.trim().toLowerCase() ?? '';
-    final String emailSessao = _emailSessao?.trim().toLowerCase() ?? '';
-    return emailConvite.isNotEmpty && emailSessao.isNotEmpty && emailConvite == emailSessao;
-  }
 
   @override
   void initState() {
     super.initState();
     _validar();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
   }
 
   Future<void> _validar() async {
@@ -49,61 +46,50 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
 
     try {
       final ColaboradorConvitePublicoResponse convite = await _service.validarConvitePublico(widget.codigo);
-      final String? emailSessao = await _authService.getUserEmail();
       if (!mounted) return;
       setState(() {
         _convite = convite;
-        _emailSessao = emailSessao;
         _loading = false;
+        _emailConfirmado = convite.status.toUpperCase() == 'EMAIL_CONFIRMADO';
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _erro = error.toString().replaceAll('Exception: ', '');
+        _erro = _mensagemAmigavel(error);
       });
     }
   }
 
-  Future<void> _aceitar() async {
-    final ColaboradorConvitePublicoResponse? convite = _convite;
-    if (convite == null) {
-      return;
-    }
-
-    if (!_temSessao) {
-      setState(() {
-        _erro = 'Faça login com o e-mail ${convite.emailConvidado} para aceitar este convite.';
-      });
-      return;
-    }
-
-    if (!_sessaoEhDoEmailConvidado) {
-      setState(() {
-        _erro = 'Este convite foi enviado para ${convite.emailConvidado}, mas a sessão atual é ${_emailSessao ?? '-'}. Entre com o e-mail convidado para aceitar.';
-      });
+  Future<void> _confirmarEmail() async {
+    final String email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() => _erro = 'Digite o e-mail que recebeu este convite.');
       return;
     }
 
     setState(() {
-      _aceitando = true;
+      _confirmando = true;
       _erro = null;
     });
 
     try {
-      await _service.aceitarConvite(widget.codigo);
+      await _service.confirmarEmailConvite(widget.codigo, email);
       if (!mounted) return;
+      setState(() {
+        _confirmando = false;
+        _emailConfirmado = true;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Convite aceito com sucesso.'),
+          content: Text('E-mail confirmado com sucesso.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.of(context).pushNamedAndRemoveUntil('/app', (Route<dynamic> route) => false);
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _aceitando = false;
+        _confirmando = false;
         _erro = _mensagemAmigavel(error);
       });
     }
@@ -112,8 +98,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
   String _mensagemAmigavel(Object error) {
     final String message = error.toString().replaceAll('Exception: ', '');
     if (message.contains('CONVITE_EMAIL_DIVERGENTE')) {
-      final String email = _convite?.emailConvidado ?? 'o e-mail convidado';
-      return 'Este convite só pode ser aceito por $email. Entre com esse e-mail para continuar.';
+      return 'O e-mail digitado não confere com o e-mail que recebeu este convite.';
     }
     if (message.contains('CONVITE_EXPIRADO')) {
       return 'Este convite expirou. Solicite um novo convite ao administrador.';
@@ -124,11 +109,8 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
     return message;
   }
 
-  Future<void> _login() async {
-    await _authService.logout();
-    if (!mounted) return;
-    final String redirect = Uri.encodeComponent(widget.initialUri.toString());
-    Navigator.of(context).pushNamed('/login?redirect=$redirect');
+  void _irParaLogin() {
+    Navigator.of(context).pushNamed('/login');
   }
 
   @override
@@ -209,7 +191,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
                   children: <Widget>[
                     Text('Convite de colaborador', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
                     const SizedBox(height: 4),
-                    Text('Você recebeu um convite para acessar um comércio no Six.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                    Text('Confirme o e-mail que recebeu este link para continuar.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -217,10 +199,10 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
           ),
           const SizedBox(height: 24),
           _info(theme, Icons.storefront_outlined, 'Comércio', convite?.nomeFantasia ?? '-'),
-          _info(theme, Icons.mail_outline, 'E-mail convidado', convite?.emailConvidado ?? '-'),
-          _info(theme, Icons.account_circle_outlined, 'Sessão atual', _emailSessao ?? 'Nenhuma sessão ativa'),
-          _info(theme, Icons.verified_user_outlined, 'Status', convite?.status ?? '-'),
+          _info(theme, Icons.verified_user_outlined, 'Status', _emailConfirmado ? 'E-mail confirmado' : convite?.status ?? '-'),
           _info(theme, Icons.schedule_outlined, 'Validade', _formatDate(convite?.expiraEm)),
+          const SizedBox(height: 18),
+          if (_emailConfirmado) _successState(theme) else _emailConfirmationForm(theme),
           if (_erro != null) ...<Widget>[
             const SizedBox(height: 16),
             Container(
@@ -233,24 +215,74 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
               child: Text(_erro!),
             ),
           ],
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+        ],
+      ),
+    );
+  }
+
+  Widget _emailConfirmationForm(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        TextField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _confirmarEmail(),
+          decoration: InputDecoration(
+            labelText: 'Digite o e-mail que recebeu o convite',
+            hintText: 'exemplo@email.com',
+            prefixIcon: const Icon(Icons.mail_outline),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+            filled: true,
+          ),
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: _confirmando ? null : _confirmarEmail,
+          icon: _confirmando
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.check_circle_outline),
+          label: Text(_confirmando ? 'Confirmando...' : 'Confirmar e-mail'),
+        ),
+      ],
+    );
+  }
+
+  Widget _successState(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.green.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
             children: <Widget>[
-              FilledButton.icon(
-                onPressed: _aceitando ? null : _aceitar,
-                icon: _aceitando
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.check_circle_outline),
-                label: Text(_aceitando ? 'Aceitando...' : 'Aceitar convite'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _login,
-                icon: const Icon(Icons.login_rounded),
-                label: Text(_temSessao ? 'Entrar com o e-mail convidado' : 'Fazer login'),
+              Icon(Icons.verified_outlined, color: Colors.green.shade700),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'E-mail confirmado',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'O convite foi confirmado para testes. A ativação completa do acesso com login e senha poderá ser finalizada em uma próxima etapa do fluxo.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: _irParaLogin,
+            icon: const Icon(Icons.login_rounded),
+            label: const Text('Ir para o login'),
           ),
         ],
       ),
