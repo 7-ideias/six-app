@@ -442,41 +442,41 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                 barGroups: <BarChartGroupData>[
                   BarChartGroupData(
                     x: 0,
-                    barRods: const <BarChartRodData>[
+                    barRods: <BarChartRodData>[
                       BarChartRodData(
                         toY: 198,
                         width: 20,
-                        color: Color(0xFF0EA5E9),
+                        color: const Color(0xFF0EA5E9),
                       ),
                     ],
                   ),
                   BarChartGroupData(
                     x: 1,
-                    barRods: const <BarChartRodData>[
+                    barRods: <BarChartRodData>[
                       BarChartRodData(
                         toY: 172,
                         width: 20,
-                        color: Color(0xFF14B8A6),
+                        color: const Color(0xFF14B8A6),
                       ),
                     ],
                   ),
                   BarChartGroupData(
                     x: 2,
-                    barRods: const <BarChartRodData>[
+                    barRods: <BarChartRodData>[
                       BarChartRodData(
                         toY: 146,
                         width: 20,
-                        color: Color(0xFF6366F1),
+                        color: const Color(0xFF6366F1),
                       ),
                     ],
                   ),
                   BarChartGroupData(
                     x: 3,
-                    barRods: const <BarChartRodData>[
+                    barRods: <BarChartRodData>[
                       BarChartRodData(
                         toY: 119,
                         width: 20,
-                        color: Color(0xFFF59E0B),
+                        color: const Color(0xFFF59E0B),
                       ),
                     ],
                   ),
@@ -513,13 +513,13 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
               PieChartData(
                 centerSpaceRadius: 44,
                 sectionsSpace: 3,
-                sections: const <PieChartSectionData>[
+                sections: <PieChartSectionData>[
                   PieChartSectionData(
                     value: 58,
                     title: '58%',
                     radius: 62,
-                    color: Color(0xFF22C55E),
-                    titleStyle: TextStyle(
+                    color: const Color(0xFF22C55E),
+                    titleStyle: const TextStyle(
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                     ),
@@ -528,8 +528,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     value: 27,
                     title: '27%',
                     radius: 62,
-                    color: Color(0xFFF59E0B),
-                    titleStyle: TextStyle(
+                    color: const Color(0xFFF59E0B),
+                    titleStyle: const TextStyle(
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                     ),
@@ -538,8 +538,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     value: 15,
                     title: '15%',
                     radius: 62,
-                    color: Color(0xFFEF4444),
-                    titleStyle: TextStyle(
+                    color: const Color(0xFFEF4444),
+                    titleStyle: const TextStyle(
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                     ),
