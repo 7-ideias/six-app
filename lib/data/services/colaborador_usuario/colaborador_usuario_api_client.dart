@@ -127,6 +127,8 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
         dataCadastro: null,
       ),
     );
+    final Map<String, dynamic> autorizacoes =
+        await _buscarAutorizacoesParaEdicao(idUnicoDoUsuario);
 
     return ColaboradorUsuarioDetalhe.fromJson(<String, dynamic>{
       'foto': resumo.foto,
@@ -160,35 +162,62 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
         },
         'DOCUMENTO_DE_IDENTIFICACAO_UNICO_DA_EMPRESA': null,
       },
-      'objAutorizacoes': <String, dynamic>{
-        'podeFazerDevolucao': false,
-        'podeCadastrarProduto': false,
-        'objProdutosPode': <String, dynamic>{
-          'podeVerEstoqueDeProduto': false,
-          'podeEditarProduto': false,
-          'valorDaComissao': 0,
-        },
-        'objVendasPode': <String, dynamic>{
-          'fazVenda': false,
-          'comissaoDeVendas': 0,
-        },
-        'objAssistenciaTecnicaPode': <String, dynamic>{
-          'lancaServico': false,
-          'ehUmTecnicoEFazAssistenciaTecnica': false,
-          'comissaoDeAssistencia': 0,
-        },
-        'objClientesPode': <String, dynamic>{
-          'podeEditarCliente': false,
-        },
-        'objRelatoriosPode': <String, dynamic>{
-          'geraRelatorioDeVendas': false,
-        },
-        'objLancamentosFinanceirosPode': <String, dynamic>{
-          'podeReceberNoCaixa': false,
-          'podeVerQuantoVendeu': false,
-        },
-      },
+      'objAutorizacoes': autorizacoes,
     });
+  }
+
+  Future<Map<String, dynamic>> _buscarAutorizacoesParaEdicao(
+    String idUnicoDoUsuario,
+  ) async {
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/permissoes').replace(
+      queryParameters: <String, String>{'idUnicoDoUsuario': idUnicoDoUsuario},
+    );
+
+    final http.Response response = await _httpClient.get(
+      uri,
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode != 200 || response.body.trim().isEmpty) {
+      return _autorizacoesVazias();
+    }
+
+    final dynamic data = jsonDecode(response.body);
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    return _autorizacoesVazias();
+  }
+
+  Map<String, dynamic> _autorizacoesVazias() {
+    return <String, dynamic>{
+      'podeFazerDevolucao': false,
+      'podeCadastrarProduto': false,
+      'objProdutosPode': <String, dynamic>{
+        'podeVerEstoqueDeProduto': false,
+        'podeEditarProduto': false,
+        'valorDaComissao': 0,
+      },
+      'objVendasPode': <String, dynamic>{
+        'fazVenda': false,
+        'comissaoDeVendas': 0,
+      },
+      'objAssistenciaTecnicaPode': <String, dynamic>{
+        'lancaServico': false,
+        'ehUmTecnicoEFazAssistenciaTecnica': false,
+        'comissaoDeAssistencia': 0,
+      },
+      'objClientesPode': <String, dynamic>{
+        'podeEditarCliente': false,
+      },
+      'objRelatoriosPode': <String, dynamic>{
+        'geraRelatorioDeVendas': false,
+      },
+      'objLancamentosFinanceirosPode': <String, dynamic>{
+        'podeReceberNoCaixa': false,
+        'podeVerQuantoVendeu': false,
+      },
+    };
   }
 
   @override
