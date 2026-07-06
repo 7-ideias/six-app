@@ -5,13 +5,12 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final theme = Theme.of(context);
           final isCompact = constraints.maxWidth < 920;
           final horizontalPadding = isCompact ? 16.0 : 28.0;
 
-          return Container(
-            color: Theme.of(
-              context,
-            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
+          return ColoredBox(
+            color: theme.colorScheme.surfaceContainerLowest,
             child: Column(
               children: <Widget>[
                 _buildCockpitHeader(context, isCompact),
@@ -26,32 +25,32 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        _buildCockpitResumoKpis(),
+                        _buildCockpitResumoKpis(context),
                         const SizedBox(height: 14),
-                        _buildCockpitFinanceiroChart(),
+                        _buildCockpitFinanceiroChart(context),
                         const SizedBox(height: 14),
                         isCompact
                             ? Column(
-                              children: <Widget>[
-                                _buildCockpitVendasCanalChart(),
-                                const SizedBox(height: 14),
-                                _buildCockpitAtendimentoChart(),
-                              ],
-                            )
+                                children: <Widget>[
+                                  _buildCockpitVendasCanalChart(context),
+                                  const SizedBox(height: 14),
+                                  _buildCockpitAtendimentoChart(context),
+                                ],
+                              )
                             : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Expanded(
-                                  child: _buildCockpitVendasCanalChart(),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: _buildCockpitAtendimentoChart(),
-                                ),
-                              ],
-                            ),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Expanded(
+                                    child: _buildCockpitVendasCanalChart(context),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: _buildCockpitAtendimentoChart(context),
+                                  ),
+                                ],
+                              ),
                         const SizedBox(height: 14),
-                        _buildCockpitOpcoesExemplo(),
+                        _buildCockpitOpcoesExemplo(context),
                       ],
                     ),
                   ),
@@ -64,79 +63,161 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     );
   }
 
-  Widget _buildCockpitResumoKpis() {
-    final List<Map<String, String>> kpis = <Map<String, String>>[
-      <String, String>{
+  Widget _buildCockpitResumoKpis(BuildContext context) {
+    final List<Map<String, Object>> kpis = <Map<String, Object>>[
+      <String, Object>{
         'titulo': 'Receita líquida',
         'valor': 'R\$ 486.300',
         'delta': '+8,6% vs mês anterior',
+        'icone': Icons.payments_outlined,
+        'destaque': true,
       },
-      <String, String>{
+      <String, Object>{
         'titulo': 'Margem operacional',
         'valor': '24,2%',
         'delta': '+2,1 p.p',
+        'icone': Icons.trending_up_rounded,
       },
-      <String, String>{
+      <String, Object>{
         'titulo': 'Ticket médio',
         'valor': 'R\$ 312',
         'delta': '+5,4%',
+        'icone': Icons.shopping_bag_outlined,
       },
-      <String, String>{
+      <String, Object>{
         'titulo': 'NPS atendimento',
         'valor': '74',
         'delta': 'Meta: 80',
+        'icone': Icons.support_agent_rounded,
       },
     ];
 
-    return Wrap(
-      spacing: 14,
-      runSpacing: 14,
-      children:
-          kpis.map((Map<String, String> kpi) {
-            return Container(
-              width: 270,
-              padding: const EdgeInsets.all(16),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 760;
+        final cardWidth = isCompact
+            ? constraints.maxWidth
+            : ((constraints.maxWidth - 42) / 4).clamp(210.0, 360.0);
+
+        return Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: kpis.map((Map<String, Object> kpi) {
+            return _buildCockpitKpiCard(
+              context,
+              width: cardWidth,
+              title: kpi['titulo']?.toString() ?? '',
+              value: kpi['valor']?.toString() ?? '',
+              delta: kpi['delta']?.toString() ?? '',
+              icon: (kpi['icone'] as IconData?) ?? Icons.insights_rounded,
+              highlight: kpi['destaque'] == true,
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildCockpitKpiCard(
+    BuildContext context, {
+    required double width,
+    required String title,
+    required String value,
+    required String delta,
+    required IconData icon,
+    bool highlight = false,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: highlight ? colorScheme.primary : colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: highlight
+                ? colorScheme.primary
+                : colorScheme.outline.withValues(alpha: 0.12),
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: _pdvTheme.cardBackground,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _pdvTheme.cardBorder),
+                color: highlight
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
               ),
+              child: Icon(
+                icon,
+                color: highlight ? Colors.white : colorScheme.primary,
+                size: 21,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    kpi['titulo'] ?? '',
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      color: highlight
+                          ? Colors.white.withValues(alpha: 0.86)
+                          : colorScheme.onSurface.withValues(alpha: 0.62),
                       fontWeight: FontWeight.w700,
-                      color: _pdvTheme.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    kpi['valor'] ?? '',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: _pdvTheme.primaryText,
+                      fontSize: 12,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    kpi['delta'] ?? '',
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      color: highlight ? Colors.white : colorScheme.onSurface,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    delta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: highlight
+                          ? Colors.white.withValues(alpha: 0.78)
+                          : colorScheme.primary,
                       fontSize: 12,
-                      color: _pdvTheme.iconColor,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
               ),
-            );
-          }).toList(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildCockpitFinanceiroChart() {
+  Widget _buildCockpitFinanceiroChart(BuildContext context) {
     const List<FlSpot> receita = <FlSpot>[
       FlSpot(0, 390),
       FlSpot(1, 410),
@@ -153,14 +234,12 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
       FlSpot(4, 460),
       FlSpot(5, 475),
     ];
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
+      decoration: _cockpitCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -168,8 +247,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             'Resultado financeiro (R\$ mil): receita x meta',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -185,11 +264,10 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                 gridData: FlGridData(
                   show: true,
                   horizontalInterval: 20,
-                  getDrawingHorizontalLine:
-                      (_) => FlLine(
-                        color: _pdvTheme.cardBorder.withValues(alpha: 0.50),
-                        strokeWidth: 1,
-                      ),
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.72),
+                    strokeWidth: 1,
+                  ),
                 ),
                 titlesData: FlTitlesData(
                   topTitles: const AxisTitles(
@@ -203,14 +281,13 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                       showTitles: true,
                       reservedSize: 48,
                       interval: 40,
-                      getTitlesWidget:
-                          (double value, TitleMeta meta) => Text(
-                            value.toInt().toString(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _pdvTheme.secondaryText,
-                            ),
-                          ),
+                      getTitlesWidget: (double value, TitleMeta meta) => Text(
+                        value.toInt().toString(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ),
                   bottomTitles: AxisTitles(
@@ -235,7 +312,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                             meses[idx],
                             style: TextStyle(
                               fontSize: 11,
-                              color: _pdvTheme.secondaryText,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         );
@@ -248,11 +325,11 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     spots: receita,
                     isCurved: true,
                     barWidth: 3.5,
-                    color: _pdvTheme.highlightColor,
+                    color: colorScheme.primary,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: _pdvTheme.highlightColor.withValues(alpha: 0.10),
+                      color: colorScheme.primary.withValues(alpha: 0.10),
                     ),
                   ),
                   LineChartBarData(
@@ -272,8 +349,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             spacing: 18,
             runSpacing: 8,
             children: <Widget>[
-              _buildLegendaGrafico(_pdvTheme.highlightColor, 'Receita'),
-              _buildLegendaGrafico(Colors.orange.shade700, 'Meta'),
+              _buildLegendaGrafico(context, colorScheme.primary, 'Receita'),
+              _buildLegendaGrafico(context, Colors.orange.shade700, 'Meta'),
             ],
           ),
         ],
@@ -281,14 +358,13 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     );
   }
 
-  Widget _buildCockpitVendasCanalChart() {
+  Widget _buildCockpitVendasCanalChart(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
+      decoration: _cockpitCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -296,8 +372,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             'Vendas por canal (últimos 30 dias)',
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -310,11 +386,10 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                 gridData: FlGridData(
                   show: true,
                   horizontalInterval: 40,
-                  getDrawingHorizontalLine:
-                      (_) => FlLine(
-                        color: _pdvTheme.cardBorder.withValues(alpha: 0.50),
-                        strokeWidth: 1,
-                      ),
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.72),
+                    strokeWidth: 1,
+                  ),
                 ),
                 titlesData: FlTitlesData(
                   topTitles: const AxisTitles(
@@ -327,14 +402,13 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 35,
-                      getTitlesWidget:
-                          (double value, TitleMeta meta) => Text(
-                            value.toInt().toString(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _pdvTheme.secondaryText,
-                            ),
-                          ),
+                      getTitlesWidget: (double value, TitleMeta meta) => Text(
+                        value.toInt().toString(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ),
                   bottomTitles: AxisTitles(
@@ -357,7 +431,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                             canais[idx],
                             style: TextStyle(
                               fontSize: 11,
-                              color: _pdvTheme.secondaryText,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         );
@@ -368,41 +442,41 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                 barGroups: <BarChartGroupData>[
                   BarChartGroupData(
                     x: 0,
-                    barRods: <BarChartRodData>[
+                    barRods: const <BarChartRodData>[
                       BarChartRodData(
                         toY: 198,
                         width: 20,
-                        color: const Color(0xFF0EA5E9),
+                        color: Color(0xFF0EA5E9),
                       ),
                     ],
                   ),
                   BarChartGroupData(
                     x: 1,
-                    barRods: <BarChartRodData>[
+                    barRods: const <BarChartRodData>[
                       BarChartRodData(
                         toY: 172,
                         width: 20,
-                        color: const Color(0xFF14B8A6),
+                        color: Color(0xFF14B8A6),
                       ),
                     ],
                   ),
                   BarChartGroupData(
                     x: 2,
-                    barRods: <BarChartRodData>[
+                    barRods: const <BarChartRodData>[
                       BarChartRodData(
                         toY: 146,
                         width: 20,
-                        color: const Color(0xFF6366F1),
+                        color: Color(0xFF6366F1),
                       ),
                     ],
                   ),
                   BarChartGroupData(
                     x: 3,
-                    barRods: <BarChartRodData>[
+                    barRods: const <BarChartRodData>[
                       BarChartRodData(
                         toY: 119,
                         width: 20,
-                        color: const Color(0xFFF59E0B),
+                        color: Color(0xFFF59E0B),
                       ),
                     ],
                   ),
@@ -415,14 +489,12 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     );
   }
 
-  Widget _buildCockpitAtendimentoChart() {
+  Widget _buildCockpitAtendimentoChart(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
+      decoration: _cockpitCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -430,8 +502,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             'Qualidade de atendimento',
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -441,13 +513,13 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
               PieChartData(
                 centerSpaceRadius: 44,
                 sectionsSpace: 3,
-                sections: <PieChartSectionData>[
+                sections: const <PieChartSectionData>[
                   PieChartSectionData(
                     value: 58,
                     title: '58%',
                     radius: 62,
-                    color: const Color(0xFF22C55E),
-                    titleStyle: const TextStyle(
+                    color: Color(0xFF22C55E),
+                    titleStyle: TextStyle(
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                     ),
@@ -456,8 +528,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     value: 27,
                     title: '27%',
                     radius: 62,
-                    color: const Color(0xFFF59E0B),
-                    titleStyle: const TextStyle(
+                    color: Color(0xFFF59E0B),
+                    titleStyle: TextStyle(
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                     ),
@@ -466,8 +538,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     value: 15,
                     title: '15%',
                     radius: 62,
-                    color: const Color(0xFFEF4444),
-                    titleStyle: const TextStyle(
+                    color: Color(0xFFEF4444),
+                    titleStyle: TextStyle(
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                     ),
@@ -481,9 +553,9 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             spacing: 12,
             runSpacing: 8,
             children: <Widget>[
-              _buildLegendaGrafico(const Color(0xFF22C55E), 'Satisfeitos'),
-              _buildLegendaGrafico(const Color(0xFFF59E0B), 'Neutros'),
-              _buildLegendaGrafico(const Color(0xFFEF4444), 'Insatisfeitos'),
+              _buildLegendaGrafico(context, const Color(0xFF22C55E), 'Satisfeitos'),
+              _buildLegendaGrafico(context, const Color(0xFFF59E0B), 'Neutros'),
+              _buildLegendaGrafico(context, const Color(0xFFEF4444), 'Insatisfeitos'),
             ],
           ),
         ],
@@ -491,7 +563,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     );
   }
 
-  Widget _buildCockpitOpcoesExemplo() {
+  Widget _buildCockpitOpcoesExemplo(BuildContext context) {
     final List<Map<String, String>> opcoes = <Map<String, String>>[
       <String, String>{
         'titulo': 'Rentabilidade por cliente',
@@ -505,8 +577,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
       },
       <String, String>{
         'titulo': 'SLA e tempo de resposta',
-        'descricao':
-            'Aponta gargalos de atendimento que afetam NPS e recompra.',
+        'descricao': 'Aponta gargalos de atendimento que afetam NPS e recompra.',
       },
       <String, String>{
         'titulo': 'Risco de churn',
@@ -514,15 +585,12 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             'Detecta clientes com queda de frequência, aumento de reclamação e queda no ticket.',
       },
     ];
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
+      decoration: _cockpitCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -530,8 +598,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             'Opções de exemplo para priorização',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: _pdvTheme.primaryText,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 10),
@@ -553,16 +621,18 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: _pdvTheme.backgroundSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _pdvTheme.cardBorder),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.52),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.10),
+              ),
             ),
             child: Text(
               opcoes[_opcaoCockpitSelecionada]['descricao'] ?? '',
               style: TextStyle(
                 height: 1.45,
-                color: _pdvTheme.secondaryText,
-                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -571,7 +641,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     );
   }
 
-  Widget _buildLegendaGrafico(Color color, String label) {
+  Widget _buildLegendaGrafico(BuildContext context, Color color, String label) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -586,7 +657,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: _pdvTheme.secondaryText,
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -685,22 +756,21 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
           ),
         ],
       ),
-      child:
-          isCompact
-              ? Column(
-                children: <Widget>[
-                  titleBlock,
-                  const SizedBox(height: 14),
-                  Align(alignment: Alignment.centerRight, child: actions),
-                ],
-              )
-              : Row(
-                children: <Widget>[
-                  Expanded(child: titleBlock),
-                  const SizedBox(width: 16),
-                  actions,
-                ],
-              ),
+      child: isCompact
+          ? Column(
+              children: <Widget>[
+                titleBlock,
+                const SizedBox(height: 14),
+                Align(alignment: Alignment.centerRight, child: actions),
+              ],
+            )
+          : Row(
+              children: <Widget>[
+                Expanded(child: titleBlock),
+                const SizedBox(width: 16),
+                actions,
+              ],
+            ),
     );
   }
 
@@ -734,6 +804,22 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
           child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
         ),
       ),
+    );
+  }
+
+  BoxDecoration _cockpitCardDecoration(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return BoxDecoration(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+      boxShadow: <BoxShadow>[
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.035),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
     );
   }
 }
