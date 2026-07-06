@@ -10,6 +10,7 @@ import 'package:sixpos/presentation/screens/register_page_web.dart';
 import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
 import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.dart';
+import 'package:sixpos/presentation/screens/colaborador_convite_publico_web_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_assinatura_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
@@ -172,6 +173,20 @@ class MyApp extends StatelessWidget {
         routeUri.pathSegments.length >= 2 &&
         routeUri.pathSegments[0] == 'cliente' &&
         routeUri.pathSegments[1] == 'auto-cadastro';
+    final bool isPublicColaboradorConviteRoute =
+        routeUri.pathSegments.length >= 3 &&
+        routeUri.pathSegments[0] == 'colaborador' &&
+        routeUri.pathSegments[1] == 'convites';
+
+    if (isPublicColaboradorConviteRoute) {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => ColaboradorConvitePublicoWebPage(
+          codigo: routeUri.pathSegments[2],
+          initialUri: routeUri,
+        ),
+      );
+    }
 
     if (isPublicClienteAutoCadastroRoute) {
       return MaterialPageRoute<void>(
