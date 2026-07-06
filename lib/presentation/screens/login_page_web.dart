@@ -11,6 +11,7 @@ import '../../domain/services/aparencia/aparencia_service.dart';
 import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
@@ -76,6 +77,12 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   Future<void> _afterLoginBootstrap() async {
     final idiomaDePreferencia =
         await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+
+    if (mounted) {
+      await context
+          .read<ColaboradorAutorizacoesProvider>()
+          .carregarAutorizacoesDoUsuarioLogado(force: true);
+    }
 
     try {
       final regionalizacaoService = RegionalizacaoService(
