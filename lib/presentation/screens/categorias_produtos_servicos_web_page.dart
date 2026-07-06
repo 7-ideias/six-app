@@ -780,8 +780,8 @@ class _HoverableCategoriaCardState extends State<_HoverableCategoriaCard> {
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: theme.shadowColor.withOpacity(_hovered ? 0.10 : 0.05),
-              blurRadius: _hovered ? 18 : 14,
-              offset: Offset(0, _hovered ? 8 : 6),
+              blurRadius: _hovered ? 18.0 : 14.0,
+              offset: Offset(0, _hovered ? 8.0 : 6.0),
             ),
           ],
         ),
