@@ -1770,11 +1770,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     label: 'Vendas',
                     onPressed: _iniciarVenda,
                   ),
-                  _buildModoOperacaoButton(
-                    icon: Icons.request_quote,
-                    label: 'Orçamento',
-                    onPressed: _abrirOrcamento,
-                  ),
+                  // _buildModoOperacaoButton(
+                  //   icon: Icons.request_quote,
+                  //   label: 'Orçamento',
+                  //   onPressed: _abrirOrcamento,
+                  // ),
                   _buildModoOperacaoButton(
                     icon: Icons.account_balance_wallet,
                     label: 'Operações de caixa',
@@ -1784,15 +1784,15 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                       });
                     },
                   ),
-                  _buildModoOperacaoButton(
-                    icon: Icons.build_circle_outlined,
-                    label: 'Ordem de Serviço',
-                    onPressed: () {
-                      setState(() {
-                        _moduloAtual = ModuloCentralPDV.ordemServico;
-                      });
-                    },
-                  ),
+                  // _buildModoOperacaoButton(
+                  //   icon: Icons.build_circle_outlined,
+                  //   label: 'Ordem de Serviço',
+                  //   onPressed: () {
+                  //     setState(() {
+                  //       _moduloAtual = ModuloCentralPDV.ordemServico;
+                  //     });
+                  //   },
+                  // ),
                   _buildModoOperacaoButton(
                     icon: Icons.monetization_on,
                     label: labelAgendaFinanceira(),
