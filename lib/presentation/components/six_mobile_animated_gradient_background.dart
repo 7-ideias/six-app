@@ -129,6 +129,9 @@ class _SixAmbientGradientPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Rect rect = Offset.zero & size;
 
+    final Color midBlue = Color.lerp(primaryColor, secondaryColor, 0.55)!;
+    final Color softBlue = Color.lerp(secondaryColor, baseColor, 0.74)!;
+
     final Paint basePaint =
         Paint()
           ..shader = LinearGradient(
@@ -136,108 +139,54 @@ class _SixAmbientGradientPainter extends CustomPainter {
             end: Alignment.bottomCenter,
             colors: <Color>[
               primaryColor,
-              Color.lerp(primaryColor, secondaryColor, 0.52)!.withOpacity(0.82),
-              Color.lerp(secondaryColor, baseColor, 0.76)!,
+              midBlue.withOpacity(0.86),
+              softBlue,
               baseColor,
               Colors.white,
             ],
-            stops: const <double>[0, 0.18, 0.46, 0.78, 1],
+            stops: const <double>[0, 0.18, 0.48, 0.78, 1],
           ).createShader(rect);
 
     canvas.drawRect(rect, basePaint);
 
-    _paintWave(
+    _paintMovingBlob(
       canvas,
       size,
-      color: Colors.white.withOpacity(0.16),
-      amplitude: 18,
-      yFactor: 0.22,
-      speed: 1,
-      thickness: 120,
-    );
-
-    _paintWave(
-      canvas,
-      size,
-      color: accentColor.withOpacity(0.085),
-      amplitude: 14,
-      yFactor: 0.36,
-      speed: -0.7,
-      thickness: 150,
-    );
-
-    _paintWave(
-      canvas,
-      size,
-      color: Colors.white.withOpacity(0.12),
-      amplitude: 12,
-      yFactor: 0.54,
-      speed: 0.55,
-      thickness: 180,
-    );
-
-    _paintSoftOrb(
-      canvas,
-      size,
-      color: primaryColor.withOpacity(0.10),
+      color: secondaryColor.withOpacity(0.30),
       radiusFactor: 0.72,
-      x: 0.16 + 0.06 * math.sin(progress * math.pi * 2),
-      y: 0.12 + 0.03 * math.cos(progress * math.pi * 2),
+      x: 0.20 + 0.18 * math.sin(progress * math.pi * 2),
+      y: 0.18 + 0.08 * math.cos(progress * math.pi * 2 + 0.7),
     );
 
-    _paintSoftOrb(
+    _paintMovingBlob(
       canvas,
       size,
-      color: secondaryColor.withOpacity(0.075),
-      radiusFactor: 0.82,
-      x: 0.88 + 0.05 * math.sin(progress * math.pi * 2 + 1.4),
-      y: 0.34 + 0.04 * math.cos(progress * math.pi * 2 + 1.1),
+      color: accentColor.withOpacity(0.16),
+      radiusFactor: 0.78,
+      x: 0.88 + 0.16 * math.sin(progress * math.pi * 2 + 1.9),
+      y: 0.34 + 0.10 * math.cos(progress * math.pi * 2 + 1.3),
+    );
+
+    _paintMovingBlob(
+      canvas,
+      size,
+      color: Colors.white.withOpacity(0.30),
+      radiusFactor: 0.88,
+      x: 0.48 + 0.14 * math.sin(progress * math.pi * 2 + 3.2),
+      y: 0.66 + 0.08 * math.cos(progress * math.pi * 2 + 2.4),
+    );
+
+    _paintMovingBlob(
+      canvas,
+      size,
+      color: primaryColor.withOpacity(0.12),
+      radiusFactor: 0.58,
+      x: 0.74 + 0.10 * math.sin(progress * math.pi * 2 + 4.1),
+      y: 0.10 + 0.06 * math.cos(progress * math.pi * 2 + 3.8),
     );
   }
 
-  void _paintWave(
-    Canvas canvas,
-    Size size, {
-    required Color color,
-    required double amplitude,
-    required double yFactor,
-    required double speed,
-    required double thickness,
-  }) {
-    final double phase = progress * math.pi * 2 * speed;
-    final double baseY = size.height * yFactor;
-    final Path path = Path()..moveTo(0, baseY);
-
-    for (double x = 0; x <= size.width; x += 8) {
-      final double normalizedX = x / size.width;
-      final double y =
-          baseY +
-          math.sin((normalizedX * math.pi * 2.2) + phase) * amplitude +
-          math.sin((normalizedX * math.pi * 4.1) - phase * 0.55) *
-              amplitude *
-              0.35;
-      path.lineTo(x, y);
-    }
-
-    path
-      ..lineTo(size.width, baseY + thickness)
-      ..lineTo(0, baseY + thickness * 0.72)
-      ..close();
-
-    final Paint paint =
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[color, color.withOpacity(0)],
-          ).createShader(
-            Rect.fromLTWH(0, baseY - amplitude, size.width, thickness),
-          );
-
-    canvas.drawPath(path, paint);
-  }
-
-  void _paintSoftOrb(
+  void _paintMovingBlob(
     Canvas canvas,
     Size size, {
     required Color color,
@@ -252,8 +201,12 @@ class _SixAmbientGradientPainter extends CustomPainter {
     final Paint paint =
         Paint()
           ..shader = RadialGradient(
-            colors: <Color>[color, color.withOpacity(0)],
-            stops: const <double>[0, 1],
+            colors: <Color>[
+              color,
+              color.withOpacity(color.opacity * 0.42),
+              color.withOpacity(0),
+            ],
+            stops: const <double>[0, 0.46, 1],
           ).createShader(Rect.fromCircle(center: center, radius: radius));
 
     canvas.drawCircle(center, radius, paint);
