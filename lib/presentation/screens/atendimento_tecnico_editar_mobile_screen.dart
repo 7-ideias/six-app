@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/auth_service.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
+import '../../data/models/cliente_usuario_model.dart';
+import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/produto_model.dart';
+import '../../data/models/usuario_model.dart';
+import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
+import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
+import '../../providers/usuario_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
 import 'produto_list_mobile_screen.dart';
 
@@ -31,6 +39,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
   static const Color _borderColor = Color(0xFFE2E8F0);
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
+  final ClienteUsuarioApiClient _clienteApiClient = HttpClienteUsuarioApiClient();
+  final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      HttpColaboradorUsuarioApiClient();
   final List<_AtendimentoItemEditavelMobile> _itens =
       <_AtendimentoItemEditavelMobile>[];
 
@@ -45,9 +56,15 @@ class _AtendimentoTecnicoEditarMobileScreenState
   late final TextEditingController _diagnosticoController;
   late final TextEditingController _observacaoAuditoriaController;
 
+  List<_ClienteAtendimentoMobile> _clientes = const <_ClienteAtendimentoMobile>[];
+  List<_ResponsavelTecnicoMobile> _responsaveis =
+      const <_ResponsavelTecnicoMobile>[];
+  _ClienteAtendimentoMobile? _clienteSelecionado;
+  _ResponsavelTecnicoMobile? _responsavelSelecionado;
   late DateTime _validadeOrcamentoEm;
   late DateTime _vencimentoFinanceiroEm;
   bool _salvando = false;
+  bool _carregandoDados = false;
 
   double get _totalItens => _itens.fold<double>(
         0,
@@ -60,6 +77,15 @@ class _AtendimentoTecnicoEditarMobileScreenState
     final AtendimentoTecnicoModel atendimento = widget.atendimento;
     final AtendimentoTecnicoEquipamentoModel equipamento =
         atendimento.equipamento ?? const AtendimentoTecnicoEquipamentoModel();
+
+    _clienteSelecionado = _clienteInicial(atendimento);
+    _responsavelSelecionado = _responsavelInicial(atendimento);
+    _clientes = <_ClienteAtendimentoMobile>[
+      if (_clienteSelecionado != null) _clienteSelecionado!,
+    ];
+    _responsaveis = <_ResponsavelTecnicoMobile>[
+      if (_responsavelSelecionado != null) _responsavelSelecionado!,
+    ];
 
     _descricaoController = TextEditingController(text: atendimento.descricao ?? '');
     _tipoController = TextEditingController(text: equipamento.tipo ?? '');
@@ -87,6 +113,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
     _itens.addAll(
       atendimento.itens.map(_AtendimentoItemEditavelMobile.fromModel),
     );
+    _carregarCadastros();
   }
 
   @override
@@ -104,6 +131,184 @@ class _AtendimentoTecnicoEditarMobileScreenState
     super.dispose();
   }
 
+  Future<void> _carregarCadastros() async {
+    if (mounted) {
+      setState(() => _carregandoDados = true);
+    }
+
+    try {
+      final ClienteUsuarioListResponse clientesResponse =
+          await _clienteApiClient.listarClientesUsuario();
+      final List<ColaboradorUsuarioResumo> colaboradores =
+          await _colaboradorApiClient.listarColaboradores();
+      final _ResponsavelTecnicoMobile? admin = await _carregarAdminAtual();
+      final List<_ClienteAtendimentoMobile> clientes = clientesResponse.clientes
+          .where((ClienteUsuario cliente) => cliente.ativo)
+          .map(_ClienteAtendimentoMobile.fromCliente)
+          .toList(growable: true);
+      final List<_ResponsavelTecnicoMobile> responsaveis =
+          _montarResponsaveis(admin, colaboradores).toList(growable: true);
+
+      final _ClienteAtendimentoMobile? clienteAtual = _clienteSelecionado;
+      if (clienteAtual != null &&
+          !clientes.any((_ClienteAtendimentoMobile item) => item.id == clienteAtual.id)) {
+        clientes.insert(0, clienteAtual);
+      }
+
+      final _ResponsavelTecnicoMobile? responsavelAtual = _responsavelSelecionado;
+      if (responsavelAtual != null &&
+          !responsaveis.any((_ResponsavelTecnicoMobile item) => item.id == responsavelAtual.id)) {
+        responsaveis.insert(0, responsavelAtual);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _clientes = clientes;
+        _responsaveis = responsaveis;
+        _clienteSelecionado = _resolverClienteSelecionado(clientes);
+        _responsavelSelecionado = _resolverResponsavelSelecionado(responsaveis);
+        _carregandoDados = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _carregandoDados = false);
+      _mostrarMensagem('Não foi possível carregar clientes e responsáveis.');
+    }
+  }
+
+  _ClienteAtendimentoMobile? _clienteInicial(AtendimentoTecnicoModel atendimento) {
+    final String id = atendimento.idCliente?.trim() ?? '';
+    final String nome = atendimento.nomeClienteSnapshot?.trim() ?? '';
+    if (id.isEmpty && nome.isEmpty) return null;
+    return _ClienteAtendimentoMobile(
+      id: id,
+      nome: nome.isEmpty ? 'Cliente não informado' : nome,
+      subtitulo: id.isEmpty ? 'Snapshot do atendimento' : 'Cliente do atendimento',
+    );
+  }
+
+  _ResponsavelTecnicoMobile? _responsavelInicial(AtendimentoTecnicoModel atendimento) {
+    final String id = atendimento.idTecnicoResponsavel?.trim() ?? '';
+    final String nome = atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    if (id.isEmpty && nome.isEmpty) return null;
+    return _ResponsavelTecnicoMobile(
+      id: id,
+      nome: nome.isEmpty ? 'Responsável não informado' : nome,
+      subtitulo: id.isEmpty ? 'Snapshot do atendimento' : 'Responsável do atendimento',
+    );
+  }
+
+  _ClienteAtendimentoMobile? _resolverClienteSelecionado(
+    List<_ClienteAtendimentoMobile> clientes,
+  ) {
+    final _ClienteAtendimentoMobile? atual = _clienteSelecionado;
+    if (atual == null) return clientes.isEmpty ? null : clientes.first;
+    return clientes.firstWhere(
+      (_ClienteAtendimentoMobile item) => item.id == atual.id,
+      orElse: () => atual,
+    );
+  }
+
+  _ResponsavelTecnicoMobile? _resolverResponsavelSelecionado(
+    List<_ResponsavelTecnicoMobile> responsaveis,
+  ) {
+    final _ResponsavelTecnicoMobile? atual = _responsavelSelecionado;
+    if (atual == null) return responsaveis.isEmpty ? null : responsaveis.first;
+    return responsaveis.firstWhere(
+      (_ResponsavelTecnicoMobile item) => item.id == atual.id,
+      orElse: () => atual,
+    );
+  }
+
+  Future<_ResponsavelTecnicoMobile?> _carregarAdminAtual() async {
+    final AuthService authService = AuthService();
+    final String idUsuario = (await authService.getUserId())?.trim() ?? '';
+
+    try {
+      if (UsuarioProvider().usuario == null) {
+        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      }
+    } catch (_) {
+      // Mantem a tela funcional mesmo quando os dados pessoais nao carregarem.
+    }
+
+    final UsuarioModel? usuario = UsuarioProvider().usuario;
+    final String email =
+        (usuario?.email.trim().isNotEmpty == true
+                ? usuario!.email.trim()
+                : (await authService.getUserEmail())?.trim()) ??
+            '';
+    final String nome = _nomeUsuario(usuario, fallbackEmail: email);
+    final String id = idUsuario.isNotEmpty ? idUsuario : email;
+
+    if (id.isEmpty && nome.isEmpty) return null;
+
+    return _ResponsavelTecnicoMobile(
+      id: id.isEmpty ? nome : id,
+      nome: nome.isEmpty ? 'ADMIN' : nome,
+      subtitulo: email.isEmpty ? 'ADMIN do sistema' : 'ADMIN do sistema • $email',
+      isAdmin: true,
+    );
+  }
+
+  String _nomeUsuario(UsuarioModel? usuario, {required String fallbackEmail}) {
+    if (usuario == null) return fallbackEmail;
+    final String nomeDeGuerra = usuario.nomeDeGuerra.trim();
+    if (nomeDeGuerra.isNotEmpty) return nomeDeGuerra;
+    final String nomeCompleto = <String>[usuario.nome, usuario.sobrenome]
+        .map((String item) => item.trim())
+        .where((String item) => item.isNotEmpty)
+        .join(' ');
+    if (nomeCompleto.isNotEmpty) return nomeCompleto;
+    return fallbackEmail;
+  }
+
+  List<_ResponsavelTecnicoMobile> _montarResponsaveis(
+    _ResponsavelTecnicoMobile? admin,
+    List<ColaboradorUsuarioResumo> colaboradores,
+  ) {
+    final Map<String, _ResponsavelTecnicoMobile> mapa =
+        <String, _ResponsavelTecnicoMobile>{};
+
+    void add(_ResponsavelTecnicoMobile responsavel) {
+      final String key = responsavel.id.trim().isNotEmpty
+          ? responsavel.id.trim()
+          : responsavel.nome.toLowerCase().trim();
+      if (key.isEmpty || mapa.containsKey(key)) return;
+      mapa[key] = responsavel;
+    }
+
+    if (admin != null) add(admin);
+
+    for (final ColaboradorUsuarioResumo colaborador in colaboradores) {
+      final String id = colaborador.idUnicoPessoal.trim().isNotEmpty
+          ? colaborador.idUnicoPessoal.trim()
+          : colaborador.email.trim();
+      final String nome = colaborador.nomeDeGuerra.trim().isNotEmpty
+          ? colaborador.nomeDeGuerra.trim()
+          : colaborador.nome.trim().isNotEmpty
+              ? colaborador.nome.trim()
+              : colaborador.email.trim();
+      if (id.isEmpty && nome.isEmpty) continue;
+
+      final String subtitulo = <String>[
+        'Colaborador',
+        colaborador.email,
+        colaborador.celularDeAcesso,
+      ].where((String item) => item.trim().isNotEmpty).join(' • ');
+
+      add(
+        _ResponsavelTecnicoMobile(
+          id: id.isEmpty ? nome : id,
+          nome: nome.isEmpty ? 'Colaborador' : nome,
+          subtitulo: subtitulo,
+        ),
+      );
+    }
+
+    return mapa.values.toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,19 +324,27 @@ class _AtendimentoTecnicoEditarMobileScreenState
         ),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-          children: <Widget>[
-            _hero(),
-            const SizedBox(height: 16),
-            _formCard(),
-          ],
+        child: RefreshIndicator(
+          onRefresh: _carregarCadastros,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            children: <Widget>[
+              _hero(),
+              const SizedBox(height: 16),
+              _formCard(),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _hero() {
+    final String cliente = _clienteSelecionado?.nome.trim().isNotEmpty == true
+        ? _clienteSelecionado!.nome
+        : _clienteLabel(widget.atendimento);
+    final String? responsavel = _responsavelSelecionado?.nome;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -178,7 +391,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${_clienteLabel(widget.atendimento)} • ${_itens.length} item(ns)',
+                  responsavel == null || responsavel.trim().isEmpty
+                      ? '$cliente • ${_itens.length} item(ns)'
+                      : '$cliente • $responsavel',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
@@ -197,6 +412,14 @@ class _AtendimentoTecnicoEditarMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _sectionTitle('Dados principais'),
+          const SizedBox(height: 12),
+          if (_carregandoDados) ...<Widget>[
+            const LinearProgressIndicator(minHeight: 3),
+            const SizedBox(height: 12),
+          ],
+          _clienteSelectorField(),
+          const SizedBox(height: 12),
+          _responsavelSelectorField(),
           const SizedBox(height: 12),
           TextField(
             controller: _descricaoController,
@@ -354,6 +577,116 @@ class _AtendimentoTecnicoEditarMobileScreenState
         ],
       ),
     );
+  }
+
+  Widget _clienteSelectorField() {
+    final _ClienteAtendimentoMobile? cliente = _clienteSelecionado;
+    final bool hasSelection = cliente != null;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _abrirSelecaoCliente,
+        child: InputDecorator(
+          isEmpty: !hasSelection,
+          decoration: _inputDecoration(
+            label: 'Cliente',
+            icon: Icons.person_search_outlined,
+            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          child: Text(
+            hasSelection ? cliente.nome : 'Selecione um cliente',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: hasSelection ? _titleTextColor : _mutedTextColor,
+              fontWeight: hasSelection ? FontWeight.w800 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _responsavelSelectorField() {
+    final _ResponsavelTecnicoMobile? responsavel = _responsavelSelecionado;
+    final bool hasSelection = responsavel != null;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _abrirSelecaoResponsavel,
+        child: InputDecorator(
+          isEmpty: !hasSelection,
+          decoration: _inputDecoration(
+            label: 'Responsável técnico',
+            icon: Icons.engineering_outlined,
+            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          child: Text(
+            hasSelection ? responsavel.nome : 'Selecione o responsável',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: hasSelection ? _titleTextColor : _mutedTextColor,
+              fontWeight: hasSelection ? FontWeight.w800 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirSelecaoCliente() async {
+    if (_clientes.isEmpty) {
+      _mostrarMensagem('Nenhum cliente disponível para seleção.');
+      return;
+    }
+
+    final _ClienteAtendimentoMobile? cliente =
+        await showModalBottomSheet<_ClienteAtendimentoMobile>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (BuildContext context) {
+        return _ClienteAtendimentoSelectorMobile(
+          clientes: _clientes,
+          clienteSelecionado: _clienteSelecionado,
+        );
+      },
+    );
+
+    if (cliente == null || !mounted) return;
+    setState(() => _clienteSelecionado = cliente);
+  }
+
+  Future<void> _abrirSelecaoResponsavel() async {
+    if (_responsaveis.isEmpty) {
+      _mostrarMensagem('Nenhum responsável técnico disponível para seleção.');
+      return;
+    }
+
+    final _ResponsavelTecnicoMobile? responsavel =
+        await showModalBottomSheet<_ResponsavelTecnicoMobile>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (BuildContext context) {
+        return _ResponsavelTecnicoSelectorMobile(
+          responsaveis: _responsaveis,
+          responsavelSelecionado: _responsavelSelecionado,
+        );
+      },
+    );
+
+    if (responsavel == null || !mounted) return;
+    setState(() => _responsavelSelecionado = responsavel);
   }
 
   Widget _itensSection() {
@@ -583,8 +916,8 @@ class _AtendimentoTecnicoEditarMobileScreenState
         quantidade: 1,
         valorUnitario: produto.precoVenda,
         desconto: 0,
-        idTecnicoResponsavel: null,
-        nomeTecnicoResponsavel: null,
+        idTecnicoResponsavel: _responsavelSelecionado?.id,
+        nomeTecnicoResponsavel: _responsavelSelecionado?.nome,
         movimentaEstoque: !servico,
       ),
     );
@@ -662,6 +995,14 @@ class _AtendimentoTecnicoEditarMobileScreenState
   Future<void> _salvar() async {
     if (_salvando) return;
 
+    final _ClienteAtendimentoMobile? cliente = _clienteSelecionado;
+    if (cliente == null || cliente.id.trim().isEmpty) {
+      _mostrarMensagem('Selecione um cliente antes de salvar.');
+      return;
+    }
+
+    final _ResponsavelTecnicoMobile? responsavel = _responsavelSelecionado;
+
     setState(() => _salvando = true);
     try {
       await _service.atualizar(
@@ -669,6 +1010,10 @@ class _AtendimentoTecnicoEditarMobileScreenState
         input: AtendimentoTecnicoUpdateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
           descricao: _textoOuNulo(_descricaoController.text),
+          idCliente: cliente.id,
+          nomeClienteSnapshot: cliente.nome,
+          idTecnicoResponsavel: responsavel?.id,
+          nomeTecnicoResponsavelSnapshot: responsavel?.nome,
           equipamento: AtendimentoTecnicoEquipamentoModel(
             tipo: _textoOuNulo(_tipoController.text),
             marca: _textoOuNulo(_marcaController.text),
@@ -680,7 +1025,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
           ),
           defeitoRelatado: _textoOuNulo(_defeitoController.text),
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
-          itens: _itens.map((item) => item.toInput()).toList(growable: false),
+          itens: _itens
+              .map((item) => item.toInput(responsavel: responsavel))
+              .toList(growable: false),
           observacaoAuditoria: _textoOuNulo(_observacaoAuditoriaController.text),
         ),
         dataVencimentoEm: _vencimentoFinanceiroEm,
@@ -696,12 +1043,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Não foi possível salvar: $error'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _mostrarMensagem('Não foi possível salvar: $error');
     } finally {
       if (mounted) setState(() => _salvando = false);
     }
@@ -795,13 +1137,17 @@ class _AtendimentoTecnicoEditarMobileScreenState
 
   InputDecoration _inputDecoration({
     required String label,
+    String? hint,
     IconData? icon,
     bool alignLabelWithHint = false,
+    Widget? suffixIcon,
   }) {
     return InputDecoration(
       labelText: label,
+      hintText: hint,
       alignLabelWithHint: alignLabelWithHint,
       prefixIcon: icon == null ? null : Icon(icon, size: 21),
+      suffixIcon: suffixIcon,
       filled: true,
       fillColor: const Color(0xFFF8FAFC),
       border: OutlineInputBorder(
@@ -825,6 +1171,13 @@ class _AtendimentoTecnicoEditarMobileScreenState
     return cliente.isEmpty ? 'Cliente não informado' : cliente;
   }
 
+  void _mostrarMensagem(String mensagem) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
+  }
+
   String? _textoOuNulo(String value) {
     final String text = value.trim();
     return text.isEmpty ? null : text;
@@ -843,6 +1196,45 @@ class _AtendimentoTecnicoEditarMobileScreenState
   String _formatarMoeda(double value) {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
   }
+}
+
+class _ClienteAtendimentoMobile {
+  const _ClienteAtendimentoMobile({
+    required this.id,
+    required this.nome,
+    required this.subtitulo,
+  });
+
+  final String id;
+  final String nome;
+  final String subtitulo;
+
+  factory _ClienteAtendimentoMobile.fromCliente(ClienteUsuario cliente) {
+    final String subtitulo = <String>[
+      cliente.telefone,
+      cliente.email,
+      cliente.documento,
+    ].where((String value) => value.trim().isNotEmpty).join(' • ');
+    return _ClienteAtendimentoMobile(
+      id: cliente.id,
+      nome: cliente.nome.trim().isEmpty ? 'Cliente sem nome' : cliente.nome,
+      subtitulo: subtitulo,
+    );
+  }
+}
+
+class _ResponsavelTecnicoMobile {
+  const _ResponsavelTecnicoMobile({
+    required this.id,
+    required this.nome,
+    required this.subtitulo,
+    this.isAdmin = false,
+  });
+
+  final String id;
+  final String nome;
+  final String subtitulo;
+  final bool isAdmin;
 }
 
 class _AtendimentoItemEditavelMobile {
@@ -922,7 +1314,9 @@ class _AtendimentoItemEditavelMobile {
     );
   }
 
-  AtendimentoTecnicoItemInput toInput() {
+  AtendimentoTecnicoItemInput toInput({
+    _ResponsavelTecnicoMobile? responsavel,
+  }) {
     return AtendimentoTecnicoItemInput(
       tipoItemId: tipoItemId,
       tipoItemCodigo: tipoCodigo,
@@ -931,9 +1325,442 @@ class _AtendimentoItemEditavelMobile {
       quantidade: quantidade.toDouble(),
       valorUnitario: valorUnitario,
       desconto: desconto,
-      idTecnicoResponsavel: idTecnicoResponsavel,
-      nomeTecnicoResponsavel: nomeTecnicoResponsavel,
+      idTecnicoResponsavel: responsavel?.id ?? idTecnicoResponsavel,
+      nomeTecnicoResponsavel: responsavel?.nome ?? nomeTecnicoResponsavel,
       movimentaEstoque: movimentaEstoque,
+    );
+  }
+}
+
+class _ClienteAtendimentoSelectorMobile extends StatefulWidget {
+  const _ClienteAtendimentoSelectorMobile({
+    required this.clientes,
+    required this.clienteSelecionado,
+  });
+
+  final List<_ClienteAtendimentoMobile> clientes;
+  final _ClienteAtendimentoMobile? clienteSelecionado;
+
+  @override
+  State<_ClienteAtendimentoSelectorMobile> createState() =>
+      _ClienteAtendimentoSelectorMobileState();
+}
+
+class _ClienteAtendimentoSelectorMobileState
+    extends State<_ClienteAtendimentoSelectorMobile> {
+  final TextEditingController _searchController = TextEditingController();
+  String _filter = '';
+
+  List<_ClienteAtendimentoMobile> get _clientesFiltrados {
+    final String term = _normalize(_filter);
+    if (term.isEmpty) return widget.clientes;
+    return widget.clientes.where((_ClienteAtendimentoMobile item) {
+      return _normalize('${item.nome} ${item.subtitulo}').contains(term);
+    }).toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SelectorShell(
+      title: 'Selecionar cliente',
+      subtitle: 'Busque e toque para trocar o cliente do atendimento.',
+      icon: Icons.person_search_outlined,
+      searchHint: 'Buscar cliente',
+      searchController: _searchController,
+      onSearchChanged: (String value) => setState(() => _filter = value),
+      onClearSearch: () {
+        _searchController.clear();
+        setState(() => _filter = '');
+      },
+      childBuilder: (ScrollController scrollController) {
+        final List<_ClienteAtendimentoMobile> clientes = _clientesFiltrados;
+        if (clientes.isEmpty) return const _SelectorEmptyState(text: 'Nenhum cliente encontrado.');
+        return ListView.separated(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+          itemBuilder: (BuildContext context, int index) {
+            final _ClienteAtendimentoMobile cliente = clientes[index];
+            return _SelectorItem(
+              title: cliente.nome,
+              subtitle: cliente.subtitulo,
+              icon: Icons.person_outline_rounded,
+              selected: widget.clienteSelecionado?.id == cliente.id,
+              onTap: () => Navigator.of(context).pop(cliente),
+            );
+          },
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemCount: clientes.length,
+        );
+      },
+    );
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+}
+
+class _ResponsavelTecnicoSelectorMobile extends StatefulWidget {
+  const _ResponsavelTecnicoSelectorMobile({
+    required this.responsaveis,
+    required this.responsavelSelecionado,
+  });
+
+  final List<_ResponsavelTecnicoMobile> responsaveis;
+  final _ResponsavelTecnicoMobile? responsavelSelecionado;
+
+  @override
+  State<_ResponsavelTecnicoSelectorMobile> createState() =>
+      _ResponsavelTecnicoSelectorMobileState();
+}
+
+class _ResponsavelTecnicoSelectorMobileState
+    extends State<_ResponsavelTecnicoSelectorMobile> {
+  final TextEditingController _searchController = TextEditingController();
+  String _filter = '';
+
+  List<_ResponsavelTecnicoMobile> get _responsaveisFiltrados {
+    final String term = _normalize(_filter);
+    if (term.isEmpty) return widget.responsaveis;
+    return widget.responsaveis.where((_ResponsavelTecnicoMobile item) {
+      return _normalize('${item.nome} ${item.subtitulo}').contains(term);
+    }).toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SelectorShell(
+      title: 'Responsável técnico',
+      subtitle: 'Selecione o ADMIN ou colaborador responsável.',
+      icon: Icons.engineering_outlined,
+      searchHint: 'Buscar responsável',
+      searchController: _searchController,
+      onSearchChanged: (String value) => setState(() => _filter = value),
+      onClearSearch: () {
+        _searchController.clear();
+        setState(() => _filter = '');
+      },
+      childBuilder: (ScrollController scrollController) {
+        final List<_ResponsavelTecnicoMobile> responsaveis = _responsaveisFiltrados;
+        if (responsaveis.isEmpty) {
+          return const _SelectorEmptyState(text: 'Nenhum responsável encontrado.');
+        }
+        return ListView.separated(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+          itemBuilder: (BuildContext context, int index) {
+            final _ResponsavelTecnicoMobile responsavel = responsaveis[index];
+            return _SelectorItem(
+              title: responsavel.nome,
+              subtitle: responsavel.subtitulo,
+              icon: responsavel.isAdmin
+                  ? Icons.admin_panel_settings_outlined
+                  : Icons.person_outline_rounded,
+              selected: widget.responsavelSelecionado?.id == responsavel.id,
+              onTap: () => Navigator.of(context).pop(responsavel),
+            );
+          },
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemCount: responsaveis.length,
+        );
+      },
+    );
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+}
+
+typedef _SelectorChildBuilder = Widget Function(ScrollController scrollController);
+
+class _SelectorShell extends StatelessWidget {
+  const _SelectorShell({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.searchHint,
+    required this.searchController,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+    required this.childBuilder,
+  });
+
+  static const Color _backgroundColor = Color(0xFFF4F7FB);
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _borderColor = Color(0xFFE2E8F0);
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String searchHint;
+  final TextEditingController searchController;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+  final _SelectorChildBuilder childBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      minChildSize: 0.38,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (BuildContext context, ScrollController scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Icon(icon, color: _primaryColor),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 12,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: searchHint,
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: onClearSearch,
+                            ),
+                      filled: true,
+                      fillColor: _surfaceColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            const BorderSide(color: _accentColor, width: 1.4),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(child: childBuilder(scrollController)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SelectorEmptyState extends StatelessWidget {
+  const _SelectorEmptyState({required this.text});
+
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _borderColor = Color(0xFFE2E8F0);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+      children: <Widget>[
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _mutedTextColor),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectorItem extends StatelessWidget {
+  const _SelectorItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _borderColor = Color(0xFFE2E8F0);
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: selected
+                    ? _accentColor.withOpacity(0.12)
+                    : const Color(0xFFF1F5F9),
+                child: Icon(icon, color: selected ? _accentColor : _primaryColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (subtitle.trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedOpacity(
+                opacity: selected ? 1 : 0,
+                duration: const Duration(milliseconds: 140),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: _accentColor,
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
