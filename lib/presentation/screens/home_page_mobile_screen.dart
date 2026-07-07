@@ -9,6 +9,7 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/pdv_page_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
@@ -129,49 +130,50 @@ class _HomePageMobileState extends State<HomePageMobile> {
   String get _totalVendasAReceber =>
       (_resumoTelaInicial?.totalVendasAbertas ?? 0).toString();
 
-  String get _subtituloVendasAReceber => _erroResumo == null
-      ? 'Vendas não liquidadas'
-      : 'Não foi possível atualizar agora';
+  String get _subtituloVendasAReceber =>
+      _erroResumo == null
+          ? 'Vendas não liquidadas'
+          : 'Não foi possível atualizar agora';
 
   @override
   Widget build(BuildContext context) {
     return kIsWeb
         ? PDVWeb()
         : Scaffold(
-            backgroundColor: _backgroundColor,
-            appBar: AppBar(
-              elevation: 0,
-              centerTitle: true,
-              backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
-              title: const Text(
-                'Início',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
+          backgroundColor: _backgroundColor,
+          appBar: AppBar(
+            elevation: 0,
+            centerTitle: true,
+            backgroundColor: _primaryColor,
+            foregroundColor: Colors.white,
+            title: const Text(
+              'Início',
+              style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+            ),
+            actions: [
+              IconButton(
+                tooltip: 'Configurações',
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: _showFeatureInProgress,
               ),
-              actions: [
-                IconButton(
-                  tooltip: 'Configurações',
-                  icon: const Icon(Icons.settings_outlined),
-                  onPressed: _showFeatureInProgress,
-                ),
-                IconButton(
-                  tooltip: 'Notificações',
-                  icon: _buildNotificationIcon(),
-                  onPressed: () => _openNotifications(context),
-                ),
-              ],
-            ),
-            drawer: AppDrawerDoMobile(
-              image: _image,
-              onPickImage: _pickImage,
-            ),
-            body: _buildHomeContent(context),
-            bottomNavigationBar:
-                kIsWeb ? null : const CustomBottomNavBar(initialIndex: 1),
-          );
+              IconButton(
+                tooltip: 'Notificações',
+                icon: _buildNotificationIcon(),
+                onPressed: () => _openNotifications(context),
+              ),
+            ],
+          ),
+          drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+          body: SixMobileAnimatedGradientBackground(
+            baseColor: _backgroundColor,
+            primaryColor: _primaryColor,
+            secondaryColor: _secondaryColor,
+            accentColor: _accentColor,
+            child: _buildHomeContent(context),
+          ),
+          bottomNavigationBar:
+              kIsWeb ? null : const CustomBottomNavBar(initialIndex: 1),
+        );
   }
 
   Widget _buildHomeContent(BuildContext context) {
@@ -293,19 +295,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
           const SizedBox(height: 8),
           const Text(
             'Acompanhe as prioridades do atendimento sem sair do mobile.',
-            style: TextStyle(
-              color: Color(0xFFD7E3F5),
-              height: 1.35,
-            ),
+            style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
           ),
           const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
-                child: _buildSummaryPill(
-                  label: 'Período',
-                  value: 'Hoje',
-                ),
+                child: _buildSummaryPill(label: 'Período', value: 'Hoje'),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -358,28 +354,29 @@ class _HomePageMobileState extends State<HomePageMobile> {
           const SizedBox(height: 4),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 220),
-            child: isLoading
-                ? Container(
-                    key: const ValueKey<String>('summary-loading'),
-                    width: 34,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: const Color(0x33FFFFFF),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  )
-                : int.tryParse(value) == null
-                    ? Text(
-                        value,
-                        key: ValueKey<String>('summary-text-$label-$value'),
-                        overflow: TextOverflow.ellipsis,
-                        style: valueStyle,
-                      )
-                    : SixAnimatedNumberText(
-                        key: ValueKey<String>('summary-number-$label-$value'),
-                        value: value,
-                        style: valueStyle,
+            child:
+                isLoading
+                    ? Container(
+                      key: const ValueKey<String>('summary-loading'),
+                      width: 34,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: const Color(0x33FFFFFF),
+                        borderRadius: BorderRadius.circular(999),
                       ),
+                    )
+                    : int.tryParse(value) == null
+                    ? Text(
+                      value,
+                      key: ValueKey<String>('summary-text-$label-$value'),
+                      overflow: TextOverflow.ellipsis,
+                      style: valueStyle,
+                    )
+                    : SixAnimatedNumberText(
+                      key: ValueKey<String>('summary-number-$label-$value'),
+                      value: value,
+                      style: valueStyle,
+                    ),
           ),
         ],
       ),
@@ -391,7 +388,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
         _notificacaoService.ultimaNotificacao;
     final int naoLidas = _notificacaoService.naoLidas;
     final bool temNaoLidas = naoLidas > 0;
-    final String resumo = ultimaNotificacao?.description ??
+    final String resumo =
+        ultimaNotificacao?.description ??
         'Aguardando mensagens do backend para esta empresa';
 
     return Material(
@@ -445,10 +443,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFEF4444),
                             borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 1.5,
-                            ),
+                            border: Border.all(color: Colors.white, width: 1.5),
                           ),
                           child: Text(
                             _badgeText(naoLidas),
@@ -521,15 +516,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: actions.asMap().entries.map((entry) {
-            return SizedBox(
-              width: width,
-              child: SixStaggeredEntry(
-                delay: Duration(milliseconds: 270 + (entry.key * 45)),
-                child: _buildQuickActionCard(entry.value),
-              ),
-            );
-          }).toList(),
+          children:
+              actions.asMap().entries.map((entry) {
+                return SizedBox(
+                  width: width,
+                  child: SixStaggeredEntry(
+                    delay: Duration(milliseconds: 270 + (entry.key * 45)),
+                    child: _buildQuickActionCard(entry.value),
+                  ),
+                );
+              }).toList(),
         );
       },
     );
@@ -585,7 +581,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
         subtitle: _subtituloVendasAReceber,
         count: _totalVendasAReceber,
         icon: Icons.point_of_sale_outlined,
-        onTap: () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
+        onTap:
+            () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
         isLoading: _carregandoResumo,
         hasError: _erroResumo != null,
       ),
@@ -608,7 +605,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
         subtitle: 'Disponíveis no catálogo',
         count: '10',
         icon: Icons.inventory_2_outlined,
-        onTap: () => _navigateTo(context, const CatalogoDisponivelMobileScreen()),
+        onTap:
+            () => _navigateTo(context, const CatalogoDisponivelMobileScreen()),
       ),
       _DashboardMetric(
         title: 'Produtos inativos',
@@ -619,7 +617,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
       ),
     ];
 
-    return metrics.asMap().entries
+    return metrics
+        .asMap()
+        .entries
         .map(
           (entry) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -644,9 +644,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: metric.hasError
-                  ? const Color(0xFFFCA5A5)
-                  : const Color(0xFFE2E8F0),
+              color:
+                  metric.hasError
+                      ? const Color(0xFFFCA5A5)
+                      : const Color(0xFFE2E8F0),
             ),
             boxShadow: const [
               BoxShadow(
@@ -688,9 +689,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: metric.hasError
-                            ? const Color(0xFFB91C1C)
-                            : _mutedTextColor,
+                        color:
+                            metric.hasError
+                                ? const Color(0xFFB91C1C)
+                                : _mutedTextColor,
                         fontSize: 12,
                       ),
                     ),
@@ -719,25 +721,26 @@ class _HomePageMobileState extends State<HomePageMobile> {
   Widget _buildMetricCount(_DashboardMetric metric) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
-      child: metric.isLoading
-          ? Container(
-              key: const ValueKey<String>('metric-loading'),
-              width: 34,
-              height: 22,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(999),
+      child:
+          metric.isLoading
+              ? Container(
+                key: const ValueKey<String>('metric-loading'),
+                width: 34,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              )
+              : SixAnimatedNumberText(
+                key: ValueKey<String>('metric-${metric.title}-${metric.count}'),
+                value: metric.count,
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            )
-          : SixAnimatedNumberText(
-              key: ValueKey<String>('metric-${metric.title}-${metric.count}'),
-              value: metric.count,
-              style: const TextStyle(
-                color: _titleTextColor,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
     );
   }
 

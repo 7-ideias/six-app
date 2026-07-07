@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
@@ -37,11 +38,14 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
+  late final PageController _sectionCarouselController;
   int _totalNotificacoesConhecidas = 0;
+  int _selectedSectionIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _sectionCarouselController = PageController(viewportFraction: 0.86);
     _totalNotificacoesConhecidas = _notificacaoService.total;
     _notificacaoService.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -49,6 +53,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   @override
   void dispose() {
+    _sectionCarouselController.dispose();
     _notificacaoService.removeListener(_onNotificacoesChanged);
     super.dispose();
   }
@@ -116,7 +121,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ],
       ),
       drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
-      body: _buildContent(context),
+      body: SixMobileAnimatedGradientBackground(
+        baseColor: _backgroundColor,
+        primaryColor: _primaryColor,
+        secondaryColor: _secondaryColor,
+        accentColor: _accentColor,
+        child: _buildContent(context),
+      ),
       bottomNavigationBar:
           kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
     );
@@ -162,9 +173,49 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   }
 
   Widget _buildContent(BuildContext context) {
-    final List<_ManagementSection> sections = <_ManagementSection>[
+    final List<_ManagementSection> sections = _managementSections(context);
+    final int selectedIndex =
+        _selectedSectionIndex >= sections.length
+            ? sections.length - 1
+            : _selectedSectionIndex;
+    final _ManagementSection selectedSection = sections[selectedIndex];
+
+    return SafeArea(
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: <Widget>[
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 70),
+            child: _buildManagementHeader(),
+          ),
+          const SizedBox(height: 18),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 130),
+            child: _buildSectionCarousel(sections),
+          ),
+          const SizedBox(height: 12),
+          _buildCarouselIndicators(sections),
+          const SizedBox(height: 18),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 190),
+            child: _buildSectionQuickActions(selectedSection),
+          ),
+          const SizedBox(height: 18),
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 250),
+            child: _buildSelectedSectionDetails(selectedSection),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_ManagementSection> _managementSections(BuildContext context) {
+    return <_ManagementSection>[
       _ManagementSection(
         title: 'Catálogo',
+        subtitle: 'Produtos, categorias e estoque sempre à mão.',
         icon: Icons.inventory_2_outlined,
         items: <_ManagementItem>[
           _ManagementItem(
@@ -193,6 +244,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       ),
       _ManagementSection(
         title: 'Pessoas',
+        subtitle: 'Clientes, equipe e parceiros do comércio.',
         icon: Icons.groups_2_outlined,
         items: <_ManagementItem>[
           _ManagementItem(
@@ -207,8 +259,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             subtitle: 'Equipe, acessos e responsabilidades',
             icon: Icons.badge_outlined,
             onTap:
-                () =>
-                    _navigateTo(context, const ColaboradoresUsuarioMobileScreen()),
+                () => _navigateTo(
+                  context,
+                  const ColaboradoresUsuarioMobileScreen(),
+                ),
           ),
           _ManagementItem(
             title: 'Fornecedores',
@@ -220,6 +274,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       ),
       _ManagementSection(
         title: 'Financeiro',
+        subtitle: 'Contas, agenda e formas de recebimento.',
         icon: Icons.account_balance_wallet_outlined,
         items: <_ManagementItem>[
           _ManagementItem(
@@ -239,8 +294,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             subtitle: 'Previsões, fiado e crediário',
             icon: Icons.event_note_outlined,
             onTap:
-                () =>
-                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+                () => _navigateTo(
+                  context,
+                  const AgendaFinanceiraMobileScreen(),
+                ),
           ),
           _ManagementItem(
             title: 'Formas de recebimento',
@@ -251,37 +308,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ],
       ),
       _ManagementSection(
-        title: 'Relatórios',
-        icon: Icons.analytics_outlined,
-        items: <_ManagementItem>[
-          _ManagementItem(
-            title: 'Vendas',
-            subtitle: 'Resultados e histórico comercial',
-            icon: Icons.bar_chart_rounded,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: 'Assistências',
-            subtitle: 'Ordens, prazos e produtividade',
-            icon: Icons.handyman_outlined,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: 'Caixa',
-            subtitle: 'Aberturas, fechamentos e movimentações',
-            icon: Icons.point_of_sale_outlined,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: 'Financeiro',
-            subtitle: 'Receitas, despesas e fluxo de caixa',
-            icon: Icons.query_stats_rounded,
-            onTap: _showFeatureInProgress,
-          ),
-        ],
-      ),
-      _ManagementSection(
         title: 'Configurações',
+        subtitle: 'Empresa, idioma, notificações e integrações.',
         icon: Icons.settings_outlined,
         items: <_ManagementItem>[
           _ManagementItem(
@@ -325,29 +353,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ],
       ),
     ];
-
-    return SafeArea(
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-        children: <Widget>[
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 70),
-            child: _buildManagementHeader(),
-          ),
-          const SizedBox(height: 22),
-          ...sections.asMap().entries.map((
-            MapEntry<int, _ManagementSection> entry,
-          ) {
-            final int delay = 130 + (entry.key * 65);
-            return SixStaggeredEntry(
-              delay: Duration(milliseconds: delay),
-              child: _buildManagementSection(entry.value),
-            );
-          }),
-        ],
-      ),
-    );
   }
 
   Widget _buildManagementHeader() {
@@ -398,7 +403,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Organize cadastros, financeiro, relatórios e configurações do comércio.',
+                  'Organize catálogo, pessoas, financeiro e configurações do comércio.',
                   style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
                 ),
               ],
@@ -409,26 +414,277 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
-  Widget _buildManagementSection(_ManagementSection section) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
+  Widget _buildSectionCarousel(List<_ManagementSection> sections) {
+    return SizedBox(
+      height: 156,
+      child: PageView.builder(
+        controller: _sectionCarouselController,
+        clipBehavior: Clip.none,
+        itemCount: sections.length,
+        onPageChanged: (int index) {
+          setState(() => _selectedSectionIndex = index);
+        },
+        itemBuilder: (BuildContext context, int index) {
+          return AnimatedBuilder(
+            animation: _sectionCarouselController,
+            builder: (BuildContext context, Widget? child) {
+              double currentPage = _selectedSectionIndex.toDouble();
+
+              if (_sectionCarouselController.hasClients &&
+                  _sectionCarouselController.position.haveDimensions) {
+                currentPage =
+                    _sectionCarouselController.page ??
+                    _selectedSectionIndex.toDouble();
+              }
+
+              final double distance = (currentPage - index).abs().clamp(
+                0.0,
+                1.0,
+              );
+              final double scale = 1 - (distance * 0.04);
+
+              return Transform.scale(scale: scale, child: child);
+            },
+            child: _buildSectionCarouselCard(sections[index], index),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionCarouselCard(_ManagementSection section, int index) {
+    final bool isActive = index == _selectedSectionIndex;
+    final Color iconBackground =
+        isActive ? const Color(0x1AFFFFFF) : const Color(0xFFEFF6FF);
+    final Color iconColor = isActive ? Colors.white : _accentColor;
+    final Color titleColor = isActive ? Colors.white : _titleTextColor;
+    final Color subtitleColor =
+        isActive ? const Color(0xFFD7E3F5) : _mutedTextColor;
+    final BoxBorder border = Border.all(
+      color: isActive ? const Color(0x33FFFFFF) : const Color(0xFFE2E8F0),
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isActive ? null : _surfaceColor,
+        gradient:
+            isActive
+                ? const LinearGradient(
+                  colors: <Color>[_primaryColor, _secondaryColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                : null,
+        borderRadius: BorderRadius.circular(26),
+        border: border,
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x140B1F3A),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
               Container(
-                width: 32,
-                height: 32,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
+                  color: iconBackground,
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(
+                    color:
+                        isActive
+                            ? const Color(0x33FFFFFF)
+                            : const Color(0xFFE2E8F0),
+                  ),
                 ),
-                child: Icon(section.icon, color: _accentColor, size: 18),
+                child: Icon(section.icon, color: iconColor, size: 22),
               ),
-              const SizedBox(width: 10),
-              Text(
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color:
+                      isActive
+                          ? const Color(0x17FFFFFF)
+                          : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${section.items.length} atalhos',
+                  style: TextStyle(
+                    color: subtitleColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            section.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: titleColor,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            section.subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: subtitleColor, fontSize: 12.5, height: 1.3),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCarouselIndicators(List<_ManagementSection> sections) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children:
+          sections.asMap().entries.map((MapEntry<int, _ManagementSection> entry) {
+            final bool isActive = entry.key == _selectedSectionIndex;
+
+            return GestureDetector(
+              onTap: () {
+                _sectionCarouselController.animateToPage(
+                  entry.key,
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeOutCubic,
+                );
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 18 : 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: isActive ? _accentColor : const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            );
+          }).toList(),
+    );
+  }
+
+  Widget _buildSectionQuickActions(_ManagementSection section) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Text(
+          'Acesso rápido',
+          style: TextStyle(
+            color: _titleTextColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children:
+                section.items.map((_ManagementItem item) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: _buildQuickActionButton(item),
+                  );
+                }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActionButton(_ManagementItem item) {
+    return SizedBox(
+      width: 78,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: item.onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: const Color(0xFFD4E0EE)),
+                    boxShadow: const <BoxShadow>[
+                      BoxShadow(
+                        color: Color(0x0F0B1F3A),
+                        blurRadius: 10,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Icon(item.icon, color: _primaryColor, size: 25),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.compactTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    height: 1.08,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedSectionDetails(_ManagementSection section) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(section.icon, color: _accentColor, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
                 section.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: _titleTextColor,
                   fontSize: 16,
@@ -436,38 +692,38 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                   letterSpacing: 0.1,
                 ),
               ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: _surfaceColor,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x0F000000),
-                  blurRadius: 14,
-                  offset: Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              children:
-                  section.items.asMap().entries.map((
-                    MapEntry<int, _ManagementItem> entry,
-                  ) {
-                    final int index = entry.key;
-                    return _buildManagementTile(
-                      entry.value,
-                      isFirst: index == 0,
-                      isLast: index == section.items.length - 1,
-                    );
-                  }).toList(),
-            ),
+          child: Column(
+            children:
+                section.items.asMap().entries.map((
+                  MapEntry<int, _ManagementItem> entry,
+                ) {
+                  final int index = entry.key;
+                  return _buildManagementTile(
+                    entry.value,
+                    isFirst: index == 0,
+                    isLast: index == section.items.length - 1,
+                  );
+                }).toList(),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -569,11 +825,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 class _ManagementSection {
   const _ManagementSection({
     required this.title,
+    required this.subtitle,
     required this.icon,
     required this.items,
   });
 
   final String title;
+  final String subtitle;
   final IconData icon;
   final List<_ManagementItem> items;
 }
@@ -584,10 +842,35 @@ class _ManagementItem {
     required this.subtitle,
     required this.icon,
     required this.onTap,
+    this.shortTitle,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
+  final String? shortTitle;
+
+  String get compactTitle => shortTitle ?? _compactTitle(title);
+
+  String _compactTitle(String value) {
+    switch (value) {
+      case 'Produtos e Serviços':
+        return 'Produtos';
+      case 'Contas a receber':
+        return 'Receber';
+      case 'Contas a pagar':
+        return 'Pagar';
+      case 'Agenda financeira':
+        return 'Agenda';
+      case 'Formas de recebimento':
+        return 'Receber';
+      case 'Usuários e permissões':
+        return 'Usuários';
+      case 'Modelos de PDF':
+        return 'PDF';
+      default:
+        return value;
+    }
+  }
 }

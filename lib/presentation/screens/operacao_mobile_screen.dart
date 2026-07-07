@@ -8,6 +8,7 @@ import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
@@ -32,8 +33,9 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   static const Color _muted = Color(0xFF64748B);
   static const Color _title = Color(0xFF0F172A);
 
-  final TelaInicialWebApiClient _api =
-      HttpResumoDaEmpresaApiClient(canal: 'mobile');
+  final TelaInicialWebApiClient _api = HttpResumoDaEmpresaApiClient(
+    canal: 'mobile',
+  );
   final NotificacaoService _notificacoes = NotificacaoService();
   final ImagePicker _picker = ImagePicker();
 
@@ -65,7 +67,8 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     _totalNotificacoesConhecidas = totalAtual;
     setState(() {});
 
-    final String? mensagem = _notificacoes.ultimaNotificacao?.description.trim();
+    final String? mensagem =
+        _notificacoes.ultimaNotificacao?.description.trim();
     if (!recebeuNova || mensagem == null || mensagem.isEmpty) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -132,52 +135,59 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         ],
       ),
       drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _carregarResumo,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-            children: <Widget>[
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 70),
-                child: _hero(),
-              ),
-              const SizedBox(height: 18),
-              _section('Atendimento rápido'),
-              const SizedBox(height: 12),
-              _primaryAction(
-                title: 'Nova venda',
-                subtitle: 'Abrir atendimento no caixa',
-                icon: Icons.point_of_sale_rounded,
-                onTap: () => _go(const PdvMobileScreen()),
-              ),
-              const SizedBox(height: 12),
-              _primaryAction(
-                title: 'Atendimento técnico',
-                subtitle: 'Iniciar diagnóstico, orçamento e execução',
-                icon: Icons.build_circle_rounded,
-                onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
-              ),
-              const SizedBox(height: 24),
-              _section('Acompanhamento'),
-              const SizedBox(height: 12),
-              ..._trackingCards(),
-              const SizedBox(height: 12),
-              _section('Caixa'),
-              const SizedBox(height: 12),
-              _trackingCard(
-                title: 'Caixa a receber',
-                subtitle: 'Liquidar vendas deixadas para depois',
-                value: null,
-                icon: Icons.point_of_sale_outlined,
-                onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
-              ),
-            ],
+      body: SixMobileAnimatedGradientBackground(
+        baseColor: _bg,
+        primaryColor: _primary,
+        secondaryColor: _secondary,
+        accentColor: _accent,
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _carregarResumo,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+              children: <Widget>[
+                SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 70),
+                  child: _hero(),
+                ),
+                const SizedBox(height: 18),
+                _section('Atendimento rápido'),
+                const SizedBox(height: 12),
+                _primaryAction(
+                  title: 'Nova venda',
+                  subtitle: 'Abrir atendimento no caixa',
+                  icon: Icons.point_of_sale_rounded,
+                  onTap: () => _go(const PdvMobileScreen()),
+                ),
+                const SizedBox(height: 12),
+                _primaryAction(
+                  title: 'Atendimento técnico',
+                  subtitle: 'Iniciar diagnóstico, orçamento e execução',
+                  icon: Icons.build_circle_rounded,
+                  onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
+                ),
+                const SizedBox(height: 24),
+                _section('Acompanhamento'),
+                const SizedBox(height: 12),
+                ..._trackingCards(),
+                const SizedBox(height: 12),
+                _section('Caixa'),
+                const SizedBox(height: 12),
+                _trackingCard(
+                  title: 'Caixa a receber',
+                  subtitle: 'Liquidar vendas deixadas para depois',
+                  value: null,
+                  icon: Icons.point_of_sale_outlined,
+                  onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      bottomNavigationBar: kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
+      bottomNavigationBar:
+          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
     );
   }
 
@@ -282,29 +292,34 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       ),
       _TrackingCardData(
         title: 'Atendimentos Técnicos',
-        subtitle: hasError ? subtitleErro : 'Dashboard executivo do fluxo técnico',
+        subtitle:
+            hasError ? subtitleErro : 'Dashboard executivo do fluxo técnico',
         value: (_resumo?.totalAtendimentoTecnicosNaoEntregues ?? 0).toString(),
         icon: Icons.fact_check_outlined,
         onTap: () => _go(const AtendimentosTecnicosMobileScreen()),
       ),
     ];
 
-    return cards.asMap().entries.map((MapEntry<int, _TrackingCardData> entry) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: SixStaggeredEntry(
-          delay: Duration(milliseconds: 230 + entry.key * 45),
-          child: _trackingCard(
-            title: entry.value.title,
-            subtitle: entry.value.subtitle,
-            value: entry.value.value,
-            icon: entry.value.icon,
-            hasError: hasError,
-            onTap: entry.value.onTap,
-          ),
-        ),
-      );
-    }).toList(growable: false);
+    return cards
+        .asMap()
+        .entries
+        .map((MapEntry<int, _TrackingCardData> entry) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SixStaggeredEntry(
+              delay: Duration(milliseconds: 230 + entry.key * 45),
+              child: _trackingCard(
+                title: entry.value.title,
+                subtitle: entry.value.subtitle,
+                value: entry.value.value,
+                icon: entry.value.icon,
+                hasError: hasError,
+                onTap: entry.value.onTap,
+              ),
+            ),
+          );
+        })
+        .toList(growable: false);
   }
 
   Widget _primaryAction({
@@ -346,22 +361,22 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           if (value != null)
             _loading
                 ? Container(
-                    width: 34,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  )
-                : SixAnimatedNumberText(
-                    key: ValueKey<String>('inicio-$title-$value'),
-                    value: value,
-                    style: const TextStyle(
-                      color: _title,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  width: 34,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(999),
                   ),
+                )
+                : SixAnimatedNumberText(
+                  key: ValueKey<String>('inicio-$title-$value'),
+                  value: value,
+                  style: const TextStyle(
+                    color: _title,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
           const Icon(Icons.chevron_right_rounded, color: _muted),
         ],
       ),
