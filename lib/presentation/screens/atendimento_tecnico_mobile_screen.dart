@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/auth_service.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
+import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/produto_model.dart';
+import '../../data/models/usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
+import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
+import '../../providers/usuario_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
 import 'produto_list_mobile_screen.dart';
 
@@ -29,6 +35,8 @@ class _AtendimentoTecnicoMobileScreenState
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ClienteUsuarioApiClient _clienteApiClient = HttpClienteUsuarioApiClient();
+  final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      HttpColaboradorUsuarioApiClient();
   final List<_AtendimentoItemMobile> _itens = <_AtendimentoItemMobile>[];
 
   final TextEditingController _descricaoController = TextEditingController();
@@ -43,7 +51,10 @@ class _AtendimentoTecnicoMobileScreenState
   final TextEditingController _diagnosticoController = TextEditingController();
 
   List<ClienteUsuario> _clientes = const <ClienteUsuario>[];
+  List<_ResponsavelTecnicoMobile> _responsaveis =
+      const <_ResponsavelTecnicoMobile>[];
   ClienteUsuario? _clienteSelecionado;
+  _ResponsavelTecnicoMobile? _responsavelSelecionado;
   bool _carregando = true;
   bool _salvando = false;
   String? _erro;
@@ -70,7 +81,7 @@ class _AtendimentoTecnicoMobileScreenState
   @override
   void initState() {
     super.initState();
-    _carregarClientes();
+    _carregarDados();
   }
 
   @override
@@ -87,7 +98,7 @@ class _AtendimentoTecnicoMobileScreenState
     super.dispose();
   }
 
-  Future<void> _carregarClientes() async {
+  Future<void> _carregarDados() async {
     if (mounted) {
       setState(() {
         _carregando = true;
@@ -97,9 +108,17 @@ class _AtendimentoTecnicoMobileScreenState
 
     try {
       final response = await _clienteApiClient.listarClientesUsuario();
+      final List<ColaboradorUsuarioResumo> colaboradores =
+          await _colaboradorApiClient.listarColaboradores();
+      final _ResponsavelTecnicoMobile? admin = await _carregarAdminAtual();
+      final List<_ResponsavelTecnicoMobile> responsaveis =
+          _montarResponsaveis(admin, colaboradores);
+
       if (!mounted) return;
       setState(() {
         _clientes = response.clientes.where((cliente) => cliente.ativo).toList();
+        _responsaveis = responsaveis;
+        _responsavelSelecionado ??= responsaveis.isEmpty ? null : responsaveis.first;
         _carregando = false;
       });
     } catch (error) {
@@ -109,6 +128,95 @@ class _AtendimentoTecnicoMobileScreenState
         _carregando = false;
       });
     }
+  }
+
+  Future<_ResponsavelTecnicoMobile?> _carregarAdminAtual() async {
+    final AuthService authService = AuthService();
+    final String idUsuario = (await authService.getUserId())?.trim() ?? '';
+
+    try {
+      if (UsuarioProvider().usuario == null) {
+        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      }
+    } catch (_) {
+      // Mantem a tela funcional mesmo quando os dados pessoais nao carregarem.
+    }
+
+    final UsuarioModel? usuario = UsuarioProvider().usuario;
+    final String email =
+        (usuario?.email.trim().isNotEmpty == true
+                ? usuario!.email.trim()
+                : (await authService.getUserEmail())?.trim()) ??
+            '';
+    final String nome = _nomeUsuario(usuario, fallbackEmail: email);
+    final String id = idUsuario.isNotEmpty ? idUsuario : email;
+
+    if (id.isEmpty && nome.isEmpty) return null;
+
+    return _ResponsavelTecnicoMobile(
+      id: id.isEmpty ? nome : id,
+      nome: nome.isEmpty ? 'ADMIN' : nome,
+      subtitulo: email.isEmpty ? 'ADMIN do sistema' : 'ADMIN do sistema • $email',
+      isAdmin: true,
+    );
+  }
+
+  String _nomeUsuario(UsuarioModel? usuario, {required String fallbackEmail}) {
+    if (usuario == null) return fallbackEmail;
+    final String nomeDeGuerra = usuario.nomeDeGuerra.trim();
+    if (nomeDeGuerra.isNotEmpty) return nomeDeGuerra;
+    final String nomeCompleto = <String>[usuario.nome, usuario.sobrenome]
+        .map((String item) => item.trim())
+        .where((String item) => item.isNotEmpty)
+        .join(' ');
+    if (nomeCompleto.isNotEmpty) return nomeCompleto;
+    return fallbackEmail;
+  }
+
+  List<_ResponsavelTecnicoMobile> _montarResponsaveis(
+    _ResponsavelTecnicoMobile? admin,
+    List<ColaboradorUsuarioResumo> colaboradores,
+  ) {
+    final Map<String, _ResponsavelTecnicoMobile> mapa =
+        <String, _ResponsavelTecnicoMobile>{};
+
+    void add(_ResponsavelTecnicoMobile responsavel) {
+      final String key = responsavel.id.trim().isNotEmpty
+          ? responsavel.id.trim()
+          : responsavel.nome.toLowerCase().trim();
+      if (key.isEmpty || mapa.containsKey(key)) return;
+      mapa[key] = responsavel;
+    }
+
+    if (admin != null) add(admin);
+
+    for (final ColaboradorUsuarioResumo colaborador in colaboradores) {
+      final String id = colaborador.idUnicoPessoal.trim().isNotEmpty
+          ? colaborador.idUnicoPessoal.trim()
+          : colaborador.email.trim();
+      final String nome = colaborador.nomeDeGuerra.trim().isNotEmpty
+          ? colaborador.nomeDeGuerra.trim()
+          : colaborador.nome.trim().isNotEmpty
+              ? colaborador.nome.trim()
+              : colaborador.email.trim();
+      if (id.isEmpty && nome.isEmpty) continue;
+
+      final String subtitulo = <String>[
+        'Colaborador',
+        colaborador.email,
+        colaborador.celularDeAcesso,
+      ].where((String item) => item.trim().isNotEmpty).join(' • ');
+
+      add(
+        _ResponsavelTecnicoMobile(
+          id: id.isEmpty ? nome : id,
+          nome: nome.isEmpty ? 'Colaborador' : nome,
+          subtitulo: subtitulo,
+        ),
+      );
+    }
+
+    return mapa.values.toList(growable: false);
   }
 
   Future<void> _selecionarValidadeOrcamento() async {
@@ -181,6 +289,31 @@ class _AtendimentoTecnicoMobileScreenState
 
     if (cliente == null || !mounted) return;
     setState(() => _clienteSelecionado = cliente);
+  }
+
+  Future<void> _abrirSelecaoResponsavel() async {
+    if (_responsaveis.isEmpty) {
+      _mostrarMensagem('Nenhum responsável técnico disponível para seleção.');
+      return;
+    }
+
+    final _ResponsavelTecnicoMobile? responsavel =
+        await showModalBottomSheet<_ResponsavelTecnicoMobile>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (context) {
+        return AtendimentoTecnicoResponsavelSelectorMobile(
+          responsaveis: _responsaveis,
+          responsavelSelecionado: _responsavelSelecionado,
+        );
+      },
+    );
+
+    if (responsavel == null || !mounted) return;
+    setState(() => _responsavelSelecionado = responsavel);
   }
 
   Future<void> _abrirSelecaoItens() async {
@@ -275,6 +408,8 @@ class _AtendimentoTecnicoMobileScreenState
       return;
     }
 
+    final _ResponsavelTecnicoMobile? responsavel = _responsavelSelecionado;
+
     setState(() => _salvando = true);
     try {
       final atendimento = await _service.criar(
@@ -283,6 +418,8 @@ class _AtendimentoTecnicoMobileScreenState
           descricao: _textoOuNulo(_descricaoController.text),
           idCliente: cliente.id,
           nomeClienteSnapshot: cliente.nome,
+          idTecnicoResponsavel: responsavel?.id,
+          nomeTecnicoResponsavelSnapshot: responsavel?.nome,
           equipamento: AtendimentoTecnicoEquipamentoModel(
             tipo: _textoOuNulo(_tipoEquipamentoController.text),
             marca: _textoOuNulo(_marcaController.text),
@@ -294,7 +431,9 @@ class _AtendimentoTecnicoMobileScreenState
           ),
           defeitoRelatado: _textoOuNulo(_defeitoController.text),
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
-          itens: _itens.map((item) => item.toInput()).toList(growable: false),
+          itens: _itens
+              .map((item) => item.toInput(responsavel: responsavel))
+              .toList(growable: false),
         ),
         dataVencimentoEm: _vencimentoFinanceiroEm,
       );
@@ -317,6 +456,8 @@ class _AtendimentoTecnicoMobileScreenState
   void _limparFormulario() {
     setState(() {
       _clienteSelecionado = null;
+      _responsavelSelecionado =
+          _responsaveis.isEmpty ? null : _responsaveis.first;
       _descricaoController.clear();
       _tipoEquipamentoController.text = 'SMARTPHONE';
       _marcaController.clear();
@@ -371,7 +512,7 @@ class _AtendimentoTecnicoMobileScreenState
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _carregarClientes,
+          onRefresh: _carregarDados,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
@@ -392,6 +533,7 @@ class _AtendimentoTecnicoMobileScreenState
   }
 
   Widget _buildHeader() {
+    final String? responsavel = _responsavelSelecionado?.nome;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -427,9 +569,11 @@ class _AtendimentoTecnicoMobileScreenState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _itens.isEmpty
-                      ? 'Cliente, equipamento e defeito em uma tela rápida para balcão.'
-                      : '$_quantidadeItens item(ns) • ${_formatarMoeda(_totalItens)}',
+                  responsavel != null && responsavel.trim().isNotEmpty
+                      ? 'Responsável: $responsavel'
+                      : _itens.isEmpty
+                          ? 'Cliente, equipamento e defeito em uma tela rápida para balcão.'
+                          : '$_quantidadeItens item(ns) • ${_formatarMoeda(_totalItens)}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
@@ -452,7 +596,7 @@ class _AtendimentoTecnicoMobileScreenState
             child: CircularProgressIndicator(strokeWidth: 2.4),
           ),
           SizedBox(width: 12),
-          Expanded(child: Text('Carregando clientes...')),
+          Expanded(child: Text('Carregando clientes e responsáveis...')),
         ],
       ),
     );
@@ -464,7 +608,7 @@ class _AtendimentoTecnicoMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const Text(
-            'Não foi possível carregar os clientes',
+            'Não foi possível carregar os dados',
             style: TextStyle(
               color: _titleTextColor,
               fontSize: 16,
@@ -480,7 +624,7 @@ class _AtendimentoTecnicoMobileScreenState
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
-            onPressed: _carregarClientes,
+            onPressed: _carregarDados,
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Tentar novamente'),
           ),
@@ -497,6 +641,8 @@ class _AtendimentoTecnicoMobileScreenState
           _sectionTitle('Dados principais'),
           const SizedBox(height: 12),
           _clienteSelectorField(),
+          const SizedBox(height: 12),
+          _responsavelSelectorField(),
           const SizedBox(height: 12),
           TextField(
             controller: _descricaoController,
@@ -860,6 +1006,37 @@ class _AtendimentoTecnicoMobileScreenState
     );
   }
 
+  Widget _responsavelSelectorField() {
+    final _ResponsavelTecnicoMobile? responsavel = _responsavelSelecionado;
+    final bool hasSelection = responsavel != null;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _abrirSelecaoResponsavel,
+        child: InputDecorator(
+          isEmpty: !hasSelection,
+          decoration: _inputDecoration(
+            label: 'Responsável técnico',
+            icon: Icons.engineering_outlined,
+            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          child: Text(
+            hasSelection ? responsavel.nome : 'Selecione o responsável',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: hasSelection ? _titleTextColor : _mutedTextColor,
+              fontWeight: hasSelection ? FontWeight.w800 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
@@ -1028,7 +1205,9 @@ class _AtendimentoItemMobile {
     );
   }
 
-  AtendimentoTecnicoItemInput toInput() {
+  AtendimentoTecnicoItemInput toInput({
+    _ResponsavelTecnicoMobile? responsavel,
+  }) {
     return AtendimentoTecnicoItemInput(
       tipoItemId: tipoItemId,
       tipoItemCodigo: tipoCodigo,
@@ -1037,7 +1216,342 @@ class _AtendimentoItemMobile {
       quantidade: quantidade.toDouble(),
       valorUnitario: valorUnitario,
       desconto: desconto,
+      idTecnicoResponsavel: responsavel?.id,
+      nomeTecnicoResponsavel: responsavel?.nome,
       movimentaEstoque: movimentaEstoque,
+    );
+  }
+}
+
+class _ResponsavelTecnicoMobile {
+  const _ResponsavelTecnicoMobile({
+    required this.id,
+    required this.nome,
+    required this.subtitulo,
+    this.isAdmin = false,
+  });
+
+  final String id;
+  final String nome;
+  final String subtitulo;
+  final bool isAdmin;
+}
+
+class AtendimentoTecnicoResponsavelSelectorMobile extends StatefulWidget {
+  const AtendimentoTecnicoResponsavelSelectorMobile({
+    super.key,
+    required this.responsaveis,
+    required this.responsavelSelecionado,
+  });
+
+  final List<_ResponsavelTecnicoMobile> responsaveis;
+  final _ResponsavelTecnicoMobile? responsavelSelecionado;
+
+  @override
+  State<AtendimentoTecnicoResponsavelSelectorMobile> createState() =>
+      _AtendimentoTecnicoResponsavelSelectorMobileState();
+}
+
+class _AtendimentoTecnicoResponsavelSelectorMobileState
+    extends State<AtendimentoTecnicoResponsavelSelectorMobile> {
+  static const Color _backgroundColor = Color(0xFFF4F7FB);
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _borderColor = Color(0xFFE2E8F0);
+
+  final TextEditingController _searchController = TextEditingController();
+  String _filter = '';
+
+  List<_ResponsavelTecnicoMobile> get _responsaveisFiltrados {
+    final String term = _normalize(_filter);
+    if (term.isEmpty) return widget.responsaveis;
+    return widget.responsaveis.where((_ResponsavelTecnicoMobile item) {
+      final String source = _normalize('${item.nome} ${item.subtitulo}');
+      return source.contains(term);
+    }).toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      minChildSize: 0.38,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (BuildContext context, ScrollController scrollController) {
+        final List<_ResponsavelTecnicoMobile> responsaveis =
+            _responsaveisFiltrados;
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.engineering_outlined,
+                          color: _primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              'Responsável técnico',
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Selecione o ADMIN ou colaborador responsável.',
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 12,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (String value) => setState(() => _filter = value),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar responsável',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _filter = '');
+                              },
+                            ),
+                      filled: true,
+                      fillColor: _surfaceColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            const BorderSide(color: _accentColor, width: 1.4),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: responsaveis.isEmpty
+                      ? _emptyState()
+                      : ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+                          itemBuilder: (BuildContext context, int index) {
+                            final _ResponsavelTecnicoMobile responsavel =
+                                responsaveis[index];
+                            final bool selected = _isSelected(responsavel);
+                            return _ResponsavelSelectorItem(
+                              responsavel: responsavel,
+                              selected: selected,
+                              onTap: () => Navigator.of(context).pop(responsavel),
+                            );
+                          },
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemCount: responsaveis.length,
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _emptyState() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+      children: <Widget>[
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+          ),
+          child: const Text(
+            'Nenhum responsável encontrado.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _mutedTextColor),
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _isSelected(_ResponsavelTecnicoMobile responsavel) {
+    final _ResponsavelTecnicoMobile? selected = widget.responsavelSelecionado;
+    if (selected == null) return false;
+    return selected.id == responsavel.id;
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+}
+
+class _ResponsavelSelectorItem extends StatelessWidget {
+  const _ResponsavelSelectorItem({
+    required this.responsavel,
+    required this.selected,
+    required this.onTap,
+  });
+
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _borderColor = Color(0xFFE2E8F0);
+
+  final _ResponsavelTecnicoMobile responsavel;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: selected
+                    ? _accentColor.withOpacity(0.12)
+                    : const Color(0xFFF1F5F9),
+                child: Icon(
+                  responsavel.isAdmin
+                      ? Icons.admin_panel_settings_outlined
+                      : Icons.person_outline_rounded,
+                  color: selected ? _accentColor : _primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      responsavel.nome,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (responsavel.subtitulo.trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 4),
+                      Text(
+                        responsavel.subtitulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedOpacity(
+                opacity: selected ? 1 : 0,
+                duration: const Duration(milliseconds: 140),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: _accentColor,
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
