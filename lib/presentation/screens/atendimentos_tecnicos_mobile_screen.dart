@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../components/mobile_motion.dart';
+import 'atendimento_tecnico_editar_mobile_screen.dart';
 
 class AtendimentosTecnicosMobileScreen extends StatefulWidget {
   const AtendimentosTecnicosMobileScreen({super.key});
@@ -27,6 +28,7 @@ class _AtendimentosTecnicosMobileScreenState
   final TextEditingController _searchController = TextEditingController();
 
   late Future<List<AtendimentoTecnicoModel>> _future;
+  String? _statusSelecionado;
 
   @override
   void initState() {
@@ -96,38 +98,44 @@ class _AtendimentosTecnicosMobileScreenState
                 children: <Widget>[
                   SixStaggeredEntry(
                     delay: const Duration(milliseconds: 60),
-                    child: _hero(atendimentos),
+                    child: _hero(filtrados, totalGeral: atendimentos.length),
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
                     delay: const Duration(milliseconds: 120),
-                    child: _summaryGrid(atendimentos),
+                    child: _summaryGrid(filtrados),
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
                     delay: const Duration(milliseconds: 180),
                     child: _statusOverview(atendimentos),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 240),
+                    delay: const Duration(milliseconds: 220),
+                    child: _statusFilter(atendimentos),
+                  ),
+                  const SizedBox(height: 14),
+                  SixStaggeredEntry(
+                    delay: const Duration(milliseconds: 260),
                     child: _searchBox(),
                   ),
                   const SizedBox(height: 16),
                   _sectionTitle(
-                    _searchController.text.trim().isEmpty
+                    _searchController.text.trim().isEmpty &&
+                            _statusSelecionado == null
                         ? 'Atendimentos recentes'
-                        : 'Resultado da busca',
+                        : 'Resultado do filtro',
                   ),
                   const SizedBox(height: 12),
                   if (filtrados.isEmpty)
                     _emptyState()
                   else
-                    ...filtrados.take(12).toList().asMap().entries.map(
+                    ...filtrados.take(20).toList().asMap().entries.map(
                           (entry) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: SixStaggeredEntry(
-                              delay: Duration(milliseconds: 300 + entry.key * 45),
+                              delay: Duration(milliseconds: 320 + entry.key * 45),
                               child: _atendimentoCard(entry.value),
                             ),
                           ),
@@ -233,8 +241,13 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _hero(List<AtendimentoTecnicoModel> atendimentos) {
+  Widget _hero(
+    List<AtendimentoTecnicoModel> atendimentos, {
+    required int totalGeral,
+  }) {
     final int pendentes = _totalPendentes(atendimentos);
+    final bool filtrando = _statusSelecionado != null ||
+        _searchController.text.trim().isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -277,9 +290,11 @@ class _AtendimentosTecnicosMobileScreenState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  pendentes == 1
-                      ? '1 atendimento ainda precisa de atenção.'
-                      : '$pendentes atendimentos ainda precisam de atenção.',
+                  filtrando
+                      ? '${atendimentos.length} de $totalGeral atendimento(s) no filtro.'
+                      : pendentes == 1
+                          ? '1 atendimento ainda precisa de atenção.'
+                          : '$pendentes atendimentos ainda precisam de atenção.',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
@@ -297,7 +312,7 @@ class _AtendimentosTecnicosMobileScreenState
       _SummaryItem(
         label: 'Atendimentos',
         value: atendimentos.length.toString(),
-        helper: 'Total criado',
+        helper: 'Total exibido',
         icon: Icons.assignment_turned_in_outlined,
       ),
       _SummaryItem(
@@ -363,7 +378,9 @@ class _AtendimentosTecnicosMobileScreenState
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: item.highlight ? const Color(0x1AFFFFFF) : const Color(0xFFEFF6FF),
+              color: item.highlight
+                  ? const Color(0x1AFFFFFF)
+                  : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -495,6 +512,84 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
+  Widget _statusFilter(List<AtendimentoTecnicoModel> atendimentos) {
+    final List<_StatusCount> statuses = _statusCounts(atendimentos);
+    final int total = atendimentos.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text(
+            'Filtrar por status',
+            style: TextStyle(
+              color: _titleTextColor,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: <Widget>[
+                _statusChip(
+                  label: 'Todos',
+                  count: total,
+                  selected: _statusSelecionado == null,
+                  onSelected: () => setState(() => _statusSelecionado = null),
+                ),
+                const SizedBox(width: 8),
+                ...statuses.map(
+                  (status) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _statusChip(
+                      label: status.label,
+                      count: status.count,
+                      selected: _statusSelecionado == status.label,
+                      onSelected: () => setState(() {
+                        _statusSelecionado = status.label;
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip({
+    required String label,
+    required int count,
+    required bool selected,
+    required VoidCallback onSelected,
+  }) {
+    return ChoiceChip(
+      selected: selected,
+      showCheckmark: false,
+      label: Text('$label · $count'),
+      onSelected: (_) => onSelected(),
+      selectedColor: _accentColor,
+      backgroundColor: const Color(0xFFF8FAFC),
+      side: BorderSide(color: selected ? _accentColor : _borderColor),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : _primaryColor,
+        fontWeight: FontWeight.w900,
+        fontSize: 12,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
   Widget _searchBox() {
     return TextField(
       controller: _searchController,
@@ -537,7 +632,7 @@ class _AtendimentosTecnicosMobileScreenState
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: () => _showDetails(atendimento),
+        onTap: () => _editarAtendimento(atendimento),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -615,12 +710,26 @@ class _AtendimentosTecnicosMobileScreenState
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+              const Icon(Icons.edit_note_rounded, color: _mutedTextColor),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _editarAtendimento(AtendimentoTecnicoModel atendimento) async {
+    final bool? alterou = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => AtendimentoTecnicoEditarMobileScreen(
+          atendimento: atendimento,
+        ),
+      ),
+    );
+
+    if (alterou == true && mounted) {
+      await _recarregar();
+    }
   }
 
   Widget _emptyState() {
@@ -727,130 +836,22 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  void _showDetails(AtendimentoTecnicoModel atendimento) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
-      builder: (BuildContext context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.58,
-          minChildSize: 0.36,
-          maxChildSize: 0.88,
-          expand: false,
-          builder: (BuildContext context, ScrollController controller) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: _backgroundColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: SafeArea(
-                top: false,
-                child: ListView(
-                  controller: controller,
-                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
-                  children: <Widget>[
-                    Center(
-                      child: Container(
-                        width: 42,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFCBD5E1),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _card(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            _equipamentoTitulo(atendimento),
-                            style: const TextStyle(
-                              color: _titleTextColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${atendimento.numero} • ${_clienteLabel(atendimento)}',
-                            style: const TextStyle(
-                              color: _mutedTextColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          _detailRow('Status', _statusLabel(atendimento)),
-                          _detailRow('Total', _formatarMoeda(atendimento.valorTotalAtendimento)),
-                          _detailRow('Em aberto', _formatarMoeda(atendimento.valorEmAberto)),
-                          _detailRow('Itens', atendimento.itens.length.toString()),
-                          _detailRow('Versão', atendimento.versaoOrcamento.toString()),
-                          _detailRow('Validade', _formatarData(atendimento.validadeOrcamentoEm)),
-                          if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty)
-                            _detailRow('Defeito', atendimento.defeitoRelatado!.trim()),
-                          if ((atendimento.diagnosticoTecnico ?? '').trim().isNotEmpty)
-                            _detailRow('Diagnóstico', atendimento.diagnosticoTecnico!.trim()),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 82,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: _mutedTextColor,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: _titleTextColor,
-                fontWeight: FontWeight.w800,
-                height: 1.25,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   List<AtendimentoTecnicoModel> _filtrar(
     List<AtendimentoTecnicoModel> atendimentos,
   ) {
     final String termo = _searchController.text.trim().toLowerCase();
-    final List<AtendimentoTecnicoModel> sorted = List<AtendimentoTecnicoModel>.from(
-      atendimentos,
-    )..sort(_compareRecentes);
-
-    if (termo.isEmpty) return sorted;
+    final String? statusSelecionado = _statusSelecionado;
+    final List<AtendimentoTecnicoModel> sorted =
+        List<AtendimentoTecnicoModel>.from(atendimentos)..sort(_compareRecentes);
 
     return sorted.where((AtendimentoTecnicoModel atendimento) {
+      if (statusSelecionado != null &&
+          _statusLabel(atendimento) != statusSelecionado) {
+        return false;
+      }
+
+      if (termo.isEmpty) return true;
+
       final AtendimentoTecnicoEquipamentoModel? equipamento = atendimento.equipamento;
       final String source = <String>[
         atendimento.numero,
@@ -941,13 +942,6 @@ class _AtendimentosTecnicosMobileScreenState
 
   String _formatarMoeda(double value) {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
-  String _formatarData(DateTime? value) {
-    if (value == null) return '-';
-    final String dia = value.day.toString().padLeft(2, '0');
-    final String mes = value.month.toString().padLeft(2, '0');
-    return '$dia/$mes/${value.year}';
   }
 }
 
