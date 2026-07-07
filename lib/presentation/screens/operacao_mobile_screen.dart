@@ -9,6 +9,7 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
@@ -228,22 +229,38 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           end: Alignment.bottomRight,
         ),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x260B1F3A), blurRadius: 22, offset: Offset(0, 12)),
+          BoxShadow(
+            color: Color(0x260B1F3A),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
         ],
       ),
       child: Row(
         children: <Widget>[
-          _iconBox(Icons.support_agent_rounded, bg: const Color(0x1AFFFFFF), fg: Colors.white),
+          _iconBox(
+            Icons.support_agent_rounded,
+            bg: const Color(0x1AFFFFFF),
+            fg: Colors.white,
+          ),
           const SizedBox(width: 14),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Balcão digital',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(
+                  'Balcão digital',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 SizedBox(height: 6),
-                Text('Venda e atendimento técnico em poucos passos.',
-                    style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35)),
+                Text(
+                  'Venda e atendimento técnico em poucos passos.',
+                  style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+                ),
               ],
             ),
           ),
@@ -264,25 +281,11 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
       ),
       _TrackingCardData(
-        title: 'Atendimentos não entregues',
-        subtitle: hasError ? subtitleErro : 'Diferentes de entregue',
+        title: 'Atendimentos Técnicos',
+        subtitle: hasError ? subtitleErro : 'Dashboard executivo do fluxo técnico',
         value: (_resumo?.totalAtendimentoTecnicosNaoEntregues ?? 0).toString(),
-        icon: Icons.pending_actions_rounded,
-        onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
-      ),
-      _TrackingCardData(
-        title: 'Em andamento',
-        subtitle: hasError ? subtitleErro : 'Atendimentos em execução',
-        value: (_resumo?.totalAtendimentoTecnicoEmAndamento ?? 0).toString(),
-        icon: Icons.engineering_rounded,
-        onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
-      ),
-      _TrackingCardData(
-        title: 'Aguardando assinatura',
-        subtitle: hasError ? subtitleErro : 'Links enviados e ainda pendentes',
-        value: (_resumo?.totalAtendimentoTecnicoAguardandoAssinatura ?? 0).toString(),
-        icon: Icons.draw_rounded,
-        onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
+        icon: Icons.fact_check_outlined,
+        onTap: () => _go(const AtendimentosTecnicosMobileScreen()),
       ),
     ];
 
@@ -382,7 +385,11 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: borderColor),
             boxShadow: const <BoxShadow>[
-              BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
             ],
           ),
           child: child,
@@ -391,28 +398,52 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     );
   }
 
-  Widget _texts(String title, String subtitle, {bool error = false, double titleSize = 15}) {
+  Widget _texts(
+    String title,
+    String subtitle, {
+    bool error = false,
+    double titleSize = 15,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: titleSize)),
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: _title,
+            fontWeight: FontWeight.w900,
+            fontSize: titleSize,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: error ? const Color(0xFFB91C1C) : _muted, fontSize: 12)),
+        Text(
+          subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: error ? const Color(0xFFB91C1C) : _muted,
+            fontSize: 12,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _iconBox(IconData icon, {required Color bg, required Color fg, double size = 50}) {
+  Widget _iconBox(
+    IconData icon, {
+    required Color bg,
+    required Color fg,
+    double size = 50,
+  }) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14),
+      ),
       child: Icon(icon, color: fg, size: size >= 48 ? 24 : 22),
     );
   }
