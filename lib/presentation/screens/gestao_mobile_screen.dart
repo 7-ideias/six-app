@@ -9,7 +9,7 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
@@ -208,7 +208,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.badge_outlined,
             onTap:
                 () =>
-                    _navigateTo(context, const ColaboradoresUsuarioListPage()),
+                    _navigateTo(context, const ColaboradoresUsuarioMobileScreen()),
           ),
           _ManagementItem(
             title: 'Fornecedores',
