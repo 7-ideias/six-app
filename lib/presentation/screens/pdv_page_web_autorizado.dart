@@ -37,10 +37,53 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
     }
 
     if (podeFazerVenda) {
-      return const PDVWeb();
+      return const _WebBrandWatermark(child: PDVWeb());
     }
 
-    return const _PdvSemVendasWeb();
+    return const _WebBrandWatermark(child: _PdvSemVendasWeb());
+  }
+}
+
+class _WebBrandWatermark extends StatelessWidget {
+  const _WebBrandWatermark({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        child,
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool isCompact = constraints.maxWidth < 720;
+            final double size = (isCompact
+                    ? constraints.maxWidth * 0.58
+                    : constraints.maxWidth * 0.22)
+                .clamp(isCompact ? 180.0 : 240.0, isCompact ? 320.0 : 420.0)
+                .toDouble();
+
+            return IgnorePointer(
+              child: Align(
+                alignment: isCompact
+                    ? const Alignment(0.72, 0.82)
+                    : const Alignment(0.92, 0.82),
+                child: Opacity(
+                  opacity: 0.10,
+                  child: Image.asset(
+                    'assets/images/six-logo-flecha.png',
+                    width: size,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 
@@ -98,7 +141,10 @@ class _PdvSemVendasWeb extends StatelessWidget {
                         SizedBox(height: 6),
                         Text(
                           'Ações disponíveis conforme as permissões do colaborador.',
-                          style: TextStyle(color: _muted, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: _muted,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
