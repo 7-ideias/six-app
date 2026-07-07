@@ -103,6 +103,75 @@ Backend:
 * Não usar animação contínua em gráfico executivo. Depois da entrada, o gráfico deve ficar estável e só reagir a hover, toque, atualização ou mudança de dados.
 * Validar labels longos, valores grandes, layout compacto e responsividade para evitar overflow em português, inglês e espanhol.
 
+## Regras obrigatórias para desenvolvimento mobile
+
+Toda alteração em telas mobile deve seguir uma abordagem mobile-first real, sem reaproveitar diretamente padrões visuais de web ou componentes padrão que prejudiquem a experiência.
+
+### Componentes de seleção no mobile
+
+Em telas mobile, evitar o uso direto de componentes padrão que abrem listas ou modais com aparência genérica de Android/Material quando isso causar quebra visual ou experiência ruim.
+
+Evitar, salvo justificativa técnica clara:
+
+- DropdownButtonFormField para listas médias/grandes;
+- DropdownMenu padrão;
+- showDatePicker padrão;
+- DatePickerDialog padrão;
+- dialogs grandes para seleção simples;
+- listas sobrepostas dentro de cards;
+- componentes que desloquem ou quebrem o layout da tela base.
+
+Para seleção de entidades no mobile, como cliente, fornecedor, produto, serviço, técnico responsável, forma de pagamento ou similares, preferir:
+
+- campo visual read-only/clicável;
+- abertura em showModalBottomSheet;
+- busca local quando a lista já estiver carregada;
+- lista com item confortável, avatar/ícone, título, subtítulo quando disponível e seleção destacada;
+- fechamento suave após seleção;
+- manutenção da tela base estável, sem deslocar ou quebrar cards.
+
+Para seleção de datas no mobile, preferir:
+
+- Bottom Sheet customizado;
+- atalhos rápidos quando fizer sentido;
+- calendário compacto dentro de layout próprio;
+- textos em pt-BR;
+- botão principal claro para aplicar;
+- botão secundário para cancelar;
+- não alterar o estado original antes da confirmação do usuário.
+
+### Regra de consistência visual
+
+Toda nova implementação mobile deve parecer parte do SixApp, usando tema, paleta, espaçamentos, bordas, cantos arredondados, tipografia e linguagem visual existentes no projeto.
+
+Não aceitar aparência de componente padrão genérico quando a tela já possui identidade visual customizada.
+
+### Regra de reutilização
+
+Quando um padrão visual puder ser reutilizado, criar componente próprio em vez de duplicar código diretamente na tela.
+
+Exemplos esperados:
+
+- ClienteSelectorMobileBottomSheet;
+- ProdutoSelectorMobileBottomSheet;
+- DateSelectorMobileBottomSheet;
+- EntitySelectorMobileBottomSheet;
+- QuickDateSelectorMobileBottomSheet.
+
+### Critério obrigatório antes de finalizar
+
+Antes de concluir uma alteração mobile, validar:
+
+- a versão web não foi alterada sem pedido explícito;
+- a tela mobile não reaproveita view web indevidamente;
+- não houve alteração de regra de negócio;
+- não houve criação de endpoint desnecessário;
+- componentes de seleção não quebram o layout base;
+- modais/bottom sheets usam transição suave;
+- textos visíveis ao usuário estão em pt-BR;
+- dart format foi executado;
+- git diff foi apresentado.
+
 ## Padrão visual Mobile — Six
 
 * A experiência mobile deve ser orientada a ação rápida, acompanhamento e gestão simples.
