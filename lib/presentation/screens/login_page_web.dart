@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
+import '../components/web_auth_logout_splash_scene.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
 import '../components/web_root/web_i18n_gate.dart';
@@ -22,6 +25,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _checkedLogoutEntry = false;
+  bool _showLogoutSplash = false;
+  Timer? _logoutSplashTimer;
 
   late WebRootL10n _l10n;
 
@@ -32,7 +38,26 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_checkedLogoutEntry) return;
+
+    _checkedLogoutEntry = true;
+    final String? routeName = ModalRoute.of(context)?.settings.name;
+    final bool abriuDiretoAposLogout = routeName == null || routeName.trim().isEmpty;
+
+    if (abriuDiretoAposLogout) {
+      _showLogoutSplash = true;
+      _logoutSplashTimer = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        setState(() => _showLogoutSplash = false);
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    _logoutSplashTimer?.cancel();
     _loginController.dispose();
     _passwordController.dispose();
     _authService.cancelPendingWebGoogleLogin();
@@ -122,125 +147,150 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   @override
   Widget build(BuildContext context) {
-    return WebI18nGate(
-      builder: (context) {
-        _l10n = WebRootL10n.of(context);
-        final primary = Theme.of(context).colorScheme.primary;
-
-        return WebAuthShell(
-          showBack: Navigator.of(context).canPop(),
-          onBack: () => Navigator.of(context).maybePop(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              WebAuthTitle(
-                title: _l10n.authLoginTitle,
-                subtitle: _l10n.authLoginSubtitle,
-              ),
-              const SizedBox(height: 32),
-              WebAuthTextField(
-                controller: _loginController,
-                hint: _l10n.authEmailHint,
-                label: _l10n.authEmailLabel,
-                prefixIcon: Icons.mail_outline_rounded,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 16),
-              WebAuthTextField(
-                controller: _passwordController,
-                hint: _l10n.authPasswordHint,
-                label: _l10n.authPasswordLabel,
-                prefixIcon: Icons.shield_outlined,
-                obscure: _obscurePassword,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _login(),
-                suffix: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: WebAuthShell.labelGrey(),
-                    size: 20,
-                  ),
-                  onPressed: () => setState(
-                    () => _obscurePassword = !_obscurePassword,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _forgotPassword,
-                  child: Text(
-                    _l10n.authForgotPassword,
-                    style: TextStyle(
-                      color: primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              WebAuthPrimaryButton(
-                label: _l10n.authSignInButton,
-                onPressed: _login,
-                isLoading: _isLoading,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      _l10n.authOrContinueWith,
-                      style: TextStyle(
-                        color: WebAuthShell.labelGrey(),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const WebGoogleSignInButton(),
-              const SizedBox(height: 28),
-              Center(
-                child: GestureDetector(
-                  onTap: _createAccount,
-                  behavior: HitTestBehavior.opaque,
-                  child: RichText(
-                    text: TextSpan(
-                      text: _l10n.authNoAccount,
-                      style: TextStyle(
-                        color: WebAuthShell.labelGrey(),
-                        fontSize: 14,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: _l10n.authCreateAccountLink,
-                          style: TextStyle(
-                            color: primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 680),
+      reverseDuration: const Duration(milliseconds: 420),
+      switchInCurve: Curves.easeInOutCubic,
+      switchOutCurve: Curves.easeInOutCubic,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.018),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
           ),
         );
       },
+      child: _showLogoutSplash
+          ? const WebAuthLogoutSplashScene(key: ValueKey<String>('logout-splash'))
+          : WebI18nGate(
+              key: const ValueKey<String>('login-form'),
+              builder: (context) {
+                _l10n = WebRootL10n.of(context);
+                final primary = Theme.of(context).colorScheme.primary;
+
+                return WebAuthShell(
+                  showBack: Navigator.of(context).canPop(),
+                  onBack: () => Navigator.of(context).maybePop(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      WebAuthTitle(
+                        title: _l10n.authLoginTitle,
+                        subtitle: _l10n.authLoginSubtitle,
+                      ),
+                      const SizedBox(height: 32),
+                      WebAuthTextField(
+                        controller: _loginController,
+                        hint: _l10n.authEmailHint,
+                        label: _l10n.authEmailLabel,
+                        prefixIcon: Icons.mail_outline_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+                      WebAuthTextField(
+                        controller: _passwordController,
+                        hint: _l10n.authPasswordHint,
+                        label: _l10n.authPasswordLabel,
+                        prefixIcon: Icons.shield_outlined,
+                        obscure: _obscurePassword,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _login(),
+                        suffix: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: WebAuthShell.labelGrey(),
+                            size: 20,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: _forgotPassword,
+                          child: Text(
+                            _l10n.authForgotPassword,
+                            style: TextStyle(
+                              color: primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      WebAuthPrimaryButton(
+                        label: _l10n.authSignInButton,
+                        onPressed: _login,
+                        isLoading: _isLoading,
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              _l10n.authOrContinueWith,
+                              style: TextStyle(
+                                color: WebAuthShell.labelGrey(),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          const Expanded(
+                            child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const WebGoogleSignInButton(),
+                      const SizedBox(height: 28),
+                      Center(
+                        child: GestureDetector(
+                          onTap: _createAccount,
+                          behavior: HitTestBehavior.opaque,
+                          child: RichText(
+                            text: TextSpan(
+                              text: _l10n.authNoAccount,
+                              style: TextStyle(
+                                color: WebAuthShell.labelGrey(),
+                                fontSize: 14,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: _l10n.authCreateAccountLink,
+                                  style: TextStyle(
+                                    color: primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
     );
   }
 }
