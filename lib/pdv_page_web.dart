@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
@@ -56,6 +57,7 @@ enum ModuloCentralPDV {
   operacoesCaixa,
   ordemServico,
   agendaFinanceira,
+  atendimentoTecnico,
   categorias,
   configuracoes,
 }
@@ -1476,6 +1478,18 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
           ),
         );
 
+      case ModuloCentralPDV.atendimentoTecnico:
+        return Expanded(
+          child: AtendimentosTecnicosListaWebPage(
+            embedded: true,
+            onBack: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.seletor;
+              });
+            },
+          ),
+        );
+
       case ModuloCentralPDV.configuracoes:
         return Expanded(
           child: ConfiguracoesSixWebPage(
@@ -1525,6 +1539,11 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         descricao =
             l10n?.pdvQuickServiceDescription ??
             'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
+        break;
+      case 'Atendimento Técnico':
+        badge = 'Assistência técnica';
+        descricao =
+            'Acompanhe atendimentos criados, status, assinaturas e recebimentos da assistência.';
         break;
       case 'Orçamento':
         badge = 'Assistência comercial';
@@ -1590,6 +1609,8 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                                   ? Icons.visibility_rounded
                                   : label == 'Orçamento'
                                   ? Icons.auto_awesome
+                                  : label == 'Atendimento Técnico'
+                                  ? Icons.handyman_rounded
                                   : Icons.settings_outlined,
                               size: 16,
                               color: _pdvTheme.iconColor,
@@ -1769,6 +1790,15 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                     icon: Icons.point_of_sale,
                     label: 'Vendas',
                     onPressed: _iniciarVenda,
+                  ),
+                  _buildModoOperacaoButton(
+                    icon: Icons.engineering_rounded,
+                    label: 'Atendimento Técnico',
+                    onPressed: () {
+                      setState(() {
+                        _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
+                      });
+                    },
                   ),
                   // _buildModoOperacaoButton(
                   //   icon: Icons.request_quote,
