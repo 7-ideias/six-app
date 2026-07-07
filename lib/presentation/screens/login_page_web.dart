@@ -102,12 +102,12 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _navigateToPostLoginSplash() {
+    final nextRoute = _redirectAfterLogin() ?? '/app';
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: '/login/splash'),
-        builder: (_) => PostLoginSplashWebPage(
-          nextRoute: _redirectAfterLogin() ?? '/app',
-        ),
+        builder: (_) => PostLoginSplashWebPage(nextRoute: nextRoute),
       ),
     );
   }
