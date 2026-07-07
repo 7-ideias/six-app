@@ -15,38 +15,43 @@ class NovaEmpresaService {
   Uri get _endpoint =>
       Uri.parse('${AppConfig.baseUrl}/public/api/login/nova-empresa');
 
-  /// Cria a empresa.
+  /// Cria a empresa e o usuário administrador.
   ///
-  /// Pré-requisito: o e-mail precisa ter sido verificado via fluxo de OTP
-  /// (validarCodigo retornou 204) dentro da janela de 15 min.
-  ///
-  /// Fluxo simplificado: apenas [email] e [senha] são obrigatórios.
-  /// Demais campos são opcionais; quando omitidos, o backend deriva defaults
-  /// a partir do e-mail (nome=prefixo, celular=email).
+  /// Fluxo temporariamente simplificado: apenas [login] e [senha] são
+  /// obrigatórios. Campos adicionais continuam opcionais para manter
+  /// compatibilidade com chamadas antigas.
   Future<void> criarNovaEmpresa({
-    required String email,
+    String? login,
+    String? email,
     required String senha,
     String? nome,
     String? sobrenome,
     String? celular,
     String? username,
     String? comercioId,
-    List<String> permissoes = const ['TODAS'],
+    List<String> permissoes = const ['ADMINISTRADOR'],
   }) async {
-    // Payload mínimo: email + senha. Campos opcionais só vão se preenchidos —
-    // o backend (LoginService.normalizarParaCadastroSimplificado) aplica
-    // defaults derivados do e-mail para os que vierem ausentes.
+    final identificador = (login ?? username ?? email ?? celular ?? '').trim();
+    if (identificador.isEmpty) {
+      throw Exception('Informe o login para criar a conta.');
+    }
+
+    final emailNormalizado = (email ?? '').trim();
     final payload = <String, dynamic>{
-      'email': email,
+      'login': identificador,
+      'username': (username == null || username.trim().isEmpty)
+          ? identificador
+          : username.trim(),
       'senha': senha,
       'senhaInicial': senha,
       'permissoes': permissoes,
+      if (emailNormalizado.isNotEmpty) 'email': emailNormalizado,
+      if (emailNormalizado.isEmpty && identificador.contains('@'))
+        'email': identificador,
       if (nome != null && nome.isNotEmpty) 'nome': nome,
       if (sobrenome != null && sobrenome.isNotEmpty) 'sobrenome': sobrenome,
       if (celular != null && celular.isNotEmpty) 'celular': celular,
-      if (username != null && username.isNotEmpty) 'username': username,
-      if (comercioId != null && comercioId.isNotEmpty)
-        'comercioId': comercioId,
+      if (comercioId != null && comercioId.isNotEmpty) 'comercioId': comercioId,
     };
 
     final response = await _client.post(
@@ -57,7 +62,8 @@ class NovaEmpresaService {
 
     if (response.statusCode >= 200 && response.statusCode < 300) return;
 
-    // Se for 403/OTP_003, propaga como exceção OTP para o chamador.
+    // Mantém compatibilidade com fluxos antigos enquanto o backend ainda pode
+    // responder erros de OTP em ambientes não atualizados.
     if (response.statusCode == 403) {
       throw RegistroOtpException.fromResponse(
         statusCode: response.statusCode,
