@@ -460,6 +460,10 @@ class AtendimentoTecnicoUpdateInput {
   const AtendimentoTecnicoUpdateInput({
     required this.validadeOrcamentoEm,
     this.descricao,
+    this.idCliente,
+    this.nomeClienteSnapshot,
+    this.idTecnicoResponsavel,
+    this.nomeTecnicoResponsavelSnapshot,
     this.equipamento,
     this.defeitoRelatado,
     this.diagnosticoTecnico,
@@ -469,6 +473,10 @@ class AtendimentoTecnicoUpdateInput {
 
   final DateTime validadeOrcamentoEm;
   final String? descricao;
+  final String? idCliente;
+  final String? nomeClienteSnapshot;
+  final String? idTecnicoResponsavel;
+  final String? nomeTecnicoResponsavelSnapshot;
   final AtendimentoTecnicoEquipamentoModel? equipamento;
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
@@ -477,6 +485,10 @@ class AtendimentoTecnicoUpdateInput {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'descricao': descricao,
+        'idCliente': idCliente,
+        'nomeClienteSnapshot': nomeClienteSnapshot,
+        'idTecnicoResponsavel': idTecnicoResponsavel,
+        'nomeTecnicoResponsavelSnapshot': nomeTecnicoResponsavelSnapshot,
         'validadeOrcamentoEm': AtendimentoTecnicoCreateInput._dateOnly(validadeOrcamentoEm),
         'equipamento': equipamento?.toJson(),
         'defeitoRelatado': defeitoRelatado,
