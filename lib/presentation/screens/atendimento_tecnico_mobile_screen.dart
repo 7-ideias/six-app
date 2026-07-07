@@ -4,6 +4,7 @@ import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../components/date_selector_mobile_bottom_sheet.dart';
 
 class AtendimentoTecnicoMobileScreen extends StatefulWidget {
   const AtendimentoTecnicoMobileScreen({super.key});
@@ -99,7 +100,8 @@ class _AtendimentoTecnicoMobileScreenState
   Future<void> _selecionarValidadeOrcamento() async {
     final data = await _selecionarData(
       initialDate: _validadeOrcamentoEm,
-      helpText: 'Validade do orçamento',
+      title: 'Validade do orçamento',
+      applyButtonLabel: 'Aplicar data',
     );
     if (data == null) return;
     setState(() => _validadeOrcamentoEm = data);
@@ -108,7 +110,8 @@ class _AtendimentoTecnicoMobileScreenState
   Future<void> _selecionarVencimentoFinanceiro() async {
     final data = await _selecionarData(
       initialDate: _vencimentoFinanceiroEm,
-      helpText: 'Vencimento financeiro',
+      title: 'Vencimento financeiro',
+      applyButtonLabel: 'Aplicar vencimento',
     );
     if (data == null) return;
     setState(() => _vencimentoFinanceiroEm = data);
@@ -116,16 +119,28 @@ class _AtendimentoTecnicoMobileScreenState
 
   Future<DateTime?> _selecionarData({
     required DateTime initialDate,
-    required String helpText,
+    required String title,
+    required String applyButtonLabel,
   }) async {
     final inicio = _inicioHoje();
-    final selected = await showDatePicker(
+    final initial = initialDate.isBefore(inicio) ? inicio : initialDate;
+    final selected = await showModalBottomSheet<DateTime>(
       context: context,
-      initialDate: initialDate.isBefore(inicio) ? inicio : initialDate,
-      firstDate: inicio,
-      lastDate: inicio.add(const Duration(days: 365)),
-      helpText: helpText,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (context) {
+        return DateSelectorMobileBottomSheet(
+          title: title,
+          initialDate: initial,
+          firstDate: inicio,
+          lastDate: inicio.add(const Duration(days: 365)),
+          applyButtonLabel: applyButtonLabel,
+        );
+      },
     );
+
     if (selected == null) return null;
     return DateTime(selected.year, selected.month, selected.day);
   }
@@ -500,7 +515,7 @@ class _AtendimentoTecnicoMobileScreenState
               const SizedBox(width: 10),
               Expanded(
                 child: _dateTile(
-                  label: 'Vencimento',
+                  label: 'Vencimento financeiro',
                   value: _formatarData(_vencimentoFinanceiroEm),
                   onTap: _selecionarVencimentoFinanceiro,
                 ),
