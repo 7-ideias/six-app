@@ -30,6 +30,8 @@ class _SixMobileAnimatedGradientBackgroundState
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
+  bool get _reduceMotion => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
   @override
   void initState() {
     super.initState();
@@ -59,8 +61,7 @@ class _SixMobileAnimatedGradientBackgroundState
   }
 
   void _syncAnimationState() {
-    final bool reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    if (widget.enabled && !reduceMotion) {
+    if (widget.enabled && !_reduceMotion) {
       if (!_controller.isAnimating) _controller.repeat();
     } else {
       _controller.stop();
@@ -70,14 +71,12 @@ class _SixMobileAnimatedGradientBackgroundState
 
   @override
   Widget build(BuildContext context) {
-    final bool reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-
     return DecoratedBox(
       decoration: BoxDecoration(color: widget.baseColor),
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          if (widget.enabled && !reduceMotion)
+          if (widget.enabled && !_reduceMotion)
             AnimatedBuilder(
               animation: _controller,
               builder: (BuildContext context, Widget? child) {
@@ -132,7 +131,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintSoftOrb(
       canvas,
       size,
-      color: primaryColor.withValues(alpha: 0.075),
+      color: primaryColor.withOpacity(0.032),
       radiusFactor: 0.72,
       x: 0.20 + 0.10 * math.sin(progress * math.pi * 2),
       y: 0.08 + 0.05 * math.cos(progress * math.pi * 2),
@@ -141,7 +140,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintSoftOrb(
       canvas,
       size,
-      color: secondaryColor.withValues(alpha: 0.065),
+      color: secondaryColor.withOpacity(0.028),
       radiusFactor: 0.86,
       x: 0.84 + 0.08 * math.sin(progress * math.pi * 2 + 1.4),
       y: 0.34 + 0.07 * math.cos(progress * math.pi * 2 + 1.1),
@@ -150,7 +149,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintSoftOrb(
       canvas,
       size,
-      color: accentColor.withValues(alpha: 0.055),
+      color: accentColor.withOpacity(0.024),
       radiusFactor: 0.64,
       x: 0.42 + 0.12 * math.sin(progress * math.pi * 2 + 2.6),
       y: 0.96 + 0.05 * math.cos(progress * math.pi * 2 + 2.2),
@@ -171,7 +170,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
 
     final Paint paint = Paint()
       ..shader = RadialGradient(
-        colors: <Color>[color, color.withValues(alpha: 0)],
+        colors: <Color>[color, color.withOpacity(0)],
         stops: const <double>[0, 1],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
 
