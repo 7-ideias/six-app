@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
@@ -116,7 +117,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ],
       ),
       drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
-      body: _buildContent(context),
+      body: SixMobileAnimatedGradientBackground(
+        baseColor: _backgroundColor,
+        primaryColor: _primaryColor,
+        secondaryColor: _secondaryColor,
+        accentColor: _accentColor,
+        child: _buildContent(context),
+      ),
       bottomNavigationBar:
           kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
     );
@@ -207,8 +214,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             subtitle: 'Equipe, acessos e responsabilidades',
             icon: Icons.badge_outlined,
             onTap:
-                () =>
-                    _navigateTo(context, const ColaboradoresUsuarioMobileScreen()),
+                () => _navigateTo(
+                  context,
+                  const ColaboradoresUsuarioMobileScreen(),
+                ),
           ),
           _ManagementItem(
             title: 'Fornecedores',

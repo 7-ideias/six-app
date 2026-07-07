@@ -30,7 +30,8 @@ class _SixMobileAnimatedGradientBackgroundState
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  bool get _reduceMotion => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  bool get _reduceMotion =>
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
   @override
   void initState() {
@@ -39,11 +40,12 @@ class _SixMobileAnimatedGradientBackgroundState
       vsync: this,
       duration: const Duration(seconds: 18),
     );
-    _syncAnimationState();
   }
 
   @override
-  void didUpdateWidget(covariant SixMobileAnimatedGradientBackground oldWidget) {
+  void didUpdateWidget(
+    covariant SixMobileAnimatedGradientBackground oldWidget,
+  ) {
     super.didUpdateWidget(oldWidget);
     _syncAnimationState();
   }
@@ -168,11 +170,12 @@ class _SixAmbientGradientPainter extends CustomPainter {
     final double radius = shortestSide * radiusFactor;
     final Offset center = Offset(size.width * x, size.height * y);
 
-    final Paint paint = Paint()
-      ..shader = RadialGradient(
-        colors: <Color>[color, color.withOpacity(0)],
-        stops: const <double>[0, 1],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    final Paint paint =
+        Paint()
+          ..shader = RadialGradient(
+            colors: <Color>[color, color.withOpacity(0)],
+            stops: const <double>[0, 1],
+          ).createShader(Rect.fromCircle(center: center, radius: radius));
 
     canvas.drawCircle(center, radius, paint);
   }
