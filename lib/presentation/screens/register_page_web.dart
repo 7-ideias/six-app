@@ -1,25 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
-import '../../core/exceptions/google_auth_exception.dart';
-import '../../core/exceptions/registro_otp_exception.dart';
-import '../../core/services/auth_service.dart';
-import '../../core/services/registro_otp_service.dart';
+import '../../core/services/nova_empresa_service.dart';
 import '../components/web_auth_shell.dart';
-import '../components/web_google_sign_in_button.dart';
 import '../components/web_root/web_i18n_gate.dart';
-import 'verificar_email_web.dart';
+import 'conta_criada_web.dart';
 
-/// Tela de cadastro mapeada para a rota `/register`.
-///
-/// Fluxo simplificado: apenas e-mail, confirmar e-mail e senha.
-/// Outros dados (nome, telefone, etc.) são preenchidos depois.
-///
-/// Validação cliente: os dois e-mails precisam ser idênticos antes de
-/// enviar a requisição — evita typo no único dado de contato do usuário.
-///
-/// "Voltar" usa `Navigator.pushReplacementNamed('/login')` para garantir
-/// que a URL mude de /register → /login (sem empilhar).
 class RegisterPageWeb extends StatefulWidget {
   const RegisterPageWeb({super.key});
 
@@ -28,64 +14,32 @@ class RegisterPageWeb extends StatefulWidget {
 }
 
 class _RegisterPageWebState extends State<RegisterPageWeb> {
-  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _loginCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
   final TextEditingController _confirmPasswordCtrl = TextEditingController();
-  final RegistroOtpService _otpService = RegistroOtpService();
-  final AuthService _authService = AuthService();
+  final NovaEmpresaService _novaEmpresaService = NovaEmpresaService();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
   bool _isLoading = false;
-
-  // Erro inline mostrado abaixo do campo "Confirmar senha".
   String? _passwordMismatchError;
 
-  // Strings l10n — atribuído no build, dentro do WebI18nGate (só após as
-  // mensagens do backend estarem carregadas). Usado também em callbacks
-  // assíncronos, que só disparam depois do primeiro build.
   late WebRootL10n _l10n;
 
   @override
   void initState() {
     super.initState();
-    _listenGoogleSignIn();
-    // Re-valida em tempo real conforme o usuário digita.
     _passwordCtrl.addListener(_validatePasswordsMatch);
     _confirmPasswordCtrl.addListener(_validatePasswordsMatch);
   }
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _loginCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmPasswordCtrl.dispose();
-    _authService.cancelPendingWebGoogleLogin();
     super.dispose();
-  }
-
-  void _listenGoogleSignIn() {
-    _authService
-        .awaitWebGoogleLogin()
-        .then((_) {
-          if (!mounted) return;
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/app', (route) => false);
-        })
-        .catchError((error) {
-          if (!mounted) return;
-          if (error is GoogleAuthException &&
-              error.code == GoogleAuthErrorCode.cancelledByUser) {
-            return;
-          }
-          final msg =
-              error is GoogleAuthException
-                  ? error.message
-                  : _l10n.authErrGoogleRegister;
-          _showSnack(msg);
-        });
   }
 
   void _showSnack(String msg) {
@@ -93,22 +47,20 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
   }
 
   void _validatePasswordsMatch() {
-    // Só mostra o erro quando o usuário começou a digitar a confirmação.
     if (_confirmPasswordCtrl.text.isEmpty) {
       if (_passwordMismatchError != null) {
         setState(() => _passwordMismatchError = null);
       }
       return;
     }
+
     final equal = _passwordCtrl.text == _confirmPasswordCtrl.text;
-    // _l10n pode não estar inicializado ainda antes do primeiro build.
-    final next = equal ? null : (_l10n.authPasswordMismatch);
+    final next = equal ? null : _l10n.authPasswordMismatch;
     if (next != _passwordMismatchError) {
       setState(() => _passwordMismatchError = next);
     }
   }
 
-  /// Volta para /login usando named route (URL correta no browser).
   void _goToLogin() {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
@@ -123,11 +75,11 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       return;
     }
 
-    final email = _emailCtrl.text.trim();
+    final login = _loginCtrl.text.trim();
     final senha = _passwordCtrl.text;
     final confirmSenha = _confirmPasswordCtrl.text;
 
-    if (email.isEmpty || senha.isEmpty || confirmSenha.isEmpty) {
+    if (login.isEmpty || senha.isEmpty || confirmSenha.isEmpty) {
       _showSnack(_l10n.authErrFillAllFields);
       return;
     }
@@ -137,7 +89,6 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       return;
     }
 
-    // Validação obrigatória: não dispara request se as senhas divergem.
     if (senha != confirmSenha) {
       setState(() => _passwordMismatchError = _l10n.authPasswordMismatch);
       _showSnack(_l10n.authErrPasswordsNotEqual);
@@ -146,18 +97,14 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
 
     setState(() => _isLoading = true);
     try {
-      await _otpService.enviarCodigo(email);
+      await _novaEmpresaService.criarNovaEmpresa(login: login, senha: senha);
       if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VerificarEmailWeb(email: email, senha: senha),
-        ),
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const ContaCriadaWeb()),
+        (route) => false,
       );
-    } on RegistroOtpException catch (e) {
-      _showSnack(e.message);
-    } catch (_) {
-      _showSnack(_l10n.authErrSendCode);
+    } catch (e) {
+      _showSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -181,18 +128,14 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 subtitle: _l10n.authRegisterSubtitle,
               ),
               const SizedBox(height: 28),
-
-              // ── E-mail ──────────────────────────────────────────────────────
               WebAuthTextField(
-                controller: _emailCtrl,
-                hint: _l10n.authEmailHint,
-                label: _l10n.authEmailLabel,
-                keyboardType: TextInputType.emailAddress,
+                controller: _loginCtrl,
+                hint: 'Informe seu login de acesso',
+                label: 'Login',
+                keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 14),
-
-              // ── Senha ───────────────────────────────────────────────────────
               WebAuthTextField(
                 controller: _passwordCtrl,
                 hint: _l10n.authPasswordMinHint,
@@ -207,14 +150,12 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                     color: WebAuthShell.labelGrey(),
                     size: 20,
                   ),
-                  onPressed:
-                      () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () => setState(
+                    () => _obscurePassword = !_obscurePassword,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
-
-              // ── Confirmar senha ─────────────────────────────────────────────
               WebAuthTextField(
                 controller: _confirmPasswordCtrl,
                 hint: _l10n.authConfirmPasswordHint,
@@ -230,11 +171,9 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                     color: WebAuthShell.labelGrey(),
                     size: 20,
                   ),
-                  onPressed:
-                      () => setState(
-                        () =>
-                            _obscureConfirmPassword = !_obscureConfirmPassword,
-                      ),
+                  onPressed: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  ),
                 ),
               ),
               if (_passwordMismatchError != null) ...[
@@ -251,8 +190,6 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 ),
               ],
               const SizedBox(height: 18),
-
-              // ── Termos ──────────────────────────────────────────────────────
               InkWell(
                 onTap: () => setState(() => _agreeTerms = !_agreeTerms),
                 borderRadius: BorderRadius.circular(8),
@@ -265,8 +202,9 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                         height: 22,
                         child: Checkbox(
                           value: _agreeTerms,
-                          onChanged:
-                              (v) => setState(() => _agreeTerms = v ?? false),
+                          onChanged: (v) => setState(
+                            () => _agreeTerms = v ?? false,
+                          ),
                           activeColor: primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
@@ -304,38 +242,12 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 ),
               ),
               const SizedBox(height: 20),
-
               WebAuthPrimaryButton(
                 label: _l10n.authCreateAccountButton,
                 onPressed: _signUp,
                 isLoading: _isLoading,
               ),
               const SizedBox(height: 24),
-
-              Row(
-                children: [
-                  const Expanded(
-                    child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      _l10n.authOrSignUpWith,
-                      style: TextStyle(
-                        color: WebAuthShell.labelGrey(),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const WebGoogleSignInButton(),
-              const SizedBox(height: 24),
-
               Center(
                 child: GestureDetector(
                   onTap: _goToLogin,
