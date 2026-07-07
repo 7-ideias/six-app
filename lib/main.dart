@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
-import 'package:sixpos/pdv_page_web.dart';
+import 'package:sixpos/presentation/screens/pdv_page_web_autorizado.dart';
 import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:sixpos/presentation/screens/register_page_web.dart';
 import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
 import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.dart';
+import 'package:sixpos/presentation/screens/colaborador_convite_publico_web_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_assinatura_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
@@ -18,6 +19,7 @@ import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_we
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
@@ -53,6 +55,7 @@ void main() async {
               ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
+        ChangeNotifierProvider(create: (_) => ColaboradorAutorizacoesProvider()),
         ChangeNotifierProvider(
           lazy: false,
           create:
@@ -119,7 +122,7 @@ class MyApp extends StatelessWidget {
     if (routeUri.path == '/app') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const PDVWeb(),
+        builder: (_) => const PdvPageWebAutorizado(),
       );
     }
 
@@ -172,6 +175,20 @@ class MyApp extends StatelessWidget {
         routeUri.pathSegments.length >= 2 &&
         routeUri.pathSegments[0] == 'cliente' &&
         routeUri.pathSegments[1] == 'auto-cadastro';
+    final bool isPublicColaboradorConviteRoute =
+        routeUri.pathSegments.length >= 3 &&
+        routeUri.pathSegments[0] == 'colaborador' &&
+        routeUri.pathSegments[1] == 'convites';
+
+    if (isPublicColaboradorConviteRoute) {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => ColaboradorConvitePublicoWebPage(
+          codigo: routeUri.pathSegments[2],
+          initialUri: routeUri,
+        ),
+      );
+    }
 
     if (isPublicClienteAutoCadastroRoute) {
       return MaterialPageRoute<void>(

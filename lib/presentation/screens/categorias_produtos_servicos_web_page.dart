@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
@@ -10,9 +11,11 @@ class CategoriasProdutosServicosWebPage extends StatefulWidget {
     this.onBack,
     this.apiClient,
   });
+
   final bool embedded;
   final VoidCallback? onBack;
   final CategoriaCatalogoApiClient? apiClient;
+
   @override
   State<CategoriasProdutosServicosWebPage> createState() =>
       _CategoriasProdutosServicosWebPageState();
@@ -22,45 +25,38 @@ class _CategoriasProdutosServicosWebPageState
     extends State<CategoriasProdutosServicosWebPage> {
   late final CategoriaCatalogoApiClient _api;
   final TextEditingController _buscaController = TextEditingController();
+
   List<CategoriaCatalogoModel> _categorias = const <CategoriaCatalogoModel>[];
   String _busca = '';
   String? _filtroTipo;
   bool _somenteAtivas = false;
   bool _loading = false;
   String? _erro;
+
   List<CategoriaCatalogoModel> get _categoriasFiltradas {
     final String termo = _normalizarBusca(_busca);
-    return _categorias
-        .where((CategoriaCatalogoModel categoria) {
-          final bool combinaTexto =
-              termo.isEmpty ||
-              _normalizarBusca(
-                '${categoria.nome} ${categoria.descricao} ${_tipoLabel(categoria.tipo)}',
-              ).contains(termo);
-          final bool combinaTipo =
-              _filtroTipo == null || categoria.tipo == _filtroTipo;
-          final bool combinaStatus = !_somenteAtivas || categoria.ativo;
-          return combinaTexto && combinaTipo && combinaStatus;
-        })
-        .toList(growable: false);
+    return _categorias.where((CategoriaCatalogoModel categoria) {
+      final bool combinaTexto = termo.isEmpty ||
+          _normalizarBusca(
+            '${categoria.nome} ${categoria.descricao} ${_tipoLabel(categoria.tipo)}',
+          ).contains(termo);
+      final bool combinaTipo = _filtroTipo == null || categoria.tipo == _filtroTipo;
+      final bool combinaStatus = !_somenteAtivas || categoria.ativo;
+      return combinaTexto && combinaTipo && combinaStatus;
+    }).toList(growable: false);
   }
 
   int get _ativas =>
       _categorias.where((CategoriaCatalogoModel item) => item.ativo).length;
-  int get _produtos =>
-      _categorias
-          .where(
-            (CategoriaCatalogoModel item) =>
-                item.tipo == 'PRODUTO' || item.tipo == 'AMBOS',
-          )
-          .length;
-  int get _servicos =>
-      _categorias
-          .where(
-            (CategoriaCatalogoModel item) =>
-                item.tipo == 'SERVICO' || item.tipo == 'AMBOS',
-          )
-          .length;
+
+  int get _produtos => _categorias.where((CategoriaCatalogoModel item) {
+        return item.tipo == 'PRODUTO' || item.tipo == 'AMBOS';
+      }).length;
+
+  int get _servicos => _categorias.where((CategoriaCatalogoModel item) {
+        return item.tipo == 'SERVICO' || item.tipo == 'AMBOS';
+      }).length;
+
   @override
   void initState() {
     super.initState();
@@ -79,9 +75,9 @@ class _CategoriasProdutosServicosWebPageState
       _loading = true;
       _erro = null;
     });
+
     try {
-      final CategoriaCatalogoListResponse response =
-          await _api.listarCategorias();
+      final CategoriaCatalogoListResponse response = await _api.listarCategorias();
       if (!mounted) return;
       setState(() {
         _categorias = response.categorias;
@@ -131,14 +127,16 @@ class _CategoriasProdutosServicosWebPageState
   }
 
   Future<void> _abrirFormulario({CategoriaCatalogoModel? categoria}) async {
-    final CategoriaCatalogoRequest? request =
-        await showDialog<CategoriaCatalogoRequest>(
-          context: context,
-          builder:
-              (BuildContext context) =>
-                  _CategoriaCatalogoDialog(categoria: categoria),
-        );
+    final CategoriaCatalogoRequest? request = await showDialog<CategoriaCatalogoRequest>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) => _EscCloseScope(
+        child: _CategoriaCatalogoDialog(categoria: categoria),
+      ),
+    );
+
     if (request == null) return;
+
     setState(() => _loading = true);
     try {
       if (categoria == null) {
@@ -171,34 +169,38 @@ class _CategoriasProdutosServicosWebPageState
   }
 
   Future<void> _confirmarExclusao(CategoriaCatalogoModel categoria) async {
-    final bool confirmou =
-        await showDialog<bool>(
+    final bool confirmou = await showDialog<bool>(
           context: context,
+          barrierDismissible: true,
           builder: (BuildContext dialogContext) {
-            return AlertDialog(
-              icon: const Icon(Icons.delete_outline_rounded),
-              title: const Text('Excluir categoria'),
-              content: Text(
-                categoria.itensVinculados > 0
-                    ? 'Esta categoria possui ${categoria.itensVinculados} item(ns) vinculado(s). O backend bloqueará a exclusão para preservar a referência dos produtos/serviços.'
-                    : 'Deseja remover a categoria "${categoria.nome}"?',
+            return _EscCloseScope(
+              child: AlertDialog(
+                icon: const Icon(Icons.delete_outline_rounded),
+                title: const Text('Excluir categoria'),
+                content: Text(
+                  categoria.itensVinculados > 0
+                      ? 'Esta categoria possui ${categoria.itensVinculados} item(ns) vinculado(s). O backend bloqueará a exclusão para preservar a referência dos produtos/serviços.'
+                      : 'Deseja remover a categoria "${categoria.nome}"?',
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('Cancelar'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('Excluir'),
+                  ),
+                ],
               ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancelar'),
-                ),
-                FilledButton.icon(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('Excluir'),
-                ),
-              ],
             );
           },
         ) ??
         false;
+
     if (!confirmou) return;
+
     setState(() => _loading = true);
     try {
       await _api.apagarCategoria(categoria.id);
@@ -229,6 +231,7 @@ class _CategoriasProdutosServicosWebPageState
       tipo: categoria.tipo,
       ativo: !categoria.ativo,
     );
+
     setState(() => _loading = true);
     try {
       await _api.atualizarCategoria(categoria.id, request);
@@ -248,17 +251,20 @@ class _CategoriasProdutosServicosWebPageState
   void _mostrarErro(String mensagem) {
     showDialog<void>(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        return AlertDialog(
-          icon: const Icon(Icons.error_outline_rounded),
-          title: const Text('Atenção'),
-          content: Text(mensagem),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fechar'),
-            ),
-          ],
+        return _EscCloseScope(
+          child: AlertDialog(
+            icon: const Icon(Icons.error_outline_rounded),
+            title: const Text('Atenção'),
+            content: Text(mensagem),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Fechar'),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -269,16 +275,21 @@ class _CategoriasProdutosServicosWebPageState
     final Widget content = Column(
       children: <Widget>[_header(), Expanded(child: _body())],
     );
+    final Widget closeAwareContent = widget.onBack == null
+        ? content
+        : _EscCloseScope(onEscape: widget.onBack, child: content);
+
     if (widget.embedded) {
       return Material(
         color: Theme.of(context).colorScheme.surface,
-        child: content,
+        child: closeAwareContent,
       );
     }
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(title: const Text('Categorias')),
-      body: SafeArea(child: content),
+      body: SafeArea(child: closeAwareContent),
     );
   }
 
@@ -322,6 +333,7 @@ class _CategoriasProdutosServicosWebPageState
         ],
       );
     }
+
     return RefreshIndicator(
       onRefresh: _recarregar,
       child: LayoutBuilder(
@@ -350,8 +362,8 @@ class _CategoriasProdutosServicosWebPageState
                     child: Text(
                       'Categorias encontradas',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                            fontWeight: FontWeight.w900,
+                          ),
                     ),
                   ),
                   Chip(label: Text('${_categoriasFiltradas.length}')),
@@ -361,11 +373,8 @@ class _CategoriasProdutosServicosWebPageState
               if (_categoriasFiltradas.isEmpty)
                 const SixWebNoData(text: 'Nenhuma categoria encontrada.')
               else
-                ...List<Widget>.generate(_categoriasFiltradas.length, (
-                  int index,
-                ) {
-                  final CategoriaCatalogoModel categoria =
-                      _categoriasFiltradas[index];
+                ...List<Widget>.generate(_categoriasFiltradas.length, (int index) {
+                  final CategoriaCatalogoModel categoria = _categoriasFiltradas[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: SixWebEntry(
@@ -432,6 +441,7 @@ class _CategoriasProdutosServicosWebPageState
         highlight: true,
       ),
     ];
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -489,8 +499,7 @@ class _CategoriasProdutosServicosWebPageState
                 selected: _somenteAtivas,
                 label: const Text('Somente ativas'),
                 avatar: const Icon(Icons.check_circle_outline, size: 18),
-                onSelected:
-                    (bool value) => setState(() => _somenteAtivas = value),
+                onSelected: (bool value) => setState(() => _somenteAtivas = value),
               ),
               OutlinedButton.icon(
                 onPressed: _limparFiltros,
@@ -538,6 +547,7 @@ class _CategoriasProdutosServicosWebPageState
       ),
       child: Icon(_tipoIcon(categoria.tipo), color: theme.colorScheme.primary),
     );
+
     final Widget details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -561,9 +571,7 @@ class _CategoriasProdutosServicosWebPageState
         ),
         const SizedBox(height: 6),
         Text(
-          categoria.descricao.isEmpty
-              ? 'Sem descrição cadastrada.'
-              : categoria.descricao,
+          categoria.descricao.isEmpty ? 'Sem descrição cadastrada.' : categoria.descricao,
           maxLines: compact ? 3 : 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -591,6 +599,7 @@ class _CategoriasProdutosServicosWebPageState
         ),
       ],
     );
+
     final Widget actions = Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -599,15 +608,12 @@ class _CategoriasProdutosServicosWebPageState
         OutlinedButton.icon(
           onPressed: _loading ? null : () => _alternarStatus(categoria),
           icon: Icon(
-            categoria.ativo
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
+            categoria.ativo ? Icons.visibility_off_outlined : Icons.visibility_outlined,
           ),
           label: Text(categoria.ativo ? 'Desativar' : 'Ativar'),
         ),
         OutlinedButton.icon(
-          onPressed:
-              _loading ? null : () => _abrirFormulario(categoria: categoria),
+          onPressed: _loading ? null : () => _abrirFormulario(categoria: categoria),
           icon: const Icon(Icons.edit_outlined),
           label: const Text('Editar'),
         ),
@@ -618,55 +624,40 @@ class _CategoriasProdutosServicosWebPageState
         ),
       ],
     );
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.05),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child:
-          compact
-              ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      leading,
-                      const SizedBox(width: 14),
-                      Expanded(child: details),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Align(alignment: Alignment.centerRight, child: actions),
-                ],
-              )
-              : Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  leading,
-                  const SizedBox(width: 16),
-                  Expanded(child: details),
-                  const SizedBox(width: 18),
-                  actions,
-                ],
-              ),
+
+    return _HoverableCategoriaCard(
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    leading,
+                    const SizedBox(width: 14),
+                    Expanded(child: details),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Align(alignment: Alignment.centerRight, child: actions),
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                leading,
+                const SizedBox(width: 16),
+                Expanded(child: details),
+                const SizedBox(width: 18),
+                actions,
+              ],
+            ),
     );
   }
 
   Widget _statusChip(bool ativo) {
     final ThemeData theme = Theme.of(context);
-    final Color color =
-        ativo ? Colors.green.shade700 : theme.colorScheme.onSurfaceVariant;
+    final Color color = ativo ? Colors.green.shade700 : theme.colorScheme.onSurfaceVariant;
     return Chip(
       avatar: Icon(
         ativo ? Icons.check_circle_outline : Icons.pause_circle_outline,
@@ -751,12 +742,98 @@ class _CategoriasProdutosServicosWebPageState
   }
 }
 
+class _HoverableCategoriaCard extends StatefulWidget {
+  const _HoverableCategoriaCard({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_HoverableCategoriaCard> createState() => _HoverableCategoriaCardState();
+}
+
+class _HoverableCategoriaCardState extends State<_HoverableCategoriaCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: _hovered
+              ? theme.colorScheme.primary.withOpacity(0.025)
+              : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: _hovered
+                ? theme.colorScheme.primary.withOpacity(0.30)
+                : theme.colorScheme.outlineVariant,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: theme.shadowColor.withOpacity(_hovered ? 0.10 : 0.05),
+              blurRadius: _hovered ? 18.0 : 14.0,
+              offset: Offset(0, _hovered ? 8.0 : 6.0),
+            ),
+          ],
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _CloseDialogIntent extends Intent {
+  const _CloseDialogIntent();
+}
+
+class _EscCloseScope extends StatelessWidget {
+  const _EscCloseScope({required this.child, this.onEscape});
+
+  final Widget child;
+  final VoidCallback? onEscape;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.escape): _CloseDialogIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _CloseDialogIntent: CallbackAction<_CloseDialogIntent>(
+            onInvoke: (_) {
+              final VoidCallback? handler = onEscape;
+              if (handler != null) {
+                handler();
+              } else {
+                Navigator.of(context).maybePop();
+              }
+              return null;
+            },
+          ),
+        },
+        child: Focus(autofocus: true, child: child),
+      ),
+    );
+  }
+}
+
 class _CategoriaCatalogoDialog extends StatefulWidget {
   const _CategoriaCatalogoDialog({this.categoria});
+
   final CategoriaCatalogoModel? categoria;
+
   @override
-  State<_CategoriaCatalogoDialog> createState() =>
-      _CategoriaCatalogoDialogState();
+  State<_CategoriaCatalogoDialog> createState() => _CategoriaCatalogoDialogState();
 }
 
 class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
@@ -765,14 +842,13 @@ class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
   late final TextEditingController _descricaoController;
   late String _tipo;
   late bool _ativo;
+
   @override
   void initState() {
     super.initState();
     final CategoriaCatalogoModel? categoria = widget.categoria;
     _nomeController = TextEditingController(text: categoria?.nome ?? '');
-    _descricaoController = TextEditingController(
-      text: categoria?.descricao ?? '',
-    );
+    _descricaoController = TextEditingController(text: categoria?.descricao ?? '');
     _tipo = categoria?.tipo ?? 'PRODUTO';
     _ativo = categoria?.ativo ?? true;
   }
@@ -823,10 +899,12 @@ class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
                   ),
                 ),
                 validator: (String? value) {
-                  if (value == null || value.trim().isEmpty)
+                  if (value == null || value.trim().isEmpty) {
                     return 'Informe o nome da categoria.';
-                  if (value.trim().length < 3)
+                  }
+                  if (value.trim().length < 3) {
                     return 'Use pelo menos 3 caracteres.';
+                  }
                   return null;
                 },
               ),
@@ -854,10 +932,7 @@ class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem(value: 'PRODUTO', child: Text('Produtos')),
                   DropdownMenuItem(value: 'SERVICO', child: Text('Serviços')),
-                  DropdownMenuItem(
-                    value: 'AMBOS',
-                    child: Text('Produtos e serviços'),
-                  ),
+                  DropdownMenuItem(value: 'AMBOS', child: Text('Produtos e serviços')),
                 ],
                 onChanged: (String? value) {
                   if (value == null) return;
@@ -900,6 +975,7 @@ class _CategoriaMetric {
     required this.value,
     this.highlight = false,
   });
+
   final IconData icon;
   final String label;
   final double value;

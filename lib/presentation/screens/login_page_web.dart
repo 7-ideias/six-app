@@ -11,6 +11,7 @@ import '../../domain/services/aparencia/aparencia_service.dart';
 import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
@@ -31,7 +32,6 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  // Strings l10n capturadas no build para uso em callbacks assíncronos.
   late WebRootL10n _l10n;
 
   @override
@@ -63,10 +63,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
               error.code == GoogleAuthErrorCode.cancelledByUser) {
             return;
           }
-          final msg =
-              error is GoogleAuthException
-                  ? error.message
-                  : _l10n.authErrGoogleLogin;
+          final msg = error is GoogleAuthException
+              ? error.message
+              : _l10n.authErrGoogleLogin;
           _showSnack(msg);
         });
   }
@@ -79,6 +78,12 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     final idiomaDePreferencia =
         await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
 
+    if (mounted) {
+      await context
+          .read<ColaboradorAutorizacoesProvider>()
+          .carregarAutorizacoesDoUsuarioLogado(force: true);
+    }
+
     try {
       final regionalizacaoService = RegionalizacaoService(
         apiClient: HttpRegionalizacaoApiClient(),
@@ -86,9 +91,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
       final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
       if (mounted) {
         await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
-          idiomaDePreferencia: idiomaDePreferencia,
-          regionalizacao: regionalizacao,
-        );
+              idiomaDePreferencia: idiomaDePreferencia,
+              regionalizacao: regionalizacao,
+            );
       }
     } catch (e) {
       debugPrint('Erro ao aplicar idioma/regionalização no login: $e');
@@ -129,8 +134,26 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     }
   }
 
+  String? _redirectAfterLogin() {
+    final String routeName = ModalRoute.of(context)?.settings.name ?? Uri.base.toString();
+    final Uri uri = Uri.parse(routeName);
+    final String redirect = uri.queryParameters['redirect'] ?? '';
+    if (redirect.trim().isEmpty) return null;
+
+    final String decoded = Uri.decodeComponent(redirect).trim();
+    final Uri redirectUri = Uri.parse(decoded);
+    final String safePath =
+        redirectUri.hasScheme || redirectUri.hasAuthority ? redirectUri.path : decoded;
+
+    if (!safePath.startsWith('/')) return null;
+    return safePath;
+  }
+
   void _navigateToHome() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/app', (route) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      _redirectAfterLogin() ?? '/app',
+      (route) => false,
+    );
   }
 
   void _forgotPassword() {
@@ -149,114 +172,113 @@ class _LoginPageWebState extends State<LoginPageWeb> {
         final primary = Theme.of(context).colorScheme.primary;
 
         return WebAuthShell(
-      showBack: Navigator.of(context).canPop(),
-      onBack: () => Navigator.of(context).maybePop(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          WebAuthTitle(
-            title: _l10n.authLoginTitle,
-            subtitle: _l10n.authLoginSubtitle,
-          ),
-          const SizedBox(height: 32),
-          WebAuthTextField(
-            controller: _loginController,
-            hint: _l10n.authEmailHint,
-            label: _l10n.authEmailLabel,
-            prefixIcon: Icons.mail_outline_rounded,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-          WebAuthTextField(
-            controller: _passwordController,
-            hint: _l10n.authPasswordHint,
-            label: _l10n.authPasswordLabel,
-            prefixIcon: Icons.shield_outlined,
-            obscure: _obscurePassword,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _login(),
-            suffix: IconButton(
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: WebAuthShell.labelGrey(),
-                size: 20,
-              ),
-              onPressed:
-                  () => setState(() => _obscurePassword = !_obscurePassword),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: _forgotPassword,
-              child: Text(
-                _l10n.authForgotPassword,
-                style: TextStyle(
-                  color: primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          WebAuthPrimaryButton(
-            label: _l10n.authSignInButton,
-            onPressed: _login,
-            isLoading: _isLoading,
-          ),
-          const SizedBox(height: 24),
-          Row(
+          showBack: Navigator.of(context).canPop(),
+          onBack: () => Navigator.of(context).maybePop(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Expanded(
-                child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
+              WebAuthTitle(
+                title: _l10n.authLoginTitle,
+                subtitle: _l10n.authLoginSubtitle,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  _l10n.authOrContinueWith,
-                  style: TextStyle(
+              const SizedBox(height: 32),
+              WebAuthTextField(
+                controller: _loginController,
+                hint: _l10n.authEmailHint,
+                label: _l10n.authEmailLabel,
+                prefixIcon: Icons.mail_outline_rounded,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 16),
+              WebAuthTextField(
+                controller: _passwordController,
+                hint: _l10n.authPasswordHint,
+                label: _l10n.authPasswordLabel,
+                prefixIcon: Icons.shield_outlined,
+                obscure: _obscurePassword,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _login(),
+                suffix: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: WebAuthShell.labelGrey(),
-                    fontSize: 13,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _forgotPassword,
+                  child: Text(
+                    _l10n.authForgotPassword,
+                    style: TextStyle(
+                      color: primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
-              const Expanded(
-                child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
+              const SizedBox(height: 12),
+              WebAuthPrimaryButton(
+                label: _l10n.authSignInButton,
+                onPressed: _login,
+                isLoading: _isLoading,
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const WebGoogleSignInButton(),
-          const SizedBox(height: 28),
-          Center(
-            child: GestureDetector(
-              onTap: _createAccount,
-              behavior: HitTestBehavior.opaque,
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: WebAuthShell.labelGrey(),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
                   ),
-                  children: [
-                    TextSpan(text: _l10n.authNoAccount),
-                    TextSpan(
-                      text: _l10n.authCreateAccountLink,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      _l10n.authOrContinueWith,
                       style: TextStyle(
-                        color: primary,
-                        fontWeight: FontWeight.w700,
+                        color: WebAuthShell.labelGrey(),
+                        fontSize: 13,
                       ),
                     ),
-                  ],
+                  ),
+                  const Expanded(
+                    child: Divider(color: Color(0xFFE3E6E5), thickness: 1),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const WebGoogleSignInButton(),
+              const SizedBox(height: 28),
+              Center(
+                child: GestureDetector(
+                  onTap: _createAccount,
+                  behavior: HitTestBehavior.opaque,
+                  child: RichText(
+                    text: TextSpan(
+                      text: _l10n.authNoAccount,
+                      style: TextStyle(
+                        color: WebAuthShell.labelGrey(),
+                        fontSize: 14,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: _l10n.authCreateAccountLink,
+                          style: TextStyle(
+                            color: primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
             ],
           ),
         );
