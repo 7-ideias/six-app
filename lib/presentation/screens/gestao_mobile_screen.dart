@@ -645,7 +645,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  item.shortTitle,
+                  item.compactTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -851,9 +851,7 @@ class _ManagementItem {
   final VoidCallback onTap;
   final String? shortTitle;
 
-  String get shortTitle => shortTitleOverride ?? _compactTitle(title);
-
-  String? get shortTitleOverride => shortTitle;
+  String get compactTitle => shortTitle ?? _compactTitle(title);
 
   String _compactTitle(String value) {
     switch (value) {
