@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
-import '../../data/services/aparencia/aparencia_api_client.dart';
-import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
-import '../../design_system/helpers/six_theme_resolver.dart';
-import '../../domain/services/aparencia/aparencia_service.dart';
-import '../../domain/services/regionalizacao/regionalizacao_service.dart';
-import '../../domain/services/telainicial_web/tela_inicial_web_service.dart';
-import '../../domain/services/usuario/usuario_service.dart';
-import '../../providers/colaborador_autorizacoes_provider.dart';
-import '../../providers/locale_settings_provider.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
 import '../components/web_root/web_i18n_gate.dart';
+import 'post_login_splash_web_page.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -51,11 +42,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   void _listenGoogleSignIn() {
     _authService
         .awaitWebGoogleLogin()
-        .then((_) async {
+        .then((_) {
           if (!mounted) return;
-          await _afterLoginBootstrap();
-          if (!mounted) return;
-          _navigateToHome();
+          _navigateToPostLoginSplash();
         })
         .catchError((error) {
           if (!mounted) return;
@@ -74,44 +63,6 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Future<void> _afterLoginBootstrap() async {
-    final idiomaDePreferencia =
-        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-
-    if (mounted) {
-      await context
-          .read<ColaboradorAutorizacoesProvider>()
-          .carregarAutorizacoesDoUsuarioLogado(force: true);
-    }
-
-    try {
-      final regionalizacaoService = RegionalizacaoService(
-        apiClient: HttpRegionalizacaoApiClient(),
-      );
-      final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
-      if (mounted) {
-        await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
-              idiomaDePreferencia: idiomaDePreferencia,
-              regionalizacao: regionalizacao,
-            );
-      }
-    } catch (e) {
-      debugPrint('Erro ao aplicar idioma/regionalização no login: $e');
-    }
-
-    try {
-      final aparenciaService = AparenciaService(
-        apiClient: HttpAparenciaApiClient(),
-      );
-      final config = await aparenciaService.buscarAparencia();
-      SixThemeResolver().atualizarConfiguracao(config);
-    } catch (e) {
-      debugPrint('Erro ao carregar aparência no login: $e');
-    }
-
-    await TelaInicialWebService().atualizaProviders();
-  }
-
   Future<void> _login() async {
     final login = _loginController.text.trim();
     final senha = _passwordController.text.trim();
@@ -124,9 +75,8 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     setState(() => _isLoading = true);
     try {
       await _authService.login(login, senha);
-      await _afterLoginBootstrap();
       if (!mounted) return;
-      _navigateToHome();
+      _navigateToPostLoginSplash();
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -135,24 +85,30 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   String? _redirectAfterLogin() {
-    final String routeName = ModalRoute.of(context)?.settings.name ?? Uri.base.toString();
+    final String routeName =
+        ModalRoute.of(context)?.settings.name ?? Uri.base.toString();
     final Uri uri = Uri.parse(routeName);
     final String redirect = uri.queryParameters['redirect'] ?? '';
     if (redirect.trim().isEmpty) return null;
 
     final String decoded = Uri.decodeComponent(redirect).trim();
     final Uri redirectUri = Uri.parse(decoded);
-    final String safePath =
-        redirectUri.hasScheme || redirectUri.hasAuthority ? redirectUri.path : decoded;
+    final String safePath = redirectUri.hasScheme || redirectUri.hasAuthority
+        ? redirectUri.path
+        : decoded;
 
     if (!safePath.startsWith('/')) return null;
     return safePath;
   }
 
-  void _navigateToHome() {
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      _redirectAfterLogin() ?? '/app',
-      (route) => false,
+  void _navigateToPostLoginSplash() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/login/splash'),
+        builder: (_) => PostLoginSplashWebPage(
+          nextRoute: _redirectAfterLogin() ?? '/app',
+        ),
+      ),
     );
   }
 
@@ -207,7 +163,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                     color: WebAuthShell.labelGrey(),
                     size: 20,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () => setState(
+                    () => _obscurePassword = !_obscurePassword,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
