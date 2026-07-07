@@ -130,6 +130,30 @@ class _AtendimentoTecnicoMobileScreenState
     return DateTime(selected.year, selected.month, selected.day);
   }
 
+  Future<void> _abrirSelecaoCliente() async {
+    if (_clientes.isEmpty) {
+      _mostrarMensagem('Nenhum cliente disponível para seleção.');
+      return;
+    }
+
+    final cliente = await showModalBottomSheet<ClienteUsuario>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (context) {
+        return AtendimentoTecnicoClienteSelectorMobile(
+          clientes: _clientes,
+          clienteSelecionado: _clienteSelecionado,
+        );
+      },
+    );
+
+    if (cliente == null || !mounted) return;
+    setState(() => _clienteSelecionado = cliente);
+  }
+
   Future<void> _salvar() async {
     if (_salvando) return;
 
@@ -355,28 +379,7 @@ class _AtendimentoTecnicoMobileScreenState
         children: <Widget>[
           _sectionTitle('Dados principais'),
           const SizedBox(height: 12),
-          DropdownButtonFormField<ClienteUsuario>(
-            value: _clienteSelecionado,
-            isExpanded: true,
-            decoration: _inputDecoration(
-              label: 'Cliente',
-              icon: Icons.person_search_outlined,
-            ),
-            hint: const Text('Selecione um cliente'),
-            items: _clientes
-                .map(
-                  (cliente) => DropdownMenuItem<ClienteUsuario>(
-                    value: cliente,
-                    child: Text(
-                      cliente.nome,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (cliente) => setState(() => _clienteSelecionado = cliente),
-          ),
+          _clienteSelectorField(),
           const SizedBox(height: 12),
           TextField(
             controller: _descricaoController,
@@ -529,6 +532,37 @@ class _AtendimentoTecnicoMobileScreenState
     );
   }
 
+  Widget _clienteSelectorField() {
+    final ClienteUsuario? cliente = _clienteSelecionado;
+    final bool hasSelection = cliente != null;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _abrirSelecaoCliente,
+        child: InputDecorator(
+          isEmpty: !hasSelection,
+          decoration: _inputDecoration(
+            label: 'Cliente',
+            icon: Icons.person_search_outlined,
+            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          child: Text(
+            hasSelection ? cliente.nome : 'Selecione um cliente',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: hasSelection ? _titleTextColor : _mutedTextColor,
+              fontWeight: hasSelection ? FontWeight.w800 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
@@ -624,12 +658,14 @@ class _AtendimentoTecnicoMobileScreenState
     String? hint,
     IconData? icon,
     bool alignLabelWithHint = false,
+    Widget? suffixIcon,
   }) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
       alignLabelWithHint: alignLabelWithHint,
       prefixIcon: icon == null ? null : Icon(icon, size: 21),
+      suffixIcon: suffixIcon,
       filled: true,
       fillColor: const Color(0xFFF8FAFC),
       border: OutlineInputBorder(
@@ -646,6 +682,376 @@ class _AtendimentoTecnicoMobileScreenState
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
     );
+  }
+}
+
+class AtendimentoTecnicoClienteSelectorMobile extends StatefulWidget {
+  const AtendimentoTecnicoClienteSelectorMobile({
+    super.key,
+    required this.clientes,
+    required this.clienteSelecionado,
+  });
+
+  final List<ClienteUsuario> clientes;
+  final ClienteUsuario? clienteSelecionado;
+
+  @override
+  State<AtendimentoTecnicoClienteSelectorMobile> createState() =>
+      _AtendimentoTecnicoClienteSelectorMobileState();
+}
+
+class _AtendimentoTecnicoClienteSelectorMobileState
+    extends State<AtendimentoTecnicoClienteSelectorMobile> {
+  static const Color _backgroundColor = Color(0xFFF4F7FB);
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _borderColor = Color(0xFFE2E8F0);
+
+  final TextEditingController _searchController = TextEditingController();
+  String _filter = '';
+
+  List<ClienteUsuario> get _clientesFiltrados {
+    final String term = _normalize(_filter);
+    if (term.isEmpty) {
+      return widget.clientes;
+    }
+
+    return widget.clientes.where((ClienteUsuario cliente) {
+      final String source = _normalize(
+        '${cliente.nome} ${cliente.telefone} ${cliente.email} ${cliente.documento}',
+      );
+      return source.contains(term);
+    }).toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      minChildSize: 0.38,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (BuildContext context, ScrollController scrollController) {
+        final List<ClienteUsuario> clientes = _clientesFiltrados;
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.person_search_outlined,
+                          color: _primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              'Selecionar cliente',
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Busque e toque para vincular ao atendimento.',
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 12,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (String value) => setState(() => _filter = value),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar cliente',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _filter = '');
+                              },
+                            ),
+                      filled: true,
+                      fillColor: _surfaceColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            const BorderSide(color: _accentColor, width: 1.4),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: clientes.isEmpty
+                      ? _emptyState()
+                      : ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+                          itemBuilder: (BuildContext context, int index) {
+                            final ClienteUsuario cliente = clientes[index];
+                            final bool selected = _isSelected(cliente);
+                            return _ClienteSelectorItem(
+                              cliente: cliente,
+                              selected: selected,
+                              onTap: () => Navigator.of(context).pop(cliente),
+                            );
+                          },
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemCount: clientes.length,
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _emptyState() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+      children: <Widget>[
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Column(
+            children: <Widget>[
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.search_off_rounded, color: _primaryColor),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Nenhum cliente encontrado',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                'Tente buscar por nome, telefone, e-mail ou documento.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _mutedTextColor, height: 1.3),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _isSelected(ClienteUsuario cliente) {
+    final ClienteUsuario? selected = widget.clienteSelecionado;
+    if (selected == null) {
+      return false;
+    }
+    return selected.id == cliente.id;
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+}
+
+class _ClienteSelectorItem extends StatelessWidget {
+  const _ClienteSelectorItem({
+    required this.cliente,
+    required this.selected,
+    required this.onTap,
+  });
+
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _surfaceColor = Colors.white;
+  static const Color _mutedTextColor = Color(0xFF64748B);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _borderColor = Color(0xFFE2E8F0);
+
+  final ClienteUsuario cliente;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final String subtitle = _subtitle(cliente);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: selected
+                    ? _accentColor.withOpacity(0.12)
+                    : const Color(0xFFF1F5F9),
+                child: Text(
+                  _initials(cliente.nome),
+                  style: TextStyle(
+                    color: selected ? _accentColor : _primaryColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      cliente.nome.isEmpty ? 'Cliente sem nome' : cliente.nome,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedOpacity(
+                opacity: selected ? 1 : 0,
+                duration: const Duration(milliseconds: 140),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: _accentColor,
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _subtitle(ClienteUsuario cliente) {
+    return <String>[
+      cliente.telefone,
+      cliente.email,
+      cliente.documento,
+    ].where((String value) => value.trim().isNotEmpty).join(' • ');
+  }
+
+  static String _initials(String name) {
+    final List<String> parts =
+        name.trim().split(' ').where((String item) => item.isNotEmpty).toList();
+    if (parts.isEmpty) {
+      return 'CL';
+    }
+    if (parts.length == 1) {
+      return parts.first[0].toUpperCase();
+    }
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 }
 
