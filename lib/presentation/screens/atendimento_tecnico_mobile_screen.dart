@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
+import '../../data/models/produto_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
+import 'produto_list_mobile_screen.dart';
 
 class AtendimentoTecnicoMobileScreen extends StatefulWidget {
   const AtendimentoTecnicoMobileScreen({super.key});
@@ -23,9 +25,11 @@ class _AtendimentoTecnicoMobileScreenState
   static const Color _surfaceColor = Colors.white;
   static const Color _mutedTextColor = Color(0xFF64748B);
   static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _borderColor = Color(0xFFE2E8F0);
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ClienteUsuarioApiClient _clienteApiClient = HttpClienteUsuarioApiClient();
+  final List<_AtendimentoItemMobile> _itens = <_AtendimentoItemMobile>[];
 
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _tipoEquipamentoController =
@@ -45,6 +49,16 @@ class _AtendimentoTecnicoMobileScreenState
   String? _erro;
   DateTime _validadeOrcamentoEm = _defaultDate();
   DateTime _vencimentoFinanceiroEm = _defaultDate();
+
+  int get _quantidadeItens => _itens.fold<int>(
+        0,
+        (int total, _AtendimentoItemMobile item) => total + item.quantidade,
+      );
+
+  double get _totalItens => _itens.fold<double>(
+        0,
+        (double total, _AtendimentoItemMobile item) => total + item.total,
+      );
 
   static DateTime _inicioHoje() {
     final now = DateTime.now();
@@ -169,6 +183,84 @@ class _AtendimentoTecnicoMobileScreenState
     setState(() => _clienteSelecionado = cliente);
   }
 
+  Future<void> _abrirSelecaoItens() async {
+    final dynamic result = await Navigator.push<dynamic>(
+      context,
+      MaterialPageRoute<dynamic>(
+        builder: (_) => const ProdutolistMobileScreen(
+          isSelecao: true,
+          permitirSelecaoMultipla: true,
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    final List<ProdutoModel> produtos = result is List
+        ? result.whereType<ProdutoModel>().toList(growable: false)
+        : <ProdutoModel>[if (result is ProdutoModel) result];
+    if (produtos.isEmpty) return;
+
+    setState(() {
+      for (final ProdutoModel produto in produtos) {
+        _adicionarProduto(produto);
+      }
+    });
+  }
+
+  void _adicionarProduto(ProdutoModel produto) {
+    final bool servico = _ehServico(produto);
+    final String tipoCodigo = servico ? 'SERVICE' : 'PRODUCT';
+    final String chave =
+        '$tipoCodigo:${produto.id ?? produto.codigoDeBarras}:${produto.nomeProduto}';
+    final int index = _itens.indexWhere((item) => item.chave == chave);
+
+    if (index >= 0) {
+      _itens[index] = _itens[index].copyWith(
+        quantidade: _itens[index].quantidade + 1,
+      );
+      return;
+    }
+
+    _itens.add(
+      _AtendimentoItemMobile(
+        chave: chave,
+        idSku: produto.id ?? produto.codigoDeBarras,
+        descricao: produto.nomeProduto.trim().isEmpty
+            ? 'Item sem nome'
+            : produto.nomeProduto,
+        tipoItemId: servico ? 20 : 10,
+        tipoCodigo: tipoCodigo,
+        quantidade: 1,
+        valorUnitario: produto.precoVenda,
+        desconto: 0,
+        movimentaEstoque: !servico,
+      ),
+    );
+  }
+
+  bool _ehServico(ProdutoModel produto) {
+    final String tipo = produto.tipoProduto.trim().toUpperCase();
+    return tipo == 'SERVICO' || tipo == 'SERVIÇO' || tipo == 'SERVICE';
+  }
+
+  void _alterarQuantidade(_AtendimentoItemMobile item, int delta) {
+    setState(() {
+      final int index = _itens.indexWhere((element) => element.chave == item.chave);
+      if (index < 0) return;
+      final int quantidade = _itens[index].quantidade + delta;
+      if (quantidade <= 0) {
+        _itens.removeAt(index);
+        return;
+      }
+      _itens[index] = _itens[index].copyWith(quantidade: quantidade);
+    });
+  }
+
+  void _removerItem(_AtendimentoItemMobile item) {
+    setState(() => _itens.removeWhere((element) => element.chave == item.chave));
+  }
+
   Future<void> _salvar() async {
     if (_salvando) return;
 
@@ -202,6 +294,7 @@ class _AtendimentoTecnicoMobileScreenState
           ),
           defeitoRelatado: _textoOuNulo(_defeitoController.text),
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
+          itens: _itens.map((item) => item.toInput()).toList(growable: false),
         ),
         dataVencimentoEm: _vencimentoFinanceiroEm,
       );
@@ -233,6 +326,7 @@ class _AtendimentoTecnicoMobileScreenState
       _acessoriosController.clear();
       _defeitoController.clear();
       _diagnosticoController.clear();
+      _itens.clear();
       _validadeOrcamentoEm = _defaultDate();
       _vencimentoFinanceiroEm = _defaultDate();
     });
@@ -248,6 +342,10 @@ class _AtendimentoTecnicoMobileScreenState
     final mes = value.month.toString().padLeft(2, '0');
     final ano = value.year.toString();
     return '$dia/$mes/$ano';
+  }
+
+  String _formatarMoeda(double value) {
+    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
   void _mostrarMensagem(String mensagem) {
@@ -311,15 +409,15 @@ class _AtendimentoTecnicoMobileScreenState
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: <Widget>[
-          _HeaderIcon(),
-          SizedBox(width: 14),
+          const _HeaderIcon(),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
+                const Text(
                   'Iniciar assistência',
                   style: TextStyle(
                     color: Colors.white,
@@ -327,10 +425,14 @@ class _AtendimentoTecnicoMobileScreenState
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
-                  'Cliente, equipamento e defeito em uma tela rápida para balcão.',
-                  style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+                  _itens.isEmpty
+                      ? 'Cliente, equipamento e defeito em uma tela rápida para balcão.'
+                      : '$_quantidadeItens item(ns) • ${_formatarMoeda(_totalItens)}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
                 ),
               ],
             ),
@@ -522,6 +624,8 @@ class _AtendimentoTecnicoMobileScreenState
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          _itensSection(),
           const SizedBox(height: 22),
           SizedBox(
             width: double.infinity,
@@ -543,6 +647,184 @@ class _AtendimentoTecnicoMobileScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _itensSection() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.inventory_2_outlined, color: _accentColor),
+              const SizedBox(width: 8),
+              Expanded(child: _sectionTitle('Produtos e serviços')),
+              Text(
+                _formatarMoeda(_totalItens),
+                style: const TextStyle(
+                  color: _titleTextColor,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_itens.isEmpty)
+            _emptyItens()
+          else
+            ..._itens.map(_itemTile),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: _salvando ? null : _abrirSelecaoItens,
+              icon: const Icon(Icons.add_shopping_cart_rounded),
+              label: const Text('Adicionar produto ou serviço'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyItens() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderColor),
+      ),
+      child: const Text(
+        'Nenhum produto ou serviço vinculado. Você pode iniciar com ou sem itens.',
+        style: TextStyle(color: _mutedTextColor, height: 1.35),
+      ),
+    );
+  }
+
+  Widget _itemTile(_AtendimentoItemMobile item) {
+    final bool servico = item.isServico;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _borderColor),
+        ),
+        child: Column(
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    servico ? Icons.handyman_outlined : Icons.inventory_2_outlined,
+                    color: _accentColor,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        item.descricao,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _titleTextColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${servico ? 'Serviço' : 'Produto'} • ${_formatarMoeda(item.valorUnitario)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: _salvando ? null : () => _removerItem(item),
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  color: const Color(0xFFEF4444),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: <Widget>[
+                _quantityButton(
+                  icon: Icons.remove_rounded,
+                  onTap: _salvando ? null : () => _alterarQuantidade(item, -1),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Text(
+                    '${item.quantidade}',
+                    style: const TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                _quantityButton(
+                  icon: Icons.add_rounded,
+                  onTap: _salvando ? null : () => _alterarQuantidade(item, 1),
+                ),
+                const Spacer(),
+                Text(
+                  _formatarMoeda(item.total),
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _quantityButton({required IconData icon, required VoidCallback? onTap}) {
+    return Material(
+      color: const Color(0xFFEFF6FF),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Icon(icon, color: _accentColor, size: 20),
+        ),
       ),
     );
   }
@@ -585,7 +867,7 @@ class _AtendimentoTecnicoMobileScreenState
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _borderColor),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x0F000000),
@@ -624,7 +906,7 @@ class _AtendimentoTecnicoMobileScreenState
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: _borderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -685,17 +967,77 @@ class _AtendimentoTecnicoMobileScreenState
       fillColor: const Color(0xFFF8FAFC),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: const BorderSide(color: _borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: const BorderSide(color: _borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: _accentColor, width: 1.4),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+    );
+  }
+}
+
+class _AtendimentoItemMobile {
+  const _AtendimentoItemMobile({
+    required this.chave,
+    required this.idSku,
+    required this.descricao,
+    required this.tipoItemId,
+    required this.tipoCodigo,
+    required this.quantidade,
+    required this.valorUnitario,
+    required this.desconto,
+    required this.movimentaEstoque,
+  });
+
+  final String chave;
+  final String? idSku;
+  final String descricao;
+  final int tipoItemId;
+  final String tipoCodigo;
+  final int quantidade;
+  final double valorUnitario;
+  final double desconto;
+  final bool movimentaEstoque;
+
+  bool get isServico {
+    final String normalizado = tipoCodigo.trim().toUpperCase();
+    return normalizado == 'SERVICE' ||
+        normalizado == 'SERVICO' ||
+        normalizado == 'SERVIÇO';
+  }
+
+  double get total => (quantidade * valorUnitario) - desconto;
+
+  _AtendimentoItemMobile copyWith({int? quantidade}) {
+    return _AtendimentoItemMobile(
+      chave: chave,
+      idSku: idSku,
+      descricao: descricao,
+      tipoItemId: tipoItemId,
+      tipoCodigo: tipoCodigo,
+      quantidade: quantidade ?? this.quantidade,
+      valorUnitario: valorUnitario,
+      desconto: desconto,
+      movimentaEstoque: movimentaEstoque,
+    );
+  }
+
+  AtendimentoTecnicoItemInput toInput() {
+    return AtendimentoTecnicoItemInput(
+      tipoItemId: tipoItemId,
+      tipoItemCodigo: tipoCodigo,
+      idSku: idSku,
+      descricaoSnapshot: descricao,
+      quantidade: quantidade.toDouble(),
+      valorUnitario: valorUnitario,
+      desconto: desconto,
+      movimentaEstoque: movimentaEstoque,
     );
   }
 }
