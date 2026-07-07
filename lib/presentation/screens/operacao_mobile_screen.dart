@@ -8,7 +8,7 @@ import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
+import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
@@ -280,7 +280,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Venda, orçamento e assistência técnica em poucos passos.',
+                  'Venda e atendimento técnico em poucos passos.',
                   style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
                 ),
               ],
@@ -301,49 +301,14 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           onTap: () => _navigateTo(context, const PdvMobileScreen()),
         ),
         const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool compact = constraints.maxWidth < 360;
-            final double width = compact
-                ? constraints.maxWidth
-                : (constraints.maxWidth - 12) / 2;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: <Widget>[
-                SizedBox(
-                  width: width,
-                  child: _buildSecondaryActionCard(
-                    title: 'Atendimento técnico',
-                    icon: Icons.build_circle_rounded,
-                    onTap: () => _navigateTo(
-                      context,
-                      const AtendimentosTecnicosWebPage(),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: width,
-                  child: _buildSecondaryActionCard(
-                    title: 'Novo orçamento',
-                    icon: Icons.request_quote_rounded,
-                    onTap: () => _showFeatureInProgress(context),
-                  ),
-                ),
-                SizedBox(
-                  width: width,
-                  child: _buildSecondaryActionCard(
-                    title: 'Nova assistência',
-                    icon: Icons.handyman_rounded,
-                    onTap: () => _navigateTo(
-                      context,
-                      const AtendimentosTecnicosWebPage(),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
+        _buildPrimaryActionCard(
+          title: 'Atendimento técnico',
+          subtitle: 'Iniciar diagnóstico, orçamento e execução',
+          icon: Icons.build_circle_rounded,
+          onTap: () => _navigateTo(
+            context,
+            const AtendimentoTecnicoMobileScreen(),
+          ),
         ),
       ],
     );
@@ -367,24 +332,13 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       ),
       _TrackingItem(
         title: 'Atendimentos técnicos',
-        subtitle: 'Diagnóstico, orçamento e execução',
+        subtitle: 'Abrir novo atendimento técnico',
         count: '0',
         icon: Icons.build_circle_outlined,
-        onTap: () => _navigateTo(context, const AtendimentosTecnicosWebPage()),
-      ),
-      _TrackingItem(
-        title: 'Orçamentos pendentes',
-        subtitle: 'Aguardando retorno do cliente',
-        count: '9',
-        icon: Icons.description_outlined,
-        onTap: () => _showFeatureInProgress(context),
-      ),
-      _TrackingItem(
-        title: 'Assistências em execução',
-        subtitle: 'Serviços técnicos em andamento',
-        count: '27',
-        icon: Icons.engineering_outlined,
-        onTap: () => _navigateTo(context, const AtendimentosTecnicosWebPage()),
+        onTap: () => _navigateTo(
+          context,
+          const AtendimentoTecnicoMobileScreen(),
+        ),
       ),
     ];
 
@@ -464,50 +418,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                 ),
               ),
               const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSecondaryActionCard({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: _surfaceColor,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _iconBox(
-                icon,
-                background: const Color(0xFFEFF6FF),
-                color: _accentColor,
-                size: 42,
-              ),
-              const SizedBox(height: 14),
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _titleTextColor,
-                  fontWeight: FontWeight.w800,
-                  height: 1.15,
-                ),
-              ),
             ],
           ),
         ),
@@ -707,15 +617,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (BuildContext context) => page),
-    );
-  }
-
-  void _showFeatureInProgress(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fluxo mobile em evolução.'),
-        behavior: SnackBarBehavior.floating,
-      ),
     );
   }
 }
