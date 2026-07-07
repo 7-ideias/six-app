@@ -4,19 +4,13 @@ import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dar
 import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
 import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
-import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
-import '../../domain/services/regionalizacao/regionalizacao_service.dart';
-import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
-import '../../providers/colaborador_autorizacoes_provider.dart';
-import '../../providers/locale_settings_provider.dart';
 import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
-import 'home_page_mobile_screen.dart';
+import 'post_login_splash_mobile_page.dart';
 
 class LoginPageMobile extends StatefulWidget {
   const LoginPageMobile({super.key});
@@ -40,32 +34,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     super.dispose();
   }
 
-  Future<void> _afterLoginBootstrap() async {
-    final idiomaDePreferencia =
-        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-
-    if (mounted) {
-      await context
-          .read<ColaboradorAutorizacoesProvider>()
-          .carregarAutorizacoesDoUsuarioLogado(force: true);
-    }
-
-    try {
-      final regionalizacaoService = RegionalizacaoService(
-        apiClient: HttpRegionalizacaoApiClient(),
-      );
-      final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
-      if (mounted) {
-        await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
-          idiomaDePreferencia: idiomaDePreferencia,
-          regionalizacao: regionalizacao,
-        );
-      }
-    } catch (e) {
-      debugPrint('Erro ao aplicar idioma/regionalização no login mobile: $e');
-    }
-  }
-
   Future<void> _login() async {
     final login = _loginController.text.trim();
     final senha = _passwordController.text.trim();
@@ -78,9 +46,8 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     setState(() => _isLoading = true);
     try {
       await _authService.login(login, senha);
-      await _afterLoginBootstrap();
       if (!mounted) return;
-      _navigateToHome();
+      _navigateToPostLoginSplash();
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -88,10 +55,12 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     }
   }
 
-  void _navigateToHome() {
+  void _navigateToPostLoginSplash() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const HomePageMobile(title: 'Home')),
+      MaterialPageRoute(
+        builder: (_) => const PostLoginSplashMobilePage(),
+      ),
     );
   }
 
@@ -104,9 +73,8 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     setState(() => _isLoading = true);
     try {
       await _authService.loginWithGoogle();
-      await _afterLoginBootstrap();
       if (!mounted) return;
-      _navigateToHome();
+      _navigateToPostLoginSplash();
     } on GoogleAuthException catch (e) {
       if (e.code == GoogleAuthErrorCode.cancelledByUser) return;
       _showSnack(e.message);
@@ -119,7 +87,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
 
   void _loginWithApple() {
     _showSnack(context.t('auth.appleLoginMock'));
-    _navigateToHome();
+    _navigateToPostLoginSplash();
   }
 
   void _forgotPassword() {

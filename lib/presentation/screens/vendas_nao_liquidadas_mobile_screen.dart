@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
@@ -9,17 +8,19 @@ class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
   const VendasNaoLiquidadasMobileScreen({super.key});
 
   @override
-  State<VendasNaoLiquidadasMobileScreen> createState() => _VendasNaoLiquidadasMobileScreenState();
+  State<VendasNaoLiquidadasMobileScreen> createState() =>
+      _VendasNaoLiquidadasMobileScreenState();
 }
 
-class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+class _VendasNaoLiquidadasMobileScreenState
+    extends State<VendasNaoLiquidadasMobileScreen> {
+  static const Color _bg = Color(0xFFF4F7FB);
+  static const Color _primary = Color(0xFF0B1F3A);
+  static const Color _accent = Color(0xFF2563EB);
+  static const Color _muted = Color(0xFF64748B);
+  static const Color _title = Color(0xFF0F172A);
 
-  final VendaNaoLiquidadaApiClient _apiClient = VendaNaoLiquidadaApiClient();
+  final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
 
   bool _loading = true;
   bool _cancelando = false;
@@ -37,9 +38,8 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
       _loading = true;
       _erro = null;
     });
-
     try {
-      final vendas = await _apiClient.listar();
+      final vendas = await _api.listar();
       if (!mounted) return;
       setState(() => _vendas = vendas);
     } catch (e) {
@@ -59,179 +59,126 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
     );
 
     if (!mounted) return;
-
     if (recebeu == true) {
       await _carregar();
-      return;
-    }
-
-    if (recebeu == false) {
+    } else if (recebeu == false) {
       await _confirmarCancelamentoVenda(venda);
     }
   }
 
   Future<void> _confirmarCancelamentoVenda(VendaNaoLiquidadaModel venda) async {
-    final bool? confirmou = await showModalBottomSheet<bool>(
+    final bool? confirmou = await showDialog<bool>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext bottomSheetContext) {
-        final theme = Theme.of(bottomSheetContext);
-        return SafeArea(
-          top: false,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Center(
-                  child: Container(
-                    width: 46,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text('Cancelar venda em aberto?', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-                          Text(
-                            'Esta ação apaga a operação e devolve os produtos ao estoque quando aplicável.',
-                            style: theme.textTheme.bodyMedium?.copyWith(color: _mutedTextColor),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFFED7AA)),
-                  ),
-                  child: Text(
-                    '${venda.descricao}\n${_formatarValor(venda.valorAberto)} • ${venda.itens.fold<int>(0, (soma, item) => soma + item.quantidade)} item(ns)',
-                    style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800, height: 1.35),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: _cancelando ? null : () => Navigator.of(bottomSheetContext).pop(true),
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('Confirmar cancelamento'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: _cancelando ? null : () => Navigator.of(bottomSheetContext).pop(false),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  label: const Text('Apenas voltar'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(46),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                ),
-              ],
-            ),
+      builder: (context) => AlertDialog(
+        title: const Text('Cancelar venda em aberto?'),
+        content: Text(
+          '${venda.descricao}\n${_formatarValor(venda.valorAberto)}\n\n'
+          'Esta ação apaga a operação e devolve os produtos ao estoque quando aplicável.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Voltar'),
           ),
-        );
-      },
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
     );
 
-    if (confirmou == true) {
-      await _cancelarVendaNaoLiquidada(venda);
-    }
+    if (confirmou == true) await _cancelarVendaNaoLiquidada(venda);
   }
 
   Future<void> _cancelarVendaNaoLiquidada(VendaNaoLiquidadaModel venda) async {
     if (_cancelando) return;
-
     setState(() => _cancelando = true);
     try {
-      await _apiClient.cancelar(idRecebimento: venda.idRecebimento);
+      await _api.cancelar(idRecebimento: venda.idRecebimento);
       if (!mounted) return;
-      _mostrarSnack('Venda em aberto cancelada.');
+      _snack('Venda em aberto cancelada.');
       await _carregar();
     } catch (e) {
       if (!mounted) return;
-      _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
+      _snack(e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _cancelando = false);
     }
   }
 
-  void _mostrarSnack(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem)));
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  String _formatarValor(double valor) => 'R\$ ${valor.toStringAsFixed(2)}';
+  String _formatarValor(double valor) =>
+      'R${String.fromCharCode(36)} ${valor.toStringAsFixed(2)}';
 
   String _formatarData(DateTime? data) {
     if (data == null) return 'Sem data';
-    String twoDigits(int value) => value.toString().padLeft(2, '0');
-    return '${twoDigits(data.day)}/${twoDigits(data.month)}/${data.year} ${twoDigits(data.hour)}:${twoDigits(data.minute)}';
+    String d(int value) => value.toString().padLeft(2, '0');
+    return '${d(data.day)}/${d(data.month)}/${data.year} ${d(data.hour)}:${d(data.minute)}';
   }
 
-  double get _totalAberto => _vendas.fold<double>(0, (soma, venda) => soma + venda.valorAberto);
+  double get _totalAberto =>
+      _vendas.fold<double>(0, (soma, venda) => soma + venda.valorAberto);
+
+  double get _ticketMedio => _vendas.isEmpty ? 0 : _totalAberto / _vendas.length;
+
+  int get _totalItens => _vendas.fold<int>(
+        0,
+        (soma, venda) =>
+            soma + venda.itens.fold<int>(0, (itens, item) => itens + item.quantidade),
+      );
+
+  int get _vencidas {
+    final hoje = DateTime.now();
+    final inicioHoje = DateTime(hoje.year, hoje.month, hoje.day);
+    return _vendas
+        .where((venda) =>
+            venda.dataVencimento != null && venda.dataVencimento!.isBefore(inicioHoje))
+        .length;
+  }
+
+  int get _venceHoje {
+    final hoje = DateTime.now();
+    return _vendas.where((venda) {
+      final vencimento = venda.dataVencimento;
+      return vencimento != null &&
+          vencimento.year == hoje.year &&
+          vencimento.month == hoje.month &&
+          vencimento.day == hoje.day;
+    }).length;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _bg,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: _primaryColor,
+        backgroundColor: _primary,
         foregroundColor: Colors.white,
-        title: const Text('Vendas a receber', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Vendas a receber',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         actions: <Widget>[
-          IconButton(onPressed: _loading || _cancelando ? null : _carregar, icon: const Icon(Icons.refresh_rounded)),
+          IconButton(
+            onPressed: _loading || _cancelando ? null : _carregar,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
         ],
       ),
-      body: SafeArea(child: _buildBody()),
+      body: SafeArea(child: _body()),
     );
   }
 
-  Widget _buildBody() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
+  Widget _body() {
+    if (_loading) return const Center(child: CircularProgressIndicator());
     if (_erro != null) {
-      return _buildEstadoMensagem(Icons.error_outline, 'Não foi possível carregar', _erro!, recarregar: true);
-    }
-
-    if (_vendas.isEmpty) {
-      return _buildEstadoMensagem(Icons.check_circle_outline, 'Nenhuma venda em aberto', 'Quando uma venda for marcada para receber depois, ela aparecerá aqui.', recarregar: true);
+      return _estado(Icons.error_outline, 'Não foi possível carregar', _erro!);
     }
 
     return Stack(
@@ -242,14 +189,23 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
             children: <Widget>[
-              _buildHeaderResumo().animate().fade(duration: 350.ms).slideY(begin: 0.05, curve: Curves.easeOut),
-              const SizedBox(height: 16),
-              ..._vendas.asMap().entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildVendaCard(entry.value).animate().fade(duration: 320.ms, delay: (70 + entry.key * 35).ms).slideY(begin: 0.04, curve: Curves.easeOut),
-                );
-              }),
+              _header(),
+              const SizedBox(height: 14),
+              _metrics(),
+              const SizedBox(height: 14),
+              _planejados(),
+              const SizedBox(height: 18),
+              _section('Vendas em aberto'),
+              const SizedBox(height: 12),
+              if (_vendas.isEmpty)
+                _empty()
+              else
+                ..._vendas.map(
+                  (venda) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _vendaCard(venda),
+                  ),
+                ),
             ],
           ),
         ),
@@ -264,41 +220,138 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
     );
   }
 
-  Widget _buildHeaderResumo() {
+  Widget _header() {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [_primaryColor, Color(0xFF123B69)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: const LinearGradient(
+          colors: <Color>[_primary, Color(0xFF123B69)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x260B1F3A), blurRadius: 20, offset: Offset(0, 10))],
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x260B1F3A), blurRadius: 20, offset: Offset(0, 10)),
+        ],
       ),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(color: const Color(0x1AFFFFFF), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0x33FFFFFF))),
-            child: const Icon(Icons.point_of_sale_outlined, color: Colors.white),
-          ),
+          _icon(Icons.point_of_sale_outlined, bg: const Color(0x1AFFFFFF), fg: Colors.white),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text('Caixa a receber', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                const Text(
+                  'Dashboard de recebimentos',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                ),
                 const SizedBox(height: 4),
-                Text('${_vendas.length} venda(s) aguardando liquidação', style: const TextStyle(color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700)),
+                Text(
+                  '${_vendas.length} venda(s) aguardando liquidação',
+                  style: const TextStyle(color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700),
+                ),
               ],
             ),
           ),
-          Text(_formatarValor(_totalAberto), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(
+            _formatarValor(_totalAberto),
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildVendaCard(VendaNaoLiquidadaModel venda) {
-    final int quantidadeItens = venda.itens.fold<int>(0, (soma, item) => soma + item.quantidade);
+  Widget _metrics() {
+    final metrics = <_Metric>[
+      _Metric('Total aberto', _formatarValor(_totalAberto), Icons.account_balance_wallet_outlined),
+      _Metric('Vendas', _vendas.length.toString(), Icons.receipt_long_outlined),
+      _Metric('Ticket médio', _formatarValor(_ticketMedio), Icons.trending_up_rounded),
+      _Metric('Itens', _totalItens.toString(), Icons.inventory_2_outlined),
+      _Metric('Vencidas', _vencidas.toString(), Icons.warning_amber_rounded),
+      _Metric('Vence hoje', _venceHoje.toString(), Icons.today_rounded),
+    ];
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: metrics.map((metric) {
+        return SizedBox(
+          width: (MediaQuery.of(context).size.width - 42) / 2,
+          child: _baseCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _icon(metric.icon, bg: const Color(0xFFEFF6FF), fg: _accent, size: 38),
+                const SizedBox(height: 10),
+                Text(metric.title, style: const TextStyle(color: _muted, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(
+                  metric.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _title, fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(growable: false),
+    );
+  }
+
+  Widget _planejados() {
+    return Row(
+      children: <Widget>[
+        Expanded(child: _planned('Previsão 7 dias', 'Em breve', Icons.auto_graph_rounded)),
+        const SizedBox(width: 10),
+        Expanded(child: _planned('Risco de atraso', 'Baixo', Icons.insights_rounded)),
+      ],
+    );
+  }
+
+  Widget _planned(String title, String value, IconData icon) {
+    return _baseCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              _icon(icon, bg: const Color(0xFFF1F5F9), fg: _primary, size: 36),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'Planejado',
+                  style: TextStyle(color: Color(0xFFC2410C), fontSize: 10, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(title, style: const TextStyle(color: _muted, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 2),
+          const Text(
+            'Mockado para futuro painel',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: _muted, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vendaCard(VendaNaoLiquidadaModel venda) {
+    final int quantidadeItens =
+        venda.itens.fold<int>(0, (soma, item) => soma + item.quantidade);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
@@ -310,26 +363,38 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
+            boxShadow: const <BoxShadow>[
+              BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+            ],
           ),
           child: Row(
             children: <Widget>[
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(16)),
-                child: const Icon(Icons.receipt_long_outlined, color: _accentColor),
-              ),
+              _icon(Icons.receipt_long_outlined, bg: const Color(0xFFEFF6FF), fg: _accent, size: 48),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(venda.descricao, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 15)),
+                    Text(
+                      venda.descricao,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: 15),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Criada por ${venda.nomeColaboradorCriacao.isEmpty ? 'colaborador' : venda.nomeColaboradorCriacao}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _mutedTextColor, fontSize: 12)),
+                    Text(
+                      'Criada por ${venda.nomeColaboradorCriacao.isEmpty ? 'colaborador' : venda.nomeColaboradorCriacao}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _muted, fontSize: 12),
+                    ),
                     const SizedBox(height: 4),
-                    Text('${_formatarData(venda.dataCompetencia)} • $quantidadeItens item(ns)', style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w700)),
+                    Text(
+                      '${_formatarData(venda.dataCompetencia)} • $quantidadeItens item(ns)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _muted, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
                   ],
                 ),
               ),
@@ -337,9 +402,12 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
-                  Text(_formatarValor(venda.valorAberto), style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900, fontSize: 17)),
+                  Text(
+                    _formatarValor(venda.valorAberto),
+                    style: const TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: 17),
+                  ),
                   const SizedBox(height: 4),
-                  const Text('Abrir PDV', style: TextStyle(color: _accentColor, fontWeight: FontWeight.w900, fontSize: 12)),
+                  const Text('Abrir PDV', style: TextStyle(color: _accent, fontWeight: FontWeight.w900, fontSize: 12)),
                 ],
               ),
             ],
@@ -349,30 +417,80 @@ class _VendasNaoLiquidadasMobileScreenState extends State<VendasNaoLiquidadasMob
     );
   }
 
-  Widget _buildEstadoMensagem(IconData icon, String titulo, String mensagem, {bool recarregar = false}) {
+  Widget _empty() {
+    return _baseCard(
+      child: const Column(
+        children: <Widget>[
+          Icon(Icons.check_circle_outline, color: _accent, size: 34),
+          SizedBox(height: 10),
+          Text('Nenhuma venda em aberto', style: TextStyle(color: _title, fontSize: 18, fontWeight: FontWeight.w900)),
+          SizedBox(height: 6),
+          Text(
+            'Quando uma venda for marcada para receber depois, ela aparecerá aqui.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _muted, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _estado(IconData icon, String titulo, String mensagem) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(color: _accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(24)),
-              child: Icon(icon, color: _accentColor, size: 36),
-            ),
+            _icon(icon, bg: _accent.withOpacity(0.10), fg: _accent, size: 76),
             const SizedBox(height: 18),
-            Text(titulo, textAlign: TextAlign.center, style: const TextStyle(color: _titleTextColor, fontSize: 20, fontWeight: FontWeight.w900)),
+            Text(titulo, textAlign: TextAlign.center, style: const TextStyle(color: _title, fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            Text(mensagem, textAlign: TextAlign.center, style: const TextStyle(color: _mutedTextColor, height: 1.4)),
-            if (recarregar) ...<Widget>[
-              const SizedBox(height: 18),
-              OutlinedButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
-            ],
+            Text(mensagem, textAlign: TextAlign.center, style: const TextStyle(color: _muted, height: 1.4)),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
           ],
         ),
       ),
     );
   }
+
+  Widget _baseCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _icon(IconData icon, {required Color bg, required Color fg, double size = 50}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14)),
+      child: Icon(icon, color: fg, size: size >= 48 ? 24 : 20),
+    );
+  }
+
+  Widget _section(String title) {
+    return Text(
+      title,
+      style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900),
+    );
+  }
+}
+
+class _Metric {
+  const _Metric(this.title, this.value, this.icon);
+
+  final String title;
+  final String value;
+  final IconData icon;
 }

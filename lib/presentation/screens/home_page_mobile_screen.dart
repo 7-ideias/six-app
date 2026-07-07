@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/data/models/tela_inicial_models.dart';
+import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/pdv_page_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
 import '../components/drawer_mobile.dart';
@@ -37,6 +40,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
+  final TelaInicialWebApiClient _telaInicialApiClient =
+      HttpResumoDaEmpresaApiClient(canal: 'mobile');
+
+  TelaInicialModel? _resumoTelaInicial;
+  bool _carregandoResumo = true;
+  String? _erroResumo;
 
   @override
   void initState() {
@@ -44,6 +53,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _notificacaoService.addListener(_onNotificacoesChanged);
     if (!kIsWeb) {
       _configurarWebSocketMobile();
+      _carregarResumoInicio();
     }
   }
 
@@ -61,23 +71,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   void _onNotificacoesChanged() {
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     setState(() {});
   }
 
   void _configurarWebSocketMobile() {
     onMensagemRecebida = (Map<String, dynamic> json) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       final String? mensagem = json['mensagem']?.toString().trim();
-      if (mensagem == null || mensagem.isEmpty) {
-        return;
-      }
+      if (mensagem == null || mensagem.isEmpty) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
@@ -91,14 +94,44 @@ class _HomePageMobileState extends State<HomePageMobile> {
     connectStomp();
   }
 
+  Future<void> _carregarResumoInicio() async {
+    if (mounted) {
+      setState(() {
+        _carregandoResumo = true;
+        _erroResumo = null;
+      });
+    }
+
+    try {
+      final TelaInicialModel resumo = await _telaInicialApiClient.getResumo();
+      if (!mounted) return;
+      setState(() {
+        _resumoTelaInicial = resumo;
+        _carregandoResumo = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _erroResumo = error.toString();
+        _carregandoResumo = false;
+      });
+      debugPrint('[HomePageMobile] Erro ao buscar resumo: $error');
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final XFile? selected = await _picker.pickImage(source: source);
     if (selected != null) {
-      setState(() {
-        _image = File(selected.path);
-      });
+      setState(() => _image = File(selected.path));
     }
   }
+
+  String get _totalVendasAReceber =>
+      (_resumoTelaInicial?.totalVendasAbertas ?? 0).toString();
+
+  String get _subtituloVendasAReceber => _erroResumo == null
+      ? 'Vendas não liquidadas'
+      : 'Não foi possível atualizar agora';
 
   @override
   Widget build(BuildContext context) {
@@ -143,36 +176,40 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   Widget _buildHomeContent(BuildContext context) {
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-        children: [
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 60),
-            child: _buildExecutiveSummary(),
-          ),
-          const SizedBox(height: 16),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 120),
-            child: _buildNotificationsOverviewCard(context),
-          ),
-          const SizedBox(height: 22),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 180),
-            child: _buildSectionTitle('Ações rápidas'),
-          ),
-          const SizedBox(height: 12),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 230),
-            child: _buildQuickActions(context),
-          ),
-          const SizedBox(height: 24),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 290),
-            child: _buildSectionTitle('Pendências'),
-          ),
-          const SizedBox(height: 12),
-          ..._buildMetricTiles(context),
-        ],
+      child: RefreshIndicator(
+        onRefresh: _carregarResumoInicio,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          children: [
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 60),
+              child: _buildExecutiveSummary(),
+            ),
+            const SizedBox(height: 16),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 120),
+              child: _buildNotificationsOverviewCard(context),
+            ),
+            const SizedBox(height: 22),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 180),
+              child: _buildSectionTitle('Ações rápidas'),
+            ),
+            const SizedBox(height: 12),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 230),
+              child: _buildQuickActions(context),
+            ),
+            const SizedBox(height: 24),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 290),
+              child: _buildSectionTitle('Pendências'),
+            ),
+            const SizedBox(height: 12),
+            ..._buildMetricTiles(context),
+          ],
+        ),
       ),
     );
   }
@@ -273,8 +310,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildSummaryPill(
-                  label: 'Vendas em aberto',
-                  value: '33',
+                  label: 'Vendas a receber',
+                  value: _totalVendasAReceber,
+                  isLoading: _carregandoResumo,
+                  hasError: _erroResumo != null,
                 ),
               ),
             ],
@@ -284,7 +323,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
     );
   }
 
-  Widget _buildSummaryPill({required String label, required String value}) {
+  Widget _buildSummaryPill({
+    required String label,
+    required String value,
+    bool isLoading = false,
+    bool hasError = false,
+  }) {
     final TextStyle valueStyle = const TextStyle(
       color: Colors.white,
       fontWeight: FontWeight.w800,
@@ -295,7 +339,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
       decoration: BoxDecoration(
         color: const Color(0x1AFFFFFF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x33FFFFFF)),
+        border: Border.all(
+          color: hasError ? const Color(0x66FCA5A5) : const Color(0x33FFFFFF),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,10 +356,31 @@ class _HomePageMobileState extends State<HomePageMobile> {
             ),
           ),
           const SizedBox(height: 4),
-          if (int.tryParse(value) == null)
-            Text(value, overflow: TextOverflow.ellipsis, style: valueStyle)
-          else
-            SixAnimatedNumberText(value: value, style: valueStyle),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: isLoading
+                ? Container(
+                    key: const ValueKey<String>('summary-loading'),
+                    width: 34,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: const Color(0x33FFFFFF),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  )
+                : int.tryParse(value) == null
+                    ? Text(
+                        value,
+                        key: ValueKey<String>('summary-text-$label-$value'),
+                        overflow: TextOverflow.ellipsis,
+                        style: valueStyle,
+                      )
+                    : SixAnimatedNumberText(
+                        key: ValueKey<String>('summary-number-$label-$value'),
+                        value: value,
+                        style: valueStyle,
+                      ),
+          ),
         ],
       ),
     );
@@ -524,11 +591,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
   List<Widget> _buildMetricTiles(BuildContext context) {
     final List<_DashboardMetric> metrics = [
       _DashboardMetric(
-        title: 'Vendas em aberto',
-        subtitle: 'Aguardando pagamento',
-        count: '33',
-        icon: Icons.payments_outlined,
-        onTap: _showFeatureInProgress,
+        title: 'Vendas a receber',
+        subtitle: _subtituloVendasAReceber,
+        count: _totalVendasAReceber,
+        icon: Icons.point_of_sale_outlined,
+        onTap: () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
+        isLoading: _carregandoResumo,
+        hasError: _erroResumo != null,
       ),
       _DashboardMetric(
         title: 'Assistências em revisão',
@@ -584,7 +653,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: metric.hasError
+                  ? const Color(0xFFFCA5A5)
+                  : const Color(0xFFE2E8F0),
+            ),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0F000000),
@@ -624,8 +697,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       metric.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _mutedTextColor,
+                      style: TextStyle(
+                        color: metric.hasError
+                            ? const Color(0xFFB91C1C)
+                            : _mutedTextColor,
                         fontSize: 12,
                       ),
                     ),
@@ -636,14 +711,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  SixAnimatedNumberText(
-                    value: metric.count,
-                    style: const TextStyle(
-                      color: _titleTextColor,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  _buildMetricCount(metric),
                   const SizedBox(height: 2),
                   const Icon(
                     Icons.chevron_right_rounded,
@@ -655,6 +723,31 @@ class _HomePageMobileState extends State<HomePageMobile> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMetricCount(_DashboardMetric metric) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: metric.isLoading
+          ? Container(
+              key: const ValueKey<String>('metric-loading'),
+              width: 34,
+              height: 22,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            )
+          : SixAnimatedNumberText(
+              key: ValueKey<String>('metric-${metric.title}-${metric.count}'),
+              value: metric.count,
+              style: const TextStyle(
+                color: _titleTextColor,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
     );
   }
 
@@ -671,10 +764,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   String _badgeText(int count) {
-    if (count > 9) {
-      return '+9';
-    }
-
+    if (count > 9) return '+9';
     return count.toString();
   }
 
@@ -720,6 +810,8 @@ class _DashboardMetric {
     required this.count,
     required this.icon,
     required this.onTap,
+    this.isLoading = false,
+    this.hasError = false,
   });
 
   final String title;
@@ -727,4 +819,6 @@ class _DashboardMetric {
   final String count;
   final IconData icon;
   final VoidCallback onTap;
+  final bool isLoading;
+  final bool hasError;
 }
