@@ -7,6 +7,7 @@ class SixMobileAnimatedGradientBackground extends StatefulWidget {
     super.key,
     required this.child,
     this.enabled = true,
+    this.intensity = 1.0,
     this.baseColor = const Color(0xFFF4F7FB),
     this.primaryColor = const Color(0xFF0B1F3A),
     this.secondaryColor = const Color(0xFF123B69),
@@ -15,6 +16,9 @@ class SixMobileAnimatedGradientBackground extends StatefulWidget {
 
   final Widget child;
   final bool enabled;
+
+  /// Escala de percepção visual: 0.0 = imperceptível, 1.0 = exagerado.
+  final double intensity;
   final Color baseColor;
   final Color primaryColor;
   final Color secondaryColor;
@@ -89,6 +93,7 @@ class _SixMobileAnimatedGradientBackgroundState
                     primaryColor: widget.primaryColor,
                     secondaryColor: widget.secondaryColor,
                     accentColor: widget.accentColor,
+                    intensity: widget.intensity,
                   ),
                 );
               },
@@ -101,6 +106,7 @@ class _SixMobileAnimatedGradientBackgroundState
                 primaryColor: widget.primaryColor,
                 secondaryColor: widget.secondaryColor,
                 accentColor: widget.accentColor,
+                intensity: widget.intensity,
               ),
             ),
           widget.child,
@@ -117,6 +123,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     required this.primaryColor,
     required this.secondaryColor,
     required this.accentColor,
+    required this.intensity,
   });
 
   final double progress;
@@ -124,6 +131,8 @@ class _SixAmbientGradientPainter extends CustomPainter {
   final Color primaryColor;
   final Color secondaryColor;
   final Color accentColor;
+
+  final dynamic intensity;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -149,10 +158,12 @@ class _SixAmbientGradientPainter extends CustomPainter {
 
     canvas.drawRect(rect, basePaint);
 
+    final double i = intensity.clamp(0.0, 1.0);
+
     _paintMovingBlob(
       canvas,
       size,
-      color: secondaryColor.withOpacity(0.30),
+      color: secondaryColor.withOpacity(0.10 + (0.42 * i)),
       radiusFactor: 0.72,
       x: 0.20 + 0.18 * math.sin(progress * math.pi * 2),
       y: 0.18 + 0.08 * math.cos(progress * math.pi * 2 + 0.7),
@@ -161,7 +172,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintMovingBlob(
       canvas,
       size,
-      color: accentColor.withOpacity(0.16),
+      color: accentColor.withOpacity(0.06 + (0.30 * i)),
       radiusFactor: 0.78,
       x: 0.88 + 0.16 * math.sin(progress * math.pi * 2 + 1.9),
       y: 0.34 + 0.10 * math.cos(progress * math.pi * 2 + 1.3),
@@ -170,7 +181,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintMovingBlob(
       canvas,
       size,
-      color: Colors.white.withOpacity(0.30),
+      color: Colors.white.withOpacity(0.12 + (0.46 * i)),
       radiusFactor: 0.88,
       x: 0.48 + 0.14 * math.sin(progress * math.pi * 2 + 3.2),
       y: 0.66 + 0.08 * math.cos(progress * math.pi * 2 + 2.4),
@@ -179,7 +190,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintMovingBlob(
       canvas,
       size,
-      color: primaryColor.withOpacity(0.12),
+      color: primaryColor.withOpacity(0.04 + (0.24 * i)),
       radiusFactor: 0.58,
       x: 0.74 + 0.10 * math.sin(progress * math.pi * 2 + 4.1),
       y: 0.10 + 0.06 * math.cos(progress * math.pi * 2 + 3.8),
@@ -215,6 +226,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _SixAmbientGradientPainter oldDelegate) {
     return progress != oldDelegate.progress ||
+        intensity != oldDelegate.intensity ||
         baseColor != oldDelegate.baseColor ||
         primaryColor != oldDelegate.primaryColor ||
         secondaryColor != oldDelegate.secondaryColor ||
