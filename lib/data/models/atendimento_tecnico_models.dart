@@ -292,6 +292,8 @@ class AtendimentoTecnicoModel {
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
+    this.idTecnicoResponsavel,
+    this.nomeTecnicoResponsavelSnapshot,
     this.equipamento,
     this.defeitoRelatado,
     this.diagnosticoTecnico,
@@ -304,6 +306,8 @@ class AtendimentoTecnicoModel {
   final String? descricao;
   final String? idCliente;
   final String? nomeClienteSnapshot;
+  final String? idTecnicoResponsavel;
+  final String? nomeTecnicoResponsavelSnapshot;
   final int statusId;
   final String statusCodigo;
   final String statusI18nKey;
@@ -342,6 +346,8 @@ class AtendimentoTecnicoModel {
       descricao: json['descricao']?.toString(),
       idCliente: json['idCliente']?.toString(),
       nomeClienteSnapshot: json['nomeClienteSnapshot']?.toString(),
+      idTecnicoResponsavel: json['idTecnicoResponsavel']?.toString(),
+      nomeTecnicoResponsavelSnapshot: json['nomeTecnicoResponsavelSnapshot']?.toString(),
       statusId: (json['statusId'] as num?)?.toInt() ?? 0,
       statusCodigo: json['statusCodigo']?.toString() ?? '',
       statusI18nKey: json['statusI18nKey']?.toString() ?? '',
@@ -401,6 +407,8 @@ class AtendimentoTecnicoCreateInput {
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
+    this.idTecnicoResponsavel,
+    this.nomeTecnicoResponsavelSnapshot,
     this.prioridadeId,
     this.prioridadeCodigo,
     this.origemCodigo,
@@ -414,6 +422,8 @@ class AtendimentoTecnicoCreateInput {
   final String? descricao;
   final String? idCliente;
   final String? nomeClienteSnapshot;
+  final String? idTecnicoResponsavel;
+  final String? nomeTecnicoResponsavelSnapshot;
   final int? prioridadeId;
   final String? prioridadeCodigo;
   final String? origemCodigo;
@@ -426,6 +436,8 @@ class AtendimentoTecnicoCreateInput {
         'descricao': descricao,
         'idCliente': idCliente,
         'nomeClienteSnapshot': nomeClienteSnapshot,
+        'idTecnicoResponsavel': idTecnicoResponsavel,
+        'nomeTecnicoResponsavelSnapshot': nomeTecnicoResponsavelSnapshot,
         'prioridadeId': prioridadeId,
         'prioridadeCodigo': prioridadeCodigo,
         'origemCodigo': origemCodigo,
@@ -448,6 +460,10 @@ class AtendimentoTecnicoUpdateInput {
   const AtendimentoTecnicoUpdateInput({
     required this.validadeOrcamentoEm,
     this.descricao,
+    this.idCliente,
+    this.nomeClienteSnapshot,
+    this.idTecnicoResponsavel,
+    this.nomeTecnicoResponsavelSnapshot,
     this.equipamento,
     this.defeitoRelatado,
     this.diagnosticoTecnico,
@@ -457,6 +473,10 @@ class AtendimentoTecnicoUpdateInput {
 
   final DateTime validadeOrcamentoEm;
   final String? descricao;
+  final String? idCliente;
+  final String? nomeClienteSnapshot;
+  final String? idTecnicoResponsavel;
+  final String? nomeTecnicoResponsavelSnapshot;
   final AtendimentoTecnicoEquipamentoModel? equipamento;
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
@@ -465,6 +485,10 @@ class AtendimentoTecnicoUpdateInput {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'descricao': descricao,
+        'idCliente': idCliente,
+        'nomeClienteSnapshot': nomeClienteSnapshot,
+        'idTecnicoResponsavel': idTecnicoResponsavel,
+        'nomeTecnicoResponsavelSnapshot': nomeTecnicoResponsavelSnapshot,
         'validadeOrcamentoEm': AtendimentoTecnicoCreateInput._dateOnly(validadeOrcamentoEm),
         'equipamento': equipamento?.toJson(),
         'defeitoRelatado': defeitoRelatado,

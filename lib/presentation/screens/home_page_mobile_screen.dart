@@ -508,16 +508,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
         onTap: () => _navigateTo(context, const PdvMobileScreen()),
       ),
       _QuickAction(
-        label: 'Novo orçamento',
-        icon: Icons.request_quote_rounded,
-        onTap: _showFeatureInProgress,
-      ),
-      _QuickAction(
-        label: 'Nova assistência',
-        icon: Icons.handyman_rounded,
-        onTap: _showFeatureInProgress,
-      ),
-      _QuickAction(
         label: 'Clientes',
         icon: Icons.people_alt_rounded,
         onTap: () => _navigateTo(context, const ClientesUsuarioListPage()),
