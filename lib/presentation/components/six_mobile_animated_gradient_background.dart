@@ -7,7 +7,7 @@ class SixMobileAnimatedGradientBackground extends StatefulWidget {
     super.key,
     required this.child,
     this.enabled = true,
-    this.intensity = 1.0,
+    this.intensity = 0.45,
     this.baseColor = const Color(0xFFF4F7FB),
     this.primaryColor = const Color(0xFF0B1F3A),
     this.secondaryColor = const Color(0xFF123B69),
@@ -42,7 +42,7 @@ class _SixMobileAnimatedGradientBackgroundState
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 18),
+      duration: const Duration(seconds: 9),
     );
   }
 
@@ -131,15 +131,16 @@ class _SixAmbientGradientPainter extends CustomPainter {
   final Color primaryColor;
   final Color secondaryColor;
   final Color accentColor;
-
-  final dynamic intensity;
+  final double intensity;
 
   @override
   void paint(Canvas canvas, Size size) {
     final Rect rect = Offset.zero & size;
+    final double i = intensity.clamp(0.0, 1.0);
+    final double t = progress * math.pi * 2;
 
-    final Color midBlue = Color.lerp(primaryColor, secondaryColor, 0.55)!;
-    final Color softBlue = Color.lerp(secondaryColor, baseColor, 0.74)!;
+    final Color midBlue = Color.lerp(primaryColor, secondaryColor, 0.50)!;
+    final Color softBlue = Color.lerp(secondaryColor, baseColor, 0.70)!;
 
     final Paint basePaint =
         Paint()
@@ -148,56 +149,75 @@ class _SixAmbientGradientPainter extends CustomPainter {
             end: Alignment.bottomCenter,
             colors: <Color>[
               primaryColor,
-              midBlue.withOpacity(0.86),
+              midBlue.withOpacity(0.90),
               softBlue,
               baseColor,
               Colors.white,
             ],
-            stops: const <double>[0, 0.18, 0.48, 0.78, 1],
+            stops: const <double>[0, 0.16, 0.42, 0.72, 1],
           ).createShader(rect);
 
     canvas.drawRect(rect, basePaint);
 
-    final double i = intensity.clamp(0.0, 1.0);
-
-    _paintMovingBlob(
+    // Área 1: topo, próximo ao hero.
+    _paintAura(
       canvas,
       size,
-      color: secondaryColor.withOpacity(0.10 + (0.42 * i)),
-      radiusFactor: 0.72,
-      x: 0.20 + 0.18 * math.sin(progress * math.pi * 2),
-      y: 0.18 + 0.08 * math.cos(progress * math.pi * 2 + 0.7),
+      color: accentColor.withOpacity(0.12 + (0.30 * i)),
+      radiusFactor: 0.44 + (0.08 * math.sin(t).abs()),
+      x: 0.12 + 0.22 * math.sin(t),
+      y: 0.15 + 0.05 * math.cos(t * 1.2),
     );
 
-    _paintMovingBlob(
+    _paintAura(
       canvas,
       size,
-      color: accentColor.withOpacity(0.06 + (0.30 * i)),
-      radiusFactor: 0.78,
-      x: 0.88 + 0.16 * math.sin(progress * math.pi * 2 + 1.9),
-      y: 0.34 + 0.10 * math.cos(progress * math.pi * 2 + 1.3),
+      color: secondaryColor.withOpacity(0.14 + (0.34 * i)),
+      radiusFactor: 0.50 + (0.10 * math.sin(t + 1.7).abs()),
+      x: 0.82 + 0.18 * math.sin(t + 1.8),
+      y: 0.20 + 0.05 * math.cos(t + 0.7),
     );
 
-    _paintMovingBlob(
+    // Área 2: entre hero e primeiros cards.
+    _paintAura(
       canvas,
       size,
-      color: Colors.white.withOpacity(0.12 + (0.46 * i)),
-      radiusFactor: 0.88,
-      x: 0.48 + 0.14 * math.sin(progress * math.pi * 2 + 3.2),
-      y: 0.66 + 0.08 * math.cos(progress * math.pi * 2 + 2.4),
+      color: Colors.white.withOpacity(0.18 + (0.50 * i)),
+      radiusFactor: 0.64 + (0.12 * math.sin(t + 2.3).abs()),
+      x: 0.52 + 0.20 * math.sin(t + 2.3),
+      y: 0.34 + 0.05 * math.cos(t * 1.1 + 1.4),
     );
 
-    _paintMovingBlob(
+    _paintAura(
       canvas,
       size,
-      color: primaryColor.withOpacity(0.04 + (0.24 * i)),
-      radiusFactor: 0.58,
-      x: 0.74 + 0.10 * math.sin(progress * math.pi * 2 + 4.1),
-      y: 0.10 + 0.06 * math.cos(progress * math.pi * 2 + 3.8),
+      color: accentColor.withOpacity(0.08 + (0.26 * i)),
+      radiusFactor: 0.48 + (0.10 * math.sin(t + 3.1).abs()),
+      x: 0.92 + 0.18 * math.sin(t + 3.1),
+      y: 0.39 + 0.06 * math.cos(t + 2.4),
+    );
+
+    // Área 3: entre blocos de acompanhamento.
+    _paintAura(
+      canvas,
+      size,
+      color: Colors.white.withOpacity(0.20 + (0.55 * i)),
+      radiusFactor: 0.72 + (0.14 * math.sin(t + 4.2).abs()),
+      x: 0.34 + 0.24 * math.sin(t + 4.2),
+      y: 0.58 + 0.06 * math.cos(t + 3.5),
+    );
+
+    _paintAura(
+      canvas,
+      size,
+      color: secondaryColor.withOpacity(0.06 + (0.18 * i)),
+      radiusFactor: 0.54 + (0.10 * math.sin(t + 5.0).abs()),
+      x: 0.82 + 0.16 * math.sin(t + 5.0),
+      y: 0.62 + 0.05 * math.cos(t + 4.6),
     );
   }
 
-  void _paintMovingBlob(
+  void _paintAura(
     Canvas canvas,
     Size size, {
     required Color color,
@@ -214,10 +234,11 @@ class _SixAmbientGradientPainter extends CustomPainter {
           ..shader = RadialGradient(
             colors: <Color>[
               color,
-              color.withOpacity(color.opacity * 0.42),
+              color.withOpacity(color.opacity * 0.72),
+              color.withOpacity(color.opacity * 0.28),
               color.withOpacity(0),
             ],
-            stops: const <double>[0, 0.46, 1],
+            stops: const <double>[0, 0.32, 0.66, 1],
           ).createShader(Rect.fromCircle(center: center, radius: radius));
 
     canvas.drawCircle(center, radius, paint);
