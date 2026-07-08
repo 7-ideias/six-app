@@ -23,11 +23,12 @@ class DesempenhoColaboradorPage extends StatefulWidget {
 }
 
 class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedColor = Color(0xFF64748B);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static const Color _background = Color(0xFFF4F7FB);
+  static const Color _primary = Color(0xFF0B1F3A);
+  static const Color _secondary = Color(0xFF123B69);
+  static const Color _accent = Color(0xFF2563EB);
+  static const Color _muted = Color(0xFF64748B);
+  static const Color _border = Color(0xFFE2E8F0);
 
   final DesempenhoColaboradorApiClient _api =
       HttpDesempenhoColaboradorApiClient();
@@ -39,9 +40,9 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
     symbol: 'R\$',
   );
 
-  late DateTime _dataInicio;
-  late DateTime _dataFim;
-  String? _idColaboradorSelecionado;
+  late DateTime _inicio;
+  late DateTime _fim;
+  String? _idColaborador;
   bool _loading = true;
   bool _saving = false;
   String? _error;
@@ -54,12 +55,12 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
   void initState() {
     super.initState();
     final DateTime now = DateTime.now();
-    _dataInicio = DateTime(now.year, now.month);
-    _dataFim = DateTime(now.year, now.month, now.day);
-    _loadData();
+    _inicio = DateTime(now.year, now.month);
+    _fim = DateTime(now.year, now.month, now.day);
+    _load();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _load() async {
     setState(() {
       _loading = true;
       _error = null;
@@ -70,9 +71,9 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
           await _colaboradorApi.listarColaboradores();
       final List<MetaColaboradorModel> metas = await _api.listarMetas();
       final DesempenhoColaboradorResumoModel resumo = await _api.buscarResumo(
-        dataInicio: _dataInicio,
-        dataFim: _dataFim,
-        idColaborador: _idColaboradorSelecionado,
+        dataInicio: _inicio,
+        dataFim: _fim,
+        idColaborador: _idColaborador,
       );
 
       if (!mounted) return;
@@ -94,23 +95,26 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
   @override
   Widget build(BuildContext context) {
     final Widget content = Container(
-      color: _backgroundColor,
+      color: _background,
       child: Column(
         children: <Widget>[
-          _buildHeader(context),
-          Expanded(child: _buildBody(context)),
+          _Header(
+            embedded: widget.embedded,
+            onBack: widget.onBack,
+            saving: _saving,
+            onNewGoal: () => _openGoalForm(),
+          ),
+          Expanded(child: _buildContent()),
         ],
       ),
     );
 
-    if (widget.embedded) {
-      return content;
-    }
+    if (widget.embedded) return content;
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _background,
       appBar: AppBar(
-        backgroundColor: _primaryColor,
+        backgroundColor: _primary,
         foregroundColor: Colors.white,
         centerTitle: true,
         title: const Text(
@@ -122,12 +126,539 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildContent() {
+    if (_loading) {
+      return const Center(
+        child: SixBackendLoading.messages(
+          animation: SixBackendLoadingAnimation.skeletonPulse,
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: _Panel(
+          maxWidth: 520,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309)),
+              const SizedBox(height: 10),
+              const Text(
+                'Não foi possível carregar o desempenho.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: _muted),
+              ),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool wide = constraints.maxWidth >= 920;
+          return ListView(
+            padding: EdgeInsets.fromLTRB(wide ? 24 : 16, 18, wide ? 24 : 16, 28),
+            children: <Widget>[
+              _buildFilters(wide),
+              const SizedBox(height: 16),
+              _buildKpis(wide),
+              const SizedBox(height: 16),
+              if (wide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(flex: 7, child: _buildResultados()),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 4, child: _buildMetas()),
+                  ],
+                )
+              else ...<Widget>[
+                _buildResultados(),
+                const SizedBox(height: 16),
+                _buildMetas(),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilters(bool wide) {
+    return _Panel(
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          _periodChip('Mês atual', _isCurrentMonth(), () {
+            final DateTime now = DateTime.now();
+            _setPeriod(DateTime(now.year, now.month), now);
+          }),
+          _periodChip('Últimos 30 dias', _isLastThirtyDays(), () {
+            final DateTime now = DateTime.now();
+            _setPeriod(now.subtract(const Duration(days: 29)), now);
+          }),
+          _periodChip('Hoje', _isToday(), () {
+            final DateTime now = DateTime.now();
+            _setPeriod(now, now);
+          }),
+          SizedBox(
+            width: wide ? 310 : double.infinity,
+            child: _SelectorButton(
+              icon: Icons.badge_outlined,
+              label: _selectedCollaboratorName,
+              onTap: _selectCollaboratorFilter,
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: Text('${_dateFormat.format(_inicio)} até ${_dateFormat.format(_fim)}'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _periodChip(String label, bool selected, VoidCallback onTap) {
+    return ChoiceChip(
+      selected: selected,
+      label: Text(label),
+      selectedColor: const Color(0xFFDCEBFF),
+      labelStyle: TextStyle(
+        color: selected ? _primary : _muted,
+        fontWeight: FontWeight.w800,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      onSelected: (_) => onTap(),
+    );
+  }
+
+  Widget _buildKpis(bool wide) {
+    final List<_KpiData> kpis = <_KpiData>[
+      _KpiData(
+        'Score médio',
+        '${_resumo.scoreMedio.toStringAsFixed(0)}%',
+        'Média ponderada das metas',
+        Icons.speed_rounded,
+      ),
+      _KpiData(
+        'Metas batidas',
+        '${_resumo.metasBatidas}/${_resumo.totalMetas}',
+        'Dentro do período filtrado',
+        Icons.emoji_events_outlined,
+      ),
+      _KpiData(
+        'Vendas',
+        _currencyFormat.format(_resumo.valorTotalVendido),
+        '${_resumo.quantidadeVendas} operações no período',
+        Icons.point_of_sale_rounded,
+      ),
+      _KpiData(
+        'Atendimentos',
+        _resumo.quantidadeAtendimentos.toString(),
+        'Assistências técnicas no período',
+        Icons.build_circle_outlined,
+      ),
+    ];
+
+    return Wrap(
+      spacing: 14,
+      runSpacing: 14,
+      children: kpis
+          .map(
+            (_KpiData item) => SizedBox(
+              width: wide ? 230 : double.infinity,
+              child: _KpiCard(data: item),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  Widget _buildResultados() {
+    return _Panel(
+      title: 'Meta x realizado',
+      subtitle: 'Resultado calculado automaticamente pelo período selecionado.',
+      action: IconButton(
+        onPressed: _load,
+        icon: const Icon(Icons.refresh_rounded),
+        tooltip: 'Atualizar',
+      ),
+      child: _resumo.resultados.isEmpty
+          ? const _EmptyState(
+              icon: Icons.flag_outlined,
+              title: 'Nenhuma meta ativa no período',
+              subtitle: 'Cadastre uma meta para acompanhar a evolução do colaborador.',
+            )
+          : Column(
+              children: _resumo.resultados.map(_resultTile).toList(growable: false),
+            ),
+    );
+  }
+
+  Widget _resultTile(DesempenhoColaboradorItemModel item) {
+    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(item.indicador);
+    final Color statusColor = _statusColor(item.status);
+    final double progress = (item.percentualAtingido / 100).clamp(0.0, 1.0).toDouble();
+
     return Container(
-      padding: EdgeInsets.fromLTRB(widget.embedded ? 20 : 16, 16, 16, 16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  item.nomeColaborador.isEmpty ? 'Colaborador' : item.nomeColaborador,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              _StatusPill(label: _statusLabel(item.status), color: statusColor),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            indicador.label,
+            style: const TextStyle(color: _muted, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 9,
+              value: progress,
+              backgroundColor: _border,
+              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  '${_formatValue(item.valorRealizado, indicador)} de ${_formatValue(item.valorAlvo, indicador)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                '${item.percentualAtingido.toStringAsFixed(0)}%',
+                style: TextStyle(color: statusColor, fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetas() {
+    final List<MetaColaboradorModel> metas = _metas
+        .where(
+          (MetaColaboradorModel meta) =>
+              _idColaborador == null || meta.idColaborador == _idColaborador,
+        )
+        .toList(growable: false);
+
+    return _Panel(
+      title: 'Metas cadastradas',
+      subtitle: 'Administre metas sem gerar relatórios nesta etapa.',
+      action: IconButton(
+        onPressed: () => _openGoalForm(),
+        icon: const Icon(Icons.add_rounded),
+        tooltip: 'Nova meta',
+      ),
+      child: metas.isEmpty
+          ? const _EmptyState(
+              icon: Icons.playlist_add_check_rounded,
+              title: 'Sem metas cadastradas',
+              subtitle: 'Crie metas por colaborador para acompanhar o resultado.',
+            )
+          : Column(children: metas.map(_metaTile).toList(growable: false)),
+    );
+  }
+
+  Widget _metaTile(MetaColaboradorModel meta) {
+    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(meta.indicador);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _openGoalForm(meta: meta),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.flag_outlined, color: _accent, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      meta.nomeColaborador.isEmpty ? 'Colaborador' : meta.nomeColaborador,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${indicador.label} • ${_formatPeriod(meta.dataInicio, meta.dataFim)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _muted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.edit_outlined, color: _muted, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openGoalForm({MetaColaboradorModel? meta}) async {
+    if (_colaboradores.isEmpty) {
+      _showSnack('Cadastre ou carregue colaboradores antes de criar metas.');
+      return;
+    }
+
+    final Map<String, dynamic>? payload;
+    if (MediaQuery.of(context).size.width >= 720) {
+      payload = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (BuildContext context) => Dialog(
+          insetPadding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: _GoalForm(
+              colaboradores: _colaboradores,
+              inicioPadrao: _inicio,
+              fimPadrao: _fim,
+              meta: meta,
+            ),
+          ),
+        ),
+      );
+    } else {
+      payload = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (BuildContext context) => _GoalForm(
+          colaboradores: _colaboradores,
+          inicioPadrao: _inicio,
+          fimPadrao: _fim,
+          meta: meta,
+        ),
+      );
+    }
+
+    if (payload == null) return;
+    await _saveGoal(meta, payload);
+  }
+
+  Future<void> _saveGoal(MetaColaboradorModel? meta, Map<String, dynamic> payload) async {
+    setState(() => _saving = true);
+    try {
+      if (meta == null) {
+        await _api.criarMeta(payload);
+      } else {
+        await _api.editarMeta(meta.id, payload);
+      }
+      await _load();
+      if (!mounted) return;
+      _showSnack(meta == null ? 'Meta cadastrada.' : 'Meta atualizada.');
+    } catch (error) {
+      if (!mounted) return;
+      _showSnack('Não foi possível salvar a meta: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _selectCollaboratorFilter() async {
+    final String? selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) => _CollaboratorSheet(
+        colaboradores: _colaboradores,
+        selectedId: _idColaborador,
+        allowAll: true,
+      ),
+    );
+
+    if (!mounted || selected == null) return;
+    setState(() => _idColaborador = selected == '__ALL__' ? null : selected);
+    await _load();
+  }
+
+  void _setPeriod(DateTime inicio, DateTime fim) {
+    setState(() {
+      _inicio = DateTime(inicio.year, inicio.month, inicio.day);
+      _fim = DateTime(fim.year, fim.month, fim.day);
+    });
+    _load();
+  }
+
+  bool _sameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool _isCurrentMonth() {
+    final DateTime now = DateTime.now();
+    return _sameDay(_inicio, DateTime(now.year, now.month)) &&
+        _sameDay(_fim, DateTime(now.year, now.month, now.day));
+  }
+
+  bool _isLastThirtyDays() {
+    final DateTime now = DateTime.now();
+    return _sameDay(_inicio, now.subtract(const Duration(days: 29))) &&
+        _sameDay(_fim, now);
+  }
+
+  bool _isToday() {
+    final DateTime now = DateTime.now();
+    return _sameDay(_inicio, now) && _sameDay(_fim, now);
+  }
+
+  String get _selectedCollaboratorName {
+    if (_idColaborador == null) return 'Todos os colaboradores';
+    return _colaboradores
+        .firstWhere(
+          (ColaboradorUsuarioResumo item) => item.idUnicoPessoal == _idColaborador,
+          orElse: () => ColaboradorUsuarioResumo(
+            idUnicoPessoal: _idColaborador ?? '',
+            nome: 'Colaborador',
+            nomeDeGuerra: '',
+            celularDeAcesso: '',
+            email: '',
+            foto: '',
+            dataCadastro: null,
+          ),
+        )
+        .displayName;
+  }
+
+  String _formatValue(double value, DesempenhoIndicadorOption indicador) {
+    if (indicador.valorMonetario) return _currencyFormat.format(value);
+    return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+  }
+
+  String _formatPeriod(DateTime? inicio, DateTime? fim) {
+    if (inicio == null || fim == null) return 'sem período';
+    return '${_dateFormat.format(inicio)} a ${_dateFormat.format(fim)}';
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'ACIMA_DA_META':
+        return 'Acima da meta';
+      case 'EM_PROGRESSO':
+        return 'Em progresso';
+      case 'EM_RISCO':
+        return 'Em risco';
+      case 'CRITICO':
+        return 'Crítico';
+      default:
+        return status.isEmpty ? 'Sem status' : status;
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'ACIMA_DA_META':
+        return const Color(0xFF16A34A);
+      case 'EM_PROGRESSO':
+        return _accent;
+      case 'EM_RISCO':
+        return const Color(0xFFD97706);
+      case 'CRITICO':
+        return const Color(0xFFDC2626);
+      default:
+        return _muted;
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.embedded,
+    required this.saving,
+    required this.onNewGoal,
+    this.onBack,
+  });
+
+  final bool embedded;
+  final bool saving;
+  final VoidCallback onNewGoal;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(embedded ? 18 : 16, 14, 16, 14),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[_primaryColor, Color(0xFF123B69)],
+          colors: <Color>[_DesempenhoColaboradorPageState._primary, _DesempenhoColaboradorPageState._secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -136,9 +667,9 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
         bottom: false,
         child: Row(
           children: <Widget>[
-            if (widget.onBack != null)
+            if (onBack != null)
               IconButton(
-                onPressed: widget.onBack,
+                onPressed: onBack,
                 icon: const Icon(Icons.close_rounded, color: Colors.white),
                 tooltip: 'Fechar',
               ),
@@ -146,14 +677,11 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: const Color(0x1AFFFFFF),
+                color: Colors.white.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0x33FFFFFF)),
+                border: Border.all(color: Colors.white.withOpacity(0.18)),
               ),
-              child: const Icon(
-                Icons.trending_up_rounded,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.trending_up_rounded, color: Colors.white),
             ),
             const SizedBox(width: 14),
             const Expanded(
@@ -184,14 +712,11 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: _primaryColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 13,
-                ),
+                foregroundColor: _DesempenhoColaboradorPageState._primary,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               ),
-              onPressed: _saving ? null : () => _abrirFormularioMeta(),
-              icon: const Icon(Icons.add_rounded, size: 19),
+              onPressed: saving ? null : onNewGoal,
+              icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Nova meta'),
             ),
           ],
@@ -199,627 +724,26 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
       ),
     );
   }
-
-  Widget _buildBody(BuildContext context) {
-    if (_loading) {
-      return const Center(
-        child: SixBackendLoading.messages(
-          compact: false,
-          animation: SixBackendLoadingAnimation.skeletonPulse,
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return _buildError();
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool wide = constraints.maxWidth >= 900;
-          return ListView(
-            padding: EdgeInsets.fromLTRB(wide ? 24 : 16, 18, wide ? 24 : 16, 28),
-            children: <Widget>[
-              _buildFilters(wide: wide),
-              const SizedBox(height: 16),
-              _buildSummaryCards(wide: wide),
-              const SizedBox(height: 16),
-              if (wide)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(flex: 7, child: _buildResultadosCard()),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 4, child: _buildMetasCard()),
-                  ],
-                )
-              else ...<Widget>[
-                _buildResultadosCard(),
-                const SizedBox(height: 16),
-                _buildMetasCard(),
-              ],
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 520),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: _borderColor),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309)),
-              const SizedBox(height: 10),
-              const Text(
-                'Não foi possível carregar o desempenho.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _error ?? '',
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: _mutedColor),
-              ),
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                onPressed: _loadData,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Tentar novamente'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilters({required bool wide}) {
-    return _Panel(
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          _buildPeriodChip(
-            label: 'Mês atual',
-            selected: _isCurrentMonth(),
-            onTap: () {
-              final DateTime now = DateTime.now();
-              _setPeriodo(DateTime(now.year, now.month), DateTime(now.year, now.month, now.day));
-            },
-          ),
-          _buildPeriodChip(
-            label: 'Últimos 30 dias',
-            selected: _isLastThirtyDays(),
-            onTap: () {
-              final DateTime now = DateTime.now();
-              _setPeriodo(now.subtract(const Duration(days: 29)), now);
-            },
-          ),
-          _buildPeriodChip(
-            label: 'Hoje',
-            selected: _isTodayOnly(),
-            onTap: () {
-              final DateTime now = DateTime.now();
-              _setPeriodo(now, now);
-            },
-          ),
-          SizedBox(
-            width: wide ? 300 : double.infinity,
-            child: _buildColaboradorSelector(),
-          ),
-          OutlinedButton.icon(
-            onPressed: _loadData,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text('${_dateFormat.format(_dataInicio)} até ${_dateFormat.format(_dataFim)}'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodChip({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return ChoiceChip(
-      selected: selected,
-      label: Text(label),
-      onSelected: (_) => onTap(),
-      selectedColor: const Color(0xFFDCEBFF),
-      labelStyle: TextStyle(
-        color: selected ? _primaryColor : _mutedColor,
-        fontWeight: FontWeight.w800,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-    );
-  }
-
-  Widget _buildColaboradorSelector() {
-    final String label = _nomeColaboradorSelecionado();
-    return Material(
-      color: const Color(0xFFF8FAFC),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: _selecionarColaboradorFiltro,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _borderColor),
-          ),
-          child: Row(
-            children: <Widget>[
-              const Icon(Icons.badge_outlined, color: _accentColor, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: _mutedColor),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCards({required bool wide}) {
-    final List<Widget> cards = <Widget>[
-      _KpiCard(
-        title: 'Score médio',
-        value: '${_resumo.scoreMedio.toStringAsFixed(0)}%',
-        subtitle: 'Média ponderada das metas',
-        icon: Icons.speed_rounded,
-      ),
-      _KpiCard(
-        title: 'Metas batidas',
-        value: '${_resumo.metasBatidas}/${_resumo.totalMetas}',
-        subtitle: 'Dentro do período filtrado',
-        icon: Icons.emoji_events_outlined,
-      ),
-      _KpiCard(
-        title: 'Vendas',
-        value: _currencyFormat.format(_resumo.valorTotalVendido),
-        subtitle: '${_resumo.quantidadeVendas} operações no período',
-        icon: Icons.point_of_sale_rounded,
-      ),
-      _KpiCard(
-        title: 'Atendimentos',
-        value: _resumo.quantidadeAtendimentos.toString(),
-        subtitle: 'Assistências técnicas no período',
-        icon: Icons.build_circle_outlined,
-      ),
-    ];
-
-    return Wrap(
-      spacing: 14,
-      runSpacing: 14,
-      children:
-          cards
-              .map(
-                (Widget card) => SizedBox(
-                  width: wide ? 230 : double.infinity,
-                  child: card,
-                ),
-              )
-              .toList(growable: false),
-    );
-  }
-
-  Widget _buildResultadosCard() {
-    return _Panel(
-      title: 'Meta x realizado',
-      subtitle: 'Resultado calculado automaticamente pelo período selecionado.',
-      action: IconButton(
-        onPressed: _loadData,
-        icon: const Icon(Icons.refresh_rounded),
-        tooltip: 'Atualizar',
-      ),
-      child:
-          _resumo.resultados.isEmpty
-              ? _EmptyState(
-                icon: Icons.flag_outlined,
-                title: 'Nenhuma meta ativa no período',
-                subtitle: 'Cadastre uma meta para acompanhar a evolução do colaborador.',
-              )
-              : Column(
-                children:
-                    _resumo.resultados
-                        .map(_buildResultadoTile)
-                        .toList(growable: false),
-              ),
-    );
-  }
-
-  Widget _buildResultadoTile(DesempenhoColaboradorItemModel item) {
-    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(item.indicador);
-    final double progress = (item.percentualAtingido / 100).clamp(0, 1);
-    final Color statusColor = _statusColor(item.status);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  item.nomeColaborador.isEmpty ? 'Colaborador' : item.nomeColaborador,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _primaryColor,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              _StatusPill(label: _statusLabel(item.status), color: statusColor),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            indicador.label,
-            style: const TextStyle(color: _mutedColor, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 9,
-              value: progress,
-              backgroundColor: const Color(0xFFE2E8F0),
-              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  '${_formatValor(item.valorRealizado, indicador)} de ${_formatValor(item.valorAlvo, indicador)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-              Text(
-                '${item.percentualAtingido.toStringAsFixed(0)}%',
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetasCard() {
-    final List<MetaColaboradorModel> metasFiltradas = _metas
-        .where(
-          (MetaColaboradorModel meta) =>
-              _idColaboradorSelecionado == null ||
-              meta.idColaborador == _idColaboradorSelecionado,
-        )
-        .toList(growable: false);
-
-    return _Panel(
-      title: 'Metas cadastradas',
-      subtitle: 'Administre metas sem gerar relatórios nesta etapa.',
-      action: IconButton(
-        onPressed: () => _abrirFormularioMeta(),
-        icon: const Icon(Icons.add_rounded),
-        tooltip: 'Nova meta',
-      ),
-      child:
-          metasFiltradas.isEmpty
-              ? const _EmptyState(
-                icon: Icons.playlist_add_check_rounded,
-                title: 'Sem metas cadastradas',
-                subtitle: 'Crie metas por colaborador para acompanhar o resultado.',
-              )
-              : Column(
-                children:
-                    metasFiltradas
-                        .map(_buildMetaTile)
-                        .toList(growable: false),
-              ),
-    );
-  }
-
-  Widget _buildMetaTile(MetaColaboradorModel meta) {
-    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(meta.indicador);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _abrirFormularioMeta(meta: meta),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _borderColor),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.flag_outlined, color: _accentColor, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      meta.nomeColaborador.isEmpty ? 'Colaborador' : meta.nomeColaborador,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${indicador.label} • ${_formatPeriodo(meta.dataInicio, meta.dataFim)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _mutedColor, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.edit_outlined, color: _mutedColor, size: 18),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _abrirFormularioMeta({MetaColaboradorModel? meta}) async {
-    if (_colaboradores.isEmpty) {
-      _showSnack('Cadastre ou carregue colaboradores antes de criar metas.');
-      return;
-    }
-
-    final Map<String, dynamic>? payload;
-    if (MediaQuery.of(context).size.width >= 720) {
-      payload = await showDialog<Map<String, dynamic>>(
-        context: context,
-        builder:
-            (BuildContext dialogContext) => Dialog(
-              insetPadding: const EdgeInsets.all(24),
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620),
-                child: _MetaForm(
-                  colaboradores: _colaboradores,
-                  meta: meta,
-                  dataInicioPadrao: _dataInicio,
-                  dataFimPadrao: _dataFim,
-                ),
-              ),
-            ),
-      );
-    } else {
-      payload = await showModalBottomSheet<Map<String, dynamic>>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder:
-            (BuildContext bottomSheetContext) => _MetaForm(
-              colaboradores: _colaboradores,
-              meta: meta,
-              dataInicioPadrao: _dataInicio,
-              dataFimPadrao: _dataFim,
-            ),
-      );
-    }
-
-    if (payload == null) return;
-    await _salvarMeta(meta: meta, payload: payload);
-  }
-
-  Future<void> _salvarMeta({
-    required MetaColaboradorModel? meta,
-    required Map<String, dynamic> payload,
-  }) async {
-    setState(() => _saving = true);
-    try {
-      if (meta == null) {
-        await _api.criarMeta(payload);
-      } else {
-        await _api.editarMeta(meta.id, payload);
-      }
-      await _loadData();
-      if (!mounted) return;
-      _showSnack(meta == null ? 'Meta cadastrada.' : 'Meta atualizada.');
-    } catch (error) {
-      if (!mounted) return;
-      _showSnack('Não foi possível salvar a meta: $error');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  Future<void> _selecionarColaboradorFiltro() async {
-    final String? selected = await showModalBottomSheet<String?>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder:
-          (BuildContext context) => _ColaboradorSelectorSheet(
-            colaboradores: _colaboradores,
-            selectedId: _idColaboradorSelecionado,
-            allowAll: true,
-          ),
-    );
-
-    if (!mounted) return;
-    setState(() => _idColaboradorSelecionado = selected);
-    await _loadData();
-  }
-
-  void _setPeriodo(DateTime inicio, DateTime fim) {
-    setState(() {
-      _dataInicio = DateTime(inicio.year, inicio.month, inicio.day);
-      _dataFim = DateTime(fim.year, fim.month, fim.day);
-    });
-    _loadData();
-  }
-
-  bool _isCurrentMonth() {
-    final DateTime now = DateTime.now();
-    return _sameDay(_dataInicio, DateTime(now.year, now.month)) &&
-        _sameDay(_dataFim, DateTime(now.year, now.month, now.day));
-  }
-
-  bool _isLastThirtyDays() {
-    final DateTime now = DateTime.now();
-    return _sameDay(_dataInicio, now.subtract(const Duration(days: 29))) &&
-        _sameDay(_dataFim, now);
-  }
-
-  bool _isTodayOnly() {
-    final DateTime now = DateTime.now();
-    return _sameDay(_dataInicio, now) && _sameDay(_dataFim, now);
-  }
-
-  bool _sameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  String _nomeColaboradorSelecionado() {
-    if (_idColaboradorSelecionado == null) {
-      return 'Todos os colaboradores';
-    }
-    return _colaboradores
-        .firstWhere(
-          (ColaboradorUsuarioResumo item) =>
-              item.idUnicoPessoal == _idColaboradorSelecionado,
-          orElse:
-              () => ColaboradorUsuarioResumo(
-                idUnicoPessoal: _idColaboradorSelecionado ?? '',
-                nome: 'Colaborador',
-                nomeDeGuerra: '',
-                celularDeAcesso: '',
-                email: '',
-                foto: '',
-                dataCadastro: null,
-              ),
-        )
-        .displayName;
-  }
-
-  String _formatValor(double value, DesempenhoIndicadorOption indicador) {
-    if (indicador.valorMonetario) {
-      return _currencyFormat.format(value);
-    }
-    return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
-  }
-
-  String _formatPeriodo(DateTime? inicio, DateTime? fim) {
-    if (inicio == null || fim == null) return 'sem período';
-    return '${_dateFormat.format(inicio)} a ${_dateFormat.format(fim)}';
-  }
-
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'ACIMA_DA_META':
-        return 'Acima da meta';
-      case 'EM_PROGRESSO':
-        return 'Em progresso';
-      case 'EM_RISCO':
-        return 'Em risco';
-      case 'CRITICO':
-        return 'Crítico';
-      default:
-        return status.isEmpty ? 'Sem status' : status;
-    }
-  }
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'ACIMA_DA_META':
-        return const Color(0xFF16A34A);
-      case 'EM_PROGRESSO':
-        return _accentColor;
-      case 'EM_RISCO':
-        return const Color(0xFFD97706);
-      case 'CRITICO':
-        return const Color(0xFFDC2626);
-      default:
-        return _mutedColor;
-    }
-  }
-
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
-  }
 }
 
-class _MetaForm extends StatefulWidget {
-  const _MetaForm({
+class _GoalForm extends StatefulWidget {
+  const _GoalForm({
     required this.colaboradores,
-    required this.dataInicioPadrao,
-    required this.dataFimPadrao,
+    required this.inicioPadrao,
+    required this.fimPadrao,
     this.meta,
   });
 
   final List<ColaboradorUsuarioResumo> colaboradores;
-  final DateTime dataInicioPadrao;
-  final DateTime dataFimPadrao;
+  final DateTime inicioPadrao;
+  final DateTime fimPadrao;
   final MetaColaboradorModel? meta;
 
   @override
-  State<_MetaForm> createState() => _MetaFormState();
+  State<_GoalForm> createState() => _GoalFormState();
 }
 
-class _MetaFormState extends State<_MetaForm> {
+class _GoalFormState extends State<_GoalForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late ColaboradorUsuarioResumo _colaborador;
   late String _indicador;
@@ -840,16 +764,16 @@ class _MetaFormState extends State<_MetaForm> {
     _indicador = widget.meta?.indicador ?? desempenhoIndicadores.first.codigo;
     _status = widget.meta?.status ?? 'ATIVA';
     _valorController = TextEditingController(
-      text: widget.meta == null ? '' : widget.meta!.valorAlvo.toStringAsFixed(2),
+      text: widget.meta == null ? '' : _decimalToPt(widget.meta!.valorAlvo),
     );
     _pesoController = TextEditingController(
-      text: widget.meta == null ? '1' : widget.meta!.peso.toStringAsFixed(2),
+      text: widget.meta == null ? '1' : _decimalToPt(widget.meta!.peso),
     );
     _inicioController = TextEditingController(
-      text: _formatDate(widget.meta?.dataInicio ?? widget.dataInicioPadrao),
+      text: _formatDate(widget.meta?.dataInicio ?? widget.inicioPadrao),
     );
     _fimController = TextEditingController(
-      text: _formatDate(widget.meta?.dataFim ?? widget.dataFimPadrao),
+      text: _formatDate(widget.meta?.dataFim ?? widget.fimPadrao),
     );
   }
 
@@ -890,7 +814,7 @@ class _MetaFormState extends State<_MetaForm> {
                       child: Text(
                         widget.meta == null ? 'Nova meta' : 'Editar meta',
                         style: const TextStyle(
-                          color: Color(0xFF0B1F3A),
+                          color: _DesempenhoColaboradorPageState._primary,
                           fontWeight: FontWeight.w900,
                           fontSize: 20,
                         ),
@@ -903,38 +827,38 @@ class _MetaFormState extends State<_MetaForm> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                _buildColaboradorField(),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _indicador,
-                  decoration: const InputDecoration(
-                    labelText: 'Indicador',
-                    border: OutlineInputBorder(),
-                  ),
-                  items:
-                      desempenhoIndicadores
-                          .map(
-                            (DesempenhoIndicadorOption option) =>
-                                DropdownMenuItem<String>(
-                                  value: option.codigo,
-                                  child: Text(option.label),
-                                ),
-                          )
-                          .toList(growable: false),
-                  onChanged:
-                      (String? value) => setState(
-                        () => _indicador = value ?? desempenhoIndicadores.first.codigo,
-                      ),
+                _SelectorButton(
+                  icon: Icons.badge_outlined,
+                  label: _colaborador.displayName,
+                  onTap: _selectCollaborator,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
+                const Text(
+                  'Indicador',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: desempenhoIndicadores
+                      .map(
+                        (DesempenhoIndicadorOption option) => ChoiceChip(
+                          selected: _indicador == option.codigo,
+                          label: Text(option.label),
+                          selectedColor: const Color(0xFFDCEBFF),
+                          onSelected: (_) => setState(() => _indicador = option.codigo),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: <Widget>[
                     Expanded(
                       child: TextFormField(
                         controller: _valorController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
                           labelText: 'Valor alvo',
                           border: OutlineInputBorder(),
@@ -947,9 +871,7 @@ class _MetaFormState extends State<_MetaForm> {
                       width: 120,
                       child: TextFormField(
                         controller: _pesoController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
                           labelText: 'Peso',
                           border: OutlineInputBorder(),
@@ -987,23 +909,19 @@ class _MetaFormState extends State<_MetaForm> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _status,
-                  decoration: const InputDecoration(
-                    labelText: 'Status',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const <DropdownMenuItem<String>>[
-                    DropdownMenuItem<String>(value: 'ATIVA', child: Text('Ativa')),
-                    DropdownMenuItem<String>(value: 'PAUSADA', child: Text('Pausada')),
-                    DropdownMenuItem<String>(
-                      value: 'ENCERRADA',
-                      child: Text('Encerrada'),
-                    ),
-                  ],
-                  onChanged:
-                      (String? value) => setState(() => _status = value ?? 'ATIVA'),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  children: <String>['ATIVA', 'PAUSADA', 'ENCERRADA']
+                      .map(
+                        (String status) => ChoiceChip(
+                          selected: _status == status,
+                          label: Text(_statusText(status)),
+                          selectedColor: const Color(0xFFDCEBFF),
+                          onSelected: (_) => setState(() => _status = status),
+                        ),
+                      )
+                      .toList(growable: false),
                 ),
                 const SizedBox(height: 18),
                 SizedBox(
@@ -1022,48 +940,16 @@ class _MetaFormState extends State<_MetaForm> {
     );
   }
 
-  Widget _buildColaboradorField() {
-    return Material(
-      color: const Color(0xFFF8FAFC),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _selecionarColaborador,
-        child: InputDecorator(
-          decoration: const InputDecoration(
-            labelText: 'Colaborador',
-            border: OutlineInputBorder(),
-          ),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  _colaborador.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-              const Icon(Icons.keyboard_arrow_down_rounded),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _selecionarColaborador() async {
+  Future<void> _selectCollaborator() async {
     final String? selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (BuildContext context) => _ColaboradorSelectorSheet(
-            colaboradores: widget.colaboradores,
-            selectedId: _colaborador.idUnicoPessoal,
-            allowAll: false,
-          ),
+      builder: (BuildContext context) => _CollaboratorSheet(
+        colaboradores: widget.colaboradores,
+        selectedId: _colaborador.idUnicoPessoal,
+        allowAll: false,
+      ),
     );
-
     if (selected == null || !mounted) return;
     setState(() {
       _colaborador = widget.colaboradores.firstWhere(
@@ -1075,7 +961,6 @@ class _MetaFormState extends State<_MetaForm> {
 
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
     final DateTime inicio = _parseDate(_inicioController.text)!;
     final DateTime fim = _parseDate(_fimController.text)!;
     if (fim.isBefore(inicio)) {
@@ -1103,17 +988,12 @@ class _MetaFormState extends State<_MetaForm> {
   }
 
   String? _validatePositiveNumber(String? value) {
-    final double number = _parseNumber(value ?? '');
-    if (number <= 0) {
-      return 'Informe um valor maior que zero';
-    }
+    if (_parseNumber(value ?? '') <= 0) return 'Informe um valor maior que zero';
     return null;
   }
 
   String? _validateDate(String? value) {
-    if (_parseDate(value ?? '') == null) {
-      return 'Use dd/mm/aaaa';
-    }
+    if (_parseDate(value ?? '') == null) return 'Use dd/mm/aaaa';
     return null;
   }
 
@@ -1127,14 +1007,23 @@ class _MetaFormState extends State<_MetaForm> {
     if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31) {
       return null;
     }
-    return DateTime(year, month, day);
+    final DateTime date = DateTime(year, month, day);
+    if (date.day != day || date.month != month || date.year != year) return null;
+    return date;
   }
 
   double _parseNumber(String value) {
-    return double.tryParse(
-          value.trim().replaceAll('.', '').replaceAll(',', '.'),
-        ) ??
-        0;
+    String normalized = value.trim().replaceAll(' ', '');
+    if (normalized.contains(',') && normalized.contains('.')) {
+      normalized = normalized.replaceAll('.', '').replaceAll(',', '.');
+    } else if (normalized.contains(',')) {
+      normalized = normalized.replaceAll(',', '.');
+    }
+    return double.tryParse(normalized) ?? 0;
+  }
+
+  String _decimalToPt(double value) {
+    return value.toStringAsFixed(2).replaceAll('.', ',');
   }
 
   String _formatDate(DateTime value) {
@@ -1144,10 +1033,21 @@ class _MetaFormState extends State<_MetaForm> {
   String _formatApiDate(DateTime value) {
     return '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
   }
+
+  String _statusText(String status) {
+    switch (status) {
+      case 'PAUSADA':
+        return 'Pausada';
+      case 'ENCERRADA':
+        return 'Encerrada';
+      default:
+        return 'Ativa';
+    }
+  }
 }
 
-class _ColaboradorSelectorSheet extends StatelessWidget {
-  const _ColaboradorSelectorSheet({
+class _CollaboratorSheet extends StatelessWidget {
+  const _CollaboratorSheet({
     required this.colaboradores,
     required this.selectedId,
     required this.allowAll,
@@ -1193,7 +1093,7 @@ class _ColaboradorSelectorSheet extends StatelessWidget {
                 subtitle: 'Visão consolidada da equipe',
                 selected: selectedId == null,
                 icon: Icons.groups_2_outlined,
-                onTap: () => Navigator.of(context).pop(null),
+                onTap: () => Navigator.of(context).pop('__ALL__'),
               ),
             Flexible(
               child: ListView.builder(
@@ -1212,6 +1112,52 @@ class _ColaboradorSelectorSheet extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectorButton extends StatelessWidget {
+  const _SelectorButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF8FAFC),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _DesempenhoColaboradorPageState._border),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, color: _DesempenhoColaboradorPageState._accent, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const Icon(Icons.keyboard_arrow_down_rounded, color: _DesempenhoColaboradorPageState._muted),
+            ],
+          ),
         ),
       ),
     );
@@ -1252,7 +1198,7 @@ class _SelectorTile extends StatelessWidget {
                   color: selected ? const Color(0xFFDCEBFF) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: const Color(0xFF2563EB), size: 20),
+                child: Icon(icon, color: _DesempenhoColaboradorPageState._accent, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1270,13 +1216,13 @@ class _SelectorTile extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                      style: const TextStyle(color: _DesempenhoColaboradorPageState._muted, fontSize: 12),
                     ),
                   ],
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB)),
+                const Icon(Icons.check_circle_rounded, color: _DesempenhoColaboradorPageState._accent),
             ],
           ),
         ),
@@ -1291,21 +1237,23 @@ class _Panel extends StatelessWidget {
     this.title,
     this.subtitle,
     this.action,
+    this.maxWidth,
   });
 
   final String? title;
   final String? subtitle;
   final Widget? action;
   final Widget child;
+  final double? maxWidth;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget panel = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _DesempenhoColaboradorPageState._border),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x0F0B1F3A),
@@ -1327,7 +1275,7 @@ class _Panel extends StatelessWidget {
                       Text(
                         title!,
                         style: const TextStyle(
-                          color: Color(0xFF0B1F3A),
+                          color: _DesempenhoColaboradorPageState._primary,
                           fontWeight: FontWeight.w900,
                           fontSize: 17,
                         ),
@@ -1336,7 +1284,7 @@ class _Panel extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           subtitle!,
-                          style: const TextStyle(color: Color(0xFF64748B)),
+                          style: const TextStyle(color: _DesempenhoColaboradorPageState._muted),
                         ),
                       ],
                     ],
@@ -1351,21 +1299,28 @@ class _Panel extends StatelessWidget {
         ],
       ),
     );
+
+    if (maxWidth == null) return panel;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth!),
+      child: panel,
+    );
   }
 }
 
-class _KpiCard extends StatelessWidget {
-  const _KpiCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.icon,
-  });
+class _KpiData {
+  const _KpiData(this.title, this.value, this.subtitle, this.icon);
 
   final String title;
   final String value;
   final String subtitle;
   final IconData icon;
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({required this.data});
+
+  final _KpiData data;
 
   @override
   Widget build(BuildContext context) {
@@ -1374,7 +1329,7 @@ class _KpiCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _DesempenhoColaboradorPageState._border),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x0F0B1F3A),
@@ -1392,7 +1347,7 @@ class _KpiCard extends StatelessWidget {
               color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: const Color(0xFF2563EB)),
+            child: Icon(data.icon, color: _DesempenhoColaboradorPageState._accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1400,32 +1355,32 @@ class _KpiCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  title,
+                  data.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF64748B),
+                    color: _DesempenhoColaboradorPageState._muted,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value,
+                  data.value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF0B1F3A),
+                    color: _DesempenhoColaboradorPageState._primary,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  subtitle,
+                  data.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                  style: const TextStyle(color: _DesempenhoColaboradorPageState._muted, fontSize: 11),
                 ),
               ],
             ),
@@ -1478,11 +1433,11 @@ class _EmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _DesempenhoColaboradorPageState._border),
       ),
       child: Column(
         children: <Widget>[
-          Icon(icon, color: const Color(0xFF64748B)),
+          Icon(icon, color: _DesempenhoColaboradorPageState._muted),
           const SizedBox(height: 8),
           Text(
             title,
@@ -1493,7 +1448,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF64748B)),
+            style: const TextStyle(color: _DesempenhoColaboradorPageState._muted),
           ),
         ],
       ),
