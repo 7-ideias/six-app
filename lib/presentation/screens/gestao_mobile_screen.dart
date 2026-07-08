@@ -45,7 +45,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   @override
   void initState() {
     super.initState();
-    _sectionCarouselController = PageController(viewportFraction: 0.86);
+    _sectionCarouselController = PageController(viewportFraction: 0.92);
     _totalNotificacoesConhecidas = _notificacaoService.total;
     _notificacaoService.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -186,11 +186,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: <Widget>[
           SixStaggeredEntry(
-            delay: const Duration(milliseconds: 70),
-            child: _buildManagementHeader(),
-          ),
-          const SizedBox(height: 18),
-          SixStaggeredEntry(
             delay: const Duration(milliseconds: 130),
             child: _buildSectionCarousel(sections),
           ),
@@ -199,12 +194,21 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           const SizedBox(height: 18),
           SixStaggeredEntry(
             delay: const Duration(milliseconds: 190),
-            child: _buildSectionQuickActions(selectedSection),
+            child: _buildSmoothSectionTransition(
+              transitionKey: 'quick-${selectedSection.title}',
+              child: _buildSectionQuickActions(selectedSection),
+            ),
           ),
           const SizedBox(height: 18),
           SixStaggeredEntry(
             delay: const Duration(milliseconds: 250),
-            child: _buildSelectedSectionDetails(selectedSection),
+            child: _buildSmoothSectionTransition(
+              transitionKey: 'details-${selectedSection.title}',
+              horizontalOffset: 0,
+              verticalOffset: 0.035,
+              duration: const Duration(milliseconds: 420),
+              child: _buildSelectedSectionDetails(selectedSection),
+            ),
           ),
         ],
       ),
@@ -294,10 +298,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             subtitle: 'Previsões, fiado e crediário',
             icon: Icons.event_note_outlined,
             onTap:
-                () => _navigateTo(
-                  context,
-                  const AgendaFinanceiraMobileScreen(),
-                ),
+                () =>
+                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
           ),
           _ManagementItem(
             title: 'Formas de recebimento',
@@ -355,71 +357,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     ];
   }
 
-  Widget _buildManagementHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: <Color>[_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x260B1F3A),
-            blurRadius: 22,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x33FFFFFF)),
-            ),
-            child: const Icon(
-              Icons.business_center_outlined,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Administração do negócio',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Organize catálogo, pessoas, financeiro e configurações do comércio.',
-                  style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSectionCarousel(List<_ManagementSection> sections) {
     return SizedBox(
-      height: 156,
+      height: 282,
       child: PageView.builder(
         controller: _sectionCarouselController,
         clipBehavior: Clip.none,
+        physics: const BouncingScrollPhysics(parent: PageScrollPhysics()),
         itemCount: sections.length,
         onPageChanged: (int index) {
           setState(() => _selectedSectionIndex = index);
@@ -441,9 +385,12 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 0.0,
                 1.0,
               );
-              final double scale = 1 - (distance * 0.04);
+              final double scale = 1 - (distance * 0.03);
 
-              return Transform.scale(scale: scale, child: child);
+              return Transform.translate(
+                offset: Offset(0, distance * 6),
+                child: Transform.scale(scale: scale, child: child),
+              );
             },
             child: _buildSectionCarouselCard(sections[index], index),
           );
@@ -509,7 +456,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color:
                       isActive
@@ -556,7 +506,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children:
-          sections.asMap().entries.map((MapEntry<int, _ManagementSection> entry) {
+          sections.asMap().entries.map((
+            MapEntry<int, _ManagementSection> entry,
+          ) {
             final bool isActive = entry.key == _selectedSectionIndex;
 
             return GestureDetector(
@@ -646,8 +598,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 const SizedBox(height: 8),
                 Text(
                   item.compactTitle,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: _titleTextColor,
@@ -724,6 +677,37 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSmoothSectionTransition({
+    required String transitionKey,
+    required Widget child,
+    double horizontalOffset = 0.03,
+    double verticalOffset = 0.025,
+    Duration duration = const Duration(milliseconds: 360),
+  }) {
+    return AnimatedSwitcher(
+      duration: duration,
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (Widget transitionChild, Animation<double> animation) {
+        final Animation<Offset> slideAnimation = Tween<Offset>(
+          begin: Offset(horizontalOffset, verticalOffset),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        );
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: slideAnimation,
+            child: transitionChild,
+          ),
+        );
+      },
+      child: KeyedSubtree(key: ValueKey<String>(transitionKey), child: child),
     );
   }
 
@@ -842,16 +826,14 @@ class _ManagementItem {
     required this.subtitle,
     required this.icon,
     required this.onTap,
-    this.shortTitle,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
-  final String? shortTitle;
 
-  String get compactTitle => shortTitle ?? _compactTitle(title);
+  String get compactTitle => _compactTitle(title);
 
   String _compactTitle(String value) {
     switch (value) {

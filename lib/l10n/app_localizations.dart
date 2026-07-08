@@ -113,6 +113,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fast checkout service, item inclusion and sale closing.'**
   String get pdvQuickServiceDescription;
+
+  /// No description provided for @aiAssistantAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI'**
+  String get aiAssistantAsk;
+
+  /// No description provided for @aiAssistantHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your question'**
+  String get aiAssistantHint;
+
+  /// No description provided for @aiAssistantSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending...'**
+  String get aiAssistantSending;
+
+  /// No description provided for @aiAssistantHelped.
+  ///
+  /// In en, this message translates to:
+  /// **'Did it help?'**
+  String get aiAssistantHelped;
+
+  /// No description provided for @aiAssistantHelpedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Helped'**
+  String get aiAssistantHelpedButton;
+
+  /// No description provided for @aiAssistantDidNotHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Did not help'**
+  String get aiAssistantDidNotHelp;
+
+  /// No description provided for @aiAssistantExamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Examples'**
+  String get aiAssistantExamples;
+
+  /// No description provided for @aiAssistantSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get aiAssistantSources;
+
+  /// No description provided for @aiAssistantRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get aiAssistantRetry;
+
+  /// No description provided for @aiAssistantError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get an AI answer right now.'**
+  String get aiAssistantError;
+
+  /// No description provided for @aiAssistantClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get aiAssistantClose;
+
+  /// No description provided for @aiAssistantHowCanIHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How can I help in Six?'**
+  String get aiAssistantHowCanIHelp;
+
+  /// No description provided for @aiAssistantFeedbackThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback saved.'**
+  String get aiAssistantFeedbackThanks;
 }
 
 class _AppLocalizationsDelegate

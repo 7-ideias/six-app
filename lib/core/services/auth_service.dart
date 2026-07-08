@@ -33,10 +33,7 @@ class AuthService {
     }
     final uri = Uri.parse('$baseUrl/auth/$pathLogin/login');
 
-    final requestBody = jsonEncode({
-      'login': login,
-      'senha': senha,
-    });
+    final requestBody = jsonEncode({'login': login, 'senha': senha});
 
     debugPrint('[AuthService] POST $uri');
 
@@ -45,9 +42,7 @@ class AuthService {
     try {
       response = await client.post(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: requestBody,
       );
     } on http.ClientException catch (e) {
@@ -131,9 +126,7 @@ class AuthService {
     if (kIsWeb) {
       response = await client.post(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
     } else {
       final String? refreshTokenStr = await getRefreshToken();
@@ -301,5 +294,58 @@ class AuthService {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<List<String>> getUserPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString(_userDataKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return <String>[];
+    }
+
+    try {
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return <String>[];
+      }
+
+      final dynamic permissoes = decoded['permissoes'];
+      if (permissoes is! List) {
+        return <String>[];
+      }
+
+      return permissoes
+          .map((dynamic item) => item.toString().trim())
+          .where((String item) => item.isNotEmpty)
+          .toSet()
+          .toList(growable: false);
+    } catch (_) {
+      return <String>[];
+    }
+  }
+
+  Future<String> getUserProfileType() async {
+    final List<String> permissions = await getUserPermissions();
+    final Set<String> normalized =
+        permissions
+            .map(
+              (String item) =>
+                  item
+                      .trim()
+                      .replaceAll('-', '_')
+                      .replaceAll(' ', '_')
+                      .toUpperCase(),
+            )
+            .toSet();
+
+    if (normalized.contains('ADMINISTRADOR') || normalized.contains('TODAS')) {
+      return 'ADMIN';
+    }
+
+    if (normalized.isNotEmpty) {
+      return 'COLABORADOR';
+    }
+
+    return 'DESCONHECIDO';
   }
 }

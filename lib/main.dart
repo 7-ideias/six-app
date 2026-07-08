@@ -55,7 +55,9 @@ void main() async {
               ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
-        ChangeNotifierProvider(create: (_) => ColaboradorAutorizacoesProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ColaboradorAutorizacoesProvider(),
+        ),
         ChangeNotifierProvider(
           lazy: false,
           create:
@@ -106,10 +108,7 @@ class MyApp extends StatelessWidget {
     }
 
     if (routeUri.path == '/register') {
-      return _slidePageRoute(
-        settings: settings,
-        page: const RegisterPageWeb(),
-      );
+      return _slidePageRoute(settings: settings, page: const RegisterPageWeb());
     }
 
     if (routeUri.path == '/forgot-password') {
@@ -150,7 +149,9 @@ class MyApp extends StatelessWidget {
     if (routeUri.path == '/atendimento/assinatura') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
+        builder:
+            (_) =>
+                AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
       );
     }
 
@@ -183,10 +184,11 @@ class MyApp extends StatelessWidget {
     if (isPublicColaboradorConviteRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => ColaboradorConvitePublicoWebPage(
-          codigo: routeUri.pathSegments[2],
-          initialUri: routeUri,
-        ),
+        builder:
+            (_) => ColaboradorConvitePublicoWebPage(
+              codigo: routeUri.pathSegments[2],
+              initialUri: routeUri,
+            ),
       );
     }
 
@@ -232,13 +234,13 @@ class MyApp extends StatelessWidget {
         final slide = Tween<Offset>(
           begin: const Offset(1.0, 0.0),
           end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeInOutCubic,
-        ));
-        final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
         );
+        final fade = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
         return SlideTransition(
           position: slide,
           child: FadeTransition(opacity: fade, child: child),

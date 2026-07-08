@@ -10,6 +10,7 @@ import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dar
 import 'package:sixpos/pdv_page_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
@@ -139,40 +140,47 @@ class _HomePageMobileState extends State<HomePageMobile> {
   Widget build(BuildContext context) {
     return kIsWeb
         ? PDVWeb()
-        : Scaffold(
-          backgroundColor: _backgroundColor,
-          appBar: AppBar(
-            elevation: 0,
-            centerTitle: true,
-            backgroundColor: _primaryColor,
-            foregroundColor: Colors.white,
-            title: const Text(
-              'Início',
-              style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        : AiAssistantHost(
+          modulo: 'geral',
+          telaAtual: 'inicio_mobile',
+          child: Scaffold(
+            backgroundColor: _backgroundColor,
+            appBar: AppBar(
+              elevation: 0,
+              centerTitle: true,
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              title: const Text(
+                'Início',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  tooltip: 'Configurações',
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: _showFeatureInProgress,
+                ),
+                IconButton(
+                  tooltip: 'Notificações',
+                  icon: _buildNotificationIcon(),
+                  onPressed: () => _openNotifications(context),
+                ),
+              ],
             ),
-            actions: [
-              IconButton(
-                tooltip: 'Configurações',
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: _showFeatureInProgress,
-              ),
-              IconButton(
-                tooltip: 'Notificações',
-                icon: _buildNotificationIcon(),
-                onPressed: () => _openNotifications(context),
-              ),
-            ],
+            drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+            body: SixMobileAnimatedGradientBackground(
+              baseColor: _backgroundColor,
+              primaryColor: _primaryColor,
+              secondaryColor: _secondaryColor,
+              accentColor: _accentColor,
+              child: _buildHomeContent(context),
+            ),
+            bottomNavigationBar:
+                kIsWeb ? null : const CustomBottomNavBar(initialIndex: 1),
           ),
-          drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
-          body: SixMobileAnimatedGradientBackground(
-            baseColor: _backgroundColor,
-            primaryColor: _primaryColor,
-            secondaryColor: _secondaryColor,
-            accentColor: _accentColor,
-            child: _buildHomeContent(context),
-          ),
-          bottomNavigationBar:
-              kIsWeb ? null : const CustomBottomNavBar(initialIndex: 1),
         );
   }
 

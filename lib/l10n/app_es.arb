@@ -1,5 +1,18 @@
 {
   "@@locale": "es",
   "appTitle": "Six",
-  "pdvQuickServiceDescription": "Servicio rápido en caja, inclusión de artículos y cierre de venta."
+  "pdvQuickServiceDescription": "Servicio rápido en caja, inclusión de artículos y cierre de venta.",
+  "aiAssistantAsk": "Preguntar a la IA",
+  "aiAssistantHint": "Escribe tu duda",
+  "aiAssistantSending": "Enviando...",
+  "aiAssistantHelped": "¿Ayudó?",
+  "aiAssistantHelpedButton": "Ayudó",
+  "aiAssistantDidNotHelp": "No ayudó",
+  "aiAssistantExamples": "Ejemplos",
+  "aiAssistantSources": "Fuentes",
+  "aiAssistantRetry": "Reintentar",
+  "aiAssistantError": "No fue posible obtener respuesta de IA ahora.",
+  "aiAssistantClose": "Cerrar",
+  "aiAssistantHowCanIHelp": "¿Cómo puedo ayudarte en Six?",
+  "aiAssistantFeedbackThanks": "Feedback registrado."
 }

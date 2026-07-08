@@ -1,5 +1,18 @@
 {
   "@@locale": "en",
   "appTitle": "Six",
-  "pdvQuickServiceDescription": "Fast checkout service, item inclusion and sale closing."
+  "pdvQuickServiceDescription": "Fast checkout service, item inclusion and sale closing.",
+  "aiAssistantAsk": "Ask AI",
+  "aiAssistantHint": "Type your question",
+  "aiAssistantSending": "Sending...",
+  "aiAssistantHelped": "Did it help?",
+  "aiAssistantHelpedButton": "Helped",
+  "aiAssistantDidNotHelp": "Did not help",
+  "aiAssistantExamples": "Examples",
+  "aiAssistantSources": "Sources",
+  "aiAssistantRetry": "Retry",
+  "aiAssistantError": "Could not get an AI answer right now.",
+  "aiAssistantClose": "Close",
+  "aiAssistantHowCanIHelp": "How can I help in Six?",
+  "aiAssistantFeedbackThanks": "Feedback saved."
 }
