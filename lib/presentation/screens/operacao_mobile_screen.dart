@@ -147,11 +147,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
               children: <Widget>[
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 70),
-                  child: _hero(),
-                ),
-                const SizedBox(height: 18),
                 _section('Atendimento rápido'),
                 const SizedBox(height: 12),
                 _primaryAction(
@@ -225,57 +220,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _hero() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: <Color>[_primary, _secondary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x260B1F3A),
-            blurRadius: 22,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          _iconBox(
-            Icons.support_agent_rounded,
-            bg: const Color(0x1AFFFFFF),
-            fg: Colors.white,
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Balcão digital',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Venda e atendimento técnico em poucos passos.',
-                  style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
