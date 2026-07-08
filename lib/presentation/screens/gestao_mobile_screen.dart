@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
@@ -101,35 +102,39 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Gestão',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Notificações',
-            icon: _buildNotificationIcon(),
-            onPressed: () => _openNotifications(context),
+    return AiAssistantHost(
+      modulo: 'configuracoes',
+      telaAtual: 'gestao_mobile',
+      child: Scaffold(
+        backgroundColor: _backgroundColor,
+        appBar: AppBar(
+          elevation: 0,
+          centerTitle: true,
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          title: const Text(
+            'Gestão',
+            style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
           ),
-        ],
+          actions: <Widget>[
+            IconButton(
+              tooltip: 'Notificações',
+              icon: _buildNotificationIcon(),
+              onPressed: () => _openNotifications(context),
+            ),
+          ],
+        ),
+        drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+        body: SixMobileAnimatedGradientBackground(
+          baseColor: _backgroundColor,
+          primaryColor: _primaryColor,
+          secondaryColor: _secondaryColor,
+          accentColor: _accentColor,
+          child: _buildContent(context),
+        ),
+        bottomNavigationBar:
+            kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
       ),
-      drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
-      body: SixMobileAnimatedGradientBackground(
-        baseColor: _backgroundColor,
-        primaryColor: _primaryColor,
-        secondaryColor: _secondaryColor,
-        accentColor: _accentColor,
-        child: _buildContent(context),
-      ),
-      bottomNavigationBar:
-          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
     );
   }
 
