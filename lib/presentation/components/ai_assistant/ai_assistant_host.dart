@@ -23,6 +23,10 @@ class AiAssistantHost extends StatefulWidget {
 }
 
 class _AiAssistantHostState extends State<AiAssistantHost> {
+  static const Duration _webPanelAnimationDuration = Duration(milliseconds: 320);
+  static const Curve _webPanelOpenCurve = Curves.easeOutCubic;
+  static const Curve _webPanelCloseCurve = Curves.easeInOutCubic;
+
   bool _panelOpen = false;
 
   void _togglePanel() {
@@ -63,34 +67,69 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
       fit: StackFit.expand,
       children: <Widget>[
         widget.child,
-        if (kIsWeb && _panelOpen)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _togglePanel,
-              child: Container(color: Colors.black.withValues(alpha: 0.15)),
-            ),
-          ),
+        if (kIsWeb) _buildWebAnimatedBackdrop(),
         Positioned(
           right: 16,
           bottom: kIsWeb ? 18 : 90,
-          child: AiAssistantButton(
-            onTap: _togglePanel,
-            label: label,
-            extended: kIsWeb,
-          ),
-        ),
-        if (kIsWeb && _panelOpen)
-          Positioned(
-            top: 0,
-            bottom: 0,
-            right: 0,
-            child: AiAssistantPanel(
-              modulo: widget.modulo,
-              telaAtual: widget.telaAtual,
-              onClose: _togglePanel,
+          child: AnimatedScale(
+            scale: kIsWeb && _panelOpen ? 0.96 : 1,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            child: AiAssistantButton(
+              onTap: _togglePanel,
+              label: label,
+              extended: kIsWeb,
             ),
           ),
+        ),
+        if (kIsWeb) _buildWebAnimatedPanel(),
       ],
+    );
+  }
+
+  Widget _buildWebAnimatedBackdrop() {
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: !_panelOpen,
+        child: AnimatedOpacity(
+          opacity: _panelOpen ? 1 : 0,
+          duration: _webPanelAnimationDuration,
+          curve: _panelOpen ? _webPanelOpenCurve : _webPanelCloseCurve,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _togglePanel,
+            child: Container(color: Colors.black.withValues(alpha: 0.18)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWebAnimatedPanel() {
+    return Positioned(
+      top: 0,
+      bottom: 0,
+      right: 0,
+      child: IgnorePointer(
+        ignoring: !_panelOpen,
+        child: AnimatedSlide(
+          offset: _panelOpen ? Offset.zero : const Offset(0.10, 0),
+          duration: _webPanelAnimationDuration,
+          curve: _panelOpen ? _webPanelOpenCurve : _webPanelCloseCurve,
+          child: AnimatedOpacity(
+            opacity: _panelOpen ? 1 : 0,
+            duration: _webPanelAnimationDuration,
+            curve: _panelOpen ? _webPanelOpenCurve : _webPanelCloseCurve,
+            child: RepaintBoundary(
+              child: AiAssistantPanel(
+                modulo: widget.modulo,
+                telaAtual: widget.telaAtual,
+                onClose: _togglePanel,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
