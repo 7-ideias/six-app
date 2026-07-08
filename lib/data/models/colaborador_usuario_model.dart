@@ -9,6 +9,8 @@ class ColaboradorUsuarioResumo {
     required this.email,
     required this.foto,
     required this.dataCadastro,
+    this.status = 'ATIVO',
+    this.ativo = true,
   });
 
   final String idUnicoPessoal;
@@ -18,8 +20,11 @@ class ColaboradorUsuarioResumo {
   final String email;
   final String foto;
   final DateTime? dataCadastro;
+  final String status;
+  final bool ativo;
 
   factory ColaboradorUsuarioResumo.fromJson(Map<String, dynamic> json) {
+    final String status = json['status']?.toString() ?? 'ATIVO';
     return ColaboradorUsuarioResumo(
       idUnicoPessoal: json['idUnicoPessoal']?.toString() ?? '',
       nome: json['nome']?.toString() ?? '',
@@ -28,6 +33,8 @@ class ColaboradorUsuarioResumo {
       email: json['email']?.toString() ?? '',
       foto: json['foto']?.toString() ?? '',
       dataCadastro: DateTime.tryParse(json['dataCadastro']?.toString() ?? ''),
+      status: status,
+      ativo: _toBool(json['ativo'], fallback: status.toUpperCase() == 'ATIVO'),
     );
   }
 
@@ -37,6 +44,8 @@ class ColaboradorUsuarioResumo {
     String? celularDeAcesso,
     String? email,
     String? foto,
+    String? status,
+    bool? ativo,
   }) {
     return ColaboradorUsuarioResumo(
       idUnicoPessoal: idUnicoPessoal,
@@ -46,7 +55,21 @@ class ColaboradorUsuarioResumo {
       email: email ?? this.email,
       foto: foto ?? this.foto,
       dataCadastro: dataCadastro,
+      status: status ?? this.status,
+      ativo: ativo ?? this.ativo,
     );
+  }
+
+  static bool _toBool(dynamic value, {required bool fallback}) {
+    if (value is bool) return value;
+    final String normalized = value?.toString().trim().toLowerCase() ?? '';
+    if (normalized == 'true' || normalized == '1' || normalized == 'sim') {
+      return true;
+    }
+    if (normalized == 'false' || normalized == '0' || normalized == 'nao' || normalized == 'não') {
+      return false;
+    }
+    return fallback;
   }
 }
 

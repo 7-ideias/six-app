@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
-import 'package:sixpos/providers/usuario_provider.dart';
-import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/presentation/screens/desempenho_colaborador_page.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 import '../screens/meu_perfil_mobile_screen.dart';
 import '../screens/preferencias_mobile_screen.dart';
@@ -50,17 +51,24 @@ class AppDrawerDoMobile extends StatelessWidget {
                     icon: Icons.person_outline,
                     title: 'Meu perfil',
                     subtitle: 'Dados pessoais e acesso',
-                    onTap:
-                        () =>
-                            _openScreen(context, const MeuPerfilMobileScreen()),
+                    onTap: () => _openScreen(context, const MeuPerfilMobileScreen()),
                   ),
                   _buildDrawerItem(
                     context,
                     icon: Icons.edit_outlined,
                     title: 'Preferências',
                     subtitle: 'Ajustes individuais do app',
-                    onTap:
-                        () => _openScreen(context, PreferencesMobileScreen()),
+                    onTap: () => _openScreen(context, PreferencesMobileScreen()),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildSectionLabel('Gestão'),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.trending_up_rounded,
+                    title: 'Desempenho',
+                    subtitle: 'Metas e resultado por período',
+                    highlighted: true,
+                    onTap: () => _openScreen(context, const DesempenhoColaboradorPage()),
                   ),
                   const SizedBox(height: 14),
                   _buildSectionLabel('Suporte e segurança'),
@@ -90,8 +98,7 @@ class AppDrawerDoMobile extends StatelessWidget {
                     icon: Icons.lock_outline,
                     title: 'Gerenciar meus dados',
                     subtitle: 'Preferências de dados e privacidade',
-                    onTap:
-                        () => _openScreen(context, PreferencesMobileScreen()),
+                    onTap: () => _openScreen(context, PreferencesMobileScreen()),
                   ),
                   const SizedBox(height: 12),
                   _buildLogoutItem(context),
@@ -126,11 +133,10 @@ class AppDrawerDoMobile extends StatelessWidget {
       return nomeDeGuerra;
     }
 
-    final String nomeCompleto =
-        <String>[
-          usuario?.nome.trim() ?? '',
-          usuario?.sobrenome.trim() ?? '',
-        ].where((String parte) => parte.isNotEmpty).join(' ').trim();
+    final String nomeCompleto = <String>[
+      usuario?.nome.trim() ?? '',
+      usuario?.sobrenome.trim() ?? '',
+    ].where((String parte) => parte.isNotEmpty).join(' ').trim();
 
     if (nomeCompleto.isNotEmpty) {
       return nomeCompleto;
@@ -265,14 +271,13 @@ class AppDrawerDoMobile extends StatelessWidget {
             radius: 34,
             backgroundColor: Colors.white.withOpacity(0.14),
             backgroundImage: image != null ? FileImage(image!) : null,
-            child:
-                image == null
-                    ? const Icon(
-                      Icons.person_rounded,
-                      size: 34,
-                      color: Colors.white,
-                    )
-                    : null,
+            child: image == null
+                ? const Icon(
+                    Icons.person_rounded,
+                    size: 34,
+                    color: Colors.white,
+                  )
+                : null,
           ),
           Positioned(
             right: -2,
@@ -349,12 +354,10 @@ class AppDrawerDoMobile extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color:
-                        highlighted ? _softBlueColor : const Color(0xFFF8FAFC),
+                    color: highlighted ? _softBlueColor : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color:
-                          highlighted ? const Color(0xFFBFDBFE) : _borderColor,
+                      color: highlighted ? const Color(0xFFBFDBFE) : _borderColor,
                     ),
                   ),
                   child: Icon(icon, color: _primaryColor, size: 21),
@@ -371,8 +374,7 @@ class AppDrawerDoMobile extends StatelessWidget {
                         style: TextStyle(
                           color: _titleTextColor,
                           fontSize: 14,
-                          fontWeight:
-                              highlighted ? FontWeight.w900 : FontWeight.w800,
+                          fontWeight: highlighted ? FontWeight.w900 : FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -456,10 +458,9 @@ class AppDrawerDoMobile extends StatelessWidget {
     final String buildNumber = AppConfig.appBuildNumber.trim();
     final String versionLabel =
         version.isEmpty ? 'versão não informada' : 'versão $version';
-    final String tooltip =
-        buildNumber.isEmpty
-            ? 'Versão atual: ${version.isEmpty ? '-' : version}'
-            : 'Versão atual: ${version.isEmpty ? '-' : version} • build $buildNumber';
+    final String tooltip = buildNumber.isEmpty
+        ? 'Versão atual: ${version.isEmpty ? '-' : version}'
+        : 'Versão atual: ${version.isEmpty ? '-' : version} • build $buildNumber';
 
     return Container(
       width: double.infinity,
