@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/desempenho_colaborador_model.dart';
-import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../components/six_backend_loading.dart';
 
@@ -32,8 +31,6 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
 
   final DesempenhoColaboradorApiClient _api =
       HttpDesempenhoColaboradorApiClient();
-  final ColaboradorUsuarioApiClient _colaboradorApi =
-      HttpColaboradorUsuarioApiClient();
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR',
@@ -68,7 +65,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
 
     try {
       final List<ColaboradorUsuarioResumo> colaboradores =
-          await _colaboradorApi.listarColaboradores();
+          await _api.listarParticipantes();
       final List<MetaColaboradorModel> metas = await _api.listarMetas();
       final DesempenhoColaboradorResumoModel resumo = await _api.buscarResumo(
         dataInicio: _inicio,
@@ -336,7 +333,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  item.nomeColaborador.isEmpty ? 'Colaborador' : item.nomeColaborador,
+                  item.nomeColaborador.isEmpty ? 'Participante' : item.nomeColaborador,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -444,7 +441,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      meta.nomeColaborador.isEmpty ? 'Colaborador' : meta.nomeColaborador,
+                      meta.nomeColaborador.isEmpty ? 'Participante' : meta.nomeColaborador,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w900),
@@ -469,7 +466,7 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
 
   Future<void> _openGoalForm({MetaColaboradorModel? meta}) async {
     if (_colaboradores.isEmpty) {
-      _showSnack('Cadastre ou carregue colaboradores antes de criar metas.');
+      _showSnack('Cadastre ou carregue participantes antes de criar metas.');
       return;
     }
 
@@ -575,13 +572,13 @@ class _DesempenhoColaboradorPageState extends State<DesempenhoColaboradorPage> {
   }
 
   String get _selectedCollaboratorName {
-    if (_idColaborador == null) return 'Todos os colaboradores';
+    if (_idColaborador == null) return 'Todos os participantes';
     return _colaboradores
         .firstWhere(
           (ColaboradorUsuarioResumo item) => item.idUnicoPessoal == _idColaborador,
           orElse: () => ColaboradorUsuarioResumo(
             idUnicoPessoal: _idColaborador ?? '',
-            nome: 'Colaborador',
+            nome: 'Participante',
             nomeDeGuerra: '',
             celularDeAcesso: '',
             email: '',
@@ -1082,15 +1079,15 @@ class _CollaboratorSheet extends StatelessWidget {
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Selecionar colaborador',
+                'Selecionar participante',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
               ),
             ),
             const SizedBox(height: 10),
             if (allowAll)
               _SelectorTile(
-                title: 'Todos os colaboradores',
-                subtitle: 'Visão consolidada da equipe',
+                title: 'Todos os participantes',
+                subtitle: 'Visão consolidada da equipe e do ADMIN',
                 selected: selectedId == null,
                 icon: Icons.groups_2_outlined,
                 onTap: () => Navigator.of(context).pop('__ALL__'),
@@ -1103,7 +1100,7 @@ class _CollaboratorSheet extends StatelessWidget {
                   final ColaboradorUsuarioResumo colaborador = colaboradores[index];
                   return _SelectorTile(
                     title: colaborador.displayName,
-                    subtitle: colaborador.email.isEmpty ? 'Colaborador' : colaborador.email,
+                    subtitle: colaborador.email.isEmpty ? 'Participante' : colaborador.email,
                     selected: colaborador.idUnicoPessoal == selectedId,
                     icon: Icons.badge_outlined,
                     onTap: () => Navigator.of(context).pop(colaborador.idUnicoPessoal),
@@ -1461,6 +1458,6 @@ extension _ColaboradorDisplayName on ColaboradorUsuarioResumo {
     if (nomeDeGuerra.trim().isNotEmpty) return nomeDeGuerra.trim();
     if (nome.trim().isNotEmpty) return nome.trim();
     if (email.trim().isNotEmpty) return email.trim();
-    return 'Colaborador';
+    return 'Participante';
   }
 }
