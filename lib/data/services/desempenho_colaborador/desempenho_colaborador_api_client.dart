@@ -8,7 +8,9 @@ import '../../models/colaborador_usuario_model.dart';
 import '../../models/desempenho_colaborador_model.dart';
 
 abstract class DesempenhoColaboradorApiClient {
-  Future<List<ColaboradorUsuarioResumo>> listarParticipantes();
+  Future<List<ColaboradorUsuarioResumo>> listarParticipantes({
+    bool incluirNaoAtivos = false,
+  });
 
   Future<List<MetaColaboradorModel>> listarMetas();
 
@@ -52,7 +54,9 @@ class HttpDesempenhoColaboradorApiClient
   }
 
   @override
-  Future<List<ColaboradorUsuarioResumo>> listarParticipantes() async {
+  Future<List<ColaboradorUsuarioResumo>> listarParticipantes({
+    bool incluirNaoAtivos = false,
+  }) async {
     final Uri uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/desempenho-colaborador/participantes',
     );
@@ -74,10 +78,13 @@ class HttpDesempenhoColaboradorApiClient
 
     final dynamic data = jsonDecode(response.body);
     final List<dynamic> rawList = data is List<dynamic> ? data : <dynamic>[];
-    return rawList
+    final List<ColaboradorUsuarioResumo> participantes = rawList
         .whereType<Map<String, dynamic>>()
         .map(ColaboradorUsuarioResumo.fromJson)
         .toList(growable: false);
+
+    if (incluirNaoAtivos) return participantes;
+    return participantes.where((item) => item.ativo).toList(growable: false);
   }
 
   @override
