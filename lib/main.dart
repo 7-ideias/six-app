@@ -16,6 +16,7 @@ import 'package:sixpos/presentation/screens/atendimento_tecnico_assinatura_publi
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_web_page.dart';
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
@@ -128,21 +129,36 @@ class MyApp extends StatelessWidget {
     if (routeUri.path == '/app/atendimentos-tecnicos') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const AtendimentosTecnicosWebPage(),
+        builder:
+            (_) => const AiAssistantHost(
+              modulo: 'atendimento',
+              telaAtual: 'atendimentos_tecnicos_web',
+              child: AtendimentosTecnicosWebPage(),
+            ),
       );
     }
 
     if (routeUri.path == '/app/atendimentos-tecnicos/criados') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const AtendimentosTecnicosListaWebPage(),
+        builder:
+            (_) => const AiAssistantHost(
+              modulo: 'atendimento',
+              telaAtual: 'atendimentos_tecnicos_lista_web',
+              child: AtendimentosTecnicosListaWebPage(),
+            ),
       );
     }
 
     if (routeUri.path == '/app/configuracoes/status-atendimento-tecnico') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const StatusAtendimentoTecnicoConfigWebPage(),
+        builder:
+            (_) => const AiAssistantHost(
+              modulo: 'configuracoes',
+              telaAtual: 'status_atendimento_tecnico_web',
+              child: StatusAtendimentoTecnicoConfigWebPage(),
+            ),
       );
     }
 
