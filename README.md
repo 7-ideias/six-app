@@ -10,6 +10,7 @@ flutter gen-l10n
 flutter build web
 ```
 
+
 --------------------------------
 RODAR O EMULADOR RAPIDAO [20260308]
 ```bash
