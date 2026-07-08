@@ -9,6 +9,7 @@ import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracao_secao_web_page.dart';
 import 'package:sixpos/presentation/screens/cores_fontes_web_page.dart';
+import 'package:sixpos/presentation/screens/desempenho_colaborador_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/fornecedores_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
@@ -281,6 +282,18 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  void _abrirDesempenhoColaborador(BuildContext context) {
+    _abrirOverlay(
+      context,
+      (dialogContext) => DesempenhoColaboradorPage(
+        embedded: true,
+        onBack: () => Navigator.of(dialogContext).pop(),
+      ),
+      widthFactor: 0.96,
+      heightFactor: 0.92,
+    );
+  }
+
   void _abrirAgenda(BuildContext context) {
     _abrirOverlay(
       context,
@@ -430,11 +443,17 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       TopNavItemData(
         title: 'Pessoas',
-        subItems: const <String>['Clientes', 'Colaboradores', 'Fornecedores'],
+        subItems: const <String>[
+          'Clientes',
+          'Colaboradores',
+          'Fornecedores',
+          'Desempenho',
+        ],
         onSelect: (value) {
           if (value == 'Clientes') return _abrirClientes(context);
           if (value == 'Colaboradores') return _abrirColaboradores(context);
           if (value == 'Fornecedores') return _abrirFornecedores(context);
+          if (value == 'Desempenho') return _abrirDesempenhoColaborador(context);
         },
       ),
       TopNavItemData(
