@@ -7,6 +7,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
@@ -115,74 +116,78 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primary,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Atendimento',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Notificações',
-            icon: _notificationIcon(),
-            onPressed: () => _go(const NotificacoesMobileScreen()),
+    return AiAssistantHost(
+      modulo: 'atendimento',
+      telaAtual: 'operacao_mobile',
+      child: Scaffold(
+        backgroundColor: _bg,
+        appBar: AppBar(
+          elevation: 0,
+          centerTitle: true,
+          backgroundColor: _primary,
+          foregroundColor: Colors.white,
+          title: const Text(
+            'Atendimento',
+            style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
           ),
-        ],
-      ),
-      drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
-      body: SixMobileAnimatedGradientBackground(
-        baseColor: _bg,
-        primaryColor: _primary,
-        secondaryColor: _secondary,
-        accentColor: _accent,
-        child: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _carregarResumo,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-              children: <Widget>[
-                _section('Atendimento rápido'),
-                const SizedBox(height: 12),
-                _primaryAction(
-                  title: 'Nova venda',
-                  subtitle: 'Abrir atendimento no caixa',
-                  icon: Icons.point_of_sale_rounded,
-                  onTap: () => _go(const PdvMobileScreen()),
-                ),
-                const SizedBox(height: 12),
-                _primaryAction(
-                  title: 'Atendimento técnico',
-                  subtitle: 'Iniciar diagnóstico, orçamento e execução',
-                  icon: Icons.build_circle_rounded,
-                  onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
-                ),
-                const SizedBox(height: 24),
-                _section('Acompanhamento'),
-                const SizedBox(height: 12),
-                ..._trackingCards(),
-                const SizedBox(height: 12),
-                _section('Caixa'),
-                const SizedBox(height: 12),
-                _trackingCard(
-                  title: 'Caixa a receber',
-                  subtitle: 'Liquidar vendas deixadas para depois',
-                  value: null,
-                  icon: Icons.point_of_sale_outlined,
-                  onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
-                ),
-              ],
+          actions: <Widget>[
+            IconButton(
+              tooltip: 'Notificações',
+              icon: _notificationIcon(),
+              onPressed: () => _go(const NotificacoesMobileScreen()),
+            ),
+          ],
+        ),
+        drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+        body: SixMobileAnimatedGradientBackground(
+          baseColor: _bg,
+          primaryColor: _primary,
+          secondaryColor: _secondary,
+          accentColor: _accent,
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _carregarResumo,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                children: <Widget>[
+                  _section('Atendimento rápido'),
+                  const SizedBox(height: 12),
+                  _primaryAction(
+                    title: 'Nova venda',
+                    subtitle: 'Abrir atendimento no caixa',
+                    icon: Icons.point_of_sale_rounded,
+                    onTap: () => _go(const PdvMobileScreen()),
+                  ),
+                  const SizedBox(height: 12),
+                  _primaryAction(
+                    title: 'Atendimento técnico',
+                    subtitle: 'Iniciar diagnóstico, orçamento e execução',
+                    icon: Icons.build_circle_rounded,
+                    onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
+                  ),
+                  const SizedBox(height: 24),
+                  _section('Acompanhamento'),
+                  const SizedBox(height: 12),
+                  ..._trackingCards(),
+                  const SizedBox(height: 12),
+                  _section('Caixa'),
+                  const SizedBox(height: 12),
+                  _trackingCard(
+                    title: 'Caixa a receber',
+                    subtitle: 'Liquidar vendas deixadas para depois',
+                    value: null,
+                    icon: Icons.point_of_sale_outlined,
+                    onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+        bottomNavigationBar:
+            kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
       ),
-      bottomNavigationBar:
-          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
     );
   }
 

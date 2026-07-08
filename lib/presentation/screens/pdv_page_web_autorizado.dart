@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../components/ai_assistant/ai_assistant_host.dart';
 import '../../pdv_page_web.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 
@@ -25,9 +26,10 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
 
   @override
   Widget build(BuildContext context) {
-    final bool podeFazerVenda = context.select<ColaboradorAutorizacoesProvider, bool>(
-      (ColaboradorAutorizacoesProvider provider) => provider.podeFazerVenda,
-    );
+    final bool podeFazerVenda = context
+        .select<ColaboradorAutorizacoesProvider, bool>(
+          (ColaboradorAutorizacoesProvider provider) => provider.podeFazerVenda,
+        );
     final bool loading = context.select<ColaboradorAutorizacoesProvider, bool>(
       (ColaboradorAutorizacoesProvider provider) => provider.loading,
     );
@@ -37,10 +39,18 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
     }
 
     if (podeFazerVenda) {
-      return const _WebBrandWatermark(child: PDVWeb());
+      return const AiAssistantHost(
+        modulo: 'geral',
+        telaAtual: 'app_inicio_web',
+        child: _WebBrandWatermark(child: PDVWeb()),
+      );
     }
 
-    return const _WebBrandWatermark(child: _PdvSemVendasWeb());
+    return const AiAssistantHost(
+      modulo: 'geral',
+      telaAtual: 'app_inicio_web',
+      child: _WebBrandWatermark(child: _PdvSemVendasWeb()),
+    );
   }
 }
 
@@ -58,17 +68,19 @@ class _WebBrandWatermark extends StatelessWidget {
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool isCompact = constraints.maxWidth < 720;
-            final double size = (isCompact
-                    ? constraints.maxWidth * 0.58
-                    : constraints.maxWidth * 0.22)
-                .clamp(isCompact ? 180.0 : 240.0, isCompact ? 320.0 : 420.0)
-                .toDouble();
+            final double size =
+                (isCompact
+                        ? constraints.maxWidth * 0.58
+                        : constraints.maxWidth * 0.22)
+                    .clamp(isCompact ? 180.0 : 240.0, isCompact ? 320.0 : 420.0)
+                    .toDouble();
 
             return IgnorePointer(
               child: Align(
-                alignment: isCompact
-                    ? const Alignment(0.72, 0.82)
-                    : const Alignment(0.92, 0.82),
+                alignment:
+                    isCompact
+                        ? const Alignment(0.72, 0.82)
+                        : const Alignment(0.92, 0.82),
                 child: Opacity(
                   opacity: 0.10,
                   child: Image.asset(
@@ -241,7 +253,10 @@ class _ModuloPermitidoCard extends StatelessWidget {
             Row(
               children: <Widget>[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: _PdvSemVendasWeb._primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(999),

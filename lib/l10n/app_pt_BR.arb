@@ -1,4 +1,17 @@
 {
   "@@locale": "pt_BR",
-  "appTitle": "Six"
+  "appTitle": "Six",
+  "aiAssistantAsk": "Perguntar à IA",
+  "aiAssistantHint": "Digite sua dúvida",
+  "aiAssistantSending": "Enviando...",
+  "aiAssistantHelped": "Ajudou?",
+  "aiAssistantHelpedButton": "Ajudou",
+  "aiAssistantDidNotHelp": "Não ajudou",
+  "aiAssistantExamples": "Exemplos",
+  "aiAssistantSources": "Fontes",
+  "aiAssistantRetry": "Tentar novamente",
+  "aiAssistantError": "Não foi possível obter resposta da IA agora.",
+  "aiAssistantClose": "Fechar",
+  "aiAssistantHowCanIHelp": "Como posso ajudar no Six?",
+  "aiAssistantFeedbackThanks": "Feedback registrado."
 }
