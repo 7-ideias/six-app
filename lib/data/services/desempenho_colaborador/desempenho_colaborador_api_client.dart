@@ -9,7 +9,7 @@ import '../../models/desempenho_colaborador_model.dart';
 
 abstract class DesempenhoColaboradorApiClient {
   Future<List<ColaboradorUsuarioResumo>> listarParticipantes({
-    bool incluirNaoAtivos = false,
+    bool incluirNaoAtivos = true,
   });
 
   Future<List<MetaColaboradorModel>> listarMetas();
@@ -55,7 +55,7 @@ class HttpDesempenhoColaboradorApiClient
 
   @override
   Future<List<ColaboradorUsuarioResumo>> listarParticipantes({
-    bool incluirNaoAtivos = false,
+    bool incluirNaoAtivos = true,
   }) async {
     final Uri uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/desempenho-colaborador/participantes',
