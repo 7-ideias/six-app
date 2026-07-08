@@ -138,50 +138,56 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   @override
   Widget build(BuildContext context) {
-    return kIsWeb
-        ? PDVWeb()
-        : AiAssistantHost(
-          modulo: 'geral',
-          telaAtual: 'inicio_mobile',
-          child: Scaffold(
-            backgroundColor: _backgroundColor,
-            appBar: AppBar(
-              elevation: 0,
-              centerTitle: true,
-              backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
-              title: const Text(
-                'Início',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              actions: [
-                IconButton(
-                  tooltip: 'Configurações',
-                  icon: const Icon(Icons.settings_outlined),
-                  onPressed: _showFeatureInProgress,
-                ),
-                IconButton(
-                  tooltip: 'Notificações',
-                  icon: _buildNotificationIcon(),
-                  onPressed: () => _openNotifications(context),
-                ),
-              ],
+    if (kIsWeb) {
+      return const AiAssistantHost(
+        modulo: 'geral',
+        telaAtual: 'inicio_web',
+        child: PDVWeb(),
+      );
+    }
+
+    return AiAssistantHost(
+      modulo: 'geral',
+      telaAtual: 'inicio_mobile',
+      child: Scaffold(
+        backgroundColor: _backgroundColor,
+        appBar: AppBar(
+          elevation: 0,
+          centerTitle: true,
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          title: const Text(
+            'Início',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
-            drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
-            body: SixMobileAnimatedGradientBackground(
-              baseColor: _backgroundColor,
-              primaryColor: _primaryColor,
-              secondaryColor: _secondaryColor,
-              accentColor: _accentColor,
-              child: _buildHomeContent(context),
-            ),
-            bottomNavigationBar:
-                kIsWeb ? null : const CustomBottomNavBar(initialIndex: 1),
           ),
-        );
+          actions: [
+            IconButton(
+              tooltip: 'Configurações',
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: _showFeatureInProgress,
+            ),
+            IconButton(
+              tooltip: 'Notificações',
+              icon: _buildNotificationIcon(),
+              onPressed: () => _openNotifications(context),
+            ),
+          ],
+        ),
+        drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+        body: SixMobileAnimatedGradientBackground(
+          baseColor: _backgroundColor,
+          primaryColor: _primaryColor,
+          secondaryColor: _secondaryColor,
+          accentColor: _accentColor,
+          child: _buildHomeContent(context),
+        ),
+        bottomNavigationBar:
+            kIsWeb ? null : const CustomBottomNavBar(initialIndex: 1),
+      ),
+    );
   }
 
   Widget _buildHomeContent(BuildContext context) {
