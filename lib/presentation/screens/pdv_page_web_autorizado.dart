@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../pdv_page_web.dart';
+import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 
 class PdvPageWebAutorizado extends StatefulWidget {
@@ -38,10 +39,18 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
     }
 
     if (podeFazerVenda) {
-      return const _WebBrandWatermark(child: PDVWeb());
+      return const AiAssistantHost(
+        modulo: 'geral',
+        telaAtual: 'inicio_web',
+        child: _WebBrandWatermark(child: PDVWeb()),
+      );
     }
 
-    return const _WebBrandWatermark(child: _PdvSemVendasWeb());
+    return const AiAssistantHost(
+      modulo: 'geral',
+      telaAtual: 'inicio_web_sem_vendas',
+      child: _WebBrandWatermark(child: _PdvSemVendasWeb()),
+    );
   }
 }
 
