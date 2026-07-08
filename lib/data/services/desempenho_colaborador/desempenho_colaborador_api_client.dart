@@ -4,9 +4,12 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../models/colaborador_usuario_model.dart';
 import '../../models/desempenho_colaborador_model.dart';
 
 abstract class DesempenhoColaboradorApiClient {
+  Future<List<ColaboradorUsuarioResumo>> listarParticipantes();
+
   Future<List<MetaColaboradorModel>> listarMetas();
 
   Future<MetaColaboradorModel> criarMeta(Map<String, dynamic> payload);
@@ -46,6 +49,35 @@ class HttpDesempenhoColaboradorApiClient
       'idUnicoDaEmpresa': empresaId,
       'Authori' 'zation': 'Bear' 'er $token',
     };
+  }
+
+  @override
+  Future<List<ColaboradorUsuarioResumo>> listarParticipantes() async {
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/desempenho-colaborador/participantes',
+    );
+    final http.Response response = await _httpClient.get(
+      uri,
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode == 204 || response.body.trim().isEmpty) {
+      return const <ColaboradorUsuarioResumo>[];
+    }
+
+    if (response.statusCode != 200) {
+      throw DesempenhoColaboradorApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    final dynamic data = jsonDecode(response.body);
+    final List<dynamic> rawList = data is List<dynamic> ? data : <dynamic>[];
+    return rawList
+        .whereType<Map<String, dynamic>>()
+        .map(ColaboradorUsuarioResumo.fromJson)
+        .toList(growable: false);
   }
 
   @override
