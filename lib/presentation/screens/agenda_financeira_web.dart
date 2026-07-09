@@ -99,16 +99,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (!widget.embedded || widget.onBack == null || _overlayInicialAberto || _estaDentroDeDialog()) {
       return false;
     }
-
     _overlayInicialAberto = true;
     final NavigatorState rootNavigator = Navigator.of(context, rootNavigator: true);
     final BuildContext rootContext = rootNavigator.context;
-
     widget.onBack?.call();
     await Future<void>.delayed(Duration.zero);
-
     if (!rootContext.mounted) return true;
-
     await showDialog<void>(
       context: rootContext,
       barrierDismissible: true,
@@ -131,7 +127,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         );
       },
     );
-
     return true;
   }
 
@@ -368,22 +363,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Future<void> _executarAcao(String acao, Map<String, dynamic> item) async {
     final comando = acao.trim().toLowerCase();
-    if (comando == 'detalhes' || comando == 'detalhar') {
-      await _mostrarDetalhesLancamento(item);
-      return;
-    }
-    if (comando == 'editar') {
-      await _editarLancamento(item);
-      return;
-    }
-    if (comando == 'registrar parcial') {
-      await _registrarParcial(item);
-      return;
-    }
-    if (comando == 'liquidar' || comando == 'receber' || comando == 'pagar') {
-      await _confirmarTotal(item, 'Liquidar');
-      return;
-    }
+    if (comando == 'detalhes' || comando == 'detalhar') { await _mostrarDetalhesLancamento(item); return; }
+    if (comando == 'editar') { await _editarLancamento(item); return; }
+    if (comando == 'registrar parcial') { await _registrarParcial(item); return; }
+    if (comando == 'liquidar' || comando == 'receber' || comando == 'pagar') { await _confirmarTotal(item, 'Liquidar'); return; }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ação "$acao" ainda não implementada.')));
   }
 
@@ -396,11 +379,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     try {
       if (id.trim().isNotEmpty) detalhe = await _service.buscarDetalheLancamento(id);
       if (detalhe.isEmpty) fallback = true;
-    } catch (_) {
-      fallback = true;
-    } finally {
-      if (mounted) setState(() => _executandoAcao = false);
-    }
+    } catch (_) { fallback = true; }
+    finally { if (mounted) setState(() => _executandoAcao = false); }
     if (!mounted) return;
     final alterado = await showDialog<bool>(
       context: context,
@@ -416,9 +396,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         onExcluirLiquidacao: (liquidacao) => _confirmarExcluirLiquidacaoDetalhe(item, liquidacao),
       ),
     );
-    if (alterado == true && mounted) {
-      await _consultar(mostrarFeedback: true);
-    }
+    if (alterado == true && mounted) await _consultar(mostrarFeedback: true);
   }
 
   Future<bool> _confirmarExcluirLancamentoDetalhe(Map<String, dynamic> item) async {
@@ -450,9 +428,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao excluir lançamento (${e.statusCode}).')));
       return false;
-    } finally {
-      if (mounted) setState(() => _executandoAcao = false);
-    }
+    } finally { if (mounted) setState(() => _executandoAcao = false); }
   }
 
   Future<bool> _confirmarExcluirLiquidacaoDetalhe(Map<String, dynamic> item, Map<String, dynamic> liquidacao) async {
@@ -488,9 +464,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao excluir parcial (${e.statusCode}).')));
       return false;
-    } finally {
-      if (mounted) setState(() => _executandoAcao = false);
-    }
+    } finally { if (mounted) setState(() => _executandoAcao = false); }
   }
 
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
@@ -515,10 +489,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               value: formaSelecionada,
               decoration: const InputDecoration(labelText: 'Tipo de recebimento'),
               items: formasDisponiveis.map((forma) => DropdownMenuItem<String>(value: forma, child: Text(forma))).toList(),
-              onChanged: (value) {
-                if (value == null || value.trim().isEmpty) return;
-                setDialogState(() => formaSelecionada = value);
-              },
+              onChanged: (value) { if (value == null || value.trim().isEmpty) return; setDialogState(() => formaSelecionada = value); },
             ),
             const SizedBox(height: 12),
             TextField(controller: observacaoController, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'Observação')),
@@ -590,13 +561,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _executarComLoading(Future<void> Function() action) async {
     if (_executandoAcao) return;
     setState(() => _executandoAcao = true);
-    try {
-      await action();
-    } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha na ação (${e.statusCode}).')));
-    } finally {
-      if (mounted) setState(() => _executandoAcao = false);
-    }
+    try { await action(); }
+    on AgendaFinanceiraLancamentoApiException catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha na ação (${e.statusCode}).'))); }
+    finally { if (mounted) setState(() => _executandoAcao = false); }
   }
 
   Future<void> _novoLancamento() async {
@@ -621,10 +588,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded && widget.onBack != null && !_estaDentroDeDialog()) {
-      return const SizedBox.shrink();
-    }
-
+    if (widget.embedded && widget.onBack != null && !_estaDentroDeDialog()) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{const SingleActivator(LogicalKeyboardKey.escape): _fechar},
@@ -657,39 +621,35 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
-    return Card(
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(children: <Widget>[
-          IconButton(onPressed: _fechar, icon: const Icon(Icons.arrow_back_rounded), tooltip: 'Voltar'),
-          const SizedBox(width: 8),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-            Text('Agenda financeira', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-            Text(_ultimaConsultaEm == null ? 'Filtre os lançamentos e acompanhe seus detalhes.' : 'Última consulta: ${_formatarDataHora(_ultimaConsultaEm!)}'),
-          ])),
-          FilledButton.icon(onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.search_rounded), label: const Text('Filtrar')),
-          const SizedBox(width: 10),
-          OutlinedButton.icon(onPressed: _novoLancamento, icon: const Icon(Icons.add_rounded), label: const Text('Novo')),
-        ]),
-      ),
-    );
-  }
+  Widget _buildHeader(ThemeData theme) => Card(
+    elevation: 1,
+    child: Padding(
+      padding: const EdgeInsets.all(18),
+      child: Row(children: <Widget>[
+        IconButton(onPressed: _fechar, icon: const Icon(Icons.arrow_back_rounded), tooltip: 'Voltar'),
+        const SizedBox(width: 8),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+          Text('Agenda financeira', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+          Text(_ultimaConsultaEm == null ? 'Filtre os lançamentos e acompanhe seus detalhes.' : 'Última consulta: ${_formatarDataHora(_ultimaConsultaEm!)}'),
+        ])),
+        FilledButton.icon(onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.search_rounded), label: const Text('Filtrar')),
+        const SizedBox(width: 10),
+        OutlinedButton.icon(onPressed: _novoLancamento, icon: const Icon(Icons.add_rounded), label: const Text('Novo')),
+      ]),
+    ),
+  );
 
-  Widget _buildFiltros(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(spacing: 12, runSpacing: 12, children: <Widget>[
-          _drop('Período', _periodoSelecionado, _periodos, (v) => setState(() => _periodoSelecionado = v!)),
-          _drop('Tipo', _tipoSelecionado, _tipos, (v) => setState(() => _tipoSelecionado = v!)),
-          _drop('Status', _statusSelecionado, _status, (v) => setState(() => _statusSelecionado = v!)),
-          _drop('Tipo de pagamento', _formaPagamentoSelecionada, _formasPagamento, (v) => setState(() => _formaPagamentoSelecionada = v!)),
-        ]),
-      ),
-    );
-  }
+  Widget _buildFiltros(ThemeData theme) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Wrap(spacing: 12, runSpacing: 12, children: <Widget>[
+        _drop('Período', _periodoSelecionado, _periodos, (v) => setState(() => _periodoSelecionado = v!)),
+        _drop('Tipo', _tipoSelecionado, _tipos, (v) => setState(() => _tipoSelecionado = v!)),
+        _drop('Status', _statusSelecionado, _status, (v) => setState(() => _statusSelecionado = v!)),
+        _drop('Tipo de pagamento', _formaPagamentoSelecionada, _formasPagamento, (v) => setState(() => _formaPagamentoSelecionada = v!)),
+      ]),
+    ),
+  );
 
   Widget _drop(String label, String value, List<String> values, ValueChanged<String?> onChanged) {
     final safeValue = values.contains(value) ? value : values.first;
@@ -736,18 +696,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildAbas(ThemeData theme) {
-    return SegmentedButton<int>(
-      selected: <int>{_abaSelecionada},
-      onSelectionChanged: (value) => setState(() => _abaSelecionada = value.first),
-      segments: const <ButtonSegment<int>>[
-        ButtonSegment<int>(value: 0, label: Text('Agenda')),
-        ButtonSegment<int>(value: 1, label: Text('Calendário')),
-        ButtonSegment<int>(value: 2, label: Text('Fluxo previsto')),
-        ButtonSegment<int>(value: 3, label: Text('Valores confirmados')),
-      ],
-    );
-  }
+  Widget _buildAbas(ThemeData theme) => SegmentedButton<int>(
+    selected: <int>{_abaSelecionada},
+    onSelectionChanged: (value) => setState(() => _abaSelecionada = value.first),
+    segments: const <ButtonSegment<int>>[
+      ButtonSegment<int>(value: 0, label: Text('Agenda')),
+      ButtonSegment<int>(value: 1, label: Text('Calendário')),
+      ButtonSegment<int>(value: 2, label: Text('Fluxo previsto')),
+      ButtonSegment<int>(value: 3, label: Text('Valores confirmados')),
+    ],
+  );
 
   Widget _buildConteudoAba(ThemeData theme) {
     if (_abaSelecionada == 3) return _buildValoresConfirmados(theme);
@@ -821,16 +779,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ])).toList())));
   }
 
-  Widget _buildFluxo(ThemeData theme) {
-    return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-      Text('Fluxo previsto', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-      const SizedBox(height: 12),
-      Text('Entradas em aberto: ${_formatarMoeda(_totalReceberPrevisto)}'),
-      Text('Saídas em aberto: ${_formatarMoeda(_totalPagarPrevisto)}'),
-      const SizedBox(height: 8),
-      Text('Saldo previsto: ${_formatarMoeda(_saldoPrevisto)}', style: const TextStyle(fontWeight: FontWeight.w900)),
-    ])));
-  }
+  Widget _buildFluxo(ThemeData theme) => Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+    Text('Fluxo previsto', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+    const SizedBox(height: 12),
+    Text('Entradas em aberto: ${_formatarMoeda(_totalReceberPrevisto)}'),
+    Text('Saídas em aberto: ${_formatarMoeda(_totalPagarPrevisto)}'),
+    const SizedBox(height: 8),
+    Text('Saldo previsto: ${_formatarMoeda(_saldoPrevisto)}', style: const TextStyle(fontWeight: FontWeight.w900)),
+  ])));
 
   double _somar(List<Map<String, dynamic>> itens, String tipo, String campo) => itens.where((item) => item['tipo'] == tipo && item['status']?.toString() != 'Cancelado').fold<double>(0, (soma, item) => soma + _toDouble(item[campo] ?? item['valor']));
 
@@ -869,12 +825,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   String _formatarDataIsoParaBr(String? dataIso) {
     if (dataIso == null || dataIso.trim().isEmpty) return '-';
-    try {
-      final data = DateTime.parse(dataIso);
-      return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
-    } catch (_) {
-      return dataIso;
-    }
+    try { final data = DateTime.parse(dataIso); return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}'; }
+    catch (_) { return dataIso; }
   }
 
   String _formatarDataFlexivel(dynamic value) {
@@ -901,7 +853,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
 class _ParcialLancamentoResultado {
   const _ParcialLancamentoResultado({required this.valor, required this.formaPagamento});
-
   final double valor;
   final String formaPagamento;
 }
@@ -912,23 +863,15 @@ class _EscOverlayIntent extends Intent {
 
 class _EscOverlayScope extends StatelessWidget {
   const _EscOverlayScope({required this.child});
-
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Shortcuts(
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.escape): _EscOverlayIntent(),
-      },
+      shortcuts: const <ShortcutActivator, Intent>{SingleActivator(LogicalKeyboardKey.escape): _EscOverlayIntent()},
       child: Actions(
         actions: <Type, Action<Intent>>{
-          _EscOverlayIntent: CallbackAction<_EscOverlayIntent>(
-            onInvoke: (_) {
-              Navigator.of(context).maybePop();
-              return null;
-            },
-          ),
+          _EscOverlayIntent: CallbackAction<_EscOverlayIntent>(onInvoke: (_) { Navigator.of(context).maybePop(); return null; }),
         },
         child: Focus(autofocus: true, child: child),
       ),
@@ -973,6 +916,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final valorPago = _numero(detalhe['valorPagoRecebido'], item['valorConfirmado']);
     final valorAberto = _numero(detalhe['valorAberto'], item['valorRestante']);
     final descricao = _texto(detalhe['descricao'], item['descricao']);
+    final stamp = _stampData(_texto(detalhe['status'], item['status']), valorAberto);
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
       child: ConstrainedBox(
@@ -989,10 +933,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                 Text(descricao, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
               ])),
               TextButton.icon(
-                onPressed: () async {
-                  final excluido = await onExcluirLancamento();
-                  if (excluido && context.mounted) Navigator.of(context).pop(true);
-                },
+                onPressed: () async { final excluido = await onExcluirLancamento(); if (excluido && context.mounted) Navigator.of(context).pop(true); },
                 icon: const Icon(Icons.delete_forever_outlined),
                 label: const Text('Excluir lançamento'),
                 style: TextButton.styleFrom(foregroundColor: Colors.white),
@@ -1000,50 +941,97 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
               IconButton(onPressed: () => Navigator.of(context).pop(false), icon: const Icon(Icons.close_rounded, color: Colors.white), tooltip: 'Fechar'),
             ]),
           ),
-          Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(22), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-            if (fallback) _avisoFallback(theme),
-            Wrap(spacing: 10, runSpacing: 10, children: <Widget>[
-              _chip(theme, _texto(detalhe['tipo'], item['tipo'] == 'pagar' ? 'Pagar' : 'Receber')),
-              _chip(theme, _texto(detalhe['status'], item['status'])),
-              _chip(theme, formaPagamentoLabel(_texto(detalhe['formaPagamento'], item['formaPagamento']))),
-              _chip(theme, 'ID: ${_texto(detalhe['idLancamento'], item['id'])}'),
-            ]),
-            const SizedBox(height: 18),
-            LayoutBuilder(builder: (context, constraints) {
-              final width = constraints.maxWidth >= 760 ? (constraints.maxWidth - 24) / 3 : double.infinity;
-              return Wrap(spacing: 12, runSpacing: 12, children: <Widget>[
-                SizedBox(width: width, child: _valorCard(theme, 'Valor original', formatarMoeda(valorOriginal), Icons.receipt_long_outlined)),
-                SizedBox(width: width, child: _valorCard(theme, 'Confirmado', formatarMoeda(valorPago), Icons.verified_outlined)),
-                SizedBox(width: width, child: _valorCard(theme, 'Em aberto', formatarMoeda(valorAberto), Icons.account_balance_wallet_outlined)),
-              ]);
-            }),
-            const SizedBox(height: 18),
-            _section(theme, 'Datas', Icons.calendar_month_outlined, <Widget>[
-              _info('Competência', formatarData(detalhe['dataCompetencia'])),
-              _info('Vencimento', formatarData(_valor(detalhe['dataVencimento'], item['vencimento']))),
-              _info('Liquidação', formatarData(detalhe['dataLiquidacao'])),
-            ]),
-            _section(theme, 'Classificação', Icons.filter_alt_outlined, <Widget>[
-              _info('Empresa', _texto(empresa['nome'], item['empresa'])),
-              _info('Categoria', _texto(categoria['nome'], categoria['descricao'], item['categoria'])),
-              _info('Origem', _texto(origem['codigoExibicao'], origem['tipo'], item['origem'])),
-              _info('Referência', _texto(origem['id'])),
-            ]),
-            _section(theme, 'Contato e responsabilidade', Icons.people_alt_outlined, <Widget>[
-              _info('Contato', _texto(contato['nome'], item['contato'])),
-              _info('Tipo', _texto(contato['tipo'])),
-              _info('Documento', _texto(contato['documento'])),
-              _info('Telefone', _texto(contato['telefone'])),
-              _info('E-mail', _texto(contato['email'])),
-              _info('Responsável', _texto(responsavel['nome'], item['responsavel'])),
-            ]),
-            _section(theme, 'Observações', Icons.notes_outlined, <Widget>[SizedBox(width: double.infinity, child: SelectableText(_texto(detalhe['observacoes'], item['observacoes'], 'Sem observações.')))]),
-            if (liquidacoes.isNotEmpty) _section(theme, 'Confirmações e liquidações', Icons.payments_outlined, liquidacoes.map((l) => _liquidacaoTile(context, theme, l)).toList()),
-            if (historico.isNotEmpty) _section(theme, 'Histórico', Icons.history_outlined, historico.map((h) => _info(formatarData(h['dataHora']), _texto(h['descricao']))).toList()),
-            if (comprovantes.isNotEmpty) _section(theme, 'Comprovantes', Icons.attach_file_outlined, comprovantes.map((c) => _info('Arquivo', c)).toList()),
-            if (acoes.isNotEmpty) _section(theme, 'Ações disponíveis', Icons.touch_app_outlined, <Widget>[Wrap(spacing: 8, runSpacing: 8, children: acoes.map((a) => Chip(label: Text(a))).toList())]),
-          ]))),
+          Expanded(child: Stack(children: <Widget>[
+            Positioned.fill(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(22),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                  if (fallback) _avisoFallback(theme),
+                  Wrap(spacing: 10, runSpacing: 10, children: <Widget>[
+                    _chip(theme, _texto(detalhe['tipo'], item['tipo'] == 'pagar' ? 'Pagar' : 'Receber')),
+                    _chip(theme, _texto(detalhe['status'], item['status'])),
+                    _chip(theme, formaPagamentoLabel(_texto(detalhe['formaPagamento'], item['formaPagamento']))),
+                    _chip(theme, 'ID: ${_texto(detalhe['idLancamento'], item['id'])}'),
+                  ]),
+                  const SizedBox(height: 18),
+                  LayoutBuilder(builder: (context, constraints) {
+                    final width = constraints.maxWidth >= 760 ? (constraints.maxWidth - 24) / 3 : double.infinity;
+                    return Wrap(spacing: 12, runSpacing: 12, children: <Widget>[
+                      SizedBox(width: width, child: _valorCard(theme, 'Valor original', formatarMoeda(valorOriginal), Icons.receipt_long_outlined)),
+                      SizedBox(width: width, child: _valorCard(theme, 'Confirmado', formatarMoeda(valorPago), Icons.verified_outlined)),
+                      SizedBox(width: width, child: _valorCard(theme, 'Em aberto', formatarMoeda(valorAberto), Icons.account_balance_wallet_outlined)),
+                    ]);
+                  }),
+                  const SizedBox(height: 18),
+                  _section(theme, 'Datas', Icons.calendar_month_outlined, <Widget>[
+                    _info('Competência', formatarData(detalhe['dataCompetencia'])),
+                    _info('Vencimento', formatarData(_valor(detalhe['dataVencimento'], item['vencimento']))),
+                    _info('Liquidação', formatarData(detalhe['dataLiquidacao'])),
+                  ]),
+                  _section(theme, 'Classificação', Icons.filter_alt_outlined, <Widget>[
+                    _info('Empresa', _texto(empresa['nome'], item['empresa'])),
+                    _info('Categoria', _texto(categoria['nome'], categoria['descricao'], item['categoria'])),
+                    _info('Origem', _texto(origem['codigoExibicao'], origem['tipo'], item['origem'])),
+                    _info('Referência', _texto(origem['id'])),
+                  ]),
+                  _section(theme, 'Contato e responsabilidade', Icons.people_alt_outlined, <Widget>[
+                    _info('Contato', _texto(contato['nome'], item['contato'])),
+                    _info('Tipo', _texto(contato['tipo'])),
+                    _info('Documento', _texto(contato['documento'])),
+                    _info('Telefone', _texto(contato['telefone'])),
+                    _info('E-mail', _texto(contato['email'])),
+                    _info('Responsável', _texto(responsavel['nome'], item['responsavel'])),
+                  ]),
+                  _section(theme, 'Observações', Icons.notes_outlined, <Widget>[SizedBox(width: double.infinity, child: SelectableText(_texto(detalhe['observacoes'], item['observacoes'], 'Sem observações.')))]),
+                  if (liquidacoes.isNotEmpty) _section(theme, 'Confirmações e liquidações', Icons.payments_outlined, liquidacoes.map((l) => _liquidacaoTile(context, theme, l)).toList()),
+                  if (historico.isNotEmpty) _section(theme, 'Histórico', Icons.history_outlined, historico.map((h) => _info(formatarData(h['dataHora']), _texto(h['descricao']))).toList()),
+                  if (comprovantes.isNotEmpty) _section(theme, 'Comprovantes', Icons.attach_file_outlined, comprovantes.map((c) => _info('Arquivo', c)).toList()),
+                  if (acoes.isNotEmpty) _section(theme, 'Ações disponíveis', Icons.touch_app_outlined, <Widget>[Wrap(spacing: 8, runSpacing: 8, children: acoes.map((a) => Chip(label: Text(a))).toList())]),
+                ]),
+              ),
+            ),
+            if (stamp != null)
+              Positioned(
+                top: 18,
+                right: 28,
+                child: _statusStamp(stamp),
+              ),
+          ])),
         ]),
+      ),
+    );
+  }
+
+  _DetalheStatusStampData? _stampData(String status, double valorAberto) {
+    final normalized = status.trim().toUpperCase().replaceAll(' ', '_');
+    if (normalized == 'PAGO' || normalized == 'RECEBIDO' || valorAberto <= 0 && (normalized == 'FINALIZADA' || normalized == 'FINALIZADO')) {
+      return const _DetalheStatusStampData('PAGO', Color(0xFF16A34A));
+    }
+    if (normalized == 'PARCIAL') return const _DetalheStatusStampData('PARCIAL', Color(0xFFF59E0B));
+    if (normalized == 'CANCELADO' || normalized == 'CANCELADA') return const _DetalheStatusStampData('CANCELADO', Color(0xFFDC2626));
+    return null;
+  }
+
+  Widget _statusStamp(_DetalheStatusStampData stamp) {
+    return IgnorePointer(
+      child: Transform.rotate(
+        angle: -0.12,
+        child: Opacity(
+          opacity: 0.94,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+            decoration: BoxDecoration(
+              color: stamp.color.withOpacity(0.055),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: stamp.color, width: 3),
+              boxShadow: <BoxShadow>[BoxShadow(color: stamp.color.withOpacity(0.10), blurRadius: 16, offset: const Offset(0, 6))],
+            ),
+            child: Text(
+              stamp.label,
+              style: TextStyle(color: stamp.color, fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 2.6),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1090,10 +1078,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
           _info('Tipo de pagamento', formaPagamentoLabel(liquidacao['formaPagamentoRealizada']?.toString())),
           if (idLiquidacao.isNotEmpty)
             TextButton.icon(
-              onPressed: () async {
-                final excluiu = await onExcluirLiquidacao(liquidacao);
-                if (excluiu && context.mounted) Navigator.of(context).pop(true);
-              },
+              onPressed: () async { final excluiu = await onExcluirLiquidacao(liquidacao); if (excluiu && context.mounted) Navigator.of(context).pop(true); },
               icon: const Icon(Icons.delete_outline_rounded, size: 18),
               label: const Text('Excluir parcial'),
               style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
@@ -1119,4 +1104,10 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   dynamic _valor(dynamic primary, dynamic fallback) => primary == null || primary.toString().trim().isEmpty ? fallback : primary;
   String _texto(dynamic primary, [dynamic secondary, dynamic third]) { for (final value in <dynamic>[primary, secondary, third]) { if (value == null) continue; final text = value.toString().trim(); if (text.isNotEmpty) return text; } return '-'; }
   double _numero(dynamic primary, dynamic fallback) { final value = _valor(primary, fallback); if (value is num) return value.toDouble(); if (value is String) { final normalizado = value.contains(',') && value.contains('.') ? value.replaceAll('.', '').replaceAll(',', '.') : value.replaceAll(',', '.'); return double.tryParse(normalizado) ?? 0; } return 0; }
+}
+
+class _DetalheStatusStampData {
+  const _DetalheStatusStampData(this.label, this.color);
+  final String label;
+  final Color color;
 }
