@@ -11,6 +11,24 @@ class CaixaService {
     return _apiClient.getInformacoesBasicasDoCaixa();
   }
 
+  Future<List<TiposRecebimento>> listarTiposRecebimentoConfiguraveis() {
+    return _apiClient.listarTiposRecebimentoConfiguraveis();
+  }
+
+  Future<TiposRecebimento> atualizarTipoRecebimentoConfiguravel({
+    required String codigoTipo,
+    required TiposRecebimento tipo,
+  }) {
+    return _apiClient.atualizarTipoRecebimentoConfiguravel(
+      codigoTipo: codigoTipo,
+      request: tipo,
+    );
+  }
+
+  Future<void> restaurarTiposRecebimentoPadrao() {
+    return _apiClient.restaurarTiposRecebimentoPadrao();
+  }
+
   Future<InformacoesCaixaComSomatorioResponse>
   buscarResumoDeMovimentosComSomatorio(String idSessaoCaixa) {
     return _apiClient.getResumoDeMovimentosComSomatorio(idSessaoCaixa);

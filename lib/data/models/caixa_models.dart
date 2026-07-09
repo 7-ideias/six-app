@@ -107,6 +107,44 @@ class TiposRecebimento {
       icone: json['icone'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'codigoTipo': codigoTipo,
+      'descricaoExibicao': descricaoExibicao,
+      'naturezaRecebimento': naturezaRecebimento,
+      'aceitaParcelamento': aceitaParcelamento,
+      'ativo': ativo,
+      'exigeCliente': exigeCliente,
+      'ordemExibicao': ordemExibicao,
+      'corHex': corHex,
+      'icone': icone,
+    };
+  }
+
+  TiposRecebimento copyWith({
+    String? codigoTipo,
+    String? descricaoExibicao,
+    String? naturezaRecebimento,
+    bool? aceitaParcelamento,
+    bool? ativo,
+    bool? exigeCliente,
+    int? ordemExibicao,
+    String? corHex,
+    String? icone,
+  }) {
+    return TiposRecebimento(
+      codigoTipo: codigoTipo ?? this.codigoTipo,
+      descricaoExibicao: descricaoExibicao ?? this.descricaoExibicao,
+      naturezaRecebimento: naturezaRecebimento ?? this.naturezaRecebimento,
+      aceitaParcelamento: aceitaParcelamento ?? this.aceitaParcelamento,
+      ativo: ativo ?? this.ativo,
+      exigeCliente: exigeCliente ?? this.exigeCliente,
+      ordemExibicao: ordemExibicao ?? this.ordemExibicao,
+      corHex: corHex ?? this.corHex,
+      icone: icone ?? this.icone,
+    );
+  }
 }
 
 class SessaoAtual {

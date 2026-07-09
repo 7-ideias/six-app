@@ -298,7 +298,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       case 'Regionalização':
         return const _MenuConfigData('Regionalização', 'Idioma, país, moeda, data, hora e formatos locais.', Icons.public_rounded);
       case 'Formas de recebimento':
-        return const _MenuConfigData('Formas de recebimento', 'Métodos aceitos, recebimentos futuros e regras de liquidação.', Icons.payments_rounded);
+        return const _MenuConfigData('Formas de recebimento', 'Personalize como sua empresa recebe pagamentos. Os códigos internos são mantidos pelo sistema, mas o nome e o comportamento podem ser ajustados.', Icons.payments_rounded);
       case 'Regras operacionais':
         return const _MenuConfigData('Regras operacionais', 'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.', Icons.rule_folder_outlined);
       case 'Notificações':
