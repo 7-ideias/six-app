@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
-import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
-import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/models/venda_nao_liquidada_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
+import 'package:sixpos/data/services/caixa/venda_nao_liquidada_api_client.dart';
 
 class VendasAReceberWebWidget extends StatefulWidget {
   const VendasAReceberWebWidget({super.key});
@@ -13,182 +12,118 @@ class VendasAReceberWebWidget extends StatefulWidget {
 }
 
 class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
-  final AgendaFinanceiraLancamentoService _lancamentoService = AgendaFinanceiraLancamentoService();
-  final AgendaFinanceiraAcoesFinanceiras _acoesService = AgendaFinanceiraAcoesFinanceiras();
+  static const Color _bg = Color(0xFFF4F7FB);
+  static const Color _primary = Color(0xFF0B1F3A);
+  static const Color _accent = Color(0xFF2563EB);
+  static const Color _muted = Color(0xFF64748B);
+  static const Color _title = Color(0xFF0F172A);
+
+  final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
   final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
 
+  bool _loading = true;
+  bool _processando = false;
+  String? _erro;
   DateTime _dataInicio = DateTime.now().subtract(const Duration(days: 30));
   DateTime _dataFim = DateTime.now().add(const Duration(days: 30));
-  bool _carregando = false;
-  bool _recebendo = false;
-  String _formaSelecionada = 'Pix';
-
-  List<String> _formasRecebimento = <String>[
-    'Pix',
-    'Boleto',
-    'Transferência',
-    'Cartão de crédito',
-    'Cartão de débito',
-    'Débito automático',
-    'Dinheiro',
+  List<VendaNaoLiquidadaModel> _vendas = <VendaNaoLiquidadaModel>[];
+  List<_TipoRecebimentoOpcao> _tiposRecebimento = <_TipoRecebimentoOpcao>[
+    const _TipoRecebimentoOpcao(codigo: 'TIPO1', descricao: 'Dinheiro'),
+    const _TipoRecebimentoOpcao(codigo: 'TIPO2', descricao: 'Pix'),
+    const _TipoRecebimentoOpcao(codigo: 'TIPO3', descricao: 'Cartão de crédito'),
+    const _TipoRecebimentoOpcao(codigo: 'TIPO4', descricao: 'Cartão de débito'),
+    const _TipoRecebimentoOpcao(codigo: 'TIPO5', descricao: 'Boleto'),
   ];
 
-  final Map<String, String> _backendPorDescricaoFormaPagamento = <String, String>{
-    'Pix': 'PIX',
-    'Boleto': 'BOLETO',
-    'Transferência': 'TRANSFERENCIA',
-    'Cartão de crédito': 'CARTAO_CREDITO',
-    'Cartão Crédito': 'CARTAO_CREDITO',
-    'Cartão de débito': 'CARTAO_DEBITO',
-    'Cartão Débito': 'CARTAO_DEBITO',
-    'Débito automático': 'DEBITO_AUTOMATICO',
-    'Dinheiro': 'DINHEIRO',
-  };
+  List<VendaNaoLiquidadaModel> get _vendasFiltradas {
+    final DateTime inicio = _inicioDoDia(_dataInicio);
+    final DateTime fim = _fimDoDia(_dataFim);
+    return _vendas.where((VendaNaoLiquidadaModel venda) {
+      final DateTime? data = venda.dataVencimento ?? venda.dataCompetencia;
+      if (data == null) return true;
+      return !data.isBefore(inicio) && !data.isAfter(fim);
+    }).toList(growable: false);
+  }
 
-  final List<Map<String, dynamic>> _vendas = <Map<String, dynamic>>[];
+  double get _totalAberto => _vendasFiltradas.fold<double>(0, (double soma, VendaNaoLiquidadaModel venda) => soma + venda.valorAberto);
+  double get _ticketMedio => _vendasFiltradas.isEmpty ? 0 : _totalAberto / _vendasFiltradas.length;
+  int get _totalItens => _vendasFiltradas.fold<int>(0, (int soma, VendaNaoLiquidadaModel venda) => soma + venda.itens.fold<int>(0, (int itens, VendaNaoLiquidadaItemModel item) => itens + item.quantidade));
 
-  double get _totalAberto => _vendas.fold<double>(0, (double soma, Map<String, dynamic> item) => soma + _toDouble(item['valorRestante'] ?? item['valor']));
+  int get _vencidas {
+    final DateTime hoje = DateTime.now();
+    final DateTime inicioHoje = DateTime(hoje.year, hoje.month, hoje.day);
+    return _vendasFiltradas.where((VendaNaoLiquidadaModel venda) => venda.dataVencimento != null && venda.dataVencimento!.isBefore(inicioHoje)).length;
+  }
+
+  int get _venceHoje {
+    final DateTime hoje = DateTime.now();
+    return _vendasFiltradas.where((VendaNaoLiquidadaModel venda) {
+      final DateTime? vencimento = venda.dataVencimento;
+      return vencimento != null && vencimento.year == hoje.year && vencimento.month == hoje.month && vencimento.day == hoje.day;
+    }).length;
+  }
+
+  double get _previsaoSeteDias {
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime seteDias = _fimDoDia(hoje.add(const Duration(days: 7)));
+    return _vendas.where((VendaNaoLiquidadaModel venda) {
+      final DateTime? data = venda.dataVencimento ?? venda.dataCompetencia;
+      if (data == null) return false;
+      return !data.isBefore(hoje) && !data.isAfter(seteDias);
+    }).fold<double>(0, (double soma, VendaNaoLiquidadaModel venda) => soma + venda.valorAberto);
+  }
+
+  String get _riscoAtraso {
+    if (_vencidas >= 5 || (_vendasFiltradas.isNotEmpty && _vencidas / _vendasFiltradas.length >= 0.35)) return 'Alto';
+    if (_vencidas > 0 || _venceHoje > 3) return 'Médio';
+    return 'Baixo';
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _carregarFormasRecebimento();
-      await _consultar();
+      await _carregarTiposRecebimento();
+      await _carregar();
     });
   }
 
-  Future<void> _carregarFormasRecebimento() async {
+  Future<void> _carregar() async {
+    setState(() {
+      _loading = true;
+      _erro = null;
+    });
+    try {
+      final List<VendaNaoLiquidadaModel> vendas = await _api.listar();
+      if (!mounted) return;
+      setState(() => _vendas = vendas);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _erro = e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _carregarTiposRecebimento() async {
     try {
       final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient.getInformacoesBasicasDoCaixa();
-      final List<String> formas = _montarFormasRecebimento(informacoes.tiposRecebimento);
-      if (!mounted || formas.isEmpty) return;
-      setState(() {
-        _formasRecebimento = formas;
-        if (!_formasRecebimento.contains(_formaSelecionada)) {
-          _formaSelecionada = _formasRecebimento.first;
-        }
-      });
+      final List<_TipoRecebimentoOpcao> ativos = informacoes.tiposRecebimento
+          .where((TiposRecebimento tipo) => tipo.ativo)
+          .toList()
+        ..sort((TiposRecebimento a, TiposRecebimento b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+      final List<_TipoRecebimentoOpcao> opcoes = ativos
+          .map((TiposRecebimento tipo) => _TipoRecebimentoOpcao(
+                codigo: tipo.codigoTipo.trim().isEmpty ? 'TIPO2' : tipo.codigoTipo.trim().toUpperCase(),
+                descricao: tipo.descricaoExibicao.trim().isEmpty ? tipo.codigoTipo.trim().toUpperCase() : tipo.descricaoExibicao.trim(),
+              ))
+          .where((_TipoRecebimentoOpcao opcao) => opcao.codigo.isNotEmpty && opcao.descricao.isNotEmpty)
+          .toList(growable: false);
+      if (!mounted || opcoes.isEmpty) return;
+      setState(() => _tiposRecebimento = opcoes);
     } catch (_) {
-      // Mantém fallback local para não bloquear recebimentos se a configuração não carregar.
+      // O mobile também mantém a tela operacional mesmo se as configurações auxiliares falharem.
     }
-  }
-
-  List<String> _montarFormasRecebimento(List<TiposRecebimento> tipos) {
-    final List<TiposRecebimento> ativos = tipos.where((TiposRecebimento tipo) => tipo.ativo).toList()
-      ..sort((TiposRecebimento a, TiposRecebimento b) => a.ordemExibicao.compareTo(b.ordemExibicao));
-
-    final List<String> descricoes = <String>[];
-    for (final TiposRecebimento tipo in ativos) {
-      final String descricao = tipo.descricaoExibicao.trim();
-      if (descricao.isEmpty || descricoes.contains(descricao)) continue;
-      descricoes.add(descricao);
-      _backendPorDescricaoFormaPagamento[descricao] = _backendPorCodigoTipo(tipo.codigoTipo) ?? _backendPorDescricao(descricao);
-    }
-    return descricoes;
-  }
-
-  String? _backendPorCodigoTipo(String codigoTipo) {
-    switch (codigoTipo.trim().toLowerCase()) {
-      case 'tipo1':
-        return 'DINHEIRO';
-      case 'tipo2':
-        return 'PIX';
-      case 'tipo3':
-        return 'CARTAO_CREDITO';
-      case 'tipo4':
-        return 'CARTAO_DEBITO';
-      case 'tipo5':
-        return 'BOLETO';
-      case 'tipo6':
-        return 'TRANSFERENCIA';
-      case 'tipo7':
-        return 'DEBITO_AUTOMATICO';
-      default:
-        return null;
-    }
-  }
-
-  String _backendPorDescricao(String descricao) {
-    final String normalizado = _normalizar(descricao).toUpperCase();
-    if (normalizado.contains('PIX')) return 'PIX';
-    if (normalizado.contains('BOLETO')) return 'BOLETO';
-    if (normalizado.contains('CREDITO')) return 'CARTAO_CREDITO';
-    if (normalizado.contains('DEBITO AUTOMATICO')) return 'DEBITO_AUTOMATICO';
-    if (normalizado.contains('DEBITO')) return 'CARTAO_DEBITO';
-    if (normalizado.contains('TRANSFER')) return 'TRANSFERENCIA';
-    if (normalizado.contains('DINHEIRO')) return 'DINHEIRO';
-    return normalizado.replaceAll(RegExp(r'[^A-Z0-9]+'), '_');
-  }
-
-  Future<void> _consultar() async {
-    if (_carregando) return;
-    setState(() => _carregando = true);
-    try {
-      final Map<String, dynamic> payload = await _lancamentoService.consultarLancamentos(
-        AgendaFinanceiraConsultaRequest(
-          periodo: AgendaFinanceiraPeriodoRequest(
-            modo: 'PERSONALIZADO',
-            dataInicio: _normalizarData(_dataInicio),
-            dataFim: _normalizarData(_dataFim),
-          ),
-          filtros: AgendaFinanceiraFiltrosRequest(
-            tipo: 'RECEBER',
-            status: const <String>['PREVISTO', 'PENDENTE', 'VENCE_HOJE', 'VENCIDO', 'PARCIAL'],
-            origens: const <String>['VENDA'],
-            categorias: const <String>[],
-            formasPagamento: const <String>[],
-            somenteCriticos: false,
-          ),
-          visaoSelecionada: 'AGENDA',
-        ),
-      );
-      if (!mounted) return;
-      setState(() {
-        _vendas
-          ..clear()
-          ..addAll(_mapearVendas(payload));
-      });
-    } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao consultar vendas a receber (${e.statusCode}).')));
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível consultar vendas a receber.')));
-    } finally {
-      if (mounted) setState(() => _carregando = false);
-    }
-  }
-
-  List<Map<String, dynamic>> _mapearVendas(Map<String, dynamic> payload) {
-    final List<Map<String, dynamic>> itens = <Map<String, dynamic>>[];
-    final dynamic gruposRaw = payload['gruposAgenda'];
-    if (gruposRaw is! List) return itens;
-
-    for (final dynamic grupoRaw in gruposRaw) {
-      if (grupoRaw is! Map<String, dynamic>) continue;
-      final dynamic itensRaw = grupoRaw['itens'];
-      if (itensRaw is! List) continue;
-      for (final dynamic itemRaw in itensRaw) {
-        if (itemRaw is! Map<String, dynamic>) continue;
-        final String status = (itemRaw['status'] ?? '').toString().toUpperCase();
-        final String origem = (itemRaw['origem'] ?? '').toString().toUpperCase();
-        if (status == 'RECEBIDO' || status == 'PAGO' || status == 'CANCELADO') continue;
-        if (origem.isNotEmpty && origem != 'VENDA') continue;
-        itens.add(<String, dynamic>{
-          'id': itemRaw['idLancamento']?.toString() ?? itemRaw['id']?.toString() ?? '',
-          'descricao': itemRaw['descricao']?.toString() ?? 'Venda sem descrição',
-          'cliente': itemRaw['nomeContato']?.toString() ?? itemRaw['contato']?.toString() ?? 'Cliente não informado',
-          'valorOriginal': _toDouble(itemRaw['valorOriginal'] ?? itemRaw['valor']),
-          'valorConfirmado': _toDouble(itemRaw['valorConfirmado']),
-          'valorRestante': _toDouble(itemRaw['valorRestante'] ?? itemRaw['valor']),
-          'vencimento': _formatarData(itemRaw['dataVencimento']?.toString()),
-          'status': _statusLabel(status),
-          'formaPagamento': _formaLabel(itemRaw['formaPagamento']?.toString()),
-        });
-      }
-    }
-    return itens;
   }
 
   Future<void> _selecionarData({required bool inicio}) async {
@@ -202,178 +137,283 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     if (selecionada == null) return;
     setState(() {
       if (inicio) {
-        _dataInicio = _normalizarData(selecionada);
+        _dataInicio = _inicioDoDia(selecionada);
         if (_dataFim.isBefore(_dataInicio)) _dataFim = _dataInicio;
       } else {
-        _dataFim = _normalizarData(selecionada);
+        _dataFim = _inicioDoDia(selecionada);
         if (_dataInicio.isAfter(_dataFim)) _dataInicio = _dataFim;
       }
     });
   }
 
-  Future<void> _receberVenda(Map<String, dynamic> venda) async {
-    final double valor = _toDouble(venda['valorRestante'] ?? venda['valorOriginal']);
-    final String idLancamento = venda['id']?.toString() ?? '';
-    if (idLancamento.trim().isEmpty || valor <= 0) return;
+  Future<void> _receberVenda(VendaNaoLiquidadaModel venda) async {
+    if (_processando) return;
+    final _TipoRecebimentoOpcao opcaoInicial = _opcaoInicial(venda.codigoTipoRecebimento);
+    _TipoRecebimentoOpcao opcaoSelecionada = opcaoInicial;
 
-    String formaSelecionada = _formasRecebimento.contains(_formaSelecionada) ? _formaSelecionada : _formasRecebimento.first;
     final bool confirmou = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext dialogContext, StateSetter setDialogState) {
-            return AlertDialog(
-              title: const Text('Receber venda'),
-              content: SizedBox(
-                width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Text(venda['descricao']?.toString() ?? 'Venda'),
-                    const SizedBox(height: 8),
-                    Text('Valor em aberto: ${_formatCurrency(valor)}', style: const TextStyle(fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      value: formaSelecionada,
-                      decoration: const InputDecoration(labelText: 'Forma de recebimento'),
-                      items: _formasRecebimento.map((String forma) => DropdownMenuItem<String>(value: forma, child: Text(forma))).toList(),
-                      onChanged: (String? value) {
-                        if (value == null) return;
-                        setDialogState(() => formaSelecionada = value);
-                      },
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) {
+            return StatefulBuilder(
+              builder: (BuildContext dialogContext, StateSetter setDialogState) {
+                return AlertDialog(
+                  title: const Text('Receber venda em aberto'),
+                  content: SizedBox(
+                    width: 440,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Text(venda.descricao, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 8),
+                        Text('Cliente: ${venda.nomeCliente.trim().isEmpty ? 'Não informado' : venda.nomeCliente.trim()}'),
+                        const SizedBox(height: 8),
+                        Text('Valor em aberto: ${_formatarValor(venda.valorAberto)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                        const SizedBox(height: 14),
+                        DropdownButtonFormField<_TipoRecebimentoOpcao>(
+                          value: opcaoSelecionada,
+                          decoration: const InputDecoration(labelText: 'Forma de recebimento'),
+                          items: _tiposRecebimento
+                              .map((_TipoRecebimentoOpcao opcao) => DropdownMenuItem<_TipoRecebimentoOpcao>(value: opcao, child: Text(opcao.descricao)))
+                              .toList(growable: false),
+                          onChanged: (_TipoRecebimentoOpcao? value) {
+                            if (value == null) return;
+                            setDialogState(() => opcaoSelecionada = value);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: <Widget>[
+                    TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancelar')),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      icon: const Icon(Icons.payments_outlined),
+                      label: const Text('Confirmar recebimento'),
                     ),
                   ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancelar')),
-                FilledButton.icon(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  icon: const Icon(Icons.payments_outlined),
-                  label: const Text('Confirmar recebimento'),
-                ),
-              ],
+                );
+              },
             );
           },
-        );
-      },
-    ) ?? false;
+        ) ??
+        false;
 
     if (!confirmou) return;
-    setState(() {
-      _recebendo = true;
-      _formaSelecionada = formaSelecionada;
-    });
+
+    setState(() => _processando = true);
     try {
-      await _acoesService.executarTotal(
-        idLancamento: idLancamento,
-        request: AgendaFinanceiraLiquidacaoRequest(
-          tipoLiquidacao: 'TOTAL',
-          dataLiquidacao: DateTime.now(),
-          valorLiquidado: valor,
-          formaPagamentoRealizada: _backendPorDescricaoFormaPagamento[formaSelecionada] ?? _backendPorDescricao(formaSelecionada),
-          observacoes: 'Recebimento de venda realizado pelo frente de caixa web.',
-          referenciaExterna: idLancamento,
+      await _api.liquidar(
+        idRecebimento: venda.idRecebimento,
+        input: LiquidarVendaNaoLiquidadaInput(
+          codigoTipoRecebimento: opcaoSelecionada.codigo,
+          valorRecebido: venda.valorAberto,
+          itens: venda.itens,
+          observacao: 'Recebimento realizado no frente de caixa web.',
+          referencia: venda.idOperacaoApp.isNotEmpty ? venda.idOperacaoApp : venda.idOperacaoFinanceira,
         ),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Venda recebida com sucesso.')));
-      await _consultar();
-    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      _snack('Venda recebida com sucesso.');
+      await _carregar();
+    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao receber venda (${e.statusCode}).')));
+      _snack(e.toString().replaceAll('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _recebendo = false);
+      if (mounted) setState(() => _processando = false);
     }
+  }
+
+  Future<void> _confirmarCancelamentoVenda(VendaNaoLiquidadaModel venda) async {
+    if (_processando) return;
+    final bool confirmou = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) => AlertDialog(
+            title: const Text('Cancelar venda em aberto?'),
+            content: Text(
+              '${venda.descricao}\n${_formatarValor(venda.valorAberto)}\n\n'
+              'Esta ação apaga a operação e devolve os produtos ao estoque quando aplicável.',
+            ),
+            actions: <Widget>[
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Voltar')),
+              FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Confirmar')),
+            ],
+          ),
+        ) ??
+        false;
+    if (confirmou) await _cancelarVendaNaoLiquidada(venda);
+  }
+
+  Future<void> _cancelarVendaNaoLiquidada(VendaNaoLiquidadaModel venda) async {
+    if (_processando) return;
+    setState(() => _processando = true);
+    try {
+      await _api.cancelar(idRecebimento: venda.idRecebimento);
+      if (!mounted) return;
+      _snack('Venda em aberto cancelada.');
+      await _carregar();
+    } catch (e) {
+      if (!mounted) return;
+      _snack(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _processando = false);
+    }
+  }
+
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+  }
+
+  _TipoRecebimentoOpcao _opcaoInicial(String codigoTipoRecebimento) {
+    final String codigo = codigoTipoRecebimento.trim().toUpperCase();
+    if (codigo.isNotEmpty) {
+      for (final _TipoRecebimentoOpcao opcao in _tiposRecebimento) {
+        if (opcao.codigo == codigo) return opcao;
+      }
+    }
+    return _tiposRecebimento.isEmpty ? const _TipoRecebimentoOpcao(codigo: 'TIPO2', descricao: 'Pix') : _tiposRecebimento.first;
   }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     return Material(
-      color: theme.colorScheme.surface,
+      color: _bg,
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              _buildHeader(theme),
-              const SizedBox(height: 14),
-              _buildFiltros(theme),
-              if (_carregando || _recebendo) ...const <Widget>[
-                SizedBox(height: 10),
-                LinearProgressIndicator(minHeight: 3),
+        child: Stack(
+          children: <Widget>[
+            Column(
+              children: <Widget>[
+                _topBar(),
+                Expanded(child: _body()),
               ],
-              const SizedBox(height: 14),
-              _buildResumo(theme),
-              const SizedBox(height: 14),
-              Expanded(child: _buildLista(theme)),
-            ],
-          ),
+            ),
+            if (_processando)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.08),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
-    return Row(
-      children: <Widget>[
-        Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Icon(Icons.receipt_long_outlined, color: theme.colorScheme.primary),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text('Vendas a receber', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-              Text('Vendas não liquidadas, com filtro por vencimento e recebimento direto no caixa.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-            ],
-          ),
-        ),
-        IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded), tooltip: 'Fechar'),
-      ],
-    );
-  }
-
-  Widget _buildFiltros(ThemeData theme) {
+  Widget _topBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
+      padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+      decoration: const BoxDecoration(color: _primary),
+      child: Row(
+        children: <Widget>[
+          const Expanded(
+            child: Text(
+              'Vendas a receber',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+          ),
+          IconButton(
+            onPressed: _loading || _processando ? null : _carregar,
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            tooltip: 'Atualizar',
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close_rounded, color: Colors.white),
+            tooltip: 'Fechar',
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _body() {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_erro != null) return _estado(Icons.error_outline, 'Não foi possível carregar', _erro!);
+
+    final List<VendaNaoLiquidadaModel> vendas = _vendasFiltradas;
+    return RefreshIndicator(
+      onRefresh: _carregar,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+        children: <Widget>[
+          _header(),
+          const SizedBox(height: 14),
+          _filtrosData(),
+          const SizedBox(height: 14),
+          _metrics(),
+          const SizedBox(height: 14),
+          _planejados(),
+          const SizedBox(height: 18),
+          _section('Vendas em aberto'),
+          const SizedBox(height: 12),
+          if (vendas.isEmpty)
+            _empty()
+          else
+            ...vendas.map(
+              (VendaNaoLiquidadaModel venda) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _vendaCard(venda),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _header() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: <Color>[_primary, Color(0xFF123B69)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x260B1F3A), blurRadius: 20, offset: Offset(0, 10))],
+      ),
+      child: Row(
+        children: <Widget>[
+          _icon(Icons.point_of_sale_outlined, bg: const Color(0x1AFFFFFF), fg: Colors.white),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text('Dashboard de recebimentos', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text('${_vendasFiltradas.length} venda(s) aguardando liquidação', style: const TextStyle(color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+          Text(_formatarValor(_totalAberto), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+
+  Widget _filtrosData() {
+    return _baseCard(
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
-          _dateButton(theme, 'Data inicial', _dataInicio, () => _selecionarData(inicio: true)),
-          _dateButton(theme, 'Data final', _dataFim, () => _selecionarData(inicio: false)),
+          _dateButton('Data inicial', _dataInicio, () => _selecionarData(inicio: true)),
+          _dateButton('Data final', _dataFim, () => _selecionarData(inicio: false)),
           FilledButton.icon(
-            onPressed: _carregando ? null : _consultar,
+            onPressed: _loading || _processando ? null : _carregar,
             icon: const Icon(Icons.search_rounded),
             label: const Text('Filtrar'),
           ),
           OutlinedButton.icon(
-            onPressed: _carregando
+            onPressed: _loading || _processando
                 ? null
                 : () {
+                    final DateTime hoje = DateTime.now();
                     setState(() {
-                      _dataInicio = DateTime.now();
-                      _dataFim = DateTime.now();
+                      _dataInicio = _inicioDoDia(hoje);
+                      _dataFim = _inicioDoDia(hoje);
                     });
-                    _consultar();
                   },
             icon: const Icon(Icons.today_outlined),
             label: const Text('Hoje'),
@@ -383,7 +423,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     );
   }
 
-  Widget _dateButton(ThemeData theme, String label, DateTime data, VoidCallback onTap) {
+  Widget _dateButton(String label, DateTime data, VoidCallback onTap) {
     return SizedBox(
       width: 190,
       child: OutlinedButton.icon(
@@ -394,7 +434,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-            Text(_formatarDataBr(data), style: const TextStyle(fontWeight: FontWeight.w900)),
+            Text(_formatarDataDia(data), style: const TextStyle(fontWeight: FontWeight.w900)),
           ],
         ),
         style: OutlinedButton.styleFrom(
@@ -406,191 +446,224 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     );
   }
 
-  Widget _buildResumo(ThemeData theme) {
-    return Row(
-      children: <Widget>[
-        Expanded(child: _summaryCard(theme, 'Vendas abertas', _vendas.length.toString(), Icons.shopping_bag_outlined)),
-        const SizedBox(width: 12),
-        Expanded(child: _summaryCard(theme, 'Total a receber', _formatCurrency(_totalAberto), Icons.payments_outlined)),
-      ],
-    );
-  }
+  Widget _metrics() {
+    final List<_Metric> metrics = <_Metric>[
+      _Metric('Total aberto', _formatarValor(_totalAberto), Icons.account_balance_wallet_outlined),
+      _Metric('Vendas', _vendasFiltradas.length.toString(), Icons.receipt_long_outlined),
+      _Metric('Ticket médio', _formatarValor(_ticketMedio), Icons.trending_up_rounded),
+      _Metric('Itens', _totalItens.toString(), Icons.inventory_2_outlined),
+      _Metric('Vencidas', _vencidas.toString(), Icons.warning_amber_rounded),
+      _Metric('Vence hoje', _venceHoje.toString(), Icons.today_rounded),
+    ];
 
-  Widget _summaryCard(ThemeData theme, String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(label, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(value, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLista(ThemeData theme) {
-    if (_vendas.isEmpty && !_carregando) {
-      return Center(
-        child: Container(
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.32),
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: const Text('Nenhuma venda a receber no período.'),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      itemCount: _vendas.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (BuildContext context, int index) {
-        final Map<String, dynamic> venda = _vendas[index];
-        return _vendaCard(theme, venda);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = constraints.maxWidth >= 980 ? 3 : 2;
+        final double width = (constraints.maxWidth - ((columns - 1) * 10)) / columns;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: metrics.map((metric) {
+            return SizedBox(
+              width: width,
+              child: _baseCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _icon(metric.icon, bg: const Color(0xFFEFF6FF), fg: _accent, size: 38),
+                    const SizedBox(height: 10),
+                    Text(metric.title, style: const TextStyle(color: _muted, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(metric.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _title, fontSize: 17, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+            );
+          }).toList(growable: false),
+        );
       },
     );
   }
 
-  Widget _vendaCard(ThemeData theme, Map<String, dynamic> venda) {
-    final double valorAberto = _toDouble(venda['valorRestante'] ?? venda['valorOriginal']);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
-      ),
-      child: Row(
+  Widget _planejados() {
+    return Row(
+      children: <Widget>[
+        Expanded(child: _planned('Previsão 7 dias', _formatarValor(_previsaoSeteDias), Icons.auto_graph_rounded)),
+        const SizedBox(width: 10),
+        Expanded(child: _planned('Risco de atraso', _riscoAtraso, Icons.insights_rounded)),
+      ],
+    );
+  }
+
+  Widget _planned(String title, String value, IconData icon) {
+    return _baseCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: <Widget>[
-                    Chip(label: Text(venda['status']?.toString() ?? 'Pendente')),
-                    Chip(label: Text('Vence em ${venda['vencimento']}')),
-                    Chip(label: Text(venda['formaPagamento']?.toString() ?? 'Forma não informada')),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(venda['descricao']?.toString() ?? 'Venda', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(venda['cliente']?.toString() ?? 'Cliente não informado', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: <Widget>[
-              Text(_formatCurrency(valorAberto), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                onPressed: _recebendo ? null : () => _receberVenda(venda),
-                icon: const Icon(Icons.payments_rounded),
-                label: const Text('Receber'),
+              _icon(icon, bg: const Color(0xFFF1F5F9), fg: _primary, size: 36),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(999)),
+                child: const Text('Planejado', style: TextStyle(color: Color(0xFFC2410C), fontSize: 10, fontWeight: FontWeight.w900)),
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          Text(title, style: const TextStyle(color: _muted, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 2),
+          const Text('Calculado com as vendas em aberto', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _muted, fontSize: 11)),
         ],
       ),
     );
   }
 
-  DateTime _normalizarData(DateTime data) => DateTime(data.year, data.month, data.day);
-
-  String _normalizar(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll('á', 'a')
-        .replaceAll('à', 'a')
-        .replaceAll('â', 'a')
-        .replaceAll('ã', 'a')
-        .replaceAll('é', 'e')
-        .replaceAll('ê', 'e')
-        .replaceAll('í', 'i')
-        .replaceAll('ó', 'o')
-        .replaceAll('ô', 'o')
-        .replaceAll('õ', 'o')
-        .replaceAll('ú', 'u')
-        .replaceAll('ç', 'c');
+  Widget _vendaCard(VendaNaoLiquidadaModel venda) {
+    final int quantidadeItens = venda.itens.fold<int>(0, (int soma, VendaNaoLiquidadaItemModel item) => soma + item.quantidade);
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
+        ),
+        child: Row(
+          children: <Widget>[
+            _icon(Icons.receipt_long_outlined, bg: const Color(0xFFEFF6FF), fg: _accent, size: 48),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(venda.descricao, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text('Criada por ${venda.nomeColaboradorCriacao.isEmpty ? 'colaborador' : venda.nomeColaboradorCriacao}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text('${_formatarData(venda.dataCompetencia)} • $quantidadeItens item(ns)', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 12, fontWeight: FontWeight.w700)),
+                  if (venda.nomeCliente.trim().isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 4),
+                    Text(venda.nomeCliente.trim(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 12)),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(_formatarValor(venda.valorAberto), style: const TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: 17)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    OutlinedButton(onPressed: _processando ? null : () => _confirmarCancelamentoVenda(venda), child: const Text('Cancelar')),
+                    FilledButton.icon(onPressed: _processando ? null : () => _receberVenda(venda), icon: const Icon(Icons.payments_rounded, size: 18), label: const Text('Receber')),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  String _statusLabel(String status) {
-    switch (status.toUpperCase()) {
-      case 'PREVISTO':
-        return 'Previsto';
-      case 'VENCE_HOJE':
-        return 'Vence hoje';
-      case 'VENCIDO':
-        return 'Vencido';
-      case 'PARCIAL':
-        return 'Parcial';
-      default:
-        return 'Pendente';
-    }
+  Widget _empty() {
+    return _baseCard(
+      child: const Column(
+        children: <Widget>[
+          Icon(Icons.check_circle_outline, color: _accent, size: 34),
+          SizedBox(height: 10),
+          Text('Nenhuma venda em aberto', style: TextStyle(color: _title, fontSize: 18, fontWeight: FontWeight.w900)),
+          SizedBox(height: 6),
+          Text('Quando uma venda for marcada para receber depois, ela aparecerá aqui.', textAlign: TextAlign.center, style: TextStyle(color: _muted, height: 1.4)),
+        ],
+      ),
+    );
   }
 
-  String _formaLabel(String? forma) {
-    switch ((forma ?? '').toUpperCase()) {
-      case 'PIX':
-        return 'Pix';
-      case 'BOLETO':
-        return 'Boleto';
-      case 'TRANSFERENCIA':
-        return 'Transferência';
-      case 'CARTAO_CREDITO':
-        return 'Cartão de crédito';
-      case 'CARTAO_DEBITO':
-        return 'Cartão de débito';
-      case 'DEBITO_AUTOMATICO':
-        return 'Débito automático';
-      case 'DINHEIRO':
-        return 'Dinheiro';
-      default:
-        return forma?.trim().isNotEmpty == true ? forma! : 'Forma não informada';
-    }
+  Widget _estado(IconData icon, String titulo, String mensagem) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _icon(icon, bg: _accent.withOpacity(0.10), fg: _accent, size: 76),
+            const SizedBox(height: 18),
+            Text(titulo, textAlign: TextAlign.center, style: const TextStyle(color: _title, fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text(mensagem, textAlign: TextAlign.center, style: const TextStyle(color: _muted, height: 1.4)),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
+          ],
+        ),
+      ),
+    );
   }
 
-  String _formatarData(String? value) {
-    if (value == null || value.trim().isEmpty) return '-';
-    try {
-      return _formatarDataBr(DateTime.parse(value));
-    } catch (_) {
-      return value;
-    }
+  Widget _baseCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
+      ),
+      child: child,
+    );
   }
 
-  String _formatarDataBr(DateTime data) => '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
-
-  String _formatCurrency(double value) => 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-
-  double _toDouble(dynamic value) {
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final String texto = value.trim();
-      final String normalizado = texto.contains(',') && texto.contains('.') ? texto.replaceAll('.', '').replaceAll(',', '.') : texto.replaceAll(',', '.');
-      return double.tryParse(normalizado) ?? 0;
-    }
-    return 0;
+  Widget _icon(IconData icon, {required Color bg, required Color fg, double size = 50}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14)),
+      child: Icon(icon, color: fg, size: size >= 48 ? 24 : 20),
+    );
   }
+
+  Widget _section(String title) {
+    return Text(title, style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900));
+  }
+
+  DateTime _inicioDoDia(DateTime data) => DateTime(data.year, data.month, data.day);
+  DateTime _fimDoDia(DateTime data) => DateTime(data.year, data.month, data.day, 23, 59, 59, 999);
+
+  String _formatarValor(double valor) => 'R${String.fromCharCode(36)} ${valor.toStringAsFixed(2)}';
+
+  String _formatarData(DateTime? data) {
+    if (data == null) return 'Sem data';
+    String d(int value) => value.toString().padLeft(2, '0');
+    return '${d(data.day)}/${d(data.month)}/${data.year} ${d(data.hour)}:${d(data.minute)}';
+  }
+
+  String _formatarDataDia(DateTime data) {
+    String d(int value) => value.toString().padLeft(2, '0');
+    return '${d(data.day)}/${d(data.month)}/${data.year}';
+  }
+}
+
+class _Metric {
+  const _Metric(this.title, this.value, this.icon);
+
+  final String title;
+  final String value;
+  final IconData icon;
+}
+
+class _TipoRecebimentoOpcao {
+  const _TipoRecebimentoOpcao({required this.codigo, required this.descricao});
+
+  final String codigo;
+  final String descricao;
 }
