@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
+import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/venda_nao_liquidada_models.dart';
-import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/data/services/caixa/venda_nao_liquidada_api_client.dart';
+import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 
 class VendasAReceberWebWidget extends StatefulWidget {
   const VendasAReceberWebWidget({super.key});
@@ -19,7 +20,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   static const Color _title = Color(0xFF0F172A);
 
   final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras = AgendaFinanceiraAcoesFinanceiras();
 
   bool _loading = true;
   bool _processando = false;
@@ -27,13 +28,6 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   DateTime _dataInicio = DateTime.now().subtract(const Duration(days: 30));
   DateTime _dataFim = DateTime.now().add(const Duration(days: 30));
   List<VendaNaoLiquidadaModel> _vendas = <VendaNaoLiquidadaModel>[];
-  List<_TipoRecebimentoOpcao> _tiposRecebimento = <_TipoRecebimentoOpcao>[
-    const _TipoRecebimentoOpcao(codigo: 'TIPO1', descricao: 'Dinheiro'),
-    const _TipoRecebimentoOpcao(codigo: 'TIPO2', descricao: 'Pix'),
-    const _TipoRecebimentoOpcao(codigo: 'TIPO3', descricao: 'Cartão de crédito'),
-    const _TipoRecebimentoOpcao(codigo: 'TIPO4', descricao: 'Cartão de débito'),
-    const _TipoRecebimentoOpcao(codigo: 'TIPO5', descricao: 'Boleto'),
-  ];
 
   List<VendaNaoLiquidadaModel> get _vendasFiltradas {
     final DateTime inicio = _inicioDoDia(_dataInicio);
@@ -82,10 +76,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _carregarTiposRecebimento();
-      await _carregar();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _carregar());
   }
 
   Future<void> _carregar() async {
@@ -102,27 +93,6 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
       setState(() => _erro = e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _carregarTiposRecebimento() async {
-    try {
-      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient.getInformacoesBasicasDoCaixa();
-      final List<TiposRecebimento> ativos = informacoes.tiposRecebimento
-          .where((TiposRecebimento tipo) => tipo.ativo)
-          .toList()
-        ..sort((TiposRecebimento a, TiposRecebimento b) => a.ordemExibicao.compareTo(b.ordemExibicao));
-      final List<_TipoRecebimentoOpcao> opcoes = ativos
-          .map((TiposRecebimento tipo) => _TipoRecebimentoOpcao(
-                codigo: tipo.codigoTipo.trim().isEmpty ? 'TIPO2' : tipo.codigoTipo.trim().toUpperCase(),
-                descricao: tipo.descricaoExibicao.trim().isEmpty ? tipo.codigoTipo.trim().toUpperCase() : tipo.descricaoExibicao.trim(),
-              ))
-          .where((_TipoRecebimentoOpcao opcao) => opcao.codigo.isNotEmpty && opcao.descricao.isNotEmpty)
-          .toList(growable: false);
-      if (!mounted || opcoes.isEmpty) return;
-      setState(() => _tiposRecebimento = opcoes);
-    } catch (_) {
-      // O mobile também mantém a tela operacional mesmo se as configurações auxiliares falharem.
     }
   }
 
@@ -148,74 +118,47 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   Future<void> _receberVenda(VendaNaoLiquidadaModel venda) async {
     if (_processando) return;
-    final _TipoRecebimentoOpcao opcaoInicial = _opcaoInicial(venda.codigoTipoRecebimento);
-    _TipoRecebimentoOpcao opcaoSelecionada = opcaoInicial;
 
-    final bool confirmou = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext dialogContext) {
-            return StatefulBuilder(
-              builder: (BuildContext dialogContext, StateSetter setDialogState) {
-                return AlertDialog(
-                  title: const Text('Receber venda em aberto'),
-                  content: SizedBox(
-                    width: 440,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Text(venda.descricao, style: const TextStyle(fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 8),
-                        Text('Cliente: ${venda.nomeCliente.trim().isEmpty ? 'Não informado' : venda.nomeCliente.trim()}'),
-                        const SizedBox(height: 8),
-                        Text('Valor em aberto: ${_formatarValor(venda.valorAberto)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                        const SizedBox(height: 14),
-                        DropdownButtonFormField<_TipoRecebimentoOpcao>(
-                          value: opcaoSelecionada,
-                          decoration: const InputDecoration(labelText: 'Forma de recebimento'),
-                          items: _tiposRecebimento
-                              .map((_TipoRecebimentoOpcao opcao) => DropdownMenuItem<_TipoRecebimentoOpcao>(value: opcao, child: Text(opcao.descricao)))
-                              .toList(growable: false),
-                          onChanged: (_TipoRecebimentoOpcao? value) {
-                            if (value == null) return;
-                            setDialogState(() => opcaoSelecionada = value);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: <Widget>[
-                    TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancelar')),
-                    FilledButton.icon(
-                      onPressed: () => Navigator.of(dialogContext).pop(true),
-                      icon: const Icon(Icons.payments_outlined),
-                      label: const Text('Confirmar recebimento'),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        ) ??
-        false;
+    final SixWebRecebimentoResultado? resultado = await SixWebRecebimentoDialog.show(
+      context,
+      titulo: 'Receber venda em aberto',
+      descricao: venda.descricao,
+      contato: venda.nomeCliente.trim().isEmpty ? null : venda.nomeCliente.trim(),
+      valorAberto: venda.valorAberto,
+      codigoTipoInicial: venda.codigoTipoRecebimento,
+      permitirParcial: true,
+      observacaoInicial: 'Recebimento realizado no frente de caixa web.',
+    );
 
-    if (!confirmou) return;
+    if (resultado == null) return;
 
     setState(() => _processando = true);
     try {
-      await _api.liquidar(
-        idRecebimento: venda.idRecebimento,
-        input: LiquidarVendaNaoLiquidadaInput(
-          codigoTipoRecebimento: opcaoSelecionada.codigo,
-          valorRecebido: venda.valorAberto,
-          itens: venda.itens,
-          observacao: 'Recebimento realizado no frente de caixa web.',
-          referencia: venda.idOperacaoApp.isNotEmpty ? venda.idOperacaoApp : venda.idOperacaoFinanceira,
-        ),
-      );
-      if (!mounted) return;
-      _snack('Venda recebida com sucesso.');
+      if (resultado.total) {
+        await _api.liquidar(
+          idRecebimento: venda.idRecebimento,
+          input: LiquidarVendaNaoLiquidadaInput(
+            codigoTipoRecebimento: resultado.codigoTipoRecebimento,
+            valorRecebido: resultado.valor,
+            itens: venda.itens,
+            observacao: resultado.observacao ?? 'Recebimento total realizado no frente de caixa web.',
+            referencia: venda.idOperacaoApp.isNotEmpty ? venda.idOperacaoApp : venda.idOperacaoFinanceira,
+          ),
+        );
+        if (mounted) _snack('Venda recebida com sucesso.');
+      } else {
+        await _acoesFinanceiras.executarAbatimento(
+          idLancamento: venda.idOperacaoFinanceira,
+          request: AgendaFinanceiraParcialRequest(
+            tipoLiquidacao: 'PARCIAL',
+            dataLiquidacao: DateTime.now(),
+            valorLiquidado: resultado.valor,
+            formaPagamentoRealizada: resultado.formaPagamentoBackend,
+            observacoes: resultado.observacao ?? 'Recebimento parcial realizado no frente de caixa web.',
+          ),
+        );
+        if (mounted) _snack('Parcial recebida com sucesso.');
+      }
       await _carregar();
     } catch (e) {
       if (!mounted) return;
@@ -265,16 +208,6 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
   }
 
-  _TipoRecebimentoOpcao _opcaoInicial(String codigoTipoRecebimento) {
-    final String codigo = codigoTipoRecebimento.trim().toUpperCase();
-    if (codigo.isNotEmpty) {
-      for (final _TipoRecebimentoOpcao opcao in _tiposRecebimento) {
-        if (opcao.codigo == codigo) return opcao;
-      }
-    }
-    return _tiposRecebimento.isEmpty ? const _TipoRecebimentoOpcao(codigo: 'TIPO2', descricao: 'Pix') : _tiposRecebimento.first;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -308,21 +241,10 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
       child: Row(
         children: <Widget>[
           const Expanded(
-            child: Text(
-              'Vendas a receber',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
-            ),
+            child: Text('Vendas a receber', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
           ),
-          IconButton(
-            onPressed: _loading || _processando ? null : _carregar,
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            tooltip: 'Atualizar',
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close_rounded, color: Colors.white),
-            tooltip: 'Fechar',
-          ),
+          IconButton(onPressed: _loading || _processando ? null : _carregar, icon: const Icon(Icons.refresh_rounded, color: Colors.white), tooltip: 'Atualizar'),
+          IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded, color: Colors.white), tooltip: 'Fechar'),
         ],
       ),
     );
@@ -352,12 +274,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
           if (vendas.isEmpty)
             _empty()
           else
-            ...vendas.map(
-              (VendaNaoLiquidadaModel venda) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _vendaCard(venda),
-              ),
-            ),
+            ...vendas.map((VendaNaoLiquidadaModel venda) => Padding(padding: const EdgeInsets.only(bottom: 12), child: _vendaCard(venda))),
         ],
       ),
     );
@@ -400,11 +317,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
         children: <Widget>[
           _dateButton('Data inicial', _dataInicio, () => _selecionarData(inicio: true)),
           _dateButton('Data final', _dataFim, () => _selecionarData(inicio: false)),
-          FilledButton.icon(
-            onPressed: _loading || _processando ? null : _carregar,
-            icon: const Icon(Icons.search_rounded),
-            label: const Text('Filtrar'),
-          ),
+          FilledButton.icon(onPressed: _loading || _processando ? null : _carregar, icon: const Icon(Icons.search_rounded), label: const Text('Filtrar')),
           OutlinedButton.icon(
             onPressed: _loading || _processando
                 ? null
@@ -437,11 +350,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             Text(_formatarDataDia(data), style: const TextStyle(fontWeight: FontWeight.w900)),
           ],
         ),
-        style: OutlinedButton.styleFrom(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
+        style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
       ),
     );
   }
@@ -632,9 +541,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     );
   }
 
-  Widget _section(String title) {
-    return Text(title, style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900));
-  }
+  Widget _section(String title) => Text(title, style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900));
 
   DateTime _inicioDoDia(DateTime data) => DateTime(data.year, data.month, data.day);
   DateTime _fimDoDia(DateTime data) => DateTime(data.year, data.month, data.day, 23, 59, 59, 999);
@@ -659,11 +566,4 @@ class _Metric {
   final String title;
   final String value;
   final IconData icon;
-}
-
-class _TipoRecebimentoOpcao {
-  const _TipoRecebimentoOpcao({required this.codigo, required this.descricao});
-
-  final String codigo;
-  final String descricao;
 }
