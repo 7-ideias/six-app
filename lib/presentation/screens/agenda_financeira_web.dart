@@ -64,6 +64,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _formaPagamentoSelecionada = 'Todos';
   bool _carregando = false;
   bool _executandoAcao = false;
+  bool _overlayInicialAberto = false;
   DateTime? _ultimaConsultaEm;
 
   List<Map<String, dynamic>> get _itensAgenda => _gruposAgenda
@@ -83,9 +84,55 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final bool abriuOverlay = await _abrirComoOverlayInicialSeNecessario();
+      if (abriuOverlay || !mounted) return;
       await _carregarTiposPagamentoConfigurados();
       await _consultar();
     });
+  }
+
+  bool _estaDentroDeDialog() {
+    return context.findAncestorWidgetOfExactType<Dialog>() != null;
+  }
+
+  Future<bool> _abrirComoOverlayInicialSeNecessario() async {
+    if (!widget.embedded || widget.onBack == null || _overlayInicialAberto || _estaDentroDeDialog()) {
+      return false;
+    }
+
+    _overlayInicialAberto = true;
+    final NavigatorState rootNavigator = Navigator.of(context, rootNavigator: true);
+    final BuildContext rootContext = rootNavigator.context;
+
+    widget.onBack?.call();
+    await Future<void>.delayed(Duration.zero);
+
+    if (!rootContext.mounted) return true;
+
+    await showDialog<void>(
+      context: rootContext,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+        return _EscOverlayScope(
+          child: Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            child: SizedBox(
+              width: size.width * 0.94,
+              height: size.height * 0.90,
+              child: AgendaFinanceiraWeb(
+                embedded: true,
+                onBack: () => Navigator.of(dialogContext).pop(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return true;
   }
 
   Future<void> _carregarTiposPagamentoConfigurados() async {
@@ -469,6 +516,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded && widget.onBack != null && !_estaDentroDeDialog()) {
+      return const SizedBox.shrink();
+    }
+
     final theme = Theme.of(context);
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{const SingleActivator(LogicalKeyboardKey.escape): _fechar},
@@ -741,6 +792,36 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String _formatarMoeda(double valor) => context.read<LocaleSettingsProvider>().formatCurrency(valor);
+}
+
+class _EscOverlayIntent extends Intent {
+  const _EscOverlayIntent();
+}
+
+class _EscOverlayScope extends StatelessWidget {
+  const _EscOverlayScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.escape): _EscOverlayIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _EscOverlayIntent: CallbackAction<_EscOverlayIntent>(
+            onInvoke: (_) {
+              Navigator.of(context).maybePop();
+              return null;
+            },
+          ),
+        },
+        child: Focus(autofocus: true, child: child),
+      ),
+    );
+  }
 }
 
 class _LancamentoDetalhesDialog extends StatelessWidget {
