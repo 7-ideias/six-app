@@ -185,6 +185,18 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
+  List<String> _tiposRecebimentoDisponiveis(Map<String, dynamic> item) {
+    final valores = _formasPagamento.where((forma) => forma != 'Todos' && forma.trim().isNotEmpty).toSet().toList(growable: true);
+    final formaAtual = item['formaPagamento']?.toString().trim() ?? '';
+    if (formaAtual.isNotEmpty && !valores.contains(formaAtual)) {
+      valores.insert(0, formaAtual);
+    }
+    if (valores.isEmpty) {
+      valores.add('Pix');
+    }
+    return valores;
+  }
+
   bool _passaFiltrosLocais(Map<String, dynamic> item) {
     final tipoOk = _tipoSelecionado == 'Todos' || (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') || (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
     final statusOk = _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
@@ -407,18 +419,34 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
     final valorController = TextEditingController();
     final observacaoController = TextEditingController();
+    final formasDisponiveis = _tiposRecebimentoDisponiveis(item);
+    final formaAtual = item['formaPagamento']?.toString().trim() ?? '';
+    String formaSelecionada = formasDisponiveis.contains(formaAtual) ? formaAtual : formasDisponiveis.first;
     String? erroValor;
-    final valor = await showDialog<double>(
+    final resultado = await showDialog<_ParcialLancamentoResultado>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(builder: (dialogContext, setDialogState) => AlertDialog(
         title: const Text('Registrar parcial'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-          Text('Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}'),
-          const SizedBox(height: 12),
-          TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: 'Valor parcial', errorText: erroValor)),
-          const SizedBox(height: 12),
-          TextField(controller: observacaoController, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'Observação')),
-        ]),
+        content: SizedBox(
+          width: 420,
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[
+            Text('Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}'),
+            const SizedBox(height: 12),
+            TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: 'Valor parcial', errorText: erroValor)),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: formaSelecionada,
+              decoration: const InputDecoration(labelText: 'Tipo de recebimento'),
+              items: formasDisponiveis.map((forma) => DropdownMenuItem<String>(value: forma, child: Text(forma))).toList(),
+              onChanged: (value) {
+                if (value == null || value.trim().isEmpty) return;
+                setDialogState(() => formaSelecionada = value);
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(controller: observacaoController, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'Observação')),
+          ]),
+        ),
         actions: <Widget>[
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(null), child: const Text('Cancelar')),
           FilledButton(onPressed: () {
@@ -426,7 +454,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             final aberto = _toDouble(item['valorRestante'] ?? item['valor']);
             if (digitado <= 0) { setDialogState(() => erroValor = 'Informe um valor maior que zero.'); return; }
             if (digitado >= aberto) { setDialogState(() => erroValor = 'Informe um valor menor que o aberto.'); return; }
-            Navigator.of(dialogContext).pop(digitado);
+            Navigator.of(dialogContext).pop(_ParcialLancamentoResultado(valor: digitado, formaPagamento: formaSelecionada));
           }, child: const Text('Salvar')),
         ],
       )),
@@ -434,15 +462,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final observacao = observacaoController.text.trim();
     valorController.dispose();
     observacaoController.dispose();
-    if (valor == null) return;
+    if (resultado == null) return;
     await _executarComLoading(() async {
       await _acoesService.executarAbatimento(
         idLancamento: item['id'].toString(),
         request: AgendaFinanceiraParcialRequest(
           tipoLiquidacao: 'PARCIAL',
           dataLiquidacao: DateTime.now(),
-          valorLiquidado: valor,
-          formaPagamentoRealizada: _formaPagamentoBackend(item['formaPagamento']?.toString() ?? 'Pix'),
+          valorLiquidado: resultado.valor,
+          formaPagamentoRealizada: _formaPagamentoBackend(resultado.formaPagamento),
           observacoes: observacao.isEmpty ? 'Lançamento parcial registrado pela agenda financeira.' : observacao,
         ),
       );
@@ -792,6 +820,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String _formatarMoeda(double valor) => context.read<LocaleSettingsProvider>().formatCurrency(valor);
+}
+
+class _ParcialLancamentoResultado {
+  const _ParcialLancamentoResultado({required this.valor, required this.formaPagamento});
+
+  final double valor;
+  final String formaPagamento;
 }
 
 class _EscOverlayIntent extends Intent {
