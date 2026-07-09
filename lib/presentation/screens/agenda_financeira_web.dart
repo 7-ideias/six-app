@@ -28,14 +28,40 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     'Fluxo previsto',
     'Valores confirmados',
   ];
-  final List<String> _periodos = const <String>['Hoje', 'Próximos 7 dias', 'Este mês', 'Próximo mês'];
+  final List<String> _periodos = const <String>[
+    'Hoje',
+    'Próximos 7 dias',
+    'Este mês',
+    'Próximo mês',
+  ];
   final List<String> _tipos = const <String>['Todos', 'Receber', 'Pagar'];
-  final List<String> _status = const <String>['Todos', 'Previsto', 'Pendente', 'Vence hoje', 'Vencido', 'Pago', 'Recebido', 'Parcial', 'Cancelado'];
+  final List<String> _status = const <String>[
+    'Todos',
+    'Previsto',
+    'Pendente',
+    'Vence hoje',
+    'Vencido',
+    'Pago',
+    'Recebido',
+    'Parcial',
+    'Cancelado',
+  ];
+  final List<String> _formasPagamento = const <String>[
+    'Todos',
+    'Pix',
+    'Boleto',
+    'Transferência',
+    'Cartão de crédito',
+    'Cartão de débito',
+    'Débito automático',
+    'Dinheiro',
+  ];
 
   int _abaSelecionada = 0;
   String _periodoSelecionado = 'Próximos 7 dias';
   String _tipoSelecionado = 'Todos';
   String _statusSelecionado = 'Todos';
+  String _formaPagamentoSelecionada = 'Todos';
 
   bool _carregando = false;
   bool _executandoAcao = false;
@@ -54,14 +80,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   List<Map<String, dynamic>> get _itensAgenda {
     return _gruposAgenda
         .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
-        .where((item) {
-          final tipoOk = _tipoSelecionado == 'Todos' ||
-              (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
-              (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
-          final statusOk = _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
-          return tipoOk && statusOk;
-        })
+        .where((item) => _passaFiltrosLocais(item))
         .toList();
+  }
+
+  List<Map<String, dynamic>> get _itensConfirmadosFiltrados {
+    return _itensConfirmados.where((item) => _passaFiltrosLocais(item)).toList();
   }
 
   List<Map<String, dynamic>> get _itensSomaveis =>
@@ -69,12 +93,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   double get _totalReceberPrevisto => _somar(_itensSomaveis, 'receber', 'valorRestante');
   double get _totalPagarPrevisto => _somar(_itensSomaveis, 'pagar', 'valorRestante');
-  double get _saldoPrevisto =>
-      (_totalRecebidoConfirmado + _totalReceberPrevisto) -
-      (_totalPagoConfirmado + _totalPagarPrevisto);
   double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
   double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
   double get _saldoConfirmado => _toDouble(_totaisConfirmados['saldoConfirmado']);
+  double get _saldoPrevisto =>
+      (_totalRecebidoConfirmado + _totalReceberPrevisto) -
+      (_totalPagoConfirmado + _totalPagarPrevisto);
+
+  bool _passaFiltrosLocais(Map<String, dynamic> item) {
+    final tipoOk = _tipoSelecionado == 'Todos' ||
+        (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
+        (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
+    final statusOk = _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
+    final formaPagamentoOk = _formaPagamentoSelecionada == 'Todos' ||
+        item['formaPagamento'] == _formaPagamentoSelecionada;
+    return tipoOk && statusOk && formaPagamentoOk;
+  }
 
   void _fechar() {
     final onBack = widget.onBack;
@@ -128,7 +162,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         status: _statusFiltro(),
         origens: const <String>[],
         categorias: const <String>[],
-        formasPagamento: const <String>[],
+        formasPagamento: _formasPagamentoFiltro(),
         clienteFornecedor: null,
         somenteCriticos: false,
       ),
@@ -186,6 +220,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
+  List<String> _formasPagamentoFiltro() {
+    if (_formaPagamentoSelecionada == 'Todos') return <String>[];
+    return <String>[_formaPagamentoBackend(_formaPagamentoSelecionada)];
+  }
+
   void _aplicarAgenda(Map<String, dynamic> payload) {
     final gruposRaw = payload['gruposAgenda'];
     final grupos = <Map<String, dynamic>>[];
@@ -211,7 +250,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   void _aplicarConfirmados(Map<String, dynamic> payload) {
     final totais = payload['totais'];
     final itens = payload['itens'];
-
     _totaisConfirmados = totais is Map<String, dynamic> ? Map<String, dynamic>.from(totais) : <String, dynamic>{};
     _itensConfirmados
       ..clear()
@@ -252,7 +290,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Map<String, dynamic> _mapearItemConfirmado(Map<String, dynamic> item) {
     final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
-
     return <String, dynamic>{
       'id': item['idLancamento']?.toString() ?? '',
       'tipo': tipo,
@@ -392,23 +429,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Future<void> _confirmarTotal(Map<String, dynamic> item, String label) async {
     final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Liquidar lançamento'),
-        content: Text(
-          'Confirmar liquidação de ${_formatarMoeda(valor)}?',
-        ),
+        content: Text('Confirmar liquidação de ${_formatarMoeda(valor)}?'),
         actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(label),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(label)),
         ],
       ),
     );
@@ -422,21 +450,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           tipoLiquidacao: 'TOTAL',
           dataLiquidacao: DateTime.now(),
           valorLiquidado: valor,
-          formaPagamentoRealizada: _formaPagamentoBackend(
-            item['formaPagamento']?.toString() ?? 'Pix',
-          ),
+          formaPagamentoRealizada: _formaPagamentoBackend(item['formaPagamento']?.toString() ?? 'Pix'),
           observacoes: 'Liquidação realizada pela agenda financeira.',
           referenciaExterna: item['id']?.toString(),
         ),
       );
-
       await _consultar();
-
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lançamento liquidado com sucesso.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento liquidado com sucesso.')));
     });
   }
 
@@ -454,7 +475,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _novoLancamento() async {
-    final item = await showSubPainelLancamentoAgendaFinanceiraWeb(context, empresaSelecionada: 'Empresa', empresas: const <String>['Empresa']);
+    final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
+      context,
+      empresaSelecionada: 'Empresa',
+      empresas: const <String>['Empresa'],
+    );
     if (!mounted || item == null) return;
     await _consultar(mostrarFeedback: true);
   }
@@ -462,7 +487,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
     final empresaAtual = _empresaNome(item['empresa']).trim();
     final empresas = <String>[empresaAtual.isEmpty ? 'Empresa' : empresaAtual];
-
     final itemAtualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
       context,
       empresaSelecionada: empresas.first,
@@ -470,7 +494,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       modoEdicao: true,
       lancamentoInicial: item,
     );
-
     if (!mounted || itemAtualizado == null) return;
     await _consultar(mostrarFeedback: true);
   }
@@ -530,30 +553,20 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               color: theme.colorScheme.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(
-              Icons.account_balance_wallet_outlined,
-              color: theme.colorScheme.primary,
-              size: 28,
-            ),
+            child: Icon(Icons.account_balance_wallet_outlined, color: theme.colorScheme.primary, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  'Agenda Financeira',
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-                ),
+                Text('Agenda Financeira', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
                 Text(
                   _ultimaConsultaEm == null
                       ? 'Ainda não consultado'
                       : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    height: 1.35,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.35),
                 ),
               ],
             ),
@@ -574,11 +587,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Novo lançamento'),
               ),
-              IconButton.filledTonal(
-                onPressed: _fechar,
-                tooltip: 'Fechar',
-                icon: const Icon(Icons.close_rounded),
-              ),
+              IconButton.filledTonal(onPressed: _fechar, tooltip: 'Fechar', icon: const Icon(Icons.close_rounded)),
             ],
           ),
         ],
@@ -590,19 +599,35 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Wrap(spacing: 12, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: <Widget>[
-          _dropdown('Período', _periodoSelecionado, _periodos, (value) => setState(() => _periodoSelecionado = value!)),
-          _dropdown('Tipo', _tipoSelecionado, _tipos, (value) => setState(() => _tipoSelecionado = value!)),
-          _dropdown('Status', _statusSelecionado, _status, (value) => setState(() => _statusSelecionado = value!)),
-          FilledButton.icon(onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.search), label: const Text('Buscar')),
-        ]),
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            _dropdown('Período', _periodoSelecionado, _periodos, (value) => setState(() => _periodoSelecionado = value!)),
+            _dropdown('Tipo', _tipoSelecionado, _tipos, (value) => setState(() => _tipoSelecionado = value!)),
+            _dropdown('Status', _statusSelecionado, _status, (value) => setState(() => _statusSelecionado = value!)),
+            _dropdown(
+              'Tipo de pagamento',
+              _formaPagamentoSelecionada,
+              _formasPagamento,
+              (value) => setState(() => _formaPagamentoSelecionada = value!),
+              width: 230,
+            ),
+            FilledButton.icon(
+              onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
+              icon: const Icon(Icons.search),
+              label: const Text('Buscar'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _dropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _dropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged, {double width = 190}) {
     return SizedBox(
-      width: 190,
+      width: width,
       child: DropdownButtonFormField<String>(
         value: items.contains(value) ? value : items.first,
         decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()).copyWith(labelText: label),
@@ -614,85 +639,46 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildResumo(BuildContext context, ThemeData theme) {
     final regionalizacao = context.watch<LocaleSettingsProvider>();
-
     final cards = <Map<String, dynamic>>[
-      {
-        'titulo': 'A receber aberto',
-        'valor': _totalReceberPrevisto,
-        'icone': Icons.south_west_rounded,
-      },
-      {
-        'titulo': 'A pagar aberto',
-        'valor': _totalPagarPrevisto,
-        'icone': Icons.north_east_rounded,
-      },
-      {
-        'titulo': 'Saldo previsto',
-        'valor': _saldoPrevisto,
-        'icone': Icons.query_stats_rounded,
-      },
-      {
-        'titulo': 'Recebido confirmado',
-        'valor': _totalRecebidoConfirmado,
-        'icone': Icons.verified_rounded,
-      },
-      {
-        'titulo': 'Pago confirmado',
-        'valor': _totalPagoConfirmado,
-        'icone': Icons.task_alt_rounded,
-      },
-      {
-        'titulo': 'Saldo confirmado',
-        'valor': _saldoConfirmado,
-        'icone': Icons.account_balance_wallet_rounded,
-      },
+      {'titulo': 'A receber aberto', 'valor': _totalReceberPrevisto, 'icone': Icons.south_west_rounded},
+      {'titulo': 'A pagar aberto', 'valor': _totalPagarPrevisto, 'icone': Icons.north_east_rounded},
+      {'titulo': 'Saldo previsto', 'valor': _saldoPrevisto, 'icone': Icons.query_stats_rounded},
+      {'titulo': 'Recebido confirmado', 'valor': _totalRecebidoConfirmado, 'icone': Icons.verified_rounded},
+      {'titulo': 'Pago confirmado', 'valor': _totalPagoConfirmado, 'icone': Icons.task_alt_rounded},
+      {'titulo': 'Saldo confirmado', 'valor': _saldoConfirmado, 'icone': Icons.account_balance_wallet_rounded},
     ];
 
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: cards
-          .map(
-            (card) => SizedBox(
-          width: 260,
-          child: _cardResumo(theme, card, regionalizacao),
-        ),
-      )
-          .toList(),
+      children: cards.map((card) => SizedBox(width: 260, child: _cardResumo(theme, card, regionalizacao))).toList(),
     );
   }
 
-  Widget _cardResumo(
-      ThemeData theme,
-      Map<String, dynamic> card,
-      LocaleSettingsProvider regionalizacao,
-      ) {
+  Widget _cardResumo(ThemeData theme, Map<String, dynamic> card, LocaleSettingsProvider regionalizacao) {
     final valor = _toDouble(card['valor']);
-
     return Card(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: <Widget>[
-            Icon(
-              card['icone'] as IconData,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    card['titulo'] as String,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
+                  Text(card['titulo'] as String, style: const TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 4),
-                  _buildValorResumoAnimado(
-                    theme,
-                    valor,
-                    regionalizacao,
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0, end: valor),
+                    duration: const Duration(milliseconds: 750),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, child) => Text(
+                      regionalizacao.formatCurrency(value),
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                    ),
                   ),
                 ],
               ),
@@ -703,31 +689,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildValorResumoAnimado(
-      ThemeData theme,
-      double valor,
-      LocaleSettingsProvider regionalizacao,
-      ) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: valor),
-      duration: const Duration(milliseconds: 750),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Text(
-          regionalizacao.formatCurrency(value),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildAbas(ThemeData theme) {
     return SegmentedButton<int>(
       segments: List<ButtonSegment<int>>.generate(
         _abas.length,
-        (index) => ButtonSegment<int>(value: index, label: Text(_abas[index]), icon: index == _abaSelecionada ? const Icon(Icons.check, size: 16) : null),
+        (index) => ButtonSegment<int>(
+          value: index,
+          label: Text(_abas[index]),
+          icon: index == _abaSelecionada ? const Icon(Icons.check, size: 16) : null,
+        ),
       ),
       selected: <int>{_abaSelecionada},
       onSelectionChanged: (value) => setState(() => _abaSelecionada = value.first),
@@ -748,7 +718,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildAgenda(ThemeData theme) {
-    if (_itensAgenda.isEmpty) return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum lançamento encontrado.')));
+    if (_itensAgenda.isEmpty) {
+      return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum lançamento encontrado.')));
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: _itensAgenda.map((item) => _cardLancamento(theme, item)).toList(),
@@ -762,42 +734,53 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-          Wrap(spacing: 8, runSpacing: 8, children: <Widget>[
-            Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar')),
-            Chip(label: Text(item['status']?.toString() ?? '-')),
-            if (_toDouble(item['valorConfirmado']) > 0) Chip(label: Text('Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}')),
-            if (_toDouble(item['valorRestante']) > 0) Chip(label: Text('Aberto: ${_formatarMoeda(_toDouble(item['valorRestante']))}')),
-          ]),
-          const SizedBox(height: 8),
-          Text(item['descricao']?.toString() ?? '', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 6),
-          Text('${item['contato']} • Vence em ${item['vencimento']} • ${item['formaPagamento']}'),
-          const SizedBox(height: 8),
-          Text('Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}', style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _executandoAcao ? null : () => _editarLancamento(item),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Editar'),
-              ),
-              ...(item['acoes'] as List).take(4).map((acao) => OutlinedButton(
-                onPressed: _executandoAcao ? null : () => _executarAcao(acao.toString(), item),
-                child: Text(acao.toString()),
-              )),
-            ],
-          ),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar')),
+                Chip(label: Text(item['status']?.toString() ?? '-')),
+                Chip(label: Text(item['formaPagamento']?.toString() ?? '-')),
+                if (_toDouble(item['valorConfirmado']) > 0) Chip(label: Text('Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}')),
+                if (_toDouble(item['valorRestante']) > 0) Chip(label: Text('Aberto: ${_formatarMoeda(_toDouble(item['valorRestante']))}')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(item['descricao']?.toString() ?? '', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            Text('${item['contato']} • Vence em ${item['vencimento']}'),
+            const SizedBox(height: 8),
+            Text('Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}', style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                OutlinedButton.icon(
+                  onPressed: _executandoAcao ? null : () => _editarLancamento(item),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Editar'),
+                ),
+                ...(item['acoes'] as List).take(4).map(
+                      (acao) => OutlinedButton(
+                        onPressed: _executandoAcao ? null : () => _executarAcao(acao.toString(), item),
+                        child: Text(acao.toString()),
+                      ),
+                    ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildValoresConfirmados(ThemeData theme) {
-    if (_itensConfirmados.isEmpty) {
+    final itens = _itensConfirmadosFiltrados;
+    if (itens.isEmpty) {
       return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum valor confirmado no período.')));
     }
     return Column(
@@ -805,15 +788,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       children: <Widget>[
         Text('Valores confirmados', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 12),
-        ..._itensConfirmados.map((item) => Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: Icon(item['tipo'] == 'receber' ? Icons.south_west_rounded : Icons.north_east_rounded),
-            title: Text(item['descricao']?.toString() ?? ''),
-            subtitle: Text('${item['contato']} • ${item['data']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}'),
-            trailing: Text(_formatarMoeda(_toDouble(item['valorConfirmado'])), style: const TextStyle(fontWeight: FontWeight.w900)),
-          ),
-        )),
+        ...itens.map((item) => Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: Icon(item['tipo'] == 'receber' ? Icons.south_west_rounded : Icons.north_east_rounded),
+                title: Text(item['descricao']?.toString() ?? ''),
+                subtitle: Text('${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}'),
+                trailing: Text(_formatarMoeda(_toDouble(item['valorConfirmado'])), style: const TextStyle(fontWeight: FontWeight.w900)),
+              ),
+            )),
       ],
     );
   }
@@ -837,6 +820,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   columns: const <DataColumn>[
                     DataColumn(label: Text('Data')),
                     DataColumn(label: Text('Tipo')),
+                    DataColumn(label: Text('Tipo de pagamento')),
                     DataColumn(label: Text('Descrição')),
                     DataColumn(label: Text('Valor previsto'), numeric: true),
                     DataColumn(label: Text('Valor confirmado'), numeric: true),
@@ -847,12 +831,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                     final valorPrevisto = _toDouble(item['valorOriginal'] ?? item['valor']);
                     final valorConfirmado = _toDouble(item['valorConfirmado']);
                     final diferenca = valorPrevisto - valorConfirmado;
-
                     return DataRow(
                       cells: <DataCell>[
                         DataCell(Text(item['vencimento']?.toString() ?? '-')),
                         DataCell(Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar'))),
-                        DataCell(SizedBox(width: 420, child: Text(item['descricao']?.toString() ?? '-', overflow: TextOverflow.ellipsis))),
+                        DataCell(Text(item['formaPagamento']?.toString() ?? '-')),
+                        DataCell(SizedBox(width: 380, child: Text(item['descricao']?.toString() ?? '-', overflow: TextOverflow.ellipsis))),
                         DataCell(Text(_formatarMoeda(valorPrevisto), style: const TextStyle(fontWeight: FontWeight.w800))),
                         DataCell(Text(_formatarMoeda(valorConfirmado), style: const TextStyle(fontWeight: FontWeight.w800))),
                         DataCell(Text(_formatarMoeda(diferenca), style: const TextStyle(fontWeight: FontWeight.w800))),
@@ -867,13 +851,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildFluxo(ThemeData theme) {
     final fluxoPorMes = <String, Map<String, double>>{};
-
     for (final item in _itensSomaveis) {
       final data = _parseDataBr(item['vencimento']?.toString());
       final mes = data == null ? 'Sem competência' : '${data.year}-${data.month.toString().padLeft(2, '0')}';
       final valor = _toDouble(item['valorRestante'] ?? item['valor']);
       final registro = fluxoPorMes.putIfAbsent(mes, () => <String, double>{'entradas': 0, 'saidas': 0});
-
       if (item['tipo'] == 'receber') {
         registro['entradas'] = (registro['entradas'] ?? 0) + valor;
       } else {
@@ -886,7 +868,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
 
     final mesesOrdenados = fluxoPorMes.keys.toList()..sort();
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -896,7 +877,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
             final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
             final saldo = entrada - saida;
-
             return Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: Column(
@@ -920,20 +900,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  Widget _buildBarraFluxoUnica({
-    required ThemeData theme,
-    required double entrada,
-    required double saida,
-  }) {
+  Widget _buildBarraFluxoUnica({required ThemeData theme, required double entrada, required double saida}) {
     final total = entrada + saida;
     final percentualEntrada = total <= 0 ? 0.0 : entrada / total;
     final percentualSaida = total <= 0 ? 0.0 : saida / total;
-    final percentualEntradaTexto = total <= 0
-        ? '0,0% entradas'
-        : '${(percentualEntrada * 100).toStringAsFixed(1).replaceAll('.', ',')}% entradas';
-    final percentualSaidaTexto = total <= 0
-        ? '0,0% saídas'
-        : '${(percentualSaida * 100).toStringAsFixed(1).replaceAll('.', ',')}% saídas';
+    final percentualEntradaTexto = total <= 0 ? '0,0% entradas' : '${(percentualEntrada * 100).toStringAsFixed(1).replaceAll('.', ',')}% entradas';
+    final percentualSaidaTexto = total <= 0 ? '0,0% saídas' : '${(percentualSaida * 100).toStringAsFixed(1).replaceAll('.', ',')}% saídas';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -962,7 +934,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 curve: Curves.easeOutCubic,
                 builder: (context, value, child) {
                   final carregou = value >= 0.98;
-
                   return Stack(
                     children: <Widget>[
                       Row(
@@ -1053,6 +1024,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   String _formaPagamentoLabel(String? formaPagamento) {
     switch ((formaPagamento ?? '').toUpperCase()) {
+      case 'PIX':
+        return 'Pix';
       case 'BOLETO':
         return 'Boleto';
       case 'TRANSFERENCIA':
@@ -1063,6 +1036,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         return 'Cartão de débito';
       case 'DINHEIRO':
         return 'Dinheiro';
+      case 'DEBITO_AUTOMATICO':
+        return 'Débito automático';
       default:
         return 'Pix';
     }
@@ -1070,6 +1045,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   String _formaPagamentoBackend(String label) {
     switch (label.toLowerCase()) {
+      case 'pix':
+        return 'PIX';
       case 'boleto':
         return 'BOLETO';
       case 'transferência':
@@ -1080,6 +1057,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         return 'CARTAO_DEBITO';
       case 'dinheiro':
         return 'DINHEIRO';
+      case 'débito automático':
+        return 'DEBITO_AUTOMATICO';
       default:
         return 'PIX';
     }
