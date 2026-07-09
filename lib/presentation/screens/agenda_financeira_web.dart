@@ -626,15 +626,29 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     child: Padding(
       padding: const EdgeInsets.all(18),
       child: Row(children: <Widget>[
-        IconButton(onPressed: _fechar, icon: const Icon(Icons.arrow_back_rounded), tooltip: 'Voltar'),
-        const SizedBox(width: 8),
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Icon(Icons.account_balance_wallet_outlined, color: theme.colorScheme.primary),
+        ),
+        const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
           Text('Agenda financeira', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-          Text(_ultimaConsultaEm == null ? 'Filtre os lançamentos e acompanhe seus detalhes.' : 'Última consulta: ${_formatarDataHora(_ultimaConsultaEm!)}'),
+          Text(_ultimaConsultaEm == null ? 'Filtre os lançamentos e acompanhe seus detalhes.' : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}'),
         ])),
-        FilledButton.icon(onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.search_rounded), label: const Text('Filtrar')),
+        OutlinedButton.icon(onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
         const SizedBox(width: 10),
-        OutlinedButton.icon(onPressed: _novoLancamento, icon: const Icon(Icons.add_rounded), label: const Text('Novo')),
+        FilledButton.icon(onPressed: _novoLancamento, icon: const Icon(Icons.add_rounded), label: const Text('Novo lançamento')),
+        const SizedBox(width: 10),
+        IconButton.filled(
+          onPressed: _fechar,
+          icon: const Icon(Icons.close_rounded),
+          tooltip: 'Fechar',
+        ),
       ]),
     ),
   );
@@ -642,11 +656,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Widget _buildFiltros(ThemeData theme) => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
-      child: Wrap(spacing: 12, runSpacing: 12, children: <Widget>[
+      child: Wrap(spacing: 12, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: <Widget>[
         _drop('Período', _periodoSelecionado, _periodos, (v) => setState(() => _periodoSelecionado = v!)),
         _drop('Tipo', _tipoSelecionado, _tipos, (v) => setState(() => _tipoSelecionado = v!)),
         _drop('Status', _statusSelecionado, _status, (v) => setState(() => _statusSelecionado = v!)),
         _drop('Tipo de pagamento', _formaPagamentoSelecionada, _formasPagamento, (v) => setState(() => _formaPagamentoSelecionada = v!)),
+        FilledButton.icon(
+          onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
+          icon: const Icon(Icons.search_rounded),
+          label: const Text('Buscar'),
+        ),
       ]),
     ),
   );
@@ -991,11 +1010,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
               ),
             ),
             if (stamp != null)
-              Positioned(
-                top: 18,
-                right: 28,
-                child: _statusStamp(stamp),
-              ),
+              Positioned(top: 18, right: 28, child: _statusStamp(stamp)),
           ])),
         ]),
       ),
@@ -1004,37 +1019,30 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
 
   _DetalheStatusStampData? _stampData(String status, double valorAberto) {
     final normalized = status.trim().toUpperCase().replaceAll(' ', '_');
-    if (normalized == 'PAGO' || normalized == 'RECEBIDO' || valorAberto <= 0 && (normalized == 'FINALIZADA' || normalized == 'FINALIZADO')) {
-      return const _DetalheStatusStampData('PAGO', Color(0xFF16A34A));
-    }
+    if (normalized == 'PAGO' || normalized == 'RECEBIDO' || valorAberto <= 0 && (normalized == 'FINALIZADA' || normalized == 'FINALIZADO')) return const _DetalheStatusStampData('PAGO', Color(0xFF16A34A));
     if (normalized == 'PARCIAL') return const _DetalheStatusStampData('PARCIAL', Color(0xFFF59E0B));
     if (normalized == 'CANCELADO' || normalized == 'CANCELADA') return const _DetalheStatusStampData('CANCELADO', Color(0xFFDC2626));
     return null;
   }
 
-  Widget _statusStamp(_DetalheStatusStampData stamp) {
-    return IgnorePointer(
-      child: Transform.rotate(
-        angle: -0.12,
-        child: Opacity(
-          opacity: 0.94,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-            decoration: BoxDecoration(
-              color: stamp.color.withOpacity(0.055),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: stamp.color, width: 3),
-              boxShadow: <BoxShadow>[BoxShadow(color: stamp.color.withOpacity(0.10), blurRadius: 16, offset: const Offset(0, 6))],
-            ),
-            child: Text(
-              stamp.label,
-              style: TextStyle(color: stamp.color, fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 2.6),
-            ),
+  Widget _statusStamp(_DetalheStatusStampData stamp) => IgnorePointer(
+    child: Transform.rotate(
+      angle: -0.12,
+      child: Opacity(
+        opacity: 0.94,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+          decoration: BoxDecoration(
+            color: stamp.color.withOpacity(0.055),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: stamp.color, width: 3),
+            boxShadow: <BoxShadow>[BoxShadow(color: stamp.color.withOpacity(0.10), blurRadius: 16, offset: const Offset(0, 6))],
           ),
+          child: Text(stamp.label, style: TextStyle(color: stamp.color, fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 2.6)),
         ),
       ),
-    );
-  }
+    ),
+  );
 
   Widget _avisoFallback(ThemeData theme) => Container(
     margin: const EdgeInsets.only(bottom: 14),
