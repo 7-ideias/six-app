@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
 import '../../providers/locale_settings_provider.dart';
@@ -21,6 +23,18 @@ class AgendaFinanceiraWeb extends StatefulWidget {
 class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final AgendaFinanceiraLancamentoService _service = AgendaFinanceiraLancamentoService();
   final AgendaFinanceiraAcoesFinanceiras _acoesService = AgendaFinanceiraAcoesFinanceiras();
+  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+
+  static const List<String> _formasPagamentoPadrao = <String>[
+    'Todos',
+    'Pix',
+    'Boleto',
+    'Transferência',
+    'Cartão de crédito',
+    'Cartão de débito',
+    'Débito automático',
+    'Dinheiro',
+  ];
 
   final List<String> _abas = const <String>[
     'Agenda',
@@ -46,16 +60,29 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     'Parcial',
     'Cancelado',
   ];
-  final List<String> _formasPagamento = const <String>[
-    'Todos',
-    'Pix',
-    'Boleto',
-    'Transferência',
-    'Cartão de crédito',
-    'Cartão de débito',
-    'Débito automático',
-    'Dinheiro',
-  ];
+  List<String> _formasPagamento = List<String>.from(_formasPagamentoPadrao);
+
+  final Map<String, String> _backendPorDescricaoFormaPagamento = <String, String>{
+    'Pix': 'PIX',
+    'Boleto': 'BOLETO',
+    'Transferência': 'TRANSFERENCIA',
+    'Cartão de crédito': 'CARTAO_CREDITO',
+    'Cartão Crédito': 'CARTAO_CREDITO',
+    'Cartão de débito': 'CARTAO_DEBITO',
+    'Cartão Débito': 'CARTAO_DEBITO',
+    'Débito automático': 'DEBITO_AUTOMATICO',
+    'Dinheiro': 'DINHEIRO',
+  };
+
+  final Map<String, String> _descricaoPorBackendFormaPagamento = <String, String>{
+    'PIX': 'Pix',
+    'BOLETO': 'Boleto',
+    'TRANSFERENCIA': 'Transferência',
+    'CARTAO_CREDITO': 'Cartão de crédito',
+    'CARTAO_DEBITO': 'Cartão de débito',
+    'DEBITO_AUTOMATICO': 'Débito automático',
+    'DINHEIRO': 'Dinheiro',
+  };
 
   int _abaSelecionada = 0;
   String _periodoSelecionado = 'Próximos 7 dias';
@@ -74,7 +101,82 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _consultar());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _carregarTiposPagamentoConfigurados();
+      await _consultar();
+    });
+  }
+
+  Future<void> _carregarTiposPagamentoConfigurados() async {
+    try {
+      final informacoes = await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final formas = _montarFormasPagamento(informacoes.tiposRecebimento);
+      if (!mounted || formas.isEmpty) return;
+
+      setState(() {
+        _formasPagamento = <String>['Todos', ...formas];
+        if (!_formasPagamento.contains(_formaPagamentoSelecionada)) {
+          _formaPagamentoSelecionada = 'Todos';
+        }
+      });
+    } catch (_) {
+      // Mantém o fallback padrão para não bloquear a consulta da agenda.
+    }
+  }
+
+  List<String> _montarFormasPagamento(List<TiposRecebimento> tipos) {
+    final descricoes = <String>[];
+    final backendPorDescricaoAtualizado = Map<String, String>.from(_backendPorDescricaoFormaPagamento);
+    final descricaoPorBackendAtualizada = Map<String, String>.from(_descricaoPorBackendFormaPagamento);
+
+    final ativosOrdenados = tipos.where((tipo) => tipo.ativo).toList()
+      ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+
+    for (final tipo in ativosOrdenados) {
+      final backend = _backendFormaPagamentoPorCodigoTipo(tipo.codigoTipo);
+      if (backend == null) continue;
+
+      final descricao = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : _descricaoPadraoPorBackend(backend);
+      if (descricao.isEmpty || descricoes.contains(descricao)) continue;
+
+      descricoes.add(descricao);
+      backendPorDescricaoAtualizado[descricao] = backend;
+      descricaoPorBackendAtualizada[backend] = descricao;
+    }
+
+    if (descricoes.isNotEmpty) {
+      _backendPorDescricaoFormaPagamento
+        ..clear()
+        ..addAll(backendPorDescricaoAtualizado);
+      _descricaoPorBackendFormaPagamento
+        ..clear()
+        ..addAll(descricaoPorBackendAtualizada);
+    }
+
+    return descricoes;
+  }
+
+  String? _backendFormaPagamentoPorCodigoTipo(String codigoTipo) {
+    switch (codigoTipo.trim().toLowerCase()) {
+      case 'tipo1':
+        return 'DINHEIRO';
+      case 'tipo2':
+        return 'PIX';
+      case 'tipo3':
+        return 'CARTAO_CREDITO';
+      case 'tipo4':
+        return 'CARTAO_DEBITO';
+      case 'tipo5':
+        return 'BOLETO';
+      default:
+        return null;
+    }
+  }
+
+  String _descricaoPadraoPorBackend(String backend) {
+    return _descricaoPorBackendFormaPagamento[backend] ?? '';
   }
 
   List<Map<String, dynamic>> get _itensAgenda {
@@ -1023,7 +1125,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String _formaPagamentoLabel(String? formaPagamento) {
-    switch ((formaPagamento ?? '').toUpperCase()) {
+    final backend = (formaPagamento ?? '').toUpperCase();
+    final descricaoConfigurada = _descricaoPorBackendFormaPagamento[backend];
+    if (descricaoConfigurada != null && descricaoConfigurada.trim().isNotEmpty) {
+      return descricaoConfigurada;
+    }
+
+    switch (backend) {
       case 'PIX':
         return 'Pix';
       case 'BOLETO':
@@ -1044,6 +1152,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String _formaPagamentoBackend(String label) {
+    final backendConfigurado = _backendPorDescricaoFormaPagamento[label];
+    if (backendConfigurado != null) return backendConfigurado;
+
     switch (label.toLowerCase()) {
       case 'pix':
         return 'PIX';
@@ -1051,8 +1162,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         return 'BOLETO';
       case 'transferência':
         return 'TRANSFERENCIA';
+      case 'cartão crédito':
       case 'cartão de crédito':
         return 'CARTAO_CREDITO';
+      case 'cartão débito':
       case 'cartão de débito':
         return 'CARTAO_DEBITO';
       case 'dinheiro':
