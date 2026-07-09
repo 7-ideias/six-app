@@ -14,6 +14,7 @@ class AgendaFinanceiraAcoesFinanceiras {
 
   String get _basePath => '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos';
   String _endpoint(String idLancamento, String acao) => '$_basePath/$idLancamento/$acao';
+  String _endpointLiquidacao(String idLancamento, String idLiquidacao) => '$_basePath/$idLancamento/liquidacoes/$idLiquidacao';
 
   Future<Map<String, String>> _buildHeaders() async {
     final authService = AuthService();
@@ -51,6 +52,17 @@ class AgendaFinanceiraAcoesFinanceiras {
       body: jsonEncode(request.toJson()),
     );
     return _parseResponse(response, idLancamento, 'ABATIMENTO_REGISTRADO');
+  }
+
+  Future<LancamentoAgendaFinanceiraResponse> excluirLiquidacao({
+    required String idLancamento,
+    required String idLiquidacao,
+  }) async {
+    final response = await _httpClient.delete(
+      Uri.parse(_endpointLiquidacao(idLancamento, idLiquidacao)),
+      headers: await _buildHeaders(),
+    );
+    return _parseResponse(response, idLancamento, 'LIQUIDACAO_EXCLUIDA');
   }
 
   LancamentoAgendaFinanceiraResponse _parseResponse(
