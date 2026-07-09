@@ -26,23 +26,17 @@ class OperacoesCaixaWebPage extends StatefulWidget {
 }
 
 class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
-  final ScrollController _scrollController = ScrollController();
   final CaixaService _caixaService = CaixaModule.caixaService;
+  final ScrollController _scrollController = ScrollController();
 
+  final TextEditingController _trocoInicialController = TextEditingController(text: '200,00');
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _observacaoController = TextEditingController();
   final TextEditingController _referenciaController = TextEditingController();
-  final TextEditingController _trocoInicialController = TextEditingController(
-    text: '200,00',
-  );
-  final TextEditingController _fechamentoDinheiroController =
-      TextEditingController();
-  final TextEditingController _fechamentoPixController =
-      TextEditingController();
-  final TextEditingController _fechamentoCartaoController =
-      TextEditingController();
-  final TextEditingController _fechamentoObservacaoController =
-      TextEditingController();
+  final TextEditingController _fechamentoDinheiroController = TextEditingController();
+  final TextEditingController _fechamentoPixController = TextEditingController();
+  final TextEditingController _fechamentoCartaoController = TextEditingController();
+  final TextEditingController _fechamentoObservacaoController = TextEditingController();
 
   bool _isLoading = false;
   bool _vincularVenda = false;
@@ -69,10 +63,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _trocoInicialController.dispose();
     _valorController.dispose();
     _observacaoController.dispose();
     _referenciaController.dispose();
-    _trocoInicialController.dispose();
     _fechamentoDinheiroController.dispose();
     _fechamentoPixController.dispose();
     _fechamentoCartaoController.dispose();
@@ -86,12 +80,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Future<void> _carregarDadosIniciais({String? idCaixaPreferencial}) async {
     setState(() => _isLoading = true);
     try {
-      final informacoesBasicas =
-          await _caixaService.buscarInformacoesBasicasDoCaixa();
+      final informacoesBasicas = await _caixaService.buscarInformacoesBasicasDoCaixa();
+
       if (mounted && informacoesBasicas.regionalizacao != null) {
-        await context
-            .read<LocaleSettingsProvider>()
-            .atualizarConfiguracaoDaEmpresaPorResponse(
+        await context.read<LocaleSettingsProvider>().atualizarConfiguracaoDaEmpresaPorResponse(
               informacoesBasicas.regionalizacao!,
             );
       }
@@ -122,16 +114,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       }
 
       TiposRecebimento? tipoPreferencial;
-      final codigoTipoAtual = _tipoRecebimentoSelecionado?.codigoTipo;
-      if (codigoTipoAtual != null) {
+      final codigoAtual = _tipoRecebimentoSelecionado?.codigoTipo;
+      if (codigoAtual != null) {
         for (final tipo in tiposAtivos) {
-          if (tipo.codigoTipo == codigoTipoAtual) {
+          if (tipo.codigoTipo == codigoAtual) {
             tipoPreferencial = tipo;
             break;
           }
         }
       }
 
+      if (!mounted) return;
       setState(() {
         _caixasDisponiveis = caixas;
         _tiposRecebimento = informacoesBasicas.tiposRecebimento;
@@ -158,9 +151,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Future<void> _carregarMovimentosEResumo(String idCaixaSessao) async {
     try {
       final movimentos = await _caixaService.listarMovimentacoes(idCaixaSessao);
-      final movimentosComSomatorio = await _caixaService
-          .buscarResumoDeMovimentosComSomatorio(idCaixaSessao);
+      final movimentosComSomatorio =
+          await _caixaService.buscarResumoDeMovimentosComSomatorio(idCaixaSessao);
       final resumo = await _caixaService.buscarResumo(idCaixaSessao);
+
       if (!mounted) return;
       setState(() {
         _movimentos = movimentos;
@@ -173,20 +167,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   void _mostrarErro(String mensagem) {
-    final theme = Theme.of(context);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(mensagem),
-        backgroundColor: theme.colorScheme.error,
+        backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
   }
 
   void _mostrarAvisoCaixaNaoAberto() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Antes de lançar operações, faça a abertura do caixa.'),
-      ),
+      const SnackBar(content: Text('Antes de lançar operações, faça a abertura do caixa.')),
     );
   }
 
@@ -207,7 +199,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       child: Actions(
         actions: <Type, Action<Intent>>{
           _SairDaTelaIntent: CallbackAction<Intent>(
-            onInvoke: (Intent intent) {
+            onInvoke: (_) {
               _sairDaTela();
               return null;
             },
@@ -219,6 +211,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         ),
       ),
     );
+
     if (widget.embedded) return content;
 
     return Scaffold(
@@ -229,72 +222,37 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
-
-    if (_isLoading && _resumo == null && _sessaoAtual == null) {
+    if (_isLoading && _sessaoAtual == null && _resumo == null) {
       return _buildLoading(theme);
     }
 
     return Container(
       color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 1180;
-          final isCompact = constraints.maxWidth < 900;
-          final horizontalPadding = isCompact ? 16.0 : 28.0;
-
-          return Column(
-            children: <Widget>[
-              _buildHeader(theme, isCompact),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    14,
-                    horizontalPadding,
-                    18,
-                  ),
-                  child: Column(
+      child: Column(
+        children: <Widget>[
+          _buildHeader(theme),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 1120;
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      _buildKpis(theme, isCompact),
+                      _buildKpis(theme),
                       const SizedBox(height: 12),
                       if (!_temCaixaAberto)
-                        _buildPainelAbertura(theme, isCompact)
-                      else ...<Widget>[
-                        isWide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Column(
-                                      children: <Widget>[
-                                        _buildContextoOperacao(theme),
-                                        const SizedBox(height: 12),
-                                        _buildAtalhosOperacao(theme),
-                                        const SizedBox(height: 12),
-                                        _buildFormularioMovimento(theme),
-                                        if (_mostrarPainelFechamento) ...<Widget>[
-                                          const SizedBox(height: 12),
-                                          _buildPainelFechamento(theme),
-                                        ],
-                                        const SizedBox(height: 12),
-                                        _buildHistorico(theme),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  SizedBox(
-                                    width: 390,
-                                    child: _buildResumoLateral(theme),
-                                  ),
-                                ],
-                              )
-                            : Column(
+                        _buildPainelAbertura(theme)
+                      else if (isWide)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              child: Column(
                                 children: <Widget>[
                                   _buildContextoOperacao(theme),
-                                  const SizedBox(height: 12),
-                                  _buildResumoLateral(theme),
                                   const SizedBox(height: 12),
                                   _buildAtalhosOperacao(theme),
                                   const SizedBox(height: 12),
@@ -307,197 +265,196 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                                   _buildHistorico(theme),
                                 ],
                               ),
-                      ],
+                            ),
+                            const SizedBox(width: 16),
+                            SizedBox(width: 390, child: _buildResumoLateral(theme)),
+                          ],
+                        )
+                      else
+                        Column(
+                          children: <Widget>[
+                            _buildContextoOperacao(theme),
+                            const SizedBox(height: 12),
+                            _buildResumoLateral(theme),
+                            const SizedBox(height: 12),
+                            _buildAtalhosOperacao(theme),
+                            const SizedBox(height: 12),
+                            _buildFormularioMovimento(theme),
+                            if (_mostrarPainelFechamento) ...<Widget>[
+                              const SizedBox(height: 12),
+                              _buildPainelFechamento(theme),
+                            ],
+                            const SizedBox(height: 12),
+                            _buildHistorico(theme),
+                          ],
+                        ),
                     ],
-                  ),
-                ),
+                  );
+                },
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildLoading(ThemeData theme) {
-    return Container(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: _softBox(theme, radius: 18),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2.4),
-              ),
-              SizedBox(width: 12),
-              Text('Carregando operações de caixa...'),
-            ],
-          ),
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: _softBox(theme),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4)),
+            SizedBox(width: 12),
+            Text('Carregando operações de caixa...'),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme, bool isCompact) {
-    final colorScheme = theme.colorScheme;
+  Widget _buildHeader(ThemeData theme) {
     final empresa = EmpresaProvider().empresa?.nomeFantasia ?? 'Empresa';
     final movimentos = _resumo?.quantidadeMovimentos ?? _movimentos.length;
-
-    final titleBlock = Row(
-      children: <Widget>[
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(16),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 18, 20, 18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outline.withOpacity(0.14))),
+        boxShadow: <BoxShadow>[
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 6)),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(Icons.point_of_sale_rounded, color: theme.colorScheme.primary, size: 27),
           ),
-          child: Icon(
-            Icons.point_of_sale_rounded,
-            color: colorScheme.primary,
-            size: 27,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Operações de caixa',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isCompact ? 21 : 24,
-                  fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Operações de caixa',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
                 ),
+                const SizedBox(height: 3),
+                Text(
+                  '$empresa • $movimentos movimento(s) • ${_temCaixaAberto ? 'Caixa aberto' : 'Aguardando abertura'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: _isLoading ? null : () => _carregarDadosIniciais(),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Atualizar'),
               ),
-              const SizedBox(height: 3),
-              Text(
-                _temCaixaAberto
-                    ? 'Controle operacional do caixa, entradas, saídas, conferência e fechamento.'
-                    : 'Abra o caixa para registrar operações do dia.',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.66)),
+              IconButton.filledTonal(
+                onPressed: _sairDaTela,
+                tooltip: 'Fechar',
+                icon: const Icon(Icons.close_rounded),
               ),
             ],
-          ),
-        ),
-      ],
-    );
-
-    final actions = Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      alignment: WrapAlignment.end,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        _headerButton(theme, Icons.refresh_rounded, 'Atualizar', () {
-          _carregarDadosIniciais();
-        }),
-        _headerBadge(theme, empresa, Icons.storefront_outlined),
-        _headerBadge(theme, '$movimentos movimentos', Icons.receipt_long_outlined),
-        if (widget.onBack != null) _closeButton(context),
-      ],
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 16 : 28,
-        isCompact ? 16 : 22,
-        isCompact ? 16 : 28,
-        isCompact ? 14 : 18,
-      ),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: isCompact
-          ? Column(
-              children: <Widget>[
-                titleBlock,
-                const SizedBox(height: 14),
-                Align(alignment: Alignment.centerRight, child: actions),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: titleBlock),
-                const SizedBox(width: 16),
-                actions,
-              ],
-            ),
     );
   }
 
-  Widget _buildKpis(ThemeData theme, bool isCompact) {
+  Widget _buildKpis(ThemeData theme) {
     final resumo = _resumo;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = isCompact
-            ? constraints.maxWidth
-            : ((constraints.maxWidth - 36) / 4).clamp(210.0, 360.0);
+        final compact = constraints.maxWidth < 820;
+        final width = compact ? constraints.maxWidth : ((constraints.maxWidth - 36) / 4).clamp(210.0, 360.0);
         return Wrap(
           spacing: 12,
           runSpacing: 12,
           children: <Widget>[
-            _summaryCard(
-              theme,
-              width: cardWidth,
-              label: 'Saldo esperado',
-              value: _formatCurrency(resumo?.saldoEsperado ?? 0),
-              helper: _temCaixaAberto ? 'Caixa em operação' : 'Aguardando abertura',
-              icon: Icons.account_balance_wallet_outlined,
-              highlight: true,
-            ),
-            _summaryCard(
-              theme,
-              width: cardWidth,
-              label: 'Entradas',
-              value: _formatCurrency(resumo?.totalEntradas ?? 0),
-              helper: 'Recebimentos e suprimentos',
-              icon: Icons.south_west_rounded,
-            ),
-            _summaryCard(
-              theme,
-              width: cardWidth,
-              label: 'Saídas',
-              value: _formatCurrency(resumo?.totalSaidas ?? 0),
-              helper: 'Sangrias e despesas',
-              icon: Icons.north_east_rounded,
-            ),
-            _summaryCard(
-              theme,
-              width: cardWidth,
-              label: 'Movimentos',
-              value: '${resumo?.quantidadeMovimentos ?? _movimentos.length}',
-              helper: _mostrarApenasHoje ? 'Filtro de hoje ativo' : 'Todos visíveis',
-              icon: Icons.receipt_long_outlined,
-            ),
+            _summaryCard(theme, width: width, label: 'Saldo esperado', value: _formatCurrency(resumo?.saldoEsperado ?? 0), helper: _temCaixaAberto ? 'Caixa em operação' : 'Aguardando abertura', icon: Icons.account_balance_wallet_outlined, highlight: true),
+            _summaryCard(theme, width: width, label: 'Entradas', value: _formatCurrency(resumo?.totalEntradas ?? 0), helper: 'Recebimentos e suprimentos', icon: Icons.south_west_rounded),
+            _summaryCard(theme, width: width, label: 'Saídas', value: _formatCurrency(resumo?.totalSaidas ?? 0), helper: 'Sangrias e despesas', icon: Icons.north_east_rounded),
+            _summaryCard(theme, width: width, label: 'Movimentos', value: '${resumo?.quantidadeMovimentos ?? _movimentos.length}', helper: _mostrarApenasHoje ? 'Filtro de hoje ativo' : 'Todos visíveis', icon: Icons.receipt_long_outlined),
           ],
         );
       },
     );
   }
 
-  Widget _buildPainelAbertura(ThemeData theme, bool isCompact) {
+  Widget _summaryCard(
+    ThemeData theme, {
+    required double width,
+    required String label,
+    required String value,
+    required String helper,
+    required IconData icon,
+    bool highlight = false,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: highlight ? colorScheme.primary : colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: highlight ? colorScheme.primary : colorScheme.outline.withOpacity(0.12)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 6)),
+          ],
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: highlight ? Colors.white.withOpacity(0.15) : colorScheme.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: highlight ? Colors.white : colorScheme.primary, size: 21),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: highlight ? Colors.white.withOpacity(0.86) : colorScheme.onSurface.withOpacity(0.62), fontWeight: FontWeight.w700, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: highlight ? Colors.white : colorScheme.onSurface, fontSize: 20, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 2),
+                  Text(helper, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: highlight ? Colors.white.withOpacity(0.78) : colorScheme.onSurface.withOpacity(0.56), fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPainelAbertura(ThemeData theme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -505,37 +462,36 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _sectionHeader(
-            theme,
-            title: 'Abertura de caixa',
-            subtitle: 'Defina o caixa, o troco inicial e inicie a operação do dia.',
-            icon: Icons.lock_open_rounded,
-          ),
+          _sectionHeader(theme, title: 'Abertura de caixa', subtitle: 'Defina o caixa, o troco inicial e inicie a operação do dia.', icon: Icons.lock_open_rounded),
           const SizedBox(height: 18),
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: <Widget>[
-              _buildSeletorCaixaOuGuiche(theme),
+              _buildFieldBox(
+                theme,
+                width: 340,
+                label: 'Caixa / guichê',
+                child: _buildDropdown<CaixaOuGuiche>(
+                  theme,
+                  value: _caixaSelecionado,
+                  items: _caixasDisponiveis,
+                  onChanged: (value) => setState(() => _caixaSelecionado = value),
+                  itemLabel: (item) => item.nome,
+                  hint: 'Selecione',
+                ),
+              ),
               _buildFieldBox(
                 theme,
                 width: 220,
                 label: 'Troco inicial',
-                child: _buildTextField(
-                  theme,
-                  controller: _trocoInicialController,
-                  hint: '0,00',
-                  prefix: 'R\$ ',
-                ),
+                child: _buildTextField(theme, controller: _trocoInicialController, hint: '0,00', prefix: 'R\$ '),
               ),
               _buildFieldBox(
                 theme,
                 width: 280,
                 label: 'Colaborador responsável',
-                child: _buildReadOnlyField(
-                  theme,
-                  UsuarioProvider().usuario?.nomeDeGuerra ?? '--',
-                ),
+                child: _buildReadOnlyField(theme, UsuarioProvider().usuario?.nomeDeGuerra ?? '--'),
               ),
             ],
           ),
@@ -544,7 +500,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             onPressed: _isLoading ? null : _abrirCaixa,
             icon: const Icon(Icons.play_arrow_rounded),
             label: const Text('Abrir caixa'),
-            style: _primaryButtonStyle(theme),
           ),
         ],
       ),
@@ -560,35 +515,34 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         spacing: 12,
         runSpacing: 12,
         children: <Widget>[
-          _miniMetric(
-            theme,
-            title: 'Sessão',
-            value: _sessaoAtual?.idSessaoCaixa ?? '--',
-            icon: Icons.badge_outlined,
-          ),
-          _miniMetric(
-            theme,
-            title: 'Caixa',
-            value: _sessaoAtual?.nomeCaixa ?? '--',
-            icon: Icons.store_mall_directory_outlined,
-          ),
-          _miniMetric(
-            theme,
-            title: 'Abertura',
-            value: _formatDateTime(_sessaoAtual?.dataHoraAbertura),
-            icon: Icons.schedule_rounded,
-          ),
-          _miniMetric(
-            theme,
-            title: 'Troco inicial',
-            value: _formatCurrency(_sessaoAtual?.valorAbertura ?? 0),
-            icon: Icons.account_balance_wallet_outlined,
-          ),
-          _miniMetric(
-            theme,
-            title: 'Status',
-            value: _labelSessao(_sessaoAtual?.status),
-            icon: Icons.verified_outlined,
+          _miniMetric(theme, title: 'Sessão', value: _sessaoAtual?.idSessaoCaixa ?? '--', icon: Icons.badge_outlined),
+          _miniMetric(theme, title: 'Caixa', value: _sessaoAtual?.nomeCaixa ?? '--', icon: Icons.store_mall_directory_outlined),
+          _miniMetric(theme, title: 'Abertura', value: _formatDateTime(_sessaoAtual?.dataHoraAbertura), icon: Icons.schedule_rounded),
+          _miniMetric(theme, title: 'Troco inicial', value: _formatCurrency(_sessaoAtual?.valorAbertura ?? 0), icon: Icons.account_balance_wallet_outlined),
+          _miniMetric(theme, title: 'Status', value: _labelSessao(_sessaoAtual?.status), icon: Icons.verified_outlined),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniMetric(ThemeData theme, {required String title, required String value, required IconData icon}) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 190, maxWidth: 270),
+      padding: const EdgeInsets.all(14),
+      decoration: _softBox(theme),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, color: theme.colorScheme.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 3),
+                Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5)),
+              ],
+            ),
           ),
         ],
       ),
@@ -597,48 +551,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _buildAtalhosOperacao(ThemeData theme) {
     final cards = <_AtalhoOperacaoData>[
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.suprimento,
-        titulo: 'Suprimento',
-        descricao: 'Adicionar valores ao caixa para reforço operacional.',
-        icone: Icons.add_card_rounded,
-        cor: const Color(0xff0f766e),
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.sangria,
-        titulo: 'Sangria',
-        descricao: 'Retirar excesso de numerário para segurança.',
-        icone: Icons.outbox_rounded,
-        cor: const Color(0xffb45309),
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.retiradaDespesa,
-        titulo: 'Despesa',
-        descricao: 'Registrar saída para motoboy, café, material e similares.',
-        icone: Icons.receipt_long_rounded,
-        cor: const Color(0xffbe123c),
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.ajuste,
-        titulo: 'Ajuste',
-        descricao: 'Corrigir diferenças operacionais com rastreabilidade.',
-        icone: Icons.tune_rounded,
-        cor: const Color(0xff4338ca),
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.recebimentoAvulso,
-        titulo: 'Recebimento avulso',
-        descricao: 'Entrada operacional sem vínculo direto com venda.',
-        icone: Icons.arrow_downward_rounded,
-        cor: const Color(0xff047857),
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.pagamentoAvulso,
-        titulo: 'Pagamento avulso',
-        descricao: 'Saída operacional pontual com justificativa.',
-        icone: Icons.arrow_upward_rounded,
-        cor: const Color(0xff991b1b),
-      ),
+      _AtalhoOperacaoData(tipo: OperacaoCaixaTipo.suprimento, titulo: 'Suprimento', descricao: 'Adicionar valores ao caixa para reforço operacional.', icone: Icons.add_card_rounded, cor: const Color(0xff0f766e)),
+      _AtalhoOperacaoData(tipo: OperacaoCaixaTipo.sangria, titulo: 'Sangria', descricao: 'Retirar excesso de numerário para segurança.', icone: Icons.outbox_rounded, cor: const Color(0xffb45309)),
+      _AtalhoOperacaoData(tipo: OperacaoCaixaTipo.retiradaDespesa, titulo: 'Despesa', descricao: 'Registrar saída operacional com justificativa.', icone: Icons.receipt_long_rounded, cor: const Color(0xffbe123c)),
+      _AtalhoOperacaoData(tipo: OperacaoCaixaTipo.ajuste, titulo: 'Ajuste', descricao: 'Corrigir diferenças operacionais com rastreabilidade.', icone: Icons.tune_rounded, cor: const Color(0xff4338ca)),
+      _AtalhoOperacaoData(tipo: OperacaoCaixaTipo.recebimentoAvulso, titulo: 'Recebimento avulso', descricao: 'Entrada operacional sem vínculo direto com venda.', icone: Icons.arrow_downward_rounded, cor: const Color(0xff047857)),
+      _AtalhoOperacaoData(tipo: OperacaoCaixaTipo.pagamentoAvulso, titulo: 'Pagamento avulso', descricao: 'Saída operacional pontual com justificativa.', icone: Icons.arrow_upward_rounded, cor: const Color(0xff991b1b)),
     ];
 
     return Container(
@@ -648,29 +566,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _sectionHeader(
-            theme,
-            title: 'Ações rápidas',
-            subtitle: 'Selecione a operação para preencher o formulário com o contexto adequado.',
-            icon: Icons.bolt_outlined,
-          ),
+          _sectionHeader(theme, title: 'Ações rápidas', subtitle: 'Selecione a operação para preencher o formulário com o contexto adequado.', icon: Icons.bolt_outlined),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              final itemWidth = constraints.maxWidth < 720
-                  ? constraints.maxWidth
-                  : ((constraints.maxWidth - 32) / 3).clamp(220.0, 320.0);
+              final width = constraints.maxWidth < 720 ? constraints.maxWidth : ((constraints.maxWidth - 32) / 3).clamp(220.0, 320.0);
               return Wrap(
                 spacing: 12,
                 runSpacing: 12,
-                children: cards
-                    .map(
-                      (item) => SizedBox(
-                        width: itemWidth,
-                        child: _operationCard(theme, item),
-                      ),
-                    )
-                    .toList(),
+                children: cards.map((item) => SizedBox(width: width, child: _operationCard(theme, item))).toList(),
               );
             },
           ),
@@ -691,18 +595,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   });
                 },
                 icon: const Icon(Icons.rule_folder_outlined),
-                label: Text(
-                  _mostrarPainelFechamento
-                      ? 'Ocultar fechamento'
-                      : 'Preparar fechamento',
-                ),
-                style: _secondaryButtonStyle(theme),
+                label: Text(_mostrarPainelFechamento ? 'Ocultar fechamento' : 'Preparar fechamento'),
               ),
               OutlinedButton.icon(
                 onPressed: _confirmarEncerramentoSessao,
                 icon: const Icon(Icons.power_settings_new_rounded),
                 label: const Text('Encerrar sessão'),
-                style: _dangerButtonStyle(theme),
               ),
             ],
           ),
@@ -729,49 +627,19 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected
-                  ? item.cor.withOpacity(.55)
-                  : theme.colorScheme.outline.withOpacity(0.12),
-              width: selected ? 1.4 : 1,
-            ),
+            border: Border.all(color: selected ? item.cor.withOpacity(.55) : theme.colorScheme.outline.withOpacity(0.12), width: selected ? 1.4 : 1),
           ),
           child: Row(
             children: <Widget>[
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: item.cor.withOpacity(.11),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(item.icone, color: item.cor, size: 22),
-              ),
+              Icon(item.icone, color: item.cor, size: 26),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      item.titulo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                      ),
-                    ),
+                    Text(item.titulo, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
                     const SizedBox(height: 4),
-                    Text(
-                      item.descricao,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.35,
-                        fontSize: 12.6,
-                      ),
-                    ),
+                    Text(item.descricao, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, height: 1.35, fontSize: 12.6)),
                   ],
                 ),
               ),
@@ -793,9 +661,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           _sectionHeader(
             theme,
             title: 'Lançamento operacional',
-            subtitle: _tipoSelecionado == null
-                ? 'Escolha uma ação rápida acima para orientar o lançamento.'
-                : 'Preencha os dados da operação ${_labelTipo(_tipoSelecionado!)}.',
+            subtitle: _tipoSelecionado == null ? 'Escolha uma ação rápida acima para orientar o lançamento.' : 'Preencha os dados da operação ${_labelTipo(_tipoSelecionado!)}.',
             icon: Icons.edit_note_rounded,
           ),
           const SizedBox(height: 16),
@@ -810,55 +676,28 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 child: _buildDropdown<OperacaoCaixaTipo>(
                   theme,
                   value: _tipoSelecionado,
-                  items: OperacaoCaixaTipo.values
-                      .where((e) => e != OperacaoCaixaTipo.fechamentoCaixa)
-                      .toList(growable: false),
+                  items: OperacaoCaixaTipo.values.where((e) => e != OperacaoCaixaTipo.fechamentoCaixa).toList(growable: false),
                   onChanged: (value) => setState(() => _tipoSelecionado = value),
                   itemLabel: _labelTipo,
                   hint: 'Selecione',
                 ),
               ),
+              _buildFieldBox(theme, width: 220, label: 'Valor', child: _buildTextField(theme, controller: _valorController, hint: '0,00', prefix: 'R\$ ')),
               _buildFieldBox(
                 theme,
-                width: 220,
-                label: 'Valor',
-                child: _buildTextField(
-                  theme,
-                  controller: _valorController,
-                  hint: '0,00',
-                  prefix: 'R\$ ',
-                ),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 260,
+                width: 280,
                 label: 'Forma relacionada',
                 child: _buildDropdown<TiposRecebimento>(
                   theme,
                   value: _tipoRecebimentoSelecionado,
                   items: _tiposRecebimentoAtivosOrdenados(),
-                  onChanged: (value) =>
-                      setState(() => _tipoRecebimentoSelecionado = value),
-                  itemLabel: (item) => item.descricaoExibicao,
+                  onChanged: (value) => setState(() => _tipoRecebimentoSelecionado = value),
+                  itemLabel: (item) => _descricaoTipoRecebimentoConfigurado(item),
                   hint: 'Selecione',
                 ),
               ),
-              _buildFieldBox(
-                theme,
-                width: 240,
-                label: 'Caixa / guichê',
-                child: _buildReadOnlyField(theme, _sessaoAtual?.nomeCaixa ?? '--'),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 260,
-                label: 'Referência / comprovante',
-                child: _buildTextField(
-                  theme,
-                  controller: _referenciaController,
-                  hint: 'Ex.: MOV-001',
-                ),
-              ),
+              _buildFieldBox(theme, width: 240, label: 'Caixa / guichê', child: _buildReadOnlyField(theme, _sessaoAtual?.nomeCaixa ?? '--')),
+              _buildFieldBox(theme, width: 260, label: 'Referência / comprovante', child: _buildTextField(theme, controller: _referenciaController, hint: 'Ex.: MOV-001')),
             ],
           ),
           const SizedBox(height: 12),
@@ -874,41 +713,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 child: TextField(
                   controller: _observacaoController,
                   maxLines: 4,
-                  decoration: _inputDecoration(
-                    theme,
-                    hint: 'Descreva o motivo da movimentação com clareza.',
-                  ),
+                  decoration: _inputDecoration(theme, hint: 'Descreva o motivo da movimentação com clareza.'),
                 ),
               ),
-              Container(
+              SizedBox(
                 width: 300,
-                padding: const EdgeInsets.all(14),
-                decoration: _softBox(theme),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Text(
-                      'Contexto adicional',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 6),
-                    CheckboxListTile(
-                      value: _vincularVenda,
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Possui vínculo com venda'),
-                      onChanged: (value) =>
-                          setState(() => _vincularVenda = value ?? false),
-                    ),
-                    Text(
-                      'Use em estornos ou situações operacionais relacionadas a atendimento anterior.',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.35,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ],
+                child: CheckboxListTile(
+                  value: _vincularVenda,
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Possui vínculo com venda'),
+                  subtitle: const Text('Use em estornos ou situações relacionadas a atendimento anterior.'),
+                  onChanged: (value) => setState(() => _vincularVenda = value ?? false),
                 ),
               ),
             ],
@@ -918,18 +734,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             spacing: 10,
             runSpacing: 10,
             children: <Widget>[
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _salvarMovimento,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Registrar movimentação'),
-                style: _primaryButtonStyle(theme),
-              ),
-              OutlinedButton.icon(
-                onPressed: _limparFormularioMovimento,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Limpar formulário'),
-                style: _secondaryButtonStyle(theme),
-              ),
+              FilledButton.icon(onPressed: _isLoading ? null : _salvarMovimento, icon: const Icon(Icons.save_outlined), label: const Text('Registrar movimentação')),
+              OutlinedButton.icon(onPressed: _limparFormularioMovimento, icon: const Icon(Icons.refresh_rounded), label: const Text('Limpar formulário')),
             ],
           ),
         ],
@@ -939,9 +745,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _buildHistorico(ThemeData theme) {
     final movimentosVisiveis = _mostrarApenasHoje
-        ? _movimentos
-            .where((m) => _isSameDay(m.dataHoraMovimento, DateTime.now()))
-            .toList(growable: false)
+        ? _movimentos.where((m) => _isSameDay(m.dataHoraMovimento, DateTime.now())).toList(growable: false)
         : _movimentos;
 
     return Container(
@@ -953,43 +757,20 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Expanded(
-                child: _sectionHeader(
-                  theme,
-                  title: 'Histórico de movimentações',
-                  subtitle: '${movimentosVisiveis.length} registros visíveis.',
-                  icon: Icons.history_rounded,
-                ),
-              ),
-              FilterChip(
-                label: const Text('Somente hoje'),
-                selected: _mostrarApenasHoje,
-                onSelected: (value) => setState(() => _mostrarApenasHoje = value),
-              ),
+              Expanded(child: _sectionHeader(theme, title: 'Histórico de movimentações', subtitle: '${movimentosVisiveis.length} registros visíveis.', icon: Icons.history_rounded)),
+              FilterChip(label: const Text('Somente hoje'), selected: _mostrarApenasHoje, onSelected: (value) => setState(() => _mostrarApenasHoje = value)),
             ],
           ),
           const SizedBox(height: 14),
           if (movimentosVisiveis.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: _softBox(theme),
-              child: Text(
-                'Nenhuma movimentação registrada após a abertura do caixa.',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
+            Container(width: double.infinity, padding: const EdgeInsets.all(18), decoration: _softBox(theme), child: const Text('Nenhuma movimentação registrada após a abertura do caixa.'))
           else
             ListView.separated(
               shrinkWrap: true,
               primary: false,
               itemCount: movimentosVisiveis.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) =>
-                  _buildMovimentoCard(theme, movimentosVisiveis[index]),
+              itemBuilder: (context, index) => _buildMovimentoCard(theme, movimentosVisiveis[index]),
             ),
         ],
       ),
@@ -998,15 +779,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _buildMovimentoCard(ThemeData theme, MovimentoCaixa movimento) {
     final cor = _corPorNatureza(movimento.natureza);
-    final colorScheme = theme.colorScheme;
-
+    final forma = _descricaoTipoRecebimentoMovimento(movimento);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1017,16 +797,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               Container(
                 width: 46,
                 height: 46,
-                decoration: BoxDecoration(
-                  color: cor.withOpacity(.10),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(
-                  movimento.natureza.toLowerCase() == 'entrada'
-                      ? Icons.south_west_rounded
-                      : Icons.north_east_rounded,
-                  color: cor,
-                ),
+                decoration: BoxDecoration(color: cor.withOpacity(.10), borderRadius: BorderRadius.circular(15)),
+                child: Icon(movimento.natureza.toLowerCase() == 'entrada' ? Icons.south_west_rounded : Icons.north_east_rounded, color: cor),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1036,27 +808,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
-                        Text(
-                          _labelTipo(movimento.tipoMovimento),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                        Text(_labelTipo(movimento.tipoMovimento), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
                         _statusPill(_labelStatusMovimento(movimento.status), _corPorStatus(movimento.status)),
                         _statusPill(_labelNatureza(movimento.natureza), cor),
+                        _statusPill(forma, theme.colorScheme.primary),
                       ],
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      movimento.observacao.isEmpty
-                          ? 'Sem observação informada.'
-                          : movimento.observacao,
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.70),
-                        height: 1.35,
-                      ),
+                      movimento.observacao.isEmpty ? 'Sem observação informada.' : movimento.observacao,
+                      style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.70), height: 1.35),
                     ),
                     const SizedBox(height: 9),
                     Wrap(
@@ -1064,14 +827,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                       runSpacing: 8,
                       children: <Widget>[
                         _inlineInfo(theme, Icons.person_outline_rounded, movimento.nomeColaborador),
-                        _inlineInfo(theme, Icons.payments_outlined, movimento.descricao),
-                        _inlineInfo(
-                          theme,
-                          Icons.receipt_long_outlined,
-                          movimento.referencia.isEmpty
-                              ? 'Sem referência'
-                              : movimento.referencia,
-                        ),
+                        _inlineInfo(theme, Icons.payments_outlined, forma),
+                        _inlineInfo(theme, Icons.receipt_long_outlined, movimento.referencia.isEmpty ? 'Sem referência' : movimento.referencia),
                       ],
                     ),
                   ],
@@ -1083,23 +840,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           final actions = Column(
             crossAxisAlignment: compact ? CrossAxisAlignment.start : CrossAxisAlignment.end,
             children: <Widget>[
-              Text(
-                _formatCurrency(movimento.valor),
-                style: TextStyle(
-                  color: cor,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+              Text(_formatCurrency(movimento.valor), style: TextStyle(color: cor, fontSize: 22, fontWeight: FontWeight.w900)),
               const SizedBox(height: 4),
-              Text(
-                _formatDateTime(movimento.dataHoraMovimento),
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(_formatDateTime(movimento.dataHoraMovimento), style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12.5, fontWeight: FontWeight.w600)),
               const SizedBox(height: 9),
               Wrap(
                 spacing: 8,
@@ -1108,44 +851,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   OutlinedButton(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Detalhamento de ${_labelTipo(movimento.tipoMovimento)} preparado para futura integração.',
-                          ),
-                        ),
+                        SnackBar(content: Text('Forma relacionada: $forma')),
                       );
                     },
                     child: const Text('Detalhes'),
                   ),
                   if (movimento.status.toLowerCase() != 'cancelada')
-                    OutlinedButton(
-                      onPressed: () => _cancelarMovimento(movimento),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colorScheme.error,
-                      ),
-                      child: const Text('Cancelar'),
-                    ),
+                    OutlinedButton(onPressed: () => _cancelarMovimento(movimento), child: const Text('Cancelar')),
                 ],
               ),
             ],
           );
 
           return compact
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[main, const SizedBox(height: 12), actions],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(child: main),
-                    const SizedBox(width: 14),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(minWidth: 210),
-                      child: actions,
-                    ),
-                  ],
-                );
+              ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[main, const SizedBox(height: 12), actions])
+              : Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Expanded(child: main), const SizedBox(width: 14), ConstrainedBox(constraints: const BoxConstraints(minWidth: 210), child: actions)]);
         },
       ),
     );
@@ -1161,23 +881,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _sectionHeader(
-                theme,
-                title: 'Conferência por forma',
-                subtitle: 'Resumo por meio de recebimento.',
-                icon: Icons.fact_check_outlined,
-              ),
+              _sectionHeader(theme, title: 'Conferência por forma', subtitle: 'Resumo pelos tipos configurados no caixa.', icon: Icons.fact_check_outlined),
               const SizedBox(height: 14),
-              _buildResumoSecundario('Dinheiro', _formatCurrency(_movimentosComSomatorio?.tipo1 ?? 0)),
-              _buildResumoSecundario('Pix', _formatCurrency(_movimentosComSomatorio?.tipo2 ?? 0)),
-              _buildResumoSecundario('Cartão Crédito', _formatCurrency(_movimentosComSomatorio?.tipo3 ?? 0)),
-              _buildResumoSecundario('Cartão Débito', _formatCurrency(_movimentosComSomatorio?.tipo4 ?? 0)),
-              _buildResumoSecundario('Boleto', _formatCurrency(_movimentosComSomatorio?.tipo5 ?? 0)),
-              _buildResumoSecundario('Fiado', _formatCurrency(_movimentosComSomatorio?.tipo6 ?? 0)),
-              _buildResumoSecundario('Crediário', _formatCurrency(_movimentosComSomatorio?.tipo7 ?? 0)),
-              _buildResumoSecundario('Convênio', _formatCurrency(_movimentosComSomatorio?.tipo8 ?? 0)),
-              _buildResumoSecundario('Vale', _formatCurrency(_movimentosComSomatorio?.tipo9 ?? 0)),
-              _buildResumoSecundario('Outros', _formatCurrency(_movimentosComSomatorio?.tipo10 ?? 0)),
+              ..._linhasResumoPorTipoRecebimento().map((linha) => _buildResumoSecundario(linha.label, _formatCurrency(linha.valor))),
             ],
           ),
         ),
@@ -1189,22 +895,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _sectionHeader(
-                theme,
-                title: 'Checklist operacional',
-                subtitle: 'Conferência rápida da sessão.',
-                icon: Icons.rule_folder_outlined,
-              ),
+              _sectionHeader(theme, title: 'Checklist operacional', subtitle: 'Conferência rápida da sessão.', icon: Icons.rule_folder_outlined),
               const SizedBox(height: 14),
               _checkItem(theme, checked: _temCaixaAberto, title: 'Caixa aberto'),
               _checkItem(theme, checked: _movimentos.isNotEmpty, title: 'Movimentações registradas'),
-              _checkItem(
-                theme,
-                checked: _movimentos.any(
-                  (m) => m.status.toLowerCase() == 'pendenteconferencia',
-                ),
-                title: 'Há pendências para conferência',
-              ),
+              _checkItem(theme, checked: _movimentos.any((m) => m.status.toLowerCase() == 'pendenteconferencia'), title: 'Há pendências para conferência'),
               _checkItem(theme, checked: _mostrarPainelFechamento, title: 'Fechamento preparado'),
             ],
           ),
@@ -1224,50 +919,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _sectionHeader(
-            theme,
-            title: 'Fechamento de caixa',
-            subtitle: 'Informe os valores apurados para comparar com o saldo esperado.',
-            icon: Icons.task_alt_rounded,
-          ),
+          _sectionHeader(theme, title: 'Fechamento de caixa', subtitle: 'Informe os valores apurados para comparar com o saldo esperado.', icon: Icons.task_alt_rounded),
           const SizedBox(height: 16),
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: <Widget>[
-              _buildFieldBox(
-                theme,
-                width: 210,
-                label: 'Dinheiro apurado',
-                child: _buildTextField(
-                  theme,
-                  controller: _fechamentoDinheiroController,
-                  hint: _formatCurrency(resumo.totalDinheiro),
-                  prefix: 'R\$ ',
-                ),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 210,
-                label: 'Pix apurado',
-                child: _buildTextField(
-                  theme,
-                  controller: _fechamentoPixController,
-                  hint: _formatCurrency(resumo.totalPix),
-                  prefix: 'R\$ ',
-                ),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 230,
-                label: 'Cartão apurado',
-                child: _buildTextField(
-                  theme,
-                  controller: _fechamentoCartaoController,
-                  hint: _formatCurrency(resumo.totalCartaoCredito + resumo.totalCartaoDebito),
-                  prefix: 'R\$ ',
-                ),
-              ),
+              _buildFieldBox(theme, width: 230, label: '${_labelTipoRecebimentoPorCodigo('tipo1', 'Dinheiro')} apurado', child: _buildTextField(theme, controller: _fechamentoDinheiroController, hint: _formatCurrency(resumo.totalDinheiro), prefix: 'R\$ ')),
+              _buildFieldBox(theme, width: 230, label: '${_labelTipoRecebimentoPorCodigo('tipo2', 'Pix')} apurado', child: _buildTextField(theme, controller: _fechamentoPixController, hint: _formatCurrency(resumo.totalPix), prefix: 'R\$ ')),
+              _buildFieldBox(theme, width: 250, label: 'Cartões apurados', child: _buildTextField(theme, controller: _fechamentoCartaoController, hint: _formatCurrency(resumo.totalCartaoCredito + resumo.totalCartaoDebito), prefix: 'R\$ ')),
               SizedBox(
                 width: 280,
                 child: Container(
@@ -1276,21 +936,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        'Saldo esperado',
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      Text('Saldo esperado', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
-                      Text(
-                        _formatCurrency(resumo.saldoEsperado),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                      Text(_formatCurrency(resumo.saldoEsperado), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
@@ -1305,10 +953,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             child: TextField(
               controller: _fechamentoObservacaoController,
               maxLines: 3,
-              decoration: _inputDecoration(
-                theme,
-                hint: 'Detalhe divergências, conferências e observações finais.',
-              ),
+              decoration: _inputDecoration(theme, hint: 'Detalhe divergências, conferências e observações finais.'),
             ),
           ),
           const SizedBox(height: 16),
@@ -1316,18 +961,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             spacing: 10,
             runSpacing: 10,
             children: <Widget>[
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _fecharCaixa,
-                icon: const Icon(Icons.task_alt_rounded),
-                label: const Text('Concluir fechamento'),
-                style: _primaryButtonStyle(theme),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _mostrarPainelFechamento = false),
-                icon: const Icon(Icons.close_rounded),
-                label: const Text('Cancelar fechamento'),
-                style: _secondaryButtonStyle(theme),
-              ),
+              FilledButton.icon(onPressed: _isLoading ? null : _fecharCaixa, icon: const Icon(Icons.task_alt_rounded), label: const Text('Concluir fechamento')),
+              OutlinedButton.icon(onPressed: () => setState(() => _mostrarPainelFechamento = false), icon: const Icon(Icons.close_rounded), label: const Text('Cancelar fechamento')),
             ],
           ),
         ],
@@ -1335,22 +970,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _sectionHeader(
-    ThemeData theme, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
+  Widget _sectionHeader(ThemeData theme, {required String title, required String subtitle, required IconData icon}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Container(
           width: 42,
           height: 42,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(14),
-          ),
+          decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(14)),
           child: Icon(icon, color: theme.colorScheme.primary, size: 22),
         ),
         const SizedBox(width: 12),
@@ -1358,177 +985,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _summaryCard(
-    ThemeData theme, {
-    required double width,
-    required String label,
-    required String value,
-    required String helper,
-    required IconData icon,
-    bool highlight = false,
-  }) {
-    final colorScheme = theme.colorScheme;
-    return SizedBox(
-      width: width,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: highlight ? colorScheme.primary : colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: highlight
-                ? colorScheme.primary
-                : colorScheme.outline.withOpacity(0.12),
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: highlight
-                    ? Colors.white.withOpacity(0.15)
-                    : colorScheme.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: highlight ? Colors.white : colorScheme.primary,
-                size: 21,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight
-                          ? Colors.white.withOpacity(0.86)
-                          : colorScheme.onSurface.withOpacity(0.62),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight ? Colors.white : colorScheme.onSurface,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    helper,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight
-                          ? Colors.white.withOpacity(0.78)
-                          : colorScheme.onSurface.withOpacity(0.56),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _miniMetric(
-    ThemeData theme, {
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 190, maxWidth: 260),
-      padding: const EdgeInsets.all(14),
-      decoration: _softBox(theme),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: theme.colorScheme.primary, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1537,39 +1000,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: <Widget>[
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
+          Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
         ],
       ),
     );
   }
 
-  Widget _checkItem(
-    ThemeData theme, {
-    required bool checked,
-    required String title,
-  }) {
+  Widget _checkItem(ThemeData theme, {required bool checked, required String title}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: <Widget>[
-          Icon(
-            checked ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-            size: 19,
-            color: checked ? const Color(0xff16a34a) : theme.colorScheme.outline,
-          ),
+          Icon(checked ? Icons.check_circle_rounded : Icons.radio_button_unchecked, size: 19, color: checked ? const Color(0xff16a34a) : theme.colorScheme.outline),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
+          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700))),
         ],
       ),
     );
@@ -1578,19 +1023,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Widget _statusPill(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(.18)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
+      decoration: BoxDecoration(color: color.withOpacity(.10), borderRadius: BorderRadius.circular(999), border: Border.all(color: color.withOpacity(.18))),
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)),
     );
   }
 
@@ -1600,91 +1034,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       children: <Widget>[
         Icon(icon, size: 15, color: theme.colorScheme.onSurfaceVariant),
         const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            text,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 12.8,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+        Flexible(child: Text(text, overflow: TextOverflow.ellipsis, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12.8, fontWeight: FontWeight.w600))),
       ],
     );
   }
 
-  Widget _buildFieldBox(
-    ThemeData theme, {
-    required double width,
-    required String label,
-    required Widget child,
-  }) {
+  Widget _buildFieldBox(ThemeData theme, {required double width, required String label, required Widget child}) {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          label,
-          style: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        Text(label, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         child,
       ],
     );
-    return width == double.infinity
-        ? SizedBox(width: double.infinity, child: content)
-        : SizedBox(width: width, child: content);
-  }
-
-  Widget _buildSeletorCaixaOuGuiche(ThemeData theme) {
-    return SizedBox(
-      width: 340,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Caixa / guichê',
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildDropdown<CaixaOuGuiche>(
-            theme,
-            value: _caixaSelecionado,
-            items: _caixasDisponiveis,
-            onChanged: (value) => setState(() => _caixaSelecionado = value),
-            itemLabel: (item) => item.nome,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _abrirDialogoCriacaoCaixaOuGuiche,
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Novo'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _caixaSelecionado == null
-                    ? null
-                    : _abrirDialogoEdicaoCaixaOuGuicheSelecionado,
-                icon: const Icon(Icons.edit_rounded, size: 16),
-                label: const Text('Editar'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return width == double.infinity ? SizedBox(width: double.infinity, child: content) : SizedBox(width: width, child: content);
   }
 
   Widget _buildReadOnlyField(ThemeData theme, String value) {
@@ -1693,24 +1057,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: _softBox(theme, radius: 16),
-      child: Text(
-        value,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
+      child: Text(value, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
     );
   }
 
-  Widget _buildTextField(
-    ThemeData theme, {
-    required TextEditingController controller,
-    required String hint,
-    String? prefix,
-  }) {
-    return TextField(
-      controller: controller,
-      decoration: _inputDecoration(theme, hint: hint, prefixText: prefix),
-    );
+  Widget _buildTextField(ThemeData theme, {required TextEditingController controller, required String hint, String? prefix}) {
+    return TextField(controller: controller, decoration: _inputDecoration(theme, hint: hint, prefixText: prefix));
   }
 
   Widget _buildDropdown<T>(
@@ -1722,40 +1074,23 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     String? hint,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      value: items.contains(value) ? value : null,
       isExpanded: true,
       decoration: _inputDecoration(theme, hint: hint),
-      items: items
-          .map(
-            (item) => DropdownMenuItem<T>(
-              value: item,
-              child: Text(itemLabel(item), overflow: TextOverflow.ellipsis),
-            ),
-          )
-          .toList(),
+      items: items.map((item) => DropdownMenuItem<T>(value: item, child: Text(itemLabel(item), overflow: TextOverflow.ellipsis))).toList(),
       onChanged: onChanged,
     );
   }
 
-  InputDecoration _inputDecoration(
-    ThemeData theme, {
-    required String? hint,
-    String? prefixText,
-  }) {
+  InputDecoration _inputDecoration(ThemeData theme, {required String? hint, String? prefixText}) {
     return InputDecoration(
       hintText: hint,
       prefixText: prefixText,
       filled: true,
       fillColor: theme.colorScheme.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.12)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.4),
-      ),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.12))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.4)),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
@@ -1765,13 +1100,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(24),
       border: Border.all(color: theme.colorScheme.outline.withOpacity(0.13)),
-      boxShadow: <BoxShadow>[
-        BoxShadow(
-          color: Colors.black.withOpacity(0.035),
-          blurRadius: 12,
-          offset: const Offset(0, 6),
-        ),
-      ],
+      boxShadow: <BoxShadow>[BoxShadow(color: Colors.black.withOpacity(0.035), blurRadius: 12, offset: const Offset(0, 6))],
     );
   }
 
@@ -1783,251 +1112,83 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _headerButton(
-    ThemeData theme,
-    IconData icon,
-    String label,
-    VoidCallback? onPressed,
-  ) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
-  }
-
-  Widget _headerBadge(ThemeData theme, String label, IconData icon) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 240),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.62),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 15, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 7),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _closeButton(BuildContext context) {
-    return Material(
-      color: const Color(0xFFE53935),
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: () {
-          if (widget.onBack != null) {
-            widget.onBack!.call();
-            return;
-          }
-          Navigator.of(context).maybePop();
-        },
-        child: const SizedBox(
-          width: 46,
-          height: 46,
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
-        ),
-      ),
-    );
-  }
-
-  ButtonStyle _primaryButtonStyle(ThemeData theme) {
-    return FilledButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
-
-  ButtonStyle _secondaryButtonStyle(ThemeData theme) {
-    return OutlinedButton.styleFrom(
-      foregroundColor: theme.colorScheme.onSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.18)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
-
-  ButtonStyle _dangerButtonStyle(ThemeData theme) {
-    return OutlinedButton.styleFrom(
-      foregroundColor: theme.colorScheme.error,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      side: BorderSide(color: theme.colorScheme.error.withOpacity(.35)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(fontWeight: FontWeight.w800),
-    );
-  }
-
   List<TiposRecebimento> _tiposRecebimentoAtivosOrdenados() {
     return _tiposRecebimento.where((item) => item.ativo).toList(growable: false)
       ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
   }
 
-  Future<void> _abrirDialogoCriacaoCaixaOuGuiche() async {
-    await _abrirDialogoSalvarCaixaOuGuiche();
+  String _descricaoTipoRecebimentoConfigurado(TiposRecebimento tipo) {
+    final descricao = tipo.descricaoExibicao.trim();
+    return descricao.isNotEmpty ? descricao : _labelTipoRecebimentoPorCodigo(tipo.codigoTipo, tipo.codigoTipo);
   }
 
-  Future<void> _abrirDialogoEdicaoCaixaOuGuicheSelecionado() async {
-    final caixaSelecionado = _caixaSelecionado;
-    if (caixaSelecionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecione um caixa / guichê para editar.'),
-        ),
-      );
-      return;
+  String _descricaoTipoRecebimentoMovimento(MovimentoCaixa movimento) {
+    final descricao = movimento.descricaoTipoRecebimento.trim();
+    if (descricao.isNotEmpty) return descricao;
+    return _labelTipoRecebimentoPorCodigo(
+      movimento.codigoTipoRecebimento,
+      movimento.descricao.trim().isNotEmpty ? movimento.descricao.trim() : 'Forma não informada',
+    );
+  }
+
+  String _labelTipoRecebimentoPorCodigo(String codigoTipo, String fallback) {
+    for (final tipo in _tiposRecebimento) {
+      if (tipo.codigoTipo.toLowerCase() == codigoTipo.toLowerCase()) {
+        final descricao = tipo.descricaoExibicao.trim();
+        if (descricao.isNotEmpty) return descricao;
+      }
     }
-    await _abrirDialogoSalvarCaixaOuGuiche(caixaParaEditar: caixaSelecionado);
+    return fallback;
   }
 
-  Future<void> _abrirDialogoSalvarCaixaOuGuiche({
-    CaixaOuGuiche? caixaParaEditar,
-  }) async {
-    final emEdicao = caixaParaEditar != null;
-    final nomeController = TextEditingController(text: caixaParaEditar?.nome ?? '');
-    final formKey = GlobalKey<FormState>();
+  List<_ResumoTipoRecebimentoData> _linhasResumoPorTipoRecebimento() {
+    final tipos = _tiposRecebimentoAtivosOrdenados();
+    if (tipos.isEmpty) {
+      return <_ResumoTipoRecebimentoData>[
+        _ResumoTipoRecebimentoData('Forma não informada', 0),
+      ];
+    }
 
-    try {
-      final caixaSalvo = await showDialog<CaixaOuGuiche>(
-        context: context,
-        builder: (dialogContext) {
-          bool salvando = false;
-          String? mensagemErro;
+    return tipos
+        .map((tipo) => _ResumoTipoRecebimentoData(
+              _descricaoTipoRecebimentoConfigurado(tipo),
+              _valorResumoPorCodigoTipo(tipo.codigoTipo),
+            ))
+        .toList(growable: false);
+  }
 
-          return StatefulBuilder(
-            builder: (builderContext, setDialogState) {
-              return AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                title: Text(emEdicao ? 'Editar caixa / guichê' : 'Novo caixa / guichê'),
-                content: SizedBox(
-                  width: 420,
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        TextFormField(
-                          controller: nomeController,
-                          autofocus: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Nome',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Informe o nome do caixa / guichê.';
-                            }
-                            return null;
-                          },
-                        ),
-                        if (mensagemErro != null) ...<Widget>[
-                          const SizedBox(height: 10),
-                          Text(
-                            mensagemErro!,
-                            style: TextStyle(
-                              color: Theme.of(builderContext).colorScheme.error,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: salvando ? null : () => Navigator.of(dialogContext).pop(),
-                    child: const Text('Cancelar'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: salvando
-                        ? null
-                        : () async {
-                            if (!(formKey.currentState?.validate() ?? false)) {
-                              return;
-                            }
-                            final nome = nomeController.text.trim();
-                            setDialogState(() {
-                              salvando = true;
-                              mensagemErro = null;
-                            });
-                            try {
-                              final response = emEdicao
-                                  ? await _caixaService.editarCaixaOuGuiche(
-                                      id: caixaParaEditar.id,
-                                      nome: nome,
-                                    )
-                                  : await _caixaService.criarCaixaOuGuiche(nome);
-                              if (!dialogContext.mounted) return;
-                              Navigator.of(dialogContext).pop(response);
-                            } catch (e) {
-                              if (!dialogContext.mounted) return;
-                              setDialogState(() {
-                                salvando = false;
-                                mensagemErro = 'Erro ao salvar: $e';
-                              });
-                            }
-                          },
-                    icon: salvando
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Icon(emEdicao ? Icons.save_rounded : Icons.add_rounded),
-                    label: Text(emEdicao ? 'Salvar' : 'Cadastrar'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
-
-      if (caixaSalvo == null || !mounted) return;
-      await _carregarDadosIniciais(
-        idCaixaPreferencial: caixaSalvo.id.isNotEmpty ? caixaSalvo.id : caixaParaEditar?.id,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            emEdicao
-                ? 'Caixa / guichê atualizado com sucesso.'
-                : 'Caixa / guichê cadastrado com sucesso.',
-          ),
-        ),
-      );
-    } finally {
-      nomeController.dispose();
+  double _valorResumoPorCodigoTipo(String codigoTipo) {
+    final resumo = _movimentosComSomatorio;
+    if (resumo == null) return 0;
+    switch (codigoTipo.toLowerCase()) {
+      case 'tipo1':
+        return resumo.tipo1;
+      case 'tipo2':
+        return resumo.tipo2;
+      case 'tipo3':
+        return resumo.tipo3;
+      case 'tipo4':
+        return resumo.tipo4;
+      case 'tipo5':
+        return resumo.tipo5;
+      case 'tipo6':
+        return resumo.tipo6;
+      case 'tipo7':
+        return resumo.tipo7;
+      case 'tipo8':
+        return resumo.tipo8;
+      case 'tipo9':
+        return resumo.tipo9;
+      case 'tipo10':
+        return resumo.tipo10;
+      default:
+        return 0;
     }
   }
 
   Future<void> _abrirCaixa() async {
     if (_caixaSelecionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione um caixa / guichê.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione um caixa / guichê.')));
       return;
     }
 
@@ -2042,9 +1203,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       );
       await _carregarDadosIniciais();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Caixa aberto com sucesso.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Caixa aberto com sucesso.')));
     } catch (e) {
       _mostrarErro('Erro ao abrir caixa: $e');
     } finally {
@@ -2058,23 +1217,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
     if (_tipoSelecionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione o tipo da operação.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione o tipo da operação.')));
       return;
     }
     if (_tipoRecebimentoSelecionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione a forma relacionada.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione a forma relacionada.')));
       return;
     }
 
     final valor = _parseCurrency(_valorController.text);
     if (valor <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe um valor válido.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Informe um valor válido.')));
       return;
     }
 
@@ -2094,9 +1247,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
       _limparFormularioMovimento();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Movimentação registrada com sucesso.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Movimentação registrada com sucesso.')));
     } catch (e) {
       _mostrarErro('Erro ao registrar movimentação: $e');
     } finally {
@@ -2153,9 +1304,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         _fechamentoCartaoController.clear();
         _fechamentoObservacaoController.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Caixa fechado com sucesso.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Caixa fechado com sucesso.')));
     } catch (e) {
       _mostrarErro('Erro ao fechar caixa: $e');
     } finally {
@@ -2171,25 +1320,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     final confirmou = await showDialog<bool>(
           context: context,
-          builder: (context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Text('Encerrar sessão?'),
-              content: const Text(
-                'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Voltar'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Encerrar'),
-                ),
-              ],
-            );
-          },
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Text('Encerrar sessão?'),
+            content: const Text('Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.'),
+            actions: <Widget>[
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Voltar')),
+              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Encerrar')),
+            ],
+          ),
         ) ??
         false;
 
@@ -2201,9 +1340,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       await _carregarDadosIniciais();
       if (!mounted) return;
       setState(() => _mostrarPainelFechamento = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sessão encerrada.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sessão encerrada.')));
     } catch (e) {
       _mostrarErro('Erro ao encerrar sessão: $e');
     } finally {
@@ -2212,27 +1349,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Future<void> _cancelarMovimento(MovimentoCaixa movimento) async {
+    final forma = _descricaoTipoRecebimentoMovimento(movimento);
     final confirmou = await showDialog<bool>(
           context: context,
-          builder: (context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Text('Cancelar movimentação?'),
-              content: Text(
-                'Deseja cancelar a operação ${_labelTipo(movimento.tipoMovimento)} no valor de ${_formatCurrency(movimento.valor)}?',
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Voltar'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Cancelar operação'),
-                ),
-              ],
-            );
-          },
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Text('Cancelar movimentação?'),
+            content: Text('Deseja cancelar a operação ${_labelTipo(movimento.tipoMovimento)} em $forma no valor de ${_formatCurrency(movimento.valor)}?'),
+            actions: <Widget>[
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Voltar')),
+              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Cancelar operação')),
+            ],
+          ),
         ) ??
         false;
 
@@ -2243,9 +1371,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       await _caixaService.cancelarMovimentacao(movimento.idMovimento);
       await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Movimentação cancelada.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Movimentação cancelada.')));
     } catch (e) {
       _mostrarErro('Erro ao cancelar movimentação: $e');
     } finally {
@@ -2255,9 +1381,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Color _corPorNatureza(String? natureza) {
     if (natureza == null) return const Color(0xff7a8394);
-    return natureza.toLowerCase() == 'entrada'
-        ? const Color(0xff15803d)
-        : const Color(0xffb91c1c);
+    return natureza.toLowerCase() == 'entrada' ? const Color(0xff15803d) : const Color(0xffb91c1c);
   }
 
   Color _corPorStatus(String? status) {
@@ -2358,32 +1482,27 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   String _formatCurrency(double value) {
-    final negative = value < 0;
-    final absolute = value.abs();
-    final fixed = absolute.toStringAsFixed(2);
-    final parts = fixed.split('.');
-    final integer = parts[0];
-    final decimal = parts[1];
-
-    final buffer = StringBuffer();
-    for (int i = 0; i < integer.length; i++) {
-      final position = integer.length - i;
-      buffer.write(integer[i]);
-      if (position > 1 && position % 3 == 1) {
-        buffer.write('.');
+    try {
+      return context.read<LocaleSettingsProvider>().formatCurrency(value);
+    } catch (_) {
+      final negative = value < 0;
+      final absolute = value.abs();
+      final fixed = absolute.toStringAsFixed(2);
+      final parts = fixed.split('.');
+      final integer = parts[0];
+      final decimal = parts[1];
+      final buffer = StringBuffer();
+      for (var i = 0; i < integer.length; i++) {
+        final position = integer.length - i;
+        buffer.write(integer[i]);
+        if (position > 1 && position % 3 == 1) buffer.write('.');
       }
+      return '${negative ? '-' : ''}R\$ ${buffer.toString()},$decimal';
     }
-
-    return '${negative ? '-' : ''}R\$ ${buffer.toString()},$decimal';
   }
 
   double _parseCurrency(String text) {
-    final cleaned = text
-        .replaceAll('R\$', '')
-        .replaceAll('.', '')
-        .replaceAll(' ', '')
-        .replaceAll(',', '.')
-        .trim();
+    final cleaned = text.replaceAll('R\$', '').replaceAll('.', '').replaceAll(' ', '').replaceAll(',', '.').trim();
     return double.tryParse(cleaned) ?? 0;
   }
 
@@ -2402,13 +1521,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
   }
 
-  bool _isSameDay(String? a, DateTime b) {
-    if (a == null || a.isEmpty) return false;
+  bool _isSameDay(String? value, DateTime other) {
+    if (value == null || value.isEmpty) return false;
     try {
-      final dateTimeA = DateTime.parse(a);
-      return dateTimeA.year == b.year &&
-          dateTimeA.month == b.month &&
-          dateTimeA.day == b.day;
+      final dateTime = DateTime.parse(value);
+      return dateTime.year == other.year && dateTime.month == other.month && dateTime.day == other.day;
     } catch (_) {
       return false;
     }
@@ -2476,4 +1593,11 @@ class _AtalhoOperacaoData {
   final String descricao;
   final IconData icone;
   final Color cor;
+}
+
+class _ResumoTipoRecebimentoData {
+  const _ResumoTipoRecebimentoData(this.label, this.valor);
+
+  final String label;
+  final double valor;
 }
