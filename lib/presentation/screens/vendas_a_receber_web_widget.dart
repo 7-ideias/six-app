@@ -108,7 +108,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   Future<void> _carregarTiposRecebimento() async {
     try {
       final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient.getInformacoesBasicasDoCaixa();
-      final List<_TipoRecebimentoOpcao> ativos = informacoes.tiposRecebimento
+      final List<TiposRecebimento> ativos = informacoes.tiposRecebimento
           .where((TiposRecebimento tipo) => tipo.ativo)
           .toList()
         ..sort((TiposRecebimento a, TiposRecebimento b) => a.ordemExibicao.compareTo(b.ordemExibicao));
