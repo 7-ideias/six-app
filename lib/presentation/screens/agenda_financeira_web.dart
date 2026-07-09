@@ -79,6 +79,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
   double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
   double get _saldoPrevisto => (_totalRecebidoConfirmado + _totalReceberPrevisto) - (_totalPagoConfirmado + _totalPagarPrevisto);
+  double get _saldoConfirmado => _totalRecebidoConfirmado - _totalPagoConfirmado;
 
   @override
   void initState() {
@@ -644,11 +645,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         const SizedBox(width: 10),
         FilledButton.icon(onPressed: _novoLancamento, icon: const Icon(Icons.add_rounded), label: const Text('Novo lançamento')),
         const SizedBox(width: 10),
-        IconButton.filled(
-          onPressed: _fechar,
-          icon: const Icon(Icons.close_rounded),
-          tooltip: 'Fechar',
-        ),
+        IconButton.filled(onPressed: _fechar, icon: const Icon(Icons.close_rounded), tooltip: 'Fechar'),
       ]),
     ),
   );
@@ -661,11 +658,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         _drop('Tipo', _tipoSelecionado, _tipos, (v) => setState(() => _tipoSelecionado = v!)),
         _drop('Status', _statusSelecionado, _status, (v) => setState(() => _statusSelecionado = v!)),
         _drop('Tipo de pagamento', _formaPagamentoSelecionada, _formasPagamento, (v) => setState(() => _formaPagamentoSelecionada = v!)),
-        FilledButton.icon(
-          onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
-          icon: const Icon(Icons.search_rounded),
-          label: const Text('Buscar'),
-        ),
+        FilledButton.icon(onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.search_rounded), label: const Text('Buscar')),
       ]),
     ),
   );
@@ -685,13 +678,19 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildResumo(ThemeData theme) {
     final cards = <Map<String, dynamic>>[
-      <String, dynamic>{'titulo': 'A receber previsto', 'valor': _totalReceberPrevisto, 'icone': Icons.south_west_rounded},
-      <String, dynamic>{'titulo': 'A pagar previsto', 'valor': _totalPagarPrevisto, 'icone': Icons.north_east_rounded},
+      <String, dynamic>{'titulo': 'A receber aberto', 'valor': _totalReceberPrevisto, 'icone': Icons.south_west_rounded},
+      <String, dynamic>{'titulo': 'A pagar aberto', 'valor': _totalPagarPrevisto, 'icone': Icons.north_east_rounded},
+      <String, dynamic>{'titulo': 'Saldo previsto', 'valor': _saldoPrevisto, 'icone': Icons.query_stats_rounded},
       <String, dynamic>{'titulo': 'Recebido confirmado', 'valor': _totalRecebidoConfirmado, 'icone': Icons.verified_rounded},
-      <String, dynamic>{'titulo': 'Saldo previsto', 'valor': _saldoPrevisto, 'icone': Icons.account_balance_wallet_outlined},
+      <String, dynamic>{'titulo': 'Pago confirmado', 'valor': _totalPagoConfirmado, 'icone': Icons.task_alt_rounded},
+      <String, dynamic>{'titulo': 'Saldo confirmado', 'valor': _saldoConfirmado, 'icone': Icons.account_balance_wallet_outlined},
     ];
     return LayoutBuilder(builder: (context, constraints) {
-      final width = constraints.maxWidth >= 1000 ? (constraints.maxWidth - 36) / 4 : (constraints.maxWidth - 12) / 2;
+      final double width = constraints.maxWidth >= 1500
+          ? (constraints.maxWidth - 60) / 6
+          : constraints.maxWidth >= 1000
+              ? (constraints.maxWidth - 36) / 4
+              : (constraints.maxWidth - 12) / 2;
       return Wrap(spacing: 12, runSpacing: 12, children: cards.map((card) => SizedBox(width: width, child: _resumoCard(theme, card))).toList());
     });
   }
