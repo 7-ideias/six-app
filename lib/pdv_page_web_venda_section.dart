@@ -471,6 +471,100 @@ extension _PdvPageWebVendaSection on _PDVWebState {
     final double total = _calcularTotal();
     final int quantidadeItens = _calcularQuantidadeItens();
 
+    Widget buildResumoHeader() {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: _pdvTheme.cardBorder))),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+          Row(children: <Widget>[
+            Expanded(child: Text('Venda atual', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _pdvTheme.primaryText))),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: _pdvTheme.successColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999)),
+              child: Text('Em andamento', style: TextStyle(color: _pdvTheme.successColor, fontWeight: FontWeight.w800)),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          _buildResumoInfoTile(Icons.person_outline_rounded, 'Cliente', _clienteAtualLabel()),
+          const SizedBox(height: 10),
+          _buildResumoInfoTile(Icons.receipt_long_outlined, 'Itens', '$quantidadeItens item(ns)'),
+          const SizedBox(height: 10),
+          _buildResumoInfoTile(Icons.payments_outlined, 'Pagamento', _formasSelecionadas.isEmpty ? 'Não definido' : _formasSelecionadas.join(', ')),
+        ]),
+      );
+    }
+
+    Widget buildResumoConteudo() {
+      return Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+          Text('Resumo rápido', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _pdvTheme.secondaryText)),
+          const SizedBox(height: 12),
+          if (_produtosSelecionados.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: _pdvTheme.backgroundPage, borderRadius: BorderRadius.circular(18), border: Border.all(color: _pdvTheme.cardBorder)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                Text('Nenhum item adicionado ainda.', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _pdvTheme.primaryText)),
+                const SizedBox(height: 10),
+                Text('Use o painel como atalho operacional ou consulte vendas a receber.', style: TextStyle(fontSize: 13, height: 1.40, color: _pdvTheme.secondaryText)),
+                const SizedBox(height: 16),
+                Wrap(spacing: 8, runSpacing: 8, children: <Widget>[
+                  _buildMiniAction('Trocar cliente', Icons.person_search_rounded, _abrirDialogClienteRapido),
+                  _buildMiniAction('Buscar item', Icons.search_rounded, _abrirSelecaoProdutoWeb),
+                  _buildMiniAction('Vendas a receber', Icons.receipt_long_outlined, _abrirVendasAReceberWeb),
+                ]),
+              ]),
+            )
+          else
+            ..._produtosSelecionados.map((Map<String, dynamic> produto) {
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: _pdvTheme.backgroundPage, borderRadius: BorderRadius.circular(16), border: Border.all(color: _pdvTheme.cardBorder)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                  Text(produto['nome']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w800, color: _pdvTheme.primaryText)),
+                  const SizedBox(height: 8),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: <Widget>[
+                    Expanded(child: Text('${produto['quantidade']} x ${_formatCurrency(((produto['preco'] ?? 0) as num).toDouble())}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _pdvTheme.secondaryText, fontWeight: FontWeight.w600))),
+                    const SizedBox(width: 8),
+                    Text(_formatCurrency(_calcularSubtotal(produto)), style: TextStyle(color: _pdvTheme.primaryText, fontWeight: FontWeight.w900)),
+                  ]),
+                ]),
+              );
+            }),
+        ]),
+      );
+    }
+
+    Widget buildResumoFooter() {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(color: _pdvTheme.backgroundPage, borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)), border: Border(top: BorderSide(color: _pdvTheme.cardBorder))),
+        child: Column(children: <Widget>[
+          _buildResumoLinhaValor('Subtotal', _formatCurrency(total)),
+          const SizedBox(height: 10),
+          _buildResumoLinhaValor('Desconto', _formatCurrency(0)),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: _pdvTheme.iconColor, borderRadius: BorderRadius.circular(18)),
+            child: Row(children: <Widget>[
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                Text('Total', style: TextStyle(color: Colors.white.withValues(alpha: 0.80), fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(_formatCurrency(total), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white))),
+              ])),
+              const SizedBox(width: 12),
+              Container(width: 56, height: 56, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(16)), child: const Icon(Icons.attach_money_rounded, color: Colors.white, size: 28)),
+            ]),
+          ),
+        ]),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: _pdvTheme.cardBackground,
@@ -478,98 +572,38 @@ extension _PdvPageWebVendaSection on _PDVWebState {
         border: Border.all(color: _pdvTheme.cardBorder),
         boxShadow: <BoxShadow>[BoxShadow(color: _pdvTheme.cardShadow, blurRadius: 12, offset: const Offset(0, 6))],
       ),
-      child: Column(
-        children: <Widget>[
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: _pdvTheme.cardBorder))),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-              Row(children: <Widget>[
-                Expanded(child: Text('Venda atual', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _pdvTheme.primaryText))),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: _pdvTheme.successColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999)),
-                  child: Text('Em andamento', style: TextStyle(color: _pdvTheme.successColor, fontWeight: FontWeight.w800)),
-                ),
-              ]),
-              const SizedBox(height: 16),
-              _buildResumoInfoTile(Icons.person_outline_rounded, 'Cliente', _clienteAtualLabel()),
-              const SizedBox(height: 10),
-              _buildResumoInfoTile(Icons.receipt_long_outlined, 'Itens', '$quantidadeItens item(ns)'),
-              const SizedBox(height: 10),
-              _buildResumoInfoTile(Icons.payments_outlined, 'Pagamento', _formasSelecionadas.isEmpty ? 'Não definido' : _formasSelecionadas.join(', ')),
-            ]),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool shortHeight = constraints.maxHeight < 560;
+
+          if (shortHeight) {
+            return SingleChildScrollView(
               controller: _resumoVendaScrollController,
               primary: false,
-              padding: const EdgeInsets.all(18),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-                Text('Resumo rápido', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _pdvTheme.secondaryText)),
-                const SizedBox(height: 12),
-                if (_produtosSelecionados.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: _pdvTheme.backgroundPage, borderRadius: BorderRadius.circular(18), border: Border.all(color: _pdvTheme.cardBorder)),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-                      Text('Nenhum item adicionado ainda.', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _pdvTheme.primaryText)),
-                      const SizedBox(height: 10),
-                      Text('Use o painel como atalho operacional ou consulte vendas a receber.', style: TextStyle(fontSize: 13, height: 1.40, color: _pdvTheme.secondaryText)),
-                      const SizedBox(height: 16),
-                      Wrap(spacing: 8, runSpacing: 8, children: <Widget>[
-                        _buildMiniAction('Trocar cliente', Icons.person_search_rounded, _abrirDialogClienteRapido),
-                        _buildMiniAction('Buscar item', Icons.search_rounded, _abrirSelecaoProdutoWeb),
-                        _buildMiniAction('Vendas a receber', Icons.receipt_long_outlined, _abrirVendasAReceberWeb),
-                      ]),
-                    ]),
-                  )
-                else
-                  ..._produtosSelecionados.map((Map<String, dynamic> produto) {
-                    return Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: _pdvTheme.backgroundPage, borderRadius: BorderRadius.circular(16), border: Border.all(color: _pdvTheme.cardBorder)),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-                        Text(produto['nome']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w800, color: _pdvTheme.primaryText)),
-                        const SizedBox(height: 8),
-                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: <Widget>[
-                          Expanded(child: Text('${produto['quantidade']} x ${_formatCurrency(((produto['preco'] ?? 0) as num).toDouble())}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _pdvTheme.secondaryText, fontWeight: FontWeight.w600))),
-                          const SizedBox(width: 8),
-                          Text(_formatCurrency(_calcularSubtotal(produto)), style: TextStyle(color: _pdvTheme.primaryText, fontWeight: FontWeight.w900)),
-                        ]),
-                      ]),
-                    );
-                  }),
-              ]),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: _pdvTheme.backgroundPage, borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)), border: Border(top: BorderSide(color: _pdvTheme.cardBorder))),
-            child: Column(children: <Widget>[
-              _buildResumoLinhaValor('Subtotal', _formatCurrency(total)),
-              const SizedBox(height: 10),
-              _buildResumoLinhaValor('Desconto', _formatCurrency(0)),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: _pdvTheme.iconColor, borderRadius: BorderRadius.circular(18)),
-                child: Row(children: <Widget>[
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-                    Text('Total', style: TextStyle(color: Colors.white.withValues(alpha: 0.80), fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 6),
-                    FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(_formatCurrency(total), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white))),
-                  ])),
-                  const SizedBox(width: 12),
-                  Container(width: 56, height: 56, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(16)), child: const Icon(Icons.attach_money_rounded, color: Colors.white, size: 28)),
-                ]),
+              child: Column(
+                children: <Widget>[
+                  buildResumoHeader(),
+                  buildResumoConteudo(),
+                  buildResumoFooter(),
+                ],
               ),
-            ]),
-          ),
-        ],
+            );
+          }
+
+          return Column(
+            children: <Widget>[
+              buildResumoHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _resumoVendaScrollController,
+                  primary: false,
+                  child: buildResumoConteudo(),
+                ),
+              ),
+              buildResumoFooter(),
+            ],
+          );
+        },
       ),
     );
   }
@@ -670,15 +704,14 @@ extension _PdvPageWebVendaSection on _PDVWebState {
   }
 
   Widget _buildAreaVenda(double total) {
-    Widget buildMain({required double height}) {
+    Widget buildMain() {
       return Column(
         children: <Widget>[
           _buildVendaHero(),
           const SizedBox(height: 18),
           _buildBarraOperacional(),
           const SizedBox(height: 18),
-          SizedBox(
-            height: height,
+          Expanded(
             child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[
               Expanded(flex: 7, child: _buildGradeOperacional()),
               const SizedBox(width: 18),
@@ -737,7 +770,7 @@ extension _PdvPageWebVendaSection on _PDVWebState {
               );
             }
 
-            return buildMain(height: constraints.maxHeight - 300);
+            return buildMain();
           },
         ),
       ),
