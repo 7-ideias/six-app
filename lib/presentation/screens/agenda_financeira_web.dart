@@ -25,42 +25,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final AgendaFinanceiraAcoesFinanceiras _acoesService = AgendaFinanceiraAcoesFinanceiras();
   final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
 
-  static const List<String> _formasPagamentoPadrao = <String>[
-    'Todos',
-    'Pix',
-    'Boleto',
-    'Transferência',
-    'Cartão de crédito',
-    'Cartão de débito',
-    'Débito automático',
-    'Dinheiro',
-  ];
-
-  final List<String> _abas = const <String>[
-    'Agenda',
-    'Calendário',
-    'Fluxo previsto',
-    'Valores confirmados',
-  ];
-  final List<String> _periodos = const <String>[
-    'Hoje',
-    'Próximos 7 dias',
-    'Este mês',
-    'Próximo mês',
-  ];
-  final List<String> _tipos = const <String>['Todos', 'Receber', 'Pagar'];
-  final List<String> _status = const <String>[
-    'Todos',
-    'Previsto',
-    'Pendente',
-    'Vence hoje',
-    'Vencido',
-    'Pago',
-    'Recebido',
-    'Parcial',
-    'Cancelado',
-  ];
-  List<String> _formasPagamento = List<String>.from(_formasPagamentoPadrao);
+  static const List<String> _periodos = <String>['Hoje', 'Próximos 7 dias', 'Este mês', 'Próximo mês'];
+  static const List<String> _tipos = <String>['Todos', 'Receber', 'Pagar'];
+  static const List<String> _status = <String>['Todos', 'Previsto', 'Pendente', 'Vence hoje', 'Vencido', 'Pago', 'Recebido', 'Parcial', 'Cancelado'];
+  static const List<String> _formasPagamentoPadrao = <String>['Todos', 'Pix', 'Boleto', 'Transferência', 'Cartão de crédito', 'Cartão de débito', 'Débito automático', 'Dinheiro'];
 
   final Map<String, String> _backendPorDescricaoFormaPagamento = <String, String>{
     'Pix': 'PIX',
@@ -84,19 +52,32 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     'DINHEIRO': 'Dinheiro',
   };
 
+  List<String> _formasPagamento = List<String>.from(_formasPagamentoPadrao);
+  final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> _itensConfirmados = <Map<String, dynamic>>[];
+  Map<String, dynamic> _totaisConfirmados = <String, dynamic>{};
+
   int _abaSelecionada = 0;
   String _periodoSelecionado = 'Próximos 7 dias';
   String _tipoSelecionado = 'Todos';
   String _statusSelecionado = 'Todos';
   String _formaPagamentoSelecionada = 'Todos';
-
   bool _carregando = false;
   bool _executandoAcao = false;
   DateTime? _ultimaConsultaEm;
 
-  final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
-  final List<Map<String, dynamic>> _itensConfirmados = <Map<String, dynamic>>[];
-  Map<String, dynamic> _totaisConfirmados = <String, dynamic>{};
+  List<Map<String, dynamic>> get _itensAgenda => _gruposAgenda
+      .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
+      .where(_passaFiltrosLocais)
+      .toList();
+
+  List<Map<String, dynamic>> get _itensConfirmadosFiltrados => _itensConfirmados.where(_passaFiltrosLocais).toList();
+
+  double get _totalReceberPrevisto => _somar(_itensAgenda, 'receber', 'valorRestante');
+  double get _totalPagarPrevisto => _somar(_itensAgenda, 'pagar', 'valorRestante');
+  double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
+  double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
+  double get _saldoPrevisto => (_totalRecebidoConfirmado + _totalReceberPrevisto) - (_totalPagoConfirmado + _totalPagarPrevisto);
 
   @override
   void initState() {
@@ -112,49 +93,31 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       final informacoes = await _caixaApiClient.getInformacoesBasicasDoCaixa();
       final formas = _montarFormasPagamento(informacoes.tiposRecebimento);
       if (!mounted || formas.isEmpty) return;
-
       setState(() {
         _formasPagamento = <String>['Todos', ...formas];
-        if (!_formasPagamento.contains(_formaPagamentoSelecionada)) {
-          _formaPagamentoSelecionada = 'Todos';
-        }
+        if (!_formasPagamento.contains(_formaPagamentoSelecionada)) _formaPagamentoSelecionada = 'Todos';
       });
-    } catch (_) {
-      // Mantém o fallback padrão para não bloquear a consulta da agenda.
-    }
+    } catch (_) {}
   }
 
   List<String> _montarFormasPagamento(List<TiposRecebimento> tipos) {
     final descricoes = <String>[];
-    final backendPorDescricaoAtualizado = Map<String, String>.from(_backendPorDescricaoFormaPagamento);
-    final descricaoPorBackendAtualizada = Map<String, String>.from(_descricaoPorBackendFormaPagamento);
-
-    final ativosOrdenados = tipos.where((tipo) => tipo.ativo).toList()
-      ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
-
-    for (final tipo in ativosOrdenados) {
+    final backendAtualizado = Map<String, String>.from(_backendPorDescricaoFormaPagamento);
+    final descricaoAtualizada = Map<String, String>.from(_descricaoPorBackendFormaPagamento);
+    final ativos = tipos.where((tipo) => tipo.ativo).toList()..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+    for (final tipo in ativos) {
       final backend = _backendFormaPagamentoPorCodigoTipo(tipo.codigoTipo);
       if (backend == null) continue;
-
-      final descricao = tipo.descricaoExibicao.trim().isNotEmpty
-          ? tipo.descricaoExibicao.trim()
-          : _descricaoPadraoPorBackend(backend);
+      final descricao = tipo.descricaoExibicao.trim().isNotEmpty ? tipo.descricaoExibicao.trim() : (_descricaoPorBackendFormaPagamento[backend] ?? '');
       if (descricao.isEmpty || descricoes.contains(descricao)) continue;
-
       descricoes.add(descricao);
-      backendPorDescricaoAtualizado[descricao] = backend;
-      descricaoPorBackendAtualizada[backend] = descricao;
+      backendAtualizado[descricao] = backend;
+      descricaoAtualizada[backend] = descricao;
     }
-
     if (descricoes.isNotEmpty) {
-      _backendPorDescricaoFormaPagamento
-        ..clear()
-        ..addAll(backendPorDescricaoAtualizado);
-      _descricaoPorBackendFormaPagamento
-        ..clear()
-        ..addAll(descricaoPorBackendAtualizada);
+      _backendPorDescricaoFormaPagamento..clear()..addAll(backendAtualizado);
+      _descricaoPorBackendFormaPagamento..clear()..addAll(descricaoAtualizada);
     }
-
     return descricoes;
   }
 
@@ -175,82 +138,34 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
-  String _descricaoPadraoPorBackend(String backend) {
-    return _descricaoPorBackendFormaPagamento[backend] ?? '';
-  }
-
-  List<Map<String, dynamic>> get _itensAgenda {
-    return _gruposAgenda
-        .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
-        .where((item) => _passaFiltrosLocais(item))
-        .toList();
-  }
-
-  List<Map<String, dynamic>> get _itensConfirmadosFiltrados {
-    return _itensConfirmados.where((item) => _passaFiltrosLocais(item)).toList();
-  }
-
-  List<Map<String, dynamic>> get _itensSomaveis =>
-      _itensAgenda.where((item) => item['status']?.toString() != 'Cancelado').toList();
-
-  double get _totalReceberPrevisto => _somar(_itensSomaveis, 'receber', 'valorRestante');
-  double get _totalPagarPrevisto => _somar(_itensSomaveis, 'pagar', 'valorRestante');
-  double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
-  double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
-  double get _saldoConfirmado => _toDouble(_totaisConfirmados['saldoConfirmado']);
-  double get _saldoPrevisto =>
-      (_totalRecebidoConfirmado + _totalReceberPrevisto) -
-      (_totalPagoConfirmado + _totalPagarPrevisto);
-
   bool _passaFiltrosLocais(Map<String, dynamic> item) {
-    final tipoOk = _tipoSelecionado == 'Todos' ||
-        (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
-        (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
+    final tipoOk = _tipoSelecionado == 'Todos' || (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') || (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
     final statusOk = _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
-    final formaPagamentoOk = _formaPagamentoSelecionada == 'Todos' ||
-        item['formaPagamento'] == _formaPagamentoSelecionada;
-    return tipoOk && statusOk && formaPagamentoOk;
-  }
-
-  void _fechar() {
-    final onBack = widget.onBack;
-    if (onBack != null) {
-      onBack();
-      return;
-    }
-    Navigator.of(context).maybePop();
+    final formaOk = _formaPagamentoSelecionada == 'Todos' || item['formaPagamento'] == _formaPagamentoSelecionada;
+    return tipoOk && statusOk && formaOk;
   }
 
   Future<void> _consultar({bool mostrarFeedback = false}) async {
     if (_carregando) return;
     setState(() => _carregando = true);
-
     try {
       final request = _buildRequest();
       final agenda = await _service.consultarLancamentos(request);
       final confirmados = await _service.consultarValoresConfirmados(request);
-
       if (!mounted) return;
       _aplicarAgenda(agenda);
       _aplicarConfirmados(confirmados);
       _sincronizarValoresConfirmadosNosLancamentos();
       _ultimaConsultaEm = DateTime.now();
-
       if (mostrarFeedback) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Agenda atualizada: ${_itensAgenda.length} lançamento(s).')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Agenda atualizada: ${_itensAgenda.length} lançamento(s).')));
       }
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha ao consultar agenda (${e.statusCode}).')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao consultar agenda (${e.statusCode}).')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível consultar a agenda financeira.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível consultar a agenda financeira.')));
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
@@ -268,94 +183,62 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         clienteFornecedor: null,
         somenteCriticos: false,
       ),
-      visaoSelecionada: _abas[_abaSelecionada].toUpperCase().replaceAll(' ', '_'),
+      visaoSelecionada: _abaSelecionada == 0 ? 'AGENDA' : (_abaSelecionada == 1 ? 'CALENDARIO' : (_abaSelecionada == 2 ? 'FLUXO_PREVISTO' : 'VALORES_CONFIRMADOS')),
     );
   }
 
   AgendaFinanceiraPeriodoRequest _periodoRequest() {
-    final agora = DateTime.now();
-    final hoje = DateTime(agora.year, agora.month, agora.day);
+    final hoje = DateTime.now();
+    final base = DateTime(hoje.year, hoje.month, hoje.day);
     switch (_periodoSelecionado) {
       case 'Hoje':
-        return AgendaFinanceiraPeriodoRequest(modo: 'HOJE', dataInicio: hoje, dataFim: hoje);
+        return AgendaFinanceiraPeriodoRequest(modo: 'HOJE', dataInicio: base, dataFim: base);
       case 'Este mês':
-        return AgendaFinanceiraPeriodoRequest(
-          modo: 'ESTE_MES',
-          dataInicio: DateTime(hoje.year, hoje.month, 1),
-          dataFim: DateTime(hoje.year, hoje.month + 1, 0),
-        );
+        return AgendaFinanceiraPeriodoRequest(modo: 'ESTE_MES', dataInicio: DateTime(base.year, base.month, 1), dataFim: DateTime(base.year, base.month + 1, 0));
       case 'Próximo mês':
-        return AgendaFinanceiraPeriodoRequest(
-          modo: 'PROXIMO_MES',
-          dataInicio: DateTime(hoje.year, hoje.month + 1, 1),
-          dataFim: DateTime(hoje.year, hoje.month + 2, 0),
-        );
+        return AgendaFinanceiraPeriodoRequest(modo: 'PROXIMO_MES', dataInicio: DateTime(base.year, base.month + 1, 1), dataFim: DateTime(base.year, base.month + 2, 0));
       default:
-        return AgendaFinanceiraPeriodoRequest(
-          modo: 'PROXIMOS_7_DIAS',
-          dataInicio: hoje,
-          dataFim: hoje.add(const Duration(days: 7)),
-        );
+        return AgendaFinanceiraPeriodoRequest(modo: 'PROXIMOS_7_DIAS', dataInicio: base, dataFim: base.add(const Duration(days: 7)));
     }
   }
 
   List<String> _statusFiltro() {
     switch (_statusSelecionado) {
-      case 'Previsto':
-        return <String>['PREVISTO'];
-      case 'Pendente':
-        return <String>['PENDENTE'];
-      case 'Vence hoje':
-        return <String>['VENCE_HOJE'];
-      case 'Vencido':
-        return <String>['VENCIDO'];
-      case 'Pago':
-        return <String>['PAGO'];
-      case 'Recebido':
-        return <String>['RECEBIDO'];
-      case 'Parcial':
-        return <String>['PARCIAL'];
-      case 'Cancelado':
-        return <String>['CANCELADO'];
-      default:
-        return <String>[];
+      case 'Previsto': return <String>['PREVISTO'];
+      case 'Pendente': return <String>['PENDENTE'];
+      case 'Vence hoje': return <String>['VENCE_HOJE'];
+      case 'Vencido': return <String>['VENCIDO'];
+      case 'Pago': return <String>['PAGO'];
+      case 'Recebido': return <String>['RECEBIDO'];
+      case 'Parcial': return <String>['PARCIAL'];
+      case 'Cancelado': return <String>['CANCELADO'];
+      default: return <String>[];
     }
   }
 
-  List<String> _formasPagamentoFiltro() {
-    if (_formaPagamentoSelecionada == 'Todos') return <String>[];
-    return <String>[_formaPagamentoBackend(_formaPagamentoSelecionada)];
-  }
+  List<String> _formasPagamentoFiltro() => _formaPagamentoSelecionada == 'Todos' ? <String>[] : <String>[_formaPagamentoBackend(_formaPagamentoSelecionada)];
 
   void _aplicarAgenda(Map<String, dynamic> payload) {
     final gruposRaw = payload['gruposAgenda'];
     final grupos = <Map<String, dynamic>>[];
-
     if (gruposRaw is List) {
       for (final grupo in gruposRaw.whereType<Map<String, dynamic>>()) {
         final itensRaw = grupo['itens'];
         grupos.add(<String, dynamic>{
           'grupo': grupo['titulo']?.toString() ?? 'Lançamentos',
           'descricao': grupo['descricao']?.toString() ?? '',
-          'itens': itensRaw is List
-              ? itensRaw.whereType<Map<String, dynamic>>().map(_mapearItemAgenda).toList()
-              : <Map<String, dynamic>>[],
+          'itens': itensRaw is List ? itensRaw.whereType<Map<String, dynamic>>().map(_mapearItemAgenda).toList() : <Map<String, dynamic>>[],
         });
       }
     }
-
-    _gruposAgenda
-      ..clear()
-      ..addAll(grupos);
+    _gruposAgenda..clear()..addAll(grupos);
   }
 
   void _aplicarConfirmados(Map<String, dynamic> payload) {
     final totais = payload['totais'];
     final itens = payload['itens'];
     _totaisConfirmados = totais is Map<String, dynamic> ? Map<String, dynamic>.from(totais) : <String, dynamic>{};
-    _itensConfirmados
-      ..clear()
-      ..addAll(itens is List ? itens.whereType<Map<String, dynamic>>().map(_mapearItemConfirmado).toList() : <Map<String, dynamic>>[]);
+    _itensConfirmados..clear()..addAll(itens is List ? itens.whereType<Map<String, dynamic>>().map(_mapearItemConfirmado).toList() : <Map<String, dynamic>>[]);
   }
 
   Map<String, dynamic> _mapearItemAgenda(Map<String, dynamic> item) {
@@ -364,10 +247,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final valorConfirmado = _toDouble(item['valorConfirmado']);
     final valorRestante = _toDouble(item['valorRestante'] ?? (valorOriginal - valorConfirmado));
     final acoesRaw = item['acoesDisponiveis'];
-    final acoes = acoesRaw is List
-        ? acoesRaw.map((acao) => _acaoLabel(acao?.toString())).where((acao) => acao.isNotEmpty).toList()
-        : <String>[];
-
+    final acoes = acoesRaw is List ? acoesRaw.map((acao) => _acaoLabel(acao?.toString())).where((acao) => acao.isNotEmpty).toSet().toList() : <String>[];
+    if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
     return <String, dynamic>{
       'id': item['idLancamento']?.toString() ?? '',
       'tipo': tipo,
@@ -385,7 +266,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'categoria': item['categoria']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
-      'acoes': acoes.isNotEmpty ? acoes : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
+      'acoes': acoes,
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
     };
   }
@@ -403,23 +284,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       'data': _formatarDataIsoParaBr((item['dataUltimaConfirmacao'] ?? item['dataVencimento'])?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'formaPagamento': _formaPagamentoLabel(item['formaPagamento']?.toString()),
-      'empresa': item['empresa']?.toString() ?? '',
-      'quantidadeConfirmacoes': item['quantidadeConfirmacoes'] ?? item['quantidadeLiquidacoes'] ?? 1,
+      'empresa': _empresaNome(item['empresa']),
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
     };
   }
 
-  List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) {
-    return raw is List
-        ? raw.whereType<Map<String, dynamic>>().map((item) => Map<String, dynamic>.from(item)).toList()
-        : <Map<String, dynamic>>[];
-  }
+  List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) => raw is List ? raw.whereType<Map<String, dynamic>>().map((item) => Map<String, dynamic>.from(item)).toList() : <Map<String, dynamic>>[];
 
   void _sincronizarValoresConfirmadosNosLancamentos() {
-    final confirmadosPorId = <String, Map<String, dynamic>>{
-      for (final item in _itensConfirmados) item['id'].toString(): item,
-    };
-
+    final confirmadosPorId = <String, Map<String, dynamic>>{for (final item in _itensConfirmados) item['id'].toString(): item};
     for (final grupo in _gruposAgenda) {
       final itens = (grupo['itens'] as List).cast<Map<String, dynamic>>();
       for (final item in itens) {
@@ -429,17 +302,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         item['valorRestante'] = confirmado['valorRestante'];
         item['valor'] = confirmado['valorRestante'];
         item['liquidacoes'] = confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
-        item['quantidadeConfirmacoes'] = confirmado['quantidadeConfirmacoes'] ?? 0;
-        if (_toDouble(confirmado['valorConfirmado']) > 0 && _toDouble(confirmado['valorRestante']) > 0) {
-          item['status'] = 'Parcial';
-        }
+        if (_toDouble(confirmado['valorConfirmado']) > 0 && _toDouble(confirmado['valorRestante']) > 0) item['status'] = 'Parcial';
       }
     }
   }
 
   Future<void> _executarAcao(String acao, Map<String, dynamic> item) async {
     final comando = acao.trim().toLowerCase();
-    if (comando == 'detalhes') return;
+    if (comando == 'detalhes' || comando == 'detalhar') {
+      await _mostrarDetalhesLancamento(item);
+      return;
+    }
     if (comando == 'editar') {
       await _editarLancamento(item);
       return;
@@ -455,63 +328,66 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ação "$acao" ainda não implementada.')));
   }
 
+  Future<void> _mostrarDetalhesLancamento(Map<String, dynamic> item) async {
+    if (_executandoAcao) return;
+    final id = item['id']?.toString() ?? '';
+    Map<String, dynamic> detalhe = <String, dynamic>{};
+    bool fallback = false;
+    setState(() => _executandoAcao = true);
+    try {
+      if (id.trim().isNotEmpty) detalhe = await _service.buscarDetalheLancamento(id);
+      if (detalhe.isEmpty) fallback = true;
+    } catch (_) {
+      fallback = true;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _LancamentoDetalhesDialog(
+        item: item,
+        detalhe: detalhe,
+        fallback: fallback,
+        formatarMoeda: _formatarMoeda,
+        formatarData: _formatarDataFlexivel,
+        formaPagamentoLabel: _formaPagamentoLabel,
+      ),
+    );
+  }
+
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
     final valorController = TextEditingController();
     final observacaoController = TextEditingController();
     String? erroValor;
-
     final valor = await showDialog<double>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Registrar parcial'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text('Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: valorController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Valor parcial', errorText: erroValor),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: observacaoController,
-                minLines: 2,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Observação'),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(null), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () {
-                final valorDigitado = _toDouble(valorController.text);
-                final valorAberto = _toDouble(item['valorRestante'] ?? item['valor']);
-                if (valorDigitado <= 0) {
-                  setDialogState(() => erroValor = 'Informe um valor maior que zero.');
-                  return;
-                }
-                if (valorDigitado >= valorAberto) {
-                  setDialogState(() => erroValor = 'Informe um valor menor que o aberto.');
-                  return;
-                }
-                Navigator.of(dialogContext).pop(valorDigitado);
-              },
-              child: const Text('Salvar'),
-            ),
-          ],
-        ),
-      ),
+      builder: (dialogContext) => StatefulBuilder(builder: (dialogContext, setDialogState) => AlertDialog(
+        title: const Text('Registrar parcial'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+          Text('Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}'),
+          const SizedBox(height: 12),
+          TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: 'Valor parcial', errorText: erroValor)),
+          const SizedBox(height: 12),
+          TextField(controller: observacaoController, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'Observação')),
+        ]),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(null), child: const Text('Cancelar')),
+          FilledButton(onPressed: () {
+            final digitado = _toDouble(valorController.text);
+            final aberto = _toDouble(item['valorRestante'] ?? item['valor']);
+            if (digitado <= 0) { setDialogState(() => erroValor = 'Informe um valor maior que zero.'); return; }
+            if (digitado >= aberto) { setDialogState(() => erroValor = 'Informe um valor menor que o aberto.'); return; }
+            Navigator.of(dialogContext).pop(digitado);
+          }, child: const Text('Salvar')),
+        ],
+      )),
     );
-
     final observacao = observacaoController.text.trim();
     valorController.dispose();
     observacaoController.dispose();
     if (valor == null) return;
-
     await _executarComLoading(() async {
       await _acoesService.executarAbatimento(
         idLancamento: item['id'].toString(),
@@ -524,8 +400,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ),
       );
       await _consultar();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Parcial registrada com sucesso.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Parcial registrada com sucesso.')));
     });
   }
 
@@ -542,9 +417,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ],
       ),
     );
-
     if (confirmado != true) return;
-
     await _executarComLoading(() async {
       await _acoesService.executarTotal(
         idLancamento: item['id'].toString(),
@@ -558,8 +431,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ),
       );
       await _consultar();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento liquidado com sucesso.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento liquidado com sucesso.')));
     });
   }
 
@@ -569,19 +441,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     try {
       await action();
     } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha na ação (${e.statusCode}).')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha na ação (${e.statusCode}).')));
     } finally {
       if (mounted) setState(() => _executandoAcao = false);
     }
   }
 
   Future<void> _novoLancamento() async {
-    final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
-      context,
-      empresaSelecionada: 'Empresa',
-      empresas: const <String>['Empresa'],
-    );
+    final item = await showSubPainelLancamentoAgendaFinanceiraWeb(context, empresaSelecionada: 'Empresa', empresas: const <String>['Empresa']);
     if (!mounted || item == null) return;
     await _consultar(mostrarFeedback: true);
   }
@@ -589,24 +456,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
     final empresaAtual = _empresaNome(item['empresa']).trim();
     final empresas = <String>[empresaAtual.isEmpty ? 'Empresa' : empresaAtual];
-    final itemAtualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
-      context,
-      empresaSelecionada: empresas.first,
-      empresas: empresas,
-      modoEdicao: true,
-      lancamentoInicial: item,
-    );
-    if (!mounted || itemAtualizado == null) return;
+    final atualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(context, empresaSelecionada: empresas.first, empresas: empresas, modoEdicao: true, lancamentoInicial: item);
+    if (!mounted || atualizado == null) return;
     await _consultar(mostrarFeedback: true);
+  }
+
+  void _fechar() {
+    final onBack = widget.onBack;
+    if (onBack != null) { onBack(); return; }
+    Navigator.of(context).maybePop();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.escape): _fechar,
-      },
+      bindings: <ShortcutActivator, VoidCallback>{const SingleActivator(LogicalKeyboardKey.escape): _fechar},
       child: Focus(
         autofocus: true,
         child: Material(
@@ -620,12 +485,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   _buildHeader(theme),
                   const SizedBox(height: 14),
                   _buildFiltros(theme),
-                  if (_carregando || _executandoAcao) ...const <Widget>[
-                    SizedBox(height: 10),
-                    LinearProgressIndicator(minHeight: 3),
-                  ],
+                  if (_carregando || _executandoAcao) ...const <Widget>[SizedBox(height: 10), LinearProgressIndicator(minHeight: 3)],
                   const SizedBox(height: 14),
-                  _buildResumo(context, theme),
+                  _buildResumo(theme),
                   const SizedBox(height: 18),
                   _buildAbas(theme),
                   const SizedBox(height: 16),
@@ -640,59 +502,21 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Widget _buildHeader(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 22, 20, 18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
-        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(Icons.account_balance_wallet_outlined, color: theme.colorScheme.primary, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Agenda Financeira', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Text(
-                  _ultimaConsultaEm == null
-                      ? 'Ainda não consultado'
-                      : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.35),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Atualizar'),
-              ),
-              FilledButton.icon(
-                onPressed: _executandoAcao ? null : _novoLancamento,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Novo lançamento'),
-              ),
-              IconButton.filledTonal(onPressed: _fechar, tooltip: 'Fechar', icon: const Icon(Icons.close_rounded)),
-            ],
-          ),
-        ],
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(children: <Widget>[
+          IconButton(onPressed: _fechar, icon: const Icon(Icons.arrow_back_rounded), tooltip: 'Voltar'),
+          const SizedBox(width: 8),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+            Text('Agenda financeira', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+            Text(_ultimaConsultaEm == null ? 'Filtre os lançamentos e acompanhe seus detalhes.' : 'Última consulta: ${_formatarDataHora(_ultimaConsultaEm!)}'),
+          ])),
+          FilledButton.icon(onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true), icon: const Icon(Icons.search_rounded), label: const Text('Filtrar')),
+          const SizedBox(width: 10),
+          OutlinedButton.icon(onPressed: _novoLancamento, icon: const Icon(Icons.add_rounded), label: const Text('Novo')),
+        ]),
       ),
     );
   }
@@ -700,156 +524,108 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Widget _buildFiltros(ThemeData theme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            _dropdown('Período', _periodoSelecionado, _periodos, (value) => setState(() => _periodoSelecionado = value!)),
-            _dropdown('Tipo', _tipoSelecionado, _tipos, (value) => setState(() => _tipoSelecionado = value!)),
-            _dropdown('Status', _statusSelecionado, _status, (value) => setState(() => _statusSelecionado = value!)),
-            _dropdown(
-              'Tipo de pagamento',
-              _formaPagamentoSelecionada,
-              _formasPagamento,
-              (value) => setState(() => _formaPagamentoSelecionada = value!),
-              width: 230,
-            ),
-            FilledButton.icon(
-              onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
-              icon: const Icon(Icons.search),
-              label: const Text('Buscar'),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(16),
+        child: Wrap(spacing: 12, runSpacing: 12, children: <Widget>[
+          _drop('Período', _periodoSelecionado, _periodos, (v) => setState(() => _periodoSelecionado = v!)),
+          _drop('Tipo', _tipoSelecionado, _tipos, (v) => setState(() => _tipoSelecionado = v!)),
+          _drop('Status', _statusSelecionado, _status, (v) => setState(() => _statusSelecionado = v!)),
+          _drop('Tipo de pagamento', _formaPagamentoSelecionada, _formasPagamento, (v) => setState(() => _formaPagamentoSelecionada = v!)),
+        ]),
       ),
     );
   }
 
-  Widget _dropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged, {double width = 190}) {
+  Widget _drop(String label, String value, List<String> values, ValueChanged<String?> onChanged) {
+    final safeValue = values.contains(value) ? value : values.first;
     return SizedBox(
-      width: width,
+      width: label == 'Tipo de pagamento' ? 260 : 190,
       child: DropdownButtonFormField<String>(
-        value: items.contains(value) ? value : items.first,
-        decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()).copyWith(labelText: label),
-        items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(item, overflow: TextOverflow.ellipsis))).toList(),
-        onChanged: _carregando ? null : onChanged,
+        value: safeValue,
+        decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14))),
+        items: values.map((item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
+        onChanged: onChanged,
       ),
     );
   }
 
-  Widget _buildResumo(BuildContext context, ThemeData theme) {
-    final regionalizacao = context.watch<LocaleSettingsProvider>();
+  Widget _buildResumo(ThemeData theme) {
     final cards = <Map<String, dynamic>>[
-      {'titulo': 'A receber aberto', 'valor': _totalReceberPrevisto, 'icone': Icons.south_west_rounded},
-      {'titulo': 'A pagar aberto', 'valor': _totalPagarPrevisto, 'icone': Icons.north_east_rounded},
-      {'titulo': 'Saldo previsto', 'valor': _saldoPrevisto, 'icone': Icons.query_stats_rounded},
-      {'titulo': 'Recebido confirmado', 'valor': _totalRecebidoConfirmado, 'icone': Icons.verified_rounded},
-      {'titulo': 'Pago confirmado', 'valor': _totalPagoConfirmado, 'icone': Icons.task_alt_rounded},
-      {'titulo': 'Saldo confirmado', 'valor': _saldoConfirmado, 'icone': Icons.account_balance_wallet_rounded},
+      <String, dynamic>{'titulo': 'A receber previsto', 'valor': _totalReceberPrevisto, 'icone': Icons.south_west_rounded},
+      <String, dynamic>{'titulo': 'A pagar previsto', 'valor': _totalPagarPrevisto, 'icone': Icons.north_east_rounded},
+      <String, dynamic>{'titulo': 'Recebido confirmado', 'valor': _totalRecebidoConfirmado, 'icone': Icons.verified_rounded},
+      <String, dynamic>{'titulo': 'Saldo previsto', 'valor': _saldoPrevisto, 'icone': Icons.account_balance_wallet_outlined},
     ];
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: cards.map((card) => SizedBox(width: 260, child: _cardResumo(theme, card, regionalizacao))).toList(),
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final width = constraints.maxWidth >= 1000 ? (constraints.maxWidth - 36) / 4 : (constraints.maxWidth - 12) / 2;
+      return Wrap(spacing: 12, runSpacing: 12, children: cards.map((card) => SizedBox(width: width, child: _resumoCard(theme, card))).toList());
+    });
   }
 
-  Widget _cardResumo(ThemeData theme, Map<String, dynamic> card, LocaleSettingsProvider regionalizacao) {
+  Widget _resumoCard(ThemeData theme, Map<String, dynamic> card) {
     final valor = _toDouble(card['valor']);
     return Card(
-      elevation: 2,
+      elevation: 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
-          children: <Widget>[
-            Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(card['titulo'] as String, style: const TextStyle(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 4),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: valor),
-                    duration: const Duration(milliseconds: 750),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, value, child) => Text(
-                      regionalizacao.formatCurrency(value),
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        child: Row(children: <Widget>[
+          Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+            Text(card['titulo'] as String, style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(_formatarMoeda(valor), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+          ])),
+        ]),
       ),
     );
   }
 
   Widget _buildAbas(ThemeData theme) {
     return SegmentedButton<int>(
-      segments: List<ButtonSegment<int>>.generate(
-        _abas.length,
-        (index) => ButtonSegment<int>(
-          value: index,
-          label: Text(_abas[index]),
-          icon: index == _abaSelecionada ? const Icon(Icons.check, size: 16) : null,
-        ),
-      ),
       selected: <int>{_abaSelecionada},
       onSelectionChanged: (value) => setState(() => _abaSelecionada = value.first),
+      segments: const <ButtonSegment<int>>[
+        ButtonSegment<int>(value: 0, label: Text('Agenda')),
+        ButtonSegment<int>(value: 1, label: Text('Calendário')),
+        ButtonSegment<int>(value: 2, label: Text('Fluxo previsto')),
+        ButtonSegment<int>(value: 3, label: Text('Valores confirmados')),
+      ],
     );
   }
 
   Widget _buildConteudoAba(ThemeData theme) {
-    switch (_abaSelecionada) {
-      case 1:
-        return _buildCalendario(theme);
-      case 2:
-        return _buildFluxo(theme);
-      case 3:
-        return _buildValoresConfirmados(theme);
-      default:
-        return _buildAgenda(theme);
-    }
+    if (_abaSelecionada == 3) return _buildValoresConfirmados(theme);
+    if (_abaSelecionada == 1) return _buildCalendario(theme);
+    if (_abaSelecionada == 2) return _buildFluxo(theme);
+    return _buildAgenda(theme);
   }
 
   Widget _buildAgenda(ThemeData theme) {
-    if (_itensAgenda.isEmpty) {
-      return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum lançamento encontrado.')));
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: _itensAgenda.map((item) => _cardLancamento(theme, item)).toList(),
-    );
+    final itens = _itensAgenda;
+    if (itens.isEmpty) return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum lançamento encontrado.')));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: itens.map((item) => _cardLancamento(theme, item)).toList());
   }
 
   Widget _cardLancamento(ThemeData theme, Map<String, dynamic> item) {
     final tipoEntrada = item['tipo'] == 'receber';
+    final acoes = List<String>.from((item['acoes'] as List?)?.map((e) => e.toString()) ?? const <String>[]);
+    if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar')),
-                Chip(label: Text(item['status']?.toString() ?? '-')),
-                Chip(label: Text(item['formaPagamento']?.toString() ?? '-')),
-                if (_toDouble(item['valorConfirmado']) > 0) Chip(label: Text('Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}')),
-                if (_toDouble(item['valorRestante']) > 0) Chip(label: Text('Aberto: ${_formatarMoeda(_toDouble(item['valorRestante']))}')),
-              ],
-            ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: _executandoAcao ? null : () => _mostrarDetalhesLancamento(item),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+            Wrap(spacing: 8, runSpacing: 8, children: <Widget>[
+              Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar')),
+              Chip(label: Text(item['status']?.toString() ?? '-')),
+              Chip(label: Text(item['formaPagamento']?.toString() ?? '-')),
+              if (_toDouble(item['valorConfirmado']) > 0) Chip(label: Text('Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}')),
+              if (_toDouble(item['valorRestante']) > 0) Chip(label: Text('Aberto: ${_formatarMoeda(_toDouble(item['valorRestante']))}')),
+            ]),
             const SizedBox(height: 8),
             Text(item['descricao']?.toString() ?? '', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
@@ -857,24 +633,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             const SizedBox(height: 8),
             Text('Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}', style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                OutlinedButton.icon(
-                  onPressed: _executandoAcao ? null : () => _editarLancamento(item),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Editar'),
-                ),
-                ...(item['acoes'] as List).take(4).map(
-                      (acao) => OutlinedButton(
-                        onPressed: _executandoAcao ? null : () => _executarAcao(acao.toString(), item),
-                        child: Text(acao.toString()),
-                      ),
-                    ),
-              ],
-            ),
-          ],
+            Wrap(spacing: 8, runSpacing: 8, children: <Widget>[
+              OutlinedButton.icon(onPressed: _executandoAcao ? null : () => _editarLancamento(item), icon: const Icon(Icons.edit_outlined, size: 18), label: const Text('Editar')),
+              ...acoes.take(4).map((acao) => OutlinedButton(onPressed: _executandoAcao ? null : () => _executarAcao(acao, item), child: Text(acao))),
+            ]),
+          ]),
         ),
       ),
     );
@@ -882,316 +645,71 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildValoresConfirmados(ThemeData theme) {
     final itens = _itensConfirmadosFiltrados;
-    if (itens.isEmpty) {
-      return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum valor confirmado no período.')));
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text('Valores confirmados', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-        const SizedBox(height: 12),
-        ...itens.map((item) => Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading: Icon(item['tipo'] == 'receber' ? Icons.south_west_rounded : Icons.north_east_rounded),
-                title: Text(item['descricao']?.toString() ?? ''),
-                subtitle: Text('${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}'),
-                trailing: Text(_formatarMoeda(_toDouble(item['valorConfirmado'])), style: const TextStyle(fontWeight: FontWeight.w900)),
-              ),
-            )),
-      ],
-    );
+    if (itens.isEmpty) return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum valor confirmado no período.')));
+    return Column(children: itens.map((item) => Card(child: ListTile(
+      onTap: () => _mostrarDetalhesLancamento(item),
+      leading: Icon(item['tipo'] == 'receber' ? Icons.south_west_rounded : Icons.north_east_rounded),
+      title: Text(item['descricao']?.toString() ?? ''),
+      subtitle: Text('${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}'),
+      trailing: Text(_formatarMoeda(_toDouble(item['valorConfirmado'])), style: const TextStyle(fontWeight: FontWeight.w900)),
+    ))).toList());
   }
 
   Widget _buildCalendario(ThemeData theme) {
-    final itens = List<Map<String, dynamic>>.from(_itensSomaveis);
-    itens.sort((a, b) {
-      final dataA = _parseDataBr(a['vencimento']?.toString()) ?? DateTime(9999);
-      final dataB = _parseDataBr(b['vencimento']?.toString()) ?? DateTime(9999);
-      return dataA.compareTo(dataB);
-    });
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: itens.isEmpty
-            ? const Text('Nenhum lançamento encontrado no calendário.')
-            : SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const <DataColumn>[
-                    DataColumn(label: Text('Data')),
-                    DataColumn(label: Text('Tipo')),
-                    DataColumn(label: Text('Tipo de pagamento')),
-                    DataColumn(label: Text('Descrição')),
-                    DataColumn(label: Text('Valor previsto'), numeric: true),
-                    DataColumn(label: Text('Valor confirmado'), numeric: true),
-                    DataColumn(label: Text('Diferença'), numeric: true),
-                  ],
-                  rows: itens.map((item) {
-                    final tipoEntrada = item['tipo'] == 'receber';
-                    final valorPrevisto = _toDouble(item['valorOriginal'] ?? item['valor']);
-                    final valorConfirmado = _toDouble(item['valorConfirmado']);
-                    final diferenca = valorPrevisto - valorConfirmado;
-                    return DataRow(
-                      cells: <DataCell>[
-                        DataCell(Text(item['vencimento']?.toString() ?? '-')),
-                        DataCell(Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar'))),
-                        DataCell(Text(item['formaPagamento']?.toString() ?? '-')),
-                        DataCell(SizedBox(width: 380, child: Text(item['descricao']?.toString() ?? '-', overflow: TextOverflow.ellipsis))),
-                        DataCell(Text(_formatarMoeda(valorPrevisto), style: const TextStyle(fontWeight: FontWeight.w800))),
-                        DataCell(Text(_formatarMoeda(valorConfirmado), style: const TextStyle(fontWeight: FontWeight.w800))),
-                        DataCell(Text(_formatarMoeda(diferenca), style: const TextStyle(fontWeight: FontWeight.w800))),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-      ),
-    );
+    final itens = List<Map<String, dynamic>>.from(_itensAgenda)..sort((a, b) => (a['vencimento']?.toString() ?? '').compareTo(b['vencimento']?.toString() ?? ''));
+    if (itens.isEmpty) return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum lançamento encontrado no calendário.')));
+    return Card(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: DataTable(columns: const <DataColumn>[
+      DataColumn(label: Text('Data')), DataColumn(label: Text('Tipo')), DataColumn(label: Text('Tipo de pagamento')), DataColumn(label: Text('Descrição')), DataColumn(label: Text('Valor'), numeric: true), DataColumn(label: Text('Ações')),
+    ], rows: itens.map((item) => DataRow(cells: <DataCell>[
+      DataCell(Text(item['vencimento']?.toString() ?? '-')), DataCell(Text(item['tipo'] == 'receber' ? 'Receber' : 'Pagar')), DataCell(Text(item['formaPagamento']?.toString() ?? '-')), DataCell(SizedBox(width: 340, child: Text(item['descricao']?.toString() ?? '-', overflow: TextOverflow.ellipsis))), DataCell(Text(_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor'])))), DataCell(TextButton(onPressed: () => _mostrarDetalhesLancamento(item), child: const Text('Detalhes'))),
+    ])).toList())));
   }
 
   Widget _buildFluxo(ThemeData theme) {
-    final fluxoPorMes = <String, Map<String, double>>{};
-    for (final item in _itensSomaveis) {
-      final data = _parseDataBr(item['vencimento']?.toString());
-      final mes = data == null ? 'Sem competência' : '${data.year}-${data.month.toString().padLeft(2, '0')}';
-      final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-      final registro = fluxoPorMes.putIfAbsent(mes, () => <String, double>{'entradas': 0, 'saidas': 0});
-      if (item['tipo'] == 'receber') {
-        registro['entradas'] = (registro['entradas'] ?? 0) + valor;
-      } else {
-        registro['saidas'] = (registro['saidas'] ?? 0) + valor;
-      }
-    }
-
-    if (fluxoPorMes.isEmpty) {
-      return const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Nenhum fluxo previsto encontrado.')));
-    }
-
-    final mesesOrdenados = fluxoPorMes.keys.toList()..sort();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: mesesOrdenados.map((mes) {
-            final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
-            final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
-            final saldo = entrada - saida;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text(mes, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-                      Text('Saldo: ${_formatarMoeda(saldo)}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBarraFluxoUnica(theme: theme, entrada: entrada, saida: saida),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
+    return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+      Text('Fluxo previsto', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+      const SizedBox(height: 12),
+      Text('Entradas em aberto: ${_formatarMoeda(_totalReceberPrevisto)}'),
+      Text('Saídas em aberto: ${_formatarMoeda(_totalPagarPrevisto)}'),
+      const SizedBox(height: 8),
+      Text('Saldo previsto: ${_formatarMoeda(_saldoPrevisto)}', style: const TextStyle(fontWeight: FontWeight.w900)),
+    ])));
   }
 
-  Widget _buildBarraFluxoUnica({required ThemeData theme, required double entrada, required double saida}) {
-    final total = entrada + saida;
-    final percentualEntrada = total <= 0 ? 0.0 : entrada / total;
-    final percentualSaida = total <= 0 ? 0.0 : saida / total;
-    final percentualEntradaTexto = total <= 0 ? '0,0% entradas' : '${(percentualEntrada * 100).toStringAsFixed(1).replaceAll('.', ',')}% entradas';
-    final percentualSaidaTexto = total <= 0 ? '0,0% saídas' : '${(percentualSaida * 100).toStringAsFixed(1).replaceAll('.', ',')}% saídas';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Text('Entradas: ${_formatarMoeda(entrada)}', style: const TextStyle(fontWeight: FontWeight.w800)),
-            Text('Saídas: ${_formatarMoeda(saida)}', style: const TextStyle(fontWeight: FontWeight.w800)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return Container(
-              height: 44,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: 1),
-                duration: const Duration(milliseconds: 750),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  final carregou = value >= 0.98;
-                  return Stack(
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 750),
-                            curve: Curves.easeOutCubic,
-                            width: constraints.maxWidth * percentualEntrada * value,
-                            height: 44,
-                            color: theme.colorScheme.primary,
-                          ),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 750),
-                            curve: Curves.easeOutCubic,
-                            width: constraints.maxWidth * percentualSaida * value,
-                            height: 44,
-                            color: theme.colorScheme.error,
-                          ),
-                        ],
-                      ),
-                      Positioned.fill(
-                        child: AnimatedOpacity(
-                          opacity: carregou ? 1 : 0,
-                          duration: const Duration(milliseconds: 250),
-                          child: Center(
-                            child: Text(
-                              '$percentualEntradaTexto • $percentualSaidaTexto',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  double _somar(List<Map<String, dynamic>> itens, String tipo, String campo) {
-    return itens.where((item) => item['tipo'] == tipo).fold<double>(0, (soma, item) => soma + _toDouble(item[campo] ?? item['valor']));
-  }
+  double _somar(List<Map<String, dynamic>> itens, String tipo, String campo) => itens.where((item) => item['tipo'] == tipo && item['status']?.toString() != 'Cancelado').fold<double>(0, (soma, item) => soma + _toDouble(item[campo] ?? item['valor']));
 
   String _acaoLabel(String? acao) {
     switch ((acao ?? '').toUpperCase()) {
-      case 'EDITAR':
-      case 'ALTERAR':
-        return 'Editar';
-      case 'REGISTRAR_RECEBIMENTO':
-      case 'RECEBER':
-      case 'REGISTRAR_PAGAMENTO':
-      case 'PAGAR':
-        return 'Liquidar';
-      case 'REGISTRAR_PARCIAL':
-        return 'Registrar parcial';
-      case 'DETALHAR':
-      case 'DETALHES':
-        return 'Detalhes';
-      default:
-        return '';
+      case 'EDITAR': case 'ALTERAR': return 'Editar';
+      case 'REGISTRAR_RECEBIMENTO': case 'RECEBER': case 'REGISTRAR_PAGAMENTO': case 'PAGAR': return 'Liquidar';
+      case 'REGISTRAR_PARCIAL': return 'Registrar parcial';
+      case 'DETALHAR': case 'DETALHES': return 'Detalhes';
+      default: return '';
     }
   }
 
   String _statusLabel(String? status) {
     switch ((status ?? '').toUpperCase()) {
-      case 'PAGO':
-        return 'Pago';
-      case 'RECEBIDO':
-        return 'Recebido';
-      case 'PARCIAL':
-        return 'Parcial';
-      case 'CANCELADO':
-        return 'Cancelado';
-      case 'VENCIDO':
-        return 'Vencido';
-      case 'VENCE_HOJE':
-        return 'Vence hoje';
-      case 'PREVISTO':
-        return 'Previsto';
-      default:
-        return 'Pendente';
+      case 'PAGO': return 'Pago';
+      case 'RECEBIDO': return 'Recebido';
+      case 'PARCIAL': return 'Parcial';
+      case 'CANCELADO': return 'Cancelado';
+      case 'VENCIDO': return 'Vencido';
+      case 'VENCE_HOJE': return 'Vence hoje';
+      case 'PREVISTO': return 'Previsto';
+      default: return 'Pendente';
     }
   }
 
   String _formaPagamentoLabel(String? formaPagamento) {
     final backend = (formaPagamento ?? '').toUpperCase();
-    final descricaoConfigurada = _descricaoPorBackendFormaPagamento[backend];
-    if (descricaoConfigurada != null && descricaoConfigurada.trim().isNotEmpty) {
-      return descricaoConfigurada;
-    }
-
-    switch (backend) {
-      case 'PIX':
-        return 'Pix';
-      case 'BOLETO':
-        return 'Boleto';
-      case 'TRANSFERENCIA':
-        return 'Transferência';
-      case 'CARTAO_CREDITO':
-        return 'Cartão de crédito';
-      case 'CARTAO_DEBITO':
-        return 'Cartão de débito';
-      case 'DINHEIRO':
-        return 'Dinheiro';
-      case 'DEBITO_AUTOMATICO':
-        return 'Débito automático';
-      default:
-        return 'Pix';
-    }
+    final configurada = _descricaoPorBackendFormaPagamento[backend];
+    if (configurada != null && configurada.trim().isNotEmpty) return configurada;
+    return _descricaoPorBackendFormaPagamento[backend] ?? (formaPagamento?.toString().trim().isNotEmpty == true ? formaPagamento! : 'Pix');
   }
 
-  String _formaPagamentoBackend(String label) {
-    final backendConfigurado = _backendPorDescricaoFormaPagamento[label];
-    if (backendConfigurado != null) return backendConfigurado;
-
-    switch (label.toLowerCase()) {
-      case 'pix':
-        return 'PIX';
-      case 'boleto':
-        return 'BOLETO';
-      case 'transferência':
-        return 'TRANSFERENCIA';
-      case 'cartão crédito':
-      case 'cartão de crédito':
-        return 'CARTAO_CREDITO';
-      case 'cartão débito':
-      case 'cartão de débito':
-        return 'CARTAO_DEBITO';
-      case 'dinheiro':
-        return 'DINHEIRO';
-      case 'débito automático':
-        return 'DEBITO_AUTOMATICO';
-      default:
-        return 'PIX';
-    }
-  }
-
-  String _empresaNome(dynamic empresa) {
-    if (empresa is Map<String, dynamic>) return empresa['nome']?.toString() ?? '';
-    return empresa?.toString() ?? '';
-  }
-
-  DateTime? _parseDataBr(String? data) {
-    if (data == null || data.trim().isEmpty) return null;
-    final partes = data.split('/');
-    if (partes.length != 3) return null;
-    final dia = int.tryParse(partes[0]);
-    final mes = int.tryParse(partes[1]);
-    final ano = int.tryParse(partes[2]);
-    if (dia == null || mes == null || ano == null) return null;
-    return DateTime(ano, mes, dia);
-  }
+  String _formaPagamentoBackend(String label) => _backendPorDescricaoFormaPagamento[label] ?? _backendPorDescricaoFormaPagamento[_formaPagamentoLabel(label)] ?? label.toUpperCase().replaceAll(' ', '_');
+  String _empresaNome(dynamic empresa) => empresa is Map<String, dynamic> ? empresa['nome']?.toString() ?? '' : empresa?.toString() ?? '';
 
   String _formatarDataIsoParaBr(String? dataIso) {
     if (dataIso == null || dataIso.trim().isEmpty) return '-';
@@ -1203,20 +721,171 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
+  String _formatarDataFlexivel(dynamic value) {
+    if (value == null || value.toString().trim().isEmpty) return '-';
+    final text = value.toString();
+    if (text.contains('/')) return text;
+    return _formatarDataIsoParaBr(text);
+  }
+
+  String _formatarDataHora(DateTime data) => '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year} ${data.hour.toString().padLeft(2, '0')}:${data.minute.toString().padLeft(2, '0')}';
+
   double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
     if (value is String) {
       final texto = value.trim();
-      final normalizado = texto.contains(',') && texto.contains('.')
-          ? texto.replaceAll('.', '').replaceAll(',', '.')
-          : texto.replaceAll(',', '.');
+      final normalizado = texto.contains(',') && texto.contains('.') ? texto.replaceAll('.', '').replaceAll(',', '.') : texto.replaceAll(',', '.');
       return double.tryParse(normalizado) ?? 0;
     }
     return 0;
   }
 
-  String _formatarMoeda(double valor) {
-    final regionalizacao = context.read<LocaleSettingsProvider>();
-    return regionalizacao.formatCurrency(valor);
+  String _formatarMoeda(double valor) => context.read<LocaleSettingsProvider>().formatCurrency(valor);
+}
+
+class _LancamentoDetalhesDialog extends StatelessWidget {
+  const _LancamentoDetalhesDialog({required this.item, required this.detalhe, required this.fallback, required this.formatarMoeda, required this.formatarData, required this.formaPagamentoLabel});
+
+  final Map<String, dynamic> item;
+  final Map<String, dynamic> detalhe;
+  final bool fallback;
+  final String Function(double) formatarMoeda;
+  final String Function(dynamic) formatarData;
+  final String Function(String?) formaPagamentoLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final contato = _mapa(detalhe['contato']);
+    final origem = _mapa(detalhe['origem']);
+    final categoria = _mapa(detalhe['categoria']);
+    final empresa = _mapa(detalhe['empresa']);
+    final responsavel = _mapa(detalhe['responsavel']);
+    final historico = _listaMapas(detalhe['historico']);
+    final liquidacoes = _liquidacoes();
+    final comprovantes = _listaStrings(detalhe['comprovantes']);
+    final acoes = _listaStrings(detalhe['acoesDisponiveis']);
+    final valorOriginal = _numero(detalhe['valorOriginal'], item['valorOriginal'] ?? item['valor']);
+    final valorPago = _numero(detalhe['valorPagoRecebido'], item['valorConfirmado']);
+    final valorAberto = _numero(detalhe['valorAberto'], item['valorRestante']);
+    final descricao = _texto(detalhe['descricao'], item['descricao']);
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 980, maxHeight: 760),
+        child: Column(children: <Widget>[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
+            child: Row(children: <Widget>[
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                const Text('Detalhes do lançamento', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Text(descricao, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+              ])),
+              IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded, color: Colors.white), tooltip: 'Fechar'),
+            ]),
+          ),
+          Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(22), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+            if (fallback) _avisoFallback(theme),
+            Wrap(spacing: 10, runSpacing: 10, children: <Widget>[
+              _chip(theme, _texto(detalhe['tipo'], item['tipo'] == 'pagar' ? 'Pagar' : 'Receber')),
+              _chip(theme, _texto(detalhe['status'], item['status'])),
+              _chip(theme, formaPagamentoLabel(_texto(detalhe['formaPagamento'], item['formaPagamento']))),
+              _chip(theme, 'ID: ${_texto(detalhe['idLancamento'], item['id'])}'),
+            ]),
+            const SizedBox(height: 18),
+            LayoutBuilder(builder: (context, constraints) {
+              final width = constraints.maxWidth >= 760 ? (constraints.maxWidth - 24) / 3 : double.infinity;
+              return Wrap(spacing: 12, runSpacing: 12, children: <Widget>[
+                SizedBox(width: width, child: _valorCard(theme, 'Valor original', formatarMoeda(valorOriginal), Icons.receipt_long_outlined)),
+                SizedBox(width: width, child: _valorCard(theme, 'Confirmado', formatarMoeda(valorPago), Icons.verified_outlined)),
+                SizedBox(width: width, child: _valorCard(theme, 'Em aberto', formatarMoeda(valorAberto), Icons.account_balance_wallet_outlined)),
+              ]);
+            }),
+            const SizedBox(height: 18),
+            _section(theme, 'Datas', Icons.calendar_month_outlined, <Widget>[
+              _info('Competência', formatarData(detalhe['dataCompetencia'])),
+              _info('Vencimento', formatarData(_valor(detalhe['dataVencimento'], item['vencimento']))),
+              _info('Liquidação', formatarData(detalhe['dataLiquidacao'])),
+            ]),
+            _section(theme, 'Classificação', Icons.filter_alt_outlined, <Widget>[
+              _info('Empresa', _texto(empresa['nome'], item['empresa'])),
+              _info('Categoria', _texto(categoria['nome'], categoria['descricao'], item['categoria'])),
+              _info('Origem', _texto(origem['codigoExibicao'], origem['tipo'], item['origem'])),
+              _info('Referência', _texto(origem['id'])),
+            ]),
+            _section(theme, 'Contato e responsabilidade', Icons.people_alt_outlined, <Widget>[
+              _info('Contato', _texto(contato['nome'], item['contato'])),
+              _info('Tipo', _texto(contato['tipo'])),
+              _info('Documento', _texto(contato['documento'])),
+              _info('Telefone', _texto(contato['telefone'])),
+              _info('E-mail', _texto(contato['email'])),
+              _info('Responsável', _texto(responsavel['nome'], item['responsavel'])),
+            ]),
+            _section(theme, 'Observações', Icons.notes_outlined, <Widget>[SizedBox(width: double.infinity, child: SelectableText(_texto(detalhe['observacoes'], item['observacoes'], 'Sem observações.')))]),
+            if (liquidacoes.isNotEmpty) _section(theme, 'Confirmações e liquidações', Icons.payments_outlined, liquidacoes.map((l) => _liquidacaoTile(theme, l)).toList()),
+            if (historico.isNotEmpty) _section(theme, 'Histórico', Icons.history_outlined, historico.map((h) => _info(formatarData(h['dataHora']), _texto(h['descricao']))).toList()),
+            if (comprovantes.isNotEmpty) _section(theme, 'Comprovantes', Icons.attach_file_outlined, comprovantes.map((c) => _info('Arquivo', c)).toList()),
+            if (acoes.isNotEmpty) _section(theme, 'Ações disponíveis', Icons.touch_app_outlined, <Widget>[Wrap(spacing: 8, runSpacing: 8, children: acoes.map((a) => Chip(label: Text(a))).toList())]),
+          ]))),
+        ]),
+      ),
+    );
   }
+
+  Widget _avisoFallback(ThemeData theme) => Container(
+    margin: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer.withOpacity(0.60), borderRadius: BorderRadius.circular(18)),
+    child: const Text('Não foi possível carregar o detalhe completo do backend. Exibindo os dados disponíveis na agenda filtrada.', style: TextStyle(fontWeight: FontWeight.w700)),
+  );
+
+  Widget _chip(ThemeData theme, String label) => Chip(label: Text(label), backgroundColor: theme.colorScheme.primary.withOpacity(0.08));
+
+  Widget _valorCard(ThemeData theme, String titulo, String valor, IconData icon) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42), borderRadius: BorderRadius.circular(20), border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10))),
+    child: Row(children: <Widget>[Icon(icon, color: theme.colorScheme.primary), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Text(titulo, style: const TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 4), Text(valor, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18))]))]),
+  );
+
+  Widget _section(ThemeData theme, String title, IconData icon, List<Widget> children) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(22), border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12))),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Row(children: <Widget>[Icon(icon, color: theme.colorScheme.primary, size: 20), const SizedBox(width: 8), Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))]), const SizedBox(height: 14), Wrap(spacing: 12, runSpacing: 12, children: children)]),
+  );
+
+  Widget _info(String label, String value) => SizedBox(width: 220, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)), const SizedBox(height: 3), SelectableText(value.trim().isEmpty ? '-' : value, style: const TextStyle(fontWeight: FontWeight.w800))]));
+
+  Widget _liquidacaoTile(ThemeData theme, Map<String, dynamic> liquidacao) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35), borderRadius: BorderRadius.circular(18)),
+    child: Wrap(spacing: 18, runSpacing: 8, children: <Widget>[
+      _info('Tipo', _texto(liquidacao['tipoLiquidacao'], liquidacao['tipo'])),
+      _info('Data', formatarData(liquidacao['dataLiquidacao'])),
+      _info('Valor', formatarMoeda(_numero(liquidacao['valorLiquidado'], null))),
+      _info('Restante antes', formatarMoeda(_numero(liquidacao['valorRestanteAntes'], null))),
+      _info('Restante depois', formatarMoeda(_numero(liquidacao['valorRestanteDepois'], null))),
+      _info('Tipo de pagamento', formaPagamentoLabel(liquidacao['formaPagamentoRealizada']?.toString())),
+      if (_texto(liquidacao['observacoes']).trim().isNotEmpty) SizedBox(width: 460, child: SelectableText('Observação: ${_texto(liquidacao['observacoes'])}')),
+    ]),
+  );
+
+  List<Map<String, dynamic>> _liquidacoes() {
+    final detalheLiquidacoes = _listaMapas(detalhe['liquidacoes']);
+    if (detalheLiquidacoes.isNotEmpty) return detalheLiquidacoes;
+    return _listaMapas(item['liquidacoes']);
+  }
+
+  List<Map<String, dynamic>> _listaMapas(dynamic raw) => raw is List ? raw.whereType<Map<String, dynamic>>().map((item) => Map<String, dynamic>.from(item)).toList() : <Map<String, dynamic>>[];
+  List<String> _listaStrings(dynamic raw) => raw is List ? raw.map((item) => item?.toString() ?? '').where((item) => item.trim().isNotEmpty).toList() : <String>[];
+  Map<String, dynamic> _mapa(dynamic raw) => raw is Map<String, dynamic> ? raw : <String, dynamic>{};
+  dynamic _valor(dynamic primary, dynamic fallback) => primary == null || primary.toString().trim().isEmpty ? fallback : primary;
+  String _texto(dynamic primary, [dynamic secondary, dynamic third]) { for (final value in <dynamic>[primary, secondary, third]) { if (value == null) continue; final text = value.toString().trim(); if (text.isNotEmpty) return text; } return '-'; }
+  double _numero(dynamic primary, dynamic fallback) { final value = _valor(primary, fallback); if (value is num) return value.toDouble(); if (value is String) { final normalizado = value.contains(',') && value.contains('.') ? value.replaceAll('.', '').replaceAll(',', '.') : value.replaceAll(',', '.'); return double.tryParse(normalizado) ?? 0; } return 0; }
 }
