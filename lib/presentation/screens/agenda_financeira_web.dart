@@ -402,7 +402,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) setState(() => _executandoAcao = false);
     }
     if (!mounted) return;
-    await showDialog<void>(
+    final alterado = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => _LancamentoDetalhesDialog(
@@ -412,8 +412,85 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         formatarMoeda: _formatarMoeda,
         formatarData: _formatarDataFlexivel,
         formaPagamentoLabel: _formaPagamentoLabel,
+        onExcluirLancamento: () => _confirmarExcluirLancamentoDetalhe(item),
+        onExcluirLiquidacao: (liquidacao) => _confirmarExcluirLiquidacaoDetalhe(item, liquidacao),
       ),
     );
+    if (alterado == true && mounted) {
+      await _consultar(mostrarFeedback: true);
+    }
+  }
+
+  Future<bool> _confirmarExcluirLancamentoDetalhe(Map<String, dynamic> item) async {
+    final id = item['id']?.toString() ?? '';
+    if (id.trim().isEmpty) return false;
+    final confirmado = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir lançamento?'),
+        content: const Text('Esta ação vai apagar definitivamente todo o lançamento financeiro e suas confirmações/parciais. Essa operação não pode ser desfeita.'),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancelar')),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.delete_forever_outlined),
+            label: const Text('Excluir lançamento'),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(dialogContext).colorScheme.error, foregroundColor: Theme.of(dialogContext).colorScheme.onError),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true) return false;
+    try {
+      setState(() => _executandoAcao = true);
+      await _service.excluirLancamento(id);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento excluído com sucesso.')));
+      return true;
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao excluir lançamento (${e.statusCode}).')));
+      return false;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
+  }
+
+  Future<bool> _confirmarExcluirLiquidacaoDetalhe(Map<String, dynamic> item, Map<String, dynamic> liquidacao) async {
+    final idLancamento = item['id']?.toString() ?? '';
+    final idLiquidacao = liquidacao['id']?.toString() ?? '';
+    if (idLancamento.trim().isEmpty || idLiquidacao.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível identificar a parcial para exclusão.')));
+      return false;
+    }
+    final confirmado = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir parcial?'),
+        content: const Text('Esta ação vai remover apenas esta confirmação/parcial e recalcular o valor em aberto do lançamento.'),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancelar')),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('Excluir parcial'),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(dialogContext).colorScheme.error, foregroundColor: Theme.of(dialogContext).colorScheme.onError),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true) return false;
+    try {
+      setState(() => _executandoAcao = true);
+      await _acoesService.excluirLiquidacao(idLancamento: idLancamento, idLiquidacao: idLiquidacao);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Parcial excluída com sucesso.')));
+      return true;
+    } on AgendaFinanceiraLancamentoApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao excluir parcial (${e.statusCode}).')));
+      return false;
+    } finally {
+      if (mounted) setState(() => _executandoAcao = false);
+    }
   }
 
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
@@ -860,7 +937,16 @@ class _EscOverlayScope extends StatelessWidget {
 }
 
 class _LancamentoDetalhesDialog extends StatelessWidget {
-  const _LancamentoDetalhesDialog({required this.item, required this.detalhe, required this.fallback, required this.formatarMoeda, required this.formatarData, required this.formaPagamentoLabel});
+  const _LancamentoDetalhesDialog({
+    required this.item,
+    required this.detalhe,
+    required this.fallback,
+    required this.formatarMoeda,
+    required this.formatarData,
+    required this.formaPagamentoLabel,
+    required this.onExcluirLancamento,
+    required this.onExcluirLiquidacao,
+  });
 
   final Map<String, dynamic> item;
   final Map<String, dynamic> detalhe;
@@ -868,6 +954,8 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   final String Function(double) formatarMoeda;
   final String Function(dynamic) formatarData;
   final String Function(String?) formaPagamentoLabel;
+  final Future<bool> Function() onExcluirLancamento;
+  final Future<bool> Function(Map<String, dynamic> liquidacao) onExcluirLiquidacao;
 
   @override
   Widget build(BuildContext context) {
@@ -900,7 +988,16 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(descricao, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
               ])),
-              IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded, color: Colors.white), tooltip: 'Fechar'),
+              TextButton.icon(
+                onPressed: () async {
+                  final excluido = await onExcluirLancamento();
+                  if (excluido && context.mounted) Navigator.of(context).pop(true);
+                },
+                icon: const Icon(Icons.delete_forever_outlined),
+                label: const Text('Excluir lançamento'),
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+              ),
+              IconButton(onPressed: () => Navigator.of(context).pop(false), icon: const Icon(Icons.close_rounded, color: Colors.white), tooltip: 'Fechar'),
             ]),
           ),
           Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(22), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
@@ -941,7 +1038,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
               _info('Responsável', _texto(responsavel['nome'], item['responsavel'])),
             ]),
             _section(theme, 'Observações', Icons.notes_outlined, <Widget>[SizedBox(width: double.infinity, child: SelectableText(_texto(detalhe['observacoes'], item['observacoes'], 'Sem observações.')))]),
-            if (liquidacoes.isNotEmpty) _section(theme, 'Confirmações e liquidações', Icons.payments_outlined, liquidacoes.map((l) => _liquidacaoTile(theme, l)).toList()),
+            if (liquidacoes.isNotEmpty) _section(theme, 'Confirmações e liquidações', Icons.payments_outlined, liquidacoes.map((l) => _liquidacaoTile(context, theme, l)).toList()),
             if (historico.isNotEmpty) _section(theme, 'Histórico', Icons.history_outlined, historico.map((h) => _info(formatarData(h['dataHora']), _texto(h['descricao']))).toList()),
             if (comprovantes.isNotEmpty) _section(theme, 'Comprovantes', Icons.attach_file_outlined, comprovantes.map((c) => _info('Arquivo', c)).toList()),
             if (acoes.isNotEmpty) _section(theme, 'Ações disponíveis', Icons.touch_app_outlined, <Widget>[Wrap(spacing: 8, runSpacing: 8, children: acoes.map((a) => Chip(label: Text(a))).toList())]),
@@ -976,21 +1073,39 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
 
   Widget _info(String label, String value) => SizedBox(width: 220, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)), const SizedBox(height: 3), SelectableText(value.trim().isEmpty ? '-' : value, style: const TextStyle(fontWeight: FontWeight.w800))]));
 
-  Widget _liquidacaoTile(ThemeData theme, Map<String, dynamic> liquidacao) => Container(
-    width: double.infinity,
-    margin: const EdgeInsets.only(bottom: 8),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35), borderRadius: BorderRadius.circular(18)),
-    child: Wrap(spacing: 18, runSpacing: 8, children: <Widget>[
-      _info('Tipo', _texto(liquidacao['tipoLiquidacao'], liquidacao['tipo'])),
-      _info('Data', formatarData(liquidacao['dataLiquidacao'])),
-      _info('Valor', formatarMoeda(_numero(liquidacao['valorLiquidado'], null))),
-      _info('Restante antes', formatarMoeda(_numero(liquidacao['valorRestanteAntes'], null))),
-      _info('Restante depois', formatarMoeda(_numero(liquidacao['valorRestanteDepois'], null))),
-      _info('Tipo de pagamento', formaPagamentoLabel(liquidacao['formaPagamentoRealizada']?.toString())),
-      if (_texto(liquidacao['observacoes']).trim().isNotEmpty) SizedBox(width: 460, child: SelectableText('Observação: ${_texto(liquidacao['observacoes'])}')),
-    ]),
-  );
+  Widget _liquidacaoTile(BuildContext context, ThemeData theme, Map<String, dynamic> liquidacao) {
+    final idLiquidacao = liquidacao['id']?.toString() ?? '';
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35), borderRadius: BorderRadius.circular(18)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+        Wrap(spacing: 18, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: <Widget>[
+          _info('Tipo', _texto(liquidacao['tipoLiquidacao'], liquidacao['tipo'])),
+          _info('Data', formatarData(liquidacao['dataLiquidacao'])),
+          _info('Valor', formatarMoeda(_numero(liquidacao['valorLiquidado'], null))),
+          _info('Restante antes', formatarMoeda(_numero(liquidacao['valorRestanteAntes'], null))),
+          _info('Restante depois', formatarMoeda(_numero(liquidacao['valorRestanteDepois'], null))),
+          _info('Tipo de pagamento', formaPagamentoLabel(liquidacao['formaPagamentoRealizada']?.toString())),
+          if (idLiquidacao.isNotEmpty)
+            TextButton.icon(
+              onPressed: () async {
+                final excluiu = await onExcluirLiquidacao(liquidacao);
+                if (excluiu && context.mounted) Navigator.of(context).pop(true);
+              },
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+              label: const Text('Excluir parcial'),
+              style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            ),
+        ]),
+        if (_texto(liquidacao['observacoes']).trim().isNotEmpty) ...<Widget>[
+          const SizedBox(height: 8),
+          SelectableText('Observação: ${_texto(liquidacao['observacoes'])}'),
+        ],
+      ]),
+    );
+  }
 
   List<Map<String, dynamic>> _liquidacoes() {
     final detalheLiquidacoes = _listaMapas(detalhe['liquidacoes']);
