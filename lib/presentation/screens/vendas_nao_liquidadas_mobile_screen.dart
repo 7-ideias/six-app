@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/agenda_financeira_acoes_financeiras.dart';
+import '../../data/models/agenda_financeira_lancamento_model.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
-import 'pdv_mobile_screen.dart';
+import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 
 class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
   const VendasNaoLiquidadasMobileScreen({super.key});
@@ -21,6 +23,8 @@ class _VendasNaoLiquidadasMobileScreenState
   static const Color _title = Color(0xFF0F172A);
 
   final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
+  final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
+      AgendaFinanceiraAcoesFinanceiras();
 
   bool _loading = true;
   bool _cancelando = false;
@@ -50,19 +54,60 @@ class _VendasNaoLiquidadasMobileScreenState
     }
   }
 
-  Future<void> _abrirVendaNoPdv(VendaNaoLiquidadaModel venda) async {
-    final bool? recebeu = await Navigator.push<bool>(
+  Future<void> _receberVenda(VendaNaoLiquidadaModel venda) async {
+    if (_cancelando) return;
+
+    final SixMobileRecebimentoResultado? resultado =
+        await SixMobileRecebimentoBottomSheet.show(
       context,
-      MaterialPageRoute<bool>(
-        builder: (_) => PdvMobileScreen(vendaNaoLiquidada: venda),
-      ),
+      titulo: 'Receber venda em aberto',
+      descricao: venda.descricao,
+      contato: venda.nomeCliente.trim().isEmpty ? null : venda.nomeCliente.trim(),
+      valorAberto: venda.valorAberto,
+      codigoTipoInicial: venda.codigoTipoRecebimento,
+      permitirParcial: true,
+      observacaoInicial: 'Recebimento realizado no PDV mobile.',
     );
 
-    if (!mounted) return;
-    if (recebeu == true) {
+    if (resultado == null) return;
+
+    setState(() => _cancelando = true);
+    try {
+      if (resultado.total) {
+        await _api.liquidar(
+          idRecebimento: venda.idRecebimento,
+          input: LiquidarVendaNaoLiquidadaInput(
+            codigoTipoRecebimento: resultado.codigoTipoRecebimento,
+            valorRecebido: resultado.valor,
+            itens: venda.itens,
+            observacao:
+                resultado.observacao ?? 'Recebimento total realizado no PDV mobile.',
+            referencia: venda.idOperacaoApp.isNotEmpty
+                ? venda.idOperacaoApp
+                : venda.idOperacaoFinanceira,
+          ),
+        );
+        if (mounted) _snack('Venda recebida com sucesso.');
+      } else {
+        await _acoesFinanceiras.executarAbatimento(
+          idLancamento: venda.idOperacaoFinanceira,
+          request: AgendaFinanceiraParcialRequest(
+            tipoLiquidacao: 'PARCIAL',
+            dataLiquidacao: DateTime.now(),
+            valorLiquidado: resultado.valor,
+            formaPagamentoRealizada: resultado.formaPagamentoBackend,
+            observacoes: resultado.observacao ??
+                'Recebimento parcial realizado no PDV mobile.',
+          ),
+        );
+        if (mounted) _snack('Parcial recebida com sucesso.');
+      }
       await _carregar();
-    } else if (recebeu == false) {
-      await _confirmarCancelamentoVenda(venda);
+    } catch (e) {
+      if (!mounted) return;
+      _snack(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _cancelando = false);
     }
   }
 
@@ -127,8 +172,8 @@ class _VendasNaoLiquidadasMobileScreenState
 
   int get _totalItens => _vendas.fold<int>(
         0,
-        (soma, venda) =>
-            soma + venda.itens.fold<int>(0, (itens, item) => itens + item.quantidade),
+        (soma, venda) => soma +
+            venda.itens.fold<int>(0, (itens, item) => itens + item.quantidade),
       );
 
   int get _vencidas {
@@ -136,7 +181,8 @@ class _VendasNaoLiquidadasMobileScreenState
     final inicioHoje = DateTime(hoje.year, hoje.month, hoje.day);
     return _vendas
         .where((venda) =>
-            venda.dataVencimento != null && venda.dataVencimento!.isBefore(inicioHoje))
+            venda.dataVencimento != null &&
+            venda.dataVencimento!.isBefore(inicioHoje))
         .length;
   }
 
@@ -236,7 +282,8 @@ class _VendasNaoLiquidadasMobileScreenState
       ),
       child: Row(
         children: <Widget>[
-          _icon(Icons.point_of_sale_outlined, bg: const Color(0x1AFFFFFF), fg: Colors.white),
+          _icon(Icons.point_of_sale_outlined,
+              bg: const Color(0x1AFFFFFF), fg: Colors.white),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -244,19 +291,24 @@ class _VendasNaoLiquidadasMobileScreenState
               children: <Widget>[
                 const Text(
                   'Dashboard de recebimentos',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${_vendas.length} venda(s) aguardando liquidação',
-                  style: const TextStyle(color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                      color: Color(0xFFD7E3F5), fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
           Text(
             _formatarValor(_totalAberto),
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -265,7 +317,8 @@ class _VendasNaoLiquidadasMobileScreenState
 
   Widget _metrics() {
     final metrics = <_Metric>[
-      _Metric('Total aberto', _formatarValor(_totalAberto), Icons.account_balance_wallet_outlined),
+      _Metric('Total aberto', _formatarValor(_totalAberto),
+          Icons.account_balance_wallet_outlined),
       _Metric('Vendas', _vendas.length.toString(), Icons.receipt_long_outlined),
       _Metric('Ticket médio', _formatarValor(_ticketMedio), Icons.trending_up_rounded),
       _Metric('Itens', _totalItens.toString(), Icons.inventory_2_outlined),
@@ -283,7 +336,8 @@ class _VendasNaoLiquidadasMobileScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _icon(metric.icon, bg: const Color(0xFFEFF6FF), fg: _accent, size: 38),
+                _icon(metric.icon,
+                    bg: const Color(0xFFEFF6FF), fg: _accent, size: 38),
                 const SizedBox(height: 10),
                 Text(metric.title, style: const TextStyle(color: _muted, fontSize: 12)),
                 const SizedBox(height: 4),
@@ -291,7 +345,8 @@ class _VendasNaoLiquidadasMobileScreenState
                   metric.value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _title, fontSize: 17, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                      color: _title, fontSize: 17, fontWeight: FontWeight.w900),
                 ),
               ],
             ),
@@ -328,7 +383,10 @@ class _VendasNaoLiquidadasMobileScreenState
                 ),
                 child: const Text(
                   'Planejado',
-                  style: TextStyle(color: Color(0xFFC2410C), fontSize: 10, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                      color: Color(0xFFC2410C),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900),
                 ),
               ),
             ],
@@ -336,7 +394,9 @@ class _VendasNaoLiquidadasMobileScreenState
           const SizedBox(height: 10),
           Text(title, style: const TextStyle(color: _muted, fontSize: 12)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: _title, fontSize: 16, fontWeight: FontWeight.w900)),
+          Text(value,
+              style: const TextStyle(
+                  color: _title, fontSize: 16, fontWeight: FontWeight.w900)),
           const SizedBox(height: 2),
           const Text(
             'Mockado para futuro painel',
@@ -357,7 +417,7 @@ class _VendasNaoLiquidadasMobileScreenState
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: _cancelando ? null : () => _abrirVendaNoPdv(venda),
+        onTap: _cancelando ? null : () => _receberVenda(venda),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -369,7 +429,8 @@ class _VendasNaoLiquidadasMobileScreenState
           ),
           child: Row(
             children: <Widget>[
-              _icon(Icons.receipt_long_outlined, bg: const Color(0xFFEFF6FF), fg: _accent, size: 48),
+              _icon(Icons.receipt_long_outlined,
+                  bg: const Color(0xFFEFF6FF), fg: _accent, size: 48),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -379,7 +440,8 @@ class _VendasNaoLiquidadasMobileScreenState
                       venda.descricao,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: 15),
+                      style: const TextStyle(
+                          color: _title, fontWeight: FontWeight.w900, fontSize: 15),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -393,7 +455,8 @@ class _VendasNaoLiquidadasMobileScreenState
                       '${_formatarData(venda.dataCompetencia)} • $quantidadeItens item(ns)',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _muted, fontSize: 12, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          color: _muted, fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -404,10 +467,26 @@ class _VendasNaoLiquidadasMobileScreenState
                 children: <Widget>[
                   Text(
                     _formatarValor(venda.valorAberto),
-                    style: const TextStyle(color: _title, fontWeight: FontWeight.w900, fontSize: 17),
+                    style: const TextStyle(
+                        color: _title, fontWeight: FontWeight.w900, fontSize: 17),
                   ),
+                  const SizedBox(height: 6),
+                  const Text('Receber',
+                      style: TextStyle(
+                          color: _accent, fontWeight: FontWeight.w900, fontSize: 12)),
                   const SizedBox(height: 4),
-                  const Text('Abrir PDV', style: TextStyle(color: _accent, fontWeight: FontWeight.w900, fontSize: 12)),
+                  GestureDetector(
+                    onTap: _cancelando
+                        ? null
+                        : () => _confirmarCancelamentoVenda(venda),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -423,7 +502,8 @@ class _VendasNaoLiquidadasMobileScreenState
         children: <Widget>[
           Icon(Icons.check_circle_outline, color: _accent, size: 34),
           SizedBox(height: 10),
-          Text('Nenhuma venda em aberto', style: TextStyle(color: _title, fontSize: 18, fontWeight: FontWeight.w900)),
+          Text('Nenhuma venda em aberto',
+              style: TextStyle(color: _title, fontSize: 18, fontWeight: FontWeight.w900)),
           SizedBox(height: 6),
           Text(
             'Quando uma venda for marcada para receber depois, ela aparecerá aqui.',
@@ -444,11 +524,19 @@ class _VendasNaoLiquidadasMobileScreenState
           children: <Widget>[
             _icon(icon, bg: _accent.withOpacity(0.10), fg: _accent, size: 76),
             const SizedBox(height: 18),
-            Text(titulo, textAlign: TextAlign.center, style: const TextStyle(color: _title, fontSize: 20, fontWeight: FontWeight.w900)),
+            Text(titulo,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: _title, fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            Text(mensagem, textAlign: TextAlign.center, style: const TextStyle(color: _muted, height: 1.4)),
+            Text(mensagem,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _muted, height: 1.4)),
             const SizedBox(height: 18),
-            OutlinedButton.icon(onPressed: _carregar, icon: const Icon(Icons.refresh_rounded), label: const Text('Atualizar')),
+            OutlinedButton.icon(
+                onPressed: _carregar,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Atualizar')),
           ],
         ),
       ),
@@ -470,11 +558,13 @@ class _VendasNaoLiquidadasMobileScreenState
     );
   }
 
-  Widget _icon(IconData icon, {required Color bg, required Color fg, double size = 50}) {
+  Widget _icon(IconData icon,
+      {required Color bg, required Color fg, double size = 50}) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14)),
+      decoration: BoxDecoration(
+          color: bg, borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14)),
       child: Icon(icon, color: fg, size: size >= 48 ? 24 : 20),
     );
   }

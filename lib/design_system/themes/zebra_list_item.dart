@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+export 'package:sixpos/presentation/screens/vendas_a_receber_web_widget.dart';
+
 class ZebraListItem extends StatelessWidget {
   final Widget child;
   final int index;

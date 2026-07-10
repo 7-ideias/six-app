@@ -7,6 +7,12 @@ import '../../models/caixa_models.dart';
 
 abstract class CaixaApiClient {
   Future<InformacoesBasicasCaixaResponse> getInformacoesBasicasDoCaixa();
+  Future<List<TiposRecebimento>> listarTiposRecebimentoConfiguraveis();
+  Future<TiposRecebimento> atualizarTipoRecebimentoConfiguravel({
+    required String codigoTipo,
+    required TiposRecebimento request,
+  });
+  Future<void> restaurarTiposRecebimentoPadrao();
   Future<CaixaSessao?> getSessaoAtual();
   Future<CaixaOuGuiche> criarCaixaOuGuiche(String nome);
   Future<CaixaOuGuiche> editarCaixaOuGuiche({
@@ -57,6 +63,94 @@ class HttpCaixaApiClient implements CaixaApiClient {
     }
 
     return InformacoesBasicasCaixaResponse.fromJson(jsonDecode(response.body));
+  }
+
+  @override
+  Future<List<TiposRecebimento>> listarTiposRecebimentoConfiguraveis() async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/configuracoes/tipos-recebimento',
+    );
+    final response = await _httpClient.get(uri, headers: await _getHeaders());
+
+    if (response.statusCode != 200) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return const <TiposRecebimento>[];
+    }
+
+    final dynamic data = jsonDecode(response.body);
+    if (data is! List) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    return data
+        .whereType<Map>()
+        .map(
+          (dynamic item) =>
+              TiposRecebimento.fromJson(item.cast<String, dynamic>()),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<TiposRecebimento> atualizarTipoRecebimentoConfiguravel({
+    required String codigoTipo,
+    required TiposRecebimento request,
+  }) async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/configuracoes/tipos-recebimento/$codigoTipo',
+    );
+    final payload = request.copyWith(codigoTipo: codigoTipo);
+
+    final response = await _httpClient.put(
+      uri,
+      headers: await _getHeaders(),
+      body: jsonEncode(payload.toJson()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return payload;
+    }
+
+    final dynamic data = jsonDecode(response.body);
+    if (data is! Map) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    return TiposRecebimento.fromJson(data.cast<String, dynamic>());
+  }
+
+  @override
+  Future<void> restaurarTiposRecebimentoPadrao() async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/configuracoes/tipos-recebimento/restaurar-padrao',
+    );
+    final response = await _httpClient.post(uri, headers: await _getHeaders());
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
   }
 
   @override

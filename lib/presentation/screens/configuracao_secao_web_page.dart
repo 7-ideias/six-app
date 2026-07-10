@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import 'empresa_configuracao_screen.dart';
+import 'formas_recebimento_configuracao_content.dart';
 import 'regionalizacao_configuracao_content.dart';
 import 'regras_operacionais_configuracao_content.dart';
 
@@ -32,6 +33,7 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
 
   bool get _ehConfiguracaoEmpresa => widget.title == 'Empresa';
   bool get _ehRegionalizacao => widget.title == 'Regionalização';
+  bool get _ehFormasRecebimento => widget.title == 'Formas de recebimento';
   bool get _ehRegrasOperacionais => widget.title == 'Regras operacionais';
 
   Future<void> _handleBack() async {
@@ -104,7 +106,8 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
 
     return Shortcuts(
       shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.escape): _SairConfiguracaoSecaoIntent(),
+        SingleActivator(LogicalKeyboardKey.escape):
+            _SairConfiguracaoSecaoIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -232,6 +235,10 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
       return _buildRegionalizacaoContent(context);
     }
 
+    if (_ehFormasRecebimento) {
+      return const FormasRecebimentoConfiguracaoContent();
+    }
+
     if (_ehRegrasOperacionais) {
       return const RegrasOperacionaisConfiguracaoContent();
     }
@@ -312,7 +319,9 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
             },
             child: Container(
               width: double.infinity,
-              constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight - 48,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
@@ -371,7 +380,9 @@ class _RegionalizacaoConfirmacaoScopeState
     );
 
     if (_salvandoAnteriormente && !salvando) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _marcarComoConfirmado());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _marcarComoConfirmado(),
+      );
     }
     _salvandoAnteriormente = salvando;
 
@@ -383,9 +394,10 @@ class _RegionalizacaoConfirmacaoScopeState
         children: <Widget>[
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: _mostrarAvisoDeConfirmacao
-                ? const _RegionalizacaoConfirmacaoBanner()
-                : const SizedBox.shrink(),
+            child:
+                _mostrarAvisoDeConfirmacao
+                    ? const _RegionalizacaoConfirmacaoBanner()
+                    : const SizedBox.shrink(),
           ),
           if (_mostrarAvisoDeConfirmacao) const SizedBox(height: 12),
           Expanded(child: widget.child),
