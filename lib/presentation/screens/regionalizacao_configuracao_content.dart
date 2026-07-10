@@ -638,9 +638,9 @@ class _RegionalizacaoConfiguracaoContentState
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.05),
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.12)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: <Widget>[
@@ -1155,7 +1155,7 @@ class _RegionalizacaoConfiguracaoContentState
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.24),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.24),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -1264,7 +1264,7 @@ class _RegionalizacaoConfiguracaoContentState
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.10),
+                color: theme.colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: theme.colorScheme.primary),
@@ -1352,8 +1352,8 @@ class _RegionalizacaoConfiguracaoContentState
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: selected
-            ? theme.colorScheme.primary.withOpacity(0.12)
-            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.55),
+            ? theme.colorScheme.primary.withValues(alpha: 0.12)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
@@ -1398,9 +1398,9 @@ class _RegionalizacaoConfiguracaoContentState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.09),
+        color: color.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.16)),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1480,7 +1480,7 @@ class _SelectableContainer extends StatelessWidget {
     final Color borderColor =
         selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant;
     final Color backgroundColor = selected
-        ? theme.colorScheme.primary.withOpacity(0.08)
+        ? theme.colorScheme.primary.withValues(alpha: 0.08)
         : theme.colorScheme.surface;
 
     return AnimatedContainer(
@@ -1493,7 +1493,7 @@ class _SelectableContainer extends StatelessWidget {
         boxShadow: selected
             ? <BoxShadow>[
                 BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.12),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -1537,7 +1537,7 @@ class _RegionalizacaoCard extends StatelessWidget {
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(embedded ? 0.03 : 0.05),
+            color: Colors.black.withValues(alpha: embedded ? 0.03 : 0.05),
             blurRadius: embedded ? 18 : 24,
             offset: const Offset(0, 10),
           ),

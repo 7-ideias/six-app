@@ -310,7 +310,7 @@ class _EmpresaConfiguracaoFormState extends State<EmpresaConfiguracaoForm> {
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(widget.embedded ? 0.03 : 0.05),
+            color: Colors.black.withValues(alpha: widget.embedded ? 0.03 : 0.05),
             blurRadius: widget.embedded ? 18 : 24,
             offset: const Offset(0, 10),
           ),
@@ -374,7 +374,7 @@ class _EmpresaConfiguracaoFormState extends State<EmpresaConfiguracaoForm> {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.10),
+            color: theme.colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(Icons.domain_rounded, color: theme.colorScheme.primary),
@@ -478,9 +478,9 @@ class _EmpresaConfiguracaoFormState extends State<EmpresaConfiguracaoForm> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.05),
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.12)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.12)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

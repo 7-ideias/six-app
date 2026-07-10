@@ -130,7 +130,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
         border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
       ),
       child: Row(
@@ -171,7 +171,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     return Container(
       width: 54,
       height: 54,
-      decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(18)),
+      decoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(18)),
       child: Icon(icon, color: theme.colorScheme.primary, size: 28),
     );
   }
@@ -341,7 +341,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     final theme = Theme.of(context);
     final background = kpi.highlight ? theme.colorScheme.primary : theme.colorScheme.surface;
     final foreground = kpi.highlight ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
-    final muted = kpi.highlight ? theme.colorScheme.onPrimary.withOpacity(0.80) : theme.colorScheme.onSurfaceVariant;
+    final muted = kpi.highlight ? theme.colorScheme.onPrimary.withValues(alpha: 0.80) : theme.colorScheme.onSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -356,7 +356,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: kpi.highlight ? theme.colorScheme.onPrimary.withOpacity(0.14) : theme.colorScheme.primary.withOpacity(0.10),
+              color: kpi.highlight ? theme.colorScheme.onPrimary.withValues(alpha: 0.14) : theme.colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(kpi.icon, color: kpi.highlight ? theme.colorScheme.onPrimary : theme.colorScheme.primary),
@@ -438,7 +438,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
               gridData: FlGridData(
                 show: true,
                 horizontalInterval: maxValue <= 0 ? 2.0 : math.max(1.0, maxValue / 4),
-                getDrawingHorizontalLine: (_) => FlLine(color: theme.colorScheme.outlineVariant.withOpacity(0.55), strokeWidth: 1),
+                getDrawingHorizontalLine: (_) => FlLine(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55), strokeWidth: 1),
               ),
               titlesData: _barTitles(theme, chartItems),
               barGroups: List<BarChartGroupData>.generate(chartItems.length, (index) {
@@ -452,7 +452,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                       toY: value(chartItems[index]) * itemProgress,
                       width: touched ? 30 : 22,
                       borderRadius: BorderRadius.circular(touched ? 10 : 8),
-                      color: _chartColor(theme, index).withOpacity(opacity),
+                      color: _chartColor(theme, index).withValues(alpha: opacity),
                     ),
                   ],
                 );
@@ -539,7 +539,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                       value: math.max(0.001, item.quantidade * itemProgress),
                       title: itemProgress > 0.72 ? _qty(item.quantidade) : '',
                       radius: touched ? 78 : 54 + (12 * progress),
-                      color: _chartColor(theme, index).withOpacity(opacity),
+                      color: _chartColor(theme, index).withValues(alpha: opacity),
                       titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
                     );
                   }),
@@ -574,7 +574,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withOpacity(0.22))),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.22))),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -619,7 +619,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
               children: items.map((item) {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.70)))),
+                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.70)))),
                   child: Row(
                     children: <Widget>[
                       Expanded(flex: 4, child: _tableText(item.nome, bold: true)),
@@ -658,7 +658,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: theme.colorScheme.surfaceVariant.withOpacity(0.45), borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.colorScheme.outlineVariant)),
+      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45), borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.colorScheme.outlineVariant)),
       child: Row(
         children: <Widget>[
           Icon(Icons.inventory_outlined, color: theme.colorScheme.primary),
@@ -730,22 +730,22 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: highlight ? theme.colorScheme.primary.withOpacity(0.90) : theme.colorScheme.surface,
+        color: highlight ? theme.colorScheme.primary.withValues(alpha: 0.90) : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: highlight ? theme.colorScheme.primary : theme.colorScheme.outlineVariant),
       ),
       child: Row(
         children: <Widget>[
-          _skeletonBox(width: 48, height: 48, radius: 16, color: highlight ? theme.colorScheme.onPrimary.withOpacity(0.16) : null),
+          _skeletonBox(width: 48, height: 48, radius: 16, color: highlight ? theme.colorScheme.onPrimary.withValues(alpha: 0.16) : null),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _skeletonBox(width: 96, height: 10, color: highlight ? theme.colorScheme.onPrimary.withOpacity(0.22) : null),
+                _skeletonBox(width: 96, height: 10, color: highlight ? theme.colorScheme.onPrimary.withValues(alpha: 0.22) : null),
                 const SizedBox(height: 10),
-                _skeletonBox(width: 134, height: 22, color: highlight ? theme.colorScheme.onPrimary.withOpacity(0.28) : null),
+                _skeletonBox(width: 134, height: 22, color: highlight ? theme.colorScheme.onPrimary.withValues(alpha: 0.28) : null),
               ],
             ),
           ),
@@ -771,7 +771,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
               width: double.infinity,
               margin: EdgeInsets.only(bottom: index == 2 ? 0 : 10),
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: theme.colorScheme.surfaceVariant.withOpacity(0.28), borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.70))),
+              decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.28), borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.70))),
               child: Row(
                 children: <Widget>[
                   _skeletonBox(width: 34, height: 34, radius: 12),
@@ -797,7 +797,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
           Positioned.fill(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List<Widget>.generate(5, (index) => Container(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.55))),
+              children: List<Widget>.generate(5, (index) => Container(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55))),
             ),
           ),
           Align(
@@ -821,7 +821,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _skeletonBox({double? width, required double height, double radius = 999, Color? color}) {
     final theme = Theme.of(context);
-    return Container(width: width, height: height, decoration: BoxDecoration(color: color ?? theme.colorScheme.surfaceVariant.withOpacity(0.55), borderRadius: BorderRadius.circular(radius)));
+    return Container(width: width, height: height, decoration: BoxDecoration(color: color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(radius)));
   }
 
   Widget _noData({String text = 'Sem dados suficientes para exibir esta informação.'}) {
@@ -830,7 +830,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
       width: double.infinity,
       height: 220,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: theme.colorScheme.surfaceVariant.withOpacity(0.35), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(16)),
       child: Text(text, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
     );
   }
@@ -843,7 +843,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 560),
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(color: theme.colorScheme.errorContainer.withOpacity(0.30), borderRadius: BorderRadius.circular(22), border: Border.all(color: theme.colorScheme.error.withOpacity(0.25))),
+          decoration: BoxDecoration(color: theme.colorScheme.errorContainer.withValues(alpha: 0.30), borderRadius: BorderRadius.circular(22), border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.25))),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[

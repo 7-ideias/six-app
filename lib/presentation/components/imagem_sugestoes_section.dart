@@ -52,7 +52,7 @@ class ImagemSugestoesSection extends StatelessWidget {
           Text(
             'Preencha ao menos título e tipo para gerar sugestões.',
             style: TextStyle(
-              color: colorScheme.onSurface.withOpacity(0.62),
+              color: colorScheme.onSurface.withValues(alpha: 0.62),
               fontSize: 12,
             ),
           ),
@@ -76,9 +76,9 @@ class ImagemSugestoesSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.error.withOpacity(0.08),
+              color: colorScheme.error.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.error.withOpacity(0.3)),
+              border: Border.all(color: colorScheme.error.withValues(alpha: 0.3)),
             ),
             child: Text(errorMessage!),
           ),
@@ -89,7 +89,7 @@ class ImagemSugestoesSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.06),
+              color: colorScheme.primary.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Text(
@@ -124,7 +124,7 @@ class ImagemSugestoesSection extends StatelessWidget {
                         border: Border.all(
                           color: isSelected
                               ? colorScheme.primary
-                              : colorScheme.outline.withOpacity(0.2),
+                              : colorScheme.outline.withValues(alpha: 0.2),
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -142,7 +142,7 @@ class ImagemSugestoesSection extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 errorBuilder:
                                     (_, __, ___) => Container(
-                                  color: colorScheme.surfaceVariant,
+                                  color: colorScheme.surfaceContainerHighest,
                                   alignment: Alignment.center,
                                   child: const Icon(
                                     Icons.broken_image_outlined,
@@ -171,7 +171,7 @@ class ImagemSugestoesSection extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: colorScheme.onSurface
-                                        .withOpacity(0.72),
+                                        .withValues(alpha: 0.72),
                                   ),
                                 ),
                               ],
@@ -188,7 +188,7 @@ class ImagemSugestoesSection extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withOpacity(0.85),
+                            color: colorScheme.primary.withValues(alpha: 0.85),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(

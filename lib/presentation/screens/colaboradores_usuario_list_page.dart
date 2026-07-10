@@ -357,7 +357,7 @@ class _ColaboradoresUsuarioListPageState
                 children: <Widget>[
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: theme.colorScheme.primary.withOpacity(0.10),
+                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.10),
                     child: Text(
                       _initials(colaborador.nome),
                       style: TextStyle(
@@ -465,9 +465,9 @@ class _ColaboradoresUsuarioListPageState
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.14)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.14)),
       ),
       child: Row(
         children: <Widget>[
@@ -492,7 +492,7 @@ class _ColaboradoresUsuarioListPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -554,7 +554,7 @@ class _ColaboradoresUsuarioListPageState
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.35),
+        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.35),
       ),
       child: Text(message),
     );
@@ -614,18 +614,18 @@ class _HoverableColaboradorCardState extends State<_HoverableColaboradorCard> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: _hovered
-              ? theme.colorScheme.primary.withOpacity(0.025)
+              ? theme.colorScheme.primary.withValues(alpha: 0.025)
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: _hovered
-                ? theme.colorScheme.primary.withOpacity(0.30)
+                ? theme.colorScheme.primary.withValues(alpha: 0.30)
                 : theme.colorScheme.outlineVariant,
           ),
           boxShadow: _hovered
               ? <BoxShadow>[
                   BoxShadow(
-                    color: theme.colorScheme.shadow.withOpacity(0.10),
+                    color: theme.colorScheme.shadow.withValues(alpha: 0.10),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),

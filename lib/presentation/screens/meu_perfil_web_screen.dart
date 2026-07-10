@@ -156,7 +156,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.24)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.24)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -164,7 +164,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error.withOpacity(0.70)),
+        borderSide: BorderSide(color: colorScheme.error.withValues(alpha: 0.70)),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -208,10 +208,10 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.86)),
+          border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.86)),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.035),
+              color: Colors.black.withValues(alpha: 0.035),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
@@ -227,7 +227,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.10),
+                    color: colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: colorScheme.primary, size: 23),
@@ -399,7 +399,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 18, 18),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.06),
+        color: colorScheme.primary.withValues(alpha: 0.06),
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Row(
@@ -408,7 +408,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.12),
+              color: colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(Icons.account_circle_outlined, color: colorScheme.primary, size: 28),
@@ -728,7 +728,7 @@ class _MeuPerfilSkeletonSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.86)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.86)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,7 +778,7 @@ class _MeuPerfilSkeletonSection extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.55),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(radius),
       ),
     );

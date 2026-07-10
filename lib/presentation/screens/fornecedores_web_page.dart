@@ -195,17 +195,17 @@ class _FornecedorRoadmapCardState extends State<_FornecedorRoadmapCard> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: _hovered
-              ? theme.colorScheme.primary.withOpacity(0.025)
+              ? theme.colorScheme.primary.withValues(alpha: 0.025)
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: _hovered
-                ? theme.colorScheme.primary.withOpacity(0.30)
+                ? theme.colorScheme.primary.withValues(alpha: 0.30)
                 : theme.colorScheme.outlineVariant,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: theme.shadowColor.withOpacity(_hovered ? 0.10 : 0.05),
+              color: theme.shadowColor.withValues(alpha: _hovered ? 0.10 : 0.05),
               blurRadius: _hovered ? 18.0 : 14.0,
               offset: Offset(0, _hovered ? 8.0 : 6.0),
             ),
@@ -218,7 +218,7 @@ class _FornecedorRoadmapCardState extends State<_FornecedorRoadmapCard> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.10),
+                color: theme.colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(widget.icon, color: theme.colorScheme.primary),

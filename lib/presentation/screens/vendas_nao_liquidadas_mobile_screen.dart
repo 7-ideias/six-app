@@ -212,7 +212,7 @@ class _VendasNaoLiquidadasMobileScreenState
         if (_cancelando)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               child: const Center(child: CircularProgressIndicator()),
             ),
           ),
@@ -442,7 +442,7 @@ class _VendasNaoLiquidadasMobileScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _icon(icon, bg: _accent.withOpacity(0.10), fg: _accent, size: 76),
+            _icon(icon, bg: _accent.withValues(alpha: 0.10), fg: _accent, size: 76),
             const SizedBox(height: 18),
             Text(titulo, textAlign: TextAlign.center, style: const TextStyle(color: _title, fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),

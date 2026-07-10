@@ -252,7 +252,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
           child: LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
             final bool compact = constraints.maxWidth < 760;
             final Widget data = Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-              CircleAvatar(radius: 24, backgroundColor: theme.colorScheme.primary.withOpacity(0.10), child: Text(_initials(cliente.nome), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
+              CircleAvatar(radius: 24, backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.10), child: Text(_initials(cliente.nome), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
                 Row(children: <Widget>[
@@ -292,12 +292,12 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: ok ? Colors.green.withOpacity(0.08) : theme.colorScheme.surfaceVariant.withOpacity(0.35), borderRadius: BorderRadius.circular(16), border: Border.all(color: ok ? Colors.green.withOpacity(0.25) : theme.colorScheme.outlineVariant)),
+      decoration: BoxDecoration(color: ok ? Colors.green.withValues(alpha: 0.08) : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(16), border: Border.all(color: ok ? Colors.green.withValues(alpha: 0.25) : theme.colorScheme.outlineVariant)),
       child: Row(children: <Widget>[Icon(Icons.request_quote_outlined, color: ok ? Colors.green.shade700 : theme.colorScheme.onSurfaceVariant, size: 20), const SizedBox(width: 10), Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800)))]),
     );
   }
 
-  Widget _status(String label, Color color) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(999)), child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)));
+  Widget _status(String label, Color color) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999)), child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)));
 
   Widget _info(IconData icon, String label) => Chip(avatar: Icon(icon, size: 14), label: Text(label, overflow: TextOverflow.ellipsis), visualDensity: VisualDensity.compact);
 
@@ -305,7 +305,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
 
   Widget _errorState() => Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[const Icon(Icons.cloud_off_rounded, size: 44), const SizedBox(height: 12), Text(_erro ?? 'Não foi possível carregar os clientes.', textAlign: TextAlign.center), const SizedBox(height: 18), FilledButton.icon(onPressed: _reload, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente'))])));
 
-  Widget _inlineError(String message) => Container(width: double.infinity, padding: const EdgeInsets.all(14), decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.35)), child: Text(message));
+  Widget _inlineError(String message) => Container(width: double.infinity, padding: const EdgeInsets.all(14), decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.35)), child: Text(message));
 
   void _history(ClienteUsuario cliente) {
     showDialog<void>(

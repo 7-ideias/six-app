@@ -77,9 +77,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             height: 68,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withOpacity(0.72)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
                   color: Color(0x1A0B1F3A),

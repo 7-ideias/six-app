@@ -499,8 +499,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            theme.colorScheme.primary.withOpacity(0.08),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.72),
+            theme.colorScheme.primary.withValues(alpha: 0.08),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.72),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -575,7 +575,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       decoration: BoxDecoration(
         color:
             selecionado
-                ? theme.colorScheme.primary.withOpacity(0.07)
+                ? theme.colorScheme.primary.withValues(alpha: 0.07)
                 : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
@@ -587,7 +587,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(selecionado ? 0.06 : 0.03),
+            color: Colors.black.withValues(alpha: selecionado ? 0.06 : 0.03),
             blurRadius: selecionado ? 16 : 8,
             offset: const Offset(0, 6),
           ),

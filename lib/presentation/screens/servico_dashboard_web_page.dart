@@ -189,7 +189,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
                       curve: Curves.easeOutCubic,
                       builder: (BuildContext context, double value, Widget? child) => ClipRRect(
                         borderRadius: BorderRadius.circular(999),
-                        child: LinearProgressIndicator(value: value, minHeight: 12, backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.65)),
+                        child: LinearProgressIndicator(value: value, minHeight: 12, backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.65)),
                       ),
                     ),
                   ]),
@@ -228,7 +228,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: theme.colorScheme.surfaceVariant.withOpacity(0.35), borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.colorScheme.outlineVariant)),
+      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.colorScheme.outlineVariant)),
       child: Row(children: <Widget>[
         Icon(Icons.home_repair_service_outlined, color: theme.colorScheme.primary),
         const SizedBox(width: 12),
@@ -253,7 +253,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withOpacity(0.22))),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.22))),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
         Icon(icon, color: color),
         const SizedBox(width: 12),
@@ -273,7 +273,7 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
     return Center(child: Container(
       constraints: const BoxConstraints(maxWidth: 560),
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: theme.colorScheme.errorContainer.withOpacity(0.30), borderRadius: BorderRadius.circular(22), border: Border.all(color: theme.colorScheme.error.withOpacity(0.25))),
+      decoration: BoxDecoration(color: theme.colorScheme.errorContainer.withValues(alpha: 0.30), borderRadius: BorderRadius.circular(22), border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.25))),
       child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
         Icon(Icons.cloud_off_rounded, size: 42, color: theme.colorScheme.error),
         const SizedBox(height: 14),

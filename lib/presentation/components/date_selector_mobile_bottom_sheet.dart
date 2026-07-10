@@ -535,7 +535,7 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color foregroundColor = !enabled
-        ? _mutedTextColor.withOpacity(0.38)
+        ? _mutedTextColor.withValues(alpha: 0.38)
         : selected
             ? Colors.white
             : _primaryColor;
@@ -557,8 +557,8 @@ class _DayCell extends StatelessWidget {
               color: selected
                   ? _accentColor
                   : today
-                      ? _accentColor.withOpacity(0.42)
-                      : _borderColor.withOpacity(enabled ? 1 : 0),
+                      ? _accentColor.withValues(alpha: 0.42)
+                      : _borderColor.withValues(alpha: enabled ? 1 : 0),
             ),
           ),
           child: Text(

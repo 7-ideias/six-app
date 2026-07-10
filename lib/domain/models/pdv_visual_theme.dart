@@ -48,7 +48,7 @@ class PdvVisualTheme {
       backgroundSidebar: const Color(0xFF1F3C88),
       cardBackground: Colors.white,
       cardBorder: const Color(0xFFE2E8F0),
-      cardShadow: Colors.black.withOpacity(0.05),
+      cardShadow: Colors.black.withValues(alpha: 0.05),
       primaryText: const Color(0xFF0F172A),
       secondaryText: const Color(0xFF475569),
       badgeBackground: const Color(0xFF1F3C88),

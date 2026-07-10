@@ -328,7 +328,7 @@ class _CadastroColaboradorWebBodyState
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.22)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -469,10 +469,10 @@ class _CadastroColaboradorWebBodyState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -487,7 +487,7 @@ class _CadastroColaboradorWebBodyState
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.10),
+                  color: colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: colorScheme.primary),
@@ -509,7 +509,7 @@ class _CadastroColaboradorWebBodyState
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: colorScheme.onSurface.withOpacity(0.65),
+                        color: colorScheme.onSurface.withValues(alpha: 0.65),
                       ),
                     ),
                   ],
@@ -534,7 +534,7 @@ class _CadastroColaboradorWebBodyState
         gradient: LinearGradient(
           colors: <Color>[
             colorScheme.primary,
-            colorScheme.primary.withOpacity(0.88),
+            colorScheme.primary.withValues(alpha: 0.88),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -542,7 +542,7 @@ class _CadastroColaboradorWebBodyState
         borderRadius: BorderRadius.circular(28),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.18),
+            color: colorScheme.primary.withValues(alpha: 0.18),
             blurRadius: 24,
             offset: const Offset(0, 14),
           ),
@@ -562,9 +562,9 @@ class _CadastroColaboradorWebBodyState
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
+                  color: Colors.white.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.18)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
                 ),
                 child: const Icon(
                   Icons.group_add_outlined,
@@ -595,9 +595,9 @@ class _CadastroColaboradorWebBodyState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -632,7 +632,7 @@ class _CadastroColaboradorWebBodyState
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: <Widget>[
@@ -652,7 +652,7 @@ class _CadastroColaboradorWebBodyState
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.62),
+                    color: colorScheme.onSurface.withValues(alpha: 0.62),
                   ),
                 ),
               ],
@@ -679,7 +679,7 @@ class _CadastroColaboradorWebBodyState
             isLast
                 ? null
                 : Border(
-                  bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
+                  bottom: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
                 ),
       ),
       child: Row(
@@ -691,7 +691,7 @@ class _CadastroColaboradorWebBodyState
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black.withOpacity(0.54),
+                color: Colors.black.withValues(alpha: 0.54),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1016,8 +1016,8 @@ class _CadastroColaboradorWebBodyState
             height: 220,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.16)),
-              color: colorScheme.primary.withOpacity(0.04),
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
+              color: colorScheme.primary.withValues(alpha: 0.04),
             ),
             clipBehavior: Clip.antiAlias,
             child:
@@ -1130,7 +1130,7 @@ class _CadastroColaboradorWebBodyState
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.08),
+            color: colorScheme.primary.withValues(alpha: 0.08),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -1149,7 +1149,7 @@ class _CadastroColaboradorWebBodyState
           'A imagem será usada como preview local e enviada no payload.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: colorScheme.onSurface.withOpacity(0.62),
+            color: colorScheme.onSurface.withValues(alpha: 0.62),
             fontSize: 12,
           ),
         ),
@@ -1191,11 +1191,11 @@ class _CadastroColaboradorWebBodyState
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.12),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

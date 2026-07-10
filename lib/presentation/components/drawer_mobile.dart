@@ -224,9 +224,9 @@ class AppDrawerDoMobile extends StatelessWidget {
                       vertical: 9,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.16)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
                     ),
                     child: const Row(
                       children: <Widget>[
@@ -269,7 +269,7 @@ class AppDrawerDoMobile extends StatelessWidget {
         children: <Widget>[
           CircleAvatar(
             radius: 34,
-            backgroundColor: Colors.white.withOpacity(0.14),
+            backgroundColor: Colors.white.withValues(alpha: 0.14),
             backgroundImage: image != null ? FileImage(image!) : null,
             child: image == null
                 ? const Icon(
@@ -288,7 +288,7 @@ class AppDrawerDoMobile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: _surfaceColor,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: _primaryColor.withOpacity(0.12)),
+                border: Border.all(color: _primaryColor.withValues(alpha: 0.12)),
               ),
               child: const Icon(
                 Icons.camera_alt_rounded,

@@ -146,7 +146,7 @@ class _SeguimentoSelecionarMobileScreenState
                 selectedSubsegments.containsValue(true)
                     ? Theme.of(context).primaryColor
                     : Colors.grey.shade300,
-            disabledForegroundColor: Colors.white.withOpacity(0.5),
+            disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
             disabledBackgroundColor: Colors.grey.shade300,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),

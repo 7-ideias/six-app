@@ -499,8 +499,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  theme.colorScheme.primary.withOpacity(0.08),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.70),
+                  theme.colorScheme.primary.withValues(alpha: 0.08),
+                  theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.70),
                 ],
               ),
               borderRadius: BorderRadius.circular(22),
@@ -572,7 +572,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.10),
+                color: theme.colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: theme.colorScheme.primary),
@@ -635,8 +635,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               borderRadius: BorderRadius.circular(22),
               gradient: LinearGradient(
                 colors: [
-                  _corPrimaria.withOpacity(0.16),
-                  _corSecundaria.withOpacity(0.10),
+                  _corPrimaria.withValues(alpha: 0.16),
+                  _corSecundaria.withValues(alpha: 0.10),
                 ],
               ),
             ),
@@ -684,7 +684,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.16),
+        color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -731,7 +731,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               border: Border.all(color: theme.colorScheme.outlineVariant),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 6),
                 ),
@@ -851,12 +851,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   ),
                   decoration: BoxDecoration(
                     color: selecionado
-                        ? theme.colorScheme.primary.withOpacity(0.10)
+                        ? theme.colorScheme.primary.withValues(alpha: 0.10)
                         : theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: selecionado
-                          ? theme.colorScheme.primary.withOpacity(0.25)
+                          ? theme.colorScheme.primary.withValues(alpha: 0.25)
                           : theme.colorScheme.outlineVariant,
                     ),
                   ),
@@ -867,7 +867,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                         height: 42,
                         decoration: BoxDecoration(
                           color: selecionado
-                              ? theme.colorScheme.primary.withOpacity(0.12)
+                              ? theme.colorScheme.primary.withValues(alpha: 0.12)
                               : theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -925,7 +925,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             width: 62,
             height: 62,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.10),
+              color: theme.colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
@@ -981,7 +981,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1200,9 +1200,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
         ),
       ),
       child: Row(
@@ -1261,15 +1261,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withOpacity(0.55),
+                color: theme.colorScheme.surface.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.35),
+                  color: Colors.white.withValues(alpha: 0.35),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.10),
+                    color: Colors.black.withValues(alpha: 0.10),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
@@ -1293,15 +1293,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.18),
+            color: Colors.white.withValues(alpha: 0.18),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: Colors.white.withOpacity(0.30),
+              color: Colors.white.withValues(alpha: 0.30),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
+                color: Colors.black.withValues(alpha: 0.12),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
@@ -1333,14 +1333,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     height: 56,
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.92),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.28),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.28),
                           blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
@@ -1413,7 +1413,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
             ),
             child: Text(
               'Obrigatório',

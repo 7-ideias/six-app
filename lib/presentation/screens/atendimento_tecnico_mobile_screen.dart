@@ -1499,7 +1499,7 @@ class _ResponsavelSelectorItem extends StatelessWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: selected
-                    ? _accentColor.withOpacity(0.12)
+                    ? _accentColor.withValues(alpha: 0.12)
                     : const Color(0xFFF1F5F9),
                 child: Icon(
                   responsavel.isAdmin
@@ -1848,7 +1848,7 @@ class _ClienteSelectorItem extends StatelessWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: selected
-                    ? _accentColor.withOpacity(0.12)
+                    ? _accentColor.withValues(alpha: 0.12)
                     : const Color(0xFFF1F5F9),
                 child: Text(
                   _initials(cliente.nome),

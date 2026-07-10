@@ -1713,7 +1713,7 @@ class _SelectorItem extends StatelessWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: selected
-                    ? _accentColor.withOpacity(0.12)
+                    ? _accentColor.withValues(alpha: 0.12)
                     : const Color(0xFFF1F5F9),
                 child: Icon(icon, color: selected ? _accentColor : _primaryColor),
               ),

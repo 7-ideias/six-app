@@ -396,8 +396,8 @@ Future<ColaboradorMock?> showSelecaoColaboradorDialog(
                                     decoration: BoxDecoration(
                                       color:
                                           colaborador.ativo
-                                              ? Colors.green.withOpacity(0.12)
-                                              : Colors.red.withOpacity(0.12),
+                                              ? Colors.green.withValues(alpha: 0.12)
+                                              : Colors.red.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                     child: Text(

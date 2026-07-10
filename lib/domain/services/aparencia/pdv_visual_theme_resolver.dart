@@ -17,9 +17,9 @@ class PdvVisualThemeResolver {
       backgroundSidebar: paleta.primaria,
       cardBackground: surfaceBackground,
       cardBorder: darkMode
-          ? Colors.white.withOpacity(0.14)
-          : paleta.secundaria.withOpacity(0.2),
-      cardShadow: Colors.black.withOpacity(darkMode ? 0.20 : 0.05),
+          ? Colors.white.withValues(alpha: 0.14)
+          : paleta.secundaria.withValues(alpha: 0.2),
+      cardShadow: Colors.black.withValues(alpha: darkMode ? 0.20 : 0.05),
       primaryText: primaryText,
       secondaryText: secondaryText,
       badgeBackground: paleta.secundaria,
@@ -28,10 +28,10 @@ class PdvVisualThemeResolver {
       highlightColor: paleta.destaque,
       successColor: paleta.destaque,
       warningColor: paleta.alerta,
-      eventCardBackground: pageBackground.withOpacity(0.72),
+      eventCardBackground: pageBackground.withValues(alpha: 0.72),
       eventCardBorder: darkMode
-          ? Colors.white.withOpacity(0.10)
-          : paleta.secundaria.withOpacity(0.1),
+          ? Colors.white.withValues(alpha: 0.10)
+          : paleta.secundaria.withValues(alpha: 0.1),
       actionButtonBackground: paleta.primaria,
       actionButtonForeground: _estimateContrast(paleta.primaria),
     );

@@ -211,7 +211,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
       contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.28)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.28)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -219,7 +219,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.18)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.18)),
       ),
     );
   }
@@ -257,7 +257,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.72)),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.72)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

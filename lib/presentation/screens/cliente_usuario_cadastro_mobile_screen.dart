@@ -112,7 +112,7 @@ class _ClienteUsuarioCadastroMobileScreenState extends State<ClienteUsuarioCadas
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.18)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.18)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -166,7 +166,7 @@ class _ClienteUsuarioCadastroMobileScreenState extends State<ClienteUsuarioCadas
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.10),
+                  color: colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: colorScheme.primary),
@@ -196,9 +196,9 @@ class _ClienteUsuarioCadastroMobileScreenState extends State<ClienteUsuarioCadas
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: value ? colorScheme.primary.withOpacity(0.05) : colorScheme.surface,
+        color: value ? colorScheme.primary.withValues(alpha: 0.05) : colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: value ? colorScheme.primary.withOpacity(0.18) : colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(color: value ? colorScheme.primary.withValues(alpha: 0.18) : colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: <Widget>[
@@ -267,7 +267,7 @@ class _ClienteUsuarioCadastroMobileScreenState extends State<ClienteUsuarioCadas
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[colorScheme.primary, colorScheme.primary.withOpacity(0.86)],
+          colors: <Color>[colorScheme.primary, colorScheme.primary.withValues(alpha: 0.86)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -277,7 +277,7 @@ class _ClienteUsuarioCadastroMobileScreenState extends State<ClienteUsuarioCadas
         children: <Widget>[
           CircleAvatar(
             radius: 24,
-            backgroundColor: Colors.white.withOpacity(0.16),
+            backgroundColor: Colors.white.withValues(alpha: 0.16),
             child: Icon(_editing ? Icons.edit_outlined : Icons.person_add_alt_1_rounded, color: Colors.white),
           ),
           const SizedBox(width: 14),
@@ -289,7 +289,7 @@ class _ClienteUsuarioCadastroMobileScreenState extends State<ClienteUsuarioCadas
                 const SizedBox(height: 4),
                 Text(
                   'Cadastro rápido para vendas, assistência e compras a prazo.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.82), height: 1.25),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.82), height: 1.25),
                 ),
               ],
             ),

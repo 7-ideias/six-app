@@ -135,7 +135,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outline.withOpacity(0.18)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -148,7 +148,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(color: colorScheme.onSurface.withOpacity(0.62), fontSize: 12),
+                  style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.62), fontSize: 12),
                 ),
               ],
             ),
@@ -265,9 +265,9 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.06),
+                  color: colorScheme.primary.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: colorScheme.primary.withOpacity(0.18)),
+                  border: Border.all(color: colorScheme.primary.withValues(alpha: 0.18)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

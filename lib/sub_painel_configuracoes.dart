@@ -16,7 +16,7 @@ void showSubPainelConfiguracoes(BuildContext context, String textoDaAppBar) {
   showDialog(
     context: context,
     barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (BuildContext context) {
       return SubPainelConfiguracoes(
         textoDaAppBar: textoDaAppBar,
@@ -33,7 +33,7 @@ class _ConfiguracoesRapidasWeb extends StatelessWidget {
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.55),
+      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (BuildContext dialogContext) {
         final Size size = MediaQuery.of(dialogContext).size;
         return Dialog(
@@ -102,7 +102,7 @@ class _ConfiguracoesRapidasWeb extends StatelessWidget {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.10),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
@@ -180,7 +180,7 @@ class _ConfigTile extends StatelessWidget {
             border: Border.all(color: theme.colorScheme.outlineVariant),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -192,7 +192,7 @@ class _ConfigTile extends StatelessWidget {
                 width: 54,
                 height: 54,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(icon, color: theme.colorScheme.primary),
@@ -219,7 +219,7 @@ class _ConfigTile extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(0.10),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.10),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(

@@ -269,7 +269,7 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.14), borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withOpacity(0.16))),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withValues(alpha: 0.16))),
             child: const Icon(Icons.groups_2_outlined, color: Colors.white),
           ),
           const SizedBox(width: 14),
@@ -279,7 +279,7 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
               children: <Widget>[
                 const Text('Base de clientes', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 5),
-                Text('Cadastre, edite e acompanhe relacionamento e fiado.', style: TextStyle(color: Colors.white.withOpacity(0.82), height: 1.25)),
+                Text('Cadastre, edite e acompanhe relacionamento e fiado.', style: TextStyle(color: Colors.white.withValues(alpha: 0.82), height: 1.25)),
               ],
             ),
           ),
@@ -409,9 +409,9 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: fiadoOk ? Colors.green.withOpacity(0.08) : const Color(0xFFF8FAFC),
+              color: fiadoOk ? Colors.green.withValues(alpha: 0.08) : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: fiadoOk ? Colors.green.withOpacity(0.24) : const Color(0xFFE2E8F0)),
+              border: Border.all(color: fiadoOk ? Colors.green.withValues(alpha: 0.24) : const Color(0xFFE2E8F0)),
             ),
             child: Row(
               children: <Widget>[
@@ -475,7 +475,7 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
     final Color color = ativo ? Colors.green.shade700 : Colors.red.shade700;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999)),
       child: Text(ativo ? 'Ativo' : 'Inativo', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900)),
     );
   }
@@ -526,7 +526,7 @@ class _ClientesUsuarioMobileScreenState extends State<ClientesUsuarioMobileScree
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.35)),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.35)),
       child: Text(message),
     );
   }

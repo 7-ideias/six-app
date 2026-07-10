@@ -77,7 +77,7 @@ class AnimatedLineChart extends StatelessWidget {
               barWidth: 3,
               isStrokeCapRound: true,
               belowBarData: BarAreaData(show: true, gradient: LinearGradient(
-                  colors: [Colors.blue.withOpacity(0.3)])),
+                  colors: [Colors.blue.withValues(alpha: 0.3)])),
             ),
           ],
         ),
@@ -158,7 +158,7 @@ class LineChartWithShadow extends StatelessWidget {
               ),
               barWidth: 3,
               belowBarData: BarAreaData(show: true, gradient: LinearGradient(
-                  colors: [Colors.red.withOpacity(0.3)])),
+                  colors: [Colors.red.withValues(alpha: 0.3)])),
             ),
           ],
         ),
@@ -263,7 +263,7 @@ class InteractiveLineChart extends StatelessWidget {
               barWidth: 3,
               isStrokeCapRound: true,
               belowBarData: BarAreaData(show: true, gradient: LinearGradient(
-                  colors:[Colors.purple.withOpacity(0.3)])),
+                  colors:[Colors.purple.withValues(alpha: 0.3)])),
             ),
           ],
         ),

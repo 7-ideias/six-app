@@ -111,7 +111,7 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.10),
+              color: theme.colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: theme.colorScheme.primary),
@@ -156,7 +156,7 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -293,7 +293,7 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -381,9 +381,9 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.10),
+                color: Colors.green.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.green.withOpacity(0.30)),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.30)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,7 +432,7 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        theme.colorScheme.primary.withOpacity(0.10),
+                        theme.colorScheme.primary.withValues(alpha: 0.10),
                         theme.colorScheme.surface,
                       ],
                     ),

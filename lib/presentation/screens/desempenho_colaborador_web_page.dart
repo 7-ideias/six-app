@@ -140,7 +140,7 @@ class _DesempenhoColaboradorWebPageState
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
         border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
       ),
       child: Row(
@@ -200,7 +200,7 @@ class _DesempenhoColaboradorWebPageState
       width: 54,
       height: 54,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.12),
+        color: theme.colorScheme.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Icon(icon, color: theme.colorScheme.primary, size: 28),
@@ -338,7 +338,7 @@ class _DesempenhoColaboradorWebPageState
     return ChoiceChip(
       selected: selected,
       label: Text(label),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.12),
       labelStyle: TextStyle(
         color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
         fontWeight: FontWeight.w800,
@@ -358,7 +358,7 @@ class _DesempenhoColaboradorWebPageState
     return ChoiceChip(
       selected: selected,
       label: Text('$label ($total)'),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.12),
       labelStyle: TextStyle(
         color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
         fontWeight: FontWeight.w800,
@@ -429,7 +429,7 @@ class _DesempenhoColaboradorWebPageState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -520,7 +520,7 @@ class _DesempenhoColaboradorWebPageState
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
@@ -530,7 +530,7 @@ class _DesempenhoColaboradorWebPageState
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(Icons.flag_outlined, color: theme.colorScheme.primary, size: 20),
@@ -1188,7 +1188,7 @@ class _KpiCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.10),
+              color: theme.colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(data.icon, color: theme.colorScheme.primary),
@@ -1241,7 +1241,7 @@ class _SelectorButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Material(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -1289,7 +1289,7 @@ class _SelectorTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: selected ? theme.colorScheme.primary.withOpacity(0.10) : theme.colorScheme.surface,
+        color: selected ? theme.colorScheme.primary.withValues(alpha: 0.10) : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1334,9 +1334,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.11),
+        color: color.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900)),
     );
@@ -1356,7 +1356,7 @@ class _EmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),

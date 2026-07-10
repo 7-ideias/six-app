@@ -334,7 +334,7 @@ class _AtendimentosTecnicosListaWebPageState
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     DropdownButtonFormField<DominioOpcaoModel>(
-                      value: statusSelecionado,
+                      initialValue: statusSelecionado,
                       decoration: const InputDecoration(
                         labelText: 'Novo status',
                       ),
@@ -443,7 +443,7 @@ class _AtendimentosTecnicosListaWebPageState
             final isCompact = constraints.maxWidth < 920;
             final horizontalPadding = isCompact ? 16.0 : 28.0;
             return Container(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
               child: Column(
                 children: <Widget>[
                   _buildHeader(
@@ -525,7 +525,7 @@ class _AtendimentosTecnicosListaWebPageState
 
   Widget _buildLoading(ThemeData theme) {
     return Container(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -533,7 +533,7 @@ class _AtendimentosTecnicosListaWebPageState
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.12),
+              color: theme.colorScheme.outline.withValues(alpha: 0.12),
             ),
           ),
           child: const Row(
@@ -566,7 +566,7 @@ class _AtendimentosTecnicosListaWebPageState
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -596,7 +596,7 @@ class _AtendimentosTecnicosListaWebPageState
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
+                  color: colorScheme.onSurface.withValues(alpha: 0.66),
                 ),
               ),
             ],
@@ -640,11 +640,11 @@ class _AtendimentosTecnicosListaWebPageState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.14)),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -749,11 +749,11 @@ class _AtendimentosTecnicosListaWebPageState
             color:
                 highlight
                     ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.12),
+                    : colorScheme.outline.withValues(alpha: 0.12),
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -767,8 +767,8 @@ class _AtendimentosTecnicosListaWebPageState
               decoration: BoxDecoration(
                 color:
                     highlight
-                        ? Colors.white.withOpacity(0.15)
-                        : colorScheme.primary.withOpacity(0.08),
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -789,8 +789,8 @@ class _AtendimentosTecnicosListaWebPageState
                     style: TextStyle(
                       color:
                           highlight
-                              ? Colors.white.withOpacity(0.86)
-                              : colorScheme.onSurface.withOpacity(0.62),
+                              ? Colors.white.withValues(alpha: 0.86)
+                              : colorScheme.onSurface.withValues(alpha: 0.62),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -814,8 +814,8 @@ class _AtendimentosTecnicosListaWebPageState
                     style: TextStyle(
                       color:
                           highlight
-                              ? Colors.white.withOpacity(0.78)
-                              : colorScheme.onSurface.withOpacity(0.56),
+                              ? Colors.white.withValues(alpha: 0.78)
+                              : colorScheme.onSurface.withValues(alpha: 0.56),
                       fontSize: 12,
                     ),
                   ),
@@ -835,7 +835,7 @@ class _AtendimentosTecnicosListaWebPageState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: <Widget>[
@@ -865,7 +865,7 @@ class _AtendimentosTecnicosListaWebPageState
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.12),
+                    color: colorScheme.outline.withValues(alpha: 0.12),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -911,7 +911,7 @@ class _AtendimentosTecnicosListaWebPageState
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.08),
+            color: colorScheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -967,7 +967,7 @@ class _AtendimentosTecnicosListaWebPageState
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colorScheme.onSurface.withOpacity(0.72),
+                    color: colorScheme.onSurface.withValues(alpha: 0.72),
                     height: 1.25,
                   ),
                 ),
@@ -1073,10 +1073,10 @@ class _AtendimentosTecnicosListaWebPageState
           padding: EdgeInsets.all(isCompact ? 14 : 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: colorScheme.outline.withOpacity(0.13)),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.13)),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withOpacity(0.035),
+                color: Colors.black.withValues(alpha: 0.035),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -1367,9 +1367,9 @@ class _AtendimentosTecnicosListaWebPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.62),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1397,7 +1397,7 @@ class _AtendimentosTecnicosListaWebPageState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1425,9 +1425,9 @@ class _AtendimentosTecnicosListaWebPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.72),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.08)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1518,7 +1518,7 @@ class _EmptyState extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.12),
+            color: theme.colorScheme.outline.withValues(alpha: 0.12),
           ),
         ),
         child: Column(
@@ -1571,7 +1571,7 @@ class _ErrorState extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.12),
+            color: theme.colorScheme.outline.withValues(alpha: 0.12),
           ),
         ),
         child: Column(

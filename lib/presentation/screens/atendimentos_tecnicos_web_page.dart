@@ -404,7 +404,7 @@ class _AtendimentosTecnicosWebPageState
             final isCompact = constraints.maxWidth < 980;
             final horizontalPadding = isCompact ? 16.0 : 28.0;
             return Container(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
               child: Column(
                 children: <Widget>[
                   _buildHeader(theme, state, isCompact),
@@ -453,14 +453,14 @@ class _AtendimentosTecnicosWebPageState
 
   Widget _buildLoading(ThemeData theme) {
     return Container(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -491,7 +491,7 @@ class _AtendimentosTecnicosWebPageState
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -520,7 +520,7 @@ class _AtendimentosTecnicosWebPageState
                 'Fluxo com cliente, equipamento, diagnóstico, itens e vencimento financeiro.',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.66)),
+                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.66)),
               ),
             ],
           ),
@@ -555,11 +555,11 @@ class _AtendimentosTecnicosWebPageState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.14)),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -791,7 +791,7 @@ class _AtendimentosTecnicosWebPageState
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.13)),
+        side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.13)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -816,13 +816,13 @@ class _AtendimentosTecnicosWebPageState
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: selected
-                ? theme.colorScheme.primary.withOpacity(0.07)
-                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.58),
+                ? theme.colorScheme.primary.withValues(alpha: 0.07)
+                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.58),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? theme.colorScheme.primary.withOpacity(0.24)
-                  : theme.colorScheme.outline.withOpacity(0.12),
+                  ? theme.colorScheme.primary.withValues(alpha: 0.24)
+                  : theme.colorScheme.outline.withValues(alpha: 0.12),
             ),
           ),
           child: Row(
@@ -832,7 +832,7 @@ class _AtendimentosTecnicosWebPageState
                 height: 40,
                 decoration: BoxDecoration(
                   color: selected
-                      ? theme.colorScheme.primary.withOpacity(0.10)
+                      ? theme.colorScheme.primary.withValues(alpha: 0.10)
                       : theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -887,7 +887,7 @@ class _AtendimentosTecnicosWebPageState
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.13)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.13)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -938,7 +938,7 @@ class _AtendimentosTecnicosWebPageState
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.45),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -1010,7 +1010,7 @@ class _AtendimentosTecnicosWebPageState
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.42),
         borderRadius: BorderRadius.circular(16),
       ),
       child: isCompact
@@ -1116,9 +1116,9 @@ class _AtendimentosTecnicosWebPageState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.16)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.16)),
       ),
       child: isCompact
           ? Column(
@@ -1152,7 +1152,7 @@ class _AtendimentosTecnicosWebPageState
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.10),
+            color: theme.colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: theme.colorScheme.primary, size: 22),
@@ -1233,7 +1233,7 @@ class _AtendimentosTecnicosWebPageState
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.12)),
+        borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1262,11 +1262,11 @@ class _AtendimentosTecnicosWebPageState
           border: Border.all(
             color: highlight
                 ? colorScheme.primary
-                : colorScheme.outline.withOpacity(0.12),
+                : colorScheme.outline.withValues(alpha: 0.12),
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -1279,8 +1279,8 @@ class _AtendimentosTecnicosWebPageState
               height: 42,
               decoration: BoxDecoration(
                 color: highlight
-                    ? Colors.white.withOpacity(0.15)
-                    : colorScheme.primary.withOpacity(0.08),
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -1300,8 +1300,8 @@ class _AtendimentosTecnicosWebPageState
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: highlight
-                          ? Colors.white.withOpacity(0.86)
-                          : colorScheme.onSurface.withOpacity(0.62),
+                          ? Colors.white.withValues(alpha: 0.86)
+                          : colorScheme.onSurface.withValues(alpha: 0.62),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -1324,8 +1324,8 @@ class _AtendimentosTecnicosWebPageState
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: highlight
-                          ? Colors.white.withOpacity(0.78)
-                          : colorScheme.onSurface.withOpacity(0.56),
+                          ? Colors.white.withValues(alpha: 0.78)
+                          : colorScheme.onSurface.withValues(alpha: 0.56),
                       fontSize: 12,
                     ),
                   ),
@@ -1381,9 +1381,9 @@ class _AtendimentosTecnicosWebPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.62),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1403,9 +1403,9 @@ class _AtendimentosTecnicosWebPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.72),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.08)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1440,7 +1440,7 @@ class _AtendimentoTecnicoErrorState extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.colorScheme.error.withOpacity(0.30)),
+          border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.30)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

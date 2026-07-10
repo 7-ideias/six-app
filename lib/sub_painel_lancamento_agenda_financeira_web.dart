@@ -335,9 +335,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.35),
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: colorScheme.outline.withOpacity(0.14)),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.14)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -863,8 +863,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
       fillColor: colorScheme.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22))),
-      disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.14))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.22))),
+      disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.14))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colorScheme.primary, width: 1.4)),
     );
   }
@@ -944,9 +944,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.08),
+        color: colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.22)),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: <Widget>[
@@ -976,21 +976,21 @@ class _LancamentoAgendaFinanceiraWebBodyState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
         Row(children: <Widget>[
           Container(
             width: 42,
             height: 42,
-            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(14)),
             child: Icon(icon, color: colorScheme.primary),
           ),
           const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
             Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withOpacity(0.65))),
+            Text(subtitle, style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.65))),
           ])),
         ]),
         const SizedBox(height: 20),
@@ -1005,7 +1005,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: <Color>[colorScheme.primary, colorScheme.primary.withOpacity(0.88)]),
+        gradient: LinearGradient(colors: <Color>[colorScheme.primary, colorScheme.primary.withValues(alpha: 0.88)]),
         borderRadius: BorderRadius.circular(28),
       ),
       child: Text(
@@ -1020,7 +1020,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: colorScheme.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: colorScheme.outline.withOpacity(0.12))),
+      decoration: BoxDecoration(color: colorScheme.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12))),
       child: Wrap(alignment: WrapAlignment.spaceBetween, crossAxisAlignment: WrapCrossAlignment.center, spacing: 16, runSpacing: 16, children: <Widget>[
         const Text('Revise os dados do lançamento antes de concluir.', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
         Wrap(spacing: 12, runSpacing: 12, children: <Widget>[

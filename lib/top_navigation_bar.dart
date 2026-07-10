@@ -597,7 +597,7 @@ class _TopNavChipState extends State<_TopNavChip> {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: _hovering ? widget.colorScheme.onPrimary.withOpacity(0.12) : Colors.transparent,
+            color: _hovering ? widget.colorScheme.onPrimary.withValues(alpha: 0.12) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(

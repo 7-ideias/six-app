@@ -395,9 +395,9 @@ class _CategoriasProdutosServicosWebPageState
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.error.withOpacity(0.08),
+        color: theme.colorScheme.error.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.error.withOpacity(0.18)),
+        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: <Widget>[
@@ -542,7 +542,7 @@ class _CategoriasProdutosServicosWebPageState
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.10),
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(_tipoIcon(categoria.tipo), color: theme.colorScheme.primary),
@@ -666,8 +666,8 @@ class _CategoriasProdutosServicosWebPageState
       ),
       label: Text(ativo ? 'Ativa' : 'Inativa'),
       labelStyle: TextStyle(color: color, fontWeight: FontWeight.w800),
-      side: BorderSide(color: color.withOpacity(0.22)),
-      backgroundColor: color.withOpacity(0.07),
+      side: BorderSide(color: color.withValues(alpha: 0.22)),
+      backgroundColor: color.withValues(alpha: 0.07),
     );
   }
 
@@ -680,8 +680,8 @@ class _CategoriasProdutosServicosWebPageState
         color: theme.colorScheme.primary,
         fontWeight: FontWeight.w800,
       ),
-      side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.18)),
-      backgroundColor: theme.colorScheme.primary.withOpacity(0.06),
+      side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.18)),
+      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.06),
     );
   }
 
@@ -690,7 +690,7 @@ class _CategoriasProdutosServicosWebPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.38),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.38),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -769,17 +769,17 @@ class _HoverableCategoriaCardState extends State<_HoverableCategoriaCard> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: _hovered
-              ? theme.colorScheme.primary.withOpacity(0.025)
+              ? theme.colorScheme.primary.withValues(alpha: 0.025)
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: _hovered
-                ? theme.colorScheme.primary.withOpacity(0.30)
+                ? theme.colorScheme.primary.withValues(alpha: 0.30)
                 : theme.colorScheme.outlineVariant,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: theme.shadowColor.withOpacity(_hovered ? 0.10 : 0.05),
+              color: theme.shadowColor.withValues(alpha: _hovered ? 0.10 : 0.05),
               blurRadius: _hovered ? 18.0 : 14.0,
               offset: Offset(0, _hovered ? 8.0 : 6.0),
             ),

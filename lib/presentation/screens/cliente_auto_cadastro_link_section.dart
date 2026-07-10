@@ -31,7 +31,7 @@ Future<void> showClienteAutoCadastroLinkDialog(
                       width: 46,
                       height: 46,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(Icons.link_outlined, color: Theme.of(context).colorScheme.primary),
@@ -155,7 +155,7 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.18)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.18)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -242,9 +242,9 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: _habilitado ? colorScheme.primary.withOpacity(0.05) : colorScheme.surface,
+        color: _habilitado ? colorScheme.primary.withValues(alpha: 0.05) : colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _habilitado ? colorScheme.primary.withOpacity(0.18) : colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(color: _habilitado ? colorScheme.primary.withValues(alpha: 0.18) : colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: <Widget>[
@@ -410,7 +410,7 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
                     Container(
                       width: 42,
                       height: 42,
-                      decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(14)),
+                      decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(14)),
                       child: Icon(Icons.link_outlined, color: colorScheme.primary),
                     ),
                     const SizedBox(width: 12),

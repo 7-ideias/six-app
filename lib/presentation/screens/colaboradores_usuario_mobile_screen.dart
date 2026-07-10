@@ -317,9 +317,9 @@ class _ColaboradoresUsuarioMobileScreenState
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.14),
+              color: Colors.white.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.16)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
             ),
             child: const Icon(Icons.badge_outlined, color: Colors.white),
           ),
@@ -340,7 +340,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 Text(
                   'Convide, acompanhe e ajuste permissões dos colaboradores.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.82),
+                    color: Colors.white.withValues(alpha: 0.82),
                     height: 1.25,
                   ),
                 ),
@@ -643,7 +643,7 @@ class _ColaboradoresUsuarioMobileScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -770,7 +770,7 @@ class _ColaboradoresUsuarioMobileScreenState
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.35),
+        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.35),
       ),
       child: Text(message),
     );

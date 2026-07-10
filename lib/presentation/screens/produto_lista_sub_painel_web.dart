@@ -421,7 +421,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             return Container(
               color: Theme.of(
                 context,
-              ).colorScheme.surfaceVariant.withOpacity(0.16),
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
               child: Column(
                 children: <Widget>[
                   _buildHeader(context, itensDaLista.length, isCompact),
@@ -499,7 +499,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -530,7 +530,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
+                  color: colorScheme.onSurface.withValues(alpha: 0.66),
                 ),
               ),
             ],
@@ -585,11 +585,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.14)),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -672,9 +672,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.06),
+        color: colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: <Widget>[
@@ -687,7 +687,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface.withOpacity(0.74),
+                color: colorScheme.onSurface.withValues(alpha: 0.74),
               ),
             ),
           ),
@@ -705,7 +705,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: <Widget>[
@@ -807,7 +807,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.12)),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.12)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -826,7 +826,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -884,7 +884,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: <Widget>[
@@ -1038,12 +1038,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         border: Border.all(
           color:
               possuiSelecionados
-                  ? colorScheme.primary.withOpacity(0.22)
-                  : colorScheme.outline.withOpacity(0.12),
+                  ? colorScheme.primary.withValues(alpha: 0.22)
+                  : colorScheme.outline.withValues(alpha: 0.12),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1055,7 +1055,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.10),
+              color: colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(13),
             ),
             child: Icon(
@@ -1113,7 +1113,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.10)),
             ),
           ),
     );
@@ -1130,7 +1130,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.10)),
         ),
         child: Row(
           children: <Widget>[
@@ -1161,7 +1161,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   Text(
                     'Ajuste a busca ou atualize a listagem.',
                     style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.62),
+                      color: colorScheme.onSurface.withValues(alpha: 0.62),
                     ),
                   ),
                 ],
@@ -1205,19 +1205,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             decoration: BoxDecoration(
               color:
                   selecionado
-                      ? colorScheme.primary.withOpacity(0.06)
+                      ? colorScheme.primary.withValues(alpha: 0.06)
                       : colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color:
                     selecionado
-                        ? colorScheme.primary.withOpacity(0.36)
-                        : colorScheme.outline.withOpacity(0.10),
+                        ? colorScheme.primary.withValues(alpha: 0.36)
+                        : colorScheme.outline.withValues(alpha: 0.10),
                 width: selecionado ? 1.4 : 1,
               ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.035),
+                  color: Colors.black.withValues(alpha: 0.035),
                   blurRadius: 12,
                   offset: const Offset(0, 5),
                 ),
@@ -1261,7 +1261,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       required VoidCallback onTap,
     }) {
       return Material(
-        color: colorScheme.primary.withOpacity(0.08),
+        color: colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
@@ -1335,10 +1335,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 color:
                     selecionado
                         ? colorScheme.primary
-                        : colorScheme.primary.withOpacity(0.08),
+                        : colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.16),
+                  color: colorScheme.primary.withValues(alpha: 0.16),
                 ),
               ),
               child: Icon(
@@ -1356,7 +1356,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: colorScheme.primary.withOpacity(0.18)),
+              border: Border.all(color: colorScheme.primary.withValues(alpha: 0.18)),
             ),
             child: Row(
               children: <Widget>[
@@ -1366,7 +1366,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.08),
+                    color: colorScheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -1554,9 +1554,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.07),
+        color: colorScheme.primary.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(size <= 46 ? 14 : 16),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.10)),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.10)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Center(child: child),
@@ -1594,10 +1594,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       decoration: BoxDecoration(
         color:
             strong
-                ? colorScheme.primary.withOpacity(0.07)
-                : colorScheme.surfaceVariant.withOpacity(0.32),
+                ? colorScheme.primary.withValues(alpha: 0.07)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.32),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.08)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1613,7 +1613,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: strong ? FontWeight.w900 : FontWeight.w700,
-              color: colorScheme.onSurface.withOpacity(strong ? 0.88 : 0.68),
+              color: colorScheme.onSurface.withValues(alpha: strong ? 0.88 : 0.68),
             ),
           ),
         ],
@@ -1627,9 +1627,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.18)),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Text(
         active ? 'Ativo' : 'Inativo',

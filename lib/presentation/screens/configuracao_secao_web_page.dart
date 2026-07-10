@@ -137,7 +137,7 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
         border: Border(
           bottom: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
@@ -216,7 +216,7 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
       width: 54,
       height: 54,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.12),
+        color: theme.colorScheme.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Icon(widget.icon, color: theme.colorScheme.primary, size: 28),
@@ -265,7 +265,7 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
             border: Border.all(color: theme.colorScheme.outlineVariant),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -319,7 +319,7 @@ class _ConfiguracaoSecaoWebPageState extends State<ConfiguracaoSecaoWebPage> {
                 border: Border.all(color: theme.colorScheme.outlineVariant),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),

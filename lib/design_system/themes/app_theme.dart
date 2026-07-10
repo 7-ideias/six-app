@@ -61,14 +61,14 @@ class AppTheme {
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          backgroundColor: colorScheme.surface.withOpacity(
+          backgroundColor: colorScheme.surface.withValues(alpha: 
             isDark ? 0.22 : 0.78,
           ),
           foregroundColor: colorScheme.primary,
           minimumSize: const Size(0, 46),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           side: BorderSide(
-            color: colorScheme.primary.withOpacity(0.28),
+            color: colorScheme.primary.withValues(alpha: 0.28),
             width: 1.1,
           ),
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
@@ -104,7 +104,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
-        labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+        labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
         prefixIconColor: colorScheme.primary,
       ),
 
@@ -114,18 +114,18 @@ class AppTheme {
         foregroundColor: colorScheme.onSecondary,
       ),
 
-      // Chip Theme
-      chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.primary.withOpacity(0.1),
-        labelStyle: TextStyle(color: colorScheme.primary),
-        secondaryLabelStyle: TextStyle(color: colorScheme.onSecondary),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+       // Chip Theme
+       chipTheme: ChipThemeData(
+         backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+         labelStyle: TextStyle(color: colorScheme.primary),
+         secondaryLabelStyle: TextStyle(color: colorScheme.onSecondary),
+         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+       ),
 
-      // Divider Theme
-      dividerTheme: DividerThemeData(
-        color: colorScheme.onSurface.withOpacity(0.1),
+       // Divider Theme
+       dividerTheme: DividerThemeData(
+         color: colorScheme.onSurface.withValues(alpha: 0.1),
         thickness: 1,
         indent: 16,
         endIndent: 16,

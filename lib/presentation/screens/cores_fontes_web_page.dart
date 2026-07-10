@@ -114,7 +114,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
       background: escuro ? const Color(0xFF060A12) : const Color(0xFFF8FAFC),
       surface: escuro ? const Color(0xFF111827) : Colors.white,
       surfaceAlt: escuro ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-      border: escuro ? Colors.white.withOpacity(0.12) : const Color(0xFFE2E8F0),
+      border: escuro ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0),
       text: escuro ? Colors.white : const Color(0xFF0F172A),
       muted: escuro ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
       primaria: _corPrimaria,
@@ -444,7 +444,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.035),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -546,7 +546,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
                     boxShadow: selecionada
                         ? <BoxShadow>[
                             BoxShadow(
-                              color: opcao.withOpacity(0.28),
+                              color: opcao.withValues(alpha: 0.28),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -607,7 +607,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
         border: Border.all(color: preview.border),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(preview.escuro ? 0.18 : 0.04),
+            color: Colors.black.withValues(alpha: preview.escuro ? 0.18 : 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -821,9 +821,9 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.22)),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Text(
         label,
@@ -838,8 +838,8 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: color.withOpacity(preview.escuro ? 0.18 : 0.10),
-        border: Border.all(color: color.withOpacity(0.22)),
+        color: color.withValues(alpha: preview.escuro ? 0.18 : 0.10),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: <Widget>[
@@ -867,9 +867,9 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(preview.escuro ? 0.18 : 0.10),
+        color: color.withValues(alpha: preview.escuro ? 0.18 : 0.10),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.20)),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -888,7 +888,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
       decoration: BoxDecoration(
         color: preview.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.20)),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
       ),
       child: Row(
         children: <Widget>[
@@ -923,7 +923,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
       width: 28,
       height: 28,
       decoration: BoxDecoration(
-        color: color.withOpacity(preview.escuro ? 0.20 : 0.14),
+        color: color.withValues(alpha: preview.escuro ? 0.20 : 0.14),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(Icons.circle, color: color, size: 10),
@@ -960,7 +960,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
       width: width,
       height: 9,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.26),
+        color: color.withValues(alpha: 0.26),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -1027,7 +1027,7 @@ class _MiniTelaSistema extends StatelessWidget {
         border: Border.all(color: preview.border),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(preview.escuro ? 0.26 : 0.06),
+            color: Colors.black.withValues(alpha: preview.escuro ? 0.26 : 0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

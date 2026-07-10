@@ -307,8 +307,8 @@ class _RegrasOperacionaisConfiguracaoContentState
         borderRadius: BorderRadius.circular(26),
         gradient: LinearGradient(
           colors: <Color>[
-            theme.colorScheme.primary.withOpacity(0.10),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.62),
+            theme.colorScheme.primary.withValues(alpha: 0.10),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
           ],
         ),
         border: Border.all(color: theme.colorScheme.outlineVariant),
@@ -322,7 +322,7 @@ class _RegrasOperacionaisConfiguracaoContentState
             width: 58,
             height: 58,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.12),
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(Icons.rule_folder_outlined, color: theme.colorScheme.primary, size: 30),
@@ -1205,7 +1205,7 @@ class _RegrasOperacionaisConfiguracaoContentState
       width: 180,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.82),
+        color: theme.colorScheme.surface.withValues(alpha: 0.82),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -1254,7 +1254,7 @@ class _RegrasOperacionaisConfiguracaoContentState
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -1270,7 +1270,7 @@ class _RegrasOperacionaisConfiguracaoContentState
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: theme.colorScheme.primary),
@@ -1487,12 +1487,12 @@ class _RegrasOperacionaisConfiguracaoContentState
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: selected
-                ? theme.colorScheme.primary.withOpacity(0.10)
+                ? theme.colorScheme.primary.withValues(alpha: 0.10)
                 : theme.colorScheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
-                  ? theme.colorScheme.primary.withOpacity(0.35)
+                  ? theme.colorScheme.primary.withValues(alpha: 0.35)
                   : theme.colorScheme.outlineVariant,
             ),
           ),
@@ -1504,7 +1504,7 @@ class _RegrasOperacionaisConfiguracaoContentState
                 height: 42,
                 decoration: BoxDecoration(
                   color: selected
-                      ? theme.colorScheme.primary.withOpacity(0.12)
+                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
                       : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                 ),

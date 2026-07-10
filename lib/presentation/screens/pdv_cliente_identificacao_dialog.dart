@@ -131,7 +131,7 @@ class _PdvClienteIdentificacaoDialogState
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.07),
+        color: theme.colorScheme.primary.withValues(alpha: 0.07),
         border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
       ),
       child: Row(
@@ -221,7 +221,7 @@ class _PdvClienteIdentificacaoDialogState
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selecionado
-              ? theme.colorScheme.primary.withOpacity(0.08)
+              ? theme.colorScheme.primary.withValues(alpha: 0.08)
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
@@ -231,7 +231,7 @@ class _PdvClienteIdentificacaoDialogState
         child: Row(
           children: <Widget>[
             CircleAvatar(
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
               child: Text(
                 _iniciais(cliente.nome),
                 style: TextStyle(

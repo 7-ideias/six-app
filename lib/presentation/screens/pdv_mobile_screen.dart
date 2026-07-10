@@ -449,7 +449,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: _accentColor.withOpacity(0.10),
+        color: _accentColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(icon, color: _accentColor),
@@ -460,9 +460,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _accentColor.withOpacity(0.07),
+        color: _accentColor.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _accentColor.withOpacity(0.16)),
+        border: Border.all(color: _accentColor.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: <Widget>[
@@ -681,7 +681,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             width: 76,
             height: 76,
             decoration: BoxDecoration(
-              color: _accentColor.withOpacity(0.10),
+              color: _accentColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(24),
             ),
             child: const Icon(
@@ -866,7 +866,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               selecionado
                   ? <BoxShadow>[
                     BoxShadow(
-                      color: _accentColor.withOpacity(0.18),
+                      color: _accentColor.withValues(alpha: 0.18),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -1040,7 +1040,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _accentColor.withOpacity(0.08),
+              color: _accentColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -1362,7 +1362,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           child: Material(
             color: Colors.white,
             elevation: disabled ? 1 : 7,
-            shadowColor: Colors.black.withOpacity(0.22),
+            shadowColor: Colors.black.withValues(alpha: 0.22),
             shape: const CircleBorder(
               side: BorderSide(color: Color(0xFFE2E8F0)),
             ),
@@ -1529,7 +1529,7 @@ class _BarcodeScannerMobileScreenState
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.58),
+                color: Colors.black.withValues(alpha: 0.58),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Text(

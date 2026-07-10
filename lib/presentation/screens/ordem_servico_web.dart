@@ -369,7 +369,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.06), borderRadius: BorderRadius.circular(18)),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .06), borderRadius: BorderRadius.circular(18)),
               child: Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -448,8 +448,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: ok ? Colors.green.withOpacity(.30) : Theme.of(context).colorScheme.outlineVariant),
-                      color: ok ? Colors.green.withOpacity(.08) : Theme.of(context).colorScheme.surface,
+                      border: Border.all(color: ok ? Colors.green.withValues(alpha: .30) : Theme.of(context).colorScheme.outlineVariant),
+                      color: ok ? Colors.green.withValues(alpha: .08) : Theme.of(context).colorScheme.surface,
                     ),
                     child: Row(
                       children: <Widget>[
@@ -505,8 +505,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: ok ? Theme.of(context).colorScheme.primary.withOpacity(.08) : Theme.of(context).colorScheme.surface,
-                    border: Border.all(color: ok ? Theme.of(context).colorScheme.primary.withOpacity(.40) : Theme.of(context).colorScheme.outlineVariant),
+                    color: ok ? Theme.of(context).colorScheme.primary.withValues(alpha: .08) : Theme.of(context).colorScheme.surface,
+                    border: Border.all(color: ok ? Theme.of(context).colorScheme.primary.withValues(alpha: .40) : Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: Row(
                     children: <Widget>[
@@ -574,8 +574,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: selected ? Theme.of(context).colorScheme.primary.withOpacity(.08) : Theme.of(context).colorScheme.surface,
-                    border: Border.all(color: selected ? Theme.of(context).colorScheme.primary.withOpacity(.40) : Theme.of(context).colorScheme.outlineVariant),
+                    color: selected ? Theme.of(context).colorScheme.primary.withValues(alpha: .08) : Theme.of(context).colorScheme.surface,
+                    border: Border.all(color: selected ? Theme.of(context).colorScheme.primary.withValues(alpha: .40) : Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: Row(
                     children: <Widget>[
@@ -716,7 +716,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 14),
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.green.withOpacity(.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.green.withOpacity(.35))),
+              decoration: BoxDecoration(color: Colors.green.withValues(alpha: .08), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.green.withValues(alpha: .35))),
               child: Row(children: <Widget>[const Icon(Icons.verified_rounded, color: Colors.green), const SizedBox(width: 10), Expanded(child: Text('Assinatura realizada por ${_assinanteController.text.trim().isEmpty ? 'cliente' : _assinanteController.text.trim()} em ${_dt(_assinadoEm)}.', style: const TextStyle(fontWeight: FontWeight.w700)))]),
             ),
           Wrap(
@@ -901,7 +901,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerLowest, borderRadius: BorderRadius.circular(18), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
       child: Row(
         children: <Widget>[
-          CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(.10), child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary)),
+          CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: .10), child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary)),
           const SizedBox(width: 12),
           Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700))),
           Text(value, style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
@@ -929,7 +929,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                   Container(
                     width: 34,
                     height: 34,
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.10), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .10), borderRadius: BorderRadius.circular(12)),
                     child: Icon(item['icone'] as IconData, size: 18, color: Theme.of(context).colorScheme.primary),
                   ),
                   const SizedBox(width: 10),
@@ -959,7 +959,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: <Color>[theme.colorScheme.primary.withOpacity(.08), theme.colorScheme.surfaceContainerHighest.withOpacity(.65)]),
+        gradient: LinearGradient(colors: <Color>[theme.colorScheme.primary.withValues(alpha: .08), theme.colorScheme.surfaceContainerHighest.withValues(alpha: .65)]),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -1029,7 +1029,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                             children: <Widget>[
                               Text(step['titulo'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall?.copyWith(color: selected ? Colors.white : theme.colorScheme.onSurface, fontWeight: FontWeight.w800)),
                               const SizedBox(height: 2),
-                              Text(step['descricao'] as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: selected ? Colors.white.withOpacity(.90) : theme.colorScheme.onSurfaceVariant)),
+                              Text(step['descricao'] as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: selected ? Colors.white.withValues(alpha: .90) : theme.colorScheme.onSurfaceVariant)),
                             ],
                           ),
                         ),

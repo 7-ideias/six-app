@@ -674,9 +674,9 @@ class _Header extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
+                color: Colors.white.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.18)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
               ),
               child: const Icon(Icons.trending_up_rounded, color: Colors.white),
             ),
@@ -1399,9 +1399,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.11),
+        color: color.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
         label,

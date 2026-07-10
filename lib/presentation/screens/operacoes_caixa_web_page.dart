@@ -235,7 +235,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
 
     return Container(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 1180;
@@ -321,7 +321,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _buildLoading(ThemeData theme) {
     return Container(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -354,7 +354,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -385,7 +385,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     : 'Abra o caixa para registrar operações do dia.',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.66)),
+                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.66)),
               ),
             ],
           ),
@@ -419,11 +419,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.14)),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -714,7 +714,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Widget _operationCard(ThemeData theme, _AtalhoOperacaoData item) {
     final selected = _tipoSelecionado == item.tipo;
     return Material(
-      color: selected ? item.cor.withOpacity(.08) : theme.colorScheme.surface,
+      color: selected ? item.cor.withValues(alpha: .08) : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -731,8 +731,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
-                  ? item.cor.withOpacity(.55)
-                  : theme.colorScheme.outline.withOpacity(0.12),
+                  ? item.cor.withValues(alpha: .55)
+                  : theme.colorScheme.outline.withValues(alpha: 0.12),
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -742,7 +742,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: item.cor.withOpacity(.11),
+                  color: item.cor.withValues(alpha: .11),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(item.icone, color: item.cor, size: 22),
@@ -1006,7 +1006,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1018,7 +1018,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: cor.withOpacity(.10),
+                  color: cor.withValues(alpha: .10),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(
@@ -1054,7 +1054,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                           ? 'Sem observação informada.'
                           : movimento.observacao,
                       style: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.70),
+                        color: colorScheme.onSurface.withValues(alpha: 0.70),
                         height: 1.35,
                       ),
                     ),
@@ -1348,7 +1348,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.10),
+            color: theme.colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: theme.colorScheme.primary, size: 22),
@@ -1402,11 +1402,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           border: Border.all(
             color: highlight
                 ? colorScheme.primary
-                : colorScheme.outline.withOpacity(0.12),
+                : colorScheme.outline.withValues(alpha: 0.12),
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -1419,8 +1419,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               height: 42,
               decoration: BoxDecoration(
                 color: highlight
-                    ? Colors.white.withOpacity(0.15)
-                    : colorScheme.primary.withOpacity(0.08),
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -1440,8 +1440,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: highlight
-                          ? Colors.white.withOpacity(0.86)
-                          : colorScheme.onSurface.withOpacity(0.62),
+                          ? Colors.white.withValues(alpha: 0.86)
+                          : colorScheme.onSurface.withValues(alpha: 0.62),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -1464,8 +1464,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: highlight
-                          ? Colors.white.withOpacity(0.78)
-                          : colorScheme.onSurface.withOpacity(0.56),
+                          ? Colors.white.withValues(alpha: 0.78)
+                          : colorScheme.onSurface.withValues(alpha: 0.56),
                       fontSize: 12,
                     ),
                   ),
@@ -1494,7 +1494,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.08),
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: theme.colorScheme.primary, size: 20),
@@ -1579,9 +1579,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(.10),
+        color: color.withValues(alpha: .10),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(.18)),
+        border: Border.all(color: color.withValues(alpha: .18)),
       ),
       child: Text(
         label,
@@ -1750,7 +1750,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.12)),
+        borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1764,10 +1764,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     return BoxDecoration(
       color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.13)),
+      border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.13)),
       boxShadow: <BoxShadow>[
         BoxShadow(
-          color: Colors.black.withOpacity(0.035),
+          color: Colors.black.withValues(alpha: 0.035),
           blurRadius: 12,
           offset: const Offset(0, 6),
         ),
@@ -1777,9 +1777,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   BoxDecoration _softBox(ThemeData theme, {double radius = 18}) {
     return BoxDecoration(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.42),
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10)),
+      border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.10)),
     );
   }
 
@@ -1805,9 +1805,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       constraints: const BoxConstraints(maxWidth: 240),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.62),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1861,7 +1861,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     return OutlinedButton.styleFrom(
       foregroundColor: theme.colorScheme.onSurface,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.18)),
+      side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.18)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       textStyle: const TextStyle(fontWeight: FontWeight.w800),
     );
@@ -1871,7 +1871,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     return OutlinedButton.styleFrom(
       foregroundColor: theme.colorScheme.error,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      side: BorderSide(color: theme.colorScheme.error.withOpacity(.35)),
+      side: BorderSide(color: theme.colorScheme.error.withValues(alpha: .35)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       textStyle: const TextStyle(fontWeight: FontWeight.w800),
     );

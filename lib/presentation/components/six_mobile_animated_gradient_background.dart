@@ -149,7 +149,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
             end: Alignment.bottomCenter,
             colors: <Color>[
               primaryColor,
-              midBlue.withOpacity(0.90),
+              midBlue.withValues(alpha: 0.90),
               softBlue,
               baseColor,
               Colors.white,
@@ -163,7 +163,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: accentColor.withOpacity(0.12 + (0.30 * i)),
+      color: accentColor.withValues(alpha: 0.12 + (0.30 * i)),
       radiusFactor: 0.44 + (0.08 * math.sin(t).abs()),
       x: 0.12 + 0.22 * math.sin(t),
       y: 0.15 + 0.05 * math.cos(t * 1.2),
@@ -172,7 +172,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: secondaryColor.withOpacity(0.14 + (0.34 * i)),
+      color: secondaryColor.withValues(alpha: 0.14 + (0.34 * i)),
       radiusFactor: 0.50 + (0.10 * math.sin(t + 1.7).abs()),
       x: 0.82 + 0.18 * math.sin(t + 1.8),
       y: 0.20 + 0.05 * math.cos(t + 0.7),
@@ -182,7 +182,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: Colors.white.withOpacity(0.18 + (0.50 * i)),
+      color: Colors.white.withValues(alpha: 0.18 + (0.50 * i)),
       radiusFactor: 0.64 + (0.12 * math.sin(t + 2.3).abs()),
       x: 0.52 + 0.20 * math.sin(t + 2.3),
       y: 0.34 + 0.05 * math.cos(t * 1.1 + 1.4),
@@ -191,7 +191,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: accentColor.withOpacity(0.08 + (0.26 * i)),
+      color: accentColor.withValues(alpha: 0.08 + (0.26 * i)),
       radiusFactor: 0.48 + (0.10 * math.sin(t + 3.1).abs()),
       x: 0.92 + 0.18 * math.sin(t + 3.1),
       y: 0.39 + 0.06 * math.cos(t + 2.4),
@@ -201,7 +201,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: Colors.white.withOpacity(0.20 + (0.55 * i)),
+      color: Colors.white.withValues(alpha: 0.20 + (0.55 * i)),
       radiusFactor: 0.72 + (0.14 * math.sin(t + 4.2).abs()),
       x: 0.34 + 0.24 * math.sin(t + 4.2),
       y: 0.58 + 0.06 * math.cos(t + 3.5),
@@ -210,7 +210,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: secondaryColor.withOpacity(0.06 + (0.18 * i)),
+      color: secondaryColor.withValues(alpha: 0.06 + (0.18 * i)),
       radiusFactor: 0.54 + (0.10 * math.sin(t + 5.0).abs()),
       x: 0.82 + 0.16 * math.sin(t + 5.0),
       y: 0.62 + 0.05 * math.cos(t + 4.6),
@@ -234,9 +234,9 @@ class _SixAmbientGradientPainter extends CustomPainter {
           ..shader = RadialGradient(
             colors: <Color>[
               color,
-              color.withOpacity(color.opacity * 0.72),
-              color.withOpacity(color.opacity * 0.28),
-              color.withOpacity(0),
+              color.withValues(alpha: color.a * 0.72),
+              color.withValues(alpha: color.a * 0.28),
+              color.withValues(alpha: 0),
             ],
             stops: const <double>[0, 0.32, 0.66, 1],
           ).createShader(Rect.fromCircle(center: center, radius: radius));

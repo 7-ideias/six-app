@@ -352,8 +352,8 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: ok ? Colors.green.withOpacity(0.30) : Theme.of(context).colorScheme.outlineVariant),
-                      color: ok ? Colors.green.withOpacity(0.08) : Theme.of(context).colorScheme.surface,
+                      border: Border.all(color: ok ? Colors.green.withValues(alpha: 0.30) : Theme.of(context).colorScheme.outlineVariant),
+                      color: ok ? Colors.green.withValues(alpha: 0.08) : Theme.of(context).colorScheme.surface,
                     ),
                     child: Row(
                       children: <Widget>[
@@ -414,8 +414,8 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: selecionado ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : Theme.of(context).colorScheme.surface,
-                    border: Border.all(color: selecionado ? Theme.of(context).colorScheme.primary.withOpacity(0.40) : Theme.of(context).colorScheme.outlineVariant),
+                    color: selecionado ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08) : Theme.of(context).colorScheme.surface,
+                    border: Border.all(color: selecionado ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.40) : Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: Row(
                     children: <Widget>[
@@ -610,7 +610,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: <Color>[theme.colorScheme.primary.withOpacity(0.08), theme.colorScheme.surfaceContainerHighest.withOpacity(0.65)]),
+        gradient: LinearGradient(colors: <Color>[theme.colorScheme.primary.withValues(alpha: 0.08), theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.65)]),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -679,7 +679,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                             children: <Widget>[
                               Text(step['titulo'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall?.copyWith(color: selected ? Colors.white : theme.colorScheme.onSurface, fontWeight: FontWeight.w800)),
                               const SizedBox(height: 2),
-                              Text(step['descricao'] as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: selected ? Colors.white.withOpacity(0.90) : theme.colorScheme.onSurfaceVariant)),
+                              Text(step['descricao'] as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: selected ? Colors.white.withValues(alpha: 0.90) : theme.colorScheme.onSurfaceVariant)),
                             ],
                           ),
                         ),

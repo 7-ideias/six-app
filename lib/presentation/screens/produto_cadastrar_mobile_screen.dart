@@ -1008,7 +1008,7 @@ class _CadastroProdutoMobileScreenState
             if (slot.isLoading)
               Positioned.fill(
                 child: Container(
-                  color: Colors.black.withOpacity(0.28),
+                  color: Colors.black.withValues(alpha: 0.28),
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
@@ -1024,7 +1024,7 @@ class _CadastroProdutoMobileScreenState
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.56),
+                    color: Colors.black.withValues(alpha: 0.56),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -1044,7 +1044,7 @@ class _CadastroProdutoMobileScreenState
               bottom: 10,
               child: CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.black.withOpacity(0.56),
+                backgroundColor: Colors.black.withValues(alpha: 0.56),
                 child: const Icon(
                   Icons.more_horiz,
                   color: Colors.white,

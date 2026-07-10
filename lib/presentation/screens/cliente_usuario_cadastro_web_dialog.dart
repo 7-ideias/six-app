@@ -164,7 +164,7 @@ class _ClienteUsuarioCadastroWebBodyState extends State<_ClienteUsuarioCadastroW
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.18)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.18)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -227,9 +227,9 @@ class _ClienteUsuarioCadastroWebBodyState extends State<_ClienteUsuarioCadastroW
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(0.06),
+          color: theme.colorScheme.primary.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.colorScheme.primary.withOpacity(0.12)),
+          border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.12)),
         ),
         child: Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -245,7 +245,7 @@ class _ClienteUsuarioCadastroWebBodyState extends State<_ClienteUsuarioCadastroW
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Icon(editing ? Icons.edit_outlined : Icons.person_add_alt_1_rounded, color: theme.colorScheme.primary),
@@ -311,9 +311,9 @@ class _ClienteUsuarioCadastroWebBodyState extends State<_ClienteUsuarioCadastroW
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: value ? colorScheme.primary.withOpacity(0.05) : colorScheme.surface,
+        color: value ? colorScheme.primary.withValues(alpha: 0.05) : colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: value ? colorScheme.primary.withOpacity(0.18) : colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(color: value ? colorScheme.primary.withValues(alpha: 0.18) : colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: <Widget>[
@@ -362,7 +362,7 @@ class _ClienteUsuarioCadastroWebBodyState extends State<_ClienteUsuarioCadastroW
               children: <Widget>[
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: theme.colorScheme.primary.withOpacity(0.10),
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.10),
                   child: Text(_initials(nome), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
                 ),
                 const SizedBox(width: 12),
@@ -388,9 +388,9 @@ class _ClienteUsuarioCadastroWebBodyState extends State<_ClienteUsuarioCadastroW
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: creditoLiberado ? Colors.green.withOpacity(0.08) : theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                color: creditoLiberado ? Colors.green.withValues(alpha: 0.08) : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: creditoLiberado ? Colors.green.withOpacity(0.24) : theme.colorScheme.outlineVariant),
+                border: Border.all(color: creditoLiberado ? Colors.green.withValues(alpha: 0.24) : theme.colorScheme.outlineVariant),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

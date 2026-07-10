@@ -272,9 +272,9 @@ class _PerfilDoMeuNegocioMobileScreenState
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.14),
+              color: Colors.white.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.20)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
             ),
             child: const Icon(
               Icons.storefront_rounded,
@@ -335,9 +335,9 @@ class _PerfilDoMeuNegocioMobileScreenState
         height: compact ? 30 : 28,
         padding: EdgeInsets.symmetric(horizontal: compact ? 9 : 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(compact ? 0.14 : 0.16),
+          color: Colors.white.withValues(alpha: compact ? 0.14 : 0.16),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withOpacity(0.22)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
         ),
         alignment: Alignment.center,
         child: Text(

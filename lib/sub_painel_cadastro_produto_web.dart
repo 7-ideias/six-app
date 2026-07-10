@@ -215,7 +215,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.22)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -547,7 +547,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     return SizedBox(
       width: width,
       child: DropdownButtonFormField<String?>(
-        value: valor,
+        initialValue: valor,
         decoration: _inputDecoration(
           context,
           'Categoria',
@@ -789,7 +789,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         gradient: LinearGradient(
           colors: <Color>[
             colorScheme.primary,
-            colorScheme.primary.withOpacity(0.88),
+            colorScheme.primary.withValues(alpha: 0.88),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -797,7 +797,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         borderRadius: BorderRadius.circular(28),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.18),
+            color: colorScheme.primary.withValues(alpha: 0.18),
             blurRadius: 24,
             offset: const Offset(0, 14),
           ),
@@ -817,9 +817,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
+                  color: Colors.white.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.18)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
                 ),
                 child: const Icon(
                   Icons.inventory_2_outlined,
@@ -854,9 +854,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -899,10 +899,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -917,7 +917,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.10),
+                  color: colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: colorScheme.primary),
@@ -939,7 +939,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: colorScheme.onSurface.withOpacity(0.65),
+                        color: colorScheme.onSurface.withValues(alpha: 0.65),
                       ),
                     ),
                   ],
@@ -967,7 +967,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: <Widget>[
@@ -987,7 +987,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.62),
+                    color: colorScheme.onSurface.withValues(alpha: 0.62),
                   ),
                 ),
               ],
@@ -1018,7 +1018,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 'Selecionadas: $_totalImagensSelecionadas / $_maxImageSlots',
                 style: TextStyle(
                   fontSize: 12,
-                  color: colorScheme.onSurface.withOpacity(0.6),
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1028,7 +1028,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
+                  color: colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -1075,7 +1075,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             'Slots',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface.withOpacity(0.78),
+              color: colorScheme.onSurface.withValues(alpha: 0.78),
             ),
           ),
           const SizedBox(height: 10),
@@ -1100,7 +1100,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 : 'Limite de imagens atingido. Remova uma miniatura para continuar.',
             style: TextStyle(
               fontSize: 12,
-              color: colorScheme.onSurface.withOpacity(0.62),
+              color: colorScheme.onSurface.withValues(alpha: 0.62),
             ),
           ),
         ],
@@ -1144,7 +1144,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface.withOpacity(0.72),
+              color: colorScheme.onSurface.withValues(alpha: 0.72),
             ),
           ),
           const SizedBox(height: 4),
@@ -1152,7 +1152,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             'Use o botão de upload ou escolha uma sugestão por IA.',
             style: TextStyle(
               fontSize: 12,
-              color: colorScheme.onSurface.withOpacity(0.58),
+              color: colorScheme.onSurface.withValues(alpha: 0.58),
             ),
           ),
         ],
@@ -1168,10 +1168,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           color:
               isSugestao
                   ? colorScheme.primary
-                  : colorScheme.outline.withOpacity(0.2),
+                  : colorScheme.outline.withValues(alpha: 0.2),
           width: isSugestao ? 2 : 1,
         ),
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -1180,7 +1180,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           if (slotAtivo.isLoading)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.28),
+                color: Colors.black.withValues(alpha: 0.28),
                 child: const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
@@ -1196,7 +1196,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.55),
+                  color: Colors.black.withValues(alpha: 0.55),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -1242,7 +1242,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     } else {
       thumb = Icon(
         Icons.add_photo_alternate_outlined,
-        color: colorScheme.onSurface.withOpacity(0.46),
+        color: colorScheme.onSurface.withValues(alpha: 0.46),
       );
     }
 
@@ -1258,12 +1258,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             color:
                 isAtivo
                     ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.24),
+                    : colorScheme.outline.withValues(alpha: 0.24),
             width: isAtivo ? 2 : 1,
           ),
           color:
               isAtivo
-                  ? colorScheme.primary.withOpacity(0.05)
+                  ? colorScheme.primary.withValues(alpha: 0.05)
                   : colorScheme.surface,
         ),
         child: Column(
@@ -1273,7 +1273,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               height: 66,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                color: colorScheme.surfaceVariant,
+                color: colorScheme.surfaceContainerHighest,
               ),
               clipBehavior: Clip.antiAlias,
               child:
@@ -1296,7 +1296,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               hasImage ? 'OK' : 'Vazio',
               style: TextStyle(
                 fontSize: 10,
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -1360,7 +1360,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.05),
+              color: colorScheme.primary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Text(
@@ -1368,7 +1368,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   ? 'Modo serviço ligado: destaque maior para garantia e alteração de valor.'
                   : 'Modo produto ligado: foco em estoque, custo e preço de venda.',
               style: TextStyle(
-                color: colorScheme.onSurface.withOpacity(0.74),
+                color: colorScheme.onSurface.withValues(alpha: 0.74),
                 fontSize: 12,
               ),
             ),
@@ -1405,7 +1405,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             isLast
                 ? null
                 : Border(
-                  bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
+                  bottom: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
                 ),
       ),
       child: Row(
@@ -1417,7 +1417,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black.withOpacity(0.54),
+                color: Colors.black.withValues(alpha: 0.54),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1442,11 +1442,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.12),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1544,7 +1544,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               SizedBox(
                 width: telaGrande ? 190 : (telaMedia ? 180 : double.infinity),
                 child: DropdownButtonFormField<String>(
-                  value: _tipoSelecionado,
+                  initialValue: _tipoSelecionado,
                   decoration: _inputDecoration(context, 'Tipo'),
                   items: const <DropdownMenuItem<String>>[
                     DropdownMenuItem(value: 'PRODUTO', child: Text('PRODUTO')),
@@ -1587,34 +1587,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             ],
           ),
         );
-
-        final Widget categoriasAviso =
-            _erroCategorias == null
-                ? const SizedBox.shrink()
-                : Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    _erroCategorias!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                );
-
-        // final Widget categoriasAviso =
-        //     _erroCategorias == null
-        //         ? const SizedBox.shrink()
-        //         : Padding(
-        //           padding: const EdgeInsets.only(top: 12),
-        //           child: Text(
-        //             _erroCategorias!,
-        //             style: TextStyle(
-        //               color: Theme.of(context).colorScheme.error,
-        //               fontWeight: FontWeight.w700,
-        //             ),
-        //           ),
-        //         );
 
         final Widget estoquePreco = _buildSectionCard(
           context: context,

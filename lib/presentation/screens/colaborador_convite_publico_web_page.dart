@@ -179,7 +179,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(Icons.group_add_outlined, color: theme.colorScheme.primary, size: 30),
@@ -209,7 +209,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer.withOpacity(0.55),
+                color: theme.colorScheme.errorContainer.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(_erro!),
@@ -254,9 +254,9 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.08),
+        color: Colors.green.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.green.withOpacity(0.25)),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +300,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -317,7 +317,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(0.045),
+          color: theme.colorScheme.primary.withValues(alpha: 0.045),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
