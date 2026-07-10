@@ -882,7 +882,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     final int itensPorLinha = largura < 340 ? 2 : (largura < 430 ? 3 : 4);
     final List<List<_FormaPagamentoMobile>> linhas = <List<_FormaPagamentoMobile>>[];
     for (int index = 0; index < _formasPagamento.length; index += itensPorLinha) {
-      final int fim = (index + itensPorLinha).clamp(0, _formasPagamento.length);
+      final int proximo = index + itensPorLinha;
+      final int fim = proximo > _formasPagamento.length ? _formasPagamento.length : proximo;
       linhas.add(_formasPagamento.sublist(index, fim));
     }
     return linhas;
