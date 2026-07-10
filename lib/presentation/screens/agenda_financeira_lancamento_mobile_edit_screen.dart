@@ -103,7 +103,6 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   bool _salvando = false;
   bool _carregandoDetalhe = false;
   bool _carregandoTiposRecebimento = false;
-  bool _statusQuitada = false;
   double _valorConfirmado = 0;
   double _valorRestante = 0;
   Map<String, dynamic> _detalhe = <String, dynamic>{};
@@ -154,7 +153,6 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
 
     _valorConfirmado = _toDouble(item['valorConfirmado']);
     _valorRestante = _toDouble(item['valorRestante']);
-    _statusQuitada = _statusEstaQuitada(_statusSelecionado, _valorConfirmado, _valorRestante);
 
     final dynamic valorOriginal = item['valorOriginal'] ?? item['valorTotalOperacao'] ?? item['valorTotal'] ?? item['valor'];
     _descricaoController.text = _texto(item['descricao']);
@@ -201,12 +199,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     if (_status.contains(status)) _statusSelecionado = status;
 
     _descricaoController.text = _texto(detalhe['descricao'], fallback: _descricaoController.text);
-    _valorController.text = _formatarValorParaCampo(
-      detalhe['valorOriginal'] ?? _valorController.text,
-    );
+    _valorController.text = _formatarValorParaCampo(detalhe['valorOriginal'] ?? _valorController.text);
     _valorConfirmado = _toDouble(detalhe['valorPagoRecebido'] ?? _valorConfirmado);
     _valorRestante = _toDouble(detalhe['valorAberto'] ?? _valorRestante);
-    _statusQuitada = _statusEstaQuitada(_statusSelecionado, _valorConfirmado, _valorRestante);
 
     _dataCompetencia = _parseData(detalhe['dataCompetencia'], fallback: _dataCompetencia);
     _dataVencimento = _parseData(detalhe['dataVencimento'], fallback: _dataVencimento);
@@ -256,8 +251,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   Future<void> _carregarTiposRecebimentoAtivos() async {
     setState(() => _carregandoTiposRecebimento = true);
     try {
-      final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient.getInformacoesBasicasDoCaixa();
       final List<String> formas = _montarFormasPagamentoAtivas(informacoes.tiposRecebimento);
       if (!mounted || formas.isEmpty) return;
       setState(() {
@@ -274,29 +268,17 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   List<String> _montarFormasPagamentoAtivas(List<TiposRecebimento> tipos) {
-    final List<TiposRecebimento> ativos = tipos
-        .where((TiposRecebimento tipo) => tipo.ativo)
-        .toList()
-      ..sort(
-        (TiposRecebimento a, TiposRecebimento b) =>
-            a.ordemExibicao.compareTo(b.ordemExibicao),
-      );
-
+    final List<TiposRecebimento> ativos = tipos.where((TiposRecebimento tipo) => tipo.ativo).toList()
+      ..sort((TiposRecebimento a, TiposRecebimento b) => a.ordemExibicao.compareTo(b.ordemExibicao));
     final List<String> descricoes = <String>[];
-    final Map<String, String> backendAtualizado =
-        Map<String, String>.from(_backendPorDescricaoFormaPagamento);
-
+    final Map<String, String> backendAtualizado = Map<String, String>.from(_backendPorDescricaoFormaPagamento);
     for (final TiposRecebimento tipo in ativos) {
-      final String backend = _backendFormaPagamentoPorCodigoTipo(tipo.codigoTipo) ??
-          _backendFormaPagamentoPorDescricao(tipo.descricaoExibicao);
-      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
-          ? tipo.descricaoExibicao.trim()
-          : _formaPagamentoLabel(backend);
+      final String backend = _backendFormaPagamentoPorCodigoTipo(tipo.codigoTipo) ?? _backendFormaPagamentoPorDescricao(tipo.descricaoExibicao);
+      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty ? tipo.descricaoExibicao.trim() : _formaPagamentoLabel(backend);
       if (descricao.trim().isEmpty || descricoes.contains(descricao)) continue;
       descricoes.add(descricao);
       backendAtualizado[descricao] = backend;
     }
-
     if (descricoes.isNotEmpty) {
       _backendPorDescricaoFormaPagamento
         ..clear()
@@ -306,7 +288,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   Future<void> _salvar() async {
-    if (!_formKey.currentState!.validate()) return;
+    final FormState? formState = _formKey.currentState;
+    if (formState == null || !formState.validate()) return;
     final double valorTotal = _toDouble(_valorController.text);
     if (valorTotal <= 0) {
       _mostrarSnack('Informe um valor maior que zero.');
@@ -344,9 +327,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     final String statusBackend = _statusSelecionado;
     final bool statusQuitada = _statusEstaQuitada(statusBackend, _valorConfirmado, _valorRestante);
 
-    final Map<String, dynamic> payload = Map<String, dynamic>.from(
-      _mapa(_detalhe['payloadOriginalJson']),
-    );
+    final Map<String, dynamic> payload = Map<String, dynamic>.from(_mapa(_detalhe['payloadOriginalJson']));
     payload['agendaFinanceira'] = <String, dynamic>{
       'tipoFiltro': tipoOperacao,
       'statusFiltro': statusBackend,
@@ -354,10 +335,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       'empresaFiltro': _empresa,
       'formaPrevistaPagamento': formaPagamento,
     };
-    payload['contato'] = <String, dynamic>{
-      'id': contatoId,
-      'nome': contatoNome,
-    };
+    payload['contato'] = <String, dynamic>{'id': contatoId, 'nome': contatoNome};
 
     return LancamentoAgendaFinanceiraRequest(
       uuidOperacaoApp: _uuidOperacaoApp.trim().isEmpty ? _idLancamento : _uuidOperacaoApp,
@@ -408,13 +386,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return _MobilePickerSheet(
-          title: titulo,
-          values: opcoes,
-          selected: selecionado,
-        );
-      },
+      builder: (BuildContext context) => _MobilePickerSheet(title: titulo, values: opcoes, selected: selecionado),
     );
     if (result == null || !mounted) return;
     setState(() => onSelected(result));
@@ -502,8 +474,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                         controller: _descricaoController,
                         label: 'Descrição',
                         icon: Icons.notes_outlined,
-                        validator: (String? value) =>
-                            (value ?? '').trim().isEmpty ? 'Informe a descrição.' : null,
+                        validator: (String? value) => (value ?? '').trim().isEmpty ? 'Informe a descrição.' : null,
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -652,13 +623,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                       const SizedBox(height: 12),
                       _textField(controller: _documentoFiscalController, label: 'Documento fiscal', icon: Icons.description_outlined),
                       const SizedBox(height: 12),
-                      _textField(
-                        controller: _observacoesController,
-                        label: 'Observações',
-                        icon: Icons.notes_outlined,
-                        minLines: 3,
-                        maxLines: 5,
-                      ),
+                      _textField(controller: _observacoesController, label: 'Observações', icon: Icons.notes_outlined, minLines: 3, maxLines: 5),
                     ],
                   ),
                 ],
@@ -674,9 +639,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           decoration: const BoxDecoration(
             color: _surfaceColor,
-            boxShadow: <BoxShadow>[
-              BoxShadow(color: Color(0x14000000), blurRadius: 18, offset: Offset(0, -6)),
-            ],
+            boxShadow: <BoxShadow>[BoxShadow(color: Color(0x14000000), blurRadius: 18, offset: Offset(0, -6))],
           ),
           child: Row(
             children: <Widget>[
@@ -710,14 +673,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: <Color>[_primaryColor, Color(0xFF123B69)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x220B1F3A), blurRadius: 18, offset: Offset(0, 8)),
-        ],
+        gradient: const LinearGradient(colors: <Color>[_primaryColor, Color(0xFF123B69)]),
+        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x220B1F3A), blurRadius: 18, offset: Offset(0, 8))],
       ),
       child: Row(
         children: <Widget>[
@@ -816,11 +773,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       borderRadius: BorderRadius.circular(18),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _borderColor),
-        ),
+        decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(18), border: Border.all(color: _borderColor)),
         child: Row(
           children: <Widget>[
             Icon(icon, color: _accentColor, size: 20),
@@ -920,8 +873,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   String _formaPagamentoParaBackend() {
-    return _backendPorDescricaoFormaPagamento[_formaPagamentoSelecionada] ??
-        _backendFormaPagamentoPorDescricao(_formaPagamentoSelecionada);
+    return _backendPorDescricaoFormaPagamento[_formaPagamentoSelecionada] ?? _backendFormaPagamentoPorDescricao(_formaPagamentoSelecionada);
   }
 
   String _tipoLabel(String? value, String fallback) {
@@ -1091,7 +1043,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   Map<String, dynamic> _mapa(dynamic value) {
-    return value is Map<String, dynamic> ? value : <String, dynamic>{};
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return <String, dynamic>{};
   }
 
   void _mostrarSnack(String mensagem) {
@@ -1099,12 +1053,12 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   Widget _sheetHandle() => Center(
-    child: Container(
-      width: 42,
-      height: 4,
-      decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(999)),
-    ),
-  );
+        child: Container(
+          width: 42,
+          height: 4,
+          decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(999)),
+        ),
+      );
 }
 
 class _MobilePickerSheet extends StatelessWidget {
@@ -1114,6 +1068,87 @@ class _MobilePickerSheet extends StatelessWidget {
     required this.selected,
   });
 
-Need file new lengthy but created. Need update agenda mobile import and _editarLancamento. Need maybe new file issue: _formKey.currentState!.validate maybe form state null? ok.
-Need need not include web import? _novoLancamento uses web so keep web import. Add import new screen. Update _editarLancamento.
-Need modify small file; need fetch current SHA? agenda mobile sha af980... since no changes yet. Need full update? Could patch not available, need full content. Updating full 1650 lines hard. But maybe use python? We don't have repo local. Could use GitHub.fetch raw whole via fetch? We can use api_tool.read_resource for /response/turn208 etc but all chunks. Need reconstruct full from GitHub? Better use Python in analysis to request raw? No internet in python. Could use GitHub.fetch with raw, perhaps resource lines all in structured content? Maybe api_tool.read_resource on response/turn? It truncated? But maybe resource full? /response/turn??? We have fetch_file chunks but not complete line by line? Need update entire file. Could use search? maybe update with replace only impossible. But we can fetch blob entire? Use fetch_file encoding base64 maybe returns full? Could use fetch_blob? It might truncate visible, but resource contains full maybe can read all via api_tool. Need use fetch_file encoding utf-8 full gave first 260 only? Actually because start. We can fetch raw full with no ranges, then use api_tool.read_resource? Let's do full fetch_file no start maybe returns truncated but resource can read. Then use api_tool.read_resource in analysis? Commentary. Need access content maybe. We can use api_tool.read_resource with response URI. We can patch manually? Maybe easier create a second screen and then need just small edit. But update_file still full. We can get full content resource via api_tool.read_resource maybe 1600 lines. We'll retrieve chunks and programmatically modify mentally? Could use GitHub.fetch raw, then maybe response has structuredContent content full line 4 but not easy. Use api_tool.read_resource on /response/turn218? Let's fetch full file. 
+  final String title;
+  final List<String> values;
+  final String selected;
+
+  static const Color _backgroundColor = Color(0xFFF4F7FB);
+  static const Color _primaryColor = Color(0xFF0B1F3A);
+  static const Color _accentColor = Color(0xFF2563EB);
+  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _mutedTextColor = Color(0xFF64748B);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 18),
+      decoration: const BoxDecoration(
+        color: _backgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(999)),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(title, style: const TextStyle(color: _titleTextColor, fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            const Text('Toque em uma opção para aplicar.', style: TextStyle(color: _mutedTextColor, fontSize: 13)),
+            const SizedBox(height: 14),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: values.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (BuildContext context, int index) {
+                  final String value = values[index];
+                  final bool isSelected = value == selected;
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => Navigator.of(context).pop(value),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                      decoration: BoxDecoration(
+                        color: isSelected ? _primaryColor : Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: isSelected ? _primaryColor : const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                            color: isSelected ? Colors.white : _accentColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              value,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : _titleTextColor,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
