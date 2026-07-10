@@ -5,6 +5,7 @@ import '../../core/services/nova_empresa_service.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_root/web_i18n_gate.dart';
 import 'conta_criada_web.dart';
+import 'login_page_web.dart';
 
 class RegisterPageWeb extends StatefulWidget {
   const RegisterPageWeb({super.key});
@@ -54,8 +55,8 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       return;
     }
 
-    final equal = _passwordCtrl.text == _confirmPasswordCtrl.text;
-    final next = equal ? null : _l10n.authPasswordMismatch;
+    final bool equal = _passwordCtrl.text == _confirmPasswordCtrl.text;
+    final String? next = equal ? null : _l10n.authPasswordMismatch;
     if (next != _passwordMismatchError) {
       setState(() => _passwordMismatchError = next);
     }
@@ -64,9 +65,15 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
   void _goToLogin() {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
-    } else {
-      Navigator.of(context).pushReplacementNamed('/login');
+      return;
     }
+
+    Navigator.of(context).pushReplacement(
+      WebAuthShell.smoothRoute<void>(
+        name: '/login',
+        builder: (_) => const LoginPageWeb(),
+      ),
+    );
   }
 
   Future<void> _signUp() async {
@@ -75,9 +82,9 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       return;
     }
 
-    final login = _loginCtrl.text.trim();
-    final senha = _passwordCtrl.text;
-    final confirmSenha = _confirmPasswordCtrl.text;
+    final String login = _loginCtrl.text.trim();
+    final String senha = _passwordCtrl.text;
+    final String confirmSenha = _confirmPasswordCtrl.text;
 
     if (login.isEmpty || senha.isEmpty || confirmSenha.isEmpty) {
       _showSnack(_l10n.authErrFillAllFields);
@@ -100,8 +107,8 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
       await _novaEmpresaService.criarNovaEmpresa(login: login, senha: senha);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const ContaCriadaWeb()),
-        (route) => false,
+        WebAuthShell.smoothRoute<void>(builder: (_) => const ContaCriadaWeb()),
+        (Route<dynamic> route) => false,
       );
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''));
@@ -113,20 +120,16 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
   @override
   Widget build(BuildContext context) {
     return WebI18nGate(
-      builder: (context) {
+      builder: (BuildContext context) {
         _l10n = WebRootL10n.of(context);
-        final primary = Theme.of(context).colorScheme.primary;
+        final Color primary = Theme.of(context).colorScheme.primary;
 
         return WebAuthShell(
           showBack: true,
           onBack: _goToLogin,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              WebAuthTitle(
-                title: _l10n.authRegisterTitle,
-                subtitle: _l10n.authRegisterSubtitle,
-              ),
+          child: WebAuthStaggeredColumn(
+            children: <Widget>[
+              WebAuthTitle(title: _l10n.authRegisterTitle, subtitle: _l10n.authRegisterSubtitle),
               const SizedBox(height: 28),
               WebAuthTextField(
                 controller: _loginCtrl,
@@ -144,15 +147,11 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 textInputAction: TextInputAction.next,
                 suffix: IconButton(
                   icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
+                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                     color: WebAuthShell.labelGrey(),
                     size: 20,
                   ),
-                  onPressed: () => setState(
-                    () => _obscurePassword = !_obscurePassword,
-                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
               const SizedBox(height: 14),
@@ -165,27 +164,20 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 onSubmitted: (_) => _signUp(),
                 suffix: IconButton(
                   icon: Icon(
-                    _obscureConfirmPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
+                    _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                     color: WebAuthShell.labelGrey(),
                     size: 20,
                   ),
-                  onPressed: () => setState(
-                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                  ),
+                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                 ),
               ),
-              if (_passwordMismatchError != null) ...[
+              if (_passwordMismatchError != null) ...<Widget>[
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
                   child: Text(
                     _passwordMismatchError!,
-                    style: const TextStyle(
-                      color: Color(0xFFD32F2F),
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Color(0xFFD32F2F), fontSize: 12),
                   ),
                 ),
               ],
@@ -196,21 +188,16 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       SizedBox(
                         width: 22,
                         height: 22,
                         child: Checkbox(
                           value: _agreeTerms,
-                          onChanged: (v) => setState(
-                            () => _agreeTerms = v ?? false,
-                          ),
+                          onChanged: (bool? v) => setState(() => _agreeTerms = v ?? false),
                           activeColor: primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                         ),
                       ),
@@ -218,20 +205,12 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                       Expanded(
                         child: RichText(
                           text: TextSpan(
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              color: WebAuthShell.textDark(),
-                              height: 1.4,
-                            ),
-                            children: [
+                            style: TextStyle(fontSize: 13.5, color: WebAuthShell.textDark(), height: 1.4),
+                            children: <InlineSpan>[
                               TextSpan(text: _l10n.authAgreeWith),
                               TextSpan(
                                 text: _l10n.authTermsAndConditions,
-                                style: TextStyle(
-                                  color: primary,
-                                  fontWeight: FontWeight.w600,
-                                  decoration: TextDecoration.underline,
-                                ),
+                                style: TextStyle(color: primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
                               ),
                             ],
                           ),
@@ -242,32 +221,22 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 ),
               ),
               const SizedBox(height: 20),
-              WebAuthPrimaryButton(
-                label: _l10n.authCreateAccountButton,
-                onPressed: _signUp,
-                isLoading: _isLoading,
-              ),
+              WebAuthPrimaryButton(label: _l10n.authCreateAccountButton, onPressed: _signUp, isLoading: _isLoading),
               const SizedBox(height: 24),
               Center(
-                child: GestureDetector(
-                  onTap: _goToLogin,
-                  behavior: HitTestBehavior.opaque,
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: WebAuthShell.labelGrey(),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: _goToLogin,
+                    behavior: HitTestBehavior.opaque,
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: WebAuthShell.labelGrey()),
+                        children: <InlineSpan>[
+                          TextSpan(text: _l10n.authAlreadyHaveAccount),
+                          TextSpan(text: _l10n.authSignInLink, style: TextStyle(color: primary, fontWeight: FontWeight.w700)),
+                        ],
                       ),
-                      children: [
-                        TextSpan(text: _l10n.authAlreadyHaveAccount),
-                        TextSpan(
-                          text: _l10n.authSignInLink,
-                          style: TextStyle(
-                            color: primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
