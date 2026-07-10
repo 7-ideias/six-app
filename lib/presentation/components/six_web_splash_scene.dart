@@ -45,7 +45,7 @@ class _SixWebSplashSceneState extends State<SixWebSplashScene>
         final double width = constraints.maxWidth;
         final bool isCompact = width < 640;
         final double horizontalPadding = isCompact ? 20.0 : 40.0;
-        final double logoSize = _clampDouble(
+        final double brandSize = _clampDouble(
           isCompact ? width * 0.42 : 210,
           118,
           isCompact ? 168 : 220,
@@ -103,19 +103,19 @@ class _SixWebSplashSceneState extends State<SixWebSplashScene>
                   _SplashBackgroundWatermark(
                     size: backgroundMarkSize,
                     progress: progress,
-                    opacity: 0.10,
+                    opacity: 0.08,
                   ),
                   _GlowOrb(
                     diameter: isCompact ? 210 : 360,
                     left: -60 + progress * 28,
                     top: isCompact ? 48 : 86,
-                    opacity: 0.24,
+                    opacity: 0.22,
                   ),
                   _GlowOrb(
                     diameter: isCompact ? 180 : 300,
                     right: -72 + progress * 34,
                     bottom: isCompact ? 70 : 86,
-                    opacity: 0.18,
+                    opacity: 0.16,
                   ),
                   Positioned(
                     right: isCompact ? -46 : -34,
@@ -125,7 +125,7 @@ class _SixWebSplashSceneState extends State<SixWebSplashScene>
                         '6',
                         style: TextStyle(
                           color: Colors.white.withOpacity(
-                            isCompact ? 0.05 : 0.06,
+                            isCompact ? 0.045 : 0.055,
                           ),
                           fontSize: isCompact ? 260 : 460,
                           fontWeight: FontWeight.w900,
@@ -146,7 +146,7 @@ class _SixWebSplashSceneState extends State<SixWebSplashScene>
                           constraints: BoxConstraints(maxWidth: panelMaxWidth),
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.10),
+                              color: Colors.white.withOpacity(0.085),
                               borderRadius: BorderRadius.circular(
                                 isCompact ? 28 : 36,
                               ),
@@ -156,7 +156,7 @@ class _SixWebSplashSceneState extends State<SixWebSplashScene>
                               ),
                               boxShadow: const <BoxShadow>[
                                 BoxShadow(
-                                  color: Color(0x33000000),
+                                  color: Color(0x30000000),
                                   blurRadius: 56,
                                   offset: Offset(0, 28),
                                 ),
@@ -168,7 +168,7 @@ class _SixWebSplashSceneState extends State<SixWebSplashScene>
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
                                   _SixLogoConstellation(
-                                    size: logoSize,
+                                    size: brandSize,
                                     progress: progress,
                                     semanticLabel: widget.semanticLabel,
                                   ),
@@ -253,10 +253,10 @@ class _SplashBackgroundWatermark extends StatelessWidget {
             opacity: opacity,
             child: Transform.scale(
               scale: 1.9,
-              child: _SixLogoConstellation(
+              child: _SixWordmark(
                 size: size,
-                progress: progress,
-                semanticLabel: 'Six',
+                compact: false,
+                watermark: true,
               ),
             ),
           ),
@@ -279,26 +279,26 @@ class _SixLogoConstellation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double orbitRadius = size * 0.64;
-    final double dotSize = _clamp(size * 0.055, 6, 10);
+    final double orbitRadius = size * 0.56;
+    final double dotSize = _clamp(size * 0.048, 5.5, 9);
 
     return Semantics(
       label: semanticLabel,
       child: SizedBox(
         width: size * 1.72,
-        height: size * 1.72,
+        height: size * 1.40,
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
             Container(
-              width: size * 1.34,
-              height: size * 1.34,
+              width: size * 1.42,
+              height: size * 0.92,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(size * 0.34),
                 gradient: RadialGradient(
                   colors: <Color>[
-                    Colors.white.withOpacity(0.24),
-                    Colors.white.withOpacity(0.08),
+                    Colors.white.withOpacity(0.22),
+                    Colors.white.withOpacity(0.06),
                     Colors.white.withOpacity(0.00),
                   ],
                 ),
@@ -314,13 +314,13 @@ class _SixLogoConstellation extends StatelessWidget {
                   width: dotSize,
                   height: dotSize,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(index.isEven ? 0.82 : 0.52),
+                    color: Colors.white.withOpacity(index.isEven ? 0.82 : 0.48),
                     shape: BoxShape.circle,
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.34),
-                        blurRadius: 18,
-                        spreadRadius: 2,
+                        color: Colors.white.withOpacity(0.28),
+                        blurRadius: 16,
+                        spreadRadius: 1.4,
                       ),
                     ],
                   ),
@@ -337,35 +337,11 @@ class _SixLogoConstellation extends StatelessWidget {
                       curve: Curves.easeInOut,
                     ),
               ),
-            Container(
-              width: size,
-              height: size,
-              padding: EdgeInsets.all(size * 0.12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.94),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.84),
-                  width: 1.2,
-                ),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x2E000000),
-                    blurRadius: 40,
-                    offset: Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: Image.asset(
-                'assets/images/six-logo-flecha.png',
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              ),
-            )
+            _SixWordmark(size: size, compact: size < 150)
                 .animate()
                 .fadeIn(duration: 620.ms, curve: Curves.easeOut)
                 .scale(
-                  begin: const Offset(0.88, 0.88),
+                  begin: const Offset(0.92, 0.92),
                   end: const Offset(1, 1),
                   duration: 820.ms,
                   curve: Curves.easeOutBack,
@@ -378,6 +354,120 @@ class _SixLogoConstellation extends StatelessWidget {
 
   double _clamp(double value, double min, double max) {
     return value.clamp(min, max).toDouble();
+  }
+}
+
+class _SixWordmark extends StatelessWidget {
+  const _SixWordmark({
+    required this.size,
+    required this.compact,
+    this.watermark = false,
+  });
+
+  final double size;
+  final bool compact;
+  final bool watermark;
+
+  @override
+  Widget build(BuildContext context) {
+    final double width = watermark ? size * 1.72 : size * 1.10;
+    final double height = watermark ? size * 0.62 : size * 0.62;
+    final double radius = watermark ? size * 0.20 : size * 0.18;
+    final double sixFontSize = watermark ? size * 0.28 : size * 0.24;
+    final double posFontSize = watermark ? size * 0.10 : size * 0.078;
+
+    return Container(
+      width: width,
+      height: height,
+      padding: EdgeInsets.symmetric(
+        horizontal: watermark ? size * 0.16 : size * 0.11,
+        vertical: watermark ? size * 0.07 : size * 0.075,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Colors.white.withOpacity(watermark ? 0.14 : 0.18),
+            Colors.white.withOpacity(watermark ? 0.04 : 0.07),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(watermark ? 0.14 : 0.34),
+          width: watermark ? 0.8 : 1.2,
+        ),
+        boxShadow: watermark
+            ? null
+            : <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.24),
+                  blurRadius: 36,
+                  offset: const Offset(0, 18),
+                ),
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.10),
+                  blurRadius: 22,
+                  offset: const Offset(0, -8),
+                ),
+              ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: watermark ? size * 0.16 : size * 0.145,
+            height: watermark ? size * 0.16 : size * 0.145,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(watermark ? 0.10 : 0.15),
+              border: Border.all(
+                color: Colors.white.withOpacity(watermark ? 0.12 : 0.38),
+              ),
+            ),
+            child: Text(
+              '6',
+              style: TextStyle(
+                color: Colors.white.withOpacity(watermark ? 0.42 : 0.92),
+                fontSize: watermark ? size * 0.09 : size * 0.082,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+            ),
+          ),
+          SizedBox(width: watermark ? size * 0.04 : size * 0.035),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Six',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(watermark ? 0.38 : 0.94),
+                  fontSize: sixFontSize,
+                  fontWeight: FontWeight.w900,
+                  height: 0.90,
+                  letterSpacing: -1.8,
+                ),
+              ),
+              SizedBox(height: watermark ? size * 0.018 : size * 0.012),
+              Text(
+                'POS',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(watermark ? 0.25 : 0.68),
+                  fontSize: posFontSize,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  letterSpacing: watermark ? 4.6 : 3.2,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -499,7 +589,8 @@ class _SixSplashBackgroundPainter extends CustomPainter {
           math.sin(progress * math.pi + index) * 12;
       final double dy = size.height * (index.isEven ? 0.20 : 0.72) +
           math.cos(progress * math.pi + index) * 18;
-      final double radius = (compact ? 36.0 : 58.0) + index * (compact ? 8 : 12);
+      final double radius =
+          (compact ? 36.0 : 58.0) + index * (compact ? 8 : 12);
       strokePaint.color = Colors.white.withOpacity(0.030 + index * 0.006);
       canvas.drawCircle(Offset(dx, dy), radius, strokePaint);
     }
