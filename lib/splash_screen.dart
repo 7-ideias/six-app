@@ -58,7 +58,6 @@ class _SplashScreenState extends State<SplashScreen>
     if (kIsWeb) {
       return const Scaffold(
         body: SixWebSplashScene(
-          title: 'Six',
           subtitle: 'Preparando sua experiência web...',
         ),
       );
