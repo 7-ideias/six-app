@@ -482,7 +482,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
@@ -528,7 +528,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
             spacing: 9,
             runSpacing: 9,
             children: _coresSugeridas.map((Color opcao) {
-              final bool selecionada = opcao.value == color.value;
+              final bool selecionada = opcao.toARGB32() == color.toARGB32();
               return InkWell(
                 borderRadius: BorderRadius.circular(999),
                 onTap: () => _alterarCor(tipo, opcao),
@@ -971,7 +971,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
   }
 
   String _hex(Color color) {
-    return '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+    return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
   }
 }
 

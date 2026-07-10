@@ -326,7 +326,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
 
   Widget _dd(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: onChanged,
       decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))),
       items: items.map((String item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),

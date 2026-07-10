@@ -655,7 +655,7 @@ class _CadastroProdutoMobileScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         DropdownButtonFormField<String?>(
-          value: valor,
+          initialValue: valor,
           decoration: _inputDecoration(
             'Categoria',
             hintText:
@@ -1215,7 +1215,7 @@ class _CadastroProdutoMobileScreenState
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _tipoSelecionado,
+            initialValue: _tipoSelecionado,
             decoration: _inputDecoration('Tipo'),
             items: const [
               DropdownMenuItem(value: 'PRODUTO', child: Text('Produto')),

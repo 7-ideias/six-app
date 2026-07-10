@@ -521,7 +521,7 @@ class _ClienteUsuarioCadastroWebBodyState extends State<_ClienteUsuarioCadastroW
               SizedBox(
                 width: _fieldWidth(telaGrande: telaGrande, telaMedia: telaMedia, grande: 190, media: 180),
                 child: DropdownButtonFormField<String>(
-                  value: _tipoPessoa,
+                  initialValue: _tipoPessoa,
                   isExpanded: true,
                   decoration: _dec('Tipo pessoa', Icons.apartment_outlined),
                   items: const <DropdownMenuItem<String>>[

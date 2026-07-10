@@ -922,7 +922,7 @@ class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
-                value: _tipo,
+                initialValue: _tipo,
                 decoration: InputDecoration(
                   labelText: 'Uso da categoria',
                   border: OutlineInputBorder(

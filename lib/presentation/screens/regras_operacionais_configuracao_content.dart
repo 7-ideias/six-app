@@ -1399,7 +1399,7 @@ class _RegrasOperacionaisConfiguracaoContentState
       child: SizedBox(
         width: 430,
         child: DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           onChanged: enabled ? onChanged : null,
           decoration: InputDecoration(
             labelText: label,

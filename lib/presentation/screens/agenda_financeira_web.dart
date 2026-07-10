@@ -778,7 +778,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return SizedBox(
       width: 190,
       child: DropdownButtonFormField<String>(
-        value: items.contains(value) ? value : items.first,
+        initialValue: items.contains(value) ? value : items.first,
         decoration: const InputDecoration(
           isDense: true,
           border: OutlineInputBorder(),

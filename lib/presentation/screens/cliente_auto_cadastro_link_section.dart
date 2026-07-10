@@ -351,7 +351,7 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
             SizedBox(
               width: smallFieldWidth,
               child: DropdownButtonFormField<String>(
-                value: _tipoPessoa,
+                initialValue: _tipoPessoa,
                 isExpanded: true,
                 decoration: _dec('Tipo pessoa', Icons.apartment_outlined),
                 items: const <DropdownMenuItem<String>>[

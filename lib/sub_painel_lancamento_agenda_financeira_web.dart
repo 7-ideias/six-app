@@ -842,7 +842,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
       final response = await _service.excluirLancamento(idLancamento);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento excluído definitivamente.')));
-      Navigator.of(context).pop(<String, dynamic>{'id': response.id ?? idLancamento, 'deleted': true, 'status': response.status});
+      Navigator.of(context).pop(<String, dynamic>{'id': response.id, 'deleted': true, 'status': response.status});
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -930,7 +930,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }) {
     final safeValue = items.contains(value) ? value : items.first;
     return DropdownButtonFormField<String>(
-      value: safeValue,
+      initialValue: safeValue,
       onChanged: enabled ? onChanged : null,
       decoration: _inputDecoration(label),
       items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),

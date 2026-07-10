@@ -1059,7 +1059,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: (novo) {
         onChanged(novo);
         _marcarAlteracao();
@@ -1165,7 +1165,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             spacing: 10,
             runSpacing: 10,
             children: opcoes.map((opcao) {
-              final selecionado = opcao.value == color.value;
+              final selecionado = opcao.toARGB32() == color.toARGB32();
               return InkWell(
                 borderRadius: BorderRadius.circular(999),
                 onTap: () {

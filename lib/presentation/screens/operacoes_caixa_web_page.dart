@@ -1722,7 +1722,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     String? hint,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       decoration: _inputDecoration(theme, hint: hint),
       items: items
