@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
-import 'package:sixpos/presentation/screens/login_mobile.dart';
-import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:sixpos/presentation/components/six_web_splash_scene.dart';
+import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/presentation/screens/login_page_web.dart';
 
 // Splash em duas fases — fade-in do logo + brand reveal — antes de
 // navegar pra próxima tela. Usa o asset oficial six-logo-flecha.png e a
@@ -54,6 +55,15 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return const Scaffold(
+        body: SixWebSplashScene(
+          title: 'Six',
+          subtitle: 'Preparando sua experiência web...',
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: WebRootTokens.surface,
       body: Center(
@@ -63,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen>
             scale: _scale,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
+              children: <Widget>[
                 Image.asset(
                   'assets/images/six-logo-flecha.png',
                   height: 180,
@@ -71,7 +81,6 @@ class _SplashScreenState extends State<SplashScreen>
                   filterQuality: FilterQuality.high,
                 ),
                 const SizedBox(height: 24),
-                // Loading indicator com cor accent
                 const SizedBox(
                   width: 32,
                   height: 32,
