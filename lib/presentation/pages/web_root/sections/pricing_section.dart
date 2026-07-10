@@ -2,6 +2,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
 import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/components/web_root/eyebrow.dart';
 import 'package:sixpos/presentation/components/web_root/plan_card.dart';
 import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
@@ -130,11 +131,15 @@ class _PricingSectionState extends State<PricingSection> {
               if (i > 0) const SizedBox(width: gap),
               SizedBox(
                 width: cardW,
-                child: PlanCard(
-                  plan: plans[i],
-                  isDesktop: true,
-                  emphasizeFeatured: true,
-                  onChoose: () => widget.onChoose?.call(plans[i].name),
+                child: SixWebEntry(
+                  order: i,
+                  duration: const Duration(milliseconds: 660),
+                  child: PlanCard(
+                    plan: plans[i],
+                    isDesktop: true,
+                    emphasizeFeatured: true,
+                    onChoose: () => widget.onChoose?.call(plans[i].name),
+                  ),
                 ),
               ),
             ],

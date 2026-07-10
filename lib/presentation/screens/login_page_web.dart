@@ -179,8 +179,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                 return WebAuthShell(
                   showBack: Navigator.of(context).canPop(),
                   onBack: () => Navigator.of(context).maybePop(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: WebAuthStaggeredItems(
                     children: [
                       WebAuthTitle(
                         title: _l10n.authLoginTitle,
@@ -217,7 +216,6 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
@@ -232,7 +230,6 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
                       WebAuthPrimaryButton(
                         label: _l10n.authSignInButton,
                         onPressed: _login,

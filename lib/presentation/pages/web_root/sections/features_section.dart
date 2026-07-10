@@ -2,6 +2,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
 import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/components/web_root/eyebrow.dart';
 import 'package:sixpos/presentation/components/web_root/feature_card.dart';
 import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
@@ -114,21 +115,22 @@ class FeaturesSection extends StatelessWidget {
           for (int col = 0; col < cols; col++) {
             final i = row * cols + col;
             if (i >= cards.length) {
-              // Slot vazio para manter a grade alinhada caso o número de
-              // cards não seja múltiplo do número de colunas.
               rowItems.add(SizedBox(width: cardW));
             } else {
               final (title, body) = cards[i];
               rowItems.add(
                 SizedBox(
                   width: cardW,
-                  // stretch: estica o card até a altura do IntrinsicHeight da linha.
-                  child: FeatureCard(
-                    icon: _iconData[i],
-                    iconColor: _iconColors[i],
-                    title: title,
-                    description: body,
-                    isDesktop: true,
+                  child: SixWebEntry(
+                    order: i,
+                    duration: const Duration(milliseconds: 660),
+                    child: FeatureCard(
+                      icon: _iconData[i],
+                      iconColor: _iconColors[i],
+                      title: title,
+                      description: body,
+                      isDesktop: true,
+                    ),
                   ),
                 ),
               );
@@ -162,12 +164,16 @@ class FeaturesSection extends StatelessWidget {
         final (title, body) = cards[i];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: FeatureCard(
-            icon: _iconData[i],
-            iconColor: _iconColors[i],
-            title: title,
-            description: body,
-            isDesktop: false,
+          child: SixWebEntry(
+            order: i,
+            duration: const Duration(milliseconds: 640),
+            child: FeatureCard(
+              icon: _iconData[i],
+              iconColor: _iconColors[i],
+              title: title,
+              description: body,
+              isDesktop: false,
+            ),
           ),
         );
       }),

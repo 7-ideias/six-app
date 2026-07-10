@@ -120,8 +120,7 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
         return WebAuthShell(
           showBack: true,
           onBack: _goToLogin,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: WebAuthStaggeredItems(
             children: [
               WebAuthTitle(
                 title: _l10n.authRegisterTitle,
@@ -176,10 +175,9 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                   ),
                 ),
               ),
-              if (_passwordMismatchError != null) ...[
-                const SizedBox(height: 6),
+              if (_passwordMismatchError != null)
                 Padding(
-                  padding: const EdgeInsets.only(left: 4),
+                  padding: const EdgeInsets.only(left: 4, top: 6),
                   child: Text(
                     _passwordMismatchError!,
                     style: const TextStyle(
@@ -188,7 +186,6 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                     ),
                   ),
                 ),
-              ],
               const SizedBox(height: 18),
               InkWell(
                 onTap: () => setState(() => _agreeTerms = !_agreeTerms),

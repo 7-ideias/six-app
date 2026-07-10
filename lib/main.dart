@@ -101,9 +101,10 @@ class MyApp extends StatelessWidget {
     }
 
     if (routeUri.path == '/login') {
-      return MaterialPageRoute<void>(
+      return _slidePageRoute(
         settings: settings,
-        builder: (_) => const LoginPageWeb(),
+        page: const LoginPageWeb(),
+        direction: _SlideDirection.up,
       );
     }
 
@@ -119,10 +120,7 @@ class MyApp extends StatelessWidget {
     }
 
     if (routeUri.path == '/app') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const PdvPageWebAutorizado(),
-      );
+      return _fadePageRoute(settings: settings, page: const PdvPageWebAutorizado());
     }
 
     if (routeUri.path == '/app/atendimentos-tecnicos') {
@@ -219,31 +217,42 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  /// Rota com transição de slide horizontal — usada nas telas de auth
-  /// para garantir feedback visual consistente em web (push/pop suaves).
+  /// Rota sem transição de container — a tela troca instantaneamente e
+  /// os elementos internos animam por conta própria (stagger top-down).
   PageRouteBuilder<void> _slidePageRoute({
+    required RouteSettings settings,
+    required Widget page,
+    _SlideDirection direction = _SlideDirection.horizontal,
+  }) {
+    return PageRouteBuilder<void>(
+      settings: settings,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+      pageBuilder: (_, __, ___) => page,
+      transitionsBuilder: (_, __, ___, child) => child,
+    );
+  }
+
+  /// Rota com fade puro — usada para transições que não têm direção óbvia.
+  PageRouteBuilder<void> _fadePageRoute({
     required RouteSettings settings,
     required Widget page,
   }) {
     return PageRouteBuilder<void>(
       settings: settings,
-      transitionDuration: const Duration(milliseconds: 350),
-      reverseTransitionDuration: const Duration(milliseconds: 280),
+      transitionDuration: const Duration(milliseconds: 420),
+      reverseTransitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (_, __, ___) => page,
       transitionsBuilder: (_, animation, __, child) {
-        final slide = Tween<Offset>(
-          begin: const Offset(1.0, 0.0),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
+        final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOut),
         );
-        final fade = Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-        return SlideTransition(
-          position: slide,
-          child: FadeTransition(opacity: fade, child: child),
+        final scale = Tween<double>(begin: 0.98, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        );
+        return FadeTransition(
+          opacity: fade,
+          child: ScaleTransition(scale: scale, child: child),
         );
       },
     );
@@ -281,6 +290,8 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+enum _SlideDirection { horizontal, up }
 
 class CatalogoPage extends StatelessWidget {
   const CatalogoPage({super.key, required this.slug});

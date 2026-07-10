@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../components/web_auth_shell.dart';
 import 'login_page_web.dart';
@@ -20,10 +21,19 @@ class ContaCriadaWeb extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: WebAuthShell(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: WebAuthStaggeredItems(
           children: [
-            Center(child: _SuccessIllustration(primary: primary)),
+            Center(
+              child: _SuccessIllustration(primary: primary)
+                  .animate()
+                  .fadeIn(duration: 560.ms, curve: Curves.easeOut)
+                  .scale(
+                    begin: const Offset(0.82, 0.82),
+                    end: const Offset(1, 1),
+                    duration: 640.ms,
+                    curve: Curves.easeOutBack,
+                  ),
+            ),
             const SizedBox(height: 32),
             const WebAuthTitle(
               title: 'Tudo certo!',

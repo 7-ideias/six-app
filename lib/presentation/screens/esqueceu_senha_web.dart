@@ -80,8 +80,7 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
         return WebAuthShell(
           showBack: true,
           onBack: _goToLogin,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: WebAuthStaggeredItems(
             children: [
               WebAuthTitle(
                 title: _l10n.authForgotTitle,

@@ -2,6 +2,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
 import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/components/web_root/eyebrow.dart';
 import 'package:sixpos/presentation/components/web_root/responsive_button.dart';
 import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
@@ -48,7 +49,14 @@ class HeroSection extends StatelessWidget {
       children: [
         Expanded(flex: 105, child: _copy(isDesktop: true, l10n: l10n, scheme: scheme)),
         const SizedBox(width: 56),
-        Expanded(flex: 100, child: _PhoneVisual(isDesktop: true, l10n: l10n)),
+        Expanded(
+          flex: 100,
+          child: SixWebEntry(
+            order: 2,
+            duration: const Duration(milliseconds: 680),
+            child: _PhoneVisual(isDesktop: true, l10n: l10n),
+          ),
+        ),
       ],
     );
   }
@@ -86,42 +94,62 @@ class HeroSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Eyebrow(
-          text: isDesktop ? l10n.heroEyebrowDesktop : l10n.heroEyebrowMobile,
-          isDesktop: isDesktop,
+        SixWebEntry(
+          order: 0,
+          duration: const Duration(milliseconds: 620),
+          child: Eyebrow(
+            text: isDesktop ? l10n.heroEyebrowDesktop : l10n.heroEyebrowMobile,
+            isDesktop: isDesktop,
+          ),
         ),
         SizedBox(height: isDesktop ? 20 : 18),
-        _heroTitle(isDesktop: isDesktop, titleStyle: titleStyle, l10n: l10n, scheme: scheme),
+        SixWebEntry(
+          order: 1,
+          duration: const Duration(milliseconds: 660),
+          child: _heroTitle(isDesktop: isDesktop, titleStyle: titleStyle, l10n: l10n, scheme: scheme),
+        ),
         SizedBox(height: isDesktop ? 18 : 14),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktop ? 520 : double.infinity),
-          child: Text(
-            isDesktop ? l10n.heroLeadDesktop : l10n.heroLeadMobile,
-            style: leadStyle.copyWith(color: scheme.textSoft),
+        SixWebEntry(
+          order: 2,
+          duration: const Duration(milliseconds: 680),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: isDesktop ? 520 : double.infinity),
+            child: Text(
+              isDesktop ? l10n.heroLeadDesktop : l10n.heroLeadMobile,
+              style: leadStyle.copyWith(color: scheme.textSoft),
+            ),
           ),
         ),
         SizedBox(height: isDesktop ? 32 : 24),
         if (isDesktop) ...[
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ResponsiveButton(
-                label: l10n.heroCtaPrimary,
-                onPressed: onStart,
-                size: WebButtonSize.lg,
-                trailing: const Icon(Icons.arrow_forward, size: 18),
-              ),
-              const SizedBox(width: 12),
-              ResponsiveButton(
-                label: l10n.heroCtaSecondary,
-                onPressed: onWatch,
-                variant: WebButtonVariant.secondary,
-                size: WebButtonSize.md,
-              ),
-            ],
+          SixWebEntry(
+            order: 3,
+            duration: const Duration(milliseconds: 700),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ResponsiveButton(
+                  label: l10n.heroCtaPrimary,
+                  onPressed: onStart,
+                  size: WebButtonSize.lg,
+                  trailing: const Icon(Icons.arrow_forward, size: 18),
+                ),
+                const SizedBox(width: 12),
+                ResponsiveButton(
+                  label: l10n.heroCtaSecondary,
+                  onPressed: onWatch,
+                  variant: WebButtonVariant.secondary,
+                  size: WebButtonSize.md,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 28),
-          _trustStripChecks(l10n, scheme),
+          SixWebEntry(
+            order: 4,
+            duration: const Duration(milliseconds: 700),
+            child: _trustStripChecks(l10n, scheme),
+          ),
         ],
       ],
     );

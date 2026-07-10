@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -27,24 +25,36 @@ class PostLoginSplashWebPage extends StatefulWidget {
 }
 
 class _PostLoginSplashWebPageState extends State<PostLoginSplashWebPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const Duration _minimumDuration = Duration(seconds: 3);
 
-  late final AnimationController _backgroundController;
+  /// Gradiente de fundo — deslocamento lento, quase imperceptível (10 s).
+  late final AnimationController _bgController;
+
+  /// Halo respirando atrás do logo (5 s).
+  late final AnimationController _haloController;
 
   @override
   void initState() {
     super.initState();
-    _backgroundController = AnimationController(
+
+    _bgController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
+      duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
+
+    _haloController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 5000),
+    )..repeat(reverse: true);
+
     _prepareSessionAndNavigate();
   }
 
   @override
   void dispose() {
-    _backgroundController.dispose();
+    _bgController.dispose();
+    _haloController.dispose();
     super.dispose();
   }
 
@@ -111,154 +121,84 @@ class _PostLoginSplashWebPageState extends State<PostLoginSplashWebPage>
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final isCompact = width < 640;
-          final horizontalPadding = isCompact ? 20.0 : 40.0;
-          final logoSize = _clampDouble(
-            isCompact ? width * 0.42 : 210,
-            118,
-            isCompact ? 168 : 220,
-          );
-          final panelPadding = isCompact ? 28.0 : 44.0;
-          final panelMaxWidth = isCompact ? 400.0 : 520.0;
-          final backgroundMarkSize = _clampDouble(
-            isCompact ? width * 0.84 : width * 0.26,
-            isCompact ? 210 : 260,
-            isCompact ? 360 : 460,
+          final isCompact = constraints.maxWidth < 640;
+          final logoSize = _clamp(
+            isCompact ? constraints.maxWidth * 0.38 : 200,
+            108,
+            isCompact ? 156 : 210,
           );
 
           return AnimatedBuilder(
-            animation: _backgroundController,
+            animation: Listenable.merge([_bgController, _haloController]),
             builder: (context, _) {
-              final progress = _backgroundController.value;
+              final bgT = _bgController.value;
+              final haloT = _haloController.value;
 
               return Container(
                 width: double.infinity,
                 height: double.infinity,
                 decoration: BoxDecoration(
+                  // Gradiente com deslocamento muito sutil — quase imperceptível.
                   gradient: LinearGradient(
-                    begin: Alignment(-1 + progress * 0.42, -1),
-                    end: Alignment(1, 1 - progress * 0.34),
+                    begin: Alignment(-1.0 + bgT * 0.12, -1.0),
+                    end: Alignment(1.0, 1.0 - bgT * 0.08),
                     colors: <Color>[
                       Color.lerp(
                         _SplashPalette.navy950,
                         _SplashPalette.navy900,
-                        progress,
+                        bgT * 0.5,
                       )!,
                       Color.lerp(
                         _SplashPalette.navy900,
                         _SplashPalette.blue900,
-                        progress,
+                        bgT * 0.4,
                       )!,
                       Color.lerp(
                         _SplashPalette.blue800,
                         _SplashPalette.navy950,
-                        progress,
+                        bgT * 0.3,
                       )!,
                     ],
                   ),
                 ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _SixSplashBackgroundPainter(
-                          progress: progress,
-                          compact: isCompact,
-                        ),
+                child: SafeArea(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 20.0 : 40.0,
+                        vertical: 28,
                       ),
-                    ),
-                    _SplashBackgroundWatermark(
-                      size: backgroundMarkSize,
-                      progress: progress,
-                      opacity: 0.10,
-                    ),
-                    _GlowOrb(
-                      diameter: isCompact ? 210 : 360,
-                      left: -60 + progress * 28,
-                      top: isCompact ? 48 : 86,
-                      opacity: 0.24,
-                    ),
-                    _GlowOrb(
-                      diameter: isCompact ? 180 : 300,
-                      right: -72 + progress * 34,
-                      bottom: isCompact ? 70 : 86,
-                      opacity: 0.18,
-                    ),
-                    Positioned(
-                      right: isCompact ? -46 : -34,
-                      bottom: isCompact ? 20 : -70,
-                      child: IgnorePointer(
-                        child: Text(
-                          '6',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(
-                              isCompact ? 0.05 : 0.06,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isCompact ? 360.0 : 480.0,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Logo com halo respirando.
+                            _SixLogoWithHalo(
+                              size: logoSize,
+                              haloProgress: haloT,
                             ),
-                            fontSize: isCompact ? 260 : 460,
-                            fontWeight: FontWeight.w900,
-                            height: 0.86,
-                            letterSpacing: -28,
-                          ),
+                            SizedBox(height: isCompact ? 36 : 48),
+                            // Seis pontos acendendo em sequência.
+                            _SixSequentialDots(compact: isCompact),
+                          ],
                         ),
-                      ),
-                    ),
-                    SafeArea(
-                      child: Center(
-                        child: SingleChildScrollView(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: horizontalPadding,
-                            vertical: 28,
+                      )
+                          .animate()
+                          .fadeIn(
+                            duration: 540.ms,
+                            curve: Curves.easeOut,
+                          )
+                          .slideY(
+                            begin: 0.04,
+                            end: 0,
+                            duration: 660.ms,
+                            curve: Curves.easeOutCubic,
                           ),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: panelMaxWidth),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(
-                                  isCompact ? 28 : 36,
-                                ),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.18),
-                                  width: 1,
-                                ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x33000000),
-                                    blurRadius: 56,
-                                    offset: Offset(0, 28),
-                                  ),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(panelPadding),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _SixLogoConstellation(
-                                      size: logoSize,
-                                      progress: progress,
-                                    ),
-                                    SizedBox(height: isCompact ? 30 : 38),
-                                    _SixProgressDots(compact: isCompact),
-                                  ],
-                                ),
-                              ),
-                            )
-                                .animate()
-                                .fadeIn(duration: 520.ms, curve: Curves.easeOut)
-                                .slideY(
-                                  begin: 0.045,
-                                  end: 0,
-                                  duration: 640.ms,
-                                  curve: Curves.easeOutCubic,
-                                ),
-                          ),
-                        ),
-                      ),
                     ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -268,126 +208,72 @@ class _PostLoginSplashWebPageState extends State<PostLoginSplashWebPage>
     );
   }
 
-  double _clampDouble(double value, double min, double max) {
-    return value.clamp(min, max).toDouble();
-  }
+  double _clamp(double value, double min, double max) =>
+      value.clamp(min, max).toDouble();
 }
 
-class _SplashBackgroundWatermark extends StatelessWidget {
-  const _SplashBackgroundWatermark({
+// ---------------------------------------------------------------------------
+// Logo com halo
+// ---------------------------------------------------------------------------
+
+class _SixLogoWithHalo extends StatelessWidget {
+  const _SixLogoWithHalo({
     required this.size,
-    required this.progress,
-    required this.opacity,
+    required this.haloProgress,
   });
 
   final double size;
-  final double progress;
-  final double opacity;
+
+  /// Valor 0..1 do AnimationController de halo (reverse: true).
+  final double haloProgress;
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: Align(
-          alignment: const Alignment(0.05, -0.02),
-          child: Opacity(
-            opacity: opacity,
-            child: Transform.scale(
-              scale: 1.9,
-              child: _SixLogoConstellation(
-                size: size,
-                progress: progress,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SixLogoConstellation extends StatelessWidget {
-  const _SixLogoConstellation({
-    required this.size,
-    required this.progress,
-  });
-
-  final double size;
-  final double progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final orbitRadius = size * 0.64;
-    final dotSize = _clamp(size * 0.055, 6, 10);
+    // Halo: scale entre 1.18 e 1.56, opacidade entre 0.08 e 0.22.
+    final haloScale = 1.18 + haloProgress * 0.38;
+    final haloOpacity = 0.08 + haloProgress * 0.14;
 
     return SizedBox(
-      width: size * 1.72,
-      height: size * 1.72,
+      width: size * 1.8,
+      height: size * 1.8,
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // Halo externo — respira devagar.
           Container(
-            width: size * 1.34,
-            height: size * 1.34,
+            width: size * haloScale,
+            height: size * haloScale,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  Colors.white.withOpacity(0.24),
-                  Colors.white.withOpacity(0.08),
-                  Colors.white.withOpacity(0.00),
+                  Colors.white.withOpacity(haloOpacity),
+                  Colors.white.withOpacity(haloOpacity * 0.35),
+                  Colors.transparent,
                 ],
+                stops: const [0.0, 0.55, 1.0],
               ),
             ),
           ),
-          for (int index = 0; index < 6; index++)
-            Transform.translate(
-              offset: Offset.fromDirection(
-                (math.pi * 2 * index / 6) + (progress * math.pi * 0.22),
-                orbitRadius,
-              ),
-              child: Container(
-                width: dotSize,
-                height: dotSize,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(index.isEven ? 0.82 : 0.52),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.34),
-                      blurRadius: 18,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              )
-                  .animate(
-                    onPlay: (controller) => controller.repeat(reverse: true),
-                    delay: (index * 90).ms,
-                  )
-                  .scale(
-                    begin: const Offset(0.74, 0.74),
-                    end: const Offset(1.16, 1.16),
-                    duration: 860.ms,
-                    curve: Curves.easeInOut,
-                  ),
-            ),
+
+          // Logo — círculo branco, fade-in na entrada.
           Container(
             width: size,
             height: size,
-            padding: EdgeInsets.all(size * 0.12),
+            padding: EdgeInsets.all(size * 0.13),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.94),
+              color: Colors.white.withOpacity(0.96),
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.84),
-                width: 1.2,
-              ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x2E000000),
-                  blurRadius: 40,
-                  offset: Offset(0, 18),
+                  color: Colors.white.withValues(alpha: 0.14),
+                  blurRadius: 48,
+                  spreadRadius: 8,
+                ),
+                const BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 36,
+                  offset: Offset(0, 16),
                 ),
               ],
             ),
@@ -398,169 +284,118 @@ class _SixLogoConstellation extends StatelessWidget {
             ),
           )
               .animate()
-              .fadeIn(duration: 620.ms, curve: Curves.easeOut)
+              .fadeIn(duration: 600.ms, curve: Curves.easeOut)
               .scale(
-                begin: const Offset(0.88, 0.88),
+                begin: const Offset(0.90, 0.90),
                 end: const Offset(1, 1),
-                duration: 820.ms,
+                duration: 720.ms,
                 curve: Curves.easeOutBack,
               ),
         ],
       ),
     );
   }
-
-  double _clamp(double value, double min, double max) {
-    return value.clamp(min, max).toDouble();
-  }
 }
 
-class _SixProgressDots extends StatelessWidget {
-  const _SixProgressDots({required this.compact});
+// ---------------------------------------------------------------------------
+// Seis pontos acendendo em sequência
+// ---------------------------------------------------------------------------
+
+class _SixSequentialDots extends StatefulWidget {
+  const _SixSequentialDots({required this.compact});
 
   final bool compact;
 
   @override
+  State<_SixSequentialDots> createState() => _SixSequentialDotsState();
+}
+
+class _SixSequentialDotsState extends State<_SixSequentialDots>
+    with SingleTickerProviderStateMixin {
+  // Um único controller para toda a sequência de 6 pontos.
+  // Cada ponto tem janela de 1/6 do ciclo.
+  late final AnimationController _ctrl;
+
+  static const int _dotCount = 6;
+  static const Duration _cycleDuration = Duration(milliseconds: 1800);
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: _cycleDuration)
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final dotSize = compact ? 7.0 : 8.0;
+    final dotSize = widget.compact ? 7.0 : 8.0;
+    final spacing = widget.compact ? 9.0 : 11.0;
 
     return Semantics(
-      label: 'Six',
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: compact ? 8 : 10,
-        runSpacing: 8,
-        children: List.generate(6, (index) {
-          return Container(
-            width: dotSize,
-            height: dotSize,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.78),
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.26),
-                  blurRadius: 14,
-                  spreadRadius: 1,
+      label: 'Carregando',
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(_dotCount, (index) {
+              // Cada ponto ocupa 1/_dotCount do ciclo.
+              // A "janela ativa" de cada ponto dura 40% do ciclo,
+              // centrada em sua posição.
+              const window = 1.0 / _dotCount;
+              final center = window * (index + 0.5);
+              final distance = _circularDistance(_ctrl.value, center);
+              // Pico quando distance == 0, cai à medida que se afasta.
+              final brightness = _clamp(1.0 - distance / (window * 1.2), 0, 1);
+              final opacity = 0.22 + brightness * 0.76;
+
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                child: Container(
+                  width: dotSize,
+                  height: dotSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(opacity),
+                    boxShadow: brightness > 0.5
+                        ? [
+                            BoxShadow(
+                              color: Colors.white
+                                  .withOpacity(brightness * 0.28),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
+                  ),
                 ),
-              ],
-            ),
-          )
-              .animate(
-                onPlay: (controller) => controller.repeat(reverse: true),
-                delay: (index * 110).ms,
-              )
-              .scale(
-                begin: const Offset(0.74, 1),
-                end: Offset(index == 5 ? 2.2 : 1.45, 1),
-                duration: 760.ms,
-                curve: Curves.easeInOutCubic,
-              )
-              .fade(
-                begin: 0.42,
-                end: 1,
-                duration: 760.ms,
-                curve: Curves.easeInOut,
               );
-        }),
+            }),
+          );
+        },
       ),
     );
   }
-}
 
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({
-    required this.diameter,
-    required this.opacity,
-    this.left,
-    this.top,
-    this.right,
-    this.bottom,
-  });
-
-  final double diameter;
-  final double opacity;
-  final double? left;
-  final double? top;
-  final double? right;
-  final double? bottom;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: left,
-      top: top,
-      right: right,
-      bottom: bottom,
-      child: IgnorePointer(
-        child: Container(
-          width: diameter,
-          height: diameter,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                Colors.white.withOpacity(opacity),
-                _SplashPalette.blue600.withOpacity(opacity * 0.44),
-                Colors.transparent,
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SixSplashBackgroundPainter extends CustomPainter {
-  const _SixSplashBackgroundPainter({
-    required this.progress,
-    required this.compact,
-  });
-
-  final double progress;
-  final bool compact;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = compact ? 0.8 : 1.1;
-
-    for (int index = 0; index < 6; index++) {
-      final dx = size.width * (0.12 + index * 0.16) +
-          math.sin(progress * math.pi + index) * 12;
-      final dy = size.height * (index.isEven ? 0.20 : 0.72) +
-          math.cos(progress * math.pi + index) * 18;
-      final radius = (compact ? 36.0 : 58.0) + index * (compact ? 8 : 12);
-      strokePaint.color = Colors.white.withOpacity(0.030 + index * 0.006);
-      canvas.drawCircle(Offset(dx, dy), radius, strokePaint);
-    }
-
-    final wavePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = compact ? 1.1 : 1.4
-      ..color = Colors.white.withOpacity(0.07);
-
-    final wave = Path();
-    final baseY = size.height * (compact ? 0.66 : 0.58);
-    for (double x = -20; x <= size.width + 20; x += 18) {
-      final y = baseY +
-          math.sin((x / 96) + progress * math.pi * 2) * (compact ? 10 : 16);
-      if (x == -20) {
-        wave.moveTo(x, y);
-      } else {
-        wave.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(wave, wavePaint);
+  /// Distância circular normalizada entre dois valores 0..1.
+  double _circularDistance(double a, double b) {
+    final diff = (a - b).abs();
+    return diff > 0.5 ? 1.0 - diff : diff;
   }
 
-  @override
-  bool shouldRepaint(covariant _SixSplashBackgroundPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.compact != compact;
-  }
+  double _clamp(double v, double min, double max) =>
+      v.clamp(min, max).toDouble();
 }
+
+// ---------------------------------------------------------------------------
+// Paleta
+// ---------------------------------------------------------------------------
 
 class _SplashPalette {
   const _SplashPalette._();
@@ -569,5 +404,6 @@ class _SplashPalette {
   static const Color navy900 = Color(0xFF06243A);
   static const Color blue900 = Color(0xFF0A3555);
   static const Color blue800 = Color(0xFF0F4C75);
-  static const Color blue600 = Color(0xFF2B8FDB);
 }
+
+

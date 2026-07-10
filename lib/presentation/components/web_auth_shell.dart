@@ -331,7 +331,6 @@ class _FormPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = WebRootL10n.of(context);
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -352,38 +351,10 @@ class _FormPane extends StatelessWidget {
                   constraints: const BoxConstraints(
                     maxWidth: SixAuthTokens.formPaneMaxWidth,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (showBack)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed:
-                                onBack ?? () => Navigator.maybePop(context),
-                            icon: const Icon(
-                              Icons.arrow_back_rounded,
-                              size: 18,
-                              color: SixAuthTokens.colorTextPrimary,
-                            ),
-                            label: Text(
-                              l10n.authBack,
-                              style: const TextStyle(
-                                color: SixAuthTokens.colorTextPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (showBack) const SizedBox(height: 8),
-                      child,
-                    ],
+                  child: _AnimatedFormContent(
+                    showBack: showBack,
+                    onBack: onBack,
+                    child: child,
                   ),
                 ),
               ),
@@ -391,6 +362,185 @@ class _FormPane extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Anima a entrada do conteúdo do formulário — usado como wrapper interno
+/// no [_FormPane]. O [child] já deve usar [WebAuthStaggeredItems] internamente
+/// para o stagger top-down dos seus campos.
+class _AnimatedFormContent extends StatefulWidget {
+  const _AnimatedFormContent({
+    required this.child,
+    required this.showBack,
+    required this.onBack,
+  });
+
+  final Widget child;
+  final bool showBack;
+  final VoidCallback? onBack;
+
+  @override
+  State<_AnimatedFormContent> createState() => _AnimatedFormContentState();
+}
+
+class _AnimatedFormContentState extends State<_AnimatedFormContent>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    // Duração curta — só para o botão "Voltar" aparecer suavemente.
+    // O stagger real dos campos fica em WebAuthStaggeredItems.
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = WebRootL10n.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.showBack)
+          FadeTransition(
+            opacity: _ctrl,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: widget.onBack ?? () => Navigator.maybePop(context),
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  size: 18,
+                  color: SixAuthTokens.colorTextPrimary,
+                ),
+                label: Text(
+                  l10n.authBack,
+                  style: const TextStyle(
+                    color: SixAuthTokens.colorTextPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                ),
+              ),
+            ),
+          ),
+        if (widget.showBack) const SizedBox(height: 8),
+        widget.child,
+      ],
+    );
+  }
+}
+
+/// Widget público que anima cada filho de cima para baixo com fade.
+///
+/// Uso típico dentro de telas de auth:
+/// ```dart
+/// WebAuthStaggeredItems(
+///   children: [
+///     WebAuthTitle(...),
+///     SizedBox(height: 28),
+///     WebAuthTextField(...),
+///     WebAuthPrimaryButton(...),
+///   ],
+/// )
+/// ```
+class WebAuthStaggeredItems extends StatefulWidget {
+  const WebAuthStaggeredItems({
+    super.key,
+    required this.children,
+    this.itemDuration = const Duration(milliseconds: 380),
+    this.stagger = const Duration(milliseconds: 90),
+  });
+
+  final List<Widget> children;
+
+  /// Duração da animação de cada item individual.
+  final Duration itemDuration;
+
+  /// Atraso entre o início da animação de itens consecutivos.
+  final Duration stagger;
+
+  @override
+  State<WebAuthStaggeredItems> createState() => _WebAuthStaggeredItemsState();
+}
+
+class _WebAuthStaggeredItemsState extends State<WebAuthStaggeredItems>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  Duration get _totalDuration {
+    final ms = widget.itemDuration.inMilliseconds +
+        widget.stagger.inMilliseconds * (widget.children.length - 1).clamp(0, 99);
+    return Duration(milliseconds: ms);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: _totalDuration);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Animation<double> _opacityFor(int i) {
+    final total = _totalDuration.inMilliseconds.toDouble();
+    final start = (i * widget.stagger.inMilliseconds) / total;
+    final end = start + widget.itemDuration.inMilliseconds / total;
+    return CurvedAnimation(
+      parent: _ctrl,
+      curve: Interval(start.clamp(0.0, 1.0), end.clamp(0.0, 1.0),
+          curve: Curves.easeOut),
+    );
+  }
+
+  Animation<Offset> _slideFor(int i) {
+    final total = _totalDuration.inMilliseconds.toDouble();
+    final start = (i * widget.stagger.inMilliseconds) / total;
+    final end = start + widget.itemDuration.inMilliseconds / total;
+    return Tween<Offset>(
+      begin: const Offset(0, -0.18),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: Interval(start.clamp(0.0, 1.0), end.clamp(0.0, 1.0),
+            curve: Curves.easeOutCubic),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < widget.children.length; i++)
+          FadeTransition(
+            opacity: _opacityFor(i),
+            child: SlideTransition(
+              position: _slideFor(i),
+              child: widget.children[i],
+            ),
+          ),
+      ],
     );
   }
 }

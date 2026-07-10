@@ -27,30 +27,54 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                       children: <Widget>[
                         _buildCockpitResumoKpis(context),
                         const SizedBox(height: 14),
-                        _buildCockpitFinanceiroChart(context),
+                        SixWebEntry(
+                          order: 4,
+                          duration: const Duration(milliseconds: 640),
+                          child: _buildCockpitFinanceiroChart(context),
+                        ),
                         const SizedBox(height: 14),
                         isCompact
                             ? Column(
                                 children: <Widget>[
-                                  _buildCockpitVendasCanalChart(context),
+                                  SixWebEntry(
+                                    order: 5,
+                                    duration: const Duration(milliseconds: 640),
+                                    child: _buildCockpitVendasCanalChart(context),
+                                  ),
                                   const SizedBox(height: 14),
-                                  _buildCockpitAtendimentoChart(context),
+                                  SixWebEntry(
+                                    order: 6,
+                                    duration: const Duration(milliseconds: 640),
+                                    child: _buildCockpitAtendimentoChart(context),
+                                  ),
                                 ],
                               )
                             : Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Expanded(
-                                    child: _buildCockpitVendasCanalChart(context),
+                                    child: SixWebEntry(
+                                      order: 5,
+                                      duration: const Duration(milliseconds: 640),
+                                      child: _buildCockpitVendasCanalChart(context),
+                                    ),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
-                                    child: _buildCockpitAtendimentoChart(context),
+                                    child: SixWebEntry(
+                                      order: 6,
+                                      duration: const Duration(milliseconds: 640),
+                                      child: _buildCockpitAtendimentoChart(context),
+                                    ),
                                   ),
                                 ],
                               ),
                         const SizedBox(height: 14),
-                        _buildCockpitOpcoesExemplo(context),
+                        SixWebEntry(
+                          order: 7,
+                          duration: const Duration(milliseconds: 640),
+                          child: _buildCockpitOpcoesExemplo(context),
+                        ),
                       ],
                     ),
                   ),
@@ -102,15 +126,21 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
         return Wrap(
           spacing: 14,
           runSpacing: 14,
-          children: kpis.map((Map<String, Object> kpi) {
-            return _buildCockpitKpiCard(
-              context,
-              width: cardWidth,
-              title: kpi['titulo']?.toString() ?? '',
-              value: kpi['valor']?.toString() ?? '',
-              delta: kpi['delta']?.toString() ?? '',
-              icon: (kpi['icone'] as IconData?) ?? Icons.insights_rounded,
-              highlight: kpi['destaque'] == true,
+          children: kpis.asMap().entries.map((entry) {
+            final index = entry.key;
+            final kpi = entry.value;
+            return SixWebEntry(
+              order: index,
+              duration: const Duration(milliseconds: 620),
+              child: _buildCockpitKpiCard(
+                context,
+                width: cardWidth,
+                title: kpi['titulo']?.toString() ?? '',
+                value: kpi['valor']?.toString() ?? '',
+                delta: kpi['delta']?.toString() ?? '',
+                icon: (kpi['icone'] as IconData?) ?? Icons.insights_rounded,
+                highlight: kpi['destaque'] == true,
+              ),
             );
           }).toList(),
         );

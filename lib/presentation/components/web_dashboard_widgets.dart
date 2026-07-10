@@ -89,7 +89,7 @@ class SixWebEntry extends StatelessWidget {
     super.key,
     required this.child,
     this.order = 0,
-    this.duration = const Duration(milliseconds: 520),
+    this.duration = const Duration(milliseconds: 680),
   });
 
   final Widget child;
@@ -100,13 +100,15 @@ class SixWebEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
-      duration: duration + Duration(milliseconds: (order * 30).clamp(0, 300).toInt()),
+      // Cada ordem adiciona 60ms de atraso ao início (máx 480ms extra),
+      // criando uma cascata top-down visível entre blocos.
+      duration: duration + Duration(milliseconds: (order * 60).clamp(0, 480).toInt()),
       curve: Curves.easeOutCubic,
       builder: (BuildContext context, double value, Widget? child) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(0, 14 * (1 - value)),
+            offset: Offset(0, 16 * (1 - value)),
             child: child,
           ),
         );

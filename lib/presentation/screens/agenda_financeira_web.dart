@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
 import '../../providers/locale_settings_provider.dart';
@@ -492,9 +493,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: <Widget>[
-                  _buildHeader(theme),
+                  SixWebEntry(
+                    order: 0,
+                    duration: const Duration(milliseconds: 600),
+                    child: _buildHeader(theme),
+                  ),
                   const SizedBox(height: 14),
-                  _buildFiltros(theme),
+                  SixWebEntry(
+                    order: 1,
+                    duration: const Duration(milliseconds: 600),
+                    child: _buildFiltros(theme),
+                  ),
                   if (_carregando || _executandoAcao) ...const <Widget>[
                     SizedBox(height: 10),
                     LinearProgressIndicator(minHeight: 3),
@@ -502,9 +511,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   const SizedBox(height: 14),
                   _buildResumo(context, theme),
                   const SizedBox(height: 18),
-                  _buildAbas(theme),
+                  SixWebEntry(
+                    order: 2,
+                    duration: const Duration(milliseconds: 600),
+                    child: _buildAbas(theme),
+                  ),
                   const SizedBox(height: 16),
-                  _buildConteudoAba(theme),
+                  SixWebEntry(
+                    order: 3,
+                    duration: const Duration(milliseconds: 620),
+                    child: _buildConteudoAba(theme),
+                  ),
                 ],
               ),
             ),
@@ -652,12 +669,18 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       spacing: 12,
       runSpacing: 12,
       children: cards
+          .asMap()
+          .entries
           .map(
-            (card) => SizedBox(
-          width: 260,
-          child: _cardResumo(theme, card, regionalizacao),
-        ),
-      )
+            (entry) => SixWebEntry(
+              order: entry.key,
+              duration: const Duration(milliseconds: 600),
+              child: SizedBox(
+                width: 260,
+                child: _cardResumo(theme, entry.value, regionalizacao),
+              ),
+            ),
+          )
           .toList(),
     );
   }

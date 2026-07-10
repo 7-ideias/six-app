@@ -2,6 +2,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/tokens/web_root_scheme.dart';
 import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/components/web_root/responsive_container.dart';
 import 'package:sixpos/presentation/components/web_root/store_badge.dart';
 import 'package:sixpos/providers/theme_provider.dart';
@@ -34,7 +35,10 @@ class CtaSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 64),
       child: ResponsiveContainer(
         isDesktop: true,
-        child: Container(
+        child: SixWebEntry(
+          order: 0,
+          duration: const Duration(milliseconds: 640),
+          child: Container(
           decoration: BoxDecoration(
             color: scheme.ctaBannerBg,
             borderRadius: BorderRadius.circular(WebRootTokens.radiusBig),
@@ -72,6 +76,7 @@ class CtaSection extends StatelessWidget {
             ],
           ),
         ),
+        ),
       ),
     );
   }
@@ -105,7 +110,10 @@ class CtaSection extends StatelessWidget {
   }
 
   Widget _mobile(WebRootL10n l10n, WebRootScheme scheme) {
-    return Padding(
+    return SixWebEntry(
+      order: 0,
+      duration: const Duration(milliseconds: 640),
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(
         WebRootTokens.gutterMobile,
         32,
@@ -188,6 +196,7 @@ class CtaSection extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

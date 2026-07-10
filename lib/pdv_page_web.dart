@@ -35,6 +35,7 @@ import 'presentation/screens/login_page_web.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'top_navigation_bar.dart';
+import 'presentation/components/web_dashboard_widgets.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
 part 'pdv_page_web_venda_section.dart';

@@ -75,8 +75,7 @@ class _NovaSenhaWebState extends State<NovaSenhaWeb> {
   Widget build(BuildContext context) {
     return WebAuthShell(
       showBack: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: WebAuthStaggeredItems(
         children: [
           const WebAuthTitle(
             title: 'Nova senha',
