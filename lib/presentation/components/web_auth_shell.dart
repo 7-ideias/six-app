@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
+import 'package:flutter/material.dart';
 import 'package:sixpos/design_system/components/auth/six_auth_input.dart';
 import 'package:sixpos/design_system/components/auth/six_auth_or_divider.dart';
 import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dart';
@@ -7,10 +9,7 @@ import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
 import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 import 'package:sixpos/presentation/components/web_root/web_language_switcher.dart';
-import 'package:flutter/material.dart';
 
-// Shell web de autenticação: painel de marca (lado esq.) + painel de formulário.
-// Todos os estilos herdados de SixAuthTokens — sem valores hardcoded aqui.
 class WebAuthShell extends StatelessWidget {
   const WebAuthShell({
     super.key,
@@ -23,40 +22,72 @@ class WebAuthShell extends StatelessWidget {
   final VoidCallback? onBack;
   final bool showBack;
 
-  // Helpers estáticos de compatibilidade (usados pelas telas enquanto migram).
-  // Delegam para SixAuthTokens — não adicionar novos valores aqui.
   static Color fieldFill() => SixAuthTokens.colorFieldFill;
   static Color labelGrey() => SixAuthTokens.colorDividerText;
   static Color textDark() => SixAuthTokens.colorTextPrimary;
 
+  static Route<T> smoothRoute<T>({
+    required WidgetBuilder builder,
+    String? name,
+  }) {
+    return PageRouteBuilder<T>(
+      settings: name == null ? null : RouteSettings(name: name),
+      transitionDuration: const Duration(milliseconds: 620),
+      reverseTransitionDuration: const Duration(milliseconds: 420),
+      pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+        return builder(context);
+      },
+      transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+        final Animation<double> curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+        final Animation<double> secondary = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeInOutCubic);
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0.018, 0.018), end: Offset.zero).animate(curved),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.985, end: 1).animate(curved),
+              child: SlideTransition(
+                position: Tween<Offset>(begin: Offset.zero, end: const Offset(-0.018, -0.008)).animate(secondary),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final showBrandPanel = width >= 960;
-
     return Scaffold(
       backgroundColor: SixAuthTokens.colorShellBackground,
-      body: Row(
-        children: [
-          if (showBrandPanel) const Expanded(flex: 5, child: _BrandPanel()),
-          Expanded(
-            flex: showBrandPanel ? 4 : 10,
-            child: _FormPane(showBack: showBack, onBack: onBack, child: child),
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          const _BrandBackdrop(),
+          const _AuthBackgroundVeil(),
+          SafeArea(
+            child: Stack(
+              children: <Widget>[
+                const Positioned(
+                  top: 14,
+                  right: 18,
+                  child: WebLanguageSwitcher(),
+                ),
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 78),
+                    child: _FormPane(showBack: showBack, onBack: onBack, child: child),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
-
-// ── Painel de marca (esquerda, desktop) ────────────────────────────────────
-//
-// Carousel auto-rotativo: troca a cada 5s entre slides com imagem de fundo,
-// título e descrição. O usuário pode pular para qualquer slide clicando nos
-// indicadores (dots) abaixo do texto.
-//
-// As imagens são reaproveitadas do onboarding mobile — todas relacionadas
-// ao dia-a-dia de quem usa o app (caixa, gestão técnica, financeiro, etc.).
 
 class _BrandSlide {
   const _BrandSlide({
@@ -70,48 +101,44 @@ class _BrandSlide {
   final String description;
 }
 
-const List<_BrandSlide> _brandSlides = [
+const List<_BrandSlide> _brandSlides = <_BrandSlide>[
   _BrandSlide(
     image: 'assets/images/onboading/1-bem-vindo.JPG',
     title: 'Bem-vindo ao Six.',
-    description:
-        'PDV, financeiro e CRM em um só app — pronto pra começar hoje.',
+    description: 'PDV, financeiro e CRM em um só app — pronto pra começar hoje.',
   ),
   _BrandSlide(
     image: 'assets/images/onboading/2-cadastro-rapido.jpg',
-    title: 'Cadastro rápido\ncom IA.',
-    description:
-        'Tire foto do produto e a IA cadastra preço, categoria e estoque.',
+    title: 'Cadastro rápido com IA.',
+    description: 'Tire foto do produto e a IA cadastra preço, categoria e estoque.',
   ),
   _BrandSlide(
     image: 'assets/images/onboading/3-gestao-tecnica.jpg',
-    title: 'Gestão técnica\nsem planilha.',
-    description:
-        'Controle ordens de serviço, fila, SLA e comunicação com o cliente.',
+    title: 'Gestão técnica sem planilha.',
+    description: 'Controle ordens de serviço, fila, SLA e comunicação com o cliente.',
   ),
   _BrandSlide(
     image: 'assets/images/onboading/4-controle-financeiro.jpg',
-    title: 'Financeiro\npreditivo.',
-    description:
-        'Previsão de caixa, alertas de risco e painel executivo com IA.',
+    title: 'Financeiro preditivo.',
+    description: 'Previsão de caixa, alertas de risco e painel executivo com IA.',
   ),
   _BrandSlide(
     image: 'assets/images/unsplash-1.jpg',
-    title: 'Suporte humano\nde verdade.',
+    title: 'Suporte humano de verdade.',
     description: 'Atendimento na hora — sem bot, sem FAQ enlatado.',
   ),
 ];
 
-class _BrandPanel extends StatefulWidget {
-  const _BrandPanel();
+class _BrandBackdrop extends StatefulWidget {
+  const _BrandBackdrop();
 
   @override
-  State<_BrandPanel> createState() => _BrandPanelState();
+  State<_BrandBackdrop> createState() => _BrandBackdropState();
 }
 
-class _BrandPanelState extends State<_BrandPanel> {
-  static const Duration _slideDuration = Duration(seconds: 5);
-  static const Duration _crossFadeDuration = Duration(milliseconds: 700);
+class _BrandBackdropState extends State<_BrandBackdrop> {
+  static const Duration _slideDuration = Duration(seconds: 6);
+  static const Duration _crossFadeDuration = Duration(milliseconds: 1100);
 
   int _index = 0;
   Timer? _timer;
@@ -136,134 +163,126 @@ class _BrandPanelState extends State<_BrandPanel> {
     });
   }
 
-  void _goTo(int i) {
-    if (i == _index) return;
-    setState(() => _index = i);
-    _startAutoplay(); // reinicia o timer ao interagir
+  @override
+  Widget build(BuildContext context) {
+    final _BrandSlide slide = _brandSlides[_index];
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        AnimatedSwitcher(
+          duration: _crossFadeDuration,
+          switchInCurve: Curves.easeInOutCubic,
+          switchOutCurve: Curves.easeInOutCubic,
+          child: Image.asset(
+            slide.image,
+            key: ValueKey<String>(slide.image),
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            alignment: Alignment.center,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ),
+        BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 2.4, sigmaY: 2.4),
+          child: const SizedBox.expand(),
+        ),
+        Positioned(
+          left: -120,
+          top: -90,
+          child: _Blob(color: const Color(0xFF2563EB).withOpacity(0.22), size: 360),
+        ),
+        Positioned(
+          right: -160,
+          bottom: -140,
+          child: _Blob(color: const Color(0xFF0B1F3A).withOpacity(0.24), size: 440),
+        ),
+        Positioned(
+          left: 52,
+          bottom: 42,
+          child: _AmbientBrandCopy(slide: slide),
+        ),
+      ],
+    );
   }
+}
+
+class _AuthBackgroundVeil extends StatelessWidget {
+  const _AuthBackgroundVeil();
 
   @override
   Widget build(BuildContext context) {
-    final slide = _brandSlides[_index];
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            const Color(0xFF03111F).withOpacity(0.78),
+            const Color(0xFF0B1F3A).withOpacity(0.62),
+            const Color(0xFFF8FAFC).withOpacity(0.58),
+          ],
+          stops: const <double>[0, 0.54, 1],
+        ),
+      ),
+      child: const SizedBox.expand(),
+    );
+  }
+}
 
-    return ClipRect(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // ── Camada 1: imagem de fundo com crossfade ────────────────────
-          Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: _crossFadeDuration,
-              switchInCurve: Curves.easeInOut,
-              switchOutCurve: Curves.easeInOut,
-              child: Image.asset(
-                slide.image,
-                key: ValueKey(slide.image),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
-            ),
-          ),
+class _AmbientBrandCopy extends StatelessWidget {
+  const _AmbientBrandCopy({required this.slide});
 
-          // ── Camada 2: overlay de cor (legibilidade) ────────────────────
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xE60F1A14), // 90% opacity
-                  Color(0xCC0F2D3A), // 80% opacity
-                ],
-              ),
-            ),
-            child: SizedBox.expand(),
-          ),
+  final _BrandSlide slide;
 
-          // ── Camada 3: blobs decorativos ────────────────────────────────
-          Positioned(
-            top: -80,
-            right: -80,
-            child: _Blob(
-              color: SixAuthTokens.colorBrand.withValues(alpha: 0.18),
-              size: 320,
+  @override
+  Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    if (width < 1040) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 850),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInOutCubic,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(animation),
+              child: child,
             ),
-          ),
-          Positioned(
-            bottom: -120,
-            left: -60,
-            child: _Blob(
-              color: SixAuthTokens.colorBrand.withValues(alpha: 0.10),
-              size: 380,
-            ),
-          ),
-
-          // ── Camada 4: conteúdo (título, descrição, dots) ───────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(56, 48, 56, 48),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Spacer(),
-                AnimatedSwitcher(
-                  duration: _crossFadeDuration,
-                  transitionBuilder: (child, anim) {
-                    final offset = Tween<Offset>(
-                      begin: const Offset(0, 0.12),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(parent: anim, curve: Curves.easeOut),
-                    );
-                    return FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(position: offset, child: child),
-                    );
-                  },
-                  child: Column(
-                    key: ValueKey('text-${slide.title}'),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        slide.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 38,
-                          fontWeight: FontWeight.w700,
-                          height: 1.15,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        slide.description,
-                        style: const TextStyle(
-                          color: Color(0xBFFFFFFF),
-                          fontSize: 15.5,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
+          );
+        },
+        child: SizedBox(
+          key: ValueKey<String>(slide.title),
+          width: 380,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                slide.title,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.88),
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                  height: 1.08,
+                  letterSpacing: -0.6,
                 ),
-                const Spacer(),
-                Row(
-                  children: List.generate(_brandSlides.length, (i) {
-                    final active = i == _index;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        right: i == _brandSlides.length - 1 ? 0 : 6,
-                      ),
-                      child: _Dot(active: active, onTap: () => _goTo(i)),
-                    );
-                  }),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                slide.description,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.62),
+                  fontSize: 15,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -285,39 +304,6 @@ class _Blob extends StatelessWidget {
   }
 }
 
-class _Dot extends StatelessWidget {
-  const _Dot({required this.active, required this.onTap});
-
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOut,
-          width: active ? 32 : 18,
-          height: 4,
-          decoration: BoxDecoration(
-            color:
-                active
-                    ? const Color(0xE6FFFFFF) // 90% white
-                    : const Color(0x59FFFFFF), // 35% white
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Painel de formulário ───────────────────────────────────────────────────
-
 class _FormPane extends StatelessWidget {
   const _FormPane({
     required this.child,
@@ -331,75 +317,154 @@ class _FormPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = WebRootL10n.of(context);
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Barra superior com seletor de idioma alinhado à direita.
-          Padding(
-            padding: const EdgeInsets.only(top: 12, right: 16),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: const WebLanguageSwitcher(),
-            ),
+    final WebRootL10n l10n = WebRootL10n.of(context);
+    final double width = MediaQuery.of(context).size.width;
+    final bool compacto = width < 640;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 760),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double value, Widget? child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 26 * (1 - value)),
+            child: Transform.scale(scale: 0.982 + (0.018 * value), child: child),
           ),
-          Expanded(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: SixAuthTokens.formPanePaddingWeb,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: SixAuthTokens.formPaneMaxWidth,
+        );
+      },
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: compacto ? 440 : 500),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(compacto ? 28 : 34),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.90),
+                borderRadius: BorderRadius.circular(compacto ? 28 : 34),
+                border: Border.all(color: Colors.white.withOpacity(0.62), width: 1.1),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: const Color(0xFF03111F).withOpacity(0.22),
+                    blurRadius: 60,
+                    offset: const Offset(0, 28),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (showBack)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed:
-                                onBack ?? () => Navigator.maybePop(context),
-                            icon: const Icon(
-                              Icons.arrow_back_rounded,
-                              size: 18,
-                              color: SixAuthTokens.colorTextPrimary,
-                            ),
-                            label: Text(
-                              l10n.authBack,
-                              style: const TextStyle(
-                                color: SixAuthTokens.colorTextPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                            ),
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.16),
+                    blurRadius: 20,
+                    offset: const Offset(0, -8),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(compacto ? 22 : 34, compacto ? 24 : 34, compacto ? 22 : 34, compacto ? 26 : 36),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (showBack)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: onBack ?? () => Navigator.maybePop(context),
+                          icon: const Icon(Icons.arrow_back_rounded, size: 18, color: SixAuthTokens.colorTextPrimary),
+                          label: Text(
+                            l10n.authBack,
+                            style: const TextStyle(color: SixAuthTokens.colorTextPrimary, fontWeight: FontWeight.w700),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           ),
                         ),
-                      if (showBack) const SizedBox(height: 8),
-                      child,
-                    ],
-                  ),
+                      ),
+                    if (showBack) const SizedBox(height: 8),
+                    child,
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// ── Componentes de compatibilidade ─────────────────────────────────────────
-// Wrappers finos que delegam para os componentes do design system.
-// Permitem que as telas existentes compilem sem alteração enquanto migram.
+class WebAuthStaggeredColumn extends StatelessWidget {
+  const WebAuthStaggeredColumn({
+    super.key,
+    required this.children,
+    this.crossAxisAlignment = CrossAxisAlignment.stretch,
+  });
 
-/// Campo de texto para auth — usa SixAuthInput internamente.
+  final List<Widget> children;
+  final CrossAxisAlignment crossAxisAlignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: crossAxisAlignment,
+      mainAxisSize: MainAxisSize.min,
+      children: List<Widget>.generate(
+        children.length,
+        (int index) => _WebAuthStaggeredEntry(order: index, child: children[index]),
+      ),
+    );
+  }
+}
+
+class _WebAuthStaggeredEntry extends StatefulWidget {
+  const _WebAuthStaggeredEntry({required this.order, required this.child});
+
+  final int order;
+  final Widget child;
+
+  @override
+  State<_WebAuthStaggeredEntry> createState() => _WebAuthStaggeredEntryState();
+}
+
+class _WebAuthStaggeredEntryState extends State<_WebAuthStaggeredEntry> {
+  bool _visible = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(Duration(milliseconds: 90 + widget.order * 58), () {
+      if (!mounted) return;
+      setState(() => _visible = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _visible ? 1 : 0,
+      duration: const Duration(milliseconds: 520),
+      curve: Curves.easeOutCubic,
+      child: AnimatedSlide(
+        offset: _visible ? Offset.zero : const Offset(0, 0.055),
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOutCubic,
+        child: AnimatedScale(
+          scale: _visible ? 1 : 0.992,
+          duration: const Duration(milliseconds: 520),
+          curve: Curves.easeOutCubic,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
 class WebAuthTextField extends StatelessWidget {
   const WebAuthTextField({
     super.key,
@@ -417,7 +482,6 @@ class WebAuthTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final String? label;
-  // Mantido por compatibilidade; SixAuthInput não usa ícone prefix conforme Figma.
   final IconData? prefixIcon;
   final Widget? suffix;
   final bool obscure;
@@ -440,7 +504,6 @@ class WebAuthTextField extends StatelessWidget {
   }
 }
 
-/// Botão primário para auth — usa SixAuthPrimaryButton internamente.
 class WebAuthPrimaryButton extends StatelessWidget {
   const WebAuthPrimaryButton({
     super.key,
@@ -455,15 +518,10 @@ class WebAuthPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SixAuthPrimaryButton(
-      label: label,
-      onPressed: onPressed,
-      isLoading: isLoading,
-    );
+    return SixAuthPrimaryButton(label: label, onPressed: onPressed, isLoading: isLoading);
   }
 }
 
-/// Botão secundário para auth (ex.: Google).
 class WebAuthSecondaryButton extends StatelessWidget {
   const WebAuthSecondaryButton({
     super.key,
@@ -487,16 +545,12 @@ class WebAuthSecondaryButton extends StatelessWidget {
           foregroundColor: SixAuthTokens.colorTextPrimary,
           elevation: 0,
           side: const BorderSide(color: SixAuthTokens.colorButtonGoogleBorder),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              SixAuthTokens.radiusButtonGoogle,
-            ),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SixAuthTokens.radiusButtonGoogle)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (leading != null) ...[leading!, const SizedBox(width: 10)],
+          children: <Widget>[
+            if (leading != null) ...<Widget>[leading!, const SizedBox(width: 10)],
             Text(
               label,
               style: const TextStyle(
@@ -512,7 +566,6 @@ class WebAuthSecondaryButton extends StatelessWidget {
   }
 }
 
-/// Título + subtítulo para auth — usa SixAuthTitle internamente.
 class WebAuthTitle extends StatelessWidget {
   const WebAuthTitle({super.key, required this.title, this.subtitle});
 
@@ -525,7 +578,6 @@ class WebAuthTitle extends StatelessWidget {
   }
 }
 
-/// Divisor "ou continue com" — usa SixAuthOrDivider internamente.
 class WebAuthOrDivider extends StatelessWidget {
   const WebAuthOrDivider({super.key, this.text = 'ou continue com'});
 
@@ -537,7 +589,6 @@ class WebAuthOrDivider extends StatelessWidget {
   }
 }
 
-/// Glyph "G" do Google — mantido por compatibilidade.
 class WebAuthGoogleGlyph extends StatelessWidget {
   const WebAuthGoogleGlyph({super.key});
 
@@ -545,12 +596,7 @@ class WebAuthGoogleGlyph extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Text(
       'G',
-      style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w900,
-        color: Color(0xFF4285F4),
-        height: 1,
-      ),
+      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF4285F4), height: 1),
     );
   }
 }
