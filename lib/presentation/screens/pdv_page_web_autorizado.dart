@@ -5,6 +5,12 @@ import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import 'pdv_page_web_dashboard.dart';
 
+const Color _primary = Color(0xFF24458F);
+const Color _text = Color(0xFF111827);
+const Color _muted = Color(0xFF596579);
+const Color _surface = Color(0xFFFFFFFF);
+const Color _border = Color(0x1F24458F);
+
 class PdvPageWebAutorizado extends StatefulWidget {
   const PdvPageWebAutorizado({super.key});
 
@@ -119,12 +125,6 @@ class _PdvAutorizacoesLoading extends StatelessWidget {
 
 class _PdvSemVendasWeb extends StatelessWidget {
   const _PdvSemVendasWeb();
-
-  static const Color _primary = Color(0xFF24458F);
-  static const Color _text = Color(0xFF111827);
-  static const Color _muted = Color(0xFF596579);
-  static const Color _surface = Color(0xFFFFFFFF);
-  static const Color _border = Color(0x1F24458F);
 
   @override
   Widget build(BuildContext context) {
