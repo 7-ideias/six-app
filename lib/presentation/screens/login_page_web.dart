@@ -110,6 +110,11 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   String? _redirectAfterLogin() {
     final String routeName = ModalRoute.of(context)?.settings.name ?? Uri.base.toString();
     final Uri uri = Uri.parse(routeName);
+
+    if (uri.path == '/admin') {
+      return '/admin/dashboard';
+    }
+
     final String redirect = uri.queryParameters['redirect'] ?? '';
     if (redirect.trim().isEmpty) return null;
 
