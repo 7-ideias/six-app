@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/l10n/app_localizations.dart';
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
@@ -114,7 +116,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
       return;
     }
 
-    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
 
     _homeOverlay = OverlayEntry(
@@ -157,18 +159,6 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
       if (!mounted || _homeOverlayVisivel) return;
       _removerHomeOverlay();
     });
-  }
-
-  void _ocultarHomeDuranteMenu() {
-    if (_homeOverlay != null && _homeOverlayVisivel) {
-      _homeOverlayOpacity.value = 0;
-    }
-  }
-
-  void _restaurarHomeAposMenuSemAcao() {
-    if (_homeOverlay != null && _homeOverlayVisivel) {
-      _homeOverlayOpacity.value = 1;
-    }
   }
 
   void _removerHomeOverlay() {
@@ -460,21 +450,53 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   _MenuConfigData _config(String value) {
     switch (value) {
       case 'Empresa':
-        return const _MenuConfigData('Empresa', 'Dados institucionais, contatos e identidade do comércio.', Icons.storefront_rounded);
+        return const _MenuConfigData(
+          'Empresa',
+          'Dados institucionais, contatos e identidade do comércio.',
+          Icons.storefront_rounded,
+        );
       case 'Usuários e permissões':
-        return const _MenuConfigData('Usuários e permissões', 'Acessos, perfis de colaboradores e permissões operacionais.', Icons.admin_panel_settings_rounded);
+        return const _MenuConfigData(
+          'Usuários e permissões',
+          'Acessos, perfis de colaboradores e permissões operacionais.',
+          Icons.admin_panel_settings_rounded,
+        );
       case 'Regionalização':
-        return const _MenuConfigData('Regionalização', 'Idioma, país, moeda, data, hora e formatos locais.', Icons.public_rounded);
+        return const _MenuConfigData(
+          'Regionalização',
+          'Idioma, país, moeda, data, hora e formatos locais.',
+          Icons.public_rounded,
+        );
       case 'Formas de recebimento':
-        return const _MenuConfigData('Formas de recebimento', 'Personalize como sua empresa recebe pagamentos. Os códigos internos são mantidos pelo sistema, mas o nome e o comportamento podem ser ajustados.', Icons.payments_rounded);
+        return const _MenuConfigData(
+          'Formas de recebimento',
+          'Personalize como sua empresa recebe pagamentos.',
+          Icons.payments_rounded,
+        );
       case 'Regras operacionais':
-        return const _MenuConfigData('Regras operacionais', 'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.', Icons.rule_folder_outlined);
+        return const _MenuConfigData(
+          'Regras operacionais',
+          'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.',
+          Icons.rule_folder_outlined,
+        );
       case 'Notificações':
-        return const _MenuConfigData('Notificações', 'Canais, mensagens e automações para clientes e equipe.', Icons.notifications_active_rounded);
+        return const _MenuConfigData(
+          'Notificações',
+          'Canais, mensagens e automações para clientes e equipe.',
+          Icons.notifications_active_rounded,
+        );
       case 'Modelos de PDF':
-        return const _MenuConfigData('Modelos de PDF', 'Modelos de comprovantes, orçamentos e ordens de serviço.', Icons.picture_as_pdf_rounded);
+        return const _MenuConfigData(
+          'Modelos de PDF',
+          'Modelos de comprovantes, orçamentos e ordens de serviço.',
+          Icons.picture_as_pdf_rounded,
+        );
       case 'Integrações':
-        return const _MenuConfigData('Integrações', 'Conexões externas para comunicação, pagamentos e automações.', Icons.hub_rounded);
+        return const _MenuConfigData(
+          'Integrações',
+          'Conexões externas para comunicação, pagamentos e automações.',
+          Icons.hub_rounded,
+        );
       default:
         return _MenuConfigData(value, 'Configuração do Six preparada para evolução.', Icons.tune_rounded);
     }
@@ -562,7 +584,10 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
           }
           if (value == 'Desempenho') {
             _abrirDesempenhoColaborador(context);
+            return;
           }
+          _ocultarHomeOverlay();
+          _mostrarPreparacao(context, value);
         },
       ),
       TopNavItemData(
@@ -668,6 +693,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     final colorScheme = currentTheme.colorScheme;
     final effectiveItems = _itemsEfetivos(context);
     final bool isDark = brightness == Brightness.dark;
+    final String aiLabel = AppLocalizations.of(context)?.aiAssistantAsk ?? 'Perguntar à IA';
 
     return Material(
       color: Colors.transparent,
@@ -715,8 +741,6 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                 data: item,
                                 colorScheme: colorScheme,
                                 premium: true,
-                                onMenuOpened: _ocultarHomeDuranteMenu,
-                                onMenuClosed: _restaurarHomeAposMenuSemAcao,
                               ),
                             ),
                           )
@@ -725,6 +749,11 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                _TopbarAiButton(
+                  colorScheme: colorScheme,
+                  label: aiLabel,
+                ),
+                const SizedBox(width: 10),
                 _AppVersionPill(colorScheme: colorScheme, premium: true),
                 const SizedBox(width: 10),
                 widget.notificationWidget ??
@@ -877,7 +906,8 @@ class _SixHomeDashboardOverlayState extends State<_SixHomeDashboardOverlay> {
   String get _periodoLabel {
     final agora = DateTime.now();
     final mes = agora.month.toString().padLeft(2, '0');
-    return '01/$mes/${agora.year} até ${DateTime(agora.year, agora.month + 1, 0).day.toString().padLeft(2, '0')}/$mes/${agora.year}';
+    final ultimoDia = DateTime(agora.year, agora.month + 1, 0).day.toString().padLeft(2, '0');
+    return '01/$mes/${agora.year} até $ultimoDia/$mes/${agora.year}';
   }
 
   String _currency(double value) => 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
@@ -1326,6 +1356,55 @@ class _DashboardOrb extends StatelessWidget {
   }
 }
 
+class _TopbarAiButton extends StatelessWidget {
+  const _TopbarAiButton({required this.colorScheme, required this.label});
+
+  final ColorScheme colorScheme;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: AiAssistantWebBridge.toggle,
+        child: Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.auto_awesome_outlined, size: 17, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 126),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AppVersionPill extends StatelessWidget {
   const _AppVersionPill({required this.colorScheme, this.premium = false});
 
@@ -1364,19 +1443,11 @@ class _AppVersionPill extends StatelessWidget {
 }
 
 class _TopNavigationMenuItem extends StatefulWidget {
-  const _TopNavigationMenuItem({
-    required this.data,
-    required this.colorScheme,
-    this.premium = false,
-    this.onMenuOpened,
-    this.onMenuClosed,
-  });
+  const _TopNavigationMenuItem({required this.data, required this.colorScheme, this.premium = false});
 
   final TopNavItemData data;
   final ColorScheme colorScheme;
   final bool premium;
-  final VoidCallback? onMenuOpened;
-  final VoidCallback? onMenuClosed;
 
   @override
   State<_TopNavigationMenuItem> createState() => _TopNavigationMenuItemState();
@@ -1388,8 +1459,6 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
 
   void _showMenu() async {
     setState(() => _open = true);
-    widget.onMenuOpened?.call();
-
     final RenderBox box = context.findRenderObject()! as RenderBox;
     final Offset position = box.localToGlobal(Offset.zero);
     Timer? autoCloseTimer;
@@ -1408,7 +1477,7 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
         0,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 16,
+      elevation: 18,
       color: Theme.of(context).colorScheme.surface,
       items: widget.data.subItems
           .map(
@@ -1431,13 +1500,9 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
 
     autoCloseTimer.cancel();
     if (mounted) setState(() => _open = false);
-
-    if (selected == null) {
-      widget.onMenuClosed?.call();
-      return;
+    if (selected != null) {
+      widget.data.onSelect?.call(selected);
     }
-
-    widget.data.onSelect?.call(selected);
   }
 
   @override
