@@ -33,6 +33,7 @@ dependencies:
   share_plus: ^10.1.4
   mobile_scanner: ^7.0.1
   syncfusion_flutter_gauges: any
+  lottie: ^1.4.0
 
 dev_dependencies:
   flutter_test:
