@@ -51,7 +51,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? notificationWidget;
 
   @override
-  Size get preferredSize => const Size.fromHeight(92);
+  Size get preferredSize => const Size.fromHeight(86);
 
   bool get _usaNovoMenuSix {
     final titles = items.map((item) => item.title).toSet();
@@ -566,7 +566,7 @@ class _AppVersionPill extends StatelessWidget {
         border: Border.all(color: border),
       ),
       child: Text(
-        'v${AppConfig.versaoApp}',
+        'v${AppConfig.appVersion}',
         style: TextStyle(
           color: text,
           fontWeight: FontWeight.w800,
