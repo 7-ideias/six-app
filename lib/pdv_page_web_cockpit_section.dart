@@ -1,6 +1,6 @@
-part of 'pdv_page_web.dart';
+part of 'pagina_principal_web.dart';
 
-extension _PdvPageWebCockpitSection on _PDVWebState {
+extension _PdvPageWebCockpitSection on _PaginaPrincipalWebState {
   Widget _buildCockpitEstrategico() {
     return Expanded(
       child: LayoutBuilder(

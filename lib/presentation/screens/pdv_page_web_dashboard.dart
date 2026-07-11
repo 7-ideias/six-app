@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/auth_service.dart';
-import '../../pdv_page_web.dart' as legacy;
+import '../../pagina_principal_web.dart' as legacy;
 import '../admin/admin_dashboard_metrics.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
@@ -69,7 +69,7 @@ class _PDVWebDashboardState extends State<PDVWeb> {
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          const legacy.PDVWeb(),
+          const legacy.PaginaPrincipalWeb(),
           Positioned.fill(
             top: 84,
             left: 16,

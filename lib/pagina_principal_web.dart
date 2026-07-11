@@ -40,11 +40,11 @@ import 'top_navigation_bar.dart';
 part 'pdv_page_web_cockpit_section.dart';
 part 'pdv_page_web_venda_section.dart';
 
-class PDVWeb extends StatefulWidget {
-  const PDVWeb({super.key});
+class PaginaPrincipalWeb extends StatefulWidget {
+  const PaginaPrincipalWeb({super.key});
 
   @override
-  State<PDVWeb> createState() => _PDVWebState();
+  State<PaginaPrincipalWeb> createState() => _PaginaPrincipalWebState();
 }
 
 enum ModuloCentralPDV {
@@ -65,7 +65,7 @@ enum ModuloCentralPDV {
 
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
-class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
+class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _ultimoEventoWebSocket;
   final List<Map<String, dynamic>> _notificacoes = <Map<String, dynamic>>[];
   int _quantidadeNotificacoesNaoLidas = 0;

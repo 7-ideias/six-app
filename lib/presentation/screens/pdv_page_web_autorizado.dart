@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../pdv_page_web.dart';
+import '../../pagina_principal_web.dart';
 import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 
@@ -42,7 +42,7 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
       return const AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
-        child: _WebBrandWatermark(child: PDVWeb()),
+        child: _WebBrandWatermark(child: PaginaPrincipalWeb()),
       );
     }
 
