@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'pdv_page_web_dashboard.dart';
+import '../../pdv_page_web.dart';
 import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 
