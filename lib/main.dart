@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/screens/admin_portal_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_novas_ideias_web_page.dart';
 import 'package:sixpos/presentation/screens/pdv_page_web_autorizado.dart';
@@ -111,7 +112,7 @@ class MyApp extends StatelessWidget {
       return _slidePageRoute(settings: settings, page: const EsqueceuSenhaWeb());
     }
     if (routeUri.path == '/app') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const PdvPageWebAutorizado());
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const PaginaPrincipalWeb());
     }
     if (routeUri.path == '/app/atendimentos-tecnicos') {
       return MaterialPageRoute<void>(settings: settings, builder: (_) => const AtendimentosTecnicosWebPage());
