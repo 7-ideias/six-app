@@ -4,57 +4,39 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
   Widget _buildCockpitEstrategico() {
     return Expanded(
       child: LayoutBuilder(
-        builder: (context, constraints) {
-          final theme = Theme.of(context);
-          final isCompact = constraints.maxWidth < 920;
-          final horizontalPadding = isCompact ? 16.0 : 28.0;
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = constraints.maxWidth < 980;
 
-          return ColoredBox(
-            color: theme.colorScheme.surfaceContainerLowest,
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(compact ? 16 : 24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _buildCockpitHeader(context, isCompact),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      14,
-                      horizontalPadding,
-                      18,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _buildCockpitResumoKpis(context),
-                        const SizedBox(height: 14),
-                        _buildCockpitFinanceiroChart(context),
-                        const SizedBox(height: 14),
-                        isCompact
-                            ? Column(
-                                children: <Widget>[
-                                  _buildCockpitVendasCanalChart(context),
-                                  const SizedBox(height: 14),
-                                  _buildCockpitAtendimentoChart(context),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Expanded(
-                                    child: _buildCockpitVendasCanalChart(context),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: _buildCockpitAtendimentoChart(context),
-                                  ),
-                                ],
-                              ),
-                        const SizedBox(height: 14),
-                        _buildCockpitOpcoesExemplo(context),
-                      ],
-                    ),
+                _buildSalesDashboardHeader(context),
+                const SizedBox(height: 18),
+                _buildSalesKpis(context, constraints.maxWidth),
+                const SizedBox(height: 18),
+                if (compact) ...<Widget>[
+                  _buildSalesEvolutionCard(context),
+                  const SizedBox(height: 18),
+                  _buildSalesDistributionCard(context),
+                ] else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        flex: 3,
+                        child: _buildSalesEvolutionCard(context),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        flex: 2,
+                        child: _buildSalesDistributionCard(context),
+                      ),
+                    ],
                   ),
-                ),
+                const SizedBox(height: 18),
+                _buildTopProductsCard(context),
               ],
             ),
           );
@@ -63,763 +45,605 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     );
   }
 
-  Widget _buildCockpitResumoKpis(BuildContext context) {
-    final List<Map<String, Object>> kpis = <Map<String, Object>>[
-      <String, Object>{
-        'titulo': 'Receita líquida',
-        'valor': 'R\$ 486.300',
-        'delta': '+8,6% vs mês anterior',
-        'icone': Icons.payments_outlined,
-        'destaque': true,
-      },
-      <String, Object>{
-        'titulo': 'Margem operacional',
-        'valor': '24,2%',
-        'delta': '+2,1 p.p',
-        'icone': Icons.trending_up_rounded,
-      },
-      <String, Object>{
-        'titulo': 'Ticket médio',
-        'valor': 'R\$ 312',
-        'delta': '+5,4%',
-        'icone': Icons.shopping_bag_outlined,
-      },
-      <String, Object>{
-        'titulo': 'NPS atendimento',
-        'valor': '74',
-        'delta': 'Meta: 80',
-        'icone': Icons.support_agent_rounded,
-      },
-    ];
+  Widget _buildSalesDashboardHeader(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 760;
-        final cardWidth = isCompact
-            ? constraints.maxWidth
-            : ((constraints.maxWidth - 42) / 4).clamp(210.0, 360.0);
-
-        return Wrap(
-          spacing: 14,
-          runSpacing: 14,
-          children: kpis.map((Map<String, Object> kpi) {
-            return _buildCockpitKpiCard(
-              context,
-              width: cardWidth,
-              title: kpi['titulo']?.toString() ?? '',
-              value: kpi['valor']?.toString() ?? '',
-              delta: kpi['delta']?.toString() ?? '',
-              icon: (kpi['icone'] as IconData?) ?? Icons.insights_rounded,
-              highlight: kpi['destaque'] == true,
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildCockpitKpiCard(
-    BuildContext context, {
-    required double width,
-    required String title,
-    required String value,
-    required String delta,
-    required IconData icon,
-    bool highlight = false,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return SizedBox(
-      width: width,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: highlight ? colorScheme.primary : colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: highlight
-                ? colorScheme.primary
-                : colorScheme.outline.withValues(alpha: 0.12),
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: highlight
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : colorScheme.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: highlight ? Colors.white : colorScheme.primary,
-                size: 21,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight
-                          ? Colors.white.withValues(alpha: 0.86)
-                          : colorScheme.onSurface.withValues(alpha: 0.62),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight ? Colors.white : colorScheme.onSurface,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    delta,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight
-                          ? Colors.white.withValues(alpha: 0.78)
-                          : colorScheme.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCockpitFinanceiroChart(BuildContext context) {
-    const List<FlSpot> receita = <FlSpot>[
-      FlSpot(0, 390),
-      FlSpot(1, 410),
-      FlSpot(2, 428),
-      FlSpot(3, 446),
-      FlSpot(4, 472),
-      FlSpot(5, 486),
-    ];
-    const List<FlSpot> meta = <FlSpot>[
-      FlSpot(0, 400),
-      FlSpot(1, 415),
-      FlSpot(2, 430),
-      FlSpot(3, 445),
-      FlSpot(4, 460),
-      FlSpot(5, 475),
-    ];
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _cockpitCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Resultado financeiro (R\$ mil): receita x meta',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 260,
-            child: LineChart(
-              LineChartData(
-                minX: 0,
-                maxX: 5,
-                minY: 360,
-                maxY: 520,
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  show: true,
-                  horizontalInterval: 20,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.72),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 48,
-                      interval: 40,
-                      getTitlesWidget: (double value, TitleMeta meta) => Text(
-                        value.toInt().toString(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        const List<String> meses = <String>[
-                          'Nov',
-                          'Dez',
-                          'Jan',
-                          'Fev',
-                          'Mar',
-                          'Abr',
-                        ];
-                        final int idx = value.toInt();
-                        if (idx < 0 || idx >= meses.length) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            meses[idx],
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                lineBarsData: <LineChartBarData>[
-                  LineChartBarData(
-                    spots: receita,
-                    isCurved: true,
-                    barWidth: 3.5,
-                    color: colorScheme.primary,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: colorScheme.primary.withValues(alpha: 0.10),
-                    ),
-                  ),
-                  LineChartBarData(
-                    spots: meta,
-                    isCurved: true,
-                    barWidth: 2.5,
-                    color: Colors.orange.shade700,
-                    dashArray: const <int>[7, 4],
-                    dotData: const FlDotData(show: false),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 18,
-            runSpacing: 8,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _buildLegendaGrafico(context, colorScheme.primary, 'Receita'),
-              _buildLegendaGrafico(context, Colors.orange.shade700, 'Meta'),
+              Text(
+                'Resultados de vendas',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: _pdvTheme.primaryText,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'Visão consolidada do desempenho comercial no período atual.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: _pdvTheme.secondaryText,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: _pdvTheme.backgroundSurface,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: _pdvTheme.cardBorder),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 17,
+                color: _pdvTheme.iconColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Últimos 30 dias',
+                style: TextStyle(
+                  color: _pdvTheme.primaryText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildCockpitVendasCanalChart(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  Widget _buildSalesKpis(BuildContext context, double availableWidth) {
+    final bool compact = availableWidth < 760;
+    final double cardWidth = compact
+        ? availableWidth
+        : ((availableWidth - 54) / 4).clamp(210.0, 360.0);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _cockpitCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Vendas por canal (últimos 30 dias)',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: colorScheme.onSurface,
+    final List<_SalesKpiData> kpis = <_SalesKpiData>[
+      const _SalesKpiData(
+        title: 'Faturamento',
+        value: 'R\$ 86.420',
+        variation: '+12,8%',
+        icon: Icons.payments_outlined,
+      ),
+      const _SalesKpiData(
+        title: 'Vendas concluídas',
+        value: '284',
+        variation: '+8,4%',
+        icon: Icons.shopping_bag_outlined,
+      ),
+      const _SalesKpiData(
+        title: 'Ticket médio',
+        value: 'R\$ 304,30',
+        variation: '+4,1%',
+        icon: Icons.receipt_long_outlined,
+      ),
+      const _SalesKpiData(
+        title: 'Conversão',
+        value: '68,7%',
+        variation: '+3,2 p.p.',
+        icon: Icons.trending_up_rounded,
+      ),
+    ];
+
+    return Wrap(
+      spacing: 18,
+      runSpacing: 18,
+      children: kpis
+          .map(
+            (_SalesKpiData item) => _buildSalesKpiCard(
+              context,
+              data: item,
+              width: cardWidth,
             ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  Widget _buildSalesKpiCard(
+    BuildContext context, {
+    required _SalesKpiData data,
+    required double width,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 520),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double value, Widget? child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 12 * (1 - value)),
+            child: child,
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 230,
-            child: BarChart(
-              BarChartData(
-                maxY: 220,
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  show: true,
-                  horizontalInterval: 40,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.72),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 35,
-                      getTitlesWidget: (double value, TitleMeta meta) => Text(
-                        value.toInt().toString(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+        );
+      },
+      child: SizedBox(
+        width: width,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: _pdvTheme.cardBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _pdvTheme.cardBorder),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: _pdvTheme.cardShadow,
+                blurRadius: 14,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: _pdvTheme.iconColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(
+                      data.icon,
+                      size: 21,
+                      color: _pdvTheme.iconColor,
                     ),
                   ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        const List<String> canais = <String>[
-                          'Loja',
-                          'Whats',
-                          'Site',
-                          'B2B',
-                        ];
-                        final int idx = value.toInt();
-                        if (idx < 0 || idx >= canais.length) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            canais[idx],
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        );
-                      },
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
                     ),
-                  ),
-                ),
-                barGroups: <BarChartGroupData>[
-                  BarChartGroupData(
-                    x: 0,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 198,
-                        width: 20,
-                        color: const Color(0xFF0EA5E9),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      data.variation,
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
                       ),
-                    ],
-                  ),
-                  BarChartGroupData(
-                    x: 1,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 172,
-                        width: 20,
-                        color: const Color(0xFF14B8A6),
-                      ),
-                    ],
-                  ),
-                  BarChartGroupData(
-                    x: 2,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 146,
-                        width: 20,
-                        color: const Color(0xFF6366F1),
-                      ),
-                    ],
-                  ),
-                  BarChartGroupData(
-                    x: 3,
-                    barRods: <BarChartRodData>[
-                      BarChartRodData(
-                        toY: 119,
-                        width: 20,
-                        color: const Color(0xFFF59E0B),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 18),
+              Text(
+                data.value,
+                style: TextStyle(
+                  color: _pdvTheme.primaryText,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                data.title,
+                style: TextStyle(
+                  color: _pdvTheme.secondaryText,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCockpitAtendimentoChart(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _cockpitCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Qualidade de atendimento',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: colorScheme.onSurface,
+  Widget _buildSalesEvolutionCard(BuildContext context) {
+    return _buildDashboardCard(
+      context,
+      title: 'Evolução de vendas',
+      subtitle: 'Faturamento diário dos últimos 7 dias',
+      child: SizedBox(
+        height: 280,
+        child: LineChart(
+          LineChartData(
+            minX: 0,
+            maxX: 6,
+            minY: 0,
+            maxY: 18,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: 6,
+              getDrawingHorizontalLine: (_) => FlLine(
+                color: _pdvTheme.cardBorder.withValues(alpha: 0.65),
+                strokeWidth: 1,
+              ),
             ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 42,
+                  interval: 6,
+                  getTitlesWidget: (double value, TitleMeta meta) => Text(
+                    '${value.toInt()}k',
+                    style: TextStyle(
+                      color: _pdvTheme.secondaryText,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 30,
+                  interval: 1,
+                  getTitlesWidget: (double value, TitleMeta meta) {
+                    const List<String> labels = <String>[
+                      'Seg',
+                      'Ter',
+                      'Qua',
+                      'Qui',
+                      'Sex',
+                      'Sáb',
+                      'Dom',
+                    ];
+                    final int index = value.toInt();
+                    if (index < 0 || index >= labels.length) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        labels[index],
+                        style: TextStyle(
+                          color: _pdvTheme.secondaryText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            lineTouchData: LineTouchData(
+              enabled: true,
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipItems: (List<LineBarSpot> spots) => spots
+                    .map(
+                      (LineBarSpot spot) => LineTooltipItem(
+                        'R\$ ${spot.y.toStringAsFixed(1)} mil',
+                        TextStyle(
+                          color: _pdvTheme.badgeText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ),
+            lineBarsData: <LineChartBarData>[
+              LineChartBarData(
+                isCurved: true,
+                curveSmoothness: 0.30,
+                barWidth: 3,
+                color: _pdvTheme.iconColor,
+                dotData: FlDotData(show: false),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: _pdvTheme.iconColor.withValues(alpha: 0.10),
+                ),
+                spots: const <FlSpot>[
+                  FlSpot(0, 8.4),
+                  FlSpot(1, 10.2),
+                  FlSpot(2, 9.6),
+                  FlSpot(3, 13.8),
+                  FlSpot(4, 15.4),
+                  FlSpot(5, 12.6),
+                  FlSpot(6, 16.1),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSalesDistributionCard(BuildContext context) {
+    return _buildDashboardCard(
+      context,
+      title: 'Composição das vendas',
+      subtitle: 'Participação por tipo de operação',
+      child: Column(
+        children: <Widget>[
           SizedBox(
-            height: 230,
+            height: 210,
             child: PieChart(
               PieChartData(
-                centerSpaceRadius: 44,
-                sectionsSpace: 3,
+                centerSpaceRadius: 54,
+                sectionsSpace: 4,
+                startDegreeOffset: -90,
                 sections: <PieChartSectionData>[
                   PieChartSectionData(
-                    value: 58,
-                    title: '58%',
-                    radius: 62,
-                    color: const Color(0xFF22C55E),
-                    titleStyle: const TextStyle(
+                    value: 56,
+                    title: '56%',
+                    radius: 48,
+                    color: _pdvTheme.iconColor,
+                    titleStyle: TextStyle(
+                      color: _pdvTheme.badgeText,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
                     ),
                   ),
                   PieChartSectionData(
-                    value: 27,
-                    title: '27%',
-                    radius: 62,
-                    color: const Color(0xFFF59E0B),
-                    titleStyle: const TextStyle(
+                    value: 29,
+                    title: '29%',
+                    radius: 48,
+                    color: _pdvTheme.highlightColor,
+                    titleStyle: TextStyle(
+                      color: _pdvTheme.badgeText,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
                     ),
                   ),
                   PieChartSectionData(
                     value: 15,
                     title: '15%',
-                    radius: 62,
-                    color: const Color(0xFFEF4444),
-                    titleStyle: const TextStyle(
+                    radius: 48,
+                    color: _pdvTheme.warningColor,
+                    titleStyle: TextStyle(
+                      color: _pdvTheme.badgeText,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeOutCubic,
             ),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: <Widget>[
-              _buildLegendaGrafico(context, const Color(0xFF22C55E), 'Satisfeitos'),
-              _buildLegendaGrafico(context, const Color(0xFFF59E0B), 'Neutros'),
-              _buildLegendaGrafico(context, const Color(0xFFEF4444), 'Insatisfeitos'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCockpitOpcoesExemplo(BuildContext context) {
-    final List<Map<String, String>> opcoes = <Map<String, String>>[
-      <String, String>{
-        'titulo': 'Rentabilidade por cliente',
-        'descricao':
-            'Mostra clientes com alta receita e baixa margem para renegociação de mix ou política comercial.',
-      },
-      <String, String>{
-        'titulo': 'Conversão de orçamento em venda',
-        'descricao':
-            'Evidencia onde o funil trava e quais equipes/canais têm maior perda de fechamento.',
-      },
-      <String, String>{
-        'titulo': 'SLA e tempo de resposta',
-        'descricao': 'Aponta gargalos de atendimento que afetam NPS e recompra.',
-      },
-      <String, String>{
-        'titulo': 'Risco de churn',
-        'descricao':
-            'Detecta clientes com queda de frequência, aumento de reclamação e queda no ticket.',
-      },
-    ];
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: _cockpitCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Opções de exemplo para priorização',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: colorScheme.onSurface,
-            ),
+          _buildSalesLegend(
+            label: 'Produtos',
+            value: '56%',
+            color: _pdvTheme.iconColor,
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List<Widget>.generate(opcoes.length, (int index) {
-              return ChoiceChip(
-                label: Text(opcoes[index]['titulo'] ?? ''),
-                selected: _opcaoCockpitSelecionada == index,
-                onSelected: (_) {
-                  _selecionarOpcaoCockpit(index);
-                },
-              );
-            }),
+          _buildSalesLegend(
+            label: 'Serviços',
+            value: '29%',
+            color: _pdvTheme.highlightColor,
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.52),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: colorScheme.outline.withValues(alpha: 0.10),
-              ),
-            ),
-            child: Text(
-              opcoes[_opcaoCockpitSelecionada]['descricao'] ?? '',
-              style: TextStyle(
-                height: 1.45,
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          const SizedBox(height: 10),
+          _buildSalesLegend(
+            label: 'Assistência técnica',
+            value: '15%',
+            color: _pdvTheme.warningColor,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLegendaGrafico(BuildContext context, Color color, String label) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildSalesLegend({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Container(
           width: 10,
           height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 7),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: _pdvTheme.secondaryText,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
         Text(
-          label,
+          value,
           style: TextStyle(
+            color: _pdvTheme.primaryText,
             fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCockpitHeader(BuildContext context, bool isCompact) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildTopProductsCard(BuildContext context) {
+    const List<_TopProductData> products = <_TopProductData>[
+      _TopProductData('Troca de tela premium', 42, 'R\$ 18.860'),
+      _TopProductData('Smartphone intermediário', 31, 'R\$ 15.490'),
+      _TopProductData('Manutenção preventiva', 58, 'R\$ 11.600'),
+      _TopProductData('Acessórios e proteção', 77, 'R\$ 9.240'),
+    ];
 
-    final titleBlock = Row(
-      children: <Widget>[
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(
-            Icons.space_dashboard_rounded,
-            color: colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Cockpit estratégico',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isCompact ? 21 : 24,
-                  fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
+    return _buildDashboardCard(
+      context,
+      title: 'Produtos e serviços em destaque',
+      subtitle: 'Ranking por faturamento no período',
+      child: Column(
+        children: products.asMap().entries.map((MapEntry<int, _TopProductData> entry) {
+          final int index = entry.key;
+          final _TopProductData product = entry.value;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            decoration: BoxDecoration(
+              border: index == products.length - 1
+                  ? null
+                  : Border(
+                      bottom: BorderSide(
+                        color: _pdvTheme.cardBorder.withValues(alpha: 0.70),
+                      ),
+                    ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _pdvTheme.iconColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: _pdvTheme.iconColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                'Visão executiva de vendas, orçamentos, assistência e qualidade de atendimento.',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.66),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        product.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _pdvTheme.primaryText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${product.quantity} vendas',
+                        style: TextStyle(
+                          color: _pdvTheme.secondaryText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    final actions = Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      alignment: WrapAlignment.end,
-      children: <Widget>[
-        _cockpitHeaderButton(
-          context,
-          Icons.refresh_rounded,
-          'Atualizar',
-          _limparFiltrosCockpit,
-        ),
-        _cockpitHeaderButton(
-          context,
-          Icons.arrow_back_rounded,
-          'Voltar',
-          _voltarParaSeletor,
-        ),
-        _cockpitCloseButton(context),
-      ],
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 16 : 28,
-        isCompact ? 16 : 22,
-        isCompact ? 16 : 28,
-        isCompact ? 14 : 18,
+                const SizedBox(width: 12),
+                Text(
+                  product.revenue,
+                  style: TextStyle(
+                    color: _pdvTheme.primaryText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(growable: false),
       ),
+    );
+  }
+
+  Widget _buildDashboardCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.14),
-          ),
-        ),
+        color: _pdvTheme.cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _pdvTheme.cardBorder),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: _pdvTheme.cardShadow,
             blurRadius: 16,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: isCompact
-          ? Column(
-              children: <Widget>[
-                titleBlock,
-                const SizedBox(height: 14),
-                Align(alignment: Alignment.centerRight, child: actions),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: titleBlock),
-                const SizedBox(width: 16),
-                actions,
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: TextStyle(
+              color: _pdvTheme.primaryText,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
             ),
-    );
-  }
-
-  Widget _cockpitHeaderButton(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback? onPressed,
-  ) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: _pdvTheme.secondaryText,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          child,
+        ],
       ),
     );
   }
+}
 
-  Widget _cockpitCloseButton(BuildContext context) {
-    return Material(
-      color: const Color(0xFFE53935),
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: _voltarParaSeletor,
-        child: const SizedBox(
-          width: 46,
-          height: 46,
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
-        ),
-      ),
-    );
-  }
+class _SalesKpiData {
+  const _SalesKpiData({
+    required this.title,
+    required this.value,
+    required this.variation,
+    required this.icon,
+  });
 
-  BoxDecoration _cockpitCardDecoration(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return BoxDecoration(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
-      boxShadow: <BoxShadow>[
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.035),
-          blurRadius: 12,
-          offset: const Offset(0, 6),
-        ),
-      ],
-    );
-  }
+  final String title;
+  final String value;
+  final String variation;
+  final IconData icon;
+}
+
+class _TopProductData {
+  const _TopProductData(this.name, this.quantity, this.revenue);
+
+  final String name;
+  final int quantity;
+  final String revenue;
 }
