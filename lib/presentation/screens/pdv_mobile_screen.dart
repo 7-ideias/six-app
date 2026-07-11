@@ -329,9 +329,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       return;
     }
     if (_editandoVendaNaoLiquidada && _formasSelecionadas.length > 1) {
-      _mostrarSnack(
-        'Para receber uma venda em aberto, selecione uma única forma de pagamento.',
-      );
+      // _mostrarSnack(
+      //   'Para receber uma venda em aberto, selecione uma única forma de pagamento.',
+      // );
       return;
     }
 
@@ -362,7 +362,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       );
     }
 
-    _mostrarSnack('Selecione uma forma de pagamento ou use Receber depois.');
+    // _mostrarSnack('Selecione uma forma de pagamento ou use Receber depois.');
     await Future<void>.delayed(const Duration(milliseconds: 1100));
     if (mounted) setState(() => _destacarPagamento = false);
   }
