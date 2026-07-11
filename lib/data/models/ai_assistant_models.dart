@@ -111,3 +111,29 @@ class AiAssistantFeedbackRequestModel {
     };
   }
 }
+
+class AiAssistantSuggestionRequestModel {
+  AiAssistantSuggestionRequestModel({
+    required this.descricao,
+    required this.idioma,
+    required this.plataforma,
+    required this.modulo,
+    required this.telaAtual,
+  });
+
+  final String descricao;
+  final String idioma;
+  final String plataforma;
+  final String modulo;
+  final String telaAtual;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'descricao': descricao,
+      'idioma': idioma,
+      'plataforma': plataforma,
+      'modulo': modulo,
+      'telaAtual': telaAtual,
+    };
+  }
+}
