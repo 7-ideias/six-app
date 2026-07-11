@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -66,6 +68,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   OverlayEntry? _homeOverlay;
   bool _homeOverlayVisivel = true;
   bool _agendouOverlayInicial = false;
+  final ValueNotifier<double> _homeOverlayOpacity = ValueNotifier<double>(1);
 
   bool get _usaNovoMenuSix {
     final titles = widget.items.map((item) => item.title).toSet();
@@ -85,6 +88,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   @override
   void dispose() {
     _removerHomeOverlay();
+    _homeOverlayOpacity.dispose();
     super.dispose();
   }
 
@@ -101,11 +105,17 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   }
 
   void _mostrarHomeOverlay(BuildContext context) {
-    if (!_usaNovoMenuSix || _homeOverlay != null) return;
-    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (!_usaNovoMenuSix) return;
+    _homeOverlayVisivel = true;
+    _homeOverlayOpacity.value = 1;
+    if (_homeOverlay != null) {
+      _homeOverlay!.markNeedsBuild();
+      return;
+    }
+
+    final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
 
-    _homeOverlayVisivel = true;
     _homeOverlay = OverlayEntry(
       builder: (overlayContext) {
         return Positioned(
@@ -113,10 +123,24 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
           left: 0,
           right: 0,
           bottom: 0,
-          child: _SixHomeDashboardOverlay(
-            onAbrirPdv: () => _abrirPdvFrenteCaixa(context),
-            onAbrirAgenda: () => _abrirAgenda(context),
-            onAbrirOperacoesCaixa: () => _abrirOperacoesCaixa(context),
+          child: ValueListenableBuilder<double>(
+            valueListenable: _homeOverlayOpacity,
+            builder: (context, opacity, child) {
+              return IgnorePointer(
+                ignoring: opacity < 0.95,
+                child: AnimatedOpacity(
+                  opacity: opacity,
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeOutCubic,
+                  child: child,
+                ),
+              );
+            },
+            child: _SixHomeDashboardOverlay(
+              onAbrirPdv: () => _abrirPdvFrenteCaixa(context),
+              onAbrirAgenda: () => _abrirAgenda(context),
+              onAbrirOperacoesCaixa: () => _abrirOperacoesCaixa(context),
+            ),
           ),
         );
       },
@@ -126,7 +150,12 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
 
   void _ocultarHomeOverlay() {
     _homeOverlayVisivel = false;
-    _removerHomeOverlay();
+    if (_homeOverlay == null) return;
+    _homeOverlayOpacity.value = 0;
+    Future<void>.delayed(const Duration(milliseconds: 280), () {
+      if (!mounted || _homeOverlayVisivel) return;
+      _removerHomeOverlay();
+    });
   }
 
   void _removerHomeOverlay() {
@@ -669,7 +698,11 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                           .map(
                             (item) => Padding(
                               padding: const EdgeInsets.only(right: 6),
-                              child: _TopNavigationMenuItem(data: item, colorScheme: colorScheme, premium: true),
+                              child: _TopNavigationMenuItem(
+                                data: item,
+                                colorScheme: colorScheme,
+                                premium: true,
+                              ),
                             ),
                           )
                           .toList(),
@@ -1331,6 +1364,11 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
     setState(() => _open = true);
     final RenderBox box = context.findRenderObject()! as RenderBox;
     final Offset position = box.localToGlobal(Offset.zero);
+    Timer? autoCloseTimer;
+    autoCloseTimer = Timer(const Duration(seconds: 5), () {
+      if (!mounted || !_open) return;
+      Navigator.of(context).maybePop();
+    });
     final selected = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -1340,7 +1378,7 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
         0,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 12,
+      elevation: 14,
       color: Theme.of(context).colorScheme.surface,
       items: widget.data.subItems
           .map(
@@ -1360,6 +1398,7 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
           )
           .toList(),
     );
+    autoCloseTimer.cancel();
     if (mounted) setState(() => _open = false);
     if (selected != null) {
       widget.data.onSelect?.call(selected);
