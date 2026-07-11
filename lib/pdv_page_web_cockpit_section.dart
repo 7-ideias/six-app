@@ -14,7 +14,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
               children: <Widget>[
                 _buildSalesDashboardHeader(context),
                 const SizedBox(height: 18),
-                _buildSalesKpis(constraints.maxWidth),
+                _buildSalesKpis(context, constraints.maxWidth),
                 const SizedBox(height: 18),
                 if (compact) ...<Widget>[
                   _buildSalesEvolutionCard(context),
@@ -104,32 +104,32 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
     );
   }
 
-  Widget _buildSalesKpis(double availableWidth) {
+  Widget _buildSalesKpis(BuildContext context, double availableWidth) {
     final bool compact = availableWidth < 760;
     final double cardWidth = compact
         ? availableWidth
         : ((availableWidth - 54) / 4).clamp(210.0, 360.0);
 
-    const List<_SalesKpiData> kpis = <_SalesKpiData>[
-      _SalesKpiData(
+    final List<_SalesKpiData> kpis = <_SalesKpiData>[
+      const _SalesKpiData(
         title: 'Faturamento',
         value: 'R\$ 86.420',
         variation: '+12,8%',
         icon: Icons.payments_outlined,
       ),
-      _SalesKpiData(
+      const _SalesKpiData(
         title: 'Vendas concluídas',
         value: '284',
         variation: '+8,4%',
         icon: Icons.shopping_bag_outlined,
       ),
-      _SalesKpiData(
+      const _SalesKpiData(
         title: 'Ticket médio',
         value: 'R\$ 304,30',
         variation: '+4,1%',
         icon: Icons.receipt_long_outlined,
       ),
-      _SalesKpiData(
+      const _SalesKpiData(
         title: 'Conversão',
         value: '68,7%',
         variation: '+3,2 p.p.',
@@ -142,16 +142,21 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
       runSpacing: 18,
       children: kpis
           .map(
-            (_SalesKpiData data) => SizedBox(
+            (_SalesKpiData item) => _buildSalesKpiCard(
+              context,
+              data: item,
               width: cardWidth,
-              child: _buildSalesKpiCard(data),
             ),
           )
           .toList(growable: false),
     );
   }
 
-  Widget _buildSalesKpiCard(_SalesKpiData data) {
+  Widget _buildSalesKpiCard(
+    BuildContext context, {
+    required _SalesKpiData data,
+    required double width,
+  }) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
       duration: const Duration(milliseconds: 520),
@@ -165,71 +170,81 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: _pdvTheme.cardBackground,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _pdvTheme.cardBorder),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: _pdvTheme.cardShadow,
-              blurRadius: 14,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: _pdvTheme.iconColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Icon(data.icon, color: _pdvTheme.iconColor, size: 21),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    data.variation,
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
+      child: SizedBox(
+        width: width,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: _pdvTheme.cardBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _pdvTheme.cardBorder),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: _pdvTheme.cardShadow,
+                blurRadius: 14,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: _pdvTheme.iconColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(
+                      data.icon,
+                      size: 21,
+                      color: _pdvTheme.iconColor,
                     ),
                   ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      data.variation,
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                data.value,
+                style: TextStyle(
+                  color: _pdvTheme.primaryText,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
                 ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              data.value,
-              style: TextStyle(
-                color: _pdvTheme.primaryText,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
               ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              data.title,
-              style: TextStyle(
-                color: _pdvTheme.secondaryText,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+              const SizedBox(height: 5),
+              Text(
+                data.title,
+                style: TextStyle(
+                  color: _pdvTheme.secondaryText,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -237,6 +252,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
 
   Widget _buildSalesEvolutionCard(BuildContext context) {
     return _buildDashboardCard(
+      context,
       title: 'Evolução de vendas',
       subtitle: 'Faturamento diário dos últimos 7 dias',
       child: SizedBox(
@@ -274,6 +290,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     style: TextStyle(
                       color: _pdvTheme.secondaryText,
                       fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -285,7 +302,13 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                   interval: 1,
                   getTitlesWidget: (double value, TitleMeta meta) {
                     const List<String> labels = <String>[
-                      'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom',
+                      'Seg',
+                      'Ter',
+                      'Qua',
+                      'Qui',
+                      'Sex',
+                      'Sáb',
+                      'Dom',
                     ];
                     final int index = value.toInt();
                     if (index < 0 || index >= labels.length) {
@@ -304,6 +327,22 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                     );
                   },
                 ),
+              ),
+            ),
+            lineTouchData: LineTouchData(
+              enabled: true,
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipItems: (List<LineBarSpot> spots) => spots
+                    .map(
+                      (LineBarSpot spot) => LineTooltipItem(
+                        'R\$ ${spot.y.toStringAsFixed(1)} mil',
+                        TextStyle(
+                          color: _pdvTheme.badgeText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
               ),
             ),
             lineBarsData: <LineChartBarData>[
@@ -329,6 +368,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
               ),
             ],
           ),
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeOutCubic,
         ),
       ),
     );
@@ -336,6 +377,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
 
   Widget _buildSalesDistributionCard(BuildContext context) {
     return _buildDashboardCard(
+      context,
       title: 'Composição das vendas',
       subtitle: 'Participação por tipo de operação',
       child: Column(
@@ -348,43 +390,73 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
                 sectionsSpace: 4,
                 startDegreeOffset: -90,
                 sections: <PieChartSectionData>[
-                  _buildPieSection(56, '56%', _pdvTheme.iconColor),
-                  _buildPieSection(29, '29%', _pdvTheme.highlightColor),
-                  _buildPieSection(15, '15%', _pdvTheme.warningColor),
+                  PieChartSectionData(
+                    value: 56,
+                    title: '56%',
+                    radius: 48,
+                    color: _pdvTheme.iconColor,
+                    titleStyle: TextStyle(
+                      color: _pdvTheme.badgeText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  PieChartSectionData(
+                    value: 29,
+                    title: '29%',
+                    radius: 48,
+                    color: _pdvTheme.highlightColor,
+                    titleStyle: TextStyle(
+                      color: _pdvTheme.badgeText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  PieChartSectionData(
+                    value: 15,
+                    title: '15%',
+                    radius: 48,
+                    color: _pdvTheme.warningColor,
+                    titleStyle: TextStyle(
+                      color: _pdvTheme.badgeText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ],
               ),
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeOutCubic,
             ),
           ),
           const SizedBox(height: 8),
-          _buildSalesLegend('Produtos', '56%', _pdvTheme.iconColor),
+          _buildSalesLegend(
+            label: 'Produtos',
+            value: '56%',
+            color: _pdvTheme.iconColor,
+          ),
           const SizedBox(height: 10),
-          _buildSalesLegend('Serviços', '29%', _pdvTheme.highlightColor),
+          _buildSalesLegend(
+            label: 'Serviços',
+            value: '29%',
+            color: _pdvTheme.highlightColor,
+          ),
           const SizedBox(height: 10),
-          _buildSalesLegend('Assistência técnica', '15%', _pdvTheme.warningColor),
+          _buildSalesLegend(
+            label: 'Assistência técnica',
+            value: '15%',
+            color: _pdvTheme.warningColor,
+          ),
         ],
       ),
     );
   }
 
-  PieChartSectionData _buildPieSection(
-    double value,
-    String title,
-    Color color,
-  ) {
-    return PieChartSectionData(
-      value: value,
-      title: title,
-      radius: 48,
-      color: color,
-      titleStyle: TextStyle(
-        color: _pdvTheme.badgeText,
-        fontSize: 12,
-        fontWeight: FontWeight.w900,
-      ),
-    );
-  }
-
-  Widget _buildSalesLegend(String label, String value, Color color) {
+  Widget _buildSalesLegend({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Row(
       children: <Widget>[
         Container(
@@ -416,79 +488,103 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
   }
 
   Widget _buildTopProductsCard(BuildContext context) {
-    const List<_TopSalesData> items = <_TopSalesData>[
-      _TopSalesData('Troca de tela premium', 'R\$ 18.540', 0.92),
-      _TopSalesData('Smartphone linha A', 'R\$ 14.280', 0.76),
-      _TopSalesData('Reparo de placa', 'R\$ 11.920', 0.64),
-      _TopSalesData('Acessórios e proteção', 'R\$ 9.870', 0.53),
+    const List<_TopProductData> products = <_TopProductData>[
+      _TopProductData('Troca de tela premium', 42, 'R\$ 18.860'),
+      _TopProductData('Smartphone intermediário', 31, 'R\$ 15.490'),
+      _TopProductData('Manutenção preventiva', 58, 'R\$ 11.600'),
+      _TopProductData('Acessórios e proteção', 77, 'R\$ 9.240'),
     ];
 
     return _buildDashboardCard(
-      title: 'Mais vendidos',
-      subtitle: 'Produtos e serviços com maior faturamento',
+      context,
+      title: 'Produtos e serviços em destaque',
+      subtitle: 'Ranking por faturamento no período',
       child: Column(
-        children: items
-            .map(
-              (_TopSalesData item) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        item.label,
+        children: products.asMap().entries.map((MapEntry<int, _TopProductData> entry) {
+          final int index = entry.key;
+          final _TopProductData product = entry.value;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            decoration: BoxDecoration(
+              border: index == products.length - 1
+                  ? null
+                  : Border(
+                      bottom: BorderSide(
+                        color: _pdvTheme.cardBorder.withValues(alpha: 0.70),
+                      ),
+                    ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _pdvTheme.iconColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: _pdvTheme.iconColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        product.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _pdvTheme.primaryText,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
-                          child: LinearProgressIndicator(
-                            value: item.progress,
-                            minHeight: 8,
-                            backgroundColor: _pdvTheme.cardBorder,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              _pdvTheme.iconColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 110,
-                      child: Text(
-                        item.value,
-                        textAlign: TextAlign.end,
+                      const SizedBox(height: 3),
+                      Text(
+                        '${product.quantity} vendas',
                         style: TextStyle(
-                          color: _pdvTheme.primaryText,
-                          fontWeight: FontWeight.w900,
+                          color: _pdvTheme.secondaryText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            )
-            .toList(growable: false),
+                const SizedBox(width: 12),
+                Text(
+                  product.revenue,
+                  style: TextStyle(
+                    color: _pdvTheme.primaryText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(growable: false),
       ),
     );
   }
 
-  Widget _buildDashboardCard({
+  Widget _buildDashboardCard(
+    BuildContext context, {
     required String title,
     required String subtitle,
     required Widget child,
   }) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: _pdvTheme.cardBackground,
@@ -497,8 +593,8 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: _pdvTheme.cardShadow,
-            blurRadius: 14,
-            offset: const Offset(0, 7),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -522,7 +618,7 @@ extension _PdvPageWebCockpitSection on _PDVWebState {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           child,
         ],
       ),
@@ -544,10 +640,10 @@ class _SalesKpiData {
   final IconData icon;
 }
 
-class _TopSalesData {
-  const _TopSalesData(this.label, this.value, this.progress);
+class _TopProductData {
+  const _TopProductData(this.name, this.quantity, this.revenue);
 
-  final String label;
-  final String value;
-  final double progress;
+  final String name;
+  final int quantity;
+  final String revenue;
 }
