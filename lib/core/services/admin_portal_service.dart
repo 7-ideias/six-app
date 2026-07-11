@@ -6,6 +6,65 @@ import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
 
+class AdminActuatorResumo {
+  const AdminActuatorResumo({
+    required this.status,
+    required this.uptimeSegundos,
+    required this.memoriaHeapUsadaBytes,
+    required this.memoriaHeapMaxBytes,
+    required this.memoriaNonHeapUsadaBytes,
+    required this.memoriaNonHeapMaxBytes,
+    required this.threadsAtivas,
+    required this.threadsPico,
+    required this.threadsDaemon,
+    required this.processadoresDisponiveis,
+    required this.cargaSistema,
+    required this.versaoJava,
+  });
+
+  final String status;
+  final int uptimeSegundos;
+  final int memoriaHeapUsadaBytes;
+  final int memoriaHeapMaxBytes;
+  final int memoriaNonHeapUsadaBytes;
+  final int memoriaNonHeapMaxBytes;
+  final int threadsAtivas;
+  final int threadsPico;
+  final int threadsDaemon;
+  final int processadoresDisponiveis;
+  final double cargaSistema;
+  final String versaoJava;
+
+  factory AdminActuatorResumo.fromJson(Map<String, dynamic> json) {
+    return AdminActuatorResumo(
+      status: json['status']?.toString() ?? 'UNKNOWN',
+      uptimeSegundos: _toInt(json['uptimeSegundos']),
+      memoriaHeapUsadaBytes: _toInt(json['memoriaHeapUsadaBytes']),
+      memoriaHeapMaxBytes: _toInt(json['memoriaHeapMaxBytes']),
+      memoriaNonHeapUsadaBytes: _toInt(json['memoriaNonHeapUsadaBytes']),
+      memoriaNonHeapMaxBytes: _toInt(json['memoriaNonHeapMaxBytes']),
+      threadsAtivas: _toInt(json['threadsAtivas']),
+      threadsPico: _toInt(json['threadsPico']),
+      threadsDaemon: _toInt(json['threadsDaemon']),
+      processadoresDisponiveis: _toInt(json['processadoresDisponiveis']),
+      cargaSistema: _toDouble(json['cargaSistema']),
+      versaoJava: json['versaoJava']?.toString() ?? '-',
+    );
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+}
+
 class AdminBancoDadosResumo {
   const AdminBancoDadosResumo({
     required this.nome,
@@ -49,11 +108,13 @@ class AdminPortalResumo {
     required this.totalEmpresasCadastradas,
     required this.totalEmpresasAtivas,
     this.bancosDeDados = const <AdminBancoDadosResumo>[],
+    this.actuator,
   });
 
   final int totalEmpresasCadastradas;
   final int totalEmpresasAtivas;
   final List<AdminBancoDadosResumo> bancosDeDados;
+  final AdminActuatorResumo? actuator;
 
   factory AdminPortalResumo.fromJson(Map<String, dynamic> json) {
     final dynamic bancosRaw = json['bancosDeDados'];
@@ -63,11 +124,13 @@ class AdminPortalResumo {
             .map(AdminBancoDadosResumo.fromJson)
             .toList(growable: false)
         : const <AdminBancoDadosResumo>[];
+    final dynamic actuatorRaw = json['actuator'];
 
     return AdminPortalResumo(
       totalEmpresasCadastradas: _toInt(json['totalEmpresasCadastradas']),
       totalEmpresasAtivas: _toInt(json['totalEmpresasAtivas']),
       bancosDeDados: bancos,
+      actuator: actuatorRaw is Map<String, dynamic> ? AdminActuatorResumo.fromJson(actuatorRaw) : null,
     );
   }
 
