@@ -12,6 +12,7 @@ import 'package:sixpos/presentation/screens/cores_fontes_web_page.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_web_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/fornecedores_web_page.dart';
+import 'package:sixpos/presentation/screens/operacoes_caixa_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/providers/theme_provider.dart';
@@ -67,13 +68,21 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     return null;
   }
 
-  void _abrirLegado(BuildContext context, String title, String value) {
+  bool _abrirLegado(
+    BuildContext context,
+    String title,
+    String value, {
+    bool mostrarPreparacao = true,
+  }) {
     final item = _itemLegado(title);
     if (item?.onSelect != null) {
       item!.onSelect!(value);
-      return;
+      return true;
     }
-    _mostrarPreparacao(context, value);
+    if (mostrarPreparacao) {
+      _mostrarPreparacao(context, value);
+    }
+    return false;
   }
 
   void _mostrarPreparacao(BuildContext context, String label) {
@@ -136,6 +145,19 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     Future<void>.delayed(
       const Duration(milliseconds: 80),
       () => _mostrarPreparacao(context, value),
+    );
+  }
+
+  void _abrirPdvFrenteCaixa(BuildContext context) {
+    final opened =
+        _abrirLegado(context, 'Atendimento', 'PDV - Frente de Caixa', mostrarPreparacao: false) ||
+        _abrirLegado(context, 'Executar', 'PDV - Frente de Caixa', mostrarPreparacao: false);
+
+    if (opened) return;
+
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      '/app',
+      (_) => false,
     );
   }
 
@@ -259,6 +281,16 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  void _abrirOperacoesCaixa(BuildContext context) {
+    _abrirOverlay(
+      context,
+      (dialogContext) => OperacoesCaixaWebPage(
+        embedded: true,
+        onBack: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
+  }
+
   void _abrirCoresFontes(BuildContext context) {
     _abrirOverlay(
       context,
@@ -323,7 +355,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       TopNavItemData(
         title: 'Atendimento',
         subItems: const <String>[
-          'Nova venda',
+          'PDV - Frente de Caixa',
           'Atendimento técnico',
           'Atendimentos criados',
           'Novo orçamento',
@@ -333,6 +365,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Assistências técnicas',
         ],
         onSelect: (value) {
+          if (value == 'PDV - Frente de Caixa') {
+            return _abrirPdvFrenteCaixa(context);
+          }
           if (value == 'Atendimento técnico' || value == 'Nova assistência técnica') {
             return _abrirAtendimentoTecnico(context);
           }
@@ -386,9 +421,11 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Fiado',
           'Crediário',
           'Agenda financeira',
+          'Operações de Caixa',
         ],
         onSelect: (value) {
           if (value == 'Agenda financeira') return _abrirAgenda(context);
+          if (value == 'Operações de Caixa') return _abrirOperacoesCaixa(context);
           _mostrarPreparacao(context, value);
         },
       ),
