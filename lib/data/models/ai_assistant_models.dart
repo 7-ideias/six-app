@@ -17,37 +17,28 @@ class AiAssistantRequestModel {
   final String perfilUsuario;
   final List<String> permissoes;
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'pergunta': pergunta,
-      'idioma': idioma,
-      'plataforma': plataforma,
-      'modulo': modulo,
-      'telaAtual': telaAtual,
-      'perfilUsuario': perfilUsuario,
-      'permissoes': permissoes,
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'pergunta': pergunta,
+    'idioma': idioma,
+    'plataforma': plataforma,
+    'modulo': modulo,
+    'telaAtual': telaAtual,
+    'perfilUsuario': perfilUsuario,
+    'permissoes': permissoes,
+  };
 }
 
 class AiAssistantActionModel {
-  AiAssistantActionModel({
-    required this.label,
-    required this.rota,
-    required this.tipo,
-  });
-
+  AiAssistantActionModel({required this.label, required this.rota, required this.tipo});
   final String label;
   final String rota;
   final String tipo;
 
-  factory AiAssistantActionModel.fromJson(Map<String, dynamic> json) {
-    return AiAssistantActionModel(
-      label: json['label']?.toString() ?? '',
-      rota: json['rota']?.toString() ?? '',
-      tipo: json['tipo']?.toString() ?? '',
-    );
-  }
+  factory AiAssistantActionModel.fromJson(Map<String, dynamic> json) => AiAssistantActionModel(
+    label: json['label']?.toString() ?? '',
+    rota: json['rota']?.toString() ?? '',
+    tipo: json['tipo']?.toString() ?? '',
+  );
 }
 
 class AiAssistantResponseModel {
@@ -67,23 +58,13 @@ class AiAssistantResponseModel {
 
   factory AiAssistantResponseModel.fromJson(Map<String, dynamic> json) {
     final dynamic acoesRaw = json['acoes'];
-    final List<AiAssistantActionModel> acoes =
-        acoesRaw is List
-            ? acoesRaw
-                .whereType<Map<String, dynamic>>()
-                .map(AiAssistantActionModel.fromJson)
-                .toList(growable: false)
-            : <AiAssistantActionModel>[];
-
     return AiAssistantResponseModel(
       resposta: json['resposta']?.toString() ?? '',
-      exemplos: (json['exemplos'] as List<dynamic>? ?? <dynamic>[])
-          .map((dynamic item) => item.toString())
-          .toList(growable: false),
-      acoes: acoes,
-      fontes: (json['fontes'] as List<dynamic>? ?? <dynamic>[])
-          .map((dynamic item) => item.toString())
-          .toList(growable: false),
+      exemplos: (json['exemplos'] as List<dynamic>? ?? <dynamic>[]).map((dynamic item) => item.toString()).toList(growable: false),
+      acoes: acoesRaw is List
+          ? acoesRaw.whereType<Map<String, dynamic>>().map(AiAssistantActionModel.fromJson).toList(growable: false)
+          : <AiAssistantActionModel>[],
+      fontes: (json['fontes'] as List<dynamic>? ?? <dynamic>[]).map((dynamic item) => item.toString()).toList(growable: false),
       confianca: json['confianca']?.toString() ?? '',
     );
   }
@@ -94,22 +75,35 @@ class AiAssistantFeedbackRequestModel {
     required this.pergunta,
     required this.resposta,
     required this.util,
+    this.motivo,
     this.comentario,
+    this.modulo,
+    this.telaAtual,
+    this.plataforma,
+    this.idioma,
   });
 
   final String pergunta;
   final String resposta;
   final bool util;
+  final String? motivo;
   final String? comentario;
+  final String? modulo;
+  final String? telaAtual;
+  final String? plataforma;
+  final String? idioma;
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'pergunta': pergunta,
-      'resposta': resposta,
-      'util': util,
-      'comentario': comentario,
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'pergunta': pergunta,
+    'resposta': resposta,
+    'util': util,
+    'motivo': motivo,
+    'comentario': comentario,
+    'modulo': modulo,
+    'telaAtual': telaAtual,
+    'plataforma': plataforma,
+    'idioma': idioma,
+  };
 }
 
 class AiAssistantSuggestionRequestModel {
@@ -127,13 +121,11 @@ class AiAssistantSuggestionRequestModel {
   final String modulo;
   final String telaAtual;
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'descricao': descricao,
-      'idioma': idioma,
-      'plataforma': plataforma,
-      'modulo': modulo,
-      'telaAtual': telaAtual,
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'descricao': descricao,
+    'idioma': idioma,
+    'plataforma': plataforma,
+    'modulo': modulo,
+    'telaAtual': telaAtual,
+  };
 }
