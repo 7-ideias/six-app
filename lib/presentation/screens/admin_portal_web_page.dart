@@ -100,6 +100,13 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
         .join(' ');
   }
 
+  String _ideasLabel(BuildContext context) {
+    final language = Localizations.localeOf(context).languageCode.toLowerCase();
+    if (language == 'en') return 'New ideas';
+    if (language == 'es') return 'Nuevas ideas';
+    return 'Novas ideias';
+  }
+
   @override
   Widget build(BuildContext context) {
     final AdminPortalTexts texts = AdminPortalTexts.of(context);
@@ -115,11 +122,25 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
       onRefresh: _carregarResumo,
       refreshing: _carregando,
       loggingOut: _saindo,
-      child: AnimatedSwitcher(
-        duration: AdminMotion.medium,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        child: _buildContent(texts),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).pushNamed('/admin/novas-ideias'),
+              icon: const Icon(Icons.lightbulb_outline_rounded),
+              label: Text(_ideasLabel(context)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          AnimatedSwitcher(
+            duration: AdminMotion.medium,
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: _buildContent(texts),
+          ),
+        ],
       ),
     );
   }
