@@ -18,6 +18,7 @@ import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 
 import 'core/config/app_config.dart';
+import 'pdv_page_web.dart';
 
 class TopNavItemData {
   const TopNavItemData({
@@ -152,15 +153,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     bool acionado = false;
 
     context.visitAncestorElements((Element element) {
-      if (element is StatefulElement && element.widget.runtimeType.toString() == 'PDVWeb') {
-        try {
-          final dynamic state = element.state;
-          state._iniciarVenda();
-          acionado = true;
-          return false;
-        } catch (_) {
-          return true;
-        }
+      if (acionarPdvFrenteCaixaPeloElemento(element)) {
+        acionado = true;
+        return false;
       }
       return true;
     });
@@ -390,13 +385,16 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         ],
         onSelect: (value) {
           if (value == 'PDV - Frente de Caixa') {
-            return _abrirPdvFrenteCaixa(context);
+            _abrirPdvFrenteCaixa(context);
+            return;
           }
           if (value == 'Atendimento técnico' || value == 'Nova assistência técnica') {
-            return _abrirAtendimentoTecnico(context);
+            _abrirAtendimentoTecnico(context);
+            return;
           }
           if (value == 'Atendimentos criados' || value == 'Assistências técnicas') {
-            return _abrirAtendimentosCriados(context);
+            _abrirAtendimentosCriados(context);
+            return;
           }
           _mostrarPreparacao(context, value);
         },
@@ -405,10 +403,22 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         title: 'Catálogo',
         subItems: const <String>['Produtos', 'Serviços', 'Categorias', 'Estoque'],
         onSelect: (value) {
-          if (value == 'Produtos') return _abrirProdutos(context);
-          if (value == 'Serviços') return _abrirServicos(context);
-          if (value == 'Categorias') return _abrirCategorias(context);
-          if (value == 'Estoque') return _abrirEstoque(context);
+          if (value == 'Produtos') {
+            _abrirProdutos(context);
+            return;
+          }
+          if (value == 'Serviços') {
+            _abrirServicos(context);
+            return;
+          }
+          if (value == 'Categorias') {
+            _abrirCategorias(context);
+            return;
+          }
+          if (value == 'Estoque') {
+            _abrirEstoque(context);
+            return;
+          }
           _mostrarPreparacao(context, value);
         },
       ),
@@ -416,10 +426,21 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         title: 'Pessoas',
         subItems: const <String>['Clientes', 'Colaboradores', 'Fornecedores', 'Desempenho'],
         onSelect: (value) {
-          if (value == 'Clientes') return _abrirClientes(context);
-          if (value == 'Colaboradores') return _abrirColaboradores(context);
-          if (value == 'Fornecedores') return _abrirFornecedores(context);
-          if (value == 'Desempenho') return _abrirDesempenhoColaborador(context);
+          if (value == 'Clientes') {
+            _abrirClientes(context);
+            return;
+          }
+          if (value == 'Colaboradores') {
+            _abrirColaboradores(context);
+            return;
+          }
+          if (value == 'Fornecedores') {
+            _abrirFornecedores(context);
+            return;
+          }
+          if (value == 'Desempenho') {
+            _abrirDesempenhoColaborador(context);
+          }
         },
       ),
       TopNavItemData(
@@ -448,8 +469,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Operações de Caixa',
         ],
         onSelect: (value) {
-          if (value == 'Agenda financeira') return _abrirAgenda(context);
-          if (value == 'Operações de Caixa') return _abrirOperacoesCaixa(context);
+          if (value == 'Agenda financeira') {
+            _abrirAgenda(context);
+            return;
+          }
+          if (value == 'Operações de Caixa') {
+            _abrirOperacoesCaixa(context);
+            return;
+          }
           _mostrarPreparacao(context, value);
         },
       ),
