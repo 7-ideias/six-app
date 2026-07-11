@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../pagina_principal_web.dart';
 import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
+import '../../presentation/components/pagina_principal_web_dashboard_section.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
-import 'pdv_page_web_dashboard.dart';
 
 const Color _primary = Color(0xFF24458F);
 const Color _text = Color(0xFF111827);
@@ -19,6 +20,8 @@ class PdvPageWebAutorizado extends StatefulWidget {
 }
 
 class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
+  bool _dashboardVisivel = true;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +31,38 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
           .read<ColaboradorAutorizacoesProvider>()
           .carregarAutorizacoesDoUsuarioLogado();
     });
+  }
+
+  void _ocultarDashboardAoInteragir(PointerDownEvent event) {
+    if (!_dashboardVisivel) return;
+    setState(() => _dashboardVisivel = false);
+  }
+
+  Widget _buildPaginaPrincipalComDashboard() {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _ocultarDashboardAoInteragir,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          const PaginaPrincipalWeb(),
+          Positioned.fill(
+            top: 84,
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _dashboardVisivel ? 1 : 0,
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                child: const PaginaPrincipalWebDashboardSection(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -45,10 +80,10 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
     }
 
     if (podeFazerVenda) {
-      return const AiAssistantHost(
+      return AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
-        child: _WebBrandWatermark(child: PDVWeb()),
+        child: _WebBrandWatermark(child: _buildPaginaPrincipalComDashboard()),
       );
     }
 
