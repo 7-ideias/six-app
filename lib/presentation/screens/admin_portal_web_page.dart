@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/services/admin_portal_service.dart';
 import '../../core/services/auth_service.dart';
 import '../admin/admin_dashboard_metrics.dart';
-import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
 
@@ -109,11 +108,9 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
   @override
   Widget build(BuildContext context) {
     final AdminPortalTexts texts = AdminPortalTexts.of(context);
-    return AdminNavigationShell(
+    return AdminShell(
       texts: texts,
       userInfo: AdminPortalUserInfo(name: _userName, email: _userEmail, profileType: _profileType),
-      currentRoute: '/admin/dashboard',
-      pageTitle: texts.currentPage,
       onLogout: _logout,
       onRefresh: _carregarResumo,
       refreshing: _carregando,
@@ -144,7 +141,7 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
         const SizedBox(height: 24),
         _AiFeedbackDashboardCard(
           resumo: _feedbackIa ?? const AdminAiFeedbackResumo(total: 0, ajudou: 0, naoAjudou: 0, aderenciaPercentual: 0),
-          onOpenIdeas: () => Navigator.of(context).pushReplacementNamed('/admin/novas-ideias'),
+          onOpenIdeas: () => Navigator.of(context).pushNamed('/admin/novas-ideias'),
         ),
       ],
     );
