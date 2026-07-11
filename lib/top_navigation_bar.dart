@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
+import 'package:sixpos/core/services/auth_service.dart';
+import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
@@ -40,7 +43,7 @@ class _MenuConfigData {
   final IconData icon;
 }
 
-class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
+class TopNavigationBar extends StatefulWidget implements PreferredSizeWidget {
   const TopNavigationBar({
     super.key,
     required this.items,
@@ -55,15 +58,84 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(86);
 
+  @override
+  State<TopNavigationBar> createState() => _TopNavigationBarState();
+}
+
+class _TopNavigationBarState extends State<TopNavigationBar> {
+  OverlayEntry? _homeOverlay;
+  bool _homeOverlayVisivel = true;
+  bool _agendouOverlayInicial = false;
+
   bool get _usaNovoMenuSix {
-    final titles = items.map((item) => item.title).toSet();
+    final titles = widget.items.map((item) => item.title).toSet();
     return titles.contains('Cadastros') &&
         titles.contains('Configurações') &&
         titles.contains('Início');
   }
 
+  @override
+  void didUpdateWidget(covariant TopNavigationBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_usaNovoMenuSix) {
+      _removerHomeOverlay();
+    }
+  }
+
+  @override
+  void dispose() {
+    _removerHomeOverlay();
+    super.dispose();
+  }
+
+  void _agendarHomeOverlay(BuildContext context) {
+    if (!_usaNovoMenuSix || !_homeOverlayVisivel || _agendouOverlayInicial) {
+      return;
+    }
+
+    _agendouOverlayInicial = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_homeOverlayVisivel) return;
+      _mostrarHomeOverlay(context);
+    });
+  }
+
+  void _mostrarHomeOverlay(BuildContext context) {
+    if (!_usaNovoMenuSix || _homeOverlay != null) return;
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return;
+
+    _homeOverlayVisivel = true;
+    _homeOverlay = OverlayEntry(
+      builder: (overlayContext) {
+        return Positioned(
+          top: widget.preferredSize.height,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _SixHomeDashboardOverlay(
+            onAbrirPdv: () => _abrirPdvFrenteCaixa(context),
+            onAbrirAgenda: () => _abrirAgenda(context),
+            onAbrirOperacoesCaixa: () => _abrirOperacoesCaixa(context),
+          ),
+        );
+      },
+    );
+    overlay.insert(_homeOverlay!);
+  }
+
+  void _ocultarHomeOverlay() {
+    _homeOverlayVisivel = false;
+    _removerHomeOverlay();
+  }
+
+  void _removerHomeOverlay() {
+    _homeOverlay?.remove();
+    _homeOverlay = null;
+  }
+
   TopNavItemData? _itemLegado(String title) {
-    for (final item in items) {
+    for (final item in widget.items) {
       if (item.title == title) return item;
     }
     return null;
@@ -103,6 +175,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     double widthFactor = 0.94,
     double heightFactor = 0.90,
   }) async {
+    _ocultarHomeOverlay();
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
@@ -164,6 +237,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _abrirPdvFrenteCaixa(BuildContext context) {
+    _ocultarHomeOverlay();
     if (_acionarPdvFrenteCaixaNoEstadoAtual(context)) {
       return;
     }
@@ -323,6 +397,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _abrirConfiguracao(BuildContext context, String value) {
+    _ocultarHomeOverlay();
     if (value == 'Cores e Fontes') {
       _abrirCoresFontes(context);
       return;
@@ -364,12 +439,15 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   List<TopNavItemData> _itemsEfetivos(BuildContext context) {
-    if (!_usaNovoMenuSix) return items;
+    if (!_usaNovoMenuSix) return widget.items;
     return <TopNavItemData>[
       TopNavItemData(
         title: 'Início',
         subItems: const <String>[],
-        onSelect: (_) => Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/app', (_) => false),
+        onSelect: (_) {
+          _homeOverlayVisivel = true;
+          _mostrarHomeOverlay(context);
+        },
       ),
       TopNavItemData(
         title: 'Atendimento',
@@ -396,6 +474,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
             _abrirAtendimentosCriados(context);
             return;
           }
+          _ocultarHomeOverlay();
           _mostrarPreparacao(context, value);
         },
       ),
@@ -419,6 +498,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
             _abrirEstoque(context);
             return;
           }
+          _ocultarHomeOverlay();
           _mostrarPreparacao(context, value);
         },
       ),
@@ -455,7 +535,10 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Ajustes',
           'Resumo do caixa',
         ],
-        onSelect: (value) => _mostrarPreparacao(context, value),
+        onSelect: (value) {
+          _ocultarHomeOverlay();
+          _mostrarPreparacao(context, value);
+        },
       ),
       TopNavItemData(
         title: 'Financeiro',
@@ -477,13 +560,17 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
             _abrirOperacoesCaixa(context);
             return;
           }
+          _ocultarHomeOverlay();
           _mostrarPreparacao(context, value);
         },
       ),
       TopNavItemData(
         title: 'Relatórios',
         subItems: const <String>['Vendas', 'Assistências', 'Caixa', 'Financeiro', 'Produtos', 'Clientes'],
-        onSelect: (value) => _mostrarPreparacao(context, 'Relatório de $value'),
+        onSelect: (value) {
+          _ocultarHomeOverlay();
+          _mostrarPreparacao(context, 'Relatório de $value');
+        },
       ),
       TopNavItemData(
         title: 'Configurações',
@@ -515,6 +602,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Preferências do Six',
         ],
         onSelect: (value) {
+          _ocultarHomeOverlay();
           if (value == 'Meu Perfil') {
             _abrirLegado(context, 'Início', value);
             return;
@@ -531,6 +619,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    _agendarHomeOverlay(context);
     final themeProvider = context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final currentTheme = brightness == Brightness.dark ? themeProvider.darkTheme : themeProvider.lightTheme;
@@ -541,7 +630,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     return Material(
       color: Colors.transparent,
       child: Container(
-        height: preferredSize.height,
+        height: widget.preferredSize.height,
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -590,9 +679,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 12),
                 _AppVersionPill(colorScheme: colorScheme, premium: true),
                 const SizedBox(width: 10),
-                notificationWidget ??
+                widget.notificationWidget ??
                     IconButton(
-                      onPressed: onNotificationPressed,
+                      onPressed: widget.onNotificationPressed,
                       icon: Icon(Icons.notifications_none, color: colorScheme.primary),
                       tooltip: 'Notificações',
                     ),
@@ -630,6 +719,552 @@ class _EscOverlayScope extends StatelessWidget {
           ),
         },
         child: Focus(autofocus: true, child: child),
+      ),
+    );
+  }
+}
+
+class _SixHomeDashboardOverlay extends StatefulWidget {
+  const _SixHomeDashboardOverlay({
+    required this.onAbrirPdv,
+    required this.onAbrirAgenda,
+    required this.onAbrirOperacoesCaixa,
+  });
+
+  final VoidCallback onAbrirPdv;
+  final VoidCallback onAbrirAgenda;
+  final VoidCallback onAbrirOperacoesCaixa;
+
+  @override
+  State<_SixHomeDashboardOverlay> createState() => _SixHomeDashboardOverlayState();
+}
+
+class _SixHomeDashboardOverlayState extends State<_SixHomeDashboardOverlay> {
+  final AgendaFinanceiraLancamentoService _service = AgendaFinanceiraLancamentoService();
+
+  bool _carregando = true;
+  String _usuario = 'usuário';
+  String? _erro;
+  _HomeSalesSummary _summary = const _HomeSalesSummary.empty();
+
+  @override
+  void initState() {
+    super.initState();
+    _carregar();
+  }
+
+  Future<void> _carregar() async {
+    setState(() {
+      _carregando = true;
+      _erro = null;
+    });
+
+    try {
+      final usuario = await _resolverUsuario();
+      final request = _buildRequestMesAtual();
+      final agenda = await _service.consultarLancamentos(request);
+      final confirmados = await _service.consultarValoresConfirmados(request);
+
+      if (!mounted) return;
+      setState(() {
+        _usuario = usuario;
+        _summary = _HomeSalesSummary.fromPayloads(agenda: agenda, confirmados: confirmados);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _erro = 'Não foi possível carregar os dados do período agora.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _carregando = false);
+      }
+    }
+  }
+
+  Future<String> _resolverUsuario() async {
+    final email = await AuthService().getUserEmail();
+    final base = email?.split('@').first.trim() ?? '';
+    if (base.isEmpty) return 'usuário';
+    final primeiroNome = base.split(RegExp(r'[._\-]')).where((parte) => parte.trim().isNotEmpty).firstOrNull;
+    if (primeiroNome == null || primeiroNome.isEmpty) return 'usuário';
+    return primeiroNome.substring(0, 1).toUpperCase() + primeiroNome.substring(1).toLowerCase();
+  }
+
+  AgendaFinanceiraConsultaRequest _buildRequestMesAtual() {
+    final hoje = DateTime.now();
+    final inicio = DateTime(hoje.year, hoje.month, 1);
+    final fim = DateTime(hoje.year, hoje.month + 1, 0);
+    return AgendaFinanceiraConsultaRequest(
+      periodo: AgendaFinanceiraPeriodoRequest(
+        modo: 'ESTE_MES',
+        dataInicio: inicio,
+        dataFim: fim,
+      ),
+      filtros: AgendaFinanceiraFiltrosRequest(
+        tipo: 'RECEBER',
+        status: const <String>[],
+        origens: const <String>[],
+        categorias: const <String>[],
+        formasPagamento: const <String>[],
+        clienteFornecedor: null,
+        somenteCriticos: false,
+      ),
+      visaoSelecionada: 'VALORES_CONFIRMADOS',
+    );
+  }
+
+  String get _saudacao {
+    final hora = DateTime.now().hour;
+    if (hora < 12) return 'Bom dia';
+    if (hora < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
+
+  String get _periodoLabel {
+    final agora = DateTime.now();
+    final mes = agora.month.toString().padLeft(2, '0');
+    return '01/$mes/${agora.year} até ${DateTime(agora.year, agora.month + 1, 0).day.toString().padLeft(2, '0')}/$mes/${agora.year}';
+  }
+
+  String _currency(double value) => 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const <Color>[Color(0xFF07111E), Color(0xFF0B1B2E), Color(0xFF081422)]
+                : const <Color>[Color(0xFFF4F7FB), Color(0xFFE7F0FA), Color(0xFFF8FAFC)],
+          ),
+        ),
+        child: Stack(
+          children: <Widget>[
+            Positioned(
+              right: -120,
+              top: -180,
+              child: _DashboardOrb(size: 360, color: const Color(0xFF2563EB).withOpacity(isDark ? 0.14 : 0.10)),
+            ),
+            Positioned(
+              left: -140,
+              bottom: -180,
+              child: _DashboardOrb(size: 430, color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.30 : 0.07)),
+            ),
+            Positioned.fill(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 36),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1280),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _buildHero(isDark),
+                        const SizedBox(height: 18),
+                        _buildCards(isDark),
+                        const SizedBox(height: 18),
+                        _buildBottomRow(isDark),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHero(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.90),
+        borderRadius: BorderRadius.circular(34),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.22 : 0.08),
+            blurRadius: 34,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[Color(0xFF0B1F3A), Color(0xFF2563EB)],
+              ),
+            ),
+            child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white, size: 30),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  '$_saudacao, $_usuario',
+                  style: TextStyle(
+                    fontSize: 30,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : const Color(0xFF0B1F3A),
+                    letterSpacing: -0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Acompanhe o resultado acumulado do período e use o menu superior para acessar os módulos operacionais.',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF8EA6BA) : const Color(0xFF475569),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          OutlinedButton.icon(
+            onPressed: _carregando ? null : _carregar,
+            icon: _carregando
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.refresh_rounded),
+            label: const Text('Atualizar'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCards(bool isDark) {
+    final venda = _summary.vendasAcumuladas;
+    final previsto = _summary.aReceberPrevisto;
+    final ticket = _summary.ticketMedio;
+    final qtd = _summary.vendasConfirmadas;
+    return GridView.count(
+      crossAxisCount: 4,
+      mainAxisSpacing: 18,
+      crossAxisSpacing: 18,
+      childAspectRatio: 1.55,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: <Widget>[
+        _DashboardMetricCard(
+          icon: Icons.trending_up_rounded,
+          title: 'Vendas acumuladas',
+          value: _currency(venda),
+          subtitle: 'Recebido confirmado no período',
+          isDark: isDark,
+          highlight: true,
+        ),
+        _DashboardMetricCard(
+          icon: Icons.pending_actions_rounded,
+          title: 'A receber previsto',
+          value: _currency(previsto),
+          subtitle: 'Saldo aberto dentro do período',
+          isDark: isDark,
+        ),
+        _DashboardMetricCard(
+          icon: Icons.receipt_long_rounded,
+          title: 'Vendas confirmadas',
+          value: '$qtd',
+          subtitle: 'Lançamentos recebidos',
+          isDark: isDark,
+        ),
+        _DashboardMetricCard(
+          icon: Icons.query_stats_rounded,
+          title: 'Ticket médio',
+          value: _currency(ticket),
+          subtitle: 'Média por venda confirmada',
+          isDark: isDark,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomRow(bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          flex: 7,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.90),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78)),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.07),
+                  blurRadius: 28,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Icon(Icons.calendar_month_rounded, color: isDark ? Colors.white : const Color(0xFF0B1F3A)),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Período analisado',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0B1F3A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  _periodoLabel,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF8EA6BA) : const Color(0xFF475569),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (_erro != null) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.25)),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B)),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(_erro!, style: const TextStyle(fontWeight: FontWeight.w700))),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 18),
+        Expanded(
+          flex: 5,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.90),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78)),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.07),
+                  blurRadius: 28,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Atalhos de operação',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0B1F3A),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: <Widget>[
+                    _DashboardShortcut(label: 'PDV - Frente de Caixa', icon: Icons.point_of_sale_rounded, onPressed: widget.onAbrirPdv),
+                    _DashboardShortcut(label: 'Agenda financeira', icon: Icons.monetization_on_rounded, onPressed: widget.onAbrirAgenda),
+                    _DashboardShortcut(label: 'Operações de caixa', icon: Icons.account_balance_wallet_rounded, onPressed: widget.onAbrirOperacoesCaixa),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeSalesSummary {
+  const _HomeSalesSummary({
+    required this.vendasAcumuladas,
+    required this.aReceberPrevisto,
+    required this.vendasConfirmadas,
+  });
+
+  const _HomeSalesSummary.empty()
+      : vendasAcumuladas = 0,
+        aReceberPrevisto = 0,
+        vendasConfirmadas = 0;
+
+  final double vendasAcumuladas;
+  final double aReceberPrevisto;
+  final int vendasConfirmadas;
+
+  double get ticketMedio => vendasConfirmadas <= 0 ? 0 : vendasAcumuladas / vendasConfirmadas;
+
+  factory _HomeSalesSummary.fromPayloads({
+    required Map<String, dynamic> agenda,
+    required Map<String, dynamic> confirmados,
+  }) {
+    final totais = confirmados['totais'];
+    final itensConfirmados = confirmados['itens'];
+    final vendasAcumuladas = _toDouble(totais is Map ? totais['totalRecebidoConfirmado'] : null);
+    final quantidade = itensConfirmados is List ? itensConfirmados.length : 0;
+    double previsto = 0;
+    final grupos = agenda['gruposAgenda'];
+    if (grupos is List) {
+      for (final grupo in grupos) {
+        if (grupo is! Map) continue;
+        final itens = grupo['itens'];
+        if (itens is! List) continue;
+        for (final item in itens) {
+          if (item is! Map) continue;
+          final tipo = item['tipo']?.toString().toUpperCase() ?? '';
+          if (tipo == 'PAGAR') continue;
+          previsto += _toDouble(item['valorRestante'] ?? item['valorOriginal'] ?? item['valor']);
+        }
+      }
+    }
+    return _HomeSalesSummary(
+      vendasAcumuladas: vendasAcumuladas,
+      aReceberPrevisto: previsto,
+      vendasConfirmadas: quantidade,
+    );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString().replaceAll(',', '.') ?? '') ?? 0;
+  }
+}
+
+class _DashboardMetricCard extends StatelessWidget {
+  const _DashboardMetricCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.isDark,
+    this.highlight = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final String subtitle;
+  final bool isDark;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = highlight ? const Color(0xFF0B1F3A) : (isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.90));
+    final Color primary = highlight ? Colors.white : (isDark ? Colors.white : const Color(0xFF0B1F3A));
+    final Color secondary = highlight ? Colors.white.withOpacity(0.72) : (isDark ? const Color(0xFF8EA6BA) : const Color(0xFF64748B));
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: highlight ? const Color(0xFF0B1F3A) : (isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78))),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: const Color(0xFF0B1F3A).withOpacity(highlight ? 0.18 : (isDark ? 0.20 : 0.08)),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: highlight ? Colors.white.withOpacity(0.14) : const Color(0xFF2563EB).withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: highlight ? Colors.white : const Color(0xFF2563EB)),
+          ),
+          const Spacer(),
+          Text(title, style: TextStyle(color: secondary, fontWeight: FontWeight.w800, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: primary, fontWeight: FontWeight.w900, fontSize: 27, letterSpacing: -0.8)),
+          const SizedBox(height: 6),
+          Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: secondary, fontWeight: FontWeight.w600, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardShortcut extends StatelessWidget {
+  const _DashboardShortcut({required this.label, required this.icon, required this.onPressed});
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+}
+
+class _DashboardOrb extends StatelessWidget {
+  const _DashboardOrb({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }
