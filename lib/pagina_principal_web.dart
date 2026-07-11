@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:sixpos/presentation/components/dashboard_colaborador_web.dart';
+import 'package:sixpos/presentation/components/dashboard_gestao_web.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
@@ -40,11 +42,11 @@ import 'top_navigation_bar.dart';
 part 'pdv_page_web_cockpit_section.dart';
 part 'pdv_page_web_venda_section.dart';
 
-class PDVWeb extends StatefulWidget {
-  const PDVWeb({super.key});
+class PaginaPrincipalWeb extends StatefulWidget {
+  const PaginaPrincipalWeb({super.key});
 
   @override
-  State<PDVWeb> createState() => _PDVWebState();
+  State<PaginaPrincipalWeb> createState() => _PaginaPrincipalWebState();
 }
 
 enum ModuloCentralPDV {
@@ -65,7 +67,7 @@ enum ModuloCentralPDV {
 
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
-class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
+class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _ultimoEventoWebSocket;
   final List<Map<String, dynamic>> _notificacoes = <Map<String, dynamic>>[];
   int _quantidadeNotificacoesNaoLidas = 0;
@@ -1774,68 +1776,10 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
         primary: false,
         child: Column(
           children: <Widget>[
-            _buildCardUltimoEvento(),
-            const SizedBox(height: 24),
-            Center(
-              child: Wrap(
-                spacing: 20,
-                runSpacing: 20,
-                alignment: WrapAlignment.center,
-                children: <Widget>[
-                  // _buildModoOperacaoButton(
-                  //   icon: Icons.space_dashboard_rounded,
-                  //   label: 'Cockpit',
-                  //   onPressed: _abrirCockpitEstrategico,
-                  // ),
-                  // _buildModoOperacaoButton(
-                  //   icon: Icons.point_of_sale,
-                  //   label: 'Vendas',
-                  //   onPressed: _iniciarVenda,
-                  // ),
-                  // _buildModoOperacaoButton(
-                  //   icon: Icons.engineering_rounded,
-                  //   label: 'Atendimento Técnico',
-                  //   onPressed: () {
-                  //     setState(() {
-                  //       _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
-                  //     });
-                  //   },
-                  // ),
-                  // _buildModoOperacaoButton(
-                  //   icon: Icons.request_quote,
-                  //   label: 'Orçamento',
-                  //   onPressed: _abrirOrcamento,
-                  // ),
-                  // _buildModoOperacaoButton(
-                  //   icon: Icons.account_balance_wallet,
-                  //   label: 'Operações de caixa',
-                  //   onPressed: () {
-                  //     setState(() {
-                  //       _moduloAtual = ModuloCentralPDV.operacoesCaixa;
-                  //     });
-                  //   },
-                  // ),
-                  // _buildModoOperacaoButton(
-                  //   icon: Icons.build_circle_outlined,
-                  //   label: 'Ordem de Serviço',
-                  //   onPressed: () {
-                  //     setState(() {
-                  //       _moduloAtual = ModuloCentralPDV.ordemServico;
-                  //     });
-                  //   },
-                  // ),
-                  // _buildModoOperacaoButton(
-                  //   icon: Icons.monetization_on,
-                  //   label: labelAgendaFinanceira(),
-                  //   onPressed: () {
-                  //     setState(() {
-                  //       _moduloAtual = ModuloCentralPDV.agendaFinanceira;
-                  //     });
-                  //   },
-                  // ),
-                ],
-              ),
-            ),
+            // _buildCardUltimoEvento(),
+            // const SizedBox(height: 24),
+            DashboardGestaoWeb(),
+            DashboardColaboradorWeb(),
           ],
         ),
       ),

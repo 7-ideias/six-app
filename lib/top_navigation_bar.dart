@@ -18,7 +18,7 @@ import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 
 import 'core/config/app_config.dart';
-import 'pdv_page_web.dart';
+import 'pagina_principal_web.dart';
 
 class TopNavItemData {
   const TopNavItemData({
@@ -366,11 +366,11 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   List<TopNavItemData> _itemsEfetivos(BuildContext context) {
     if (!_usaNovoMenuSix) return items;
     return <TopNavItemData>[
-      TopNavItemData(
-        title: 'Início',
-        subItems: const <String>[],
-        onSelect: (_) => Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/app', (_) => false),
-      ),
+      // TopNavItemData(
+      //   title: 'Início',
+      //   subItems: const <String>[],
+      //   onSelect: (_) => Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/app', (_) => false),
+      // ),
       TopNavItemData(
         title: 'Atendimento',
         subItems: const <String>[

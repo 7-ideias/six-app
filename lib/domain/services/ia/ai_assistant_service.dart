@@ -14,4 +14,8 @@ class AiAssistantService {
   Future<void> enviarFeedback(AiAssistantFeedbackRequestModel request) {
     return _apiClient.enviarFeedback(request);
   }
+
+  Future<void> enviarSugestao(AiAssistantSuggestionRequestModel request) {
+    return _apiClient.enviarSugestao(request);
+  }
 }

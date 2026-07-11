@@ -4,6 +4,7 @@ import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/screens/admin_portal_web_page.dart';
+import 'package:sixpos/presentation/screens/admin_novas_ideias_web_page.dart';
 import 'package:sixpos/presentation/screens/pdv_page_web_autorizado.dart';
 import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
@@ -39,9 +40,7 @@ import 'core/ui/app_feedback.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb) {
-    usePathUrlStrategy();
-  }
+  if (kIsWeb) usePathUrlStrategy();
   final prefs = await SharedPreferences.getInstance();
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
@@ -50,23 +49,19 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
-          create:
-              (_) => ProdutosListProvider<ProdutoModel>(
-                fetchFunction: ProdutoService().produtosList,
-              ),
+          create: (_) => ProdutosListProvider<ProdutoModel>(
+            fetchFunction: ProdutoService().produtosList,
+          ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
-        ChangeNotifierProvider(
-          create: (_) => ColaboradorAutorizacoesProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => ColaboradorAutorizacoesProvider()),
         ChangeNotifierProvider(
           lazy: false,
-          create:
-              (_) => LocaleSettingsProvider(
-                regionalizacaoService: RegionalizacaoService(
-                  apiClient: HttpRegionalizacaoApiClient(),
-                ),
-              )..initialize(),
+          create: (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: HttpRegionalizacaoApiClient(),
+            ),
+          )..initialize(),
         ),
       ],
       child: MyApp(hasSeenOnboarding: hasSeenOnboarding),
@@ -95,88 +90,50 @@ class MyApp extends StatelessWidget {
     final Uri routeUri = Uri.parse(routeName);
 
     if (routeUri.path == '/' || routeUri.path == '/home') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const WebRootPage(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const WebRootPage());
     }
-
     if (routeUri.path == '/login') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const LoginPageWeb(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const LoginPageWeb());
     }
-
     if (routeUri.path == '/admin') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const LoginPageWeb(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const LoginPageWeb());
     }
-
     if (routeUri.path == '/admin/dashboard') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const AdminPortalWebPage(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AdminPortalWebPage());
     }
-
+    if (routeUri.path == '/admin/novas-ideias') {
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AdminNovasIdeiasWebPage());
+    }
     if (routeUri.path == '/register') {
       return _slidePageRoute(settings: settings, page: const RegisterPageWeb());
     }
-
     if (routeUri.path == '/forgot-password') {
-      return _slidePageRoute(
-        settings: settings,
-        page: const EsqueceuSenhaWeb(),
-      );
+      return _slidePageRoute(settings: settings, page: const EsqueceuSenhaWeb());
     }
-
     if (routeUri.path == '/app') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const PdvPageWebAutorizado(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const PdvPageWebAutorizado());
     }
-
     if (routeUri.path == '/app/atendimentos-tecnicos') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const AtendimentosTecnicosWebPage(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AtendimentosTecnicosWebPage());
     }
-
     if (routeUri.path == '/app/atendimentos-tecnicos/criados') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const AtendimentosTecnicosListaWebPage(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AtendimentosTecnicosListaWebPage());
     }
-
     if (routeUri.path == '/app/configuracoes/status-atendimento-tecnico') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const StatusAtendimentoTecnicoConfigWebPage(),
-      );
+      return MaterialPageRoute<void>(settings: settings, builder: (_) => const StatusAtendimentoTecnicoConfigWebPage());
     }
-
     if (routeUri.path == '/atendimento/assinatura') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) =>
-                AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
+        builder: (_) => AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
       );
     }
-
     if (routeUri.path == '/onboarding') {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => WebTrialOnboardingPage(initialUri: routeUri),
       );
     }
-
     if (routeUri.path == '/checkout') {
       return MaterialPageRoute<void>(
         settings: settings,
@@ -185,8 +142,7 @@ class MyApp extends StatelessWidget {
     }
 
     final bool isPublicOsRoute =
-        routeUri.pathSegments.isNotEmpty &&
-        routeUri.pathSegments.first == 'ordem-servico';
+        routeUri.pathSegments.isNotEmpty && routeUri.pathSegments.first == 'ordem-servico';
     final bool isPublicClienteAutoCadastroRoute =
         routeUri.pathSegments.length >= 2 &&
         routeUri.pathSegments[0] == 'cliente' &&
@@ -199,43 +155,31 @@ class MyApp extends StatelessWidget {
     if (isPublicColaboradorConviteRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) => ColaboradorConvitePublicoWebPage(
-              codigo: routeUri.pathSegments[2],
-              initialUri: routeUri,
-            ),
+        builder: (_) => ColaboradorConvitePublicoWebPage(
+          codigo: routeUri.pathSegments[2],
+          initialUri: routeUri,
+        ),
       );
     }
-
     if (isPublicClienteAutoCadastroRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => ClienteAutoCadastroPublicoPage(initialUri: routeUri),
       );
     }
-
     if (isPublicOsRoute) {
-      final String ordemId =
-          routeUri.pathSegments.length > 1
-              ? routeUri.pathSegments[1]
-              : 'os-sem-id';
-
+      final String ordemId = routeUri.pathSegments.length > 1
+          ? routeUri.pathSegments[1]
+          : 'os-sem-id';
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) =>
-                OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
+        builder: (_) => OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
       );
     }
 
-    return MaterialPageRoute<void>(
-      settings: settings,
-      builder: (_) => const WebRootPage(),
-    );
+    return MaterialPageRoute<void>(settings: settings, builder: (_) => const WebRootPage());
   }
 
-  /// Rota com transição de slide horizontal — usada nas telas de auth
-  /// para garantir feedback visual consistente em web (push/pop suaves).
   PageRouteBuilder<void> _slidePageRoute({
     required RouteSettings settings,
     required Widget page,
@@ -249,13 +193,10 @@ class MyApp extends StatelessWidget {
         final slide = Tween<Offset>(
           begin: const Offset(1.0, 0.0),
           end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic));
+        final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOut),
         );
-        final fade = Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
         return SlideTransition(
           position: slide,
           child: FadeTransition(opacity: fade, child: child),
@@ -271,8 +212,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
-      onGenerateTitle:
-          (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
+      onGenerateTitle: (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
@@ -285,12 +225,9 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home:
-          kIsWeb
-              ? null
-              : (hasSeenOnboarding
-                  ? const AuthGateMobile()
-                  : OnboardingScreen()),
+      home: kIsWeb
+          ? null
+          : (hasSeenOnboarding ? const AuthGateMobile() : OnboardingScreen()),
       initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
     );

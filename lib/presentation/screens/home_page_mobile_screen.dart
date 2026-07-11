@@ -7,7 +7,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
-import 'package:sixpos/pdv_page_web.dart';
+import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
@@ -142,7 +142,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       return const AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
-        child: PDVWeb(),
+        child: PaginaPrincipalWeb(),
       );
     }
 
