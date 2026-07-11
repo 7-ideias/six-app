@@ -72,9 +72,9 @@ class _PDVWebDashboardState extends State<PDVWeb> {
           const legacy.PDVWeb(),
           Positioned.fill(
             top: 84,
-            left: 16,
-            right: 16,
-            bottom: 16,
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: IgnorePointer(
               child: AnimatedOpacity(
                 opacity: _dashboardVisivel ? 1 : 0,
@@ -103,18 +103,41 @@ class _PdvAdminDashboard extends StatelessWidget {
       active: 4,
     );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
       child: ColoredBox(
         color: AdminPalette.background,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-          child: AdminStaggeredColumn(
-            children: <Widget>[
-              AdminDashboardHeader(texts: texts, userName: userName),
-              AdminMetricsGrid(texts: texts, metrics: metrics),
-            ],
-          ),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 900;
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                compact ? AdminSpacing.lg : AdminSpacing.xl,
+                AdminSpacing.lg,
+                compact ? AdminSpacing.lg : AdminSpacing.xl,
+                AdminSpacing.xl,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AdminShell.maxContentWidth,
+                  ),
+                  child: AdminStaggeredColumn(
+                    children: <Widget>[
+                      AdminDashboardHeader(
+                        texts: texts,
+                        userName: userName,
+                      ),
+                      AdminMetricsGrid(texts: texts, metrics: metrics),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
