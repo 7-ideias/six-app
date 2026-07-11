@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../pagina_principal_web.dart';
 import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
+import 'pdv_page_web_dashboard.dart';
 
 class PdvPageWebAutorizado extends StatefulWidget {
   const PdvPageWebAutorizado({super.key});
@@ -42,7 +42,7 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
       return const AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
-        child: _WebBrandWatermark(child: PaginaPrincipalWeb()),
+        child: _WebBrandWatermark(child: PDVWeb()),
       );
     }
 
@@ -230,96 +230,56 @@ class _ModuloPermitidoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: 300,
-      height: 304,
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: _PdvSemVendasWeb._surface,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: _PdvSemVendasWeb._border),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 16,
-              offset: Offset(0, 8),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x0D000000), blurRadius: 18, offset: Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: _primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(999),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _PdvSemVendasWeb._primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: _PdvSemVendasWeb._primary.withValues(alpha: 0.16),
-                    ),
-                  ),
-                  child: Text(
-                    badge,
-                    style: const TextStyle(
-                      color: _PdvSemVendasWeb._primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                const Icon(
-                  Icons.lock_outline_rounded,
-                  size: 20,
-                  color: _PdvSemVendasWeb._primary,
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: _PdvSemVendasWeb._primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: _PdvSemVendasWeb._primary.withValues(alpha: 0.20),
-                ),
-              ),
-              child: Icon(icon, size: 34, color: _PdvSemVendasWeb._primary),
-            ),
-            const SizedBox(height: 22),
-            Text(
-              title,
+            child: Text(
+              badge,
               style: const TextStyle(
-                color: _PdvSemVendasWeb._primary,
-                fontSize: 22,
+                color: _primary,
+                fontSize: 12,
                 fontWeight: FontWeight.w800,
-                height: 1.10,
               ),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Text(
-                description,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _PdvSemVendasWeb._muted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 1.45,
-                ),
-              ),
+          ),
+          const SizedBox(height: 18),
+          Icon(icon, color: _primary, size: 36),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            style: const TextStyle(
+              color: _text,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            description,
+            style: const TextStyle(
+              color: _muted,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -332,23 +292,20 @@ class _PermissaoInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _PdvSemVendasWeb._primary.withValues(alpha: 0.06),
+        color: _surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _PdvSemVendasWeb._border),
+        border: Border.all(color: _border),
       ),
       child: const Row(
         children: <Widget>[
-          Icon(Icons.info_outline_rounded, color: _PdvSemVendasWeb._primary),
+          Icon(Icons.info_outline_rounded, color: _primary),
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'O módulo Vendas não é exibido porque objVendasPode.fazVenda está desabilitado para este colaborador.',
-              style: TextStyle(
-                color: _PdvSemVendasWeb._text,
-                fontWeight: FontWeight.w700,
-              ),
+              'As opções exibidas respeitam as permissões configuradas pelo administrador.',
+              style: TextStyle(color: _muted, fontWeight: FontWeight.w700),
             ),
           ),
         ],
