@@ -22,6 +22,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
 import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
 
