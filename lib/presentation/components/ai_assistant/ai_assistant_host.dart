@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier, kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'ai_assistant_button.dart';
@@ -10,7 +10,7 @@ class AiAssistantWebBridge {
 
   static final ValueNotifier<int> _toggleSignal = ValueNotifier<int>(0);
 
-  static ValueListenable<int> get toggleSignal = _toggleSignal;
+  static ValueListenable<int> get toggleSignal => _toggleSignal;
 
   static void toggle() {
     _toggleSignal.value = _toggleSignal.value + 1;
