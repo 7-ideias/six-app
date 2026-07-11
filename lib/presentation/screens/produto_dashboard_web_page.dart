@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_dashboard_model.dart';
@@ -254,8 +253,10 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                     child: _chartCard(
                       title: 'Situação do estoque',
                       subtitle: 'Distribuição por saúde operacional.',
-                      child: _stockSituationGauge(
+                      child: _pieChart(
                         dashboard.situacaoEstoque,
+                        touchedIndex: _situacaoEstoqueTouchedIndex,
+                        onTouchedIndexChanged: _setSituacaoEstoqueTouchedIndex,
                       ),
                     ),
                   ),
@@ -503,149 +504,61 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     );
   }
 
-  Widget _stockSituationGauge(List<ProdutoDashboardSerieItem> itens) {
+  Widget _pieChart(List<ProdutoDashboardSerieItem> itens, {required int touchedIndex, required ValueChanged<int> onTouchedIndexChanged}) {
     final theme = Theme.of(context);
     final chartItems = itens.where((item) => item.quantidade > 0).toList();
     if (chartItems.isEmpty) return _noData();
 
-    final double total = chartItems.fold<double>(
-      0,
-      (sum, item) => sum + item.quantidade,
-    );
-    final double saudavel = chartItems
-        .where((item) {
-          final label = item.label.toLowerCase();
-          return label.contains('normal') ||
-              label.contains('saud') ||
-              label.contains('adequado') ||
-              label.contains('disponível');
-        })
-        .fold<double>(0, (sum, item) => sum + item.quantidade);
-    final double percentualSaudavel =
-        total <= 0 ? 0 : ((saudavel / total) * 100).clamp(0, 100);
-
-    return Column(
-      children: <Widget>[
-        SizedBox(
-          height: 250,
-          child: SfRadialGauge(
-            enableLoadingAnimation: true,
-            animationDuration: _chartDuration.inMilliseconds.toDouble(),
-            axes: <RadialAxis>[
-              RadialAxis(
-                minimum: 0,
-                maximum: 100,
-                startAngle: 145,
-                endAngle: 35,
-                showLabels: false,
-                showTicks: false,
-                radiusFactor: 0.92,
-                axisLineStyle: AxisLineStyle(
-                  thickness: 0.16,
-                  thicknessUnit: GaugeSizeUnit.factor,
-                  color: theme.colorScheme.surfaceVariant.withOpacity(0.75),
-                  cornerStyle: CornerStyle.bothCurve,
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>(chartItems.map((item) => '${item.label}:${item.quantidade}').join('|')),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: _chartDuration,
+      curve: Curves.linear,
+      builder: (context, progress, child) {
+        return Column(
+          children: <Widget>[
+            SizedBox(
+              height: 230,
+              child: PieChart(
+                PieChartData(
+                  pieTouchData: PieTouchData(
+                    touchCallback: (_, response) {
+                      final index = response?.touchedSection?.touchedSectionIndex ?? -1;
+                      onTouchedIndexChanged(index >= 0 && index < chartItems.length ? index : -1);
+                    },
+                  ),
+                  startDegreeOffset: -90,
+                  centerSpaceRadius: 48,
+                  sectionsSpace: touchedIndex == -1 ? 3 : 5,
+                  sections: List<PieChartSectionData>.generate(chartItems.length, (index) {
+                    final item = chartItems[index];
+                    final itemProgress = _staggeredItemProgress(progress, index);
+                    final touched = index == touchedIndex;
+                    final opacity = touchedIndex == -1 || touched ? 1.0 : 0.48;
+                    return PieChartSectionData(
+                      value: math.max(0.001, item.quantidade * itemProgress),
+                      title: itemProgress > 0.72 ? _qty(item.quantidade) : '',
+                      radius: touched ? 78 : 54 + (12 * progress),
+                      color: _chartColor(theme, index).withOpacity(opacity),
+                      titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+                    );
+                  }),
                 ),
-                ranges: <GaugeRange>[
-                  GaugeRange(
-                    startValue: 0,
-                    endValue: 40,
-                    color: theme.colorScheme.error.withOpacity(0.28),
-                    startWidth: 0.16,
-                    endWidth: 0.16,
-                    sizeUnit: GaugeSizeUnit.factor,
-                  ),
-                  GaugeRange(
-                    startValue: 40,
-                    endValue: 70,
-                    color: Colors.orange.withOpacity(0.32),
-                    startWidth: 0.16,
-                    endWidth: 0.16,
-                    sizeUnit: GaugeSizeUnit.factor,
-                  ),
-                  GaugeRange(
-                    startValue: 70,
-                    endValue: 100,
-                    color: Colors.green.withOpacity(0.30),
-                    startWidth: 0.16,
-                    endWidth: 0.16,
-                    sizeUnit: GaugeSizeUnit.factor,
-                  ),
-                ],
-                pointers: <GaugePointer>[
-                  RangePointer(
-                    value: percentualSaudavel,
-                    width: 0.16,
-                    sizeUnit: GaugeSizeUnit.factor,
-                    color: theme.colorScheme.primary,
-                    cornerStyle: CornerStyle.bothCurve,
-                    enableAnimation: true,
-                    animationDuration: _chartDuration.inMilliseconds,
-                    animationType: AnimationType.easeOutBack,
-                  ),
-                  MarkerPointer(
-                    value: percentualSaudavel,
-                    markerType: MarkerType.circle,
-                    markerHeight: 13,
-                    markerWidth: 13,
-                    color: theme.colorScheme.primary,
-                    borderColor: theme.colorScheme.surface,
-                    borderWidth: 3,
-                    enableAnimation: true,
-                    animationDuration: _chartDuration.inMilliseconds,
-                  ),
-                ],
-                annotations: <GaugeAnnotation>[
-                  GaugeAnnotation(
-                    angle: 90,
-                    positionFactor: 0.08,
-                    widget: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          '${percentualSaudavel.toStringAsFixed(0)}%',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'estoque saudável',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${_qty(saudavel)} de ${_qty(total)} itens',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: List<Widget>.generate(
-            chartItems.length,
-            (index) => _legend(
-              _chartColor(theme, index),
-              '${chartItems[index].label}: ${_qty(chartItems[index].quantidade)}',
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 12),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 220),
+              opacity: progress > 0.65 ? 1 : 0,
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: List<Widget>.generate(chartItems.length, (index) => _legend(_chartColor(theme, index), chartItems[index].label)),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
