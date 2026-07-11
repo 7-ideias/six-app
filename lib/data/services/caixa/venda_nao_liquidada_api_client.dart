@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/state/six_sale_processing_controller.dart';
 import '../../models/venda_nao_liquidada_models.dart';
 
 class VendaNaoLiquidadaApiClient {
@@ -49,32 +50,34 @@ class VendaNaoLiquidadaApiClient {
   Future<VendaNaoLiquidadaModel> liquidar({
     required String idRecebimento,
     required LiquidarVendaNaoLiquidadaInput input,
-  }) async {
-    final uri = Uri.parse(
-      '${AppConfig.baseUrl}/private/api/caixa/vendas-nao-liquidadas/$idRecebimento/liquidar',
-    );
-    final response = await _httpClient.post(
-      uri,
-      headers: await _getHeaders(),
-      body: jsonEncode(input.toJson()),
-    );
-
-    if (response.statusCode != 200) {
-      throw VendaNaoLiquidadaApiException(
-        statusCode: response.statusCode,
-        body: response.body,
+  }) {
+    return SixSaleProcessingController.track(() async {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/private/api/caixa/vendas-nao-liquidadas/$idRecebimento/liquidar',
       );
-    }
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw VendaNaoLiquidadaApiException(
-        statusCode: response.statusCode,
-        body: response.body,
+      final response = await _httpClient.post(
+        uri,
+        headers: await _getHeaders(),
+        body: jsonEncode(input.toJson()),
       );
-    }
 
-    return VendaNaoLiquidadaModel.fromJson(decoded);
+      if (response.statusCode != 200) {
+        throw VendaNaoLiquidadaApiException(
+          statusCode: response.statusCode,
+          body: response.body,
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw VendaNaoLiquidadaApiException(
+          statusCode: response.statusCode,
+          body: response.body,
+        );
+      }
+
+      return VendaNaoLiquidadaModel.fromJson(decoded);
+    });
   }
 
   Future<void> cancelar({required String idRecebimento}) async {

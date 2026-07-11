@@ -1,3 +1,4 @@
+import '../../../core/state/six_sale_processing_controller.dart';
 import '../../../data/models/operacao_models.dart';
 import '../../../data/services/operacao/operacao_api_client.dart';
 import '../../../mappers/operacao_mapper.dart';
@@ -17,7 +18,9 @@ class OperacaoService {
   ) async {
     final request = _mapper.toRequest(input);
 
-    return _apiClient.inserirOperacao(request: request);
+    return SixSaleProcessingController.track(
+      () => _apiClient.inserirOperacao(request: request),
+    );
   }
 
   Future<void> imprimirComprovanteDaOperacao({
