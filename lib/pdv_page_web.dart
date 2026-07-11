@@ -1519,167 +1519,167 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
     }
   }
 
-  Widget _buildModoOperacaoButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    String badge;
-    String descricao;
-    final l10n = AppLocalizations.of(context);
-
-    switch (label) {
-      case 'Cockpit':
-        badge = 'Gestão visionária';
-        descricao =
-            'Antecipe riscos de margem, vendas e atendimento com foco em resultado sustentável.';
-        break;
-      case 'Vendas':
-        badge = 'Fluxo principal';
-        descricao =
-            l10n?.pdvQuickServiceDescription ??
-            'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
-        break;
-      case 'Atendimento Técnico':
-        badge = 'Assistência técnica';
-        descricao =
-            'Acompanhe atendimentos criados, status, assinaturas e recebimentos da assistência.';
-        break;
-      case 'Orçamento':
-        badge = 'Assistência comercial';
-        descricao =
-            'Monte propostas com organização, clareza e continuidade do atendimento.';
-        break;
-      default:
-        badge = 'Operação interna';
-        descricao = 'Controle operacional e financeiro da rotina do balcão.';
-    }
-
-    return SizedBox(
-      width: 300,
-      height: 304,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(28),
-          onTap: onPressed,
-          child: Ink(
-            decoration: BoxDecoration(
-              color: _pdvTheme.cardBackground,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: _pdvTheme.cardBorder),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: _pdvTheme.cardShadow,
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _pdvTheme.badgeBackground.withValues(
-                            alpha: 0.10,
-                          ),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: _pdvTheme.badgeBackground.withValues(
-                              alpha: 0.20,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Icon(
-                              label == 'Vendas'
-                                  ? Icons.flash_on_rounded
-                                  : label == 'Cockpit'
-                                  ? Icons.visibility_rounded
-                                  : label == 'Orçamento'
-                                  ? Icons.auto_awesome
-                                  : label == 'Atendimento Técnico'
-                                  ? Icons.handyman_rounded
-                                  : Icons.settings_outlined,
-                              size: 16,
-                              color: _pdvTheme.iconColor,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              badge,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: _pdvTheme.iconColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        Icons.north_east_rounded,
-                        size: 22,
-                        color: _pdvTheme.iconColor,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: _pdvTheme.iconColor.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: _pdvTheme.iconColor.withValues(alpha: 0.20),
-                      ),
-                    ),
-                    child: Icon(icon, size: 34, color: _pdvTheme.iconColor),
-                  ),
-                  const SizedBox(height: 22),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: _pdvTheme.iconColor,
-                      height: 1.10,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: Text(
-                      descricao,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.45,
-                        color: _pdvTheme.secondaryText,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildModoOperacaoButton({
+  //   required IconData icon,
+  //   required String label,
+  //   required VoidCallback onPressed,
+  // }) {
+  //   String badge;
+  //   String descricao;
+  //   final l10n = AppLocalizations.of(context);
+  //
+  //   switch (label) {
+  //     case 'Cockpit':
+  //       badge = 'Gestão visionária';
+  //       descricao =
+  //           'Antecipe riscos de margem, vendas e atendimento com foco em resultado sustentável.';
+  //       break;
+  //     case 'Vendas':
+  //       badge = 'Fluxo principal';
+  //       descricao =
+  //           l10n?.pdvQuickServiceDescription ??
+  //           'Atendimento rápido no caixa, inclusão de itens e fechamento da venda.';
+  //       break;
+  //     case 'Atendimento Técnico':
+  //       badge = 'Assistência técnica';
+  //       descricao =
+  //           'Acompanhe atendimentos criados, status, assinaturas e recebimentos da assistência.';
+  //       break;
+  //     case 'Orçamento':
+  //       badge = 'Assistência comercial';
+  //       descricao =
+  //           'Monte propostas com organização, clareza e continuidade do atendimento.';
+  //       break;
+  //     default:
+  //       badge = 'Operação interna';
+  //       descricao = 'Controle operacional e financeiro da rotina do balcão.';
+  //   }
+  //
+  //   return SizedBox(
+  //     width: 300,
+  //     height: 304,
+  //     child: Material(
+  //       color: Colors.transparent,
+  //       child: InkWell(
+  //         borderRadius: BorderRadius.circular(28),
+  //         onTap: onPressed,
+  //         child: Ink(
+  //           decoration: BoxDecoration(
+  //             color: _pdvTheme.cardBackground,
+  //             borderRadius: BorderRadius.circular(28),
+  //             border: Border.all(color: _pdvTheme.cardBorder),
+  //             boxShadow: <BoxShadow>[
+  //               BoxShadow(
+  //                 color: _pdvTheme.cardShadow,
+  //                 blurRadius: 16,
+  //                 offset: const Offset(0, 8),
+  //               ),
+  //             ],
+  //           ),
+  //           child: Padding(
+  //             padding: const EdgeInsets.all(22),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: <Widget>[
+  //                 Row(
+  //                   children: <Widget>[
+  //                     Container(
+  //                       padding: const EdgeInsets.symmetric(
+  //                         horizontal: 14,
+  //                         vertical: 8,
+  //                       ),
+  //                       decoration: BoxDecoration(
+  //                         color: _pdvTheme.badgeBackground.withValues(
+  //                           alpha: 0.10,
+  //                         ),
+  //                         borderRadius: BorderRadius.circular(999),
+  //                         border: Border.all(
+  //                           color: _pdvTheme.badgeBackground.withValues(
+  //                             alpha: 0.20,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                       child: Row(
+  //                         mainAxisSize: MainAxisSize.min,
+  //                         children: <Widget>[
+  //                           Icon(
+  //                             label == 'Vendas'
+  //                                 ? Icons.flash_on_rounded
+  //                                 : label == 'Cockpit'
+  //                                 ? Icons.visibility_rounded
+  //                                 : label == 'Orçamento'
+  //                                 ? Icons.auto_awesome
+  //                                 : label == 'Atendimento Técnico'
+  //                                 ? Icons.handyman_rounded
+  //                                 : Icons.settings_outlined,
+  //                             size: 16,
+  //                             color: _pdvTheme.iconColor,
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Text(
+  //                             badge,
+  //                             style: TextStyle(
+  //                               fontSize: 13,
+  //                               fontWeight: FontWeight.w700,
+  //                               color: _pdvTheme.iconColor,
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                     const Spacer(),
+  //                     Icon(
+  //                       Icons.north_east_rounded,
+  //                       size: 22,
+  //                       color: _pdvTheme.iconColor,
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 18),
+  //                 Container(
+  //                   width: 72,
+  //                   height: 72,
+  //                   decoration: BoxDecoration(
+  //                     color: _pdvTheme.iconColor.withValues(alpha: 0.10),
+  //                     borderRadius: BorderRadius.circular(22),
+  //                     border: Border.all(
+  //                       color: _pdvTheme.iconColor.withValues(alpha: 0.20),
+  //                     ),
+  //                   ),
+  //                   child: Icon(icon, size: 34, color: _pdvTheme.iconColor),
+  //                 ),
+  //                 const SizedBox(height: 22),
+  //                 Text(
+  //                   label,
+  //                   style: TextStyle(
+  //                     fontSize: 22,
+  //                     fontWeight: FontWeight.w800,
+  //                     color: _pdvTheme.iconColor,
+  //                     height: 1.10,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 12),
+  //                 Expanded(
+  //                   child: Text(
+  //                     descricao,
+  //                     maxLines: 4,
+  //                     overflow: TextOverflow.ellipsis,
+  //                     style: TextStyle(
+  //                       fontSize: 14,
+  //                       height: 1.45,
+  //                       color: _pdvTheme.secondaryText,
+  //                       fontWeight: FontWeight.w500,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildCardUltimoEvento() {
     if (_ultimoEventoWebSocket == null) {
@@ -1781,39 +1781,39 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                 runSpacing: 20,
                 alignment: WrapAlignment.center,
                 children: <Widget>[
-                  _buildModoOperacaoButton(
-                    icon: Icons.space_dashboard_rounded,
-                    label: 'Cockpit',
-                    onPressed: _abrirCockpitEstrategico,
-                  ),
-                  _buildModoOperacaoButton(
-                    icon: Icons.point_of_sale,
-                    label: 'Vendas',
-                    onPressed: _iniciarVenda,
-                  ),
-                  _buildModoOperacaoButton(
-                    icon: Icons.engineering_rounded,
-                    label: 'Atendimento Técnico',
-                    onPressed: () {
-                      setState(() {
-                        _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
-                      });
-                    },
-                  ),
+                  // _buildModoOperacaoButton(
+                  //   icon: Icons.space_dashboard_rounded,
+                  //   label: 'Cockpit',
+                  //   onPressed: _abrirCockpitEstrategico,
+                  // ),
+                  // _buildModoOperacaoButton(
+                  //   icon: Icons.point_of_sale,
+                  //   label: 'Vendas',
+                  //   onPressed: _iniciarVenda,
+                  // ),
+                  // _buildModoOperacaoButton(
+                  //   icon: Icons.engineering_rounded,
+                  //   label: 'Atendimento Técnico',
+                  //   onPressed: () {
+                  //     setState(() {
+                  //       _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
+                  //     });
+                  //   },
+                  // ),
                   // _buildModoOperacaoButton(
                   //   icon: Icons.request_quote,
                   //   label: 'Orçamento',
                   //   onPressed: _abrirOrcamento,
                   // ),
-                  _buildModoOperacaoButton(
-                    icon: Icons.account_balance_wallet,
-                    label: 'Operações de caixa',
-                    onPressed: () {
-                      setState(() {
-                        _moduloAtual = ModuloCentralPDV.operacoesCaixa;
-                      });
-                    },
-                  ),
+                  // _buildModoOperacaoButton(
+                  //   icon: Icons.account_balance_wallet,
+                  //   label: 'Operações de caixa',
+                  //   onPressed: () {
+                  //     setState(() {
+                  //       _moduloAtual = ModuloCentralPDV.operacoesCaixa;
+                  //     });
+                  //   },
+                  // ),
                   // _buildModoOperacaoButton(
                   //   icon: Icons.build_circle_outlined,
                   //   label: 'Ordem de Serviço',
@@ -1823,15 +1823,15 @@ class _PDVWebState extends State<PDVWeb> with SingleTickerProviderStateMixin {
                   //     });
                   //   },
                   // ),
-                  _buildModoOperacaoButton(
-                    icon: Icons.monetization_on,
-                    label: labelAgendaFinanceira(),
-                    onPressed: () {
-                      setState(() {
-                        _moduloAtual = ModuloCentralPDV.agendaFinanceira;
-                      });
-                    },
-                  ),
+                  // _buildModoOperacaoButton(
+                  //   icon: Icons.monetization_on,
+                  //   label: labelAgendaFinanceira(),
+                  //   onPressed: () {
+                  //     setState(() {
+                  //       _moduloAtual = ModuloCentralPDV.agendaFinanceira;
+                  //     });
+                  //   },
+                  // ),
                 ],
               ),
             ),
