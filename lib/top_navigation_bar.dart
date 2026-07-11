@@ -464,8 +464,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           'Preferências do Six',
         ],
         onSelect: (value) {
-          if (value == 'Meu Perfil') return _abrirLegado(context, 'Início', value);
-          if (value == 'Preferências do Six') return _abrirLegado(context, 'Configurações', value);
+          if (value == 'Meu Perfil') {
+            _abrirLegado(context, 'Início', value);
+            return;
+          }
+          if (value == 'Preferências do Six') {
+            _abrirLegado(context, 'Configurações', value);
+            return;
+          }
           _abrirLegado(context, 'Cadastros', value);
         },
       ),
