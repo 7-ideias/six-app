@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/services/auth_service.dart';
 import '../../pdv_page_web.dart';
+import '../../presentation/admin/admin_dashboard_metrics.dart';
+import '../../presentation/admin/admin_portal_components.dart';
+import '../../presentation/admin/admin_portal_texts.dart';
 import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 
@@ -42,7 +48,9 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
       return const AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
-        child: _WebBrandWatermark(child: PDVWeb()),
+        child: _WebBrandWatermark(
+          child: _PdvWebComDashboard(child: PDVWeb()),
+        ),
       );
     }
 
@@ -50,6 +58,142 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
       modulo: 'geral',
       telaAtual: 'inicio_web_sem_vendas',
       child: _WebBrandWatermark(child: _PdvSemVendasWeb()),
+    );
+  }
+}
+
+class _PdvWebComDashboard extends StatefulWidget {
+  const _PdvWebComDashboard({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PdvWebComDashboard> createState() => _PdvWebComDashboardState();
+}
+
+class _PdvWebComDashboardState extends State<_PdvWebComDashboard> {
+  final AuthService _authService = AuthService();
+  Timer? _retornoDashboardTimer;
+  bool _dashboardVisivel = true;
+  String? _userName;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarUsuario();
+  }
+
+  @override
+  void dispose() {
+    _retornoDashboardTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _carregarUsuario() async {
+    final String? email = await _authService.getUserEmail();
+    if (!mounted) return;
+    setState(() => _userName = _nomeExibicaoPorEmail(email));
+  }
+
+  void _registrarInteracao(PointerDownEvent event) {
+    _retornoDashboardTimer?.cancel();
+    if (_dashboardVisivel) {
+      setState(() => _dashboardVisivel = false);
+    }
+    _retornoDashboardTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _dashboardVisivel = true);
+      }
+    });
+  }
+
+  String? _nomeExibicaoPorEmail(String? email) {
+    final String normalized = email?.trim() ?? '';
+    if (normalized.isEmpty || !normalized.contains('@')) return null;
+
+    final String prefix = normalized
+        .split('@')
+        .first
+        .replaceAll('.', ' ')
+        .replaceAll('_', ' ')
+        .trim();
+    if (prefix.isEmpty) return null;
+
+    return prefix
+        .split(RegExp(r'\s+'))
+        .where((String part) => part.isNotEmpty)
+        .map(
+          (String part) =>
+              '${part.characters.first.toUpperCase()}${part.characters.skip(1).join().toLowerCase()}',
+        )
+        .join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _registrarInteracao,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          widget.child,
+          Positioned.fill(
+            top: 82,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _dashboardVisivel ? 1 : 0,
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                child: AnimatedSlide(
+                  offset: _dashboardVisivel
+                      ? Offset.zero
+                      : const Offset(0, -0.015),
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeOutCubic,
+                  child: _DashboardAdministrativoInicial(userName: _userName),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardAdministrativoInicial extends StatelessWidget {
+  const _DashboardAdministrativoInicial({this.userName});
+
+  final String? userName;
+
+  @override
+  Widget build(BuildContext context) {
+    final AdminPortalTexts texts = AdminPortalTexts.of(context);
+    const AdminCompaniesMetrics metrics = AdminCompaniesMetrics(
+      total: 4,
+      active: 4,
+      inactive: 0,
+      activePercent: 100,
+    );
+
+    return ColoredBox(
+      color: AdminPalette.background,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1280),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                AdminDashboardHeader(texts: texts, userName: userName),
+                AdminMetricsGrid(texts: texts, metrics: metrics),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -77,10 +221,9 @@ class _WebBrandWatermark extends StatelessWidget {
 
             return IgnorePointer(
               child: Align(
-                alignment:
-                    isCompact
-                        ? const Alignment(0.80, 0.86)
-                        : const Alignment(0.88, 0.80),
+                alignment: isCompact
+                    ? const Alignment(0.80, 0.86)
+                    : const Alignment(0.88, 0.80),
                 child: Opacity(
                   opacity: 0.045,
                   child: Image.asset(
@@ -120,238 +263,25 @@ class _PdvAutorizacoesLoading extends StatelessWidget {
 class _PdvSemVendasWeb extends StatelessWidget {
   const _PdvSemVendasWeb();
 
-  static const Color _primary = Color(0xFF24458F);
-  static const Color _text = Color(0xFF111827);
-  static const Color _muted = Color(0xFF596579);
-  static const Color _surface = Color(0xFFFFFFFF);
-  static const Color _border = Color(0x1F24458F);
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FB),
+    return const Scaffold(
+      backgroundColor: Color(0xFFF7F8FB),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          'Início',
-                          style: TextStyle(
-                            color: _text,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Ações disponíveis conforme as permissões do colaborador.',
-                          style: TextStyle(
-                            color: _muted,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: () {
-                      context
-                          .read<ColaboradorAutorizacoesProvider>()
-                          .carregarAutorizacoesDoUsuarioLogado(force: true);
-                    },
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Atualizar permissões'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              Expanded(
-                child: Center(
-                  child: Wrap(
-                    spacing: 20,
-                    runSpacing: 20,
-                    alignment: WrapAlignment.center,
-                    children: const <Widget>[
-                      _ModuloPermitidoCard(
-                        icon: Icons.space_dashboard_rounded,
-                        badge: 'Gestão visionária',
-                        title: 'Cockpit',
-                        description:
-                            'Antecipe riscos de margem, vendas e atendimento com foco em resultado sustentável.',
-                      ),
-                      _ModuloPermitidoCard(
-                        icon: Icons.account_balance_wallet,
-                        badge: 'Operação interna',
-                        title: 'Operações de caixa',
-                        description:
-                            'Controle operacional e financeiro da rotina do balcão.',
-                      ),
-                      _ModuloPermitidoCard(
-                        icon: Icons.monetization_on,
-                        badge: 'Operação interna',
-                        title: 'Agenda Financeira',
-                        description:
-                            'Acompanhe contas, compromissos financeiros e previsões.',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              const _PermissaoInfoCard(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ModuloPermitidoCard extends StatelessWidget {
-  const _ModuloPermitidoCard({
-    required this.icon,
-    required this.badge,
-    required this.title,
-    required this.description,
-  });
-
-  final IconData icon;
-  final String badge;
-  final String title;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 300,
-      height: 304,
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: _PdvSemVendasWeb._surface,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: _PdvSemVendasWeb._border),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 16,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _PdvSemVendasWeb._primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: _PdvSemVendasWeb._primary.withValues(alpha: 0.16),
-                    ),
-                  ),
-                  child: Text(
-                    badge,
-                    style: const TextStyle(
-                      color: _PdvSemVendasWeb._primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                const Icon(
-                  Icons.lock_outline_rounded,
-                  size: 20,
-                  color: _PdvSemVendasWeb._primary,
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: _PdvSemVendasWeb._primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: _PdvSemVendasWeb._primary.withValues(alpha: 0.20),
-                ),
-              ),
-              child: Icon(icon, size: 34, color: _PdvSemVendasWeb._primary),
-            ),
-            const SizedBox(height: 22),
-            Text(
-              title,
-              style: const TextStyle(
-                color: _PdvSemVendasWeb._primary,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                height: 1.10,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Text(
-                description,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _PdvSemVendasWeb._muted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 1.45,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PermissaoInfoCard extends StatelessWidget {
-  const _PermissaoInfoCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _PdvSemVendasWeb._primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _PdvSemVendasWeb._border),
-      ),
-      child: const Row(
-        children: <Widget>[
-          Icon(Icons.info_outline_rounded, color: _PdvSemVendasWeb._primary),
-          SizedBox(width: 12),
-          Expanded(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
             child: Text(
-              'O módulo Vendas não é exibido porque objVendasPode.fazVenda está desabilitado para este colaborador.',
+              'O módulo de vendas não está disponível para este usuário.',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                color: _PdvSemVendasWeb._text,
+                color: Color(0xFF596579),
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
