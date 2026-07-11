@@ -70,19 +70,19 @@ class _WebBrandWatermark extends StatelessWidget {
             final bool isCompact = constraints.maxWidth < 720;
             final double size =
                 (isCompact
-                        ? constraints.maxWidth * 0.58
-                        : constraints.maxWidth * 0.22)
-                    .clamp(isCompact ? 180.0 : 240.0, isCompact ? 320.0 : 420.0)
+                        ? constraints.maxWidth * 0.42
+                        : constraints.maxWidth * 0.16)
+                    .clamp(isCompact ? 140.0 : 190.0, isCompact ? 240.0 : 300.0)
                     .toDouble();
 
             return IgnorePointer(
               child: Align(
                 alignment:
                     isCompact
-                        ? const Alignment(0.72, 0.82)
-                        : const Alignment(0.92, 0.82),
+                        ? const Alignment(0.80, 0.86)
+                        : const Alignment(0.88, 0.80),
                 child: Opacity(
-                  opacity: 0.10,
+                  opacity: 0.045,
                   child: Image.asset(
                     'assets/images/six-logo-flecha.png',
                     width: size,

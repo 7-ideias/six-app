@@ -1,5 +1,14 @@
 part of 'pdv_page_web.dart';
 
+bool acionarPdvFrenteCaixaPeloElemento(Element element) {
+  if (element is StatefulElement && element.state is _PDVWebState) {
+    (element.state as _PDVWebState)._iniciarVenda();
+    return true;
+  }
+
+  return false;
+}
+
 extension _PdvPageWebVendaSection on _PDVWebState {
   Future<void> _abrirVendasAReceberWeb() async {
     await showDialog<void>(
