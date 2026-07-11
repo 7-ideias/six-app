@@ -86,6 +86,8 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
                       _HeaderCard(
                         saindo: _saindo,
                         onLogout: _logout,
+                        onRefresh: _carregarResumo,
+                        carregando: _carregando,
                       ),
                       const SizedBox(height: 18),
                       AnimatedSwitcher(
@@ -140,6 +142,7 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
     }
 
     final AdminPortalResumo resumo = _resumo ?? const AdminPortalResumo(totalEmpresasCadastradas: 0, totalEmpresasAtivas: 0);
+    final AdminBancoDadosResumo? bancoPrincipal = resumo.bancosDeDados.isNotEmpty ? resumo.bancosDeDados.first : null;
 
     return Column(
       key: const ValueKey<String>('dashboard'),
@@ -174,6 +177,14 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
             );
           },
         ),
+        if (bancoPrincipal != null) ...<Widget>[
+          const SizedBox(height: 16),
+          _BancoDadosResumoSection(banco: bancoPrincipal),
+        ],
+        if (resumo.bancosDeDados.length > 1) ...<Widget>[
+          const SizedBox(height: 16),
+          _BancosDadosListaSection(bancos: resumo.bancosDeDados),
+        ],
         const SizedBox(height: 16),
         const _AdminGlassCard(
           child: Row(
@@ -195,10 +206,17 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
 }
 
 class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.saindo, required this.onLogout});
+  const _HeaderCard({
+    required this.saindo,
+    required this.onLogout,
+    required this.onRefresh,
+    required this.carregando,
+  });
 
   final bool saindo;
   final VoidCallback onLogout;
+  final VoidCallback onRefresh;
+  final bool carregando;
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +253,12 @@ class _HeaderCard extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           OutlinedButton.icon(
+            onPressed: carregando ? null : onRefresh,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Atualizar'),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton.icon(
             onPressed: saindo ? null : onLogout,
             icon: saindo
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
@@ -247,64 +271,241 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
+class _BancoDadosResumoSection extends StatelessWidget {
+  const _BancoDadosResumoSection({required this.banco});
+
+  final AdminBancoDadosResumo banco;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AdminGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF123B69).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.storage_rounded, color: Color(0xFF123B69)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text('Banco de dados', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0B1F3A), fontSize: 18)),
+                    const SizedBox(height: 4),
+                    Text('MongoDB atual: ${banco.nome}', style: TextStyle(color: Colors.black.withOpacity(0.58), fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compacto = constraints.maxWidth < 820;
+              final double width = compacto ? constraints.maxWidth : (constraints.maxWidth - 32) / 3;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: <Widget>[
+                  SizedBox(
+                    width: width,
+                    child: _AdminMetricCard.flat(
+                      icon: Icons.data_object_rounded,
+                      title: 'Dados',
+                      value: _formatarBytes(banco.tamanhoDadosBytes),
+                      subtitle: 'Volume lógico de documentos.',
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _AdminMetricCard.flat(
+                      icon: Icons.inventory_2_rounded,
+                      title: 'Armazenado',
+                      value: _formatarBytes(banco.tamanhoArmazenadoBytes),
+                      subtitle: 'Espaço ocupado no storage.',
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _AdminMetricCard.flat(
+                      icon: Icons.speed_rounded,
+                      title: 'Índices',
+                      value: _formatarBytes(banco.tamanhoIndicesBytes),
+                      subtitle: 'Espaço usado por índices.',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: <Widget>[
+              _InfoPill(label: 'Total', value: _formatarBytes(banco.tamanhoTotalBytes)),
+              _InfoPill(label: 'Coleções', value: banco.quantidadeColecoes.toString()),
+              _InfoPill(label: 'Objetos', value: banco.quantidadeObjetos.toString()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BancosDadosListaSection extends StatelessWidget {
+  const _BancosDadosListaSection({required this.bancos});
+
+  final List<AdminBancoDadosResumo> bancos;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AdminGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text('Bancos monitorados', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0B1F3A), fontSize: 18)),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const <DataColumn>[
+                DataColumn(label: Text('Banco')),
+                DataColumn(label: Text('Dados')),
+                DataColumn(label: Text('Armazenado')),
+                DataColumn(label: Text('Índices')),
+                DataColumn(label: Text('Coleções')),
+                DataColumn(label: Text('Objetos')),
+              ],
+              rows: bancos
+                  .map(
+                    (AdminBancoDadosResumo banco) => DataRow(
+                      cells: <DataCell>[
+                        DataCell(Text(banco.nome)),
+                        DataCell(Text(_formatarBytes(banco.tamanhoDadosBytes))),
+                        DataCell(Text(_formatarBytes(banco.tamanhoArmazenadoBytes))),
+                        DataCell(Text(_formatarBytes(banco.tamanhoIndicesBytes))),
+                        DataCell(Text(banco.quantidadeColecoes.toString())),
+                        DataCell(Text(banco.quantidadeObjetos.toString())),
+                      ],
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF123B69).withOpacity(0.06),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFF123B69).withOpacity(0.08)),
+      ),
+      child: Text('$label: $value', style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF123B69))),
+    );
+  }
+}
+
 class _AdminMetricCard extends StatelessWidget {
   const _AdminMetricCard({
     required this.icon,
     required this.title,
     required this.value,
     required this.subtitle,
-  });
+  }) : flat = false;
+
+  const _AdminMetricCard.flat({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+  }) : flat = true;
 
   final IconData icon;
   final String title;
   final String value;
   final String subtitle;
+  final bool flat;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return _AdminGlassCard(
-      child: TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 620),
-        curve: Curves.easeOutCubic,
-        builder: (BuildContext context, double progress, Widget? child) {
-          return Opacity(
-            opacity: progress,
-            child: Transform.translate(
-              offset: Offset(0, 18 * (1 - progress)),
-              child: child,
+    final Widget content = TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 620),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double progress, Widget? child) {
+        return Opacity(
+          opacity: progress,
+          child: Transform.translate(
+            offset: Offset(0, 18 * (1 - progress)),
+            child: child,
+          ),
+        );
+      },
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0xFF123B69).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
             ),
-          );
-        },
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xFF123B69).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(icon, color: const Color(0xFF123B69)),
+            child: Icon(icon, color: const Color(0xFF123B69)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF152033))),
+                const SizedBox(height: 6),
+                Text(value, style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w900, color: const Color(0xFF0B1F3A), letterSpacing: -1.2)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: TextStyle(color: Colors.black.withOpacity(0.58), fontWeight: FontWeight.w600)),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF152033))),
-                  const SizedBox(height: 6),
-                  Text(value, style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w900, color: const Color(0xFF0B1F3A), letterSpacing: -1.2)),
-                  const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: Colors.black.withOpacity(0.58), fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+
+    if (flat) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.58),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFF123B69).withOpacity(0.08)),
+        ),
+        child: content,
+      );
+    }
+
+    return _AdminGlassCard(child: content);
   }
 }
 
@@ -369,4 +570,17 @@ class _Orb extends StatelessWidget {
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
+}
+
+String _formatarBytes(int bytes) {
+  if (bytes <= 0) return '0 B';
+  const List<String> unidades = <String>['B', 'KB', 'MB', 'GB', 'TB'];
+  double valor = bytes.toDouble();
+  int unidade = 0;
+  while (valor >= 1024 && unidade < unidades.length - 1) {
+    valor = valor / 1024;
+    unidade++;
+  }
+  final String texto = valor >= 10 || unidade == 0 ? valor.toStringAsFixed(0) : valor.toStringAsFixed(1);
+  return '$texto ${unidades[unidade]}';
 }
