@@ -4,11 +4,10 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import '../../core/services/auth_service.dart';
 import '../admin/admin_portal_components.dart';
 
-/// Conteúdo visual do dashboard exibido sobre a [PaginaPrincipalWeb].
+/// Conteúdo visual do dashboard exibido sobre a PaginaPrincipalWeb.
 ///
-/// Este componente não cria uma nova página nem substitui a tela principal.
-/// Ele concentra apenas a saudação e os indicadores de vendas para manter
-/// `pagina_principal_web.dart` menor e facilitar a evolução futura.
+/// Este componente concentra apenas a saudação e os indicadores operacionais,
+/// mantendo a página principal menor e facilitando a evolução futura.
 class PaginaPrincipalWebDashboardSection extends StatefulWidget {
   const PaginaPrincipalWebDashboardSection({super.key});
 
@@ -62,43 +61,47 @@ class _PaginaPrincipalWebDashboardSectionState
 
   @override
   Widget build(BuildContext context) {
-    return _SalesDashboard(userName: _userName);
+    return _OperationalDashboard(userName: _userName);
   }
 }
 
-class _SalesDashboard extends StatelessWidget {
-  const _SalesDashboard({required this.userName});
+class _OperationalDashboard extends StatelessWidget {
+  const _OperationalDashboard({required this.userName});
 
   final String? userName;
 
   static const List<_GaugeData> _mockedGauges = <_GaugeData>[
     _GaugeData(
-      titleKey: 'monthlyGoal',
-      value: 76,
-      mainValue: 'R\$ 76.400',
-      supportingValue: 'Meta: R\$ 100.000',
-      icon: Icons.flag_rounded,
+      titleKey: 'salesGoal',
+      value: 82,
+      mainValue: 'R\$ 82.000',
+      supportingKey: 'salesGoalSupport',
+      icon: Icons.track_changes_rounded,
+      color: Color(0xFF2563EB),
     ),
     _GaugeData(
-      titleKey: 'profitMargin',
-      value: 31,
-      mainValue: '31%',
-      supportingValue: '+3,2 p.p. no mês',
-      icon: Icons.trending_up_rounded,
+      titleKey: 'settledSalesGoal',
+      value: 74,
+      mainValue: 'R\$ 59.200',
+      supportingKey: 'settledSalesGoalSupport',
+      icon: Icons.verified_rounded,
+      color: Color(0xFF16A34A),
     ),
     _GaugeData(
-      titleKey: 'conversion',
-      value: 68,
-      mainValue: '68%',
-      supportingValue: '204 de 300 atendimentos',
-      icon: Icons.swap_horiz_rounded,
+      titleKey: 'unsettledSales',
+      value: 24,
+      mainValue: 'R\$ 18.400',
+      supportingKey: 'unsettledSalesSupport',
+      icon: Icons.pending_actions_rounded,
+      color: Color(0xFFF59E0B),
     ),
     _GaugeData(
-      titleKey: 'averageTicket',
-      value: 84,
-      mainValue: 'R\$ 418',
-      supportingValue: 'Referência: R\$ 500',
-      icon: Icons.shopping_bag_rounded,
+      titleKey: 'pendingServices',
+      value: 36,
+      mainValue: '18',
+      supportingKey: 'pendingServicesSupport',
+      icon: Icons.build_circle_outlined,
+      color: Color(0xFFEF4444),
     ),
   ];
 
@@ -139,9 +142,11 @@ class _SalesDashboard extends StatelessWidget {
                         .map(
                           (_GaugeData data) => SizedBox(
                             width: cardWidth,
-                            child: _SalesGaugeCard(
+                            child: _OperationalGaugeCard(
                               data: data,
-                              title: texts.titleFor(data.titleKey),
+                              title: texts.textFor(data.titleKey),
+                              supportingText:
+                                  texts.textFor(data.supportingKey),
                             ),
                           ),
                         )
@@ -237,16 +242,19 @@ class _GreetingHeader extends StatelessWidget {
   }
 }
 
-class _SalesGaugeCard extends StatelessWidget {
-  const _SalesGaugeCard({required this.data, required this.title});
+class _OperationalGaugeCard extends StatelessWidget {
+  const _OperationalGaugeCard({
+    required this.data,
+    required this.title,
+    required this.supportingText,
+  });
 
   final _GaugeData data;
   final String title;
+  final String supportingText;
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       height: 320,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -271,10 +279,10 @@ class _SalesGaugeCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.08),
+                  color: data.color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(data.icon, color: colorScheme.primary, size: 21),
+                child: Icon(data.icon, color: data.color, size: 21),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -314,7 +322,7 @@ class _SalesGaugeCard extends StatelessWidget {
                       value: data.value,
                       width: 0.16,
                       sizeUnit: GaugeSizeUnit.factor,
-                      color: colorScheme.primary,
+                      color: data.color,
                       cornerStyle: CornerStyle.bothCurve,
                       enableAnimation: true,
                       animationDuration: 900,
@@ -325,7 +333,7 @@ class _SalesGaugeCard extends StatelessWidget {
                       markerHeight: 12,
                       markerWidth: 12,
                       markerType: MarkerType.circle,
-                      color: colorScheme.primary,
+                      color: data.color,
                       borderColor: Colors.white,
                       borderWidth: 3,
                       enableAnimation: true,
@@ -351,7 +359,7 @@ class _SalesGaugeCard extends StatelessWidget {
                           Text(
                             data.mainValue,
                             style: TextStyle(
-                              color: colorScheme.primary,
+                              color: data.color,
                               fontSize: 14,
                               fontWeight: FontWeight.w900,
                             ),
@@ -365,8 +373,8 @@ class _SalesGaugeCard extends StatelessWidget {
             ),
           ),
           Text(
-            data.supportingValue,
-            maxLines: 1,
+            supportingText,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AdminPalette.mutedText,
@@ -423,15 +431,17 @@ class _GaugeData {
     required this.titleKey,
     required this.value,
     required this.mainValue,
-    required this.supportingValue,
+    required this.supportingKey,
     required this.icon,
+    required this.color,
   });
 
   final String titleKey;
   final double value;
   final String mainValue;
-  final String supportingValue;
+  final String supportingKey;
   final IconData icon;
+  final Color color;
 }
 
 class _DashboardTexts {
@@ -445,20 +455,23 @@ class _DashboardTexts {
     );
   }
 
+  String get normalizedLanguage =>
+      language == 'en' || language == 'es' ? language : 'pt';
+
   String get userFallback =>
       language == 'en' ? 'there' : language == 'es' ? 'usuario' : 'usuário';
 
   String get title => language == 'en'
-      ? 'Sales performance overview'
+      ? 'Business performance overview'
       : language == 'es'
-          ? 'Resumen del rendimiento de ventas'
-          : 'Visão geral dos resultados de vendas';
+          ? 'Resumen del rendimiento del negocio'
+          : 'Visão geral dos resultados do negócio';
 
   String get subtitle => language == 'en'
-      ? 'Track the main commercial indicators of your business.'
+      ? 'Compare goals, settlements and pending service operations.'
       : language == 'es'
-          ? 'Acompaña los principales indicadores comerciales de tu negocio.'
-          : 'Acompanhe os principais indicadores comerciais do seu negócio.';
+          ? 'Compara metas, liquidaciones y atenciones pendientes.'
+          : 'Compare metas, liquidações e atendimentos pendentes.';
 
   String get mockNotice => language == 'en'
       ? 'Demonstration data. These indicators are not connected to the backend yet.'
@@ -466,33 +479,52 @@ class _DashboardTexts {
           ? 'Datos de demostración. Estos indicadores aún no están conectados al backend.'
           : 'Dados demonstrativos. Estes indicadores ainda não estão conectados ao backend.';
 
-  String titleFor(String key) {
-    final Map<String, Map<String, String>> values = <String, Map<String, String>>{
-      'monthlyGoal': <String, String>{
-        'pt': 'Meta mensal de vendas',
-        'en': 'Monthly sales goal',
-        'es': 'Meta mensual de ventas',
+  String textFor(String key) {
+    const Map<String, Map<String, String>> values =
+        <String, Map<String, String>>{
+      'salesGoal': <String, String>{
+        'pt': 'Resultado de vendas vs. meta',
+        'en': 'Sales result vs. goal',
+        'es': 'Resultado de ventas vs. meta',
       },
-      'profitMargin': <String, String>{
-        'pt': 'Margem comercial',
-        'en': 'Commercial margin',
-        'es': 'Margen comercial',
+      'salesGoalSupport': <String, String>{
+        'pt': 'Meta mensal: R\$ 100.000',
+        'en': 'Monthly goal: R\$ 100,000',
+        'es': 'Meta mensual: R\$ 100.000',
       },
-      'conversion': <String, String>{
-        'pt': 'Conversão de atendimentos',
-        'en': 'Service conversion',
-        'es': 'Conversión de atenciones',
+      'settledSalesGoal': <String, String>{
+        'pt': 'Vendas liquidadas vs. meta',
+        'en': 'Settled sales vs. goal',
+        'es': 'Ventas liquidadas vs. meta',
       },
-      'averageTicket': <String, String>{
-        'pt': 'Ticket médio vs. referência',
-        'en': 'Average ticket vs. benchmark',
-        'es': 'Ticket promedio vs. referencia',
+      'settledSalesGoalSupport': <String, String>{
+        'pt': 'Meta liquidada: R\$ 80.000',
+        'en': 'Settlement goal: R\$ 80,000',
+        'es': 'Meta liquidada: R\$ 80.000',
+      },
+      'unsettledSales': <String, String>{
+        'pt': 'Vendas não liquidadas',
+        'en': 'Unsettled sales',
+        'es': 'Ventas no liquidadas',
+      },
+      'unsettledSalesSupport': <String, String>{
+        'pt': '12 vendas aguardando recebimento',
+        'en': '12 sales awaiting settlement',
+        'es': '12 ventas pendientes de liquidación',
+      },
+      'pendingServices': <String, String>{
+        'pt': 'Atendimentos pendentes',
+        'en': 'Pending service orders',
+        'es': 'Atenciones pendientes',
+      },
+      'pendingServicesSupport': <String, String>{
+        'pt': '18 de 50 atendimentos • 7 em atraso',
+        'en': '18 of 50 service orders • 7 overdue',
+        'es': '18 de 50 atenciones • 7 atrasadas',
       },
     };
-    final String normalized = language == 'en' || language == 'es'
-        ? language
-        : 'pt';
-    return values[key]?[normalized] ?? key;
+
+    return values[key]?[normalizedLanguage] ?? key;
   }
 
   String greetingFor(DateTime now, String name) {
