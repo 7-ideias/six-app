@@ -126,67 +126,67 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
     });
   }
 
-  void _limparFiltrosCockpit() {
-    setState(() {
-      _opcaoCockpitSelecionada = 0;
-    });
-  }
-
-  void _selecionarOpcaoCockpit(int index) {
-    setState(() {
-      _opcaoCockpitSelecionada = index;
-    });
-  }
-
-  void _voltarParaSeletor() {
-    if (_cockpitAbertoEmDialog) {
-      Navigator.of(context).pop();
-      return;
-    }
-
-    setState(() {
-      _moduloAtual = ModuloCentralPDV.seletor;
-    });
-  }
-
-  Future<void> _abrirCockpitEstrategico() async {
-    setState(() {
-      _opcaoCockpitSelecionada = 0;
-      _cockpitAbertoEmDialog = true;
-    });
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          backgroundColor: Colors.transparent,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
-            child: SizedBox(
-              width: size.width * 0.94,
-              height: size.height * 0.90,
-              child: Column(children: <Widget>[_buildCockpitEstrategico()]),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _cockpitAbertoEmDialog = false;
-    });
-  }
+  // void _limparFiltrosCockpit() {
+  //   setState(() {
+  //     _opcaoCockpitSelecionada = 0;
+  //   });
+  // }
+  //
+  // void _selecionarOpcaoCockpit(int index) {
+  //   setState(() {
+  //     _opcaoCockpitSelecionada = index;
+  //   });
+  // }
+  //
+  // void _voltarParaSeletor() {
+  //   if (_cockpitAbertoEmDialog) {
+  //     Navigator.of(context).pop();
+  //     return;
+  //   }
+  //
+  //   setState(() {
+  //     _moduloAtual = ModuloCentralPDV.seletor;
+  //   });
+  // }
+  //
+  // Future<void> _abrirCockpitEstrategico() async {
+  //   setState(() {
+  //     _opcaoCockpitSelecionada = 0;
+  //     _cockpitAbertoEmDialog = true;
+  //   });
+  //
+  //   await showDialog<void>(
+  //     context: context,
+  //     barrierDismissible: true,
+  //     builder: (BuildContext dialogContext) {
+  //       final Size size = MediaQuery.of(dialogContext).size;
+  //
+  //       return Dialog(
+  //         insetPadding: const EdgeInsets.symmetric(
+  //           horizontal: 24,
+  //           vertical: 24,
+  //         ),
+  //         backgroundColor: Colors.transparent,
+  //         child: ClipRRect(
+  //           borderRadius: BorderRadius.circular(22),
+  //           child: SizedBox(
+  //             width: size.width * 0.94,
+  //             height: size.height * 0.90,
+  //             child: Column(children: <Widget>[_buildCockpitEstrategico()]),
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  //
+  //   if (!mounted) {
+  //     return;
+  //   }
+  //
+  //   setState(() {
+  //     _cockpitAbertoEmDialog = false;
+  //   });
+  // }
 
   @override
   void initState() {
