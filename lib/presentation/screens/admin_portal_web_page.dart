@@ -143,6 +143,7 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
 
     final AdminPortalResumo resumo = _resumo ?? const AdminPortalResumo(totalEmpresasCadastradas: 0, totalEmpresasAtivas: 0);
     final AdminBancoDadosResumo? bancoPrincipal = resumo.bancosDeDados.isNotEmpty ? resumo.bancosDeDados.first : null;
+    final AdminActuatorResumo? actuator = resumo.actuator;
 
     return Column(
       key: const ValueKey<String>('dashboard'),
@@ -184,6 +185,10 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
         if (resumo.bancosDeDados.length > 1) ...<Widget>[
           const SizedBox(height: 16),
           _BancosDadosListaSection(bancos: resumo.bancosDeDados),
+        ],
+        if (actuator != null) ...<Widget>[
+          const SizedBox(height: 16),
+          _ActuatorResumoSection(actuator: actuator),
         ],
         const SizedBox(height: 16),
         const _AdminGlassCard(
@@ -300,7 +305,7 @@ class _BancoDadosResumoSection extends StatelessWidget {
                   children: <Widget>[
                     const Text('Banco de dados', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0B1F3A), fontSize: 18)),
                     const SizedBox(height: 4),
-                    Text('MongoDB atual: ${banco.nome}', style: TextStyle(color: Colors.black.withOpacity(0.58), fontWeight: FontWeight.w700)),
+                    Text('Banco principal: ${banco.nome}', style: TextStyle(color: Colors.black.withOpacity(0.58), fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -352,8 +357,8 @@ class _BancoDadosResumoSection extends StatelessWidget {
             runSpacing: 10,
             children: <Widget>[
               _InfoPill(label: 'Total', value: _formatarBytes(banco.tamanhoTotalBytes)),
-              _InfoPill(label: 'Coleções', value: banco.quantidadeColecoes.toString()),
-              _InfoPill(label: 'Objetos', value: banco.quantidadeObjetos.toString()),
+              _InfoPill(label: 'Coleções/Tabelas', value: banco.quantidadeColecoes.toString()),
+              _InfoPill(label: 'Objetos/Registros', value: banco.quantidadeObjetos.toString()),
             ],
           ),
         ],
@@ -383,8 +388,8 @@ class _BancosDadosListaSection extends StatelessWidget {
                 DataColumn(label: Text('Dados')),
                 DataColumn(label: Text('Armazenado')),
                 DataColumn(label: Text('Índices')),
-                DataColumn(label: Text('Coleções')),
-                DataColumn(label: Text('Objetos')),
+                DataColumn(label: Text('Coleções/Tabelas')),
+                DataColumn(label: Text('Objetos/Registros')),
               ],
               rows: bancos
                   .map(
@@ -404,6 +409,122 @@ class _BancosDadosListaSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ActuatorResumoSection extends StatelessWidget {
+  const _ActuatorResumoSection({required this.actuator});
+
+  final AdminActuatorResumo actuator;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool statusOk = actuator.status.toUpperCase() == 'UP';
+    final Color statusColor = statusOk ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+
+    return _AdminGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(Icons.monitor_heart_rounded, color: statusColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text('Actuator / Saúde do backend', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0B1F3A), fontSize: 18)),
+                    const SizedBox(height: 4),
+                    Text('Status reportado pelo Spring Boot Actuator e runtime da JVM.', style: TextStyle(color: Colors.black.withOpacity(0.58), fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+              _StatusBadge(status: actuator.status, color: statusColor),
+            ],
+          ),
+          const SizedBox(height: 18),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compacto = constraints.maxWidth < 900;
+              final double width = compacto ? constraints.maxWidth : (constraints.maxWidth - 32) / 3;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: <Widget>[
+                  SizedBox(
+                    width: width,
+                    child: _AdminMetricCard.flat(
+                      icon: Icons.timer_outlined,
+                      title: 'Uptime',
+                      value: _formatarDuracao(actuator.uptimeSegundos),
+                      subtitle: 'Tempo em execução do backend.',
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _AdminMetricCard.flat(
+                      icon: Icons.memory_rounded,
+                      title: 'Heap JVM',
+                      value: _formatarBytes(actuator.memoriaHeapUsadaBytes),
+                      subtitle: 'Máximo: ${_formatarBytes(actuator.memoriaHeapMaxBytes)}.',
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _AdminMetricCard.flat(
+                      icon: Icons.account_tree_rounded,
+                      title: 'Threads',
+                      value: actuator.threadsAtivas.toString(),
+                      subtitle: 'Pico: ${actuator.threadsPico} • Daemon: ${actuator.threadsDaemon}.',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: <Widget>[
+              _InfoPill(label: 'Non-heap', value: '${_formatarBytes(actuator.memoriaNonHeapUsadaBytes)} / ${_formatarBytes(actuator.memoriaNonHeapMaxBytes)}'),
+              _InfoPill(label: 'Processadores', value: actuator.processadoresDisponiveis.toString()),
+              _InfoPill(label: 'Carga', value: _formatarCarga(actuator.cargaSistema)),
+              _InfoPill(label: 'Java', value: actuator.versaoJava),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status, required this.color});
+
+  final String status;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.22)),
+      ),
+      child: Text(status.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.w900, letterSpacing: 0.6)),
     );
   }
 }
@@ -583,4 +704,19 @@ String _formatarBytes(int bytes) {
   }
   final String texto = valor >= 10 || unidade == 0 ? valor.toStringAsFixed(0) : valor.toStringAsFixed(1);
   return '$texto ${unidades[unidade]}';
+}
+
+String _formatarDuracao(int segundos) {
+  if (segundos <= 0) return '0s';
+  final int dias = segundos ~/ 86400;
+  final int horas = (segundos % 86400) ~/ 3600;
+  final int minutos = (segundos % 3600) ~/ 60;
+  if (dias > 0) return '${dias}d ${horas}h';
+  if (horas > 0) return '${horas}h ${minutos}min';
+  return '${minutos}min';
+}
+
+String _formatarCarga(double carga) {
+  if (carga < 0) return 'indisponível';
+  return carga.toStringAsFixed(2);
 }
