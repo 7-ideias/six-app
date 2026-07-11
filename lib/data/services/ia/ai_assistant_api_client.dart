@@ -48,6 +48,21 @@ class AiAssistantApiClient {
     }
   }
 
+  Future<void> enviarSugestao(AiAssistantSuggestionRequestModel request) async {
+    final response = await _httpClient.post(
+      Uri.parse('${AppConfig.baseUrl}/private/api/ia/assistente/sugestoes'),
+      headers: await _headers(),
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AiAssistantApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+  }
+
   Future<Map<String, String>> _headers() async {
     final AuthService authService = AuthService();
     final String? jwtToken = await authService.getAccessToken();
