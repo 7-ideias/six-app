@@ -1,10 +1,21 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-import '../../../l10n/app_localizations.dart';
 import 'ai_assistant_button.dart';
 import 'ai_assistant_mobile_screen.dart';
 import 'ai_assistant_panel.dart';
+
+class AiAssistantWebBridge {
+  AiAssistantWebBridge._();
+
+  static final ValueNotifier<int> _toggleSignal = ValueNotifier<int>(0);
+
+  static ValueListenable<int> get toggleSignal = _toggleSignal;
+
+  static void toggle() {
+    _toggleSignal.value = _toggleSignal.value + 1;
+  }
+}
 
 class AiAssistantHost extends StatefulWidget {
   const AiAssistantHost({
@@ -28,6 +39,27 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
   static const Curve _webPanelCloseCurve = Curves.easeInOutCubic;
 
   bool _panelOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      AiAssistantWebBridge.toggleSignal.addListener(_togglePanelFromTopbar);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (kIsWeb) {
+      AiAssistantWebBridge.toggleSignal.removeListener(_togglePanelFromTopbar);
+    }
+    super.dispose();
+  }
+
+  void _togglePanelFromTopbar() {
+    if (!mounted) return;
+    setState(() => _panelOpen = !_panelOpen);
+  }
 
   void _togglePanel() {
     if (kIsWeb) {
@@ -60,44 +92,22 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations? l10n = AppLocalizations.of(context);
-    final String label = l10n?.aiAssistantAsk ?? 'Perguntar a IA';
-
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
         widget.child,
         if (kIsWeb) _buildWebAnimatedBackdrop(),
-        if (kIsWeb)
-          _buildWebTopbarButton(label)
-        else
+        if (!kIsWeb)
           Positioned(
             right: 16,
             bottom: 90,
             child: AiAssistantButton(
               onTap: _togglePanel,
-              label: label,
+              label: 'Perguntar a IA',
             ),
           ),
         if (kIsWeb) _buildWebAnimatedPanel(),
       ],
-    );
-  }
-
-  Widget _buildWebTopbarButton(String label) {
-    return Positioned(
-      top: 27,
-      right: 292,
-      child: AnimatedScale(
-        scale: _panelOpen ? 0.98 : 1,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        child: _WebAiAssistantTopbarButton(
-          onTap: _togglePanel,
-          label: label,
-          selected: _panelOpen,
-        ),
-      ),
     );
   }
 
@@ -112,7 +122,7 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _togglePanel,
-            child: Container(color: Colors.black.withValues(alpha: 0.18)),
+            child: Container(color: Colors.black.withOpacity(0.18)),
           ),
         ),
       ),
@@ -141,79 +151,6 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
                 onClose: _togglePanel,
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WebAiAssistantTopbarButton extends StatelessWidget {
-  const _WebAiAssistantTopbarButton({
-    required this.onTap,
-    required this.label,
-    required this.selected,
-  });
-
-  final VoidCallback onTap;
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final bool isDark = theme.brightness == Brightness.dark;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: selected
-                ? colorScheme.primary
-                : (isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF8FAFC)),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected
-                  ? colorScheme.primary
-                  : (isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2E8F0)),
-            ),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(
-                Icons.auto_awesome_outlined,
-                size: 17,
-                color: selected ? colorScheme.onPrimary : colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? colorScheme.onPrimary : colorScheme.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ],
           ),
         ),
       ),
