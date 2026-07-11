@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../pagina_principal_web.dart';
 import '../../presentation/components/ai_assistant/ai_assistant_host.dart';
-import '../../presentation/components/pagina_principal_web_dashboard_section.dart';
+import '../../presentation/components/dashboard_colaborador_web.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 
 const Color _primary = Color(0xFF24458F);
@@ -56,7 +56,7 @@ class _PdvPageWebAutorizadoState extends State<PdvPageWebAutorizado> {
                 opacity: _dashboardVisivel ? 1 : 0,
                 duration: const Duration(milliseconds: 320),
                 curve: Curves.easeOutCubic,
-                child: const PaginaPrincipalWebDashboardSection(),
+                child: const DashboardColaboradorWeb(),
               ),
             ),
           ),

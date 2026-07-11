@@ -4,20 +4,16 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import '../../core/services/auth_service.dart';
 import '../admin/admin_portal_components.dart';
 
-/// Conteúdo visual do dashboard exibido sobre a PaginaPrincipalWeb.
-///
-/// Este componente concentra apenas a saudação e os indicadores operacionais,
-/// mantendo a página principal menor e facilitando a evolução futura.
-class PaginaPrincipalWebDashboardSection extends StatefulWidget {
-  const PaginaPrincipalWebDashboardSection({super.key});
+class DashboardGestaoWeb extends StatefulWidget {
+  const DashboardGestaoWeb({super.key});
 
   @override
-  State<PaginaPrincipalWebDashboardSection> createState() =>
-      _PaginaPrincipalWebDashboardSectionState();
+  State<DashboardGestaoWeb> createState() =>
+      _DashboardGestaoWebState();
 }
 
-class _PaginaPrincipalWebDashboardSectionState
-    extends State<PaginaPrincipalWebDashboardSection> {
+class _DashboardGestaoWebState
+    extends State<DashboardGestaoWeb> {
   final AuthService _authService = AuthService();
 
   String? _userName;
@@ -53,9 +49,9 @@ class _PaginaPrincipalWebDashboardSectionState
         .split(RegExp(r'\s+'))
         .where((String parte) => parte.isNotEmpty)
         .map((String parte) {
-          if (parte.length == 1) return parte.toUpperCase();
-          return '${parte[0].toUpperCase()}${parte.substring(1).toLowerCase()}';
-        })
+      if (parte.length == 1) return parte.toUpperCase();
+      return '${parte[0].toUpperCase()}${parte.substring(1).toLowerCase()}';
+    })
         .join(' ');
   }
 
@@ -128,8 +124,8 @@ class _OperationalDashboard extends StatelessWidget {
                   final int columns = constraints.maxWidth >= 1320
                       ? 4
                       : constraints.maxWidth >= 760
-                          ? 2
-                          : 1;
+                      ? 2
+                      : 1;
                   const double spacing = 18;
                   final double cardWidth =
                       (constraints.maxWidth - ((columns - 1) * spacing)) /
@@ -141,15 +137,15 @@ class _OperationalDashboard extends StatelessWidget {
                     children: _mockedGauges
                         .map(
                           (_GaugeData data) => SizedBox(
-                            width: cardWidth,
-                            child: _OperationalGaugeCard(
-                              data: data,
-                              title: texts.textFor(data.titleKey),
-                              supportingText:
-                                  texts.textFor(data.supportingKey),
-                            ),
-                          ),
-                        )
+                        width: cardWidth,
+                        child: _OperationalGaugeCard(
+                          data: data,
+                          title: texts.textFor(data.titleKey),
+                          supportingText:
+                          texts.textFor(data.supportingKey),
+                        ),
+                      ),
+                    )
                         .toList(growable: false),
                   );
                 },
@@ -464,24 +460,24 @@ class _DashboardTexts {
   String get title => language == 'en'
       ? 'Business performance overview'
       : language == 'es'
-          ? 'Resumen del rendimiento del negocio'
-          : 'Visão geral dos resultados do negócio';
+      ? 'Resumen del rendimiento del negocio'
+      : 'Visão geral dos resultados do negócio';
 
   String get subtitle => language == 'en'
       ? 'Compare goals, settlements and pending service operations.'
       : language == 'es'
-          ? 'Compara metas, liquidaciones y atenciones pendientes.'
-          : 'Compare metas, liquidações e atendimentos pendentes.';
+      ? 'Compara metas, liquidaciones y atenciones pendientes.'
+      : 'Compare metas, liquidações e atendimentos pendentes.';
 
   String get mockNotice => language == 'en'
       ? 'Demonstration data. These indicators are not connected to the backend yet.'
       : language == 'es'
-          ? 'Datos de demostración. Estos indicadores aún no están conectados al backend.'
-          : 'Dados demonstrativos. Estes indicadores ainda não estão conectados ao backend.';
+      ? 'Datos de demostración. Estos indicadores aún no están conectados al backend.'
+      : 'Dados demonstrativos. Estes indicadores ainda não estão conectados ao backend.';
 
   String textFor(String key) {
     const Map<String, Map<String, String>> values =
-        <String, Map<String, String>>{
+    <String, Map<String, String>>{
       'salesGoal': <String, String>{
         'pt': 'Resultado de vendas vs. meta',
         'en': 'Sales result vs. goal',
@@ -533,20 +529,20 @@ class _DashboardTexts {
       period = language == 'en'
           ? 'Good morning'
           : language == 'es'
-              ? 'Buenos días'
-              : 'Bom dia';
+          ? 'Buenos días'
+          : 'Bom dia';
     } else if (now.hour < 18) {
       period = language == 'en'
           ? 'Good afternoon'
           : language == 'es'
-              ? 'Buenas tardes'
-              : 'Boa tarde';
+          ? 'Buenas tardes'
+          : 'Boa tarde';
     } else {
       period = language == 'en'
           ? 'Good evening'
           : language == 'es'
-              ? 'Buenas noches'
-              : 'Boa noite';
+          ? 'Buenas noches'
+          : 'Boa noite';
     }
     return '$period, $name';
   }
