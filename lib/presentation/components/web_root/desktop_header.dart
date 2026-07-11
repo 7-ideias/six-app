@@ -9,9 +9,9 @@ import 'package:sixpos/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// Nav desktop sticky 96px:
-//   [LOGO maior, esquerda]  ─ flex spacer ─  [NAV CENTRALIZADA com indicator]
-//                                            ─ flex spacer ─  [Idioma | Dark | Entrar | CTA]
+// Nav desktop sticky premium:
+//   [brand discreta] ─ [fluxo superior] ─ [Idioma | Dark | Entrar | CTA]
+// Mantém os mesmos destinos atuais: home / features / pricing / about.
 class DesktopHeader extends StatefulWidget {
   const DesktopHeader({
     super.key,
@@ -42,10 +42,10 @@ class _DesktopHeaderState extends State<DesktopHeader> {
   }
 
   List<_NavItem> _navItems(WebRootL10n l10n) => [
-    _NavItem('home', l10n.navHome),
-    _NavItem('features', l10n.navFeatures),
-    _NavItem('pricing', l10n.navPricing),
-    _NavItem('about', l10n.navAbout),
+    _NavItem('home', l10n.navHome, Icons.dashboard_customize_rounded),
+    _NavItem('features', l10n.navFeatures, Icons.storefront_rounded),
+    _NavItem('pricing', l10n.navPricing, Icons.workspace_premium_rounded),
+    _NavItem('about', l10n.navAbout, Icons.forum_rounded),
   ];
 
   @override
@@ -55,90 +55,87 @@ class _DesktopHeaderState extends State<DesktopHeader> {
     final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
     final items = _navItems(l10n);
 
-    return Container(
-      height: 96,
-      color: scheme.headerBgDesktop,
-      child: Row(
-        children: [
-          // Logo à esquerda — fora do flex/centering.
-          _logo(),
-          // Conteúdo centralizado (nav + buttons) com borda inferior.
-          // LayoutBuilder detecta largura disponível e adapta padding e
-          // visibilidade do botão "Entrar" para evitar overflow em desktops
-          // estreitos (1024-1130px). O CTA principal sempre permanece visível.
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final narrow = constraints.maxWidth < 880;
-                final hPad = narrow ? 24.0 : 40.0;
-                return Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: scheme.border),
-                    ),
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        height: 112,
+        padding: const EdgeInsets.fromLTRB(28, 18, 28, 14),
+        color: Colors.transparent,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1280),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: scheme.isDark
+                    ? const Color(0xE60A1624)
+                    : Colors.white.withOpacity(0.88),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: scheme.isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.white.withOpacity(0.78),
+                ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: const Color(0xFF0B1F3A).withOpacity(scheme.isDark ? 0.22 : 0.08),
+                    blurRadius: 34,
+                    offset: const Offset(0, 18),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: hPad),
-                  child: Row(
-                    children: [
-                      const Expanded(child: SizedBox()),
-                      _CenteredNav(
-                        items: items,
-                        active: _active,
-                        scheme: scheme,
-                        onTap: (id) {
-                          setState(() => _active = id);
-                          widget.onNavTap?.call(id);
-                        },
-                      ),
-                      const Expanded(child: SizedBox()),
-                      const WebLanguageSwitcher(),
-                      const SizedBox(width: 8),
-                      const WebDarkToggle(),
-                      const SizedBox(width: 16),
-                      if (!narrow) ...[
+                ],
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool narrow = constraints.maxWidth < 980;
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: narrow ? 18 : 22,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        _BrandMark(scheme: scheme),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: _FlowNav(
+                              items: items,
+                              active: _active,
+                              scheme: scheme,
+                              compact: narrow,
+                              onTap: (id) {
+                                setState(() => _active = id);
+                                widget.onNavTap?.call(id);
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        const WebLanguageSwitcher(),
+                        const SizedBox(width: 8),
+                        const WebDarkToggle(),
+                        const SizedBox(width: 12),
+                        if (!narrow) ...[
+                          ResponsiveButton(
+                            label: l10n.navLogin,
+                            onPressed: widget.onLogin,
+                            variant: WebButtonVariant.ghost,
+                            size: WebButtonSize.sm,
+                          ),
+                          const SizedBox(width: 10),
+                        ],
                         ResponsiveButton(
-                          label: l10n.navLogin,
-                          onPressed: widget.onLogin,
-                          variant: WebButtonVariant.ghost,
+                          label: l10n.navSignup,
+                          onPressed: widget.onSignup,
+                          variant: WebButtonVariant.primary,
                           size: WebButtonSize.sm,
                         ),
-                        const SizedBox(width: 10),
                       ],
-                      ResponsiveButton(
-                        label: l10n.navSignup,
-                        onPressed: widget.onSignup,
-                        variant: WebButtonVariant.primary,
-                        size: WebButtonSize.sm,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _logo() {
-    final isDark = SixThemeResolver().isDark;
-    return Padding(
-      padding: const EdgeInsets.only(left: 32),
-      child: SizedBox(
-        width: 220,
-        height: 96,
-        child: OverflowBox(
-          maxWidth: 280,
-          maxHeight: 180,
-          alignment: Alignment.centerLeft,
-          child: Image.asset(
-            'assets/images/six-logo-flecha.png',
-            height: 150,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            color: isDark ? Colors.white : null,
-            colorBlendMode: isDark ? BlendMode.srcIn : null,
           ),
         ),
       ),
@@ -146,183 +143,232 @@ class _DesktopHeaderState extends State<DesktopHeader> {
   }
 }
 
-class _NavItem {
-  const _NavItem(this.id, this.label);
-  final String id;
-  final String label;
+class _BrandMark extends StatelessWidget {
+  const _BrandMark({required this.scheme});
+
+  final WebRootScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = scheme.isDark;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(17),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[Color(0xFF0B1F3A), Color(0xFF2563EB)],
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFF2563EB).withOpacity(0.20),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Image.asset(
+            'assets/images/six-logo-flecha.png',
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            color: Colors.white,
+            colorBlendMode: BlendMode.srcIn,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Six',
+              style: TextStyle(
+                fontFamily: WebRootTokens.fontFamily,
+                fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                height: 1,
+                color: scheme.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'CRM para operação técnica',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: WebRootTokens.fontFamily,
+                fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFF8EA6BA) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
-// Nav centralizada com indicador animado (pill + underline).
-class _CenteredNav extends StatefulWidget {
-  const _CenteredNav({
+class _NavItem {
+  const _NavItem(this.id, this.label, this.icon);
+  final String id;
+  final String label;
+  final IconData icon;
+}
+
+class _FlowNav extends StatefulWidget {
+  const _FlowNav({
     required this.items,
     required this.active,
     required this.scheme,
+    required this.compact,
     required this.onTap,
   });
 
   final List<_NavItem> items;
   final String active;
   final WebRootScheme scheme;
+  final bool compact;
   final ValueChanged<String> onTap;
 
   @override
-  State<_CenteredNav> createState() => _CenteredNavState();
+  State<_FlowNav> createState() => _FlowNavState();
 }
 
-class _CenteredNavState extends State<_CenteredNav> {
-  final Map<String, GlobalKey> _keys = {};
-  final Map<String, Rect> _rects = {};
-  bool _measured = false;
-
-  @override
-  void initState() {
-    super.initState();
-    for (final it in widget.items) {
-      _keys[it.id] = GlobalKey();
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
-  }
-
-  @override
-  void didUpdateWidget(covariant _CenteredNav old) {
-    super.didUpdateWidget(old);
-    // Re-cria keys quando os itens mudam (ex: troca de idioma muda labels
-    // mas não IDs, então a estrutura é a mesma — apenas re-mede).
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
-  }
-
-  void _measure() {
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.attached) return;
-    for (final entry in _keys.entries) {
-      final itemBox =
-          entry.value.currentContext?.findRenderObject() as RenderBox?;
-      if (itemBox == null) continue;
-      final offset = itemBox.localToGlobal(Offset.zero, ancestor: box);
-      _rects[entry.key] = offset & itemBox.size;
-    }
-    if (mounted) setState(() => _measured = true);
-  }
+class _FlowNavState extends State<_FlowNav> {
+  final Map<String, bool> _hovering = <String, bool>{};
 
   @override
   Widget build(BuildContext context) {
-    final activeRect = _rects[widget.active];
-
-    return LayoutBuilder(
-      builder: (context, _) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
-
-        return SizedBox(
-          height: 48,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (_measured && activeRect != null)
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  left: activeRect.left,
-                  top: activeRect.top,
-                  width: activeRect.width,
-                  height: activeRect.height,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: widget.scheme.borderSoft,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-              if (_measured && activeRect != null)
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 320),
-                  curve: Curves.easeOutCubic,
-                  left: activeRect.left + 16,
-                  top: activeRect.bottom + 2,
-                  width: (activeRect.width - 32).clamp(0, double.infinity),
-                  height: 2,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: WebRootTokens.accent,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final it in widget.items)
-                    _NavButton(
-                      key: _keys[it.id],
-                      item: it,
-                      active: widget.active == it.id,
-                      scheme: widget.scheme,
-                      onTap: () => widget.onTap(it.id),
-                    ),
-                ],
-              ),
-            ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: widget.scheme.isDark
+              ? Colors.white.withOpacity(0.04)
+              : const Color(0xFFF1F5F9).withOpacity(0.86),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: widget.scheme.isDark
+                ? Colors.white.withOpacity(0.06)
+                : const Color(0xFFE2E8F0),
           ),
-        );
-      },
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (final item in widget.items)
+              _FlowNavButton(
+                item: item,
+                active: widget.active == item.id,
+                hovering: _hovering[item.id] ?? false,
+                compact: widget.compact,
+                scheme: widget.scheme,
+                onEnter: () => setState(() => _hovering[item.id] = true),
+                onExit: () => setState(() => _hovering[item.id] = false),
+                onTap: () => widget.onTap(item.id),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _NavButton extends StatefulWidget {
-  const _NavButton({
-    super.key,
+class _FlowNavButton extends StatelessWidget {
+  const _FlowNavButton({
     required this.item,
     required this.active,
+    required this.hovering,
+    required this.compact,
     required this.scheme,
+    required this.onEnter,
+    required this.onExit,
     required this.onTap,
   });
 
   final _NavItem item;
   final bool active;
+  final bool hovering;
+  final bool compact;
   final WebRootScheme scheme;
+  final VoidCallback onEnter;
+  final VoidCallback onExit;
   final VoidCallback onTap;
 
   @override
-  State<_NavButton> createState() => _NavButtonState();
-}
-
-class _NavButtonState extends State<_NavButton> {
-  bool _hover = false;
-
-  @override
   Widget build(BuildContext context) {
-    final color = widget.active
-        ? widget.scheme.textPrimary
-        : (_hover ? widget.scheme.textPrimary : widget.scheme.textMuted);
+    final Color foreground = active
+        ? Colors.white
+        : (hovering ? scheme.textPrimary : scheme.textMuted);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
+      onEnter: (_) => onEnter(),
+      onExit: (_) => onExit(),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
+        onTap: onTap,
         child: Semantics(
           button: true,
-          selected: widget.active,
-          label: widget.item.label,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontFamily: WebRootTokens.fontFamily,
-                  fontFamilyFallback: WebRootTokens.fontFamilyFallback,
-                  fontSize: 14,
-                  fontWeight:
-                      widget.active ? FontWeight.w600 : FontWeight.w500,
-                  color: color,
-                ),
-                child: Text(widget.item.label),
-              ),
+          selected: active,
+          label: item.label,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 11 : 15,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: active
+                  ? const Color(0xFF0B1F3A)
+                  : (hovering
+                      ? (scheme.isDark
+                          ? Colors.white.withOpacity(0.06)
+                          : Colors.white.withOpacity(0.86))
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: active
+                  ? <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0xFF0B1F3A).withOpacity(0.18),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(item.icon, size: 16, color: foreground),
+                if (!compact) ...<Widget>[
+                  const SizedBox(width: 8),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      fontFamily: WebRootTokens.fontFamily,
+                      fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+                      fontSize: 13,
+                      fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+                      color: foreground,
+                    ),
+                    child: Text(item.label, overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
