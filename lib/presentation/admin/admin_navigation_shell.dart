@@ -206,7 +206,9 @@ class _AdminNavigationMainArea extends StatelessWidget {
               ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: maxContentWidth),
+                  constraints: const BoxConstraints(
+                    maxWidth: AdminNavigationShell.maxContentWidth,
+                  ),
                   child: child,
                 ),
               ),
