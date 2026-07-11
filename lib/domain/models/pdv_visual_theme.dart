@@ -43,23 +43,23 @@ class PdvVisualTheme {
 
   factory PdvVisualTheme.defaultTheme() {
     return PdvVisualTheme(
-      backgroundPage: const Color(0xFFF8FAFC),
+      backgroundPage: const Color(0xFFF4F7FB),
       backgroundSurface: Colors.white,
-      backgroundSidebar: const Color(0xFF1F3C88),
+      backgroundSidebar: const Color(0xFF0B1F3A),
       cardBackground: Colors.white,
       cardBorder: const Color(0xFFE2E8F0),
-      cardShadow: Colors.black.withOpacity(0.05),
+      cardShadow: const Color(0xFF0B1F3A).withOpacity(0.08),
       primaryText: const Color(0xFF0F172A),
       secondaryText: const Color(0xFF475569),
-      badgeBackground: const Color(0xFF1F3C88),
+      badgeBackground: const Color(0xFF2563EB),
       badgeText: Colors.white,
-      iconColor: const Color(0xFF1F3C88),
-      highlightColor: const Color(0xFF5E81F4),
-      successColor: const Color(0xFF0FA958),
+      iconColor: const Color(0xFF1D2B8F),
+      highlightColor: const Color(0xFF2563EB),
+      successColor: const Color(0xFF16A34A),
       warningColor: const Color(0xFFF59E0B),
-      eventCardBackground: const Color(0xFFF1F5F9),
-      eventCardBorder: const Color(0xFFCBD5E1),
-      actionButtonBackground: const Color(0xFF1F3C88),
+      eventCardBackground: const Color(0xFFF8FAFC),
+      eventCardBorder: const Color(0xFFE2E8F0),
+      actionButtonBackground: const Color(0xFF0B1F3A),
       actionButtonForeground: Colors.white,
     );
   }
