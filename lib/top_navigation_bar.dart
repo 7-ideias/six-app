@@ -51,7 +51,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? notificationWidget;
 
   @override
-  Size get preferredSize => const Size.fromHeight(56);
+  Size get preferredSize => const Size.fromHeight(92);
 
   bool get _usaNovoMenuSix {
     final titles = items.map((item) => item.title).toSet();
@@ -442,40 +442,69 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     final currentTheme = brightness == Brightness.dark ? themeProvider.darkTheme : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
     final effectiveItems = _itemsEfetivos(context);
+    final bool isDark = brightness == Brightness.dark;
+
     return Material(
-      color: colorScheme.primary,
-      child: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        titleSpacing: 18,
-        title: Row(
-          children: <Widget>[
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: effectiveItems
-                      .map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: _TopNavigationMenuItem(data: item, colorScheme: colorScheme),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
+      color: Colors.transparent,
+      child: Container(
+        height: preferredSize.height,
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const <Color>[Color(0xFF07111E), Color(0xFF0B1B2E)]
+                : const <Color>[Color(0xFFF4F7FB), Color(0xFFE7F0FA)],
+          ),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.88),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78),
             ),
-            const SizedBox(width: 12),
-            _AppVersionPill(colorScheme: colorScheme),
-            const SizedBox(width: 10),
-            notificationWidget ??
-                IconButton(
-                  onPressed: onNotificationPressed,
-                  icon: Icon(Icons.notifications_none, color: colorScheme.onPrimary),
-                  tooltip: 'Notificações',
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.22 : 0.08),
+                blurRadius: 34,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: effectiveItems
+                          .map(
+                            (item) => Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: _TopNavigationMenuItem(data: item, colorScheme: colorScheme, premium: true),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
                 ),
-          ],
+                const SizedBox(width: 12),
+                _AppVersionPill(colorScheme: colorScheme, premium: true),
+                const SizedBox(width: 10),
+                notificationWidget ??
+                    IconButton(
+                      onPressed: onNotificationPressed,
+                      icon: Icon(Icons.notifications_none, color: colorScheme.primary),
+                      tooltip: 'Notificações',
+                    ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -513,106 +542,157 @@ class _EscOverlayScope extends StatelessWidget {
 }
 
 class _AppVersionPill extends StatelessWidget {
-  const _AppVersionPill({required this.colorScheme});
+  const _AppVersionPill({required this.colorScheme, this.premium = false});
 
   final ColorScheme colorScheme;
+  final bool premium;
 
   @override
   Widget build(BuildContext context) {
-    final label = 'v${AppConfig.appVersion}';
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color bg = premium
+        ? (isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF8FAFC))
+        : colorScheme.onPrimary.withOpacity(0.16);
+    final Color border = premium
+        ? (isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2E8F0))
+        : colorScheme.onPrimary.withOpacity(0.20);
+    final Color text = premium ? colorScheme.primary : colorScheme.onPrimary;
+
     return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: bg,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border),
       ),
-      alignment: Alignment.center,
       child: Text(
-        label,
-        style: TextStyle(color: colorScheme.primary, fontSize: 12, fontWeight: FontWeight.w800),
+        'v${AppConfig.versaoApp}',
+        style: TextStyle(
+          color: text,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+          letterSpacing: -0.1,
+        ),
       ),
     );
   }
 }
 
-class _TopNavigationMenuItem extends StatelessWidget {
-  const _TopNavigationMenuItem({required this.data, required this.colorScheme});
+class _TopNavigationMenuItem extends StatefulWidget {
+  const _TopNavigationMenuItem({required this.data, required this.colorScheme, this.premium = false});
 
   final TopNavItemData data;
   final ColorScheme colorScheme;
+  final bool premium;
 
   @override
-  Widget build(BuildContext context) {
-    if (data.subItems.isEmpty) {
-      return _TopNavChip(
-        label: data.title,
-        hasMenu: false,
-        colorScheme: colorScheme,
-        onTap: () => data.onSelect?.call(data.title),
-      );
-    }
+  State<_TopNavigationMenuItem> createState() => _TopNavigationMenuItemState();
+}
 
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 44),
-      onSelected: (value) => data.onSelect?.call(value),
-      itemBuilder: (context) => data.subItems
-          .map((subItem) => PopupMenuItem<String>(value: subItem, child: Text(subItem)))
+class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
+  bool _open = false;
+  bool _hover = false;
+
+  void _showMenu() async {
+    setState(() => _open = true);
+    final RenderBox box = context.findRenderObject()! as RenderBox;
+    final Offset position = box.localToGlobal(Offset.zero);
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + box.size.height + 6,
+        position.dx + box.size.width,
+        0,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 12,
+      color: Theme.of(context).colorScheme.surface,
+      items: widget.data.subItems
+          .map(
+            (item) => PopupMenuItem<String>(
+              value: item,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.arrow_right_rounded, color: widget.colorScheme.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(child: Text(item, overflow: TextOverflow.ellipsis)),
+                  ],
+                ),
+              ),
+            ),
+          )
           .toList(),
-      child: _TopNavChip(label: data.title, hasMenu: true, colorScheme: colorScheme),
     );
+    if (mounted) setState(() => _open = false);
+    if (selected != null) {
+      widget.data.onSelect?.call(selected);
+    }
   }
-}
-
-class _TopNavChip extends StatefulWidget {
-  const _TopNavChip({
-    required this.label,
-    required this.hasMenu,
-    required this.colorScheme,
-    this.onTap,
-  });
-
-  final String label;
-  final bool hasMenu;
-  final ColorScheme colorScheme;
-  final VoidCallback? onTap;
-
-  @override
-  State<_TopNavChip> createState() => _TopNavChipState();
-}
-
-class _TopNavChipState extends State<_TopNavChip> {
-  bool _hovering = false;
 
   @override
   Widget build(BuildContext context) {
+    final bool hasChildren = widget.data.subItems.isNotEmpty;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool active = _open || _hover;
+    final Color textColor = widget.premium
+        ? (active ? widget.colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.76))
+        : widget.colorScheme.onPrimary;
+    final Color bgColor = widget.premium
+        ? (active
+            ? (isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9))
+            : Colors.transparent)
+        : Colors.transparent;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () {
+          if (hasChildren) {
+            _showMenu();
+            return;
+          }
+          widget.data.onSelect?.call(widget.data.title);
+        },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
-            color: _hovering ? widget.colorScheme.onPrimary.withOpacity(0.12) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: bgColor,
+            borderRadius: BorderRadius.circular(999),
+            border: widget.premium && active
+                ? Border.all(color: widget.colorScheme.primary.withOpacity(0.10))
+                : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                widget.label,
+                widget.data.title,
                 style: TextStyle(
-                  color: widget.colorScheme.onPrimary,
-                  fontSize: 17,
-                  fontWeight: _hovering ? FontWeight.w800 : FontWeight.w700,
+                  color: textColor,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
                 ),
               ),
-              if (widget.hasMenu)
-                Icon(Icons.keyboard_arrow_down_rounded, color: widget.colorScheme.onPrimary, size: 18),
+              if (hasChildren) ...<Widget>[
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _open ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: textColor,
+                    size: 18,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
