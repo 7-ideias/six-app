@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/services/admin_portal_service.dart';
 import '../../core/services/auth_service.dart';
 import '../components/six_backend_loading.dart';
-import '../components/web_auth_shell.dart';
 
 class AdminPortalWebPage extends StatefulWidget {
   const AdminPortalWebPage({super.key});
@@ -42,8 +41,13 @@ class _AdminPortalWebPageState extends State<AdminPortalWebPage> {
       });
     } catch (e) {
       if (!mounted) return;
+      final String mensagem = e.toString().replaceAll('Exception: ', '');
+      if (mensagem.toLowerCase().contains('login') || mensagem.toLowerCase().contains('sessão')) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
+        return;
+      }
       setState(() {
-        _erro = e.toString().replaceAll('Exception: ', '');
+        _erro = mensagem;
         _carregando = false;
       });
     }
