@@ -68,22 +68,36 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
       children: <Widget>[
         widget.child,
         if (kIsWeb) _buildWebAnimatedBackdrop(),
-        Positioned(
-          right: 16,
-          bottom: kIsWeb ? 18 : 90,
-          child: AnimatedScale(
-            scale: kIsWeb && _panelOpen ? 0.96 : 1,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
+        if (kIsWeb)
+          _buildWebTopbarButton(label)
+        else
+          Positioned(
+            right: 16,
+            bottom: 90,
             child: AiAssistantButton(
               onTap: _togglePanel,
               label: label,
-              extended: kIsWeb,
             ),
           ),
-        ),
         if (kIsWeb) _buildWebAnimatedPanel(),
       ],
+    );
+  }
+
+  Widget _buildWebTopbarButton(String label) {
+    return Positioned(
+      top: 27,
+      right: 292,
+      child: AnimatedScale(
+        scale: _panelOpen ? 0.98 : 1,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: _WebAiAssistantTopbarButton(
+          onTap: _togglePanel,
+          label: label,
+          selected: _panelOpen,
+        ),
+      ),
     );
   }
 
@@ -127,6 +141,79 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
                 onClose: _togglePanel,
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WebAiAssistantTopbarButton extends StatelessWidget {
+  const _WebAiAssistantTopbarButton({
+    required this.onTap,
+    required this.label,
+    required this.selected,
+  });
+
+  final VoidCallback onTap;
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: selected
+                ? colorScheme.primary
+                : (isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF8FAFC)),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? colorScheme.primary
+                  : (isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2E8F0)),
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                Icons.auto_awesome_outlined,
+                size: 17,
+                color: selected ? colorScheme.onPrimary : colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? colorScheme.onPrimary : colorScheme.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ],
           ),
         ),
       ),
