@@ -12,7 +12,8 @@ import 'package:provider/provider.dart';
 
 // Layout para viewports >= 1024px.
 // Header sticky + scroll vertical com hero / features / pricing / cta / footer.
-// Mantém GlobalKeys nas sections de destino para smooth-scroll do nav.
+// A estrutura visual segue o padrão do dashboard /admin: fundo claro,
+// cards grandes, bordas sutis e bastante respiro sem remover seções atuais.
 class DesktopLayout extends StatefulWidget {
   const DesktopLayout({
     super.key,
@@ -81,7 +82,7 @@ class _DesktopLayoutState extends State<DesktopLayout> {
       ctx,
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeInOutCubic,
-      alignment: 0.04, // pequeno padding no topo
+      alignment: 0.04,
     );
   }
 
@@ -90,63 +91,236 @@ class _DesktopLayoutState extends State<DesktopLayout> {
     context.watch<ThemeProvider>();
     final scheme = WebRootScheme(isDark: SixThemeResolver().isDark);
     return Scaffold(
-      backgroundColor: scheme.surfacePage,
-      body: Column(
-        children: [
-          DesktopHeader(
-            onLogin: widget.onLogin,
-            onSignup: () => _scrollTo('pricing'), // "Começar agora" → planos
-            onNavTap: _scrollTo,
-            activeId: _activeNav,
-          ),
-          Expanded(
-            // SingleChildScrollView + Column (em vez de ListView lazy) garante
-            // que TODAS as sections estejam renderizadas e seus GlobalKeys
-            // tenham currentContext válido — sem isso, Scrollable.ensureVisible
-            // falha em pulos não-lineares (ex.: home → about direto).
-            // RepaintBoundary nas sections preserva a perf de paint isolado.
-            child: SingleChildScrollView(
-              controller: _scroll,
-              padding: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  KeyedSubtree(
-                    key: _heroKey,
-                    child: HeroSection(
-                      isDesktop: true,
-                      onStart: () => _scrollTo('pricing'),
-                      onWatch: () => _scrollTo('about'),
-                    ),
-                  ),
-                  RepaintBoundary(
-                    child: KeyedSubtree(
-                      key: _featuresKey,
-                      child: const FeaturesSection(isDesktop: true),
-                    ),
-                  ),
-                  RepaintBoundary(
-                    child: KeyedSubtree(
-                      key: _pricingKey,
-                      child: PricingSection(
-                        isDesktop: true,
-                        onChoose: widget.onChoosePlan,
+      backgroundColor: scheme.isDark ? const Color(0xFF081422) : const Color(0xFFF4F7FB),
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          _HomeDashboardBackground(scheme: scheme),
+          Column(
+            children: [
+              DesktopHeader(
+                onLogin: widget.onLogin,
+                onSignup: () => _scrollTo('pricing'),
+                onNavTap: _scrollTo,
+                activeId: _activeNav,
+              ),
+              Expanded(
+                // SingleChildScrollView + Column (em vez de ListView lazy) garante
+                // que TODAS as sections estejam renderizadas e seus GlobalKeys
+                // tenham currentContext válido — sem isso, Scrollable.ensureVisible
+                // falha em pulos não-lineares (ex.: home → about direto).
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1280),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _HomeSectionPanel(
+                            key: _heroKey,
+                            scheme: scheme,
+                            priorityDelay: Duration.zero,
+                            child: HeroSection(
+                              isDesktop: true,
+                              onStart: () => _scrollTo('pricing'),
+                              onWatch: () => _scrollTo('about'),
+                            ),
+                          ),
+                          _HomeSectionPanel(
+                            key: _featuresKey,
+                            scheme: scheme,
+                            priorityDelay: const Duration(milliseconds: 80),
+                            child: const RepaintBoundary(
+                              child: FeaturesSection(isDesktop: true),
+                            ),
+                          ),
+                          _HomeSectionPanel(
+                            key: _pricingKey,
+                            scheme: scheme,
+                            priorityDelay: const Duration(milliseconds: 140),
+                            child: RepaintBoundary(
+                              child: PricingSection(
+                                isDesktop: true,
+                                onChoose: widget.onChoosePlan,
+                              ),
+                            ),
+                          ),
+                          _HomeSectionPanel(
+                            key: _ctaKey,
+                            scheme: scheme,
+                            priorityDelay: const Duration(milliseconds: 200),
+                            child: CtaSection(
+                              isDesktop: true,
+                              onTalk: widget.onSignup,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          const DesktopFooter(),
+                        ],
                       ),
                     ),
                   ),
-                  KeyedSubtree(
-                    key: _ctaKey,
-                    child: CtaSection(
-                      isDesktop: true,
-                      onTalk: widget.onSignup,
-                    ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeSectionPanel extends StatefulWidget {
+  const _HomeSectionPanel({
+    super.key,
+    required this.child,
+    required this.scheme,
+    required this.priorityDelay,
+  });
+
+  final Widget child;
+  final WebRootScheme scheme;
+  final Duration priorityDelay;
+
+  @override
+  State<_HomeSectionPanel> createState() => _HomeSectionPanelState();
+}
+
+class _HomeSectionPanelState extends State<_HomeSectionPanel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 560),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.018),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+    Future<void>.delayed(widget.priorityDelay, () {
+      if (!mounted) return;
+      _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = widget.scheme.isDark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: FadeTransition(
+        opacity: _fade,
+        child: SlideTransition(
+          position: _slide,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(34),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xE61B2F47)
+                    : Colors.white.withOpacity(0.88),
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.white.withOpacity(0.78),
+                ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.08),
+                    blurRadius: 34,
+                    offset: const Offset(0, 18),
                   ),
-                  const DesktopFooter(),
                 ],
               ),
+              child: widget.child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeDashboardBackground extends StatelessWidget {
+  const _HomeDashboardBackground({required this.scheme});
+
+  final WebRootScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = scheme.isDark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const <Color>[Color(0xFF07111E), Color(0xFF0B1B2E), Color(0xFF081422)]
+              : const <Color>[Color(0xFFF4F7FB), Color(0xFFE7F0FA), Color(0xFFF8FAFC)],
+        ),
+      ),
+      child: Stack(
+        children: <Widget>[
+          Positioned(
+            top: -170,
+            right: -120,
+            child: _HomeOrb(
+              size: 390,
+              color: const Color(0xFF2563EB).withOpacity(isDark ? 0.16 : 0.12),
+            ),
+          ),
+          Positioned(
+            bottom: -180,
+            left: -130,
+            child: _HomeOrb(
+              size: 430,
+              color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.30 : 0.08),
+            ),
+          ),
+          Positioned(
+            top: 180,
+            left: 80,
+            child: _HomeOrb(
+              size: 180,
+              color: const Color(0xFF16A34A).withOpacity(isDark ? 0.08 : 0.06),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HomeOrb extends StatelessWidget {
+  const _HomeOrb({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }
