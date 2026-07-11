@@ -148,7 +148,31 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  bool _acionarPdvFrenteCaixaNoEstadoAtual(BuildContext context) {
+    bool acionado = false;
+
+    context.visitAncestorElements((Element element) {
+      if (element is StatefulElement && element.widget.runtimeType.toString() == 'PDVWeb') {
+        try {
+          final dynamic state = element.state;
+          state._iniciarVenda();
+          acionado = true;
+          return false;
+        } catch (_) {
+          return true;
+        }
+      }
+      return true;
+    });
+
+    return acionado;
+  }
+
   void _abrirPdvFrenteCaixa(BuildContext context) {
+    if (_acionarPdvFrenteCaixaNoEstadoAtual(context)) {
+      return;
+    }
+
     final opened =
         _abrirLegado(context, 'Atendimento', 'PDV - Frente de Caixa', mostrarPreparacao: false) ||
         _abrirLegado(context, 'Executar', 'PDV - Frente de Caixa', mostrarPreparacao: false);
