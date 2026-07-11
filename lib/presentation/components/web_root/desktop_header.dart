@@ -150,7 +150,6 @@ class _BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = scheme.isDark;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -182,36 +181,17 @@ class _BrandMark extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Six',
-              style: TextStyle(
-                fontFamily: WebRootTokens.fontFamily,
-                fontFamilyFallback: WebRootTokens.fontFamilyFallback,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                height: 1,
-                color: scheme.textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'CRM para operação técnica',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: WebRootTokens.fontFamily,
-                fontFamilyFallback: WebRootTokens.fontFamilyFallback,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: isDark ? const Color(0xFF8EA6BA) : const Color(0xFF64748B),
-              ),
-            ),
-          ],
+        Text(
+          'Six',
+          style: TextStyle(
+            fontFamily: WebRootTokens.fontFamily,
+            fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            height: 1,
+            color: scheme.textPrimary,
+            letterSpacing: -0.3,
+          ),
         ),
       ],
     );
