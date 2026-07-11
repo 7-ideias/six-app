@@ -786,8 +786,13 @@ class _SixHomeDashboardOverlayState extends State<_SixHomeDashboardOverlay> {
     final email = await AuthService().getUserEmail();
     final base = email?.split('@').first.trim() ?? '';
     if (base.isEmpty) return 'usuário';
-    final primeiroNome = base.split(RegExp(r'[._\-]')).where((parte) => parte.trim().isNotEmpty).firstOrNull;
-    if (primeiroNome == null || primeiroNome.isEmpty) return 'usuário';
+    final partes = base
+        .split(RegExp(r'[._\-]'))
+        .map((parte) => parte.trim())
+        .where((parte) => parte.isNotEmpty)
+        .toList(growable: false);
+    if (partes.isEmpty) return 'usuário';
+    final primeiroNome = partes.first;
     return primeiroNome.substring(0, 1).toUpperCase() + primeiroNome.substring(1).toLowerCase();
   }
 
