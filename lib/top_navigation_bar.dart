@@ -108,12 +108,13 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     if (!_usaNovoMenuSix) return;
     _homeOverlayVisivel = true;
     _homeOverlayOpacity.value = 1;
+
     if (_homeOverlay != null) {
       _homeOverlay!.markNeedsBuild();
       return;
     }
 
-    final overlay = Overlay.maybeOf(context);
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
 
     _homeOverlay = OverlayEntry(
@@ -156,6 +157,18 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
       if (!mounted || _homeOverlayVisivel) return;
       _removerHomeOverlay();
     });
+  }
+
+  void _ocultarHomeDuranteMenu() {
+    if (_homeOverlay != null && _homeOverlayVisivel) {
+      _homeOverlayOpacity.value = 0;
+    }
+  }
+
+  void _restaurarHomeAposMenuSemAcao() {
+    if (_homeOverlay != null && _homeOverlayVisivel) {
+      _homeOverlayOpacity.value = 1;
+    }
   }
 
   void _removerHomeOverlay() {
@@ -702,6 +715,8 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                 data: item,
                                 colorScheme: colorScheme,
                                 premium: true,
+                                onMenuOpened: _ocultarHomeDuranteMenu,
+                                onMenuClosed: _restaurarHomeAposMenuSemAcao,
                               ),
                             ),
                           )
@@ -1046,20 +1061,8 @@ class _SixHomeDashboardOverlayState extends State<_SixHomeDashboardOverlay> {
       children: <Widget>[
         Expanded(
           flex: 7,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.90),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78)),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.07),
-                  blurRadius: 28,
-                  offset: const Offset(0, 14),
-                ),
-              ],
-            ),
+          child: _DashboardPanel(
+            isDark: isDark,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -1110,20 +1113,8 @@ class _SixHomeDashboardOverlayState extends State<_SixHomeDashboardOverlay> {
         const SizedBox(width: 18),
         Expanded(
           flex: 5,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.90),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78)),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.07),
-                  blurRadius: 28,
-                  offset: const Offset(0, 14),
-                ),
-              ],
-            ),
+          child: _DashboardPanel(
+            isDark: isDark,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -1150,6 +1141,33 @@ class _SixHomeDashboardOverlayState extends State<_SixHomeDashboardOverlay> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DashboardPanel extends StatelessWidget {
+  const _DashboardPanel({required this.isDark, required this.child});
+
+  final bool isDark;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.90),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.18 : 0.07),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
@@ -1346,11 +1364,19 @@ class _AppVersionPill extends StatelessWidget {
 }
 
 class _TopNavigationMenuItem extends StatefulWidget {
-  const _TopNavigationMenuItem({required this.data, required this.colorScheme, this.premium = false});
+  const _TopNavigationMenuItem({
+    required this.data,
+    required this.colorScheme,
+    this.premium = false,
+    this.onMenuOpened,
+    this.onMenuClosed,
+  });
 
   final TopNavItemData data;
   final ColorScheme colorScheme;
   final bool premium;
+  final VoidCallback? onMenuOpened;
+  final VoidCallback? onMenuClosed;
 
   @override
   State<_TopNavigationMenuItem> createState() => _TopNavigationMenuItemState();
@@ -1362,15 +1388,19 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
 
   void _showMenu() async {
     setState(() => _open = true);
+    widget.onMenuOpened?.call();
+
     final RenderBox box = context.findRenderObject()! as RenderBox;
     final Offset position = box.localToGlobal(Offset.zero);
     Timer? autoCloseTimer;
     autoCloseTimer = Timer(const Duration(seconds: 5), () {
       if (!mounted || !_open) return;
-      Navigator.of(context).maybePop();
+      Navigator.of(context, rootNavigator: true).maybePop();
     });
+
     final selected = await showMenu<String>(
       context: context,
+      useRootNavigator: true,
       position: RelativeRect.fromLTRB(
         position.dx,
         position.dy + box.size.height + 6,
@@ -1378,7 +1408,7 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
         0,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 14,
+      elevation: 16,
       color: Theme.of(context).colorScheme.surface,
       items: widget.data.subItems
           .map(
@@ -1398,11 +1428,16 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
           )
           .toList(),
     );
+
     autoCloseTimer.cancel();
     if (mounted) setState(() => _open = false);
-    if (selected != null) {
-      widget.data.onSelect?.call(selected);
+
+    if (selected == null) {
+      widget.onMenuClosed?.call();
+      return;
     }
+
+    widget.data.onSelect?.call(selected);
   }
 
   @override
