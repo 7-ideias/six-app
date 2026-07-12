@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 ///
 /// O contador permite que chamadas concorrentes não encerrem a animação antes
 /// de todas as operações acompanhadas terminarem.
-class SixSaleProcessingController {
-  const SixSaleProcessingController._();
+class LoadingDoMobileComunicandoComBackendController {
+  const LoadingDoMobileComunicandoComBackendController._();
 
   static final ValueNotifier<int> _activeOperations = ValueNotifier<int>(0);
 

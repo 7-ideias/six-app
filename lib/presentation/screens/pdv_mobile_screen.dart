@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/state/six_sale_processing_controller.dart';
+import '../../core/state/loading_do_mobile_comunicando_com_backend_controller.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../l10n/app_localizations.dart';
 import '../components/six_lottie_action_overlay.dart';
@@ -18,7 +18,7 @@ class PdvMobileScreen extends StatelessWidget {
     final AppLocalizations localizations = AppLocalizations.of(context)!;
 
     return ValueListenableBuilder<int>(
-      valueListenable: SixSaleProcessingController.activeOperations,
+      valueListenable: LoadingDoMobileComunicandoComBackendController.activeOperations,
       child: base.PdvMobileScreen(vendaNaoLiquidada: vendaNaoLiquidada),
       builder: (BuildContext context, int activeOperations, Widget? child) {
         return SixLottieActionOverlay(

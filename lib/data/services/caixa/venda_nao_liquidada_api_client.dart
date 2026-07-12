@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/state/six_sale_processing_controller.dart';
+import '../../../core/state/loading_do_mobile_comunicando_com_backend_controller.dart';
 import '../../models/venda_nao_liquidada_models.dart';
 
 class VendaNaoLiquidadaApiClient {
@@ -51,7 +51,7 @@ class VendaNaoLiquidadaApiClient {
     required String idRecebimento,
     required LiquidarVendaNaoLiquidadaInput input,
   }) {
-    return SixSaleProcessingController.track(() async {
+    return LoadingDoMobileComunicandoComBackendController.track(() async {
       final uri = Uri.parse(
         '${AppConfig.baseUrl}/private/api/caixa/vendas-nao-liquidadas/$idRecebimento/liquidar',
       );
