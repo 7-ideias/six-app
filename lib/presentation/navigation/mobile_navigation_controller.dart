@@ -19,8 +19,8 @@ class MobileNavigationScope
   const MobileNavigationScope({
     super.key,
     required MobileNavigationController controller,
-    required super.child,
-  }) : super(notifier: controller);
+    required Widget child,
+  }) : super(notifier: controller, child: child);
 
   static MobileNavigationController? maybeOf(BuildContext context) {
     return context
