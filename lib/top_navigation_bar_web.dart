@@ -40,8 +40,8 @@ class _MenuConfigData {
   final IconData icon;
 }
 
-class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
-  const TopNavigationBar({
+class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget {
+  const TopNavigationBarWeb({
     super.key,
     required this.items,
     this.onNotificationPressed,

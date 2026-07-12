@@ -7,6 +7,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
@@ -17,7 +18,7 @@ import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
-import '../components/drawer_mobile.dart';
+import '../components/cores_do_mobile.dart';
 import 'catalogo_disponivel_mobile_screen.dart';
 import 'catalogo_nao_disponivel_mobile_screen.dart';
 
@@ -31,13 +32,13 @@ class HomePageMobile extends StatefulWidget {
 }
 
 class _HomePageMobileState extends State<HomePageMobile> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -155,7 +156,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
           elevation: 0,
           centerTitle: true,
           backgroundColor: _primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: SixMobilePalette.onPrimary,
           title: const Text(
             'Início',
             style: TextStyle(
@@ -176,7 +177,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
             ),
           ],
         ),
-        drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+        drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
         body: SixMobileAnimatedGradientBackground(
           baseColor: _backgroundColor,
           primaryColor: _primaryColor,
@@ -250,14 +251,17 @@ class _HomePageMobileState extends State<HomePageMobile> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
+                  color: SixMobilePalette.notificationBadge,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(
+                    color: SixMobilePalette.onPrimary,
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   _badgeText(naoLidas),
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: SixMobilePalette.onPrimary,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                   ),
@@ -281,7 +285,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x260B1F3A),
+            color: SixMobilePalette.heroShadow,
             blurRadius: 22,
             offset: Offset(0, 12),
           ),
@@ -292,13 +296,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
         children: [
           Row(
             children: [
-              const Icon(Icons.insights_rounded, color: Colors.white),
+              const Icon(
+                Icons.insights_rounded,
+                color: SixMobilePalette.onPrimary,
+              ),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
                   'Hoje no Six',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: SixMobilePalette.onPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -309,7 +316,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
           const SizedBox(height: 8),
           const Text(
             'Acompanhe as prioridades do atendimento sem sair do mobile.',
-            style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+            style: TextStyle(
+              color: SixMobilePalette.heroSupportingText,
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 18),
           Row(
@@ -340,7 +350,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     bool hasError = false,
   }) {
     final TextStyle valueStyle = const TextStyle(
-      color: Colors.white,
+      color: SixMobilePalette.onPrimary,
       fontWeight: FontWeight.w800,
     );
 
@@ -360,7 +370,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
             label,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Color(0xFFBFD0EA),
+              color: SixMobilePalette.heroLabelText,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -416,7 +426,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: SixMobilePalette.border),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0F000000),
@@ -434,7 +444,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: SixMobilePalette.softAccentSurface,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
@@ -455,14 +465,17 @@ class _HomePageMobileState extends State<HomePageMobile> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
+                            color: SixMobilePalette.notificationBadge,
                             borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: Colors.white, width: 1.5),
+                            border: Border.all(
+                              color: SixMobilePalette.onPrimary,
+                              width: 1.5,
+                            ),
                           ),
                           child: Text(
                             _badgeText(naoLidas),
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: SixMobilePalette.onPrimary,
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
                             ),
@@ -556,7 +569,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: SixMobilePalette.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,7 +578,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: SixMobilePalette.softAccentSurface,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(action.icon, color: _accentColor, size: 22),
@@ -660,8 +673,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
             border: Border.all(
               color:
                   metric.hasError
-                      ? const Color(0xFFFCA5A5)
-                      : const Color(0xFFE2E8F0),
+                      ? SixMobilePalette.errorBorder
+                      : SixMobilePalette.border,
             ),
             boxShadow: const [
               BoxShadow(
@@ -677,7 +690,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: SixMobilePalette.softNeutralSurface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(metric.icon, color: _primaryColor, size: 23),
@@ -705,7 +718,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       style: TextStyle(
                         color:
                             metric.hasError
-                                ? const Color(0xFFB91C1C)
+                                ? SixMobilePalette.error
                                 : _mutedTextColor,
                         fontSize: 12,
                       ),
@@ -742,7 +755,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 width: 34,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: SixMobilePalette.border,
                   borderRadius: BorderRadius.circular(999),
                 ),
               )

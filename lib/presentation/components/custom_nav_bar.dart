@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacao_mobile_screen.dart';
@@ -15,11 +16,6 @@ class CustomBottomNavBar extends StatefulWidget {
 }
 
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedColor = Color(0xFF64748B);
-  static const Color _activeSurfaceColor = Color(0xFFEFF6FF);
-
   late int _selectedIndex;
 
   @override
@@ -77,12 +73,14 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             height: 68,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
+              color: SixMobilePalette.surface.withOpacity(0.92),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withOpacity(0.72)),
+              border: Border.all(
+                color: SixMobilePalette.surface.withOpacity(0.72),
+              ),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
-                  color: Color(0x1A0B1F3A),
+                  color: SixMobilePalette.navigationShadow,
                   blurRadius: 24,
                   offset: Offset(0, 10),
                 ),
@@ -141,12 +139,16 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               vertical: 6,
             ),
             decoration: BoxDecoration(
-              color: isActive ? _activeSurfaceColor : Colors.transparent,
+              color:
+                  isActive
+                      ? SixMobilePalette.softAccentSurface
+                      : Colors.transparent,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: isActive
-                    ? const Color(0xFFDCEBFF)
-                    : Colors.transparent,
+                color:
+                    isActive
+                        ? SixMobilePalette.activeBorder
+                        : Colors.transparent,
               ),
             ),
             child: AnimatedScale(
@@ -160,16 +162,23 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                   Icon(
                     isActive ? activeIcon : icon,
                     size: isActive ? 22 : 21,
-                    color: isActive ? _accentColor : _mutedColor,
+                    color:
+                        isActive
+                            ? SixMobilePalette.accent
+                            : SixMobilePalette.mutedText,
                   ),
                   const SizedBox(height: 3),
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
                     style: TextStyle(
-                      color: isActive ? _primaryColor : _mutedColor,
+                      color:
+                          isActive
+                              ? SixMobilePalette.primary
+                              : SixMobilePalette.mutedText,
                       fontSize: isActive ? 11 : 10.5,
-                      fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                      fontWeight:
+                          isActive ? FontWeight.w900 : FontWeight.w700,
                       letterSpacing: -0.1,
                       height: 1,
                     ),

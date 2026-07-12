@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_page.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
@@ -13,21 +14,21 @@ import 'package:sixpos/providers/usuario_provider.dart';
 import '../screens/meu_perfil_mobile_screen.dart';
 import '../screens/preferencias_mobile_screen.dart';
 
-class AppDrawerDoMobile extends StatelessWidget {
-  const AppDrawerDoMobile({
+class CoresDoMobile extends StatelessWidget {
+  const CoresDoMobile({
     super.key,
     required this.image,
     required this.onPickImage,
   });
 
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _borderColor = Color(0xFFE2E8F0);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _softBlueColor = Color(0xFFEFF6FF);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _borderColor = SixMobilePalette.border;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _softBlueColor = SixMobilePalette.softAccentSurface;
 
   final File? image;
   final void Function(ImageSource source) onPickImage;
@@ -61,38 +62,38 @@ class AppDrawerDoMobile extends StatelessWidget {
                     onTap: () => _openScreen(context, PreferencesMobileScreen()),
                   ),
                   const SizedBox(height: 14),
-                  _buildSectionLabel('Gestão'),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.trending_up_rounded,
-                    title: 'Desempenho',
-                    subtitle: 'Metas e resultado por período',
-                    highlighted: true,
-                    onTap: () => _openScreen(context, const DesempenhoColaboradorPage()),
-                  ),
+                  // _buildSectionLabel('Gestão'),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.trending_up_rounded,
+                  //   title: 'Desempenho',
+                  //   subtitle: 'Metas e resultado por período',
+                  //   highlighted: true,
+                  //   onTap: () => _openScreen(context, const DesempenhoColaboradorPage()),
+                  // ),
                   const SizedBox(height: 14),
-                  _buildSectionLabel('Suporte e segurança'),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.chat_outlined,
-                    title: 'Preciso de ajuda',
-                    subtitle: 'Atendimento e suporte',
-                    onTap: () => _showFeatureInProgress(context),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.description_outlined,
-                    title: 'Termos de Uso',
-                    subtitle: 'Condições de uso do Six',
-                    onTap: () => _showFeatureInProgress(context),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.security_outlined,
-                    title: 'Política de Privacidade',
-                    subtitle: 'Como seus dados são protegidos',
-                    onTap: () => _showFeatureInProgress(context),
-                  ),
+                  // _buildSectionLabel('Suporte e segurança'),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.chat_outlined,
+                  //   title: 'Preciso de ajuda',
+                  //   subtitle: 'Atendimento e suporte',
+                  //   onTap: () => _showFeatureInProgress(context),
+                  // ),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.description_outlined,
+                  //   title: 'Termos de Uso',
+                  //   subtitle: 'Condições de uso do Six',
+                  //   onTap: () => _showFeatureInProgress(context),
+                  // ),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.security_outlined,
+                  //   title: 'Política de Privacidade',
+                  //   subtitle: 'Como seus dados são protegidos',
+                  //   onTap: () => _showFeatureInProgress(context),
+                  // ),
                   _buildDrawerItem(
                     context,
                     icon: Icons.lock_outline,
@@ -197,7 +198,7 @@ class AppDrawerDoMobile extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: SixMobilePalette.onPrimary,
                                 fontSize: 17,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -208,7 +209,7 @@ class AppDrawerDoMobile extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Color(0xFFDCEBFF),
+                                color: SixMobilePalette.activeBorder,
                                 fontSize: 12.5,
                               ),
                             ),
@@ -224,15 +225,17 @@ class AppDrawerDoMobile extends StatelessWidget {
                       vertical: 9,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: SixMobilePalette.onPrimary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.16)),
+                      border: Border.all(
+                        color: SixMobilePalette.onPrimary.withOpacity(0.16),
+                      ),
                     ),
                     child: const Row(
                       children: <Widget>[
                         Icon(
                           Icons.storefront_rounded,
-                          color: Colors.white,
+                          color: SixMobilePalette.onPrimary,
                           size: 18,
                         ),
                         SizedBox(width: 8),
@@ -242,7 +245,7 @@ class AppDrawerDoMobile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: SixMobilePalette.onPrimary,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -269,13 +272,13 @@ class AppDrawerDoMobile extends StatelessWidget {
         children: <Widget>[
           CircleAvatar(
             radius: 34,
-            backgroundColor: Colors.white.withOpacity(0.14),
+            backgroundColor: SixMobilePalette.onPrimary.withOpacity(0.14),
             backgroundImage: image != null ? FileImage(image!) : null,
             child: image == null
                 ? const Icon(
                     Icons.person_rounded,
                     size: 34,
-                    color: Colors.white,
+                    color: SixMobilePalette.onPrimary,
                   )
                 : null,
           ),
@@ -338,7 +341,10 @@ class AppDrawerDoMobile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: highlighted ? const Color(0xFFBFDBFE) : _borderColor,
+                color:
+                    highlighted
+                        ? SixMobilePalette.highlightedBorder
+                        : _borderColor,
               ),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
@@ -354,10 +360,16 @@ class AppDrawerDoMobile extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: highlighted ? _softBlueColor : const Color(0xFFF8FAFC),
+                    color:
+                        highlighted
+                            ? _softBlueColor
+                            : SixMobilePalette.softNeutralSurface,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: highlighted ? const Color(0xFFBFDBFE) : _borderColor,
+                      color:
+                          highlighted
+                              ? SixMobilePalette.highlightedBorder
+                              : _borderColor,
                     ),
                   ),
                   child: Icon(icon, color: _primaryColor, size: 21),
@@ -374,7 +386,8 @@ class AppDrawerDoMobile extends StatelessWidget {
                         style: TextStyle(
                           color: _titleTextColor,
                           fontSize: 14,
-                          fontWeight: highlighted ? FontWeight.w900 : FontWeight.w800,
+                          fontWeight:
+                              highlighted ? FontWeight.w900 : FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -564,7 +577,7 @@ class AppDrawerDoMobile extends StatelessWidget {
     required ImageSource source,
   }) {
     return Material(
-      color: const Color(0xFFF8FAFC),
+      color: SixMobilePalette.softNeutralSurface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),

@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../mock_cadastros_store.dart';
-import '../../top_navigation_bar.dart';
+import '../../top_navigation_bar_web.dart';
 
 class OrdemServicoWeb extends StatefulWidget {
   const OrdemServicoWeb({super.key, this.embedded = false, this.onBack});
@@ -1212,7 +1212,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       return Container(color: theme.colorScheme.surfaceContainerLowest, child: body);
     }
 
-    return Scaffold(appBar: TopNavigationBar(items: _navItems(), onNotificationPressed: () {}), body: body);
+    return Scaffold(appBar: TopNavigationBarWeb(items: _navItems(), onNotificationPressed: () {}), body: body);
   }
 }
 

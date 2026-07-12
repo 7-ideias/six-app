@@ -175,10 +175,10 @@ class FirebasePushNotificationService {
           break;
       }
     } on TimeoutException {
-      AppFeedback.show('Tempo esgotado ao solicitar permissão. Tentando registrar token.');
+      // AppFeedback.show('Tempo esgotado ao solicitar permissão. Tentando registrar token.');
     } catch (e) {
-      debugPrint('[FirebasePushNotificationService] Falha ao solicitar permissão: $e');
-      AppFeedback.show('Falha ao solicitar permissão. Tentando registrar token.');
+      // debugPrint('[FirebasePushNotificationService] Falha ao solicitar permissão: $e');
+      // AppFeedback.show('Falha ao solicitar permissão. Tentando registrar token.');
     }
   }
 
@@ -188,11 +188,11 @@ class FirebasePushNotificationService {
             const Duration(seconds: 12),
           );
     } on TimeoutException {
-      AppFeedback.show('Tempo esgotado ao obter token Firebase.');
+      // AppFeedback.show('Tempo esgotado ao obter token Firebase.');
       return null;
     } catch (e) {
-      debugPrint('[FirebasePushNotificationService] Firebase não retornou token FCM: $e');
-      AppFeedback.show('Erro ao obter token Firebase.');
+      // debugPrint('[FirebasePushNotificationService] Firebase não retornou token FCM: $e');
+      // AppFeedback.show('Erro ao obter token Firebase.');
       return null;
     }
   }
@@ -210,12 +210,12 @@ class FirebasePushNotificationService {
         accessToken.trim().isEmpty ||
         idUnicoDaEmpresa == null ||
         idUnicoDaEmpresa.trim().isEmpty) {
-      debugPrint(
-        '[FirebasePushNotificationService] Token FCM aguardando sessão autenticada.',
-      );
-      AppFeedback.show(
-        'Token FCM aguardando sessão autenticada.',
-      );
+      // debugPrint(
+      //   '[FirebasePushNotificationService] Token FCM aguardando sessão autenticada.',
+      // );
+      // AppFeedback.show(
+      //   'Token FCM aguardando sessão autenticada.',
+      // );
       return;
     }
 
@@ -239,21 +239,21 @@ class FirebasePushNotificationService {
       );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        debugPrint(
-          '[FirebasePushNotificationService] Backend recusou token FCM: '
-          '${response.statusCode} ${response.body}',
-        );
-        AppFeedback.show(
-          'Backend recusou token FCM: ${response.statusCode}.',
-        );
+        // debugPrint(
+        //   '[FirebasePushNotificationService] Backend recusou token FCM: '
+        //   '${response.statusCode} ${response.body}',
+        // );
+        // AppFeedback.show(
+        //   'Backend recusou token FCM: ${response.statusCode}.',
+        // );
       } else {
-        AppFeedback.show('Push registrado no backend.');
+        // AppFeedback.show('Push registrado no backend.');
       }
     } catch (e) {
-      debugPrint('[FirebasePushNotificationService] Falha ao enviar token FCM: $e');
-      AppFeedback.show(
-        'Falha ao enviar token FCM.',
-      );
+      // debugPrint('[FirebasePushNotificationService] Falha ao enviar token FCM: $e');
+      // AppFeedback.show(
+      //   'Falha ao enviar token FCM.',
+      // );
     }
   }
 

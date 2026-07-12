@@ -37,7 +37,7 @@ import 'core/services/websocket_service.dart';
 import 'presentation/screens/login_page_web.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/operacao/operacao_service.dart';
-import 'top_navigation_bar.dart';
+import 'top_navigation_bar_web.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
 part 'pdv_page_web_venda_section.dart';
@@ -1796,7 +1796,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
       canPop: false,
       child: Scaffold(
         backgroundColor: _pdvTheme.backgroundPage,
-        appBar: TopNavigationBar(
+        appBar: TopNavigationBarWeb(
           items: <TopNavItemData>[
             TopNavItemData(
               title: 'Início',
