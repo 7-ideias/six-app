@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/state/loading_do_mobile_comunicando_com_backend_controller.dart';
 import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../components/six_lottie_action_overlay.dart';
 import '../components/web_auth_logout_splash_scene.dart';
 import 'home_page_mobile_screen.dart';
 
@@ -27,10 +29,12 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
   }
 
   Future<void> _prepareSessionAndNavigate() async {
-    await Future.wait<void>([
-      _guardedBootstrap(),
-      Future<void>.delayed(_minimumDuration),
-    ]);
+    await LoadingDoMobileComunicandoComBackendController.track<void>(() async {
+      await Future.wait<void>([
+        _guardedBootstrap(),
+        Future<void>.delayed(_minimumDuration),
+      ]);
+    });
 
     if (!mounted) return;
 
@@ -77,8 +81,18 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: WebAuthLogoutSplashScene(),
+    return ValueListenableBuilder<int>(
+      valueListenable:
+          LoadingDoMobileComunicandoComBackendController.activeOperations,
+      child: const Scaffold(body: WebAuthLogoutSplashScene()),
+      builder: (BuildContext context, int activeOperations, Widget? child) {
+        return SixLottieActionOverlay(
+          isLoading: activeOperations > 0,
+          title: 'Preparando seu acesso',
+          subtitle: 'Sincronizando seus dados, permissões e preferências.',
+          child: child!,
+        );
+      },
     );
   }
 }
