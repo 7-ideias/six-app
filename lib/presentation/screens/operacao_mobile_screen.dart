@@ -7,6 +7,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
@@ -26,12 +27,12 @@ class OperacaoMobileScreen extends StatefulWidget {
 }
 
 class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
-  static const Color _bg = Color(0xFFF4F7FB);
-  static const Color _primary = Color(0xFF0B1F3A);
-  static const Color _secondary = Color(0xFF123B69);
-  static const Color _accent = Color(0xFF2563EB);
-  static const Color _muted = Color(0xFF64748B);
-  static const Color _title = Color(0xFF0F172A);
+  static const Color _bg = SixMobilePalette.background;
+  static const Color _primary = SixMobilePalette.primary;
+  static const Color _secondary = SixMobilePalette.secondary;
+  static const Color _accent = SixMobilePalette.accent;
+  static const Color _muted = SixMobilePalette.mutedText;
+  static const Color _title = SixMobilePalette.titleText;
 
   final TelaInicialWebApiClient _api = HttpResumoDaEmpresaApiClient(
     canal: 'mobile',
@@ -121,7 +122,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         elevation: 0,
         centerTitle: true,
         backgroundColor: _primary,
-        foregroundColor: Colors.white,
+        foregroundColor: SixMobilePalette.onPrimary,
         title: const Text(
           'Atendimento',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
@@ -204,14 +205,17 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
+                  color: SixMobilePalette.notificationBadge,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(
+                    color: SixMobilePalette.onPrimary,
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   naoLidas > 9 ? '+9' : naoLidas.toString(),
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: SixMobilePalette.onPrimary,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                   ),
@@ -276,7 +280,11 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       onTap: onTap,
       child: Row(
         children: <Widget>[
-          _iconBox(icon, bg: const Color(0xFFEFF6FF), fg: _accent),
+          _iconBox(
+            icon,
+            bg: SixMobilePalette.softAccentSurface,
+            fg: _accent,
+          ),
           const SizedBox(width: 14),
           Expanded(child: _texts(title, subtitle, titleSize: 16)),
           const Icon(Icons.chevron_right_rounded, color: _muted),
@@ -295,10 +303,16 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   }) {
     return _card(
       onTap: onTap,
-      borderColor: hasError ? const Color(0xFFFCA5A5) : const Color(0xFFE2E8F0),
+      borderColor:
+          hasError ? SixMobilePalette.errorBorder : SixMobilePalette.border,
       child: Row(
         children: <Widget>[
-          _iconBox(icon, bg: const Color(0xFFF1F5F9), fg: _primary, size: 46),
+          _iconBox(
+            icon,
+            bg: SixMobilePalette.softNeutralSurface,
+            fg: _primary,
+            size: 46,
+          ),
           const SizedBox(width: 14),
           Expanded(child: _texts(title, subtitle, error: hasError)),
           const SizedBox(width: 12),
@@ -308,7 +322,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                   width: 34,
                   height: 22,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
+                    color: SixMobilePalette.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 )
@@ -330,10 +344,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   Widget _card({
     required Widget child,
     required VoidCallback onTap,
-    Color borderColor = const Color(0xFFE2E8F0),
+    Color borderColor = SixMobilePalette.border,
   }) {
     return Material(
-      color: Colors.white,
+      color: SixMobilePalette.surface,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
@@ -382,7 +396,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: error ? const Color(0xFFB91C1C) : _muted,
+            color: error ? SixMobilePalette.error : _muted,
             fontSize: 12,
           ),
         ),
