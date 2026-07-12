@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../mock_cadastros_store.dart';
-import '../../top_navigation_bar.dart';
+import '../../top_navigation_bar_web.dart';
 
 class OrcamentoWeb extends StatefulWidget {
   const OrcamentoWeb({super.key, this.embedded = false, this.onBack});
@@ -885,7 +885,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
     }
 
     return Scaffold(
-      appBar: TopNavigationBar(items: _navItems(), onNotificationPressed: () {}),
+      appBar: TopNavigationBarWeb(items: _navItems(), onNotificationPressed: () {}),
       body: body,
     );
   }

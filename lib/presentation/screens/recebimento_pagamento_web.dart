@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/di/operacao_module.dart';
 import '../../data/models/operacao_models.dart';
 import '../../domain/services/operacao/operacao_service.dart';
-import '../../top_navigation_bar.dart';
+import '../../top_navigation_bar_web.dart';
 
 class RecebimentoPagamentoWeb extends StatefulWidget {
   const RecebimentoPagamentoWeb({
@@ -1093,7 +1093,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     }
 
     return Scaffold(
-      appBar: TopNavigationBar(
+      appBar: TopNavigationBarWeb(
         items: const [
           TopNavItemData(
             title: 'Início',
