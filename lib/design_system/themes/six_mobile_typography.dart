@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Tipografia exclusiva da experiência mobile do Six.
 ///
@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 /// alturas de linha usados no Android e iOS, sem depender de fontes externas.
 abstract final class SixMobileTypography {
   const SixMobileTypography._();
+
+  static final String _mobileFontFamily =
+      GoogleFonts.inter().fontFamily ?? 'Inter';
 
   static const List<String> _fallbackFonts = <String>[
     'SF Pro Text',
@@ -16,22 +19,16 @@ abstract final class SixMobileTypography {
     'Arial',
   ];
 
-  static String? get _titleFontFamily {
-    return defaultTargetPlatform == TargetPlatform.android
-        ? 'sans-serif-medium'
-        : null;
-  }
+  static String get _titleFontFamily => _mobileFontFamily;
 
-  static String? get _bodyFontFamily {
-    return defaultTargetPlatform == TargetPlatform.android
-        ? 'sans-serif'
-        : null;
-  }
+  static String get _bodyFontFamily => _mobileFontFamily;
 
   static ThemeData apply(ThemeData theme) {
-    final TextTheme textTheme = _buildTextTheme(theme.textTheme);
+    final TextTheme textTheme = _buildTextTheme(
+      GoogleFonts.interTextTheme(theme.textTheme),
+    );
     final TextTheme primaryTextTheme = _buildTextTheme(
-      theme.primaryTextTheme,
+      GoogleFonts.interTextTheme(theme.primaryTextTheme),
     );
 
     final TextStyle? appBarTitleStyle = _style(

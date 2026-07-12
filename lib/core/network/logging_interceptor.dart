@@ -1,17 +1,38 @@
 import 'package:http_interceptor/http_interceptor.dart';
 
-class LoggingInterceptor implements InterceptorContract {
+class LoggingInterceptor implements HttpInterceptor {
   @override
-  Future<RequestData> interceptRequest({required RequestData data}) async {
-    print('[HTTP] REQUEST => ${data.method} ${data.url}');
-    print('[HEADERS] => ${data.headers}');
-    print('[BODY] => ${data.body}');
-    return data;
+  Future<bool> shouldInterceptRequest({required BaseRequest request}) async {
+    return true;
   }
 
   @override
-  Future<ResponseData> interceptResponse({required ResponseData data}) async {
-    print('[HTTP] RESPONSE ${data.statusCode} => ${data.body}');
-    return data;
+  Future<bool> shouldInterceptResponse({required BaseResponse response}) async {
+    return true;
+  }
+
+  @override
+  Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
+    print('[HTTP] REQUEST => ${request.method} ${request.url}');
+    print('[HEADERS] => ${request.headers}');
+
+    if (request is Request) {
+      print('[BODY] => ${request.body}');
+    }
+
+    return request;
+  }
+
+  @override
+  Future<BaseResponse> interceptResponse({
+    required BaseResponse response,
+  }) async {
+    if (response is Response) {
+      print('[HTTP] RESPONSE ${response.statusCode} => ${response.body}');
+    } else {
+      print('[HTTP] RESPONSE ${response.statusCode}');
+    }
+
+    return response;
   }
 }
