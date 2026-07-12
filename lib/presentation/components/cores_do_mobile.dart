@@ -7,7 +7,6 @@ import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
-import 'package:sixpos/presentation/screens/desempenho_colaborador_page.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
@@ -21,89 +20,65 @@ class CoresDoMobile extends StatelessWidget {
     required this.onPickImage,
   });
 
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _borderColor = SixMobilePalette.border;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _softBlueColor = SixMobilePalette.softAccentSurface;
-
   final File? image;
   final void Function(ImageSource source) onPickImage;
+
+  static const Color _background = SixMobilePalette.background;
+  static const Color _surface = SixMobilePalette.surface;
+  static const Color _border = SixMobilePalette.border;
+  static const Color _title = SixMobilePalette.titleText;
+  static const Color _muted = SixMobilePalette.mutedText;
+  static const Color _accent = SixMobilePalette.accent;
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _surface,
       child: SafeArea(
         top: false,
         child: Column(
           children: <Widget>[
             _buildHeader(context),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-                children: <Widget>[
-                  _buildSectionLabel('Conta'),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.person_outline,
-                    title: 'Meu perfil',
-                    subtitle: 'Dados pessoais e acesso',
-                    onTap: () => _openScreen(context, const MeuPerfilMobileScreen()),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.edit_outlined,
-                    title: 'Preferências',
-                    subtitle: 'Ajustes individuais do app',
-                    onTap: () => _openScreen(context, PreferencesMobileScreen()),
-                  ),
-                  const SizedBox(height: 14),
-                  // _buildSectionLabel('Gestão'),
-                  // _buildDrawerItem(
-                  //   context,
-                  //   icon: Icons.trending_up_rounded,
-                  //   title: 'Desempenho',
-                  //   subtitle: 'Metas e resultado por período',
-                  //   highlighted: true,
-                  //   onTap: () => _openScreen(context, const DesempenhoColaboradorPage()),
-                  // ),
-                  const SizedBox(height: 14),
-                  // _buildSectionLabel('Suporte e segurança'),
-                  // _buildDrawerItem(
-                  //   context,
-                  //   icon: Icons.chat_outlined,
-                  //   title: 'Preciso de ajuda',
-                  //   subtitle: 'Atendimento e suporte',
-                  //   onTap: () => _showFeatureInProgress(context),
-                  // ),
-                  // _buildDrawerItem(
-                  //   context,
-                  //   icon: Icons.description_outlined,
-                  //   title: 'Termos de Uso',
-                  //   subtitle: 'Condições de uso do Six',
-                  //   onTap: () => _showFeatureInProgress(context),
-                  // ),
-                  // _buildDrawerItem(
-                  //   context,
-                  //   icon: Icons.security_outlined,
-                  //   title: 'Política de Privacidade',
-                  //   subtitle: 'Como seus dados são protegidos',
-                  //   onTap: () => _showFeatureInProgress(context),
-                  // ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.lock_outline,
-                    title: 'Gerenciar meus dados',
-                    subtitle: 'Preferências de dados e privacidade',
-                    onTap: () => _openScreen(context, PreferencesMobileScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildLogoutItem(context),
-                ],
+              child: ColoredBox(
+                color: _background,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(14, 16, 14, 18),
+                  children: <Widget>[
+                    _buildSectionLabel('Conta'),
+                    _buildItem(
+                      icon: Icons.person_outline_rounded,
+                      title: 'Meu perfil',
+                      subtitle: 'Dados pessoais e acesso',
+                      onTap: () => _openScreen(
+                        context,
+                        const MeuPerfilMobileScreen(),
+                      ),
+                    ),
+                    _buildItem(
+                      icon: Icons.tune_rounded,
+                      title: 'Preferências',
+                      subtitle: 'Ajustes individuais do app',
+                      onTap: () => _openScreen(
+                        context,
+                        PreferencesMobileScreen(),
+                      ),
+                    ),
+                    _buildItem(
+                      icon: Icons.shield_outlined,
+                      title: 'Gerenciar meus dados',
+                      subtitle: 'Dados e privacidade',
+                      onTap: () => _openScreen(
+                        context,
+                        PreferencesMobileScreen(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(color: _border),
+                    const SizedBox(height: 8),
+                    _buildLogoutItem(context),
+                  ],
+                ),
               ),
             ),
             _buildVersionFooter(),
@@ -113,58 +88,15 @@ class CoresDoMobile extends StatelessWidget {
     );
   }
 
-  Future<void> _carregarUsuarioSeNecessario() async {
-    final UsuarioProvider provider = UsuarioProvider();
-
-    if (provider.usuario != null) {
-      return;
-    }
-
-    try {
-      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-    } catch (_) {
-      // O drawer deve continuar abrindo mesmo se os dados do usuário não carregarem.
-    }
-  }
-
-  String _nomeDoUsuario(UsuarioModel? usuario) {
-    final String nomeDeGuerra = usuario?.nomeDeGuerra.trim() ?? '';
-
-    if (nomeDeGuerra.isNotEmpty) {
-      return nomeDeGuerra;
-    }
-
-    final String nomeCompleto = <String>[
-      usuario?.nome.trim() ?? '',
-      usuario?.sobrenome.trim() ?? '',
-    ].where((String parte) => parte.isNotEmpty).join(' ').trim();
-
-    if (nomeCompleto.isNotEmpty) {
-      return nomeCompleto;
-    }
-
-    return 'Usuário';
-  }
-
-  String _emailDoUsuario(UsuarioModel? usuario) {
-    final String email = usuario?.email.trim() ?? '';
-
-    if (email.isNotEmpty) {
-      return email;
-    }
-
-    return 'E-mail não informado';
-  }
-
   Widget _buildHeader(BuildContext context) {
     final UsuarioProvider usuarioProvider = UsuarioProvider();
 
     return FutureBuilder<void>(
-      future: _carregarUsuarioSeNecessario(),
-      builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+      future: _loadUserIfNeeded(usuarioProvider),
+      builder: (BuildContext context, AsyncSnapshot<void> _) {
         return ListenableBuilder(
           listenable: usuarioProvider,
-          builder: (BuildContext context, Widget? child) {
+          builder: (BuildContext context, Widget? _) {
             final UsuarioModel? usuario = usuarioProvider.usuario;
 
             return Container(
@@ -176,79 +108,37 @@ class CoresDoMobile extends StatelessWidget {
                 18,
               ),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: <Color>[_primaryColor, _secondaryColor],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                color: _surface,
+                border: Border(
+                  bottom: BorderSide(color: _border),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      _buildAvatar(context),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              _nomeDoUsuario(usuario),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: SixMobilePalette.onPrimary,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _emailDoUsuario(usuario),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: SixMobilePalette.activeBorder,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: SixMobilePalette.onPrimary.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: SixMobilePalette.onPrimary.withOpacity(0.16),
-                      ),
-                    ),
-                    child: const Row(
+                  _buildAvatar(context),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Icon(
-                          Icons.storefront_rounded,
-                          color: SixMobilePalette.onPrimary,
-                          size: 18,
+                        Text(
+                          _userName(usuario),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _title,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Gestão rápida do seu comércio',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: SixMobilePalette.onPrimary,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _userEmail(usuario),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _muted,
+                            fontSize: 12.5,
                           ),
                         ),
                       ],
@@ -271,14 +161,14 @@ class CoresDoMobile extends StatelessWidget {
         clipBehavior: Clip.none,
         children: <Widget>[
           CircleAvatar(
-            radius: 34,
-            backgroundColor: SixMobilePalette.onPrimary.withOpacity(0.14),
+            radius: 32,
+            backgroundColor: SixMobilePalette.softNeutralSurface,
             backgroundImage: image != null ? FileImage(image!) : null,
             child: image == null
                 ? const Icon(
-                    Icons.person_rounded,
-                    size: 34,
-                    color: SixMobilePalette.onPrimary,
+                    Icons.person_outline_rounded,
+                    size: 30,
+                    color: _accent,
                   )
                 : null,
           ),
@@ -289,14 +179,14 @@ class CoresDoMobile extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: _surfaceColor,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: _primaryColor.withOpacity(0.12)),
+                color: _surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: _border),
               ),
               child: const Icon(
-                Icons.camera_alt_rounded,
-                color: _primaryColor,
+                Icons.camera_alt_outlined,
                 size: 14,
+                color: _accent,
               ),
             ),
           ),
@@ -307,52 +197,38 @@ class CoresDoMobile extends StatelessWidget {
 
   Widget _buildSectionLabel(String label) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
       child: Text(
         label.toUpperCase(),
         style: const TextStyle(
-          color: _mutedTextColor,
+          color: _muted,
           fontSize: 11,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w800,
           letterSpacing: 0.7,
         ),
       ),
     );
   }
 
-  Widget _buildDrawerItem(
-    BuildContext context, {
+  Widget _buildItem({
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    bool highlighted = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(18),
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(13),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color:
-                    highlighted
-                        ? SixMobilePalette.highlightedBorder
-                        : _borderColor,
-              ),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x0A000000),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _border),
             ),
             child: Row(
               children: <Widget>[
@@ -360,19 +236,11 @@ class CoresDoMobile extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color:
-                        highlighted
-                            ? _softBlueColor
-                            : SixMobilePalette.softNeutralSurface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color:
-                          highlighted
-                              ? SixMobilePalette.highlightedBorder
-                              : _borderColor,
-                    ),
+                    color: SixMobilePalette.softNeutralSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _border),
                   ),
-                  child: Icon(icon, color: _primaryColor, size: 21),
+                  child: Icon(icon, color: _accent, size: 21),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -383,11 +251,10 @@ class CoresDoMobile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _titleTextColor,
+                        style: const TextStyle(
+                          color: _title,
                           fontSize: 14,
-                          fontWeight:
-                              highlighted ? FontWeight.w900 : FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -396,15 +263,17 @@ class CoresDoMobile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: _mutedTextColor,
+                          color: _muted,
                           fontSize: 12,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: _muted,
+                ),
               ],
             ),
           ),
@@ -414,52 +283,47 @@ class CoresDoMobile extends StatelessWidget {
   }
 
   Widget _buildLogoutItem(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Material(
-        color: const Color(0xFFFFFBFB),
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => _logout(context),
-          child: Container(
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFFECACA)),
-            ),
-            child: const Row(
-              children: <Widget>[
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.all(Radius.circular(14)),
-                    ),
-                    child: Icon(
-                      Icons.logout_rounded,
-                      color: Color(0xFFB91C1C),
-                      size: 21,
-                    ),
+    return Material(
+      color: _surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => _logout(context),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: SixMobilePalette.errorBorder),
+          ),
+          child: const Row(
+            children: <Widget>[
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: SixMobilePalette.error,
+                    size: 21,
                   ),
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Sair da conta',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Color(0xFF991B1B),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                    ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Sair da conta',
+                  style: TextStyle(
+                    color: SixMobilePalette.error,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -479,8 +343,10 @@ class CoresDoMobile extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
       decoration: const BoxDecoration(
-        color: _backgroundColor,
-        border: Border(top: BorderSide(color: _borderColor)),
+        color: _surface,
+        border: Border(
+          top: BorderSide(color: _border),
+        ),
       ),
       child: Tooltip(
         message: tooltip,
@@ -488,40 +354,59 @@ class CoresDoMobile extends StatelessWidget {
           versionLabel,
           textAlign: TextAlign.center,
           style: const TextStyle(
+            color: _muted,
             fontSize: 12,
-            color: _mutedTextColor,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
     );
   }
 
+  Future<void> _loadUserIfNeeded(UsuarioProvider provider) async {
+    if (provider.usuario != null) return;
+
+    try {
+      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+    } catch (_) {
+      // O drawer continua funcional mesmo sem os dados do usuário.
+    }
+  }
+
+  String _userName(UsuarioModel? usuario) {
+    final String nomeDeGuerra = usuario?.nomeDeGuerra.trim() ?? '';
+    if (nomeDeGuerra.isNotEmpty) return nomeDeGuerra;
+
+    final String nomeCompleto = <String>[
+      usuario?.nome.trim() ?? '',
+      usuario?.sobrenome.trim() ?? '',
+    ].where((String parte) => parte.isNotEmpty).join(' ');
+
+    return nomeCompleto.isEmpty ? 'Usuário' : nomeCompleto;
+  }
+
+  String _userEmail(UsuarioModel? usuario) {
+    final String email = usuario?.email.trim() ?? '';
+    return email.isEmpty ? 'E-mail não informado' : email;
+  }
+
   void _openScreen(BuildContext context, Widget screen) {
     Navigator.of(context).pop();
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => screen),
+    );
   }
 
   Future<void> _logout(BuildContext context) async {
     await AuthService().logout();
 
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
 
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const LoginPageMobile()),
-      (Route<dynamic> route) => false,
-    );
-  }
-
-  void _showFeatureInProgress(BuildContext context) {
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Recurso em preparação.'),
-        behavior: SnackBarBehavior.floating,
+      MaterialPageRoute<void>(
+        builder: (_) => const LoginPageMobile(),
       ),
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -529,9 +414,11 @@ class CoresDoMobile extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: _surfaceColor,
+      backgroundColor: _surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(22),
+        ),
       ),
       builder: (BuildContext bottomSheetContext) {
         return SafeArea(
@@ -543,9 +430,9 @@ class CoresDoMobile extends StatelessWidget {
                 const Text(
                   'Foto do perfil',
                   style: TextStyle(
-                    color: _titleTextColor,
+                    color: _title,
                     fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -578,9 +465,9 @@ class CoresDoMobile extends StatelessWidget {
   }) {
     return Material(
       color: SixMobilePalette.softNeutralSurface,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         onTap: () {
           Navigator.of(context).pop();
           onPickImage(source);
@@ -588,19 +475,19 @@ class CoresDoMobile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _borderColor),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _border),
           ),
           child: Row(
             children: <Widget>[
-              Icon(icon, color: _primaryColor),
+              Icon(icon, color: _accent),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w800,
+                    color: _title,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
