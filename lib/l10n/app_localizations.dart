@@ -252,6 +252,36 @@ abstract class AppLocalizations {
   /// **'Exit expanded mode'**
   String get pdvWebExitExpandedModeAction;
 
+  /// No description provided for @pdvWebCloseFrontDeskAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close front desk'**
+  String get pdvWebCloseFrontDeskAction;
+
+  /// No description provided for @pdvWebCloseFrontDeskConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close front desk?'**
+  String get pdvWebCloseFrontDeskConfirmTitle;
+
+  /// No description provided for @pdvWebCloseFrontDeskConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'There is an ongoing sale. If you close this screen, you can continue this sale later.'**
+  String get pdvWebCloseFrontDeskConfirmMessage;
+
+  /// No description provided for @pdvWebContinueSaleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue sale'**
+  String get pdvWebContinueSaleAction;
+
+  /// No description provided for @pdvWebAvailableShortcutsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcuts available'**
+  String get pdvWebAvailableShortcutsLabel;
+
   /// No description provided for @pdvWebClearSaleAction.
   ///
   /// In en, this message translates to:
@@ -357,20 +387,32 @@ abstract class AppLocalizations {
   /// No description provided for @pdvWebDecreaseQuantityAction.
   ///
   /// In en, this message translates to:
-  /// **'Decrease'**
+  /// **'Decrease quantity'**
   String get pdvWebDecreaseQuantityAction;
 
   /// No description provided for @pdvWebIncreaseQuantityAction.
   ///
   /// In en, this message translates to:
-  /// **'Increase'**
+  /// **'Increase quantity'**
   String get pdvWebIncreaseQuantityAction;
 
   /// No description provided for @pdvWebRemoveItemAction.
   ///
   /// In en, this message translates to:
-  /// **'Remove'**
+  /// **'Remove item'**
   String get pdvWebRemoveItemAction;
+
+  /// No description provided for @pdvWebCustomerNotInformedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer not identified'**
+  String get pdvWebCustomerNotInformedStatus;
+
+  /// No description provided for @pdvWebCustomerIdentifiedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer identified'**
+  String get pdvWebCustomerIdentifiedStatus;
 
   /// No description provided for @pdvWebNoItemsAddedTitle.
   ///
@@ -425,6 +467,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registering...'**
   String get pdvWebRegisteringAction;
+
+  /// No description provided for @pdvWebClosePaymentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close receive'**
+  String get pdvWebClosePaymentAction;
+
+  /// No description provided for @pdvWebCompleteRemainingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill remaining'**
+  String get pdvWebCompleteRemainingAction;
+
+  /// No description provided for @pdvWebConfirmDistributionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm distribution'**
+  String get pdvWebConfirmDistributionAction;
+
+  /// No description provided for @pdvWebConfirmReceiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm receive'**
+  String get pdvWebConfirmReceiveAction;
+
+  /// No description provided for @pdvWebConfirmReceiveMessagePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to confirm receiving in the amount of'**
+  String get pdvWebConfirmReceiveMessagePrefix;
+
+  /// No description provided for @pdvWebDefinePaymentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Set payment'**
+  String get pdvWebDefinePaymentAction;
+
+  /// No description provided for @pdvWebDistributedTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Distributed total'**
+  String get pdvWebDistributedTotalLabel;
+
+  /// No description provided for @pdvWebEditPaymentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit payment'**
+  String get pdvWebEditPaymentAction;
+
+  /// No description provided for @pdvWebPaymentDefinedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment set'**
+  String get pdvWebPaymentDefinedLabel;
+
+  /// No description provided for @pdvWebPaymentDistributionReadyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Distribution is ready for confirmation.'**
+  String get pdvWebPaymentDistributionReadyLabel;
+
+  /// No description provided for @pdvWebPaymentDistributionReviewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust values to match the sale total.'**
+  String get pdvWebPaymentDistributionReviewLabel;
+
+  /// No description provided for @pdvWebPaymentIncompleteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment incomplete'**
+  String get pdvWebPaymentIncompleteLabel;
+
+  /// No description provided for @pdvWebPaymentMethodsSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'methods'**
+  String get pdvWebPaymentMethodsSelectedLabel;
+
+  /// No description provided for @pdvWebPaymentMethodsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment methods'**
+  String get pdvWebPaymentMethodsTitle;
+
+  /// No description provided for @pdvWebPaymentMismatchMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The sum of payment methods must match the sale total.'**
+  String get pdvWebPaymentMismatchMessage;
+
+  /// No description provided for @pdvWebPaymentMismatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review distribution'**
+  String get pdvWebPaymentMismatchTitle;
+
+  /// No description provided for @pdvWebPaymentNeedsReviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Review distribution to match the sale total.'**
+  String get pdvWebPaymentNeedsReviewHint;
+
+  /// No description provided for @pdvWebPaymentOverlayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving'**
+  String get pdvWebPaymentOverlayTitle;
+
+  /// No description provided for @pdvWebPaymentSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Distribution summary'**
+  String get pdvWebPaymentSummaryTitle;
+
+  /// No description provided for @pdvWebPaymentValueFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get pdvWebPaymentValueFieldLabel;
+
+  /// No description provided for @pdvWebProcessingReceiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get pdvWebProcessingReceiveAction;
+
+  /// No description provided for @pdvWebReceivedTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Received total'**
+  String get pdvWebReceivedTotalLabel;
+
+  /// No description provided for @pdvWebRemainingAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining amount'**
+  String get pdvWebRemainingAmountLabel;
+
+  /// No description provided for @pdvWebReviewPaymentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Review payment'**
+  String get pdvWebReviewPaymentAction;
+
+  /// No description provided for @pdvWebSaleTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale total'**
+  String get pdvWebSaleTotalLabel;
+
+  /// No description provided for @pdvWebSelectPaymentMethodHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a method to enter values.'**
+  String get pdvWebSelectPaymentMethodHint;
+
+  /// No description provided for @pdvWebSelectPaymentMethodMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one method and enter an amount to continue.'**
+  String get pdvWebSelectPaymentMethodMessage;
+
+  /// No description provided for @pdvWebSelectPaymentMethodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a payment method'**
+  String get pdvWebSelectPaymentMethodTitle;
 }
 
 class _AppLocalizationsDelegate

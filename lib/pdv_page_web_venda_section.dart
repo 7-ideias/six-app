@@ -51,6 +51,15 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
   Widget _buildCabecalhoVendaCompacto() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final bool expandido = _modoExpandidoFrenteCaixa;
+    final bool temPagamentoConfirmado = _temPagamentoConfirmado();
+    final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
+    final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
+    final bool clienteNaoInformado =
+        _vendaPossuiItens && !_clienteSelecionadoNaVenda;
+    final Duration transicaoAcoes =
+        _prefereReducaoDeMovimento
+            ? const Duration(milliseconds: 90)
+            : const Duration(milliseconds: 160);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -60,76 +69,208 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
         border: Border.all(color: _pdvTheme.cardBorder),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  l10n?.pdvWebTitle ?? 'Frente de caixa',
-                  style: TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                    color: _pdvTheme.primaryText,
-                  ),
-                ),
-                _buildAtalhoPdvChip(
-                  icon: Icons.point_of_sale_outlined,
-                  label: l10n?.pdvWebSessionActive ?? 'Sessão ativa',
-                ),
-                if (_vendaPossuiItens)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _pdvTheme.successColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      l10n?.pdvWebStatusInProgress ?? 'Em andamento',
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      l10n?.pdvWebTitle ?? 'Frente de caixa',
                       style: TextStyle(
-                        color: _pdvTheme.successColor,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                        color: _pdvTheme.primaryText,
                       ),
                     ),
-                  ),
-                _buildAtalhoPdvChip(
-                  icon: Icons.search_rounded,
-                  label: 'F2 ${l10n?.pdvWebSearchItemAction ?? 'Buscar item'}',
+                    _buildAtalhoPdvChip(
+                      icon: Icons.point_of_sale_outlined,
+                      label: l10n?.pdvWebSessionActive ?? 'Sessão ativa',
+                    ),
+                    if (_vendaPossuiItens)
+                      _buildStatusChip(
+                        label: l10n?.pdvWebStatusInProgress ?? 'Em andamento',
+                        icon: Icons.play_circle_outline_rounded,
+                        foregroundColor: _pdvTheme.successColor,
+                        backgroundColor: _pdvTheme.successColor.withValues(
+                          alpha: 0.12,
+                        ),
+                      ),
+                    if (clienteNaoInformado)
+                      _buildStatusChip(
+                        label:
+                            l10n?.pdvWebCustomerNotInformedStatus ??
+                            'Cliente não informado',
+                        icon: Icons.person_off_outlined,
+                        foregroundColor: _pdvTheme.warningColor,
+                        backgroundColor: _pdvTheme.warningColor.withValues(
+                          alpha: 0.15,
+                        ),
+                      )
+                    else if (_vendaPossuiItens && _clienteSelecionadoNaVenda)
+                      _buildStatusChip(
+                        label:
+                            l10n?.pdvWebCustomerIdentifiedStatus ??
+                            'Cliente identificado',
+                        icon: Icons.person_outline_rounded,
+                        foregroundColor: _pdvTheme.iconColor,
+                        backgroundColor: _pdvTheme.iconColor.withValues(
+                          alpha: 0.11,
+                        ),
+                      ),
+                    if (temPagamentoConfirmado)
+                      _buildChipStatusPagamento(
+                        l10n: l10n,
+                        pagamentoCompleto: pagamentoCompleto,
+                        pagamentoPrecisaRevisao: pagamentoPrecisaRevisao,
+                      ),
+                  ],
                 ),
-                _buildAtalhoPdvChip(
-                  icon: Icons.person_search_rounded,
-                  label:
-                      'F4 ${l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente'}',
-                ),
-                _buildAtalhoPdvChip(
-                  icon: Icons.payments_outlined,
-                  label: 'F8 ${l10n?.pdvWebReceiveAction ?? 'Receber'}',
-                ),
-                _buildAtalhoPdvChip(
-                  icon: Icons.delete_sweep_outlined,
-                  label: 'ESC ${l10n?.pdvWebClearSaleAction ?? 'Limpar venda'}',
+                AnimatedSwitcher(
+                  duration: transicaoAcoes,
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (
+                    Widget child,
+                    Animation<double> animation,
+                  ) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SizeTransition(
+                        sizeFactor: animation,
+                        axis: Axis.horizontal,
+                        axisAlignment: -1,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child:
+                      _atalhosContextuaisDisponiveis
+                          ? Padding(
+                            key: const ValueKey<String>('on-wrap'),
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildAtalhosContextuaisCabecalho(l10n),
+                          )
+                          : const SizedBox.shrink(key: ValueKey<String>('off')),
                 ),
               ],
             ),
           ),
-          Tooltip(
-            message:
-                expandido
-                    ? (l10n?.pdvWebExitExpandedModeAction ??
-                        'Sair do modo expandido')
-                    : (l10n?.pdvWebExpandModeAction ??
-                        'Expandir frente de caixa'),
-            child: IconButton(
-              onPressed: _alternarModoExpandidoFrenteCaixa,
-              icon: Icon(
-                expandido ? Icons.fullscreen_exit : Icons.fullscreen,
-                color: _pdvTheme.iconColor,
+          Wrap(
+            spacing: 4,
+            children: <Widget>[
+              Tooltip(
+                message:
+                    expandido
+                        ? (l10n?.pdvWebExitExpandedModeAction ??
+                            'Sair do modo expandido')
+                        : (l10n?.pdvWebExpandModeAction ??
+                            'Expandir frente de caixa'),
+                child: Semantics(
+                  button: true,
+                  label:
+                      expandido
+                          ? (l10n?.pdvWebExitExpandedModeAction ??
+                              'Sair do modo expandido')
+                          : (l10n?.pdvWebExpandModeAction ??
+                              'Expandir frente de caixa'),
+                  child: IconButton(
+                    onPressed: _alternarModoExpandidoFrenteCaixa,
+                    constraints: const BoxConstraints(
+                      minWidth: 42,
+                      minHeight: 42,
+                    ),
+                    icon: Icon(
+                      expandido ? Icons.fullscreen_exit : Icons.fullscreen,
+                      color: _pdvTheme.iconColor,
+                    ),
+                  ),
+                ),
               ),
+              Tooltip(
+                message:
+                    l10n?.pdvWebCloseFrontDeskAction ??
+                    'Fechar frente de caixa',
+                child: Semantics(
+                  button: true,
+                  label:
+                      l10n?.pdvWebCloseFrontDeskAction ??
+                      'Fechar frente de caixa',
+                  child: IconButton(
+                    onPressed: _confirmarFecharFrenteCaixa,
+                    constraints: const BoxConstraints(
+                      minWidth: 42,
+                      minHeight: 42,
+                    ),
+                    icon: Icon(Icons.close, color: _pdvTheme.iconColor),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAtalhosContextuaisCabecalho(AppLocalizations? l10n) {
+    return Wrap(
+      key: const ValueKey<String>('on'),
+      spacing: 8,
+      runSpacing: 8,
+      children: <Widget>[
+        _buildAtalhoPdvChip(
+          icon: Icons.keyboard_command_key_rounded,
+          label: l10n?.pdvWebAvailableShortcutsLabel ?? 'Atalhos disponíveis',
+        ),
+        _buildAtalhoPdvChip(
+          icon: Icons.search_rounded,
+          label: 'F2 ${l10n?.pdvWebSearchItemAction ?? 'Buscar item'}',
+        ),
+        _buildAtalhoPdvChip(
+          icon: Icons.person_search_rounded,
+          label:
+              'F4 ${l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente'}',
+        ),
+        _buildAtalhoPdvChip(
+          icon: Icons.payments_outlined,
+          label: 'F8 ${l10n?.pdvWebReceiveAction ?? 'Receber'}',
+        ),
+        _buildAtalhoPdvChip(
+          icon: Icons.delete_sweep_outlined,
+          label: 'ESC ${l10n?.pdvWebClearSaleAction ?? 'Limpar venda'}',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusChip({
+    required String label,
+    required IconData icon,
+    required Color foregroundColor,
+    required Color backgroundColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: foregroundColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: foregroundColor,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -165,83 +306,187 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
 
   Widget _buildLeituraBuscaItem() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
+    final Duration transicaoAcoes =
+        _prefereReducaoDeMovimento
+            ? const Duration(milliseconds: 90)
+            : const Duration(milliseconds: 160);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _pdvTheme.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxWidth < 980;
+    return FocusTraversalGroup(
+      child: FocusScope(
+        node: _barcodeInteractionFocusScopeNode,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _pdvTheme.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _pdvTheme.cardBorder),
+          ),
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compact = constraints.maxWidth < 980;
 
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                _buildCampoLeitura(l10n),
-                const SizedBox(height: 10),
-                Row(
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _abrirSelecaoProdutoWeb,
-                        icon: const Icon(Icons.search_rounded),
-                        label: Text(
-                          l10n?.pdvWebSearchItemAction ?? 'Buscar item',
-                        ),
-                      ),
-                    ),
-                    if (_vendaPossuiItens) ...<Widget>[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _abrirDialogClienteRapido,
-                          icon: const Icon(Icons.person_add_alt_1_outlined),
-                          label: Text(
-                            l10n?.pdvWebIdentifyCustomerAction ??
-                                'Identificar cliente',
+                    _buildCampoLeitura(l10n),
+                    AnimatedSwitcher(
+                      duration: transicaoAcoes,
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (
+                        Widget child,
+                        Animation<double> animation,
+                      ) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SizeTransition(
+                            sizeFactor: animation,
+                            axisAlignment: -1,
+                            child: child,
                           ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            );
-          }
-
-          return Row(
-            children: <Widget>[
-              Expanded(child: _buildCampoLeitura(l10n)),
-              const SizedBox(width: 10),
-              SizedBox(
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: _abrirSelecaoProdutoWeb,
-                  icon: const Icon(Icons.search_rounded),
-                  label: Text(l10n?.pdvWebSearchItemAction ?? 'Buscar item'),
-                ),
-              ),
-              if (_vendaPossuiItens) ...<Widget>[
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 52,
-                  child: OutlinedButton.icon(
-                    onPressed: _abrirDialogClienteRapido,
-                    icon: const Icon(Icons.person_add_alt_1_outlined),
-                    label: Text(
-                      l10n?.pdvWebIdentifyCustomerAction ??
-                          'Identificar cliente',
+                        );
+                      },
+                      child:
+                          _atalhosContextuaisDisponiveis
+                              ? Padding(
+                                key: const ValueKey<String>('on'),
+                                padding: const EdgeInsets.only(top: 10),
+                                child: _buildAcoesOperacionaisCodigoBarras(
+                                  l10n,
+                                  compact: true,
+                                ),
+                              )
+                              : const SizedBox.shrink(
+                                key: ValueKey<String>('off'),
+                              ),
                     ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: <Widget>[
+                  Expanded(child: _buildCampoLeitura(l10n)),
+                  AnimatedSwitcher(
+                    duration: transicaoAcoes,
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (
+                      Widget child,
+                      Animation<double> animation,
+                    ) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SizeTransition(
+                          sizeFactor: animation,
+                          axis: Axis.horizontal,
+                          axisAlignment: -1,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child:
+                        _atalhosContextuaisDisponiveis
+                            ? Padding(
+                              key: const ValueKey<String>('on'),
+                              padding: const EdgeInsets.only(left: 10),
+                              child: _buildAcoesOperacionaisCodigoBarras(
+                                l10n,
+                                compact: false,
+                              ),
+                            )
+                            : const SizedBox.shrink(
+                              key: ValueKey<String>('off'),
+                            ),
                   ),
-                ),
-              ],
-            ],
-          );
-        },
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAcoesOperacionaisCodigoBarras(
+    AppLocalizations? l10n, {
+    required bool compact,
+  }) {
+    if (compact) {
+      return Row(
+        children: <Widget>[
+          Expanded(
+            child: _buildBotaoAcaoCodigoBarras(
+              tooltip: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
+              icon: Icons.search_rounded,
+              label: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
+              onPressed: _abrirSelecaoProdutoWeb,
+            ),
+          ),
+          if (_vendaPossuiItens) ...<Widget>[
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildBotaoAcaoCodigoBarras(
+                tooltip:
+                    l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
+                icon: Icons.person_add_alt_1_outlined,
+                label:
+                    l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
+                onPressed: _abrirDialogClienteRapido,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        SizedBox(
+          height: 52,
+          child: _buildBotaoAcaoCodigoBarras(
+            tooltip: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
+            icon: Icons.search_rounded,
+            label: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
+            onPressed: _abrirSelecaoProdutoWeb,
+          ),
+        ),
+        if (_vendaPossuiItens) ...<Widget>[
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 52,
+            child: _buildBotaoAcaoCodigoBarras(
+              tooltip:
+                  l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
+              icon: Icons.person_add_alt_1_outlined,
+              label:
+                  l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
+              onPressed: _abrirDialogClienteRapido,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBotaoAcaoCodigoBarras({
+    required String tooltip,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: OutlinedButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          label: Text(label),
+        ),
       ),
     );
   }
@@ -286,10 +531,10 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
       ),
       child: Row(
         children: <Widget>[
-          _buildHeaderCell(l10n?.pdvWebTableHeaderItem ?? 'Item', flex: 5),
+          _buildHeaderCell(l10n?.pdvWebTableHeaderItem ?? 'Item', flex: 6),
           _buildHeaderCell(
             l10n?.pdvWebTableHeaderQuantity ?? 'Qtd',
-            flex: 2,
+            flex: 3,
             alignEnd: true,
           ),
           _buildHeaderCell(
@@ -299,11 +544,6 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
           ),
           _buildHeaderCell(
             l10n?.pdvWebTableHeaderSubtotal ?? 'Subtotal',
-            flex: 2,
-            alignEnd: true,
-          ),
-          _buildHeaderCell(
-            l10n?.pdvWebTableHeaderActions ?? 'Ações',
             flex: 2,
             alignEnd: true,
           ),
@@ -339,24 +579,39 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
     final double preco = ((produto['preco'] ?? 0) as num).toDouble();
     final double subtotal = _calcularSubtotal(produto);
     final bool ehServico = _ehServicoItem(produto);
+    final String itemKey = _itemVisualKey(produto);
+    final _PdvItemVisualFeedback? feedback = _itemVisualFeedbackForKey(itemKey);
+    final Color baseColor =
+        index.isEven ? _pdvTheme.backgroundSurface : _pdvTheme.backgroundPage;
+    final Color rowColor =
+        feedback == null
+            ? baseColor
+            : Color.alphaBlend(
+              _itemFeedbackHighlightColor(feedback),
+              baseColor,
+            );
+    final Duration transicaoCorLinha =
+        _prefereReducaoDeMovimento
+            ? Duration.zero
+            : const Duration(milliseconds: 180);
 
     return ZebraListItem(
       index: index,
-      child: Container(
+      child: AnimatedContainer(
+        key: _itemRowKey(itemKey),
+        duration: transicaoCorLinha,
+        curve: Curves.easeOutCubic,
         margin: const EdgeInsets.only(top: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: _pdvTheme.cardBorder),
-          color:
-              index.isEven
-                  ? _pdvTheme.backgroundSurface
-                  : _pdvTheme.backgroundPage,
+          color: rowColor,
         ),
         child: Row(
           children: <Widget>[
             Expanded(
-              flex: 5,
+              flex: 6,
               child: Row(
                 children: <Widget>[
                   Container(
@@ -405,16 +660,58 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
               ),
             ),
             Expanded(
-              flex: 2,
+              flex: 3,
               child: Align(
                 alignment: Alignment.centerRight,
-                child: Text(
-                  quantidade.toString(),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: _pdvTheme.primaryText,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    _buildBotaoQuantidadeItem(
+                      tooltip:
+                          l10n?.pdvWebDecreaseQuantityAction ??
+                          'Diminuir quantidade',
+                      semanticLabel:
+                          l10n?.pdvWebDecreaseQuantityAction ??
+                          'Diminuir quantidade',
+                      icon: Icons.remove_circle_outline,
+                      onPressed: () => _alterarQuantidade(produto, -1),
+                      foregroundColor: _pdvTheme.iconColor,
+                    ),
+                    SizedBox(
+                      width: 30,
+                      child: Text(
+                        quantidade.toString(),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: _pdvTheme.primaryText,
+                        ),
+                      ),
+                    ),
+                    _buildBotaoQuantidadeItem(
+                      tooltip:
+                          l10n?.pdvWebIncreaseQuantityAction ??
+                          'Aumentar quantidade',
+                      semanticLabel:
+                          l10n?.pdvWebIncreaseQuantityAction ??
+                          'Aumentar quantidade',
+                      icon: Icons.add_circle_outline,
+                      onPressed: () => _alterarQuantidade(produto, 1),
+                      foregroundColor: _pdvTheme.iconColor,
+                    ),
+                    const SizedBox(width: 2),
+                    _buildBotaoQuantidadeItem(
+                      tooltip: l10n?.pdvWebRemoveItemAction ?? 'Remover item',
+                      semanticLabel:
+                          l10n?.pdvWebRemoveItemAction ?? 'Remover item',
+                      icon: Icons.delete_outline_rounded,
+                      onPressed: () => _removerProduto(produto),
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.error.withValues(alpha: 0.75),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -446,36 +743,34 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                 ),
               ),
             ),
-            Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Wrap(
-                  spacing: 2,
-                  children: <Widget>[
-                    IconButton(
-                      tooltip: l10n?.pdvWebDecreaseQuantityAction ?? 'Diminuir',
-                      onPressed: () => _alterarQuantidade(produto, -1),
-                      icon: const Icon(Icons.remove_circle_outline),
-                    ),
-                    IconButton(
-                      tooltip: l10n?.pdvWebIncreaseQuantityAction ?? 'Aumentar',
-                      onPressed: () => _alterarQuantidade(produto, 1),
-                      icon: const Icon(Icons.add_circle_outline),
-                    ),
-                    IconButton(
-                      tooltip: l10n?.pdvWebRemoveItemAction ?? 'Remover',
-                      onPressed: () => _removerProduto(produto),
-                      icon: Icon(
-                        Icons.delete_outline_rounded,
-                        color: _pdvTheme.warningColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBotaoQuantidadeItem({
+    required String tooltip,
+    required String semanticLabel,
+    required IconData icon,
+    required VoidCallback onPressed,
+    required Color foregroundColor,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        child: IconButton(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          splashRadius: 20,
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          style: IconButton.styleFrom(
+            foregroundColor: foregroundColor,
+            hoverColor: foregroundColor.withValues(alpha: 0.12),
+            focusColor: foregroundColor.withValues(alpha: 0.14),
+          ),
         ),
       ),
     );
@@ -593,6 +888,13 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
         _clienteSelecionadoNaVenda
             ? _clienteAtualLabel()
             : (l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente');
+    final List<FormaPagamentoSelecionada> formasPagamento =
+        _formasPagamentoConfirmadas
+            .where((FormaPagamentoSelecionada forma) => forma.valor > 0)
+            .toList(growable: false);
+    final bool temPagamentoConfirmado = formasPagamento.isNotEmpty;
+    final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
+    final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -619,22 +921,34 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _pdvTheme.successColor.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    l10n?.pdvWebStatusInProgress ?? 'Em andamento',
-                    style: TextStyle(
-                      color: _pdvTheme.successColor,
-                      fontWeight: FontWeight.w800,
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _pdvTheme.successColor.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        l10n?.pdvWebStatusInProgress ?? 'Em andamento',
+                        style: TextStyle(
+                          color: _pdvTheme.successColor,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (temPagamentoConfirmado)
+                      _buildChipStatusPagamento(
+                        l10n: l10n,
+                        pagamentoCompleto: pagamentoCompleto,
+                        pagamentoPrecisaRevisao: pagamentoPrecisaRevisao,
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -653,23 +967,20 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                   l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
                 ),
               ),
-            if (_formasSelecionadas.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 10),
-              _buildResumoInfoTile(
-                icon: Icons.payments_outlined,
-                label: l10n?.pdvWebPaymentLabel ?? 'Pagamento',
-                value: _formasSelecionadas.join(', '),
+            const SizedBox(height: 10),
+            if (temPagamentoConfirmado)
+              _buildSecaoPagamentoConfirmado(
+                l10n: l10n,
+                formasPagamento: formasPagamento,
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: _abrirTelaRecebimento,
+                icon: const Icon(Icons.payments_outlined),
+                label: Text(
+                  l10n?.pdvWebDefinePaymentAction ?? 'Definir pagamento',
+                ),
               ),
-            ] else ...<Widget>[
-              const SizedBox(height: 10),
-              _buildResumoInfoTile(
-                icon: Icons.payments_outlined,
-                label: l10n?.pdvWebPaymentLabel ?? 'Pagamento',
-                value:
-                    l10n?.pdvWebPaymentDefinedOnReceiveLabel ??
-                    'Definir no recebimento',
-              ),
-            ],
             const SizedBox(height: 12),
             Divider(color: _pdvTheme.cardBorder, height: 1),
             const SizedBox(height: 12),
@@ -713,6 +1024,119 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
         ),
       ),
     );
+  }
+
+  Widget _buildChipStatusPagamento({
+    required AppLocalizations? l10n,
+    required bool pagamentoCompleto,
+    required bool pagamentoPrecisaRevisao,
+  }) {
+    final Color textoCor;
+    final Color fundoCor;
+    final String label;
+
+    if (pagamentoCompleto) {
+      textoCor = _pdvTheme.successColor;
+      fundoCor = _pdvTheme.successColor.withValues(alpha: 0.12);
+      label = l10n?.pdvWebPaymentDefinedLabel ?? 'Pagamento definido';
+    } else if (pagamentoPrecisaRevisao) {
+      textoCor = _pdvTheme.warningColor;
+      fundoCor = _pdvTheme.warningColor.withValues(alpha: 0.14);
+      label = l10n?.pdvWebReviewPaymentAction ?? 'Revisar pagamento';
+    } else {
+      textoCor = _pdvTheme.secondaryText;
+      fundoCor = _pdvTheme.backgroundPage;
+      label = l10n?.pdvWebPaymentIncompleteLabel ?? 'Pagamento incompleto';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: fundoCor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: textoCor, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+
+  Widget _buildSecaoPagamentoConfirmado({
+    required AppLocalizations? l10n,
+    required List<FormaPagamentoSelecionada> formasPagamento,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: _pdvTheme.backgroundPage,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _pdvTheme.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  l10n?.pdvWebPaymentMethodsTitle ?? 'Formas de recebimento',
+                  style: TextStyle(
+                    color: _pdvTheme.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _editarPagamentoConfirmado,
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: Text(
+                  l10n?.pdvWebEditPaymentAction ?? 'Editar pagamento',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          for (final FormaPagamentoSelecionada forma in formasPagamento)
+            _buildResumoLinhaValor(
+              _rotuloFormaPagamento(forma),
+              _formatCurrency(forma.valor),
+            ),
+          const SizedBox(height: 4),
+          Divider(color: _pdvTheme.cardBorder, height: 1),
+          const SizedBox(height: 8),
+          _buildResumoLinhaValor(
+            l10n?.pdvWebReceivedTotalLabel ?? 'Total recebido',
+            _formatCurrency(_totalPagamentoConfirmado()),
+          ),
+          _buildResumoLinhaValor(
+            l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante',
+            _formatCurrency(_restantePagamentoConfirmado()),
+          ),
+          if (_pagamentoConfirmadoPrecisaRevisao()) ...<Widget>[
+            const SizedBox(height: 4),
+            Text(
+              l10n?.pdvWebPaymentNeedsReviewHint ??
+                  'Revise a distribuição para fechar o total da venda.',
+              style: TextStyle(
+                color: _pdvTheme.warningColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _rotuloFormaPagamento(FormaPagamentoSelecionada forma) {
+    final String codigo = forma.codigo.trim().toUpperCase();
+    final String? descricao = _descricoesFormaPagamentoPorCodigo[codigo];
+    if (descricao != null && descricao.trim().isNotEmpty) {
+      return descricao.trim();
+    }
+    return codigo;
   }
 
   Widget _buildResumoInfoTile({
@@ -790,6 +1214,26 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final bool temItens = _vendaPossuiItens;
     final bool podeLimpar = _vendaTemDadosTemporariosPreenchidos();
+    final bool pagamentoDefinido = _temPagamentoConfirmado();
+    final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
+    final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
+
+    final String labelAcaoPrincipal;
+    if (!temItens) {
+      labelAcaoPrincipal = l10n?.pdvWebReceiveAction ?? 'Receber';
+    } else if (pagamentoPrecisaRevisao) {
+      labelAcaoPrincipal =
+          '${l10n?.pdvWebReviewPaymentAction ?? 'Revisar pagamento'} — ${_formatCurrency(total)}';
+    } else if (pagamentoCompleto) {
+      labelAcaoPrincipal =
+          '${l10n?.pdvWebConfirmReceiveAction ?? 'Confirmar recebimento'} — ${_formatCurrency(total)}';
+    } else if (pagamentoDefinido) {
+      labelAcaoPrincipal =
+          '${l10n?.pdvWebEditPaymentAction ?? 'Editar pagamento'} — ${_formatCurrency(total)}';
+    } else {
+      labelAcaoPrincipal =
+          '${l10n?.pdvWebReceiveAction ?? 'Receber'} — ${_formatCurrency(total)}';
+    }
 
     return Container(
       width: double.infinity,
@@ -828,6 +1272,19 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                     icon: Icons.payments_outlined,
                     label: l10n?.pdvWebSubtotalLabel ?? 'Subtotal',
                   ),
+                  if (pagamentoDefinido)
+                    _buildAtalhoPdvChip(
+                      icon:
+                          pagamentoCompleto
+                              ? Icons.verified_outlined
+                              : Icons.warning_amber_rounded,
+                      label:
+                          pagamentoCompleto
+                              ? (l10n?.pdvWebPaymentDefinedLabel ??
+                                  'Pagamento definido')
+                              : (l10n?.pdvWebReviewPaymentAction ??
+                                  'Revisar pagamento'),
+                    ),
                 ],
               )
               : Text(
@@ -862,13 +1319,9 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                 ),
               ),
               FilledButton.icon(
-                onPressed: temItens ? _abrirTelaRecebimento : null,
+                onPressed: temItens ? _acionarRecebimentoPrincipal : null,
                 icon: const Icon(Icons.payments_rounded),
-                label: Text(
-                  temItens
-                      ? '${l10n?.pdvWebReceiveAction ?? 'Receber'} — ${_formatCurrency(total)}'
-                      : (l10n?.pdvWebReceiveAction ?? 'Receber'),
-                ),
+                label: Text(labelAcaoPrincipal),
               ),
               OutlinedButton.icon(
                 onPressed: _abrirVendasAReceberWeb,

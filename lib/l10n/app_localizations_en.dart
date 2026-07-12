@@ -85,6 +85,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdvWebExitExpandedModeAction => 'Exit expanded mode';
 
   @override
+  String get pdvWebCloseFrontDeskAction => 'Close front desk';
+
+  @override
+  String get pdvWebCloseFrontDeskConfirmTitle => 'Close front desk?';
+
+  @override
+  String get pdvWebCloseFrontDeskConfirmMessage =>
+      'There is an ongoing sale. If you close this screen, you can continue this sale later.';
+
+  @override
+  String get pdvWebContinueSaleAction => 'Continue sale';
+
+  @override
+  String get pdvWebAvailableShortcutsLabel => 'Shortcuts available';
+
+  @override
   String get pdvWebClearSaleAction => 'Clear sale';
 
   @override
@@ -138,13 +154,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdvWebCodeLabel => 'Code';
 
   @override
-  String get pdvWebDecreaseQuantityAction => 'Decrease';
+  String get pdvWebDecreaseQuantityAction => 'Decrease quantity';
 
   @override
-  String get pdvWebIncreaseQuantityAction => 'Increase';
+  String get pdvWebIncreaseQuantityAction => 'Increase quantity';
 
   @override
-  String get pdvWebRemoveItemAction => 'Remove';
+  String get pdvWebRemoveItemAction => 'Remove item';
+
+  @override
+  String get pdvWebCustomerNotInformedStatus => 'Customer not identified';
+
+  @override
+  String get pdvWebCustomerIdentifiedStatus => 'Customer identified';
 
   @override
   String get pdvWebNoItemsAddedTitle => 'No item added';
@@ -172,6 +194,97 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdvWebRegisteringAction => 'Registering...';
+
+  @override
+  String get pdvWebClosePaymentAction => 'Close receive';
+
+  @override
+  String get pdvWebCompleteRemainingAction => 'Fill remaining';
+
+  @override
+  String get pdvWebConfirmDistributionAction => 'Confirm distribution';
+
+  @override
+  String get pdvWebConfirmReceiveAction => 'Confirm receive';
+
+  @override
+  String get pdvWebConfirmReceiveMessagePrefix =>
+      'Do you want to confirm receiving in the amount of';
+
+  @override
+  String get pdvWebDefinePaymentAction => 'Set payment';
+
+  @override
+  String get pdvWebDistributedTotalLabel => 'Distributed total';
+
+  @override
+  String get pdvWebEditPaymentAction => 'Edit payment';
+
+  @override
+  String get pdvWebPaymentDefinedLabel => 'Payment set';
+
+  @override
+  String get pdvWebPaymentDistributionReadyLabel =>
+      'Distribution is ready for confirmation.';
+
+  @override
+  String get pdvWebPaymentDistributionReviewLabel =>
+      'Adjust values to match the sale total.';
+
+  @override
+  String get pdvWebPaymentIncompleteLabel => 'Payment incomplete';
+
+  @override
+  String get pdvWebPaymentMethodsSelectedLabel => 'methods';
+
+  @override
+  String get pdvWebPaymentMethodsTitle => 'Payment methods';
+
+  @override
+  String get pdvWebPaymentMismatchMessage =>
+      'The sum of payment methods must match the sale total.';
+
+  @override
+  String get pdvWebPaymentMismatchTitle => 'Review distribution';
+
+  @override
+  String get pdvWebPaymentNeedsReviewHint =>
+      'Review distribution to match the sale total.';
+
+  @override
+  String get pdvWebPaymentOverlayTitle => 'Receiving';
+
+  @override
+  String get pdvWebPaymentSummaryTitle => 'Distribution summary';
+
+  @override
+  String get pdvWebPaymentValueFieldLabel => 'Amount';
+
+  @override
+  String get pdvWebProcessingReceiveAction => 'Processing...';
+
+  @override
+  String get pdvWebReceivedTotalLabel => 'Received total';
+
+  @override
+  String get pdvWebRemainingAmountLabel => 'Remaining amount';
+
+  @override
+  String get pdvWebReviewPaymentAction => 'Review payment';
+
+  @override
+  String get pdvWebSaleTotalLabel => 'Sale total';
+
+  @override
+  String get pdvWebSelectPaymentMethodHint =>
+      'Select a method to enter values.';
+
+  @override
+  String get pdvWebSelectPaymentMethodMessage =>
+      'Choose at least one method and enter an amount to continue.';
+
+  @override
+  String get pdvWebSelectPaymentMethodTitle => 'Select a payment method';
 }
 
 /// The translations for English, as used in the United States (`en_US`).

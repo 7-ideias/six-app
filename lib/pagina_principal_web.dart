@@ -22,8 +22,8 @@ import 'package:sixpos/sub_painel_configuracoes.dart';
 import 'package:sixpos/domain/models/pdv_visual_theme.dart';
 import 'package:sixpos/domain/services/aparencia/pdv_visual_theme_resolver.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
@@ -68,6 +68,18 @@ enum ModuloCentralPDV {
 
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
+enum _PdvItemVisualFeedback { itemAdded, quantityIncreased, quantityDecreased }
+
+class _PdvItemMutationResult {
+  const _PdvItemMutationResult({
+    required this.itemKey,
+    required this.isNewItem,
+  });
+
+  final String itemKey;
+  final bool isNewItem;
+}
+
 class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     with TickerProviderStateMixin {
   Map<String, dynamic>? _ultimoEventoWebSocket;
@@ -90,16 +102,17 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
 
-  bool _cockpitAbertoEmDialog = false;
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
 
   final List<Map<String, dynamic>> _produtosSelecionados =
       <Map<String, dynamic>>[];
-  final Set<String> _formasSelecionadas = <String>{};
+  List<FormaPagamentoSelecionada> _formasPagamentoConfirmadas =
+      <FormaPagamentoSelecionada>[];
+  Map<String, String> _descricoesFormaPagamentoPorCodigo = <String, String>{};
   bool _registrandoReceberDepois = false;
+  bool _overlayRecebimentoAberto = false;
   bool _modoExpandidoFrenteCaixa = false;
   ClienteUsuario? _clienteIdentificado;
-  int _opcaoCockpitSelecionada = 0;
 
   final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _itensTotalController = TextEditingController(
@@ -112,6 +125,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   final FocusNode _codigoBarrasFocusNode = FocusNode(
     debugLabel: 'barcode-field',
   );
+  final FocusScopeNode _barcodeInteractionFocusScopeNode = FocusScopeNode(
+    debugLabel: 'barcode-interaction-scope',
+  );
+  bool _barcodeInteractionActive = false;
+
+  final Map<String, _PdvItemVisualFeedback> _itemVisualFeedbackByItemKey =
+      <String, _PdvItemVisualFeedback>{};
+  final Map<String, Timer> _itemVisualFeedbackTimersByItemKey =
+      <String, Timer>{};
+  final Map<String, GlobalKey> _itemRowKeysByItemKey = <String, GlobalKey>{};
 
   final ScrollController _notificacoesScrollController = ScrollController();
   final ScrollController _seletorScrollController = ScrollController();
@@ -249,6 +272,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       ),
     );
 
+    _barcodeInteractionFocusScopeNode.addListener(
+      _onBarcodeInteractionFocusChanged,
+    );
+
     _configurarWebSocket();
   }
 
@@ -265,6 +292,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     _bellAnimationController.dispose();
     _atalhosFocusNode.dispose();
     _codigoBarrasFocusNode.dispose();
+    _barcodeInteractionFocusScopeNode
+      ..removeListener(_onBarcodeInteractionFocusChanged)
+      ..dispose();
+    _clearAllItemVisualState();
     _codigoBarrasController.dispose();
     _itensTotalController.dispose();
     _clienteIdentificadoController.dispose();
@@ -984,16 +1015,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       },
     );
 
-    if (!mounted || result == null) {
+    if (!mounted) {
       return;
     }
 
     if (result is ProdutoModel) {
       _adicionarProdutoSelecionado(result);
-      return;
-    }
-
-    if (result is List) {
+    } else if (result is List) {
       final List<ProdutoModel> produtos = result
           .whereType<ProdutoModel>()
           .toList(growable: false);
@@ -1002,6 +1030,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _adicionarProdutosSelecionados(produtos);
       }
     }
+
+    _restaurarFocoLeituraRapidaSeCabivel();
   }
 
   Future<void> _abrirListaProdutosParaEdicao() async {
@@ -1031,6 +1061,46 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 
+  bool get _atalhosContextuaisDisponiveis {
+    return _moduloAtual == ModuloCentralPDV.vendas &&
+        !_overlayRecebimentoAberto &&
+        _barcodeInteractionActive;
+  }
+
+  bool get _prefereReducaoDeMovimento {
+    final MediaQueryData? mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery == null) {
+      return false;
+    }
+    return mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
+  }
+
+  void _onBarcodeInteractionFocusChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    final bool isActive = _barcodeInteractionFocusScopeNode.hasFocus;
+    if (_barcodeInteractionActive == isActive) {
+      return;
+    }
+
+    setState(() {
+      _barcodeInteractionActive = isActive;
+    });
+  }
+
+  void _restaurarFocoLeituraRapidaSeCabivel() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          _moduloAtual != ModuloCentralPDV.vendas ||
+          _overlayRecebimentoAberto) {
+        return;
+      }
+      _focarCodigoBarras();
+    });
+  }
+
   void _alternarModoExpandidoFrenteCaixa() {
     if (_moduloAtual != ModuloCentralPDV.vendas) {
       return;
@@ -1041,22 +1111,248 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 
+  Future<void> _confirmarFecharFrenteCaixa() async {
+    if (_moduloAtual != ModuloCentralPDV.vendas) {
+      return;
+    }
+
+    if (!_vendaTemDadosTemporariosPreenchidos()) {
+      _fecharFrenteCaixa();
+      return;
+    }
+
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final bool confirmar =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              title: Text(
+                l10n?.pdvWebCloseFrontDeskConfirmTitle ??
+                    'Fechar frente de caixa?',
+              ),
+              content: Text(
+                l10n?.pdvWebCloseFrontDeskConfirmMessage ??
+                    'Existe uma venda em andamento. Ao fechar esta tela, você poderá continuar esta venda depois.',
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(
+                    l10n?.pdvWebContinueSaleAction ?? 'Continuar venda',
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: Text(
+                    l10n?.pdvWebCloseFrontDeskAction ??
+                        'Fechar frente de caixa',
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (confirmar) {
+      _fecharFrenteCaixa();
+    }
+  }
+
+  void _fecharFrenteCaixa() {
+    setState(() {
+      _modoExpandidoFrenteCaixa = false;
+      _moduloAtual = ModuloCentralPDV.seletor;
+      _barcodeInteractionActive = false;
+    });
+  }
+
   bool _vendaTemDadosTemporariosPreenchidos() {
     return _produtosSelecionados.isNotEmpty ||
-        _formasSelecionadas.isNotEmpty ||
+        _formasPagamentoConfirmadas.isNotEmpty ||
         _clienteIdentificado != null ||
         _clienteIdentificadoController.text.trim().isNotEmpty ||
         _codigoBarrasController.text.trim().isNotEmpty;
   }
 
+  String _itemVisualKey(Map<String, dynamic> item) {
+    final String key = item['chaveItem']?.toString().trim() ?? '';
+    if (key.isNotEmpty) {
+      return key;
+    }
+
+    final String tipo = _normalizarTipoProdutoWeb(
+      item['tipoProduto']?.toString() ??
+          ((item['ehServico'] ?? false) == true ? 'SERVICO' : 'PRODUTO'),
+    );
+    final String id = item['id']?.toString().trim() ?? '';
+    if (id.isNotEmpty) {
+      return '$tipo:id:$id';
+    }
+
+    final String codigo = item['codigo']?.toString().trim() ?? '';
+    if (codigo.isNotEmpty) {
+      return '$tipo:codigo:$codigo';
+    }
+
+    final String nome = item['nome']?.toString().trim().toLowerCase() ?? '';
+    final double preco = ((item['preco'] ?? 0) as num).toDouble();
+    return '$tipo:nome:$nome|preco:${preco.toStringAsFixed(4)}';
+  }
+
+  GlobalKey _itemRowKey(String itemKey) {
+    return _itemRowKeysByItemKey.putIfAbsent(
+      itemKey,
+      () => GlobalKey(debugLabel: 'pdv-item-row-$itemKey'),
+    );
+  }
+
+  _PdvItemVisualFeedback? _itemVisualFeedbackForKey(String itemKey) {
+    return _itemVisualFeedbackByItemKey[itemKey];
+  }
+
+  Color _itemFeedbackHighlightColor(_PdvItemVisualFeedback feedback) {
+    switch (feedback) {
+      case _PdvItemVisualFeedback.itemAdded:
+      case _PdvItemVisualFeedback.quantityIncreased:
+        return _pdvTheme.successColor.withValues(alpha: 0.16);
+      case _PdvItemVisualFeedback.quantityDecreased:
+        return _pdvTheme.warningColor.withValues(alpha: 0.18);
+    }
+  }
+
+  Duration _itemFeedbackDuration(_PdvItemVisualFeedback feedback) {
+    if (_prefereReducaoDeMovimento) {
+      return const Duration(milliseconds: 120);
+    }
+
+    switch (feedback) {
+      case _PdvItemVisualFeedback.itemAdded:
+      case _PdvItemVisualFeedback.quantityIncreased:
+        return const Duration(milliseconds: 820);
+      case _PdvItemVisualFeedback.quantityDecreased:
+        return const Duration(milliseconds: 700);
+    }
+  }
+
+  void _clearAllItemVisualState() {
+    for (final Timer timer in _itemVisualFeedbackTimersByItemKey.values) {
+      timer.cancel();
+    }
+    _itemVisualFeedbackTimersByItemKey.clear();
+    _itemVisualFeedbackByItemKey.clear();
+    _itemRowKeysByItemKey.clear();
+  }
+
+  void _clearItemVisualStateForKey(String itemKey) {
+    _itemVisualFeedbackTimersByItemKey.remove(itemKey)?.cancel();
+    _itemVisualFeedbackByItemKey.remove(itemKey);
+    _itemRowKeysByItemKey.remove(itemKey);
+  }
+
+  void _scheduleItemFeedbackClear(
+    String itemKey,
+    _PdvItemVisualFeedback value,
+  ) {
+    _itemVisualFeedbackTimersByItemKey[itemKey]?.cancel();
+    _itemVisualFeedbackTimersByItemKey[itemKey] = Timer(
+      _itemFeedbackDuration(value),
+      () {
+        if (!mounted) {
+          return;
+        }
+        final _PdvItemVisualFeedback? current =
+            _itemVisualFeedbackByItemKey[itemKey];
+        if (current != value) {
+          return;
+        }
+        setState(() {
+          _itemVisualFeedbackByItemKey.remove(itemKey);
+        });
+        _itemVisualFeedbackTimersByItemKey.remove(itemKey)?.cancel();
+      },
+    );
+  }
+
+  void _registerItemFeedbackWithoutSetState(
+    String itemKey,
+    _PdvItemVisualFeedback value,
+  ) {
+    _itemVisualFeedbackByItemKey[itemKey] = value;
+    _scheduleItemFeedbackClear(itemKey, value);
+  }
+
+  void _scrollToItemIfNeeded(String itemKey) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          _moduloAtual != ModuloCentralPDV.vendas ||
+          !_gradeItensScrollController.hasClients) {
+        return;
+      }
+
+      final GlobalKey? rowKey = _itemRowKeysByItemKey[itemKey];
+      final BuildContext? rowContext = rowKey?.currentContext;
+      if (rowContext == null) {
+        return;
+      }
+
+      final RenderObject? renderObject = rowContext.findRenderObject();
+      if (renderObject is! RenderBox) {
+        return;
+      }
+
+      final RenderAbstractViewport? viewport = RenderAbstractViewport.maybeOf(
+        renderObject,
+      );
+      if (viewport == null) {
+        return;
+      }
+
+      final ScrollPosition position = _gradeItensScrollController.position;
+      final RevealedOffset revealStart = viewport.getOffsetToReveal(
+        renderObject,
+        0.0,
+      );
+      final RevealedOffset revealEnd = viewport.getOffsetToReveal(
+        renderObject,
+        1.0,
+      );
+      final double currentOffset = position.pixels;
+      final double viewportEnd = currentOffset + position.viewportDimension;
+      final bool fullyVisible =
+          revealStart.offset >= currentOffset &&
+          revealEnd.offset <= viewportEnd;
+
+      if (fullyVisible) {
+        return;
+      }
+
+      final double targetOffset =
+          revealStart.offset
+              .clamp(position.minScrollExtent, position.maxScrollExtent)
+              .toDouble();
+      _gradeItensScrollController.animateTo(
+        targetOffset,
+        duration:
+            _prefereReducaoDeMovimento
+                ? const Duration(milliseconds: 120)
+                : const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
   void _limparDadosTemporariosVenda({required ModuloCentralPDV moduloDestino}) {
     setState(() {
       _produtosSelecionados.clear();
-      _formasSelecionadas.clear();
+      _formasPagamentoConfirmadas = <FormaPagamentoSelecionada>[];
+      _descricoesFormaPagamentoPorCodigo = <String, String>{};
       _codigoBarrasController.clear();
       _itensTotalController.text = '0';
       _clienteIdentificado = null;
       _clienteIdentificadoController.clear();
+      _clearAllItemVisualState();
       _moduloAtual = moduloDestino;
     });
   }
@@ -1103,10 +1399,21 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
+    late final _PdvItemMutationResult mutation;
     setState(() {
-      _adicionarProdutoNaListaSemSetState(produto);
+      mutation = _adicionarProdutoNaListaSemSetState(produto);
       _atualizarCamposDerivados();
+      _registerItemFeedbackWithoutSetState(
+        mutation.itemKey,
+        mutation.isNewItem
+            ? _PdvItemVisualFeedback.itemAdded
+            : _PdvItemVisualFeedback.quantityIncreased,
+      );
     });
+
+    if (mutation.isNewItem) {
+      _scrollToItemIfNeeded(mutation.itemKey);
+    }
   }
 
   void _adicionarProdutosSelecionados(List<ProdutoModel> produtos) {
@@ -1114,16 +1421,33 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
+    final List<_PdvItemMutationResult> mutations = <_PdvItemMutationResult>[];
     setState(() {
       for (final ProdutoModel produto in produtos) {
-        _adicionarProdutoNaListaSemSetState(produto);
+        final _PdvItemMutationResult mutation =
+            _adicionarProdutoNaListaSemSetState(produto);
+        mutations.add(mutation);
+        _registerItemFeedbackWithoutSetState(
+          mutation.itemKey,
+          mutation.isNewItem
+              ? _PdvItemVisualFeedback.itemAdded
+              : _PdvItemVisualFeedback.quantityIncreased,
+        );
       }
 
       _atualizarCamposDerivados();
     });
+
+    for (final _PdvItemMutationResult mutation in mutations) {
+      if (mutation.isNewItem) {
+        _scrollToItemIfNeeded(mutation.itemKey);
+      }
+    }
   }
 
-  void _adicionarProdutoNaListaSemSetState(ProdutoModel produto) {
+  _PdvItemMutationResult _adicionarProdutoNaListaSemSetState(
+    ProdutoModel produto,
+  ) {
     final String tipoNormalizado = _normalizarTipoProdutoWeb(
       produto.tipoProduto,
     );
@@ -1137,7 +1461,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       final int quantidadeAtual =
           (_produtosSelecionados[indexExistente]['quantidade'] ?? 1) as int;
       _produtosSelecionados[indexExistente]['quantidade'] = quantidadeAtual + 1;
-      return;
+      return _PdvItemMutationResult(
+        itemKey: _itemVisualKey(_produtosSelecionados[indexExistente]),
+        isNewItem: false,
+      );
     }
 
     _produtosSelecionados.add(<String, dynamic>{
@@ -1151,6 +1478,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       'chaveItem': chaveProduto,
       'produtoOriginal': produto,
     });
+
+    return _PdvItemMutationResult(itemKey: chaveProduto, isNewItem: true);
   }
 
   bool _mesmoProduto(Map<String, dynamic> item, ProdutoModel produto) {
@@ -1227,25 +1556,39 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _alterarQuantidade(Map<String, dynamic> produto, int delta) {
+    final String itemKey = _itemVisualKey(produto);
     setState(() {
       final int quantidadeAtual = (produto['quantidade'] ?? 1) as int;
       final int novaQuantidade = quantidadeAtual + delta;
 
       if (novaQuantidade <= 0) {
         _produtosSelecionados.remove(produto);
+        _clearItemVisualStateForKey(itemKey);
       } else {
         produto['quantidade'] = novaQuantidade;
+        _registerItemFeedbackWithoutSetState(
+          itemKey,
+          delta > 0
+              ? _PdvItemVisualFeedback.quantityIncreased
+              : _PdvItemVisualFeedback.quantityDecreased,
+        );
       }
 
       _atualizarCamposDerivados();
     });
+
+    _restaurarFocoLeituraRapidaSeCabivel();
   }
 
   void _removerProduto(Map<String, dynamic> produto) {
+    final String itemKey = _itemVisualKey(produto);
     setState(() {
       _produtosSelecionados.remove(produto);
+      _clearItemVisualStateForKey(itemKey);
       _atualizarCamposDerivados();
     });
+
+    _restaurarFocoLeituraRapidaSeCabivel();
   }
 
   void _atualizarCamposDerivados() {
@@ -1311,6 +1654,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         );
 
     if (result == null) {
+      _restaurarFocoLeituraRapidaSeCabivel();
       return;
     }
 
@@ -1329,17 +1673,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               : cliente?.documento.trim() ?? '';
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _moduloAtual == ModuloCentralPDV.vendas) {
-        _focarCodigoBarras();
-      }
-    });
-  }
-
-  void _abrirOrcamento() {
-    setState(() {
-      _moduloAtual = ModuloCentralPDV.orcamento;
-    });
+    _restaurarFocoLeituraRapidaSeCabivel();
   }
 
   KeyEventResult _handleAtalhoPdv(FocusNode node, KeyEvent event) {
@@ -1347,7 +1681,15 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return KeyEventResult.ignored;
     }
 
+    if (_overlayRecebimentoAberto) {
+      return KeyEventResult.handled;
+    }
+
     if (_moduloAtual != ModuloCentralPDV.vendas) {
+      return KeyEventResult.ignored;
+    }
+
+    if (!_atalhosContextuaisDisponiveis) {
       return KeyEventResult.ignored;
     }
 
@@ -1363,7 +1705,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     if (event.logicalKey == LogicalKeyboardKey.f8 &&
         _produtosSelecionados.isNotEmpty) {
-      _abrirTelaRecebimento();
+      _acionarRecebimentoPrincipal();
       return KeyEventResult.handled;
     }
 
@@ -1531,7 +1873,36 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
-  void _abrirTelaRecebimento() {
+  bool _temPagamentoConfirmado() {
+    return _formasPagamentoConfirmadas.any(
+      (FormaPagamentoSelecionada forma) => forma.valor > 0,
+    );
+  }
+
+  double _totalPagamentoConfirmado() {
+    return _formasPagamentoConfirmadas.fold<double>(
+      0,
+      (double soma, FormaPagamentoSelecionada forma) => soma + forma.valor,
+    );
+  }
+
+  double _restantePagamentoConfirmado() {
+    return _calcularTotal() - _totalPagamentoConfirmado();
+  }
+
+  bool _pagamentoConfirmadoCompleto() {
+    if (!_temPagamentoConfirmado()) {
+      return false;
+    }
+
+    return _restantePagamentoConfirmado().abs() <= 0.009;
+  }
+
+  bool _pagamentoConfirmadoPrecisaRevisao() {
+    return _temPagamentoConfirmado() && !_pagamentoConfirmadoCompleto();
+  }
+
+  Future<void> _abrirOverlayRecebimento({required bool somenteSelecao}) async {
     if (_produtosSelecionados.isEmpty) {
       _mostrarDialogMensagem(
         'Venda vazia',
@@ -1540,9 +1911,124 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    setState(() {
-      _moduloAtual = ModuloCentralPDV.recebimento;
-    });
+    if (mounted) {
+      setState(() {
+        _overlayRecebimentoAberto = true;
+      });
+    }
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withValues(alpha: 0.26),
+        builder: (BuildContext dialogContext) {
+          final Size size = MediaQuery.of(dialogContext).size;
+          final double alturaMaximaDisponivel =
+              (size.height - 24).clamp(420.0, double.infinity).toDouble();
+          final double largura =
+              (size.width >= 1280
+                      ? 1120.0
+                      : (size.width * 0.96).clamp(780.0, 1120.0))
+                  .toDouble();
+          final double altura =
+              (size.height * 0.92)
+                  .clamp(420.0, alturaMaximaDisponivel)
+                  .toDouble();
+
+          return CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.escape): () {
+                Navigator.of(dialogContext).maybePop();
+              },
+            },
+            child: Focus(
+              autofocus: true,
+              child: Dialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: SizedBox(
+                  width: largura,
+                  height: altura,
+                  child: RecebimentoPagamentoWeb(
+                    embedded: true,
+                    somenteSelecao: somenteSelecao,
+                    formasPagamentoIniciais: _formasPagamentoConfirmadas,
+                    descricoesFormasIniciais:
+                        _descricoesFormaPagamentoPorCodigo,
+                    onBack: () => Navigator.of(dialogContext).maybePop(),
+                    onSelecaoConfirmada: (
+                      RecebimentoPagamentoSelecaoResultado resultado,
+                    ) {
+                      setState(() {
+                        _formasPagamentoConfirmadas = resultado.formasPagamento
+                            .where(
+                              (FormaPagamentoSelecionada forma) =>
+                                  forma.valor > 0,
+                            )
+                            .toList(growable: false);
+                        _descricoesFormaPagamentoPorCodigo =
+                            Map<String, String>.from(
+                              resultado.descricaoPorCodigo,
+                            );
+                      });
+                    },
+                    onSuccess: () {
+                      _limparVendaAposSucessoRecebimento();
+                      Navigator.of(dialogContext).maybePop();
+                    },
+                    valorTotalVenda: _calcularTotal(),
+                    itensResumo: _montarItensResumoPagamento(),
+                    clienteNome:
+                        _clienteIdentificado?.nome.trim().isNotEmpty == true
+                            ? _clienteIdentificado!.nome.trim()
+                            : _clienteIdentificadoController.text.trim(),
+                    numeroVenda: '',
+                    idColaborador: 'idUnicoDoColaborador',
+                    nomeColaborador: 'Nome do colaborador',
+                    operacaoService: _operacaoService,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _overlayRecebimentoAberto = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _moduloAtual == ModuloCentralPDV.vendas) {
+            _focarCodigoBarras();
+          }
+        });
+      }
+    }
+  }
+
+  void _abrirTelaRecebimento() {
+    _abrirOverlayRecebimento(somenteSelecao: true);
+  }
+
+  void _editarPagamentoConfirmado() {
+    _abrirOverlayRecebimento(somenteSelecao: true);
+  }
+
+  void _acionarRecebimentoPrincipal() {
+    if (_pagamentoConfirmadoCompleto()) {
+      _abrirOverlayRecebimento(somenteSelecao: false);
+      return;
+    }
+
+    _abrirOverlayRecebimento(somenteSelecao: true);
   }
 
   List<Map<String, dynamic>> _montarItensResumoPagamento() {

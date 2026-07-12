@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/di/operacao_module.dart';
+import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/models/operacao_models.dart';
+import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
+import 'package:sixpos/domain/services/operacao/operacao_service.dart';
+import 'package:sixpos/l10n/app_localizations.dart';
+import 'package:sixpos/top_navigation_bar_web.dart';
 
-import '../../core/di/operacao_module.dart';
-import '../../data/models/operacao_models.dart';
-import '../../domain/services/operacao/operacao_service.dart';
-import '../../top_navigation_bar_web.dart';
+class RecebimentoPagamentoSelecaoResultado {
+  const RecebimentoPagamentoSelecaoResultado({
+    required this.formasPagamento,
+    required this.descricaoPorCodigo,
+  });
+
+  final List<FormaPagamentoSelecionada> formasPagamento;
+  final Map<String, String> descricaoPorCodigo;
+
+  double get totalDistribuido => formasPagamento.fold<double>(
+    0,
+    (double soma, FormaPagamentoSelecionada forma) => soma + forma.valor,
+  );
+}
 
 class RecebimentoPagamentoWeb extends StatefulWidget {
   const RecebimentoPagamentoWeb({
@@ -18,6 +35,10 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
     this.embedded = false,
     this.onBack,
     this.onSuccess,
+    this.somenteSelecao = false,
+    this.formasPagamentoIniciais = const <FormaPagamentoSelecionada>[],
+    this.descricoesFormasIniciais = const <String, String>{},
+    this.onSelecaoConfirmada,
   });
 
   final double valorTotalVenda;
@@ -30,6 +51,10 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
   final bool embedded;
   final VoidCallback? onBack;
   final VoidCallback? onSuccess;
+  final bool somenteSelecao;
+  final List<FormaPagamentoSelecionada> formasPagamentoIniciais;
+  final Map<String, String> descricoesFormasIniciais;
+  final ValueChanged<RecebimentoPagamentoSelecaoResultado>? onSelecaoConfirmada;
 
   @override
   State<RecebimentoPagamentoWeb> createState() =>
@@ -38,129 +63,390 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
 
 enum _DecisaoImpressao { naoImprimir, imprimirA4, imprimirCupomTermico }
 
+class _FormaPagamentoWeb {
+  const _FormaPagamentoWeb({
+    required this.codigo,
+    required this.titulo,
+    required this.descricao,
+    required this.icone,
+    required this.selecionado,
+    required this.valor,
+  });
+
+  final String codigo;
+  final String titulo;
+  final String descricao;
+  final IconData icone;
+  final bool selecionado;
+  final double valor;
+
+  _FormaPagamentoWeb copyWith({
+    String? codigo,
+    String? titulo,
+    String? descricao,
+    IconData? icone,
+    bool? selecionado,
+    double? valor,
+  }) {
+    return _FormaPagamentoWeb(
+      codigo: codigo ?? this.codigo,
+      titulo: titulo ?? this.titulo,
+      descricao: descricao ?? this.descricao,
+      icone: icone ?? this.icone,
+      selecionado: selecionado ?? this.selecionado,
+      valor: valor ?? this.valor,
+    );
+  }
+}
+
 class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   late final List<Map<String, dynamic>> _itensResumo;
-
   late final OperacaoService _operacaoService;
+  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  final Map<String, TextEditingController> _valorControllers =
+      <String, TextEditingController>{};
+
+  late List<_FormaPagamentoWeb> _formasPagamento;
   bool _salvandoOperacao = false;
+  bool _carregandoFormas = true;
+  bool _estadoInicialAplicado = false;
 
-  List<Map<String, dynamic>> _formasPagamentoVisiveis() {
-    return _formasPagamento
-        .where((forma) => forma['selecionado'] == true)
-        .toList();
-  }
-
-  final List<Map<String, dynamic>> _formasPagamento = [
-    {
-      'codigo': 'TIPO1',
-      'titulo': 'Dinheiro',
-      'descricao': 'Recebimento no caixa com troco e conferência imediata.',
-      'icone': Icons.payments_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO2',
-      'titulo': 'Pix',
-      'descricao': 'Confirmação rápida via chave, QR Code ou copia e cola.',
-      'icone': Icons.qr_code_2_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO3',
-      'titulo': 'Cartão de crédito',
-      'descricao': 'Recebimento parcelado ou à vista com operadora.',
-      'icone': Icons.credit_card_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO4',
-      'titulo': 'Cartão de débito',
-      'descricao': 'Liquidação imediata com confirmação de maquininha.',
-      'icone': Icons.point_of_sale_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO5',
-      'titulo': 'Boleto',
-      'descricao': 'Emissão para pagamento posterior com baixa futura.',
-      'icone': Icons.receipt_long_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO6',
-      'titulo': 'Fiado',
-      'descricao': 'Lançamento em aberto para cobrança posterior.',
-      'icone': Icons.history_toggle_off_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO7',
-      'titulo': 'Crediário',
-      'descricao': 'Lançamento em aberto para cobrança posterior.',
-      'icone': Icons.history_toggle_off_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO8',
-      'titulo': 'Convênio',
-      'descricao': 'Lançamento em aberto para cobrança posterior.',
-      'icone': Icons.history_toggle_off_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO9',
-      'titulo': 'Vale',
-      'descricao': 'Lançamento em aberto para cobrança posterior.',
-      'icone': Icons.history_toggle_off_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-    {
-      'codigo': 'TIPO10',
-      'titulo': 'Outros',
-      'descricao': 'Outros tipos.',
-      'icone': Icons.history_toggle_off_outlined,
-      'selecionado': false,
-      'valor': 0.0,
-    },
-  ];
+  static const List<_FormaPagamentoWeb> _formasPagamentoFallback =
+      <_FormaPagamentoWeb>[
+        _FormaPagamentoWeb(
+          codigo: 'TIPO1',
+          titulo: 'Dinheiro',
+          descricao: 'Recebimento no caixa com conferência imediata.',
+          icone: Icons.payments_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO2',
+          titulo: 'Pix',
+          descricao: 'Confirmação rápida via chave, QR Code ou copia e cola.',
+          icone: Icons.qr_code_2_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO3',
+          titulo: 'Cartão de crédito',
+          descricao: 'Recebimento parcelado ou à vista com operadora.',
+          icone: Icons.credit_card_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO4',
+          titulo: 'Cartão de débito',
+          descricao: 'Liquidação imediata com confirmação de maquininha.',
+          icone: Icons.point_of_sale_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO5',
+          titulo: 'Boleto',
+          descricao: 'Emissão para pagamento posterior com baixa futura.',
+          icone: Icons.receipt_long_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO6',
+          titulo: 'Fiado',
+          descricao: 'Lançamento em aberto para cobrança posterior.',
+          icone: Icons.history_toggle_off_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO7',
+          titulo: 'Crediário',
+          descricao: 'Lançamento com cobrança futura.',
+          icone: Icons.event_note_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO8',
+          titulo: 'Convênio',
+          descricao: 'Pagamento via convênio da empresa.',
+          icone: Icons.people_outline,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO9',
+          titulo: 'Vale',
+          descricao: 'Pagamento via voucher ou vale.',
+          icone: Icons.confirmation_number_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+        _FormaPagamentoWeb(
+          codigo: 'TIPO10',
+          titulo: 'Outros',
+          descricao: 'Outros tipos de recebimento.',
+          icone: Icons.more_horiz_outlined,
+          selecionado: false,
+          valor: 0,
+        ),
+      ];
 
   @override
   void initState() {
     super.initState();
     _itensResumo = List<Map<String, dynamic>>.from(widget.itensResumo);
     _operacaoService = widget.operacaoService ?? OperacaoModule.operacaoService;
+    _formasPagamento = _formasPagamentoFallback
+        .map((forma) => forma.copyWith())
+        .toList(growable: false);
+    _carregarFormasPagamentoConfiguradas();
   }
 
-  double _valorSelecionadoTotal() {
-    return _formasPagamento
-        .where((forma) => forma['selecionado'] == true)
-        .fold<double>(
-          0.0,
-          (soma, forma) => soma + ((forma['valor'] ?? 0.0) as double),
+  @override
+  void dispose() {
+    for (final TextEditingController controller in _valorControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _carregarFormasPagamentoConfiguradas() async {
+    try {
+      final InformacoesBasicasCaixaResponse informacoes =
+          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final List<_FormaPagamentoWeb> formas =
+          _montarFormasPagamentoConfiguradas(informacoes.tiposRecebimento);
+      if (!mounted) return;
+      setState(() {
+        if (formas.isNotEmpty) {
+          _formasPagamento = formas;
+        }
+        _carregandoFormas = false;
+      });
+      _aplicarEstadoInicialSeNecessario();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _carregandoFormas = false;
+      });
+      _aplicarEstadoInicialSeNecessario();
+    }
+  }
+
+  List<_FormaPagamentoWeb> _montarFormasPagamentoConfiguradas(
+    List<TiposRecebimento> tipos,
+  ) {
+    final List<TiposRecebimento> ativos =
+        tipos.where((TiposRecebimento tipo) => tipo.ativo).toList()..sort(
+          (TiposRecebimento a, TiposRecebimento b) =>
+              a.ordemExibicao.compareTo(b.ordemExibicao),
         );
+
+    final Set<String> codigosAdicionados = <String>{};
+    final List<_FormaPagamentoWeb> formas = <_FormaPagamentoWeb>[];
+    for (final TiposRecebimento tipo in ativos) {
+      final String codigo = tipo.codigoTipo.trim().toUpperCase();
+      if (!_codigoTipoValido(codigo) || codigosAdicionados.contains(codigo)) {
+        continue;
+      }
+
+      final String titulo =
+          tipo.descricaoExibicao.trim().isNotEmpty
+              ? tipo.descricaoExibicao.trim()
+              : _descricaoPadraoPorCodigo(codigo);
+
+      formas.add(
+        _FormaPagamentoWeb(
+          codigo: codigo,
+          titulo: titulo,
+          descricao:
+              tipo.naturezaRecebimento.trim().isNotEmpty
+                  ? tipo.naturezaRecebimento.trim()
+                  : _descricaoPadraoPorCodigo(codigo),
+          icone: _iconePorCodigo(codigo),
+          selecionado: false,
+          valor: 0,
+        ),
+      );
+      codigosAdicionados.add(codigo);
+    }
+    return formas;
+  }
+
+  void _aplicarEstadoInicialSeNecessario() {
+    if (_estadoInicialAplicado || !mounted) return;
+    _estadoInicialAplicado = true;
+
+    if (widget.formasPagamentoIniciais.isEmpty &&
+        widget.descricoesFormasIniciais.isEmpty) {
+      return;
+    }
+
+    final Map<String, FormaPagamentoSelecionada> formaInicialPorCodigo =
+        <String, FormaPagamentoSelecionada>{
+          for (final FormaPagamentoSelecionada forma
+              in widget.formasPagamentoIniciais)
+            forma.codigo.trim().toUpperCase(): forma,
+        };
+
+    setState(() {
+      _formasPagamento = _formasPagamento
+          .map((forma) {
+            final FormaPagamentoSelecionada? inicial =
+                formaInicialPorCodigo[forma.codigo];
+            final String? descricaoInicial =
+                widget.descricoesFormasIniciais[forma.codigo];
+            return forma.copyWith(
+              titulo:
+                  descricaoInicial?.trim().isNotEmpty == true
+                      ? descricaoInicial!.trim()
+                      : forma.titulo,
+              selecionado: inicial != null && inicial.valor > 0,
+              valor: inicial?.valor ?? 0,
+            );
+          })
+          .toList(growable: false);
+    });
+
+    for (final _FormaPagamentoWeb forma in _formasPagamento) {
+      if (forma.valor <= 0) {
+        _valorControllers.remove(forma.codigo)?.dispose();
+        continue;
+      }
+      _controllerFor(forma).text = forma.valor.toStringAsFixed(2);
+    }
+  }
+
+  bool _codigoTipoValido(String codigo) {
+    return RegExp(r'^TIPO(10|[1-9])$').hasMatch(codigo);
+  }
+
+  String _descricaoPadraoPorCodigo(String codigo) {
+    switch (codigo) {
+      case 'TIPO1':
+        return 'Dinheiro';
+      case 'TIPO2':
+        return 'Pix';
+      case 'TIPO3':
+        return 'Cartão de crédito';
+      case 'TIPO4':
+        return 'Cartão de débito';
+      case 'TIPO5':
+        return 'Boleto';
+      case 'TIPO6':
+        return 'Fiado';
+      case 'TIPO7':
+        return 'Crediário';
+      case 'TIPO8':
+        return 'Convênio';
+      case 'TIPO9':
+        return 'Vale';
+      case 'TIPO10':
+        return 'Outros';
+      default:
+        return codigo;
+    }
+  }
+
+  IconData _iconePorCodigo(String codigo) {
+    switch (codigo) {
+      case 'TIPO1':
+        return Icons.payments_outlined;
+      case 'TIPO2':
+        return Icons.qr_code_2_outlined;
+      case 'TIPO3':
+        return Icons.credit_card_outlined;
+      case 'TIPO4':
+        return Icons.point_of_sale_outlined;
+      case 'TIPO5':
+        return Icons.receipt_long_outlined;
+      case 'TIPO6':
+        return Icons.history_toggle_off_outlined;
+      case 'TIPO7':
+        return Icons.event_note_outlined;
+      case 'TIPO8':
+        return Icons.people_outline;
+      case 'TIPO9':
+        return Icons.confirmation_number_outlined;
+      default:
+        return Icons.more_horiz_outlined;
+    }
+  }
+
+  TextEditingController _controllerFor(_FormaPagamentoWeb forma) {
+    return _valorControllers.putIfAbsent(
+      forma.codigo,
+      () => TextEditingController(
+        text: forma.valor > 0 ? forma.valor.toStringAsFixed(2) : '',
+      ),
+    );
   }
 
   int _quantidadeFormasSelecionadas() {
-    return _formasPagamento
-        .where((forma) => forma['selecionado'] == true)
-        .length;
+    return _formasPagamento.where((forma) => forma.selecionado).length;
+  }
+
+  double _valorSelecionadoTotal() {
+    return _formasPagamento.fold<double>(
+      0,
+      (double soma, _FormaPagamentoWeb forma) =>
+          soma + (forma.selecionado ? forma.valor : 0),
+    );
   }
 
   double _valorRestante() {
     return widget.valorTotalVenda - _valorSelecionadoTotal();
   }
 
-  String _formatarValor(double valor) {
-    return 'R\$ ${valor.toStringAsFixed(2)}';
+  List<_FormaPagamentoWeb> _formasPagamentoVisiveis() {
+    return _formasPagamento
+        .where((forma) => forma.selecionado)
+        .toList(growable: false);
+  }
+
+  List<FormaPagamentoSelecionada> _montarFormasSelecionadas() {
+    return _formasPagamento
+        .where((forma) => forma.selecionado && forma.valor > 0)
+        .map(
+          (forma) => FormaPagamentoSelecionada(
+            codigo: forma.codigo,
+            valor: forma.valor,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Map<String, String> _mapaDescricaoSelecionada() {
+    return <String, String>{
+      for (final _FormaPagamentoWeb forma in _formasPagamento)
+        if (forma.selecionado && forma.valor > 0) forma.codigo: forma.titulo,
+    };
+  }
+
+  List<ItemVendaAtual> _montarItensDaVenda() {
+    return _itensResumo
+        .map((item) {
+          final String idProduto =
+              (item['id'] ??
+                      item['codigo'] ??
+                      item['idSKU'] ??
+                      item['idCodigoUnicoDoProduto'] ??
+                      '')
+                  .toString();
+
+          return ItemVendaAtual(
+            idProduto: idProduto,
+            nome: (item['nome'] ?? '').toString(),
+            quantidade: (item['quantidade'] ?? 1) as int,
+            valorUnitario: ((item['valor'] ?? 0.0) as num).toDouble(),
+            ehServico: (item['ehServico'] ?? false) == true,
+          );
+        })
+        .toList(growable: false);
   }
 
   Future<void> _fecharTela() async {
@@ -169,74 +455,70 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       return;
     }
 
-    final navigator = Navigator.of(context);
+    final NavigatorState navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();
     }
   }
 
-  List<FormaPagamentoSelecionada> _montarFormasSelecionadas() {
-    return _formasPagamento
-        .where((forma) => forma['selecionado'] == true)
-        .map(
-          (forma) => FormaPagamentoSelecionada(
-            codigo: (forma['codigo'] ?? '').toString(),
-            valor: ((forma['valor'] ?? 0.0) as num).toDouble(),
-          ),
-        )
-        .toList();
-  }
+  void _alternarForma(_FormaPagamentoWeb forma, bool selecionado) {
+    setState(() {
+      _formasPagamento = _formasPagamento
+          .map((item) {
+            if (item.codigo != forma.codigo) {
+              return item;
+            }
+            return item.copyWith(
+              selecionado: selecionado,
+              valor: selecionado ? item.valor : 0,
+            );
+          })
+          .toList(growable: false);
+    });
 
-  List<ItemVendaAtual> _montarItensDaVenda() {
-    return _itensResumo.map((item) {
-      final idProduto =
-          (item['id'] ??
-                  item['codigo'] ??
-                  item['idSKU'] ??
-                  item['idCodigoUnicoDoProduto'] ??
-                  '')
-              .toString();
-
-      return ItemVendaAtual(
-        idProduto: idProduto,
-        nome: (item['nome'] ?? '').toString(),
-        quantidade: (item['quantidade'] ?? 1) as int,
-        valorUnitario: ((item['valor'] ?? 0.0) as num).toDouble(),
-        ehServico: (item['ehServico'] ?? false) == true,
+    if (!selecionado) {
+      final TextEditingController? controller = _valorControllers.remove(
+        forma.codigo,
       );
-    }).toList();
+      controller?.dispose();
+    }
   }
 
-  void _preencherValorRestante(Map<String, dynamic> forma) {
-    final restante = _valorRestante();
-    final valorAtual = ((forma['valor'] ?? 0.0) as double);
-    final novoValor = valorAtual + restante;
-
+  void _alterarValorForma(_FormaPagamentoWeb forma, String value) {
+    final double parsed = _parseValor(value);
     setState(() {
-      forma['valor'] = novoValor < 0 ? 0.0 : novoValor;
-      forma['selecionado'] = true;
+      _formasPagamento = _formasPagamento
+          .map((item) {
+            if (item.codigo != forma.codigo) {
+              return item;
+            }
+            return item.copyWith(
+              valor: parsed < 0 ? 0 : parsed,
+              selecionado: parsed > 0 || item.selecionado,
+            );
+          })
+          .toList(growable: false);
     });
   }
 
-  void _alternarForma(Map<String, dynamic> forma, bool selecionado) {
+  void _preencherValorRestante(_FormaPagamentoWeb forma) {
+    final double restante = _valorRestante();
+    final double valorAtual = forma.valor;
+    final double novoValor = (valorAtual + restante).clamp(
+      0.0,
+      double.infinity,
+    );
     setState(() {
-      forma['selecionado'] = selecionado;
-
-      if (!selecionado) {
-        forma['valor'] = 0.0;
-      }
+      _formasPagamento = _formasPagamento
+          .map((item) {
+            if (item.codigo != forma.codigo) {
+              return item;
+            }
+            return item.copyWith(selecionado: true, valor: novoValor);
+          })
+          .toList(growable: false);
     });
-  }
-
-  void _alterarValorForma(Map<String, dynamic> forma, String value) {
-    final normalizado = value.replaceAll('R\$', '').replaceAll(',', '.').trim();
-    final parsed = double.tryParse(normalizado) ?? 0.0;
-    setState(() {
-      forma['valor'] = parsed < 0 ? 0.0 : parsed;
-      if (parsed > 0) {
-        forma['selecionado'] = true;
-      }
-    });
+    _controllerFor(forma).text = novoValor.toStringAsFixed(2);
   }
 
   Future<void> _mostrarDialogMensagem({
@@ -246,7 +528,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   }) async {
     await showDialog<void>(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return AlertDialog(
           icon: Icon(
             sucesso ? Icons.check_circle_outline : Icons.info_outline,
@@ -258,10 +540,13 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
           ),
           title: Text(titulo),
           content: Text(mensagem),
-          actions: [
+          actions: <Widget>[
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fechar'),
+              child: Text(
+                AppLocalizations.of(context)?.pdvWebClosePaymentAction ??
+                    'Fechar',
+              ),
             ),
           ],
         );
@@ -274,7 +559,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   }) async {
     final _DecisaoImpressao? resposta = await showDialog<_DecisaoImpressao>(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return AlertDialog(
           icon: Icon(
             Icons.check_circle_outline,
@@ -285,7 +570,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
           content: Text(
             'Venda enviada com sucesso.\nUUID: $uuidOperacao\n\nDeseja imprimir o comprovante agora?',
           ),
-          actions: [
+          actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(_DecisaoImpressao.naoImprimir);
@@ -335,72 +620,96 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   }
 
   Future<void> _confirmarOperacao() async {
-    if (_quantidadeFormasSelecionadas() == 0) {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final List<FormaPagamentoSelecionada> formasSelecionadas =
+        _montarFormasSelecionadas();
+
+    if (formasSelecionadas.isEmpty) {
       await _mostrarDialogMensagem(
-        titulo: 'Selecione uma forma de pagamento',
+        titulo:
+            l10n?.pdvWebSelectPaymentMethodTitle ??
+            'Selecione uma forma de recebimento',
         mensagem:
-            'Para confirmar a operação, escolha pelo menos uma forma de pagamento.',
+            l10n?.pdvWebSelectPaymentMethodMessage ??
+            'Escolha pelo menos uma forma e informe um valor para continuar.',
       );
       return;
     }
 
-    final diferenca = (_valorSelecionadoTotal() - widget.valorTotalVenda).abs();
+    final double diferenca =
+        (_valorSelecionadoTotal() - widget.valorTotalVenda).abs();
     if (diferenca > 0.009) {
       await _mostrarDialogMensagem(
-        titulo: 'Ajuste os valores para finalizar',
+        titulo: l10n?.pdvWebPaymentMismatchTitle ?? 'Revise a distribuição',
         mensagem:
-            'A soma das formas selecionadas deve ser exatamente igual ao total da venda.',
+            l10n?.pdvWebPaymentMismatchMessage ??
+            'A soma das formas deve ser igual ao total da venda.',
       );
       return;
     }
 
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          icon: Icon(
-            Icons.verified_outlined,
-            color: Theme.of(context).colorScheme.primary,
-            size: 34,
-          ),
-          title: const Text('Confirmar operação'),
-          content: Text(
-            'Deseja confirmar o recebimento/pagamento no valor de ${_formatarValor(widget.valorTotalVenda)}?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmar != true) {
+    if (widget.somenteSelecao) {
+      widget.onSelecaoConfirmada?.call(
+        RecebimentoPagamentoSelecaoResultado(
+          formasPagamento: formasSelecionadas,
+          descricaoPorCodigo: _mapaDescricaoSelecionada(),
+        ),
+      );
+      await _fecharTela();
       return;
     }
 
-    setState(() {
-      _salvandoOperacao = true;
-    });
+    final bool confirmar =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              icon: Icon(
+                Icons.verified_outlined,
+                color: Theme.of(context).colorScheme.primary,
+                size: 34,
+              ),
+              title: Text(
+                l10n?.pdvWebConfirmReceiveAction ?? 'Confirmar recebimento',
+              ),
+              content: Text(
+                '${l10n?.pdvWebConfirmReceiveMessagePrefix ?? 'Deseja confirmar o recebimento no valor de'} ${_formatarValor(widget.valorTotalVenda)}?',
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(l10n?.pdvWebBackAction ?? 'Voltar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(
+                    l10n?.pdvWebConfirmReceiveAction ?? 'Confirmar recebimento',
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!confirmar) return;
+
+    setState(() => _salvandoOperacao = true);
 
     try {
       final DateTime dataOperacao = DateTime.now();
       final OperacaoVendaInput input = OperacaoVendaInput(
-        descricao: 'Venda ${widget.numeroVenda ?? 'em andamento'}',
+        descricao:
+            'Venda ${(widget.numeroVenda?.trim().isNotEmpty ?? false) ? widget.numeroVenda!.trim() : 'em andamento'}',
         idColaborador: widget.idColaborador,
         nomeColaborador: widget.nomeColaborador,
         itens: _montarItensDaVenda(),
-        formasPagamento: _montarFormasSelecionadas(),
+        formasPagamento: formasSelecionadas,
         dataOperacao: dataOperacao,
       );
 
-      final response = await _operacaoService.finalizarVenda(input);
+      final OperacaoInserirResponse response = await _operacaoService
+          .finalizarVenda(input);
 
       if (!mounted) return;
 
@@ -438,16 +747,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
             );
           }
         }
-      } else {
-        await _mostrarDialogMensagem(
-          titulo: 'Operação concluída',
-          mensagem: 'Venda enviada com sucesso.',
-          sucesso: true,
-        );
       }
 
       if (!mounted) return;
-
       if (widget.embedded) {
         widget.onSuccess?.call();
       } else {
@@ -455,220 +757,242 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       }
     } catch (e) {
       if (!mounted) return;
-
       await _mostrarDialogMensagem(
         titulo: 'Erro ao enviar operação',
         mensagem: e.toString(),
       );
     } finally {
       if (mounted) {
-        setState(() {
-          _salvandoOperacao = false;
-        });
+        setState(() => _salvandoOperacao = false);
       }
     }
   }
 
-  Widget _buildBadgeInformativo(String texto, IconData icone) {
-    final theme = Theme.of(context);
+  Widget _buildCabecalhoCompacto() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final bool temCliente = widget.clienteNome?.trim().isNotEmpty == true;
+    final double restante = _valorRestante();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border(
+          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icone, size: 18, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(texto, style: const TextStyle(fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderPremium(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary.withOpacity(0.08),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.72),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Wrap(
-        spacing: 18,
-        runSpacing: 14,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 25,
-                backgroundColor: theme.colorScheme.primary,
-                child: const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Recebimento / Pagamento',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          _buildBadgeInformativo(
-            (widget.numeroVenda?.trim().isNotEmpty ?? false)
-                ? widget.numeroVenda!.trim()
-                : 'Venda em andamento',
-            Icons.receipt_long_outlined,
-          ),
-          _buildBadgeInformativo(
-            (widget.clienteNome?.trim().isNotEmpty ?? false)
-                ? widget.clienteNome!.trim()
-                : 'Cliente não identificado',
-            Icons.person_outline,
-          ),
-          _buildBadgeInformativo(
-            '${_quantidadeFormasSelecionadas()} forma(s) ativa(s)',
-            Icons.payments_outlined,
-          ),
-          _buildBadgeInformativo(
-            'Total ${_formatarValor(widget.valorTotalVenda)}',
-            Icons.attach_money_outlined,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            'Selecione uma ou mais formas, distribua os valores e confirme a operação com segurança.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPainelFormaPagamento(Map<String, dynamic> forma) {
-    final theme = Theme.of(context);
-    final bool selecionado = forma['selecionado'] == true;
-    final double valor = (forma['valor'] ?? 0.0) as double;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color:
-            selecionado
-                ? theme.colorScheme.primary.withOpacity(0.07)
-                : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color:
-              selecionado
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outlineVariant,
-          width: selecionado ? 1.6 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(selecionado ? 0.06 : 0.03),
-            blurRadius: selecionado ? 16 : 8,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Checkbox(
-                value: selecionado,
-                onChanged: (value) => _alternarForma(forma, value ?? false),
-              ),
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  forma['icone'] as IconData,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  forma['titulo'] as String,
-                  style: theme.textTheme.titleMedium?.copyWith(
+        children: <Widget>[
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(
+                  l10n?.pdvWebPaymentOverlayTitle ?? 'Recebimento',
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                _buildInfoChip(
+                  icon: Icons.attach_money_outlined,
+                  text:
+                      '${l10n?.pdvWebSaleTotalLabel ?? 'Total da venda'} ${_formatarValor(widget.valorTotalVenda)}',
+                ),
+                if (temCliente)
+                  _buildInfoChip(
+                    icon: Icons.person_outline,
+                    text: widget.clienteNome!.trim(),
+                  ),
+                if (_quantidadeFormasSelecionadas() > 0)
+                  _buildInfoChip(
+                    icon: Icons.payments_outlined,
+                    text:
+                        '${_quantidadeFormasSelecionadas()} ${l10n?.pdvWebPaymentMethodsSelectedLabel ?? 'formas'}',
+                  ),
+                if (restante.abs() <= 0.009)
+                  _buildInfoChip(
+                    icon: Icons.verified_outlined,
+                    text:
+                        l10n?.pdvWebPaymentDefinedLabel ?? 'Pagamento definido',
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: l10n?.pdvWebClosePaymentAction ?? 'Fechar recebimento',
+            onPressed: _salvandoOperacao ? null : _fecharTela,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({required IconData icon, required String text}) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPillForma(_FormaPagamentoWeb forma) {
+    final ThemeData theme = Theme.of(context);
+    return FilterChip(
+      selected: forma.selecionado,
+      onSelected:
+          _salvandoOperacao
+              ? null
+              : (bool selected) => _alternarForma(forma, selected),
+      avatar: Icon(
+        forma.icone,
+        size: 16,
+        color:
+            forma.selecionado
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.primary,
+      ),
+      label: Text(forma.titulo),
+      labelStyle: TextStyle(
+        color:
+            forma.selecionado
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface,
+        fontWeight: FontWeight.w700,
+      ),
+      selectedColor: theme.colorScheme.primary,
+      checkmarkColor: theme.colorScheme.onPrimary,
+      side: BorderSide(
+        color:
+            forma.selecionado
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outlineVariant,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+    );
+  }
+
+  Widget _buildPainelFormaPagamento(_FormaPagamentoWeb forma) {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final TextEditingController controller = _controllerFor(forma);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color:
+              forma.selecionado
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Checkbox(
+                value: forma.selecionado,
+                onChanged:
+                    _salvandoOperacao
+                        ? null
+                        : (bool? value) =>
+                            _alternarForma(forma, value ?? false),
               ),
-              Text(
-                _formatarValor(valor),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
+              const SizedBox(width: 6),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  forma.icone,
+                  size: 18,
                   color: theme.colorScheme.primary,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            forma['descricao'] as String,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
+              const SizedBox(width: 8),
               Expanded(
-                child: TextFormField(
-                  enabled: selecionado,
-                  initialValue: valor == 0.0 ? '' : valor.toStringAsFixed(2),
-                  decoration: InputDecoration(
-                    labelText: 'Valor para esta forma',
-                    hintText: '0.00',
-                    prefixText: 'R\$ ',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                child: Text(
+                  forma.titulo,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                  onChanged: (value) => _alterarValorForma(forma, value),
                 ),
               ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: () => _preencherValorRestante(forma),
-                icon: const Icon(Icons.auto_fix_high_outlined),
-                label: const Text('Completar restante'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(170, 52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              Text(
+                _formatarValor(forma.valor),
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            forma.descricao,
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  enabled: forma.selecionado && !_salvandoOperacao,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
+                  decoration: InputDecoration(
+                    labelText: l10n?.pdvWebPaymentValueFieldLabel ?? 'Valor',
+                    prefixText: 'R\$ ',
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onChanged: (String value) => _alterarValorForma(forma, value),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed:
+                    _salvandoOperacao
+                        ? null
+                        : () => _preencherValorRestante(forma),
+                icon: const Icon(Icons.auto_fix_high_outlined, size: 16),
+                label: Text(
+                  l10n?.pdvWebCompleteRemainingAction ?? 'Completar restante',
                 ),
               ),
             ],
@@ -678,347 +1002,220 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     );
   }
 
-  Widget _buildPainelEsquerdo() {
-    final theme = Theme.of(context);
-    final formasVisiveis = _formasPagamentoVisiveis();
+  Widget _buildResumoDistribuicao() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final double totalDistribuido = _valorSelecionadoTotal();
+    final double restante = _valorRestante();
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Formas de pagamento',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                _buildBadgeInformativo(
-                  '${_formasPagamento.length} opções',
-                  Icons.grid_view_rounded,
-                ),
-              ],
+    final bool completo = restante.abs() <= 0.009;
+    final Color statusBg =
+        completo ? const Color(0xFFE9F6EC) : const Color(0xFFFFF4E5);
+    final Color statusFg =
+        completo ? const Color(0xFF2E7D32) : const Color(0xFFB26A00);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            l10n?.pdvWebPaymentSummaryTitle ?? 'Resumo da distribuição',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Clique em uma forma para exibir o card correspondente. Clique novamente para ocultar.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+          ),
+          const SizedBox(height: 10),
+          _buildLinhaResumo(
+            l10n?.pdvWebSaleTotalLabel ?? 'Total da venda',
+            _formatarValor(widget.valorTotalVenda),
+          ),
+          _buildLinhaResumo(
+            l10n?.pdvWebDistributedTotalLabel ?? 'Total distribuído',
+            _formatarValor(totalDistribuido),
+          ),
+          _buildLinhaResumo(
+            l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante',
+            _formatarValor(restante),
+          ),
+          _buildLinhaResumo(
+            l10n?.pdvWebPaymentMethodsSelectedLabel ?? 'Formas selecionadas',
+            _quantidadeFormasSelecionadas().toString(),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: statusBg,
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 18),
-
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children:
-                  _formasPagamento.map((forma) {
-                    final selecionado = forma['selecionado'] == true;
-
-                    return FilterChip(
-                      label: Text(forma['titulo'] as String),
-                      selected: selecionado,
-                      avatar: Icon(
-                        forma['icone'] as IconData,
-                        size: 18,
-                        color:
-                            selecionado
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.primary,
-                      ),
-                      onSelected: (selected) => _alternarForma(forma, selected),
-                      selectedColor: theme.colorScheme.primary,
-                      checkmarkColor: theme.colorScheme.onPrimary,
-                      labelStyle: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color:
-                            selecionado
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.onSurface,
-                      ),
-                      side: BorderSide(
-                        color:
-                            selecionado
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.outlineVariant,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                    );
-                  }).toList(),
+            child: Text(
+              completo
+                  ? (l10n?.pdvWebPaymentDistributionReadyLabel ??
+                      'Distribuição pronta para confirmação.')
+                  : (l10n?.pdvWebPaymentDistributionReviewLabel ??
+                      'Ajuste os valores para fechar o total da venda.'),
+              style: TextStyle(color: statusFg, fontWeight: FontWeight.w700),
             ),
-
-            const SizedBox(height: 18),
-
-            Expanded(
-              child:
-                  formasVisiveis.isEmpty
-                      ? Center(
-                        child: Container(
-                          width: 420,
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerLowest,
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: theme.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.touch_app_outlined,
-                                size: 38,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Nenhuma forma aberta',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Selecione uma forma de pagamento acima para exibir o card e preencher o valor.',
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      : SingleChildScrollView(
-                        child: Wrap(
-                          spacing: 14,
-                          runSpacing: 14,
-                          children:
-                              formasVisiveis.map((forma) {
-                                return SizedBox(
-                                  width: 520,
-                                  child: _buildPainelFormaPagamento(forma),
-                                );
-                              }).toList(),
-                        ),
-                      ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildLinhaResumo(
-    String titulo,
-    String valor, {
-    bool destaque = false,
-  }) {
+  Widget _buildLinhaResumo(String titulo, String valor) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        children: [
+        children: <Widget>[
           Expanded(
             child: Text(
               titulo,
-              style: TextStyle(
-                fontSize: destaque ? 15 : 14,
-                fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
-          Text(
-            valor,
-            style: TextStyle(
-              fontSize: destaque ? 16 : 14,
-              fontWeight: destaque ? FontWeight.w900 : FontWeight.w700,
-            ),
-          ),
+          Text(valor, style: const TextStyle(fontWeight: FontWeight.w900)),
         ],
       ),
     );
   }
 
-  Widget _buildResumoDaVenda() {
-    final theme = Theme.of(context);
-    final totalSelecionado = _valorSelecionadoTotal();
-    final restante = _valorRestante();
+  Widget _buildPainelPrincipal() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final List<_FormaPagamentoWeb> formasVisiveis = _formasPagamentoVisiveis();
 
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Resumo da venda',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildLinhaResumo(
-              'Venda',
-              (widget.numeroVenda?.trim().isNotEmpty ?? false)
-                  ? widget.numeroVenda!.trim()
-                  : 'Em andamento',
-            ),
-            _buildLinhaResumo(
-              'Cliente',
-              (widget.clienteNome?.trim().isNotEmpty ?? false)
-                  ? widget.clienteNome!.trim()
-                  : 'Não identificado',
-            ),
-            const Divider(height: 28),
-            Text(
-              'Itens da operação',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _itensResumo.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final item = _itensResumo[index];
-                  final int quantidade = (item['quantidade'] ?? 1) as int;
-                  final double valor =
-                      ((item['valor'] ?? 0.0) as num).toDouble();
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 980;
 
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '${item['nome']} ($quantidade x)',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        Text(
-                          _formatarValor(valor * quantidade),
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            const Divider(height: 28),
-            _buildLinhaResumo(
-              'Formas selecionadas',
-              _quantidadeFormasSelecionadas().toString(),
-            ),
-            _buildLinhaResumo(
-              'Total selecionado',
-              _formatarValor(totalSelecionado),
-            ),
-            _buildLinhaResumo(
-              'Valor restante',
-              _formatarValor(restante),
-              destaque: true,
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color:
-                    restante.abs() < 0.009
-                        ? const Color(0xFFE9F6EC)
-                        : const Color(0xFFFFF4E5),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(
-                restante.abs() < 0.009
-                    ? 'Valores conferidos. A operação está pronta para confirmação.'
-                    : 'Ajuste a soma das formas de pagamento até alcançar o valor total da venda.',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color:
-                      restante.abs() < 0.009
-                          ? const Color(0xFF2E7D32)
-                          : const Color(0xFFB26A00),
+        final Widget listaFormas = Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                l10n?.pdvWebPaymentMethodsTitle ?? 'Formas de recebimento',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _formasPagamento
+                    .map(_buildPillForma)
+                    .toList(growable: false),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child:
+                    _carregandoFormas
+                        ? Center(
+                          child: CircularProgressIndicator(
+                            color: theme.colorScheme.primary,
+                          ),
+                        )
+                        : (formasVisiveis.isEmpty
+                            ? Center(
+                              child: Text(
+                                l10n?.pdvWebSelectPaymentMethodHint ??
+                                    'Selecione uma forma para informar valores.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            )
+                            : SingleChildScrollView(
+                              child: Column(
+                                children: formasVisiveis
+                                    .map(
+                                      (_FormaPagamentoWeb forma) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        child: _buildPainelFormaPagamento(
+                                          forma,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(growable: false),
+                              ),
+                            )),
+              ),
+            ],
+          ),
+        );
+
+        if (compact) {
+          return Column(
+            children: <Widget>[
+              Expanded(child: listaFormas),
+              const SizedBox(height: 10),
+              _buildResumoDistribuicao(),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(flex: 7, child: listaFormas),
+            const SizedBox(width: 10),
+            Expanded(flex: 3, child: _buildResumoDistribuicao()),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildBarraAcoes() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final double restante = _valorRestante();
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
       ),
       child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
+        spacing: 10,
+        runSpacing: 10,
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _fecharTela,
-                icon: const Icon(Icons.close),
-                label: const Text('Cancelar'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(160, 48),
-                ),
-              ),
-            ],
+        children: <Widget>[
+          OutlinedButton.icon(
+            onPressed: _salvandoOperacao ? null : _fecharTela,
+            icon: const Icon(Icons.arrow_back_outlined),
+            label: Text(l10n?.pdvWebClosePaymentAction ?? 'Fechar recebimento'),
           ),
           Wrap(
-            spacing: 16,
-            runSpacing: 12,
+            spacing: 12,
+            runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
+            children: <Widget>[
               Text(
-                'Total da venda: ${_formatarValor(widget.valorTotalVenda)}',
+                '${l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante'}: ${_formatarValor(restante)}',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1027,12 +1224,21 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
                 icon:
                     _salvandoOperacao
                         ? const SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 16,
+                          height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                         : const Icon(Icons.check_circle_outline),
-                label: Text(_salvandoOperacao ? 'Enviando...' : 'Confirmar'),
+                label: Text(
+                  _salvandoOperacao
+                      ? (l10n?.pdvWebProcessingReceiveAction ??
+                          'Processando...')
+                      : (widget.somenteSelecao
+                          ? (l10n?.pdvWebConfirmDistributionAction ??
+                              'Confirmar distribuição')
+                          : (l10n?.pdvWebConfirmReceiveAction ??
+                              'Confirmar recebimento')),
+                ),
               ),
             ],
           ),
@@ -1041,86 +1247,73 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     );
   }
 
-  Widget _buildBodyResponsivo() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool larguraEstreita = constraints.maxWidth < 1450;
+  String _formatarValor(double valor) => 'R\$ ${valor.toStringAsFixed(2)}';
 
-        if (larguraEstreita) {
-          return Column(
-            children: [
-              Expanded(child: _buildPainelEsquerdo()),
-              const SizedBox(height: 16),
-              SizedBox(height: 420, child: _buildResumoDaVenda()),
-              const SizedBox(height: 16),
-              _buildBarraAcoes(),
-            ],
-          );
-        }
-
-        return Column(
-          children: [
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(flex: 7, child: _buildPainelEsquerdo()),
-                  const SizedBox(width: 18),
-                  SizedBox(width: 420, child: _buildResumoDaVenda()),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildBarraAcoes(),
-          ],
-        );
-      },
-    );
+  double _parseValor(String value) {
+    final String texto = value.trim().replaceAll('R\$', '').trim();
+    final String normalizado =
+        texto.contains(',') && texto.contains('.')
+            ? texto.replaceAll('.', '').replaceAll(',', '.')
+            : texto.replaceAll(',', '.');
+    return double.tryParse(normalizado) ?? 0;
   }
 
   @override
   Widget build(BuildContext context) {
     final Widget conteudo = Column(
-      children: [
-        _buildHeaderPremium(context),
-        const SizedBox(height: 16),
-        Expanded(child: _buildBodyResponsivo()),
+      children: <Widget>[
+        _buildCabecalhoCompacto(),
+        const SizedBox(height: 10),
+        Expanded(child: _buildPainelPrincipal()),
+        _buildBarraAcoes(),
       ],
     );
 
     if (widget.embedded) {
-      return conteudo;
+      return Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: conteudo,
+      );
     }
 
     return Scaffold(
       appBar: TopNavigationBarWeb(
-        items: const [
+        items: const <TopNavItemData>[
           TopNavItemData(
             title: 'Início',
-            subItems: ['Preferências do Sistema', 'Painel Administrativo'],
+            subItems: <String>[
+              'Preferências do Sistema',
+              'Painel Administrativo',
+            ],
           ),
           TopNavItemData(
             title: 'Permitir',
-            subItems: ['Gerenciar Permissões', 'Alterar Configurações'],
+            subItems: <String>['Gerenciar Permissões', 'Alterar Configurações'],
           ),
           TopNavItemData(
             title: 'Cadastros',
-            subItems: ['Clientes', 'Produtos', 'Fornecedores'],
+            subItems: <String>['Clientes', 'Produtos', 'Fornecedores'],
           ),
           TopNavItemData(
             title: 'Relatórios',
-            subItems: ['Vendas', 'Estoque', 'Financeiro'],
+            subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
           ),
           TopNavItemData(
             title: 'Executar',
-            subItems: ['Processar Pagamentos', 'Fechar Caixa'],
+            subItems: <String>['Processar Pagamentos', 'Fechar Caixa'],
           ),
           TopNavItemData(
             title: 'Configurações',
-            subItems: ['Sistema', 'Usuários'],
+            subItems: <String>['Sistema', 'Usuários'],
           ),
-          TopNavItemData(title: 'Automações', subItems: ['Tarefas Agendadas']),
-          TopNavItemData(title: 'Ajuda', subItems: ['Suporte', 'Sobre']),
+          TopNavItemData(
+            title: 'Automações',
+            subItems: <String>['Tarefas Agendadas'],
+          ),
+          TopNavItemData(
+            title: 'Ajuda',
+            subItems: <String>['Suporte', 'Sobre'],
+          ),
         ],
         onNotificationPressed: () {},
       ),

@@ -86,6 +86,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pdvWebExitExpandedModeAction => 'Salir del modo expandido';
 
   @override
+  String get pdvWebCloseFrontDeskAction => 'Cerrar frente de caja';
+
+  @override
+  String get pdvWebCloseFrontDeskConfirmTitle => '¿Cerrar frente de caja?';
+
+  @override
+  String get pdvWebCloseFrontDeskConfirmMessage =>
+      'Hay una venta en curso. Si cierras esta pantalla, podrás continuar esta venta más tarde.';
+
+  @override
+  String get pdvWebContinueSaleAction => 'Continuar venta';
+
+  @override
+  String get pdvWebAvailableShortcutsLabel => 'Atajos disponibles';
+
+  @override
   String get pdvWebClearSaleAction => 'Limpiar venta';
 
   @override
@@ -139,13 +155,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pdvWebCodeLabel => 'Código';
 
   @override
-  String get pdvWebDecreaseQuantityAction => 'Disminuir';
+  String get pdvWebDecreaseQuantityAction => 'Disminuir cantidad';
 
   @override
-  String get pdvWebIncreaseQuantityAction => 'Aumentar';
+  String get pdvWebIncreaseQuantityAction => 'Aumentar cantidad';
 
   @override
-  String get pdvWebRemoveItemAction => 'Eliminar';
+  String get pdvWebRemoveItemAction => 'Eliminar artículo';
+
+  @override
+  String get pdvWebCustomerNotInformedStatus => 'Cliente no informado';
+
+  @override
+  String get pdvWebCustomerIdentifiedStatus => 'Cliente identificado';
 
   @override
   String get pdvWebNoItemsAddedTitle => 'Ningún artículo agregado';
@@ -174,4 +196,95 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pdvWebRegisteringAction => 'Registrando...';
+
+  @override
+  String get pdvWebClosePaymentAction => 'Cerrar cobro';
+
+  @override
+  String get pdvWebCompleteRemainingAction => 'Completar restante';
+
+  @override
+  String get pdvWebConfirmDistributionAction => 'Confirmar distribución';
+
+  @override
+  String get pdvWebConfirmReceiveAction => 'Confirmar cobro';
+
+  @override
+  String get pdvWebConfirmReceiveMessagePrefix =>
+      '¿Deseas confirmar el cobro por';
+
+  @override
+  String get pdvWebDefinePaymentAction => 'Definir pago';
+
+  @override
+  String get pdvWebDistributedTotalLabel => 'Total distribuido';
+
+  @override
+  String get pdvWebEditPaymentAction => 'Editar pago';
+
+  @override
+  String get pdvWebPaymentDefinedLabel => 'Pago definido';
+
+  @override
+  String get pdvWebPaymentDistributionReadyLabel =>
+      'Distribución lista para confirmar.';
+
+  @override
+  String get pdvWebPaymentDistributionReviewLabel =>
+      'Ajusta los valores para cerrar el total de la venta.';
+
+  @override
+  String get pdvWebPaymentIncompleteLabel => 'Pago incompleto';
+
+  @override
+  String get pdvWebPaymentMethodsSelectedLabel => 'formas';
+
+  @override
+  String get pdvWebPaymentMethodsTitle => 'Formas de cobro';
+
+  @override
+  String get pdvWebPaymentMismatchMessage =>
+      'La suma de las formas debe coincidir con el total de la venta.';
+
+  @override
+  String get pdvWebPaymentMismatchTitle => 'Revisar distribución';
+
+  @override
+  String get pdvWebPaymentNeedsReviewHint =>
+      'Revisa la distribución para cerrar el total de la venta.';
+
+  @override
+  String get pdvWebPaymentOverlayTitle => 'Cobro';
+
+  @override
+  String get pdvWebPaymentSummaryTitle => 'Resumen de distribución';
+
+  @override
+  String get pdvWebPaymentValueFieldLabel => 'Valor';
+
+  @override
+  String get pdvWebProcessingReceiveAction => 'Procesando...';
+
+  @override
+  String get pdvWebReceivedTotalLabel => 'Total recibido';
+
+  @override
+  String get pdvWebRemainingAmountLabel => 'Valor restante';
+
+  @override
+  String get pdvWebReviewPaymentAction => 'Revisar pago';
+
+  @override
+  String get pdvWebSaleTotalLabel => 'Total de la venta';
+
+  @override
+  String get pdvWebSelectPaymentMethodHint =>
+      'Selecciona una forma para informar valores.';
+
+  @override
+  String get pdvWebSelectPaymentMethodMessage =>
+      'Elige al menos una forma e informa un valor para continuar.';
+
+  @override
+  String get pdvWebSelectPaymentMethodTitle => 'Selecciona una forma de cobro';
 }

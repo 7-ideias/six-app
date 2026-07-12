@@ -85,6 +85,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get pdvWebExitExpandedModeAction => 'Sair do modo expandido';
 
   @override
+  String get pdvWebCloseFrontDeskAction => 'Fechar frente de caixa';
+
+  @override
+  String get pdvWebCloseFrontDeskConfirmTitle => 'Fechar frente de caixa?';
+
+  @override
+  String get pdvWebCloseFrontDeskConfirmMessage =>
+      'Existe uma venda em andamento. Ao fechar esta tela, você poderá continuar esta venda depois.';
+
+  @override
+  String get pdvWebContinueSaleAction => 'Continuar venda';
+
+  @override
+  String get pdvWebAvailableShortcutsLabel => 'Atalhos disponíveis';
+
+  @override
   String get pdvWebClearSaleAction => 'Limpar venda';
 
   @override
@@ -138,13 +154,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get pdvWebCodeLabel => 'Código';
 
   @override
-  String get pdvWebDecreaseQuantityAction => 'Diminuir';
+  String get pdvWebDecreaseQuantityAction => 'Diminuir quantidade';
 
   @override
-  String get pdvWebIncreaseQuantityAction => 'Aumentar';
+  String get pdvWebIncreaseQuantityAction => 'Aumentar quantidade';
 
   @override
-  String get pdvWebRemoveItemAction => 'Remover';
+  String get pdvWebRemoveItemAction => 'Remover item';
+
+  @override
+  String get pdvWebCustomerNotInformedStatus => 'Cliente não informado';
+
+  @override
+  String get pdvWebCustomerIdentifiedStatus => 'Cliente identificado';
 
   @override
   String get pdvWebNoItemsAddedTitle => 'Nenhum item adicionado';
@@ -173,6 +195,98 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get pdvWebRegisteringAction => 'Registrando...';
+
+  @override
+  String get pdvWebClosePaymentAction => 'Fechar recebimento';
+
+  @override
+  String get pdvWebCompleteRemainingAction => 'Completar restante';
+
+  @override
+  String get pdvWebConfirmDistributionAction => 'Confirmar distribuição';
+
+  @override
+  String get pdvWebConfirmReceiveAction => 'Confirmar recebimento';
+
+  @override
+  String get pdvWebConfirmReceiveMessagePrefix =>
+      'Deseja confirmar o recebimento no valor de';
+
+  @override
+  String get pdvWebDefinePaymentAction => 'Definir pagamento';
+
+  @override
+  String get pdvWebDistributedTotalLabel => 'Total distribuído';
+
+  @override
+  String get pdvWebEditPaymentAction => 'Editar pagamento';
+
+  @override
+  String get pdvWebPaymentDefinedLabel => 'Pagamento definido';
+
+  @override
+  String get pdvWebPaymentDistributionReadyLabel =>
+      'Distribuição pronta para confirmação.';
+
+  @override
+  String get pdvWebPaymentDistributionReviewLabel =>
+      'Ajuste os valores para fechar o total da venda.';
+
+  @override
+  String get pdvWebPaymentIncompleteLabel => 'Pagamento incompleto';
+
+  @override
+  String get pdvWebPaymentMethodsSelectedLabel => 'formas';
+
+  @override
+  String get pdvWebPaymentMethodsTitle => 'Formas de recebimento';
+
+  @override
+  String get pdvWebPaymentMismatchMessage =>
+      'A soma das formas deve ser igual ao total da venda.';
+
+  @override
+  String get pdvWebPaymentMismatchTitle => 'Revise a distribuição';
+
+  @override
+  String get pdvWebPaymentNeedsReviewHint =>
+      'Revise a distribuição para fechar o total da venda.';
+
+  @override
+  String get pdvWebPaymentOverlayTitle => 'Recebimento';
+
+  @override
+  String get pdvWebPaymentSummaryTitle => 'Resumo da distribuição';
+
+  @override
+  String get pdvWebPaymentValueFieldLabel => 'Valor';
+
+  @override
+  String get pdvWebProcessingReceiveAction => 'Processando...';
+
+  @override
+  String get pdvWebReceivedTotalLabel => 'Total recebido';
+
+  @override
+  String get pdvWebRemainingAmountLabel => 'Valor restante';
+
+  @override
+  String get pdvWebReviewPaymentAction => 'Revisar pagamento';
+
+  @override
+  String get pdvWebSaleTotalLabel => 'Total da venda';
+
+  @override
+  String get pdvWebSelectPaymentMethodHint =>
+      'Selecione uma forma para informar valores.';
+
+  @override
+  String get pdvWebSelectPaymentMethodMessage =>
+      'Escolha pelo menos uma forma e informe um valor para continuar.';
+
+  @override
+  String get pdvWebSelectPaymentMethodTitle =>
+      'Selecione uma forma de recebimento';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
