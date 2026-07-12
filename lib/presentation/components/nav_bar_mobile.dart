@@ -17,8 +17,8 @@ class NavBarMobile extends StatefulWidget {
 }
 
 class _NavBarMobileState extends State<NavBarMobile> {
-  static const Duration _itemAnimationDuration = Duration(milliseconds: 320);
-  static const Duration _pageTransitionDuration = Duration(milliseconds: 260);
+  static const Duration _itemAnimationDuration = Duration(milliseconds: 240);
+  static const Duration _pageTransitionDuration = Duration(milliseconds: 220);
 
   late int _selectedIndex;
 
@@ -73,7 +73,7 @@ class _NavBarMobileState extends State<NavBarMobile> {
           return FadeTransition(
             opacity: curvedAnimation,
             child: ScaleTransition(
-              scale: Tween<double>(begin: 0.975, end: 1).animate(
+              scale: Tween<double>(begin: 0.985, end: 1).animate(
                 curvedAnimation,
               ),
               child: child,
@@ -88,35 +88,33 @@ class _NavBarMobileState extends State<NavBarMobile> {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(26),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
-              blurRadius: 28,
-              offset: Offset(0, 12),
+              blurRadius: 22,
+              offset: Offset(0, 9),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(26),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
-              height: 78,
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+              height: 70,
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: SixMobilePalette.surface.withOpacity(0.91),
-                borderRadius: BorderRadius.circular(30),
+                color: SixMobilePalette.surface.withOpacity(0.94),
+                borderRadius: BorderRadius.circular(26),
                 border: Border.all(
-                  color: SixMobilePalette.surface.withOpacity(0.84),
-                  width: 1.2,
+                  color: SixMobilePalette.surface.withOpacity(0.82),
                 ),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   _buildNavItem(
                     index: 0,
@@ -154,140 +152,115 @@ class _NavBarMobileState extends State<NavBarMobile> {
     final bool isActive = _selectedIndex == index;
 
     return Expanded(
-      child: Semantics(
-        button: true,
-        selected: isActive,
-        label: label,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Semantics(
+          button: true,
+          selected: isActive,
+          label: label,
           child: InkWell(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             onTap: () => _onNavItemTapped(index),
-            child: AnimatedScale(
+            child: AnimatedContainer(
               duration: _itemAnimationDuration,
-              curve: isActive ? Curves.easeOutBack : Curves.easeOutCubic,
-              scale: isActive ? 1.075 : 0.94,
-              child: AnimatedSlide(
-                duration: _itemAnimationDuration,
-                curve: Curves.easeOutCubic,
-                offset: isActive ? const Offset(0, -0.035) : Offset.zero,
-                child: AnimatedContainer(
-                  duration: _itemAnimationDuration,
-                  curve: Curves.easeOutCubic,
-                  height: isActive ? 62 : 56,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: isActive
-                        ? LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: <Color>[
-                              SixMobilePalette.surface,
-                              SixMobilePalette.softAccentSurface,
-                            ],
-                          )
-                        : null,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isActive
-                          ? SixMobilePalette.highlightedBorder
-                          : Colors.transparent,
-                    ),
-                    boxShadow: isActive
-                        ? const <BoxShadow>[
-                            BoxShadow(
-                              color: SixMobilePalette.navigationShadow,
-                              blurRadius: 16,
-                              offset: Offset(0, 7),
-                            ),
-                          ]
-                        : const <BoxShadow>[],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      AnimatedContainer(
-                        duration: _itemAnimationDuration,
-                        curve: Curves.easeOutBack,
-                        width: isActive ? 36 : 30,
-                        height: isActive ? 36 : 30,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: isActive
-                              ? const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: <Color>[
-                                    SixMobilePalette.secondary,
-                                    SixMobilePalette.accent,
-                                  ],
-                                )
-                              : null,
-                          boxShadow: isActive
-                              ? const <BoxShadow>[
-                                  BoxShadow(
-                                    color: SixMobilePalette.heroShadow,
-                                    blurRadius: 12,
-                                    offset: Offset(0, 5),
-                                  ),
-                                ]
-                              : const <BoxShadow>[],
-                        ),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
-                          switchInCurve: Curves.easeOutBack,
-                          switchOutCurve: Curves.easeInCubic,
-                          transitionBuilder: (
-                            Widget child,
-                            Animation<double> animation,
-                          ) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: ScaleTransition(
-                                scale: Tween<double>(begin: 0.55, end: 1).animate(
-                                  animation,
-                                ),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: Icon(
-                            isActive ? activeIcon : icon,
-                            key: ValueKey<bool>(isActive),
-                            size: isActive ? 21 : 20,
-                            color: isActive
-                                ? SixMobilePalette.onPrimary
-                                : SixMobilePalette.mutedText,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutCubic,
-                        style: TextStyle(
-                          color: isActive
-                              ? SixMobilePalette.primary
-                              : SixMobilePalette.mutedText,
-                          fontSize: isActive ? 10.8 : 10.2,
-                          fontWeight:
-                              isActive ? FontWeight.w900 : FontWeight.w700,
-                          letterSpacing: -0.15,
-                          height: 1,
-                        ),
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+              curve: Curves.easeOutCubic,
+              height: 54,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? SixMobilePalette.softAccentSurface
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isActive
+                      ? SixMobilePalette.activeBorder
+                      : Colors.transparent,
                 ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  AnimatedScale(
+                    duration: _itemAnimationDuration,
+                    curve: isActive ? Curves.easeOutBack : Curves.easeOutCubic,
+                    scale: isActive ? 1.12 : 1,
+                    child: AnimatedContainer(
+                      duration: _itemAnimationDuration,
+                      curve: Curves.easeOutCubic,
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: isActive
+                            ? const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: <Color>[
+                                  SixMobilePalette.secondary,
+                                  SixMobilePalette.accent,
+                                ],
+                              )
+                            : null,
+                        boxShadow: isActive
+                            ? const <BoxShadow>[
+                                BoxShadow(
+                                  color: SixMobilePalette.heroShadow,
+                                  blurRadius: 9,
+                                  offset: Offset(0, 4),
+                                ),
+                              ]
+                            : const <BoxShadow>[],
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        switchInCurve: Curves.easeOutBack,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (
+                          Widget child,
+                          Animation<double> animation,
+                        ) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: ScaleTransition(
+                              scale: Tween<double>(begin: 0.72, end: 1).animate(
+                                animation,
+                              ),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Icon(
+                          isActive ? activeIcon : icon,
+                          key: ValueKey<bool>(isActive),
+                          size: 19,
+                          color: isActive
+                              ? SixMobilePalette.onPrimary
+                              : SixMobilePalette.mutedText,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  AnimatedDefaultTextStyle(
+                    duration: _itemAnimationDuration,
+                    curve: Curves.easeOutCubic,
+                    style: TextStyle(
+                      color: isActive
+                          ? SixMobilePalette.primary
+                          : SixMobilePalette.mutedText,
+                      fontSize: 10.5,
+                      fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                      letterSpacing: -0.1,
+                      height: 1,
+                    ),
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
