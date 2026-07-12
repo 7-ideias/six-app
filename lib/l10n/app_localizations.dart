@@ -191,6 +191,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feedback saved.'**
   String get aiAssistantFeedbackThanks;
+
+  /// No description provided for @pdvWebTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front desk'**
+  String get pdvWebTitle;
+
+  /// No description provided for @pdvWebSessionActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Session active'**
+  String get pdvWebSessionActive;
+
+  /// No description provided for @pdvWebStatusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get pdvWebStatusInProgress;
+
+  /// No description provided for @pdvWebSearchItemAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Search item'**
+  String get pdvWebSearchItemAction;
+
+  /// No description provided for @pdvWebIdentifyCustomerAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Identify customer'**
+  String get pdvWebIdentifyCustomerAction;
+
+  /// No description provided for @pdvWebReceiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive'**
+  String get pdvWebReceiveAction;
+
+  /// No description provided for @pdvWebReceiveLaterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive later'**
+  String get pdvWebReceiveLaterAction;
+
+  /// No description provided for @pdvWebSalesToReceiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales to receive'**
+  String get pdvWebSalesToReceiveAction;
+
+  /// No description provided for @pdvWebExpandModeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand front desk'**
+  String get pdvWebExpandModeAction;
+
+  /// No description provided for @pdvWebExitExpandedModeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit expanded mode'**
+  String get pdvWebExitExpandedModeAction;
+
+  /// No description provided for @pdvWebClearSaleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear sale'**
+  String get pdvWebClearSaleAction;
+
+  /// No description provided for @pdvWebClearSaleConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear current sale?'**
+  String get pdvWebClearSaleConfirmTitle;
+
+  /// No description provided for @pdvWebClearSaleConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Items and entered data in this sale will be removed.'**
+  String get pdvWebClearSaleConfirmMessage;
+
+  /// No description provided for @pdvWebBackAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get pdvWebBackAction;
+
+  /// No description provided for @pdvWebReadOrSearchToStartMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a barcode or search a product to start the sale.'**
+  String get pdvWebReadOrSearchToStartMessage;
+
+  /// No description provided for @pdvWebBarcodeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode'**
+  String get pdvWebBarcodeFieldLabel;
+
+  /// No description provided for @pdvWebFocusBarcodeFieldAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus input'**
+  String get pdvWebFocusBarcodeFieldAction;
+
+  /// No description provided for @pdvWebItemsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale items'**
+  String get pdvWebItemsSectionTitle;
+
+  /// No description provided for @pdvWebItemsCounterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'items'**
+  String get pdvWebItemsCounterLabel;
+
+  /// No description provided for @pdvWebTableHeaderItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get pdvWebTableHeaderItem;
+
+  /// No description provided for @pdvWebTableHeaderQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get pdvWebTableHeaderQuantity;
+
+  /// No description provided for @pdvWebTableHeaderUnitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price'**
+  String get pdvWebTableHeaderUnitPrice;
+
+  /// No description provided for @pdvWebTableHeaderSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get pdvWebTableHeaderSubtotal;
+
+  /// No description provided for @pdvWebTableHeaderActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get pdvWebTableHeaderActions;
+
+  /// No description provided for @pdvWebItemTypeService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get pdvWebItemTypeService;
+
+  /// No description provided for @pdvWebItemTypeProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get pdvWebItemTypeProduct;
+
+  /// No description provided for @pdvWebCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get pdvWebCodeLabel;
+
+  /// No description provided for @pdvWebDecreaseQuantityAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease'**
+  String get pdvWebDecreaseQuantityAction;
+
+  /// No description provided for @pdvWebIncreaseQuantityAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase'**
+  String get pdvWebIncreaseQuantityAction;
+
+  /// No description provided for @pdvWebRemoveItemAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get pdvWebRemoveItemAction;
+
+  /// No description provided for @pdvWebNoItemsAddedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No item added'**
+  String get pdvWebNoItemsAddedTitle;
+
+  /// No description provided for @pdvWebCurrentSaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current sale'**
+  String get pdvWebCurrentSaleTitle;
+
+  /// No description provided for @pdvWebCustomerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get pdvWebCustomerLabel;
+
+  /// No description provided for @pdvWebPaymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get pdvWebPaymentLabel;
+
+  /// No description provided for @pdvWebPaymentDefinedOnReceiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set during receive'**
+  String get pdvWebPaymentDefinedOnReceiveLabel;
+
+  /// No description provided for @pdvWebSubtotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get pdvWebSubtotalLabel;
+
+  /// No description provided for @pdvWebTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get pdvWebTotalLabel;
+
+  /// No description provided for @pdvWebReadyToStartSaleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan an item to start a new sale.'**
+  String get pdvWebReadyToStartSaleHint;
+
+  /// No description provided for @pdvWebRegisteringAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Registering...'**
+  String get pdvWebRegisteringAction;
 }
 
 class _AppLocalizationsDelegate

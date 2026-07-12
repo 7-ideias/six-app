@@ -53,6 +53,125 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback saved.';
+
+  @override
+  String get pdvWebTitle => 'Front desk';
+
+  @override
+  String get pdvWebSessionActive => 'Session active';
+
+  @override
+  String get pdvWebStatusInProgress => 'In progress';
+
+  @override
+  String get pdvWebSearchItemAction => 'Search item';
+
+  @override
+  String get pdvWebIdentifyCustomerAction => 'Identify customer';
+
+  @override
+  String get pdvWebReceiveAction => 'Receive';
+
+  @override
+  String get pdvWebReceiveLaterAction => 'Receive later';
+
+  @override
+  String get pdvWebSalesToReceiveAction => 'Sales to receive';
+
+  @override
+  String get pdvWebExpandModeAction => 'Expand front desk';
+
+  @override
+  String get pdvWebExitExpandedModeAction => 'Exit expanded mode';
+
+  @override
+  String get pdvWebClearSaleAction => 'Clear sale';
+
+  @override
+  String get pdvWebClearSaleConfirmTitle => 'Clear current sale?';
+
+  @override
+  String get pdvWebClearSaleConfirmMessage =>
+      'Items and entered data in this sale will be removed.';
+
+  @override
+  String get pdvWebBackAction => 'Back';
+
+  @override
+  String get pdvWebReadOrSearchToStartMessage =>
+      'Scan a barcode or search a product to start the sale.';
+
+  @override
+  String get pdvWebBarcodeFieldLabel => 'Barcode';
+
+  @override
+  String get pdvWebFocusBarcodeFieldAction => 'Focus input';
+
+  @override
+  String get pdvWebItemsSectionTitle => 'Sale items';
+
+  @override
+  String get pdvWebItemsCounterLabel => 'items';
+
+  @override
+  String get pdvWebTableHeaderItem => 'Item';
+
+  @override
+  String get pdvWebTableHeaderQuantity => 'Qty';
+
+  @override
+  String get pdvWebTableHeaderUnitPrice => 'Unit price';
+
+  @override
+  String get pdvWebTableHeaderSubtotal => 'Subtotal';
+
+  @override
+  String get pdvWebTableHeaderActions => 'Actions';
+
+  @override
+  String get pdvWebItemTypeService => 'Service';
+
+  @override
+  String get pdvWebItemTypeProduct => 'Product';
+
+  @override
+  String get pdvWebCodeLabel => 'Code';
+
+  @override
+  String get pdvWebDecreaseQuantityAction => 'Decrease';
+
+  @override
+  String get pdvWebIncreaseQuantityAction => 'Increase';
+
+  @override
+  String get pdvWebRemoveItemAction => 'Remove';
+
+  @override
+  String get pdvWebNoItemsAddedTitle => 'No item added';
+
+  @override
+  String get pdvWebCurrentSaleTitle => 'Current sale';
+
+  @override
+  String get pdvWebCustomerLabel => 'Customer';
+
+  @override
+  String get pdvWebPaymentLabel => 'Payment';
+
+  @override
+  String get pdvWebPaymentDefinedOnReceiveLabel => 'Set during receive';
+
+  @override
+  String get pdvWebSubtotalLabel => 'Subtotal';
+
+  @override
+  String get pdvWebTotalLabel => 'Total';
+
+  @override
+  String get pdvWebReadyToStartSaleHint => 'Scan an item to start a new sale.';
+
+  @override
+  String get pdvWebRegisteringAction => 'Registering...';
 }
 
 /// The translations for English, as used in the United States (`en_US`).

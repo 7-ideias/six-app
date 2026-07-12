@@ -97,6 +97,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       <Map<String, dynamic>>[];
   final Set<String> _formasSelecionadas = <String>{};
   bool _registrandoReceberDepois = false;
+  bool _modoExpandidoFrenteCaixa = false;
   ClienteUsuario? _clienteIdentificado;
   int _opcaoCockpitSelecionada = 0;
 
@@ -202,18 +203,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       duration: const Duration(milliseconds: 900),
     );
 
-    _iaPulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.22,
-    ).animate(
-      CurvedAnimation(
-        parent: _iaPulseController,
-        curve: Curves.easeInOut,
-      ),
+    _iaPulseAnimation = Tween<double>(begin: 1.0, end: 1.22).animate(
+      CurvedAnimation(parent: _iaPulseController, curve: Curves.easeInOut),
     );
 
     _iaPulseController.repeat(reverse: true);
-
 
     _pdvTheme = PdvVisualThemeResolver.resolve(
       _themeResolver.paleta,
@@ -495,9 +489,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             decoration: BoxDecoration(
               color: _pdvTheme.backgroundSurface,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: _pdvTheme.cardBorder,
-              ),
+              border: Border.all(color: _pdvTheme.cardBorder),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1039,33 +1031,25 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 
-  Future<void> _confirmarCancelamentoVenda() async {
-    final bool? confirmar = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Cancelar venda'),
-          content: const Text('Deseja realmente cancelar a venda atual?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Não'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Sim, cancelar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmar == true) {
-      _cancelarVenda();
+  void _alternarModoExpandidoFrenteCaixa() {
+    if (_moduloAtual != ModuloCentralPDV.vendas) {
+      return;
     }
+
+    setState(() {
+      _modoExpandidoFrenteCaixa = !_modoExpandidoFrenteCaixa;
+    });
   }
 
-  void _cancelarVenda() {
+  bool _vendaTemDadosTemporariosPreenchidos() {
+    return _produtosSelecionados.isNotEmpty ||
+        _formasSelecionadas.isNotEmpty ||
+        _clienteIdentificado != null ||
+        _clienteIdentificadoController.text.trim().isNotEmpty ||
+        _codigoBarrasController.text.trim().isNotEmpty;
+  }
+
+  void _limparDadosTemporariosVenda({required ModuloCentralPDV moduloDestino}) {
     setState(() {
       _produtosSelecionados.clear();
       _formasSelecionadas.clear();
@@ -1073,8 +1057,49 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _itensTotalController.text = '0';
       _clienteIdentificado = null;
       _clienteIdentificadoController.clear();
-      _moduloAtual = ModuloCentralPDV.seletor;
+      _moduloAtual = moduloDestino;
     });
+  }
+
+  Future<void> _confirmarLimparVendaAtual() async {
+    if (!_vendaTemDadosTemporariosPreenchidos()) {
+      return;
+    }
+
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final bool? confirmar = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            l10n?.pdvWebClearSaleConfirmTitle ?? 'Limpar venda atual?',
+          ),
+          content: Text(
+            l10n?.pdvWebClearSaleConfirmMessage ??
+                'Os itens e dados preenchidos nesta venda serão removidos.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n?.pdvWebBackAction ?? 'Voltar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n?.pdvWebClearSaleAction ?? 'Limpar venda'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar == true) {
+      _limparDadosTemporariosVenda(moduloDestino: ModuloCentralPDV.vendas);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _focarCodigoBarras();
+        }
+      });
+    }
   }
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
@@ -1317,10 +1342,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 
-  void _adicionarServicoRapido() {
-    _abrirSelecaoProdutoWeb(tipoInicial: 'SERVICO');
-  }
-
   KeyEventResult _handleAtalhoPdv(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) {
       return KeyEventResult.ignored;
@@ -1347,7 +1368,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
 
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      _confirmarCancelamentoVenda();
+      _confirmarLimparVendaAtual();
       return KeyEventResult.handled;
     }
 
@@ -1982,154 +2003,169 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   @override
   Widget build(BuildContext context) {
     final double total = _calcularTotal();
+    final bool modoExpandidoAtivo =
+        _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
 
     return PopScope(
       canPop: false,
       child: Scaffold(
         backgroundColor: _pdvTheme.backgroundPage,
-        appBar: TopNavigationBarWeb(
-          items: <TopNavItemData>[
-            TopNavItemData(
-              title: 'Início',
-              subItems: const <String>[
-                'Meu Perfil',
-                'Preferências do Sistema',
-                'Painel Administrativo',
-              ],
-              onSelect: (String value) {
-                if (value == 'Meu Perfil') {
-                  showMeuPerfilWebDialog(context);
-                }
+        appBar:
+            modoExpandidoAtivo
+                ? null
+                : TopNavigationBarWeb(
+                  items: <TopNavItemData>[
+                    TopNavItemData(
+                      title: 'Início',
+                      subItems: const <String>[
+                        'Meu Perfil',
+                        'Preferências do Sistema',
+                        'Painel Administrativo',
+                      ],
+                      onSelect: (String value) {
+                        if (value == 'Meu Perfil') {
+                          showMeuPerfilWebDialog(context);
+                        }
 
-                if (value == 'Painel Administrativo') {
-                  showSubPainelConfiguracoes(context, 'Configurações');
-                }
-              },
-            ),
-            const TopNavItemData(
-              title: 'Permitir',
-              subItems: <String>[
-                'Gerenciar Permissões',
-                'Alterar Configurações',
-              ],
-            ),
-            TopNavItemData(
-              title: 'Cadastros',
-              subItems: const <String>[
-                'Clientes',
-                'Clientes List',
-                'Produtos',
-                'Categorias',
-                'Colaboradores',
-                'Colaboradores List',
-                'Fornecedores',
-                'Produtos List',
-              ],
-              onSelect: (String value) {
-                if (value == 'Produtos') {
-                  showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
-                }
+                        if (value == 'Painel Administrativo') {
+                          showSubPainelConfiguracoes(context, 'Configurações');
+                        }
+                      },
+                    ),
+                    const TopNavItemData(
+                      title: 'Permitir',
+                      subItems: <String>[
+                        'Gerenciar Permissões',
+                        'Alterar Configurações',
+                      ],
+                    ),
+                    TopNavItemData(
+                      title: 'Cadastros',
+                      subItems: const <String>[
+                        'Clientes',
+                        'Clientes List',
+                        'Produtos',
+                        'Categorias',
+                        'Colaboradores',
+                        'Colaboradores List',
+                        'Fornecedores',
+                        'Produtos List',
+                      ],
+                      onSelect: (String value) {
+                        if (value == 'Produtos') {
+                          showSubPainelCadastroProduto(
+                            context,
+                            'Cadastro de Produtos',
+                          );
+                        }
 
-                if (value == 'Clientes') {
-                  showSubPainelCadastroCliente(context, 'Cadastro de Clientes');
-                }
+                        if (value == 'Clientes') {
+                          showSubPainelCadastroCliente(
+                            context,
+                            'Cadastro de Clientes',
+                          );
+                        }
 
-                if (value == 'Clientes List') {
-                  setState(() {
-                    _moduloAtual = ModuloCentralPDV.clientesList;
-                  });
-                }
+                        if (value == 'Clientes List') {
+                          setState(() {
+                            _moduloAtual = ModuloCentralPDV.clientesList;
+                          });
+                        }
 
-                if (value == 'Colaboradores') {
-                  showSubPainelCadastroColaborador(
-                    context,
-                    'Cadastro de Colaboradores',
-                  );
-                }
+                        if (value == 'Colaboradores') {
+                          showSubPainelCadastroColaborador(
+                            context,
+                            'Cadastro de Colaboradores',
+                          );
+                        }
 
-                if (value == 'Colaboradores List') {
-                  setState(() {
-                    _moduloAtual = ModuloCentralPDV.colaboradoresList;
-                  });
-                }
+                        if (value == 'Colaboradores List') {
+                          setState(() {
+                            _moduloAtual = ModuloCentralPDV.colaboradoresList;
+                          });
+                        }
 
-                if (value == 'Produtos List') {
-                  _abrirListaProdutosParaEdicao();
-                }
+                        if (value == 'Produtos List') {
+                          _abrirListaProdutosParaEdicao();
+                        }
 
-                if (value == 'Categorias') {
-                  setState(() {
-                    _moduloAtual = ModuloCentralPDV.categorias;
-                  });
-                }
-              },
-            ),
-            TopNavItemData(
-              title: 'Configurações',
-              subItems: const <String>[
-                'formas de recebimentos',
-                'exibição aos colaboradores (ex.: habilita so o pdv e esconde o administrativo)',
-                'Sistema',
-                'Usuários',
-                'Preferências do Six',
-              ],
-              onSelect: (String value) {
-                if (value == 'Preferências do Six') {
-                  setState(() {
-                    _moduloAtual = ModuloCentralPDV.configuracoes;
-                  });
-                }
-              },
-            ),
-            const TopNavItemData(
-              title: 'Relatórios',
-              subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
-            ),
-            const TopNavItemData(
-              title: 'Executar',
-              subItems: <String>['Processar Pagamentos', 'Fechar Caixa'],
-            ),
-            const TopNavItemData(
-              title: 'Automações',
-              subItems: <String>['Tarefas Agendadas'],
-            ),
-            const TopNavItemData(
-              title: 'Ajuda',
-              subItems: <String>['Suporte', 'Sobre'],
-            ),
-          ],
-          notificationWidget: _buildAreaNotificacoesEConexao(),
-          onNotificationPressed: _abrirPainelNotificacoes,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Card(
-            elevation: 6,
-            color: _pdvTheme.backgroundSurface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-              side: BorderSide(color: _pdvTheme.cardBorder),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(children: <Widget>[_buildConteudoCentral(total)]),
-            ),
-          ),
-        ),
+                        if (value == 'Categorias') {
+                          setState(() {
+                            _moduloAtual = ModuloCentralPDV.categorias;
+                          });
+                        }
+                      },
+                    ),
+                    TopNavItemData(
+                      title: 'Configurações',
+                      subItems: const <String>[
+                        'formas de recebimentos',
+                        'exibição aos colaboradores (ex.: habilita so o pdv e esconde o administrativo)',
+                        'Sistema',
+                        'Usuários',
+                        'Preferências do Six',
+                      ],
+                      onSelect: (String value) {
+                        if (value == 'Preferências do Six') {
+                          setState(() {
+                            _moduloAtual = ModuloCentralPDV.configuracoes;
+                          });
+                        }
+                      },
+                    ),
+                    const TopNavItemData(
+                      title: 'Relatórios',
+                      subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
+                    ),
+                    const TopNavItemData(
+                      title: 'Executar',
+                      subItems: <String>[
+                        'Processar Pagamentos',
+                        'Fechar Caixa',
+                      ],
+                    ),
+                    const TopNavItemData(
+                      title: 'Automações',
+                      subItems: <String>['Tarefas Agendadas'],
+                    ),
+                    const TopNavItemData(
+                      title: 'Ajuda',
+                      subItems: <String>['Suporte', 'Sobre'],
+                    ),
+                  ],
+                  notificationWidget: _buildAreaNotificacoesEConexao(),
+                  onNotificationPressed: _abrirPainelNotificacoes,
+                ),
+        body:
+            modoExpandidoAtivo
+                ? SafeArea(
+                  child: Column(
+                    children: <Widget>[_buildConteudoCentral(total)],
+                  ),
+                )
+                : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Card(
+                    elevation: 6,
+                    color: _pdvTheme.backgroundSurface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                      side: BorderSide(color: _pdvTheme.cardBorder),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        children: <Widget>[_buildConteudoCentral(total)],
+                      ),
+                    ),
+                  ),
+                ),
       ),
     );
   }
 
   void _limparVendaAposSucessoRecebimento() {
-    setState(() {
-      _produtosSelecionados.clear();
-      _formasSelecionadas.clear();
-      _codigoBarrasController.clear();
-      _itensTotalController.text = '0';
-      _clienteIdentificado = null;
-      _clienteIdentificadoController.clear();
-      _moduloAtual = ModuloCentralPDV.vendas;
-    });
+    _limparDadosTemporariosVenda(moduloDestino: ModuloCentralPDV.vendas);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
