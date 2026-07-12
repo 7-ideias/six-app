@@ -9,7 +9,7 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
@@ -116,37 +116,33 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SixMobilePageShell(
+      title: 'Atendimento',
       backgroundColor: _bg,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primary,
-        foregroundColor: SixMobilePalette.onPrimary,
-        title: const Text(
-          'Atendimento',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Notificações',
-            icon: _notificationIcon(),
-            onPressed: () => _go(const NotificacoesMobileScreen()),
-          ),
-        ],
-      ),
+      primaryColor: _primary,
+      secondaryColor: _secondary,
+      accentColor: _accent,
       drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
-      body: SixMobileAnimatedGradientBackground(
-        baseColor: _bg,
-        primaryColor: _primary,
-        secondaryColor: _secondary,
-        accentColor: _accent,
-        child: SafeArea(
+      actions: <Widget>[
+        IconButton(
+          tooltip: 'Notificações',
+          icon: _notificationIcon(),
+          onPressed: () => _go(const NotificacoesMobileScreen()),
+        ),
+      ],
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
           child: RefreshIndicator(
             onRefresh: _carregarResumo,
             child: ListView(
+              controller: scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+              padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
               children: <Widget>[
                 _section('Atendimento rápido'),
                 const SizedBox(height: 12),
@@ -180,10 +176,9 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
               ],
             ),
           ),
-        ),
-      ),
-      bottomNavigationBar:
-          kIsWeb ? null : const NavBarMobile(initialIndex: 2),
+        );
+      },
+      bottomNavigationBar: kIsWeb ? null : const NavBarMobile(initialIndex: 2),
     );
   }
 
@@ -280,11 +275,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       onTap: onTap,
       child: Row(
         children: <Widget>[
-          _iconBox(
-            icon,
-            bg: SixMobilePalette.softAccentSurface,
-            fg: _accent,
-          ),
+          _iconBox(icon, bg: SixMobilePalette.softAccentSurface, fg: _accent),
           const SizedBox(width: 14),
           Expanded(child: _texts(title, subtitle, titleSize: 16)),
           const Icon(Icons.chevron_right_rounded, color: _muted),

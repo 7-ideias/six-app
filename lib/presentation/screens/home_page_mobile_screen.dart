@@ -10,8 +10,8 @@ import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dar
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
@@ -150,54 +150,45 @@ class _HomePageMobileState extends State<HomePageMobile> {
     return AiAssistantHost(
       modulo: 'geral',
       telaAtual: 'inicio_mobile',
-      child: Scaffold(
+      child: SixMobilePageShell(
+        title: 'Início',
         backgroundColor: _backgroundColor,
-        appBar: AppBar(
-          elevation: 0,
-          centerTitle: true,
-          backgroundColor: _primaryColor,
-          foregroundColor: SixMobilePalette.onPrimary,
-          title: const Text(
-            'Início',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-            ),
-          ),
-          actions: [
-            IconButton(
-              tooltip: 'Configurações',
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: _showFeatureInProgress,
-            ),
-            IconButton(
-              tooltip: 'Notificações',
-              icon: _buildNotificationIcon(),
-              onPressed: () => _openNotifications(context),
-            ),
-          ],
-        ),
+        primaryColor: _primaryColor,
+        secondaryColor: _secondaryColor,
+        accentColor: _accentColor,
         drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
-        body: SixMobileAnimatedGradientBackground(
-          baseColor: _backgroundColor,
-          primaryColor: _primaryColor,
-          secondaryColor: _secondaryColor,
-          accentColor: _accentColor,
-          child: _buildHomeContent(context),
-        ),
+        actions: [
+          IconButton(
+            tooltip: 'Configurações',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: _showFeatureInProgress,
+          ),
+          IconButton(
+            tooltip: 'Notificações',
+            icon: _buildNotificationIcon(),
+            onPressed: () => _openNotifications(context),
+          ),
+        ],
+        bodyBuilder: _buildHomeContent,
         bottomNavigationBar:
             kIsWeb ? null : const NavBarMobile(initialIndex: 1),
       ),
     );
   }
 
-  Widget _buildHomeContent(BuildContext context) {
+  Widget _buildHomeContent(
+    BuildContext context,
+    ScrollController scrollController,
+    double topInset,
+  ) {
     return SafeArea(
+      top: false,
       child: RefreshIndicator(
         onRefresh: _carregarResumoInicio,
         child: ListView(
+          controller: scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
           children: [
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 60),

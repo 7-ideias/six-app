@@ -7,7 +7,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
@@ -102,35 +102,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SixMobilePageShell(
+      title: 'Gestão',
       backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: SixMobilePalette.onPrimary,
-        title: const Text(
-          'Gestão',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Notificações',
-            icon: _buildNotificationIcon(),
-            onPressed: () => _openNotifications(context),
-          ),
-        ],
-      ),
+      primaryColor: _primaryColor,
+      secondaryColor: _secondaryColor,
+      accentColor: _accentColor,
       drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
-      body: SixMobileAnimatedGradientBackground(
-        baseColor: _backgroundColor,
-        primaryColor: _primaryColor,
-        secondaryColor: _secondaryColor,
-        accentColor: _accentColor,
-        child: _buildContent(context),
-      ),
-      bottomNavigationBar:
-          kIsWeb ? null : const NavBarMobile(initialIndex: 0),
+      actions: <Widget>[
+        IconButton(
+          tooltip: 'Notificações',
+          icon: _buildNotificationIcon(),
+          onPressed: () => _openNotifications(context),
+        ),
+      ],
+      bodyBuilder: _buildContent,
+      bottomNavigationBar: kIsWeb ? null : const NavBarMobile(initialIndex: 0),
     );
   }
 
@@ -176,7 +163,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(
+    BuildContext context,
+    ScrollController scrollController,
+    double topInset,
+  ) {
     final List<_ManagementSection> sections = _managementSections(context);
     final int selectedIndex =
         _selectedSectionIndex >= sections.length
@@ -185,9 +176,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final _ManagementSection selectedSection = sections[selectedIndex];
 
     return SafeArea(
+      top: false,
       child: ListView(
+        controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
         children: <Widget>[
           SixStaggeredEntry(
             delay: const Duration(milliseconds: 130),
@@ -406,9 +399,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   Widget _buildSectionCarouselCard(_ManagementSection section, int index) {
     final bool isActive = index == _selectedSectionIndex;
     final Color iconBackground =
-        isActive
-            ? const Color(0x1AFFFFFF)
-            : SixMobilePalette.softAccentSurface;
+        isActive ? const Color(0x1AFFFFFF) : SixMobilePalette.softAccentSurface;
     final Color iconColor =
         isActive ? SixMobilePalette.onPrimary : _accentColor;
     final Color titleColor =
@@ -416,8 +407,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final Color subtitleColor =
         isActive ? SixMobilePalette.heroSupportingText : _mutedTextColor;
     final BoxBorder border = Border.all(
-      color:
-          isActive ? const Color(0x33FFFFFF) : SixMobilePalette.border,
+      color: isActive ? const Color(0x33FFFFFF) : SixMobilePalette.border,
     );
 
     return Container(
