@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// Centraliza o estado de processamento das operações de venda.
+/// Centraliza o estado de comunicação do mobile com o backend.
 ///
 /// O contador permite que chamadas concorrentes não encerrem a animação antes
 /// de todas as operações acompanhadas terminarem.
