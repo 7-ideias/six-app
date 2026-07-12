@@ -17,7 +17,7 @@ import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 
-import '../components/custom_nav_bar.dart';
+import '../components/nav_bar_mobile.dart';
 import '../components/cores_do_mobile.dart';
 
 class GestaoMobileScreen extends StatefulWidget {
@@ -130,7 +130,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         child: _buildContent(context),
       ),
       bottomNavigationBar:
-          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 0),
+          kIsWeb ? null : const NavBarMobile(initialIndex: 0),
     );
   }
 

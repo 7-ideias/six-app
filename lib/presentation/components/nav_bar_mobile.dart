@@ -6,16 +6,16 @@ import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacao_mobile_screen.dart';
 
-class CustomBottomNavBar extends StatefulWidget {
+class NavBarMobile extends StatefulWidget {
   final int initialIndex;
 
-  const CustomBottomNavBar({super.key, this.initialIndex = 1}); // 1 = Início
+  const NavBarMobile({super.key, this.initialIndex = 1}); // 1 = Início
 
   @override
-  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+  State<NavBarMobile> createState() => _NavBarMobileState();
 }
 
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+class _NavBarMobileState extends State<NavBarMobile> {
   late int _selectedIndex;
 
   @override

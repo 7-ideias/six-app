@@ -16,7 +16,7 @@ import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
-import '../components/custom_nav_bar.dart';
+import '../components/nav_bar_mobile.dart';
 import '../components/cores_do_mobile.dart';
 
 class OperacaoMobileScreen extends StatefulWidget {
@@ -183,7 +183,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         ),
       ),
       bottomNavigationBar:
-          kIsWeb ? null : const CustomBottomNavBar(initialIndex: 2),
+          kIsWeb ? null : const NavBarMobile(initialIndex: 2),
     );
   }
 
