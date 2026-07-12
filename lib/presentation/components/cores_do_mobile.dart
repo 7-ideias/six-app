@@ -14,8 +14,8 @@ import 'package:sixpos/providers/usuario_provider.dart';
 import '../screens/meu_perfil_mobile_screen.dart';
 import '../screens/preferencias_mobile_screen.dart';
 
-class AppDrawerDoMobile extends StatelessWidget {
-  const AppDrawerDoMobile({
+class CoresDoMobile extends StatelessWidget {
+  const CoresDoMobile({
     super.key,
     required this.image,
     required this.onPickImage,
@@ -62,38 +62,38 @@ class AppDrawerDoMobile extends StatelessWidget {
                     onTap: () => _openScreen(context, PreferencesMobileScreen()),
                   ),
                   const SizedBox(height: 14),
-                  _buildSectionLabel('Gestão'),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.trending_up_rounded,
-                    title: 'Desempenho',
-                    subtitle: 'Metas e resultado por período',
-                    highlighted: true,
-                    onTap: () => _openScreen(context, const DesempenhoColaboradorPage()),
-                  ),
+                  // _buildSectionLabel('Gestão'),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.trending_up_rounded,
+                  //   title: 'Desempenho',
+                  //   subtitle: 'Metas e resultado por período',
+                  //   highlighted: true,
+                  //   onTap: () => _openScreen(context, const DesempenhoColaboradorPage()),
+                  // ),
                   const SizedBox(height: 14),
-                  _buildSectionLabel('Suporte e segurança'),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.chat_outlined,
-                    title: 'Preciso de ajuda',
-                    subtitle: 'Atendimento e suporte',
-                    onTap: () => _showFeatureInProgress(context),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.description_outlined,
-                    title: 'Termos de Uso',
-                    subtitle: 'Condições de uso do Six',
-                    onTap: () => _showFeatureInProgress(context),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.security_outlined,
-                    title: 'Política de Privacidade',
-                    subtitle: 'Como seus dados são protegidos',
-                    onTap: () => _showFeatureInProgress(context),
-                  ),
+                  // _buildSectionLabel('Suporte e segurança'),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.chat_outlined,
+                  //   title: 'Preciso de ajuda',
+                  //   subtitle: 'Atendimento e suporte',
+                  //   onTap: () => _showFeatureInProgress(context),
+                  // ),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.description_outlined,
+                  //   title: 'Termos de Uso',
+                  //   subtitle: 'Condições de uso do Six',
+                  //   onTap: () => _showFeatureInProgress(context),
+                  // ),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.security_outlined,
+                  //   title: 'Política de Privacidade',
+                  //   subtitle: 'Como seus dados são protegidos',
+                  //   onTap: () => _showFeatureInProgress(context),
+                  // ),
                   _buildDrawerItem(
                     context,
                     icon: Icons.lock_outline,

@@ -84,7 +84,7 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
     return ValueListenableBuilder<int>(
       valueListenable:
           LoadingDoMobileComunicandoComBackendController.activeOperations,
-      child: const Scaffold(body: WebAuthLogoutSplashScene()),
+      child: Scaffold(body: Container() /*WebAuthLogoutSplashScene()*/),
       builder: (BuildContext context, int activeOperations, Widget? child) {
         return SixLottieActionOverlay(
           isLoading: activeOperations > 0,

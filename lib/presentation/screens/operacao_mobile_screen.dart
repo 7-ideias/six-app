@@ -17,7 +17,7 @@ import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
-import '../components/drawer_mobile.dart';
+import '../components/cores_do_mobile.dart';
 
 class OperacaoMobileScreen extends StatefulWidget {
   const OperacaoMobileScreen({super.key});
@@ -135,7 +135,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           ),
         ],
       ),
-      drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+      drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
       body: SixMobileAnimatedGradientBackground(
         baseColor: _bg,
         primaryColor: _primary,

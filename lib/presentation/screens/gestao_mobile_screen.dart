@@ -18,7 +18,7 @@ import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 
 import '../components/custom_nav_bar.dart';
-import '../components/drawer_mobile.dart';
+import '../components/cores_do_mobile.dart';
 
 class GestaoMobileScreen extends StatefulWidget {
   const GestaoMobileScreen({super.key});
@@ -121,7 +121,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           ),
         ],
       ),
-      drawer: AppDrawerDoMobile(image: _image, onPickImage: _pickImage),
+      drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
       body: SixMobileAnimatedGradientBackground(
         baseColor: _backgroundColor,
         primaryColor: _primaryColor,
