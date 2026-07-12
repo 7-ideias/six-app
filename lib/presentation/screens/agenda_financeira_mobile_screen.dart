@@ -17,7 +17,8 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
       _AgendaFinanceiraMobileScreenState();
 }
 
-class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScreen> {
+class _AgendaFinanceiraMobileScreenState
+    extends State<AgendaFinanceiraMobileScreen> {
   static const Color _backgroundColor = Color(0xFFF4F7FB);
   static const Color _primaryColor = Color(0xFF0B1F3A);
   static const Color _secondaryColor = Color(0xFF123B69);
@@ -28,8 +29,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   static const Color _borderColor = Color(0xFFE2E8F0);
   static const Color _softBlueColor = Color(0xFFEFF6FF);
 
-  final AgendaFinanceiraLancamentoService _service = AgendaFinanceiraLancamentoService();
-  final AgendaFinanceiraAcoesFinanceiras _acoesService = AgendaFinanceiraAcoesFinanceiras();
+  final AgendaFinanceiraLancamentoService _service =
+      AgendaFinanceiraLancamentoService();
+  final AgendaFinanceiraAcoesFinanceiras _acoesService =
+      AgendaFinanceiraAcoesFinanceiras();
   final ScrollController _periodosScrollController = ScrollController();
 
   final List<String> _abas = const <String>[
@@ -88,12 +91,16 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   List<Map<String, dynamic>> get _itensAgenda {
     return _gruposAgenda
-        .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
+        .expand(
+          (grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>(),
+        )
         .where((item) {
-          final tipoOk = _tipoSelecionado == 'Todos' ||
+          final tipoOk =
+              _tipoSelecionado == 'Todos' ||
               (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
               (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
-          final statusOk = _statusSelecionado == 'Todos' ||
+          final statusOk =
+              _statusSelecionado == 'Todos' ||
               item['status'] == _statusSelecionado;
           return tipoOk && statusOk;
         })
@@ -101,19 +108,25 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   }
 
   List<Map<String, dynamic>> get _itensSomaveis =>
-      _itensAgenda.where((item) => item['status']?.toString() != 'Cancelado').toList();
+      _itensAgenda
+          .where((item) => item['status']?.toString() != 'Cancelado')
+          .toList();
 
-  double get _totalReceberPrevisto => _somar(_itensSomaveis, 'receber', 'valorRestante');
-  double get _totalPagarPrevisto => _somar(_itensSomaveis, 'pagar', 'valorRestante');
-  double get _totalRecebidoConfirmado => _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
-  double get _totalPagoConfirmado => _toDouble(_totaisConfirmados['totalPagoConfirmado']);
+  double get _totalReceberPrevisto =>
+      _somar(_itensSomaveis, 'receber', 'valorRestante');
+  double get _totalPagarPrevisto =>
+      _somar(_itensSomaveis, 'pagar', 'valorRestante');
+  double get _totalRecebidoConfirmado =>
+      _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
+  double get _totalPagoConfirmado =>
+      _toDouble(_totaisConfirmados['totalPagoConfirmado']);
   double get _saldoPrevisto =>
       (_totalRecebidoConfirmado + _totalReceberPrevisto) -
       (_totalPagoConfirmado + _totalPagarPrevisto);
   double get _saldoConfirmado => _toDouble(
-        _totaisConfirmados['saldoConfirmado'] ??
-            (_totalRecebidoConfirmado - _totalPagoConfirmado),
-      );
+    _totaisConfirmados['saldoConfirmado'] ??
+        (_totalRecebidoConfirmado - _totalPagoConfirmado),
+  );
 
   Future<void> _executarDicaScrollPeriodos() async {
     if (_dicaPeriodosExecutada) return;
@@ -153,7 +166,11 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       _ultimaConsultaEm = DateTime.now();
       if (mostrarFeedback) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Agenda atualizada: ${_itensAgenda.length} lançamento(s).')),
+          SnackBar(
+            content: Text(
+              'Agenda atualizada: ${_itensAgenda.length} lançamento(s).',
+            ),
+          ),
         );
       }
     } on AgendaFinanceiraLancamentoApiException catch (e) {
@@ -164,7 +181,9 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível consultar a agenda financeira.')),
+        const SnackBar(
+          content: Text('Não foi possível consultar a agenda financeira.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _carregando = false);
@@ -175,7 +194,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     return AgendaFinanceiraConsultaRequest(
       periodo: _periodoRequest(),
       filtros: AgendaFinanceiraFiltrosRequest(
-        tipo: _tipoSelecionado == 'Todos' ? 'TODOS' : _tipoSelecionado.toUpperCase(),
+        tipo:
+            _tipoSelecionado == 'Todos'
+                ? 'TODOS'
+                : _tipoSelecionado.toUpperCase(),
         status: _statusFiltro(),
         origens: const <String>[],
         categorias: const <String>[],
@@ -183,7 +205,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         clienteFornecedor: null,
         somenteCriticos: false,
       ),
-      visaoSelecionada: _abas[_abaSelecionada].toUpperCase().replaceAll(' ', '_'),
+      visaoSelecionada: _abas[_abaSelecionada].toUpperCase().replaceAll(
+        ' ',
+        '_',
+      ),
     );
   }
 
@@ -192,7 +217,11 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     final hoje = DateTime(agora.year, agora.month, agora.day);
     switch (_periodoSelecionado) {
       case 'Hoje':
-        return AgendaFinanceiraPeriodoRequest(modo: 'HOJE', dataInicio: hoje, dataFim: hoje);
+        return AgendaFinanceiraPeriodoRequest(
+          modo: 'HOJE',
+          dataInicio: hoje,
+          dataFim: hoje,
+        );
       case 'Este mês':
         return AgendaFinanceiraPeriodoRequest(
           modo: 'ESTE_MES',
@@ -246,9 +275,13 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         grupos.add(<String, dynamic>{
           'grupo': grupo['titulo']?.toString() ?? 'Lançamentos',
           'descricao': grupo['descricao']?.toString() ?? '',
-          'itens': itensRaw is List
-              ? itensRaw.whereType<Map<String, dynamic>>().map(_mapearItemAgenda).toList()
-              : <Map<String, dynamic>>[],
+          'itens':
+              itensRaw is List
+                  ? itensRaw
+                      .whereType<Map<String, dynamic>>()
+                      .map(_mapearItemAgenda)
+                      .toList()
+                  : <Map<String, dynamic>>[],
         });
       }
     }
@@ -260,27 +293,38 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   void _aplicarConfirmados(Map<String, dynamic> payload) {
     final totais = payload['totais'];
     final itens = payload['itens'];
-    _totaisConfirmados = totais is Map<String, dynamic>
-        ? Map<String, dynamic>.from(totais)
-        : <String, dynamic>{};
+    _totaisConfirmados =
+        totais is Map<String, dynamic>
+            ? Map<String, dynamic>.from(totais)
+            : <String, dynamic>{};
     _itensConfirmados
       ..clear()
       ..addAll(
         itens is List
-            ? itens.whereType<Map<String, dynamic>>().map(_mapearItemConfirmado).toList()
+            ? itens
+                .whereType<Map<String, dynamic>>()
+                .map(_mapearItemConfirmado)
+                .toList()
             : <Map<String, dynamic>>[],
       );
   }
 
   Map<String, dynamic> _mapearItemAgenda(Map<String, dynamic> item) {
-    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
+    final tipo =
+        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
     final valorOriginal = _toDouble(item['valorOriginal'] ?? item['valor']);
     final valorConfirmado = _toDouble(item['valorConfirmado']);
-    final valorRestante = _toDouble(item['valorRestante'] ?? (valorOriginal - valorConfirmado));
+    final valorRestante = _toDouble(
+      item['valorRestante'] ?? (valorOriginal - valorConfirmado),
+    );
     final acoesRaw = item['acoesDisponiveis'];
-    final acoes = acoesRaw is List
-        ? acoesRaw.map((acao) => _acaoLabel(acao?.toString())).where((acao) => acao.isNotEmpty).toList()
-        : <String>[];
+    final acoes =
+        acoesRaw is List
+            ? acoesRaw
+                .map((acao) => _acaoLabel(acao?.toString()))
+                .where((acao) => acao.isNotEmpty)
+                .toList()
+            : <String>[];
 
     return <String, dynamic>{
       'id': item['idLancamento']?.toString() ?? '',
@@ -295,12 +339,17 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'origem': item['origem']?.toString() ?? '',
-      'formaPagamento': _formaPagamentoLabel(item['formaPagamento']?.toString()),
+      'formaPagamento': _formaPagamentoLabel(
+        item['formaPagamento']?.toString(),
+      ),
       'empresa': _empresaNome(item['empresa']),
       'categoria': item['categoria']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
-      'acoes': acoes.isNotEmpty ? acoes : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
+      'acoes':
+          acoes.isNotEmpty
+              ? acoes
+              : <String>['Liquidar', 'Registrar parcial', 'Detalhes'],
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
       'dataOperacao': item['dataOperacao']?.toString(),
       'dataCompetencia': item['dataCompetencia']?.toString(),
@@ -308,7 +357,8 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   }
 
   Map<String, dynamic> _mapearItemConfirmado(Map<String, dynamic> item) {
-    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
+    final tipo =
+        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
     return <String, dynamic>{
       'id': item['idLancamento']?.toString() ?? '',
       'uuidOperacaoApp': item['uuidOperacaoApp']?.toString(),
@@ -318,12 +368,17 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       'valorOriginal': _toDouble(item['valorOriginal']),
       'valorConfirmado': _toDouble(item['valorConfirmado']),
       'valorRestante': _toDouble(item['valorRestante']),
-      'data': _formatarDataIsoParaBr((item['dataUltimaConfirmacao'] ?? item['dataVencimento'])?.toString()),
+      'data': _formatarDataIsoParaBr(
+        (item['dataUltimaConfirmacao'] ?? item['dataVencimento'])?.toString(),
+      ),
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
-      'formaPagamento': _formaPagamentoLabel(item['formaPagamento']?.toString()),
+      'formaPagamento': _formaPagamentoLabel(
+        item['formaPagamento']?.toString(),
+      ),
       'empresa': item['empresa']?.toString() ?? '',
-      'quantidadeConfirmacoes': item['quantidadeConfirmacoes'] ?? item['quantidadeLiquidacoes'] ?? 1,
+      'quantidadeConfirmacoes':
+          item['quantidadeConfirmacoes'] ?? item['quantidadeLiquidacoes'] ?? 1,
       'liquidacoes': _mapearLiquidacoes(item['liquidacoes']),
       'acoes': <String>['Detalhes'],
     };
@@ -331,7 +386,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) {
     return raw is List
-        ? raw.whereType<Map<String, dynamic>>().map((item) => Map<String, dynamic>.from(item)).toList()
+        ? raw
+            .whereType<Map<String, dynamic>>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList()
         : <Map<String, dynamic>>[];
   }
 
@@ -347,9 +405,12 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         item['valorConfirmado'] = confirmado['valorConfirmado'];
         item['valorRestante'] = confirmado['valorRestante'];
         item['valor'] = confirmado['valorRestante'];
-        item['liquidacoes'] = confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
-        item['quantidadeConfirmacoes'] = confirmado['quantidadeConfirmacoes'] ?? 0;
-        if (_toDouble(confirmado['valorConfirmado']) > 0 && _toDouble(confirmado['valorRestante']) > 0) {
+        item['liquidacoes'] =
+            confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
+        item['quantidadeConfirmacoes'] =
+            confirmado['quantidadeConfirmacoes'] ?? 0;
+        if (_toDouble(confirmado['valorConfirmado']) > 0 &&
+            _toDouble(confirmado['valorRestante']) > 0) {
           item['status'] = 'Parcial';
         }
       }
@@ -367,9 +428,12 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   }
 
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
-    final itemAtualizado = await Navigator.of(context).push<Map<String, dynamic>>(
+    final itemAtualizado = await Navigator.of(
+      context,
+    ).push<Map<String, dynamic>>(
       MaterialPageRoute<Map<String, dynamic>>(
-        builder: (_) => AgendaFinanceiraLancamentoMobileEditScreen(lancamento: item),
+        builder:
+            (_) => AgendaFinanceiraLancamentoMobileEditScreen(lancamento: item),
       ),
     );
     if (!mounted || itemAtualizado == null) return;
@@ -391,10 +455,15 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       return;
     }
     if (comando == 'liquidar' || comando == 'receber' || comando == 'pagar') {
-      await _confirmarTotal(item, item['tipo'] == 'pagar' ? 'Pagar' : 'Receber');
+      await _confirmarTotal(
+        item,
+        item['tipo'] == 'pagar' ? 'Pagar' : 'Receber',
+      );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ação "$acao" ainda não implementada.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ação "$acao" ainda não implementada.')),
+    );
   }
 
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
@@ -403,50 +472,73 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     String? erroValor;
     final valor = await showDialog<double>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Registrar parcial'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text('Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: valorController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Valor parcial', errorText: erroValor),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: observacaoController,
-                minLines: 2,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Observação'),
-              ),
-            ],
+      builder:
+          (dialogContext) => StatefulBuilder(
+            builder:
+                (dialogContext, setDialogState) => AlertDialog(
+                  title: const Text('Registrar parcial'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}',
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: valorController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Valor parcial',
+                          errorText: erroValor,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: observacaoController,
+                        minLines: 2,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Observação',
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(null),
+                      child: const Text('Cancelar'),
+                    ),
+                    FilledButton(
+                      onPressed: () {
+                        final valorDigitado = _toDouble(valorController.text);
+                        final valorAberto = _toDouble(
+                          item['valorRestante'] ?? item['valor'],
+                        );
+                        if (valorDigitado <= 0) {
+                          setDialogState(
+                            () =>
+                                erroValor = 'Informe um valor maior que zero.',
+                          );
+                          return;
+                        }
+                        if (valorDigitado >= valorAberto) {
+                          setDialogState(
+                            () =>
+                                erroValor =
+                                    'Informe um valor menor que o aberto.',
+                          );
+                          return;
+                        }
+                        Navigator.of(dialogContext).pop(valorDigitado);
+                      },
+                      child: const Text('Salvar'),
+                    ),
+                  ],
+                ),
           ),
-          actions: <Widget>[
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(null), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () {
-                final valorDigitado = _toDouble(valorController.text);
-                final valorAberto = _toDouble(item['valorRestante'] ?? item['valor']);
-                if (valorDigitado <= 0) {
-                  setDialogState(() => erroValor = 'Informe um valor maior que zero.');
-                  return;
-                }
-                if (valorDigitado >= valorAberto) {
-                  setDialogState(() => erroValor = 'Informe um valor menor que o aberto.');
-                  return;
-                }
-                Navigator.of(dialogContext).pop(valorDigitado);
-              },
-              child: const Text('Salvar'),
-            ),
-          ],
-        ),
-      ),
     );
     final observacao = observacaoController.text.trim();
     valorController.dispose();
@@ -459,13 +551,20 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           tipoLiquidacao: 'PARCIAL',
           dataLiquidacao: DateTime.now(),
           valorLiquidado: valor,
-          formaPagamentoRealizada: _formaPagamentoBackend(item['formaPagamento']?.toString() ?? 'Pix'),
-          observacoes: observacao.isEmpty ? 'Lançamento parcial registrado pela agenda financeira.' : observacao,
+          formaPagamentoRealizada: _formaPagamentoBackend(
+            item['formaPagamento']?.toString() ?? 'Pix',
+          ),
+          observacoes:
+              observacao.isEmpty
+                  ? 'Lançamento parcial registrado pela agenda financeira.'
+                  : observacao,
         ),
       );
       await _consultar();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Parcial registrada com sucesso.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Parcial registrada com sucesso.')),
+      );
     });
   }
 
@@ -473,14 +572,21 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     final valor = _toDouble(item['valorRestante'] ?? item['valor']);
     final confirmado = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Liquidar lançamento'),
-        content: Text('Confirmar liquidação de ${_formatarMoeda(valor)}?'),
-        actions: <Widget>[
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(label)),
-        ],
-      ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Liquidar lançamento'),
+            content: Text('Confirmar liquidação de ${_formatarMoeda(valor)}?'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(label),
+              ),
+            ],
+          ),
     );
     if (confirmado != true) return;
     await _executarComLoading(() async {
@@ -490,14 +596,18 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           tipoLiquidacao: 'TOTAL',
           dataLiquidacao: DateTime.now(),
           valorLiquidado: valor,
-          formaPagamentoRealizada: _formaPagamentoBackend(item['formaPagamento']?.toString() ?? 'Pix'),
+          formaPagamentoRealizada: _formaPagamentoBackend(
+            item['formaPagamento']?.toString() ?? 'Pix',
+          ),
           observacoes: 'Liquidação realizada pela agenda financeira.',
           referenciaExterna: item['id']?.toString(),
         ),
       );
       await _consultar();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lançamento liquidado com sucesso.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lançamento liquidado com sucesso.')),
+      );
     });
   }
 
@@ -508,10 +618,14 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       await action();
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha na ação (${e.statusCode}).')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Falha na ação (${e.statusCode}).')),
+      );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível executar a ação.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível executar a ação.')),
+      );
     } finally {
       if (mounted) setState(() => _executandoAcao = false);
     }
@@ -524,7 +638,7 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: _primaryColor,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text(
           'Agenda financeira',
@@ -533,7 +647,8 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         actions: <Widget>[
           IconButton(
             tooltip: 'Atualizar',
-            onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
+            onPressed:
+                _carregando ? null : () => _consultar(mostrarFeedback: true),
             icon: const Icon(Icons.refresh_rounded),
           ),
           IconButton(
@@ -552,17 +667,29 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
             children: <Widget>[
               SixStaggeredEntry(child: _buildHeaderCard()),
               const SizedBox(height: 12),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 60), child: _buildFilterCard()),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 60),
+                child: _buildFilterCard(),
+              ),
               if (_carregando || _executandoAcao) ...const <Widget>[
                 SizedBox(height: 10),
                 LinearProgressIndicator(minHeight: 3),
               ],
               const SizedBox(height: 14),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 110), child: _buildResumo()),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 110),
+                child: _buildResumo(),
+              ),
               const SizedBox(height: 16),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 160), child: _buildTabs()),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 160),
+                child: _buildTabs(),
+              ),
               const SizedBox(height: 12),
-              SixStaggeredEntry(delay: const Duration(milliseconds: 210), child: _buildConteudoAba()),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 210),
+                child: _buildConteudoAba(),
+              ),
             ],
           ),
         ),
@@ -581,7 +708,11 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           end: Alignment.centerRight,
         ),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x1F0B1F3A), blurRadius: 16, offset: Offset(0, 8)),
+          BoxShadow(
+            color: Color(0x1F0B1F3A),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
         ],
       ),
       child: Row(
@@ -594,7 +725,11 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0x33FFFFFF)),
             ),
-            child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white, size: 22),
+            child: const Icon(
+              Icons.account_balance_wallet_outlined,
+              color: Colors.white,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -605,7 +740,11 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                   'Agenda financeira',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -614,7 +753,11 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                       : 'Atualizado às ${_ultimaConsultaEm!.hour.toString().padLeft(2, '0')}:${_ultimaConsultaEm!.minute.toString().padLeft(2, '0')}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFFD7E3F5), fontSize: 12.5, height: 1.25),
+                  style: const TextStyle(
+                    color: Color(0xFFD7E3F5),
+                    fontSize: 12.5,
+                    height: 1.25,
+                  ),
                 ),
               ],
             ),
@@ -631,7 +774,13 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,7 +800,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                 label: const Text('Filtros'),
               ),
               FilledButton.icon(
-                onPressed: _carregando ? null : () => _consultar(mostrarFeedback: true),
+                onPressed:
+                    _carregando
+                        ? null
+                        : () => _consultar(mostrarFeedback: true),
                 icon: const Icon(Icons.search_rounded, size: 18),
                 label: const Text('Buscar'),
               ),
@@ -681,18 +833,26 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                 selected: selected,
                 visualDensity: VisualDensity.compact,
                 label: Text(periodo),
-                onSelected: _carregando
-                    ? null
-                    : (_) {
-                        setState(() => _periodoSelecionado = periodo);
-                      },
+                onSelected:
+                    _carregando
+                        ? null
+                        : (_) {
+                          setState(() => _periodoSelecionado = periodo);
+                        },
                 selectedColor: _primaryColor,
                 labelStyle: TextStyle(
                   color: selected ? Colors.white : _titleTextColor,
                   fontWeight: FontWeight.w800,
                   fontSize: 12.5,
                 ),
-                avatar: selected ? const Icon(Icons.check_rounded, size: 15, color: Colors.white) : null,
+                avatar:
+                    selected
+                        ? const Icon(
+                          Icons.check_rounded,
+                          size: 15,
+                          color: Colors.white,
+                        )
+                        : null,
               );
             },
           ),
@@ -714,7 +874,11 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                 child: const Padding(
                   padding: EdgeInsets.only(right: 2),
                   child: SixPulsingBadge(
-                    child: Icon(Icons.chevron_right_rounded, color: _accentColor, size: 22),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: _accentColor,
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
@@ -728,13 +892,23 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   Widget _smallInfoChip(IconData icon, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: _softBlueColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, color: _accentColor, size: 16),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(color: _titleTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
+          Text(
+            text,
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
@@ -751,7 +925,12 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 18),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                MediaQuery.of(context).viewInsets.bottom + 18,
+              ),
               decoration: const BoxDecoration(
                 color: _backgroundColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -767,30 +946,48 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                         child: Container(
                           width: 42,
                           height: 4,
-                          decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(999)),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const Text('Filtrar agenda', style: TextStyle(color: _titleTextColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                      const Text(
+                        'Filtrar agenda',
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       _buildFilterOptions(
                         title: 'Tipo',
                         values: _tipos,
                         selected: tipoTemp,
-                        onSelected: (value) => setModalState(() => tipoTemp = value),
+                        onSelected:
+                            (value) => setModalState(() => tipoTemp = value),
                       ),
                       const SizedBox(height: 16),
                       _buildFilterOptions(
                         title: 'Status',
                         values: _status,
                         selected: statusTemp,
-                        onSelected: (value) => setModalState(() => statusTemp = value),
+                        onSelected:
+                            (value) => setModalState(() => statusTemp = value),
                       ),
                       const SizedBox(height: 18),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: () => Navigator.of(context).pop(_AgendaMobileFiltro(tipo: tipoTemp, status: statusTemp)),
+                          onPressed:
+                              () => Navigator.of(context).pop(
+                                _AgendaMobileFiltro(
+                                  tipo: tipoTemp,
+                                  status: statusTemp,
+                                ),
+                              ),
                           icon: const Icon(Icons.check_rounded),
                           label: const Text('Aplicar filtros'),
                         ),
@@ -820,21 +1017,32 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(title, style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
+        Text(
+          title,
+          style: const TextStyle(
+            color: _mutedTextColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: values.map((value) {
-            final isSelected = value == selected;
-            return ChoiceChip(
-              selected: isSelected,
-              label: Text(value),
-              onSelected: (_) => onSelected(value),
-              selectedColor: _primaryColor,
-              labelStyle: TextStyle(color: isSelected ? Colors.white : _titleTextColor, fontWeight: FontWeight.w700),
-            );
-          }).toList(),
+          children:
+              values.map((value) {
+                final isSelected = value == selected;
+                return ChoiceChip(
+                  selected: isSelected,
+                  label: Text(value),
+                  onSelected: (_) => onSelected(value),
+                  selectedColor: _primaryColor,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : _titleTextColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              }).toList(),
         ),
       ],
     );
@@ -842,20 +1050,55 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   Widget _buildResumo() {
     final cards = <_ResumoAgendaCardData>[
-      _ResumoAgendaCardData('A receber aberto', _totalReceberPrevisto, Icons.south_west_rounded),
-      _ResumoAgendaCardData('A pagar aberto', _totalPagarPrevisto, Icons.north_east_rounded),
-      _ResumoAgendaCardData('Saldo previsto', _saldoPrevisto, Icons.query_stats_rounded),
-      _ResumoAgendaCardData('Recebido confirmado', _totalRecebidoConfirmado, Icons.verified_rounded),
-      _ResumoAgendaCardData('Pago confirmado', _totalPagoConfirmado, Icons.task_alt_rounded),
-      _ResumoAgendaCardData('Saldo confirmado', _saldoConfirmado, Icons.account_balance_wallet_rounded),
+      _ResumoAgendaCardData(
+        'A receber aberto',
+        _totalReceberPrevisto,
+        Icons.south_west_rounded,
+      ),
+      _ResumoAgendaCardData(
+        'A pagar aberto',
+        _totalPagarPrevisto,
+        Icons.north_east_rounded,
+      ),
+      _ResumoAgendaCardData(
+        'Saldo previsto',
+        _saldoPrevisto,
+        Icons.query_stats_rounded,
+      ),
+      _ResumoAgendaCardData(
+        'Recebido confirmado',
+        _totalRecebidoConfirmado,
+        Icons.verified_rounded,
+      ),
+      _ResumoAgendaCardData(
+        'Pago confirmado',
+        _totalPagoConfirmado,
+        Icons.task_alt_rounded,
+      ),
+      _ResumoAgendaCardData(
+        'Saldo confirmado',
+        _saldoConfirmado,
+        Icons.account_balance_wallet_rounded,
+      ),
     ];
     return LayoutBuilder(
       builder: (context, constraints) {
-        final itemWidth = constraints.maxWidth > 520 ? (constraints.maxWidth - 12) / 2 : constraints.maxWidth;
+        final itemWidth =
+            constraints.maxWidth > 520
+                ? (constraints.maxWidth - 12) / 2
+                : constraints.maxWidth;
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: cards.map((card) => SizedBox(width: itemWidth, child: _buildResumoCard(card))).toList(),
+          children:
+              cards
+                  .map(
+                    (card) => SizedBox(
+                      width: itemWidth,
+                      child: _buildResumoCard(card),
+                    ),
+                  )
+                  .toList(),
         );
       },
     );
@@ -868,14 +1111,23 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: <Widget>[
           Container(
             width: 38,
             height: 38,
-            decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(
+              color: _softBlueColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
             child: Icon(card.icon, color: _accentColor, size: 19),
           ),
           const SizedBox(width: 12),
@@ -883,18 +1135,32 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
+                Text(
+                  card.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _mutedTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: card.value),
                   duration: const Duration(milliseconds: 650),
                   curve: Curves.easeOutCubic,
-                  builder: (context, value, child) => Text(
-                    _formatarMoeda(value),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: _titleTextColor, fontSize: 16, fontWeight: FontWeight.w900),
-                  ),
+                  builder:
+                      (context, value, child) => Text(
+                        _formatarMoeda(value),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                 ),
               ],
             ),
@@ -918,7 +1184,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
             label: Text(aba),
             onSelected: (_) => setState(() => _abaSelecionada = index),
             selectedColor: _primaryColor,
-            labelStyle: TextStyle(color: selected ? Colors.white : _titleTextColor, fontWeight: FontWeight.w800),
+            labelStyle: TextStyle(
+              color: selected ? Colors.white : _titleTextColor,
+              fontWeight: FontWeight.w800,
+            ),
           );
         },
         separatorBuilder: (_, __) => const SizedBox(width: 8),
@@ -945,7 +1214,8 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       return _buildEmptyState(
         icon: Icons.event_busy_outlined,
         title: 'Nenhum lançamento encontrado',
-        subtitle: 'Ajuste os filtros ou cadastre um novo lançamento financeiro.',
+        subtitle:
+            'Ajuste os filtros ou cadastre um novo lançamento financeiro.',
       );
     }
     return Column(children: _itensAgenda.map(_buildLancamentoCard).toList());
@@ -955,9 +1225,13 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     final tipoEntrada = item['tipo'] == 'receber';
     final valorAberto = _toDouble(item['valorRestante'] ?? item['valor']);
     final valorConfirmado = _toDouble(item['valorConfirmado']);
-    final acoes = item['acoes'] is List
-        ? (item['acoes'] as List).cast<dynamic>().map((acao) => acao.toString()).toList()
-        : <String>[];
+    final acoes =
+        item['acoes'] is List
+            ? (item['acoes'] as List)
+                .cast<dynamic>()
+                .map((acao) => acao.toString())
+                .toList()
+            : <String>[];
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -965,7 +1239,13 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6))],
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -974,34 +1254,66 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
-              _pill(tipoEntrada ? 'Receber' : 'Pagar', tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded),
+              _pill(
+                tipoEntrada ? 'Receber' : 'Pagar',
+                tipoEntrada
+                    ? Icons.south_west_rounded
+                    : Icons.north_east_rounded,
+              ),
               _pill(item['status']?.toString() ?? '-', Icons.flag_outlined),
-              if (valorConfirmado > 0) _pill('Confirmado: ${_formatarMoeda(valorConfirmado)}', Icons.verified_outlined),
-              if (valorAberto > 0) _pill('Aberto: ${_formatarMoeda(valorAberto)}', Icons.pending_actions_outlined),
+              if (valorConfirmado > 0)
+                _pill(
+                  'Confirmado: ${_formatarMoeda(valorConfirmado)}',
+                  Icons.verified_outlined,
+                ),
+              if (valorAberto > 0)
+                _pill(
+                  'Aberto: ${_formatarMoeda(valorAberto)}',
+                  Icons.pending_actions_outlined,
+                ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(item['descricao']?.toString() ?? '', style: const TextStyle(color: _titleTextColor, fontSize: 16, fontWeight: FontWeight.w900)),
+          Text(
+            item['descricao']?.toString() ?? '',
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 7),
           Text(
             '${item['contato']} • Vence em ${item['vencimento']} • ${item['formaPagamento']}',
             style: const TextStyle(color: _mutedTextColor, height: 1.35),
           ),
           const SizedBox(height: 10),
-          Text('Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}', style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800)),
+          Text(
+            'Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}',
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
               OutlinedButton.icon(
-                onPressed: _executandoAcao ? null : () => _editarLancamento(item),
+                onPressed:
+                    _executandoAcao ? null : () => _editarLancamento(item),
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: const Text('Editar'),
               ),
-              ...acoes.take(3).map(
+              ...acoes
+                  .take(3)
+                  .map(
                     (acao) => OutlinedButton(
-                      onPressed: _executandoAcao ? null : () => _executarAcao(acao, item),
+                      onPressed:
+                          _executandoAcao
+                              ? null
+                              : () => _executarAcao(acao, item),
                       child: Text(acao),
                     ),
                   ),
@@ -1032,28 +1344,43 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       itensPorData.putIfAbsent(data, () => <Map<String, dynamic>>[]).add(item);
     }
     return Column(
-      children: itensPorData.entries.map((entry) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(color: _surfaceColor, borderRadius: BorderRadius.circular(22), border: Border.all(color: _borderColor)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: Row(
-                  children: <Widget>[
-                    const Icon(Icons.calendar_today_outlined, color: _accentColor, size: 18),
-                    const SizedBox(width: 8),
-                    Text(entry.key, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900)),
-                  ],
-                ),
+      children:
+          itensPorData.entries.map((entry) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: _borderColor),
               ),
-              ...entry.value.map((item) => _buildCalendarioItem(item)),
-            ],
-          ),
-        );
-      }).toList(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          color: _accentColor,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          entry.key,
+                          style: const TextStyle(
+                            color: _titleTextColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...entry.value.map((item) => _buildCalendarioItem(item)),
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -1069,22 +1396,48 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(14)),
-            child: Icon(tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded, color: _accentColor, size: 20),
+            decoration: BoxDecoration(
+              color: _softBlueColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded,
+              color: _accentColor,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(item['descricao']?.toString() ?? '-', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800)),
+                Text(
+                  item['descricao']?.toString() ?? '-',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('Previsto ${_formatarMoeda(valorPrevisto)} • Diferença ${_formatarMoeda(diferenca)}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _mutedTextColor, fontSize: 12)),
+                Text(
+                  'Previsto ${_formatarMoeda(valorPrevisto)} • Diferença ${_formatarMoeda(diferenca)}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          Text(_formatarMoeda(valorConfirmado), style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900)),
+          Text(
+            _formatarMoeda(valorConfirmado),
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );
@@ -1094,9 +1447,15 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     final fluxoPorMes = <String, Map<String, double>>{};
     for (final item in _itensSomaveis) {
       final data = _parseDataBr(item['vencimento']?.toString());
-      final mes = data == null ? 'Sem competência' : '${data.year}-${data.month.toString().padLeft(2, '0')}';
+      final mes =
+          data == null
+              ? 'Sem competência'
+              : '${data.year}-${data.month.toString().padLeft(2, '0')}';
       final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-      final registro = fluxoPorMes.putIfAbsent(mes, () => <String, double>{'entradas': 0, 'saidas': 0});
+      final registro = fluxoPorMes.putIfAbsent(
+        mes,
+        () => <String, double>{'entradas': 0, 'saidas': 0},
+      );
       if (item['tipo'] == 'receber') {
         registro['entradas'] = (registro['entradas'] ?? 0) + valor;
       } else {
@@ -1104,42 +1463,72 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       }
     }
     if (fluxoPorMes.isEmpty) {
-      return _buildEmptyState(icon: Icons.query_stats_outlined, title: 'Fluxo previsto vazio', subtitle: 'Nenhuma entrada ou saída prevista para o período.');
+      return _buildEmptyState(
+        icon: Icons.query_stats_outlined,
+        title: 'Fluxo previsto vazio',
+        subtitle: 'Nenhuma entrada ou saída prevista para o período.',
+      );
     }
     final mesesOrdenados = fluxoPorMes.keys.toList()..sort();
     return Column(
-      children: mesesOrdenados.map((mes) {
-        final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
-        final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
-        final saldo = entrada - saida;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _surfaceColor, borderRadius: BorderRadius.circular(22), border: Border.all(color: _borderColor)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children:
+          mesesOrdenados.map((mes) {
+            final entrada = fluxoPorMes[mes]?['entradas'] ?? 0;
+            final saida = fluxoPorMes[mes]?['saidas'] ?? 0;
+            final saldo = entrada - saida;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: _borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(mes, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900)),
-                  Text('Saldo: ${_formatarMoeda(saldo)}', style: const TextStyle(fontWeight: FontWeight.w900)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        mes,
+                        style: const TextStyle(
+                          color: _titleTextColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        'Saldo: ${_formatarMoeda(saldo)}',
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _buildFluxoBarra(entrada: entrada, saida: saida),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _fluxoValor(
+                          'Entradas',
+                          entrada,
+                          Icons.south_west_rounded,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _fluxoValor(
+                          'Saídas',
+                          saida,
+                          Icons.north_east_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              const SizedBox(height: 14),
-              _buildFluxoBarra(entrada: entrada, saida: saida),
-              const SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  Expanded(child: _fluxoValor('Entradas', entrada, Icons.south_west_rounded)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _fluxoValor('Saídas', saida, Icons.north_east_rounded)),
-                ],
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -1152,7 +1541,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
         return Container(
           height: 30,
           width: double.infinity,
-          decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(999)),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE2E8F0),
+            borderRadius: BorderRadius.circular(999),
+          ),
           clipBehavior: Clip.antiAlias,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
@@ -1161,8 +1553,18 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
             builder: (context, value, child) {
               return Row(
                 children: <Widget>[
-                  AnimatedContainer(duration: const Duration(milliseconds: 650), width: constraints.maxWidth * percentualEntrada * value, height: 30, color: _accentColor),
-                  AnimatedContainer(duration: const Duration(milliseconds: 650), width: constraints.maxWidth * percentualSaida * value, height: 30, color: const Color(0xFFE11D48)),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 650),
+                    width: constraints.maxWidth * percentualEntrada * value,
+                    height: 30,
+                    color: _accentColor,
+                  ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 650),
+                    width: constraints.maxWidth * percentualSaida * value,
+                    height: 30,
+                    color: const Color(0xFFE11D48),
+                  ),
                 ],
               );
             },
@@ -1175,15 +1577,33 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   Widget _fluxoValor(String label, double value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: _softBlueColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Icon(icon, color: _accentColor, size: 18),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(color: _mutedTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: _mutedTextColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(_formatarMoeda(value), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900)),
+          Text(
+            _formatarMoeda(value),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );
@@ -1191,69 +1611,139 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
 
   Widget _buildValoresConfirmados() {
     if (_itensConfirmados.isEmpty) {
-      return _buildEmptyState(icon: Icons.verified_outlined, title: 'Nenhum valor confirmado', subtitle: 'As liquidações confirmadas aparecerão aqui.');
+      return _buildEmptyState(
+        icon: Icons.verified_outlined,
+        title: 'Nenhum valor confirmado',
+        subtitle: 'As liquidações confirmadas aparecerão aqui.',
+      );
     }
     return Column(
-      children: _itensConfirmados.map((item) {
-        final tipoEntrada = item['tipo'] == 'receber';
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _surfaceColor, borderRadius: BorderRadius.circular(22), border: Border.all(color: _borderColor)),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(14)),
-                child: Icon(tipoEntrada ? Icons.south_west_rounded : Icons.north_east_rounded, color: _accentColor, size: 20),
+      children:
+          _itensConfirmados.map((item) {
+            final tipoEntrada = item['tipo'] == 'receber';
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: _borderColor),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(item['descricao']?.toString() ?? '-', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 4),
-                    Text('${item['contato']} • ${item['data']} • ${item['formaPagamento']}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _mutedTextColor, fontSize: 12)),
-                  ],
-                ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: _softBlueColor,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      tipoEntrada
+                          ? Icons.south_west_rounded
+                          : Icons.north_east_rounded,
+                      color: _accentColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          item['descricao']?.toString() ?? '-',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _titleTextColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${item['contato']} • ${item['data']} • ${item['formaPagamento']}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _mutedTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _formatarMoeda(_toDouble(item['valorConfirmado'])),
+                    style: const TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Text(_formatarMoeda(_toDouble(item['valorConfirmado'])), style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900)),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
   Widget _pill(String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: _softBlueColor, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: _softBlueColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, color: _accentColor, size: 15),
           const SizedBox(width: 5),
-          Text(label, style: const TextStyle(color: _titleTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState({required IconData icon, required String title, required String subtitle}) {
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: _surfaceColor, borderRadius: BorderRadius.circular(22), border: Border.all(color: _borderColor)),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _borderColor),
+      ),
       child: Column(
         children: <Widget>[
           Icon(icon, color: _accentColor, size: 34),
           const SizedBox(height: 12),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(color: _titleTextColor, fontSize: 16, fontWeight: FontWeight.w900)),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(color: _mutedTextColor, height: 1.35)),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _mutedTextColor, height: 1.35),
+          ),
         ],
       ),
     );
@@ -1266,8 +1756,16 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 18),
-          decoration: const BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            MediaQuery.of(context).viewInsets.bottom + 18,
+          ),
+          decoration: const BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
           child: SafeArea(
             top: false,
             child: SingleChildScrollView(
@@ -1276,21 +1774,60 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Center(
-                    child: Container(width: 42, height: 4, decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(999))),
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 18),
-                  Text(item['descricao']?.toString() ?? 'Detalhes', style: const TextStyle(color: _titleTextColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                  Text(
+                    item['descricao']?.toString() ?? 'Detalhes',
+                    style: const TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                   const SizedBox(height: 14),
                   _detalheLinha('Contato', item['contato']?.toString() ?? '-'),
-                  _detalheLinha('Vencimento', item['vencimento']?.toString() ?? '-'),
+                  _detalheLinha(
+                    'Vencimento',
+                    item['vencimento']?.toString() ?? '-',
+                  ),
                   _detalheLinha('Status', item['status']?.toString() ?? '-'),
-                  _detalheLinha('Forma de recebimento', item['formaPagamento']?.toString() ?? '-'),
-                  _detalheLinha('Valor original', _formatarMoeda(_toDouble(item['valorOriginal']))),
-                  _detalheLinha('Valor confirmado', _formatarMoeda(_toDouble(item['valorConfirmado']))),
-                  _detalheLinha('Valor em aberto', _formatarMoeda(_toDouble(item['valorRestante']))),
-                  if ((item['observacoes']?.toString() ?? '').isNotEmpty) _detalheLinha('Observações', item['observacoes'].toString()),
+                  _detalheLinha(
+                    'Forma de recebimento',
+                    item['formaPagamento']?.toString() ?? '-',
+                  ),
+                  _detalheLinha(
+                    'Valor original',
+                    _formatarMoeda(_toDouble(item['valorOriginal'])),
+                  ),
+                  _detalheLinha(
+                    'Valor confirmado',
+                    _formatarMoeda(_toDouble(item['valorConfirmado'])),
+                  ),
+                  _detalheLinha(
+                    'Valor em aberto',
+                    _formatarMoeda(_toDouble(item['valorRestante'])),
+                  ),
+                  if ((item['observacoes']?.toString() ?? '').isNotEmpty)
+                    _detalheLinha(
+                      'Observações',
+                      item['observacoes'].toString(),
+                    ),
                   const SizedBox(height: 14),
-                  SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Fechar'))),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Fechar'),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1306,15 +1843,37 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(width: 130, child: Text(label, style: const TextStyle(color: _mutedTextColor, fontWeight: FontWeight.w800))),
-          Expanded(child: Text(value, style: const TextStyle(color: _titleTextColor, fontWeight: FontWeight.w800))),
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _mutedTextColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: _titleTextColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   double _somar(List<Map<String, dynamic>> itens, String tipo, String campo) {
-    return itens.where((item) => item['tipo'] == tipo).fold<double>(0, (soma, item) => soma + _toDouble(item[campo] ?? item['valor']));
+    return itens
+        .where((item) => item['tipo'] == tipo)
+        .fold<double>(
+          0,
+          (soma, item) => soma + _toDouble(item[campo] ?? item['valor']),
+        );
   }
 
   String _acaoLabel(String? acao) {
@@ -1373,7 +1932,9 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
       case 'DEBITO_AUTOMATICO':
         return 'Débito automático';
       default:
-        return formaPagamento?.trim().isNotEmpty == true ? formaPagamento!.trim() : 'Pix';
+        return formaPagamento?.trim().isNotEmpty == true
+            ? formaPagamento!.trim()
+            : 'Pix';
     }
   }
 
@@ -1397,7 +1958,8 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
   }
 
   String _empresaNome(dynamic empresa) {
-    if (empresa is Map<String, dynamic>) return empresa['nome']?.toString() ?? '';
+    if (empresa is Map<String, dynamic>)
+      return empresa['nome']?.toString() ?? '';
     return empresa?.toString() ?? '';
   }
 
@@ -1426,9 +1988,10 @@ class _AgendaFinanceiraMobileScreenState extends State<AgendaFinanceiraMobileScr
     if (value is num) return value.toDouble();
     if (value is String) {
       final texto = value.trim();
-      final normalizado = texto.contains(',') && texto.contains('.')
-          ? texto.replaceAll('.', '').replaceAll(',', '.')
-          : texto.replaceAll(',', '.');
+      final normalizado =
+          texto.contains(',') && texto.contains('.')
+              ? texto.replaceAll('.', '').replaceAll(',', '.')
+              : texto.replaceAll(',', '.');
       return double.tryParse(normalizado) ?? 0;
     }
     return 0;

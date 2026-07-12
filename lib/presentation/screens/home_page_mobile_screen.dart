@@ -17,7 +17,7 @@ import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
-import '../components/custom_nav_bar.dart';
+import '../components/nav_bar_mobile.dart';
 import '../components/cores_do_mobile.dart';
 import 'catalogo_disponivel_mobile_screen.dart';
 import 'catalogo_nao_disponivel_mobile_screen.dart';
@@ -186,7 +186,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
           child: _buildHomeContent(context),
         ),
         bottomNavigationBar:
-            kIsWeb ? null : const CustomBottomNavBar(initialIndex: 1),
+            kIsWeb ? null : const NavBarMobile(initialIndex: 1),
       ),
     );
   }

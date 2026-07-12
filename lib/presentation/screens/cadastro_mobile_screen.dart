@@ -2,7 +2,7 @@ import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-import '../components/custom_nav_bar.dart';
+import '../components/nav_bar_mobile.dart';
 import '../components/escolha_card_grid.dart';
 
 class CadastroMobileScreen extends StatefulWidget {
@@ -42,7 +42,7 @@ class _CadastroMobileScreenState extends State<CadastroMobileScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: kIsWeb ? null : CustomBottomNavBar(initialIndex: 2),
+      bottomNavigationBar: kIsWeb ? null : NavBarMobile(initialIndex: 2),
     );
   }
 }

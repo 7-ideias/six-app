@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:sixpos/presentation/components/dashboard_colaborador_web.dart';
 import 'package:sixpos/presentation/components/dashboard_gestao_web.dart';
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
@@ -67,7 +68,8 @@ enum ModuloCentralPDV {
 
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
-class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTickerProviderStateMixin {
+class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
+    with TickerProviderStateMixin {
   Map<String, dynamic>? _ultimoEventoWebSocket;
   final List<Map<String, dynamic>> _notificacoes = <Map<String, dynamic>>[];
   int _quantidadeNotificacoesNaoLidas = 0;
@@ -76,6 +78,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
   DateTime? _ultimaValidacaoBackend;
   Timer? _monitoramentoComunicacaoTimer;
   DateTime? _ultimaTentativaReconexao;
+
+  late final AnimationController _iaPulseController;
+  late final Animation<double> _iaPulseAnimation;
 
   late final AnimationController _bellAnimationController;
   late final Animation<double> _bellRotationAnimation;
@@ -191,6 +196,25 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
   @override
   void initState() {
     super.initState();
+
+    _iaPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
+    _iaPulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.22,
+    ).animate(
+      CurvedAnimation(
+        parent: _iaPulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _iaPulseController.repeat(reverse: true);
+
+
     _pdvTheme = PdvVisualThemeResolver.resolve(
       _themeResolver.paleta,
       tema: _themeResolver.tema,
@@ -236,6 +260,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
 
   @override
   void dispose() {
+    _iaPulseController.dispose();
     _themeResolver.removeListener(_onThemeChanged);
     onMensagemRecebida = null;
     onStompConectado = null;
@@ -442,6 +467,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        _buildIAAssistente(),
+        const SizedBox(width: 10),
         _buildIndicadorComunicacaoBackend(),
         const SizedBox(width: 10),
         _buildNotificationBellButton(),
@@ -449,6 +476,170 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
         _buildLogoutButton(),
       ],
     );
+  }
+
+  Widget _buildIAAssistente() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final String tooltip = l10n?.aiAssistantAsk ?? 'Perguntar à IA';
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: _abrirAssistenteIA,
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: _pdvTheme.backgroundSurface,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: _pdvTheme.cardBorder,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ScaleTransition(
+                  scale: _iaPulseAnimation,
+                  child: Icon(
+                    Icons.auto_awesome_outlined,
+                    size: 16,
+                    color: _pdvTheme.iconColor,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'IA',
+                  style: TextStyle(
+                    color: _pdvTheme.primaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirAssistenteIA() async {
+    final String barrierLabel =
+        MaterialLocalizations.of(context).modalBarrierDismissLabel;
+
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: barrierLabel,
+      barrierColor: Colors.black.withValues(alpha: 0.18),
+      transitionDuration: const Duration(milliseconds: 260),
+      pageBuilder: (
+        BuildContext dialogContext,
+        Animation<double> _,
+        Animation<double> __,
+      ) {
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 76, 12, 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: AiAssistantPanel(
+                  modulo: _moduloAtualParaIA(),
+                  telaAtual: _telaAtualParaIA(),
+                  onClose: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (
+        BuildContext _,
+        Animation<double> animation,
+        Animation<double> __,
+        Widget child,
+      ) {
+        final Animation<Offset> slideAnimation = Tween<Offset>(
+          begin: const Offset(0.08, 0),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          ),
+        );
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slideAnimation, child: child),
+        );
+      },
+    );
+  }
+
+  String _moduloAtualParaIA() {
+    switch (_moduloAtual) {
+      case ModuloCentralPDV.seletor:
+      case ModuloCentralPDV.cockpit:
+        return 'geral';
+      case ModuloCentralPDV.vendas:
+      case ModuloCentralPDV.orcamento:
+        return 'pdv';
+      case ModuloCentralPDV.recebimento:
+      case ModuloCentralPDV.agendaFinanceira:
+        return 'financeiro';
+      case ModuloCentralPDV.clientesList:
+        return 'clientes';
+      case ModuloCentralPDV.colaboradoresList:
+        return 'colaboradores';
+      case ModuloCentralPDV.operacoesCaixa:
+        return 'caixa';
+      case ModuloCentralPDV.ordemServico:
+      case ModuloCentralPDV.atendimentoTecnico:
+        return 'assistencia_tecnica';
+      case ModuloCentralPDV.categorias:
+        return 'produtos';
+      case ModuloCentralPDV.configuracoes:
+        return 'configuracoes';
+    }
+  }
+
+  String _telaAtualParaIA() {
+    switch (_moduloAtual) {
+      case ModuloCentralPDV.seletor:
+        return 'inicio_web';
+      case ModuloCentralPDV.cockpit:
+        return 'cockpit_web';
+      case ModuloCentralPDV.vendas:
+        return 'vendas_web';
+      case ModuloCentralPDV.recebimento:
+        return 'recebimento_web';
+      case ModuloCentralPDV.clientesList:
+        return 'clientes_lista_web';
+      case ModuloCentralPDV.colaboradoresList:
+        return 'colaboradores_lista_web';
+      case ModuloCentralPDV.orcamento:
+        return 'orcamento_web';
+      case ModuloCentralPDV.operacoesCaixa:
+        return 'operacoes_caixa_web';
+      case ModuloCentralPDV.ordemServico:
+        return 'ordem_servico_web';
+      case ModuloCentralPDV.agendaFinanceira:
+        return 'agenda_financeira_web';
+      case ModuloCentralPDV.atendimentoTecnico:
+        return 'atendimentos_tecnicos_web';
+      case ModuloCentralPDV.categorias:
+        return 'categorias_web';
+      case ModuloCentralPDV.configuracoes:
+        return 'configuracoes_web';
+    }
   }
 
   Widget _buildLogoutButton() {
@@ -1776,7 +1967,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb> with SingleTick
         primary: false,
         child: Column(
           children: <Widget>[
-            // _buildCardUltimoEvento(),
+            _buildCardUltimoEvento(),
             // const SizedBox(height: 24),
             DashboardGestaoWeb(),
             DashboardColaboradorWeb(),

@@ -14,7 +14,7 @@ class ColaboradorService {
       '${AppConfig.baseUrl}/private/api/colaborador/editar';
 
   final client = InterceptedClient.build(
-    interceptors: <InterceptorContract>[LoggingInterceptor()],
+    interceptors: <HttpInterceptor>[LoggingInterceptor()],
   );
 
   Future<ColaboradorCadastroResponse> cadastrarColaborador(

@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+
 import '../design_system/helpers/six_theme_resolver.dart';
 import '../design_system/themes/app_theme.dart';
+import '../design_system/themes/six_mobile_typography.dart';
 
 class ThemeProvider extends ChangeNotifier {
   ThemeProvider() {
     _loadTheme();
-    // Ouve o SixThemeResolver para propagar mudanças
     SixThemeResolver().addListener(notifyListeners);
   }
 
@@ -18,30 +20,32 @@ class ThemeProvider extends ChangeNotifier {
   ThemeMode get themeMode => SixThemeResolver().themeMode;
 
   ThemeData get lightTheme {
-    final resolver = SixThemeResolver();
-    return AppTheme.getThemeWithScheme(
+    final SixThemeResolver resolver = SixThemeResolver();
+    final ThemeData theme = AppTheme.getThemeWithScheme(
       resolver.getLightScheme(),
       isDark: false,
       visualDensity: resolver.visualDensity,
     );
+
+    return kIsWeb ? theme : SixMobileTypography.apply(theme);
   }
 
   ThemeData get darkTheme {
-    final resolver = SixThemeResolver();
-    return AppTheme.getThemeWithScheme(
+    final SixThemeResolver resolver = SixThemeResolver();
+    final ThemeData theme = AppTheme.getThemeWithScheme(
       resolver.getDarkScheme(),
       isDark: true,
       visualDensity: resolver.visualDensity,
     );
+
+    return kIsWeb ? theme : SixMobileTypography.apply(theme);
   }
 
   void toggleTheme(bool isDarkMode) async {
-    // Esta lógica pode precisar ser adaptada se quisermos salvar no backend via SixThemeResolver
-    // Por enquanto, apenas para compatibilidade
     notifyListeners();
   }
 
   Future<void> _loadTheme() async {
-    // Implementação futura: carregar do backend ou localmente via SixThemeResolver
+    // Implementação futura: carregar do backend ou localmente.
   }
 }

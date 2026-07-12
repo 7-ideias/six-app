@@ -5,8 +5,8 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/empresa_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
-import 'home_page_mobile_screen.dart';
 import 'login_mobile.dart';
+import 'mobile_main_shell.dart';
 
 class AuthGateMobile extends StatefulWidget {
   const AuthGateMobile({super.key});
@@ -66,7 +66,7 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   void _goToHome() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => const HomePageMobile(title: 'Início'),
+        builder: (_) => const MobileMainShell(initialIndex: 1),
       ),
     );
   }

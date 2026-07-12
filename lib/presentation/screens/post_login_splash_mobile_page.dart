@@ -8,8 +8,7 @@ import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/six_lottie_action_overlay.dart';
-import '../components/web_auth_logout_splash_scene.dart';
-import 'home_page_mobile_screen.dart';
+import 'mobile_main_shell.dart';
 
 class PostLoginSplashMobilePage extends StatefulWidget {
   const PostLoginSplashMobilePage({super.key});
@@ -40,7 +39,7 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(
-        builder: (_) => const HomePageMobile(title: 'Home'),
+        builder: (_) => const MobileMainShell(initialIndex: 1),
       ),
       (route) => false,
     );
@@ -84,7 +83,7 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
     return ValueListenableBuilder<int>(
       valueListenable:
           LoadingDoMobileComunicandoComBackendController.activeOperations,
-      child: Scaffold(body: Container() /*WebAuthLogoutSplashScene()*/),
+      child: const Scaffold(body: SizedBox.expand()),
       builder: (BuildContext context, int activeOperations, Widget? child) {
         return SixLottieActionOverlay(
           isLoading: activeOperations > 0,
