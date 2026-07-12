@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
@@ -27,13 +28,13 @@ class GestaoMobileScreen extends StatefulWidget {
 }
 
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -107,7 +108,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         elevation: 0,
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: SixMobilePalette.onPrimary,
         title: const Text(
           'Gestão',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
@@ -153,14 +154,17 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
+                  color: SixMobilePalette.notificationBadge,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(
+                    color: SixMobilePalette.onPrimary,
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   _badgeText(naoLidas),
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: SixMobilePalette.onPrimary,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                   ),
@@ -402,13 +406,18 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   Widget _buildSectionCarouselCard(_ManagementSection section, int index) {
     final bool isActive = index == _selectedSectionIndex;
     final Color iconBackground =
-        isActive ? const Color(0x1AFFFFFF) : const Color(0xFFEFF6FF);
-    final Color iconColor = isActive ? Colors.white : _accentColor;
-    final Color titleColor = isActive ? Colors.white : _titleTextColor;
+        isActive
+            ? const Color(0x1AFFFFFF)
+            : SixMobilePalette.softAccentSurface;
+    final Color iconColor =
+        isActive ? SixMobilePalette.onPrimary : _accentColor;
+    final Color titleColor =
+        isActive ? SixMobilePalette.onPrimary : _titleTextColor;
     final Color subtitleColor =
-        isActive ? const Color(0xFFD7E3F5) : _mutedTextColor;
+        isActive ? SixMobilePalette.heroSupportingText : _mutedTextColor;
     final BoxBorder border = Border.all(
-      color: isActive ? const Color(0x33FFFFFF) : const Color(0xFFE2E8F0),
+      color:
+          isActive ? const Color(0x33FFFFFF) : SixMobilePalette.border,
     );
 
     return Container(
@@ -428,7 +437,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         border: border,
         boxShadow: const <BoxShadow>[
           BoxShadow(
-            color: Color(0x140B1F3A),
+            color: SixMobilePalette.heroShadow,
             blurRadius: 18,
             offset: Offset(0, 10),
           ),
@@ -449,7 +458,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                     color:
                         isActive
                             ? const Color(0x33FFFFFF)
-                            : const Color(0xFFE2E8F0),
+                            : SixMobilePalette.border,
                   ),
                 ),
                 child: Icon(section.icon, color: iconColor, size: 22),
@@ -464,7 +473,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                   color:
                       isActive
                           ? const Color(0x17FFFFFF)
-                          : const Color(0xFFF1F5F9),
+                          : SixMobilePalette.softNeutralSurface,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -582,12 +591,12 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
+                    color: SixMobilePalette.border,
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(color: const Color(0xFFD4E0EE)),
                     boxShadow: const <BoxShadow>[
                       BoxShadow(
-                        color: Color(0x0F0B1F3A),
+                        color: SixMobilePalette.navigationShadow,
                         blurRadius: 10,
                         offset: Offset(0, 6),
                       ),
@@ -627,7 +636,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: SixMobilePalette.softAccentSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(section.icon, color: _accentColor, size: 18),
@@ -653,7 +662,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           decoration: BoxDecoration(
             color: _surfaceColor,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: SixMobilePalette.border),
             boxShadow: const <BoxShadow>[
               BoxShadow(
                 color: Color(0x0F000000),
@@ -731,7 +740,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 isLast
                     ? null
                     : const Border(
-                      bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                      bottom: BorderSide(color: SixMobilePalette.border),
                     ),
           ),
           child: Row(
@@ -740,7 +749,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: SixMobilePalette.softNeutralSurface,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(item.icon, color: _primaryColor, size: 21),
