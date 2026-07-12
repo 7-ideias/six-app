@@ -17,7 +17,7 @@ class NavBarMobile extends StatefulWidget {
 }
 
 class _NavBarMobileState extends State<NavBarMobile> {
-  static const Duration _itemAnimationDuration = Duration(milliseconds: 240);
+  static const Duration _itemAnimationDuration = Duration(milliseconds: 220);
   static const Duration _pageTransitionDuration = Duration(milliseconds: 220);
 
   late int _selectedIndex;
@@ -105,8 +105,8 @@ class _NavBarMobileState extends State<NavBarMobile> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
-              height: 70,
-              padding: const EdgeInsets.all(7),
+              height: 68,
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: SixMobilePalette.surface.withOpacity(0.94),
                 borderRadius: BorderRadius.circular(26),
@@ -159,18 +159,18 @@ class _NavBarMobileState extends State<NavBarMobile> {
           selected: isActive,
           label: label,
           child: InkWell(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(19),
             onTap: () => _onNavItemTapped(index),
             child: AnimatedContainer(
               duration: _itemAnimationDuration,
               curve: Curves.easeOutCubic,
-              height: 54,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: isActive
                     ? SixMobilePalette.softAccentSurface
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(19),
                 border: Border.all(
                   color: isActive
                       ? SixMobilePalette.activeBorder
@@ -184,37 +184,13 @@ class _NavBarMobileState extends State<NavBarMobile> {
                   AnimatedScale(
                     duration: _itemAnimationDuration,
                     curve: isActive ? Curves.easeOutBack : Curves.easeOutCubic,
-                    scale: isActive ? 1.12 : 1,
-                    child: AnimatedContainer(
-                      duration: _itemAnimationDuration,
-                      curve: Curves.easeOutCubic,
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: isActive
-                            ? const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: <Color>[
-                                  SixMobilePalette.secondary,
-                                  SixMobilePalette.accent,
-                                ],
-                              )
-                            : null,
-                        boxShadow: isActive
-                            ? const <BoxShadow>[
-                                BoxShadow(
-                                  color: SixMobilePalette.heroShadow,
-                                  blurRadius: 9,
-                                  offset: Offset(0, 4),
-                                ),
-                              ]
-                            : const <BoxShadow>[],
-                      ),
+                    scale: isActive ? 1.1 : 1,
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
                       child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        switchInCurve: Curves.easeOutBack,
+                        duration: _itemAnimationDuration,
+                        switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeInCubic,
                         transitionBuilder: (
                           Widget child,
@@ -223,41 +199,74 @@ class _NavBarMobileState extends State<NavBarMobile> {
                           return FadeTransition(
                             opacity: animation,
                             child: ScaleTransition(
-                              scale: Tween<double>(begin: 0.72, end: 1).animate(
+                              scale: Tween<double>(begin: 0.82, end: 1).animate(
                                 animation,
                               ),
                               child: child,
                             ),
                           );
                         },
-                        child: Icon(
-                          isActive ? activeIcon : icon,
-                          key: ValueKey<bool>(isActive),
-                          size: 19,
-                          color: isActive
-                              ? SixMobilePalette.onPrimary
-                              : SixMobilePalette.mutedText,
-                        ),
+                        child: isActive
+                            ? DecoratedBox(
+                                key: ValueKey<String>('active-$index'),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: <Color>[
+                                      SixMobilePalette.secondary,
+                                      SixMobilePalette.accent,
+                                    ],
+                                  ),
+                                  boxShadow: <BoxShadow>[
+                                    BoxShadow(
+                                      color: SixMobilePalette.heroShadow,
+                                      blurRadius: 8,
+                                      offset: Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  activeIcon,
+                                  size: 18,
+                                  color: SixMobilePalette.onPrimary,
+                                ),
+                              )
+                            : SizedBox.expand(
+                                key: ValueKey<String>('inactive-$index'),
+                                child: Icon(
+                                  icon,
+                                  size: 19,
+                                  color: SixMobilePalette.mutedText,
+                                ),
+                              ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  AnimatedDefaultTextStyle(
-                    duration: _itemAnimationDuration,
-                    curve: Curves.easeOutCubic,
-                    style: TextStyle(
-                      color: isActive
-                          ? SixMobilePalette.primary
-                          : SixMobilePalette.mutedText,
-                      fontSize: 10.5,
-                      fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                      letterSpacing: -0.1,
-                      height: 1,
-                    ),
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 2),
+                  SizedBox(
+                    height: 12,
+                    child: Center(
+                      child: AnimatedDefaultTextStyle(
+                        duration: _itemAnimationDuration,
+                        curve: Curves.easeOutCubic,
+                        style: TextStyle(
+                          color: isActive
+                              ? SixMobilePalette.primary
+                              : SixMobilePalette.mutedText,
+                          fontSize: 10,
+                          fontWeight:
+                              isActive ? FontWeight.w800 : FontWeight.w600,
+                          letterSpacing: -0.1,
+                          height: 1,
+                        ),
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                   ),
                 ],
