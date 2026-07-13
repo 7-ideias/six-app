@@ -82,21 +82,26 @@ class ManagementParallaxCard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = constraints.maxWidth;
-        final double overflowWidth = width * imageOverflowFraction;
-        final double imageWidth = width + overflowWidth;
-        final double safeShift = overflowWidth / 2;
-        final double desiredShift = -effectiveDelta * width * parallaxIntensity;
-        final double imageShift =
-            desiredShift.clamp(-safeShift, safeShift).toDouble();
+        final double cardWidth = constraints.maxWidth;
+        final double parallaxExtent =
+            (cardWidth * imageOverflowFraction / 2)
+                .clamp(24.0, 120.0)
+                .toDouble();
+        final double parallaxOffset =
+            -effectiveDelta * cardWidth * parallaxIntensity;
+        final double safeOffset =
+            parallaxOffset.clamp(-parallaxExtent, parallaxExtent).toDouble();
 
-        return ClipRect(
-          child: Center(
-            child: Transform.translate(
-              offset: Offset(imageShift, 0),
-              child: SizedBox(
-                width: imageWidth,
-                height: constraints.maxHeight,
+        return Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            Positioned(
+              left: -parallaxExtent,
+              right: -parallaxExtent,
+              top: 0,
+              bottom: 0,
+              child: Transform.translate(
+                offset: Offset(safeOffset, 0),
                 child: Image.asset(
                   data.imageAssetPath,
                   fit: BoxFit.cover,
@@ -118,7 +123,7 @@ class ManagementParallaxCard extends StatelessWidget {
                 ),
               ),
             ),
-          ),
+          ],
         );
       },
     );
