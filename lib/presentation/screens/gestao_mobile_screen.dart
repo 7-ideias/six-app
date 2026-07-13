@@ -31,7 +31,24 @@ class GestaoMobileScreen extends StatefulWidget {
 }
 
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
-  static const double _sectionCarouselViewportFraction = 0.92;
+  static const double _sectionHorizontalPadding = 16;
+  static const double _sectionCarouselViewportFraction = 0.94;
+  static const double _sectionCarouselMinHeight = 320;
+  static const double _sectionCarouselMaxHeight = 420;
+  static const double _sectionCarouselHeightFactor = 0.48;
+  static const double _sectionCarouselParallaxIntensity = 0.26;
+  static const double _sectionCarouselImageOverflowFraction = 0.52;
+  static const double _sectionCarouselSideCardScale = 1;
+  static const double _sectionCarouselPageSpacing = 0;
+  static const double _sectionContentBottomPadding = 24;
+  static const double _sectionSpacingAfterCarousel = 12;
+  static const double _sectionSpacingAfterIndicators = 20;
+  static const Duration _sectionDetailsTransitionDuration = Duration(
+    milliseconds: 420,
+  );
+  static const Duration _sectionTransitionDuration = Duration(
+    milliseconds: 360,
+  );
   static const String _managementParallaxAssetBasePath =
       'assets/images/management/parallax/';
   static const Color _backgroundColor = SixMobilePalette.background;
@@ -187,37 +204,67 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
     return SafeArea(
       top: false,
-      child: ListView(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
-        children: <Widget>[
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 130),
-            child: _buildSectionCarousel(sections, reduceMotion: reduceMotion),
-          ),
-          const SizedBox(height: 12),
-          _buildCarouselIndicators(sections),
-          const SizedBox(height: 18),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 190),
-            child: _buildSmoothSectionTransition(
-              transitionKey: 'quick-${selectedSection.title}',
-              child: _buildSectionQuickActions(selectedSection),
+      left: false,
+      right: false,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double viewportHeight =
+              constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : MediaQuery.sizeOf(context).height;
+          final double availableHeight =
+              (viewportHeight - topInset)
+                  .clamp(0.0, double.infinity)
+                  .toDouble();
+          final double carouselHeight =
+              (availableHeight * _sectionCarouselHeightFactor)
+                  .clamp(_sectionCarouselMinHeight, _sectionCarouselMaxHeight)
+                  .toDouble();
+
+          return ListView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              0,
+              topInset,
+              0,
+              _sectionContentBottomPadding,
             ),
-          ),
-          const SizedBox(height: 18),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 250),
-            child: _buildSmoothSectionTransition(
-              transitionKey: 'details-${selectedSection.title}',
-              horizontalOffset: 0,
-              verticalOffset: 0.035,
-              duration: const Duration(milliseconds: 420),
-              child: _buildSelectedSectionDetails(selectedSection),
-            ),
-          ),
-        ],
+            children: <Widget>[
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 130),
+                child: _buildSectionCarousel(
+                  sections,
+                  reduceMotion: reduceMotion,
+                  height: carouselHeight,
+                ),
+              ),
+              const SizedBox(height: _sectionSpacingAfterCarousel),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _sectionHorizontalPadding,
+                ),
+                child: _buildCarouselIndicators(sections),
+              ),
+              const SizedBox(height: _sectionSpacingAfterIndicators),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _sectionHorizontalPadding,
+                ),
+                child: SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 250),
+                  child: _buildSmoothSectionTransition(
+                    transitionKey: 'details-${selectedSection.title}',
+                    horizontalOffset: 0,
+                    verticalOffset: 0.035,
+                    duration: _sectionDetailsTransitionDuration,
+                    child: _buildSelectedSectionDetails(selectedSection),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -367,12 +414,20 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   Widget _buildSectionCarousel(
     List<_ManagementSection> sections, {
     required bool reduceMotion,
+    required double height,
   }) {
     return ManagementParallaxCarousel(
       controller: _sectionCarouselController,
       cards: _managementCarouselCards(sections),
       selectedIndex: _selectedSectionIndex,
+      height: height,
       viewportFraction: _sectionCarouselViewportFraction,
+      sideCardScale: _sectionCarouselSideCardScale,
+      parallaxIntensity: _sectionCarouselParallaxIntensity,
+      imageOverflowFraction: _sectionCarouselImageOverflowFraction,
+      pageSpacing: _sectionCarouselPageSpacing,
+      padEnds: false,
+      clipBehavior: Clip.none,
       reduceMotion: reduceMotion,
       onPageChanged: (int index) {
         if (!mounted) return;
@@ -446,7 +501,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             id: id,
             title: section.title,
             subtitle: section.subtitle,
-            badgeText: '${section.items.length} atalhos',
             icon: section.icon,
             imageAssetPath: _carouselImagePathForCard(id),
             fallbackGradient: _carouselFallbackGradientForCard(id),
@@ -512,89 +566,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           end: Alignment.bottomRight,
         );
     }
-  }
-
-  Widget _buildSectionQuickActions(_ManagementSection section) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const Text(
-          'Acesso rápido',
-          style: TextStyle(
-            color: _titleTextColor,
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.1,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children:
-                section.items.map((_ManagementItem item) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 14),
-                    child: _buildQuickActionButton(item),
-                  );
-                }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActionButton(_ManagementItem item) {
-    return SizedBox(
-      width: 78,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: item.onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: SixMobilePalette.border,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: const Color(0xFFD4E0EE)),
-                    boxShadow: const <BoxShadow>[
-                      BoxShadow(
-                        color: SixMobilePalette.navigationShadow,
-                        blurRadius: 10,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Icon(item.icon, color: _primaryColor, size: 25),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  item.compactTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: _titleTextColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    height: 1.08,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildSelectedSectionDetails(_ManagementSection section) {
@@ -665,7 +636,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     required Widget child,
     double horizontalOffset = 0.03,
     double verticalOffset = 0.025,
-    Duration duration = const Duration(milliseconds: 360),
+    Duration duration = _sectionTransitionDuration,
   }) {
     return AnimatedSwitcher(
       duration: duration,
@@ -812,27 +783,4 @@ class _ManagementItem {
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
-
-  String get compactTitle => _compactTitle(title);
-
-  String _compactTitle(String value) {
-    switch (value) {
-      case 'Produtos e Serviços':
-        return 'Produtos';
-      case 'Contas a receber':
-        return 'Receber';
-      case 'Contas a pagar':
-        return 'Pagar';
-      case 'Agenda financeira':
-        return 'Agenda';
-      case 'Formas de recebimento':
-        return 'Receber';
-      case 'Usuários e permissões':
-        return 'Usuários';
-      case 'Modelos de PDF':
-        return 'PDF';
-      default:
-        return value;
-    }
-  }
 }
