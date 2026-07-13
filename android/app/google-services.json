@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "841074493827",
+    "project_id": "sixpos-cd87e",
+    "storage_bucket": "sixpos-cd87e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841074493827:android:15e3b2e7d7b5c18cb98eb6",
+        "android_client_info": {
+          "package_name": "br.com.seteideias.appplanilha"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8Hq0Livcf2DyDzbM-mzauwxxQRmkzVB0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

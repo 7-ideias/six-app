@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -6,8 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/presentation/components/mobile/management/management_parallax_card_data.dart';
+import 'package:sixpos/presentation/components/mobile/management/management_parallax_carousel.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
@@ -28,6 +31,26 @@ class GestaoMobileScreen extends StatefulWidget {
 }
 
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
+  static const double _sectionHorizontalPadding = 16;
+  static const double _sectionCarouselViewportFraction = 0.94;
+  static const double _sectionCarouselMinHeight = 320;
+  static const double _sectionCarouselMaxHeight = 420;
+  static const double _sectionCarouselHeightFactor = 0.48;
+  static const double _sectionCarouselParallaxIntensity = 0.26;
+  static const double _sectionCarouselImageOverflowFraction = 0.52;
+  static const double _sectionCarouselSideCardScale = 1;
+  static const double _sectionCarouselPageSpacing = 0;
+  static const double _sectionContentBottomPadding = 24;
+  static const double _sectionSpacingAfterCarousel = 12;
+  static const double _sectionSpacingAfterIndicators = 20;
+  static const Duration _sectionDetailsTransitionDuration = Duration(
+    milliseconds: 420,
+  );
+  static const Duration _sectionTransitionDuration = Duration(
+    milliseconds: 360,
+  );
+  static const String _managementParallaxAssetBasePath =
+      'assets/images/management/parallax/';
   static const Color _backgroundColor = SixMobilePalette.background;
   static const Color _primaryColor = SixMobilePalette.primary;
   static const Color _secondaryColor = SixMobilePalette.secondary;
@@ -46,7 +69,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   @override
   void initState() {
     super.initState();
-    _sectionCarouselController = PageController(viewportFraction: 0.92);
+    _sectionCarouselController = PageController(
+      viewportFraction: _sectionCarouselViewportFraction,
+    );
     _totalNotificacoesConhecidas = _notificacaoService.total;
     _notificacaoService.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -102,35 +127,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SixMobilePageShell(
+      title: 'Gestão',
       backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: SixMobilePalette.onPrimary,
-        title: const Text(
-          'Gestão',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Notificações',
-            icon: _buildNotificationIcon(),
-            onPressed: () => _openNotifications(context),
-          ),
-        ],
-      ),
+      primaryColor: _primaryColor,
+      secondaryColor: _secondaryColor,
+      accentColor: _accentColor,
       drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
-      body: SixMobileAnimatedGradientBackground(
-        baseColor: _backgroundColor,
-        primaryColor: _primaryColor,
-        secondaryColor: _secondaryColor,
-        accentColor: _accentColor,
-        child: _buildContent(context),
-      ),
-      bottomNavigationBar:
-          kIsWeb ? null : const NavBarMobile(initialIndex: 0),
+      actions: <Widget>[
+        IconButton(
+          tooltip: 'Notificações',
+          icon: _buildNotificationIcon(),
+          onPressed: () => _openNotifications(context),
+        ),
+      ],
+      bodyBuilder: _buildContent,
+      bottomNavigationBar: kIsWeb ? null : const NavBarMobile(initialIndex: 0),
     );
   }
 
@@ -176,8 +188,14 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(
+    BuildContext context,
+    ScrollController scrollController,
+    double topInset,
+  ) {
     final List<_ManagementSection> sections = _managementSections(context);
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final int selectedIndex =
         _selectedSectionIndex >= sections.length
             ? sections.length - 1
@@ -185,36 +203,68 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final _ManagementSection selectedSection = sections[selectedIndex];
 
     return SafeArea(
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-        children: <Widget>[
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 130),
-            child: _buildSectionCarousel(sections),
-          ),
-          const SizedBox(height: 12),
-          _buildCarouselIndicators(sections),
-          const SizedBox(height: 18),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 190),
-            child: _buildSmoothSectionTransition(
-              transitionKey: 'quick-${selectedSection.title}',
-              child: _buildSectionQuickActions(selectedSection),
+      top: false,
+      left: false,
+      right: false,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double viewportHeight =
+              constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : MediaQuery.sizeOf(context).height;
+          final double availableHeight =
+              (viewportHeight - topInset)
+                  .clamp(0.0, double.infinity)
+                  .toDouble();
+          final double carouselHeight =
+              (availableHeight * _sectionCarouselHeightFactor)
+                  .clamp(_sectionCarouselMinHeight, _sectionCarouselMaxHeight)
+                  .toDouble();
+
+          return ListView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              0,
+              topInset,
+              0,
+              _sectionContentBottomPadding,
             ),
-          ),
-          const SizedBox(height: 18),
-          SixStaggeredEntry(
-            delay: const Duration(milliseconds: 250),
-            child: _buildSmoothSectionTransition(
-              transitionKey: 'details-${selectedSection.title}',
-              horizontalOffset: 0,
-              verticalOffset: 0.035,
-              duration: const Duration(milliseconds: 420),
-              child: _buildSelectedSectionDetails(selectedSection),
-            ),
-          ),
-        ],
+            children: <Widget>[
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 130),
+                child: _buildSectionCarousel(
+                  sections,
+                  reduceMotion: reduceMotion,
+                  height: carouselHeight,
+                ),
+              ),
+              const SizedBox(height: _sectionSpacingAfterCarousel),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _sectionHorizontalPadding,
+                ),
+                child: _buildCarouselIndicators(sections),
+              ),
+              const SizedBox(height: _sectionSpacingAfterIndicators),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _sectionHorizontalPadding,
+                ),
+                child: SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 250),
+                  child: _buildSmoothSectionTransition(
+                    transitionKey: 'details-${selectedSection.title}',
+                    horizontalOffset: 0,
+                    verticalOffset: 0.035,
+                    duration: _sectionDetailsTransitionDuration,
+                    child: _buildSelectedSectionDetails(selectedSection),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -361,269 +411,161 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     ];
   }
 
-  Widget _buildSectionCarousel(List<_ManagementSection> sections) {
-    return SizedBox(
-      height: 282,
-      child: PageView.builder(
-        controller: _sectionCarouselController,
-        clipBehavior: Clip.none,
-        physics: const BouncingScrollPhysics(parent: PageScrollPhysics()),
-        itemCount: sections.length,
-        onPageChanged: (int index) {
-          setState(() => _selectedSectionIndex = index);
-        },
-        itemBuilder: (BuildContext context, int index) {
-          return AnimatedBuilder(
-            animation: _sectionCarouselController,
-            builder: (BuildContext context, Widget? child) {
-              double currentPage = _selectedSectionIndex.toDouble();
-
-              if (_sectionCarouselController.hasClients &&
-                  _sectionCarouselController.position.haveDimensions) {
-                currentPage =
-                    _sectionCarouselController.page ??
-                    _selectedSectionIndex.toDouble();
-              }
-
-              final double distance = (currentPage - index).abs().clamp(
-                0.0,
-                1.0,
-              );
-              final double scale = 1 - (distance * 0.03);
-
-              return Transform.translate(
-                offset: Offset(0, distance * 6),
-                child: Transform.scale(scale: scale, child: child),
-              );
-            },
-            child: _buildSectionCarouselCard(sections[index], index),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSectionCarouselCard(_ManagementSection section, int index) {
-    final bool isActive = index == _selectedSectionIndex;
-    final Color iconBackground =
-        isActive
-            ? const Color(0x1AFFFFFF)
-            : SixMobilePalette.softAccentSurface;
-    final Color iconColor =
-        isActive ? SixMobilePalette.onPrimary : _accentColor;
-    final Color titleColor =
-        isActive ? SixMobilePalette.onPrimary : _titleTextColor;
-    final Color subtitleColor =
-        isActive ? SixMobilePalette.heroSupportingText : _mutedTextColor;
-    final BoxBorder border = Border.all(
-      color:
-          isActive ? const Color(0x33FFFFFF) : SixMobilePalette.border,
-    );
-
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isActive ? null : _surfaceColor,
-        gradient:
-            isActive
-                ? const LinearGradient(
-                  colors: <Color>[_primaryColor, _secondaryColor],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-                : null,
-        borderRadius: BorderRadius.circular(26),
-        border: border,
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: iconBackground,
-                  borderRadius: BorderRadius.circular(17),
-                  border: Border.all(
-                    color:
-                        isActive
-                            ? const Color(0x33FFFFFF)
-                            : SixMobilePalette.border,
-                  ),
-                ),
-                child: Icon(section.icon, color: iconColor, size: 22),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      isActive
-                          ? const Color(0x17FFFFFF)
-                          : SixMobilePalette.softNeutralSurface,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '${section.items.length} atalhos',
-                  style: TextStyle(
-                    color: subtitleColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            section.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: titleColor,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.1,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            section.subtitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: subtitleColor, fontSize: 12.5, height: 1.3),
-          ),
-        ],
-      ),
+  Widget _buildSectionCarousel(
+    List<_ManagementSection> sections, {
+    required bool reduceMotion,
+    required double height,
+  }) {
+    return ManagementParallaxCarousel(
+      controller: _sectionCarouselController,
+      cards: _managementCarouselCards(sections),
+      selectedIndex: _selectedSectionIndex,
+      height: height,
+      viewportFraction: _sectionCarouselViewportFraction,
+      sideCardScale: _sectionCarouselSideCardScale,
+      parallaxIntensity: _sectionCarouselParallaxIntensity,
+      imageOverflowFraction: _sectionCarouselImageOverflowFraction,
+      pageSpacing: _sectionCarouselPageSpacing,
+      padEnds: false,
+      clipBehavior: Clip.none,
+      reduceMotion: reduceMotion,
+      onPageChanged: (int index) {
+        if (!mounted) return;
+        setState(() => _selectedSectionIndex = index);
+      },
     );
   }
 
   Widget _buildCarouselIndicators(List<_ManagementSection> sections) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children:
-          sections.asMap().entries.map((
-            MapEntry<int, _ManagementSection> entry,
-          ) {
-            final bool isActive = entry.key == _selectedSectionIndex;
+    return AnimatedBuilder(
+      animation: _sectionCarouselController,
+      builder: (BuildContext context, Widget? child) {
+        double currentPage = _selectedSectionIndex.toDouble();
 
-            return GestureDetector(
-              onTap: () {
-                _sectionCarouselController.animateToPage(
-                  entry.key,
-                  duration: const Duration(milliseconds: 260),
-                  curve: Curves.easeOutCubic,
+        if (_sectionCarouselController.hasClients &&
+            _sectionCarouselController.position.haveDimensions) {
+          currentPage =
+              _sectionCarouselController.page ??
+              _selectedSectionIndex.toDouble();
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children:
+              sections.asMap().entries.map((
+                MapEntry<int, _ManagementSection> entry,
+              ) {
+                final double distance =
+                    (currentPage - entry.key).abs().clamp(0.0, 1.0).toDouble();
+                final double activeStrength =
+                    1 - Curves.easeOutCubic.transform(distance);
+                final double width = lerpDouble(7, 18, activeStrength)!;
+                final Color color =
+                    Color.lerp(
+                      const Color(0xFFCBD5E1),
+                      _accentColor,
+                      activeStrength,
+                    )!;
+
+                return GestureDetector(
+                  onTap: () {
+                    _sectionCarouselController.animateToPage(
+                      entry.key,
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: width,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
                 );
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isActive ? 18 : 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: isActive ? _accentColor : const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            );
-          }).toList(),
+              }).toList(),
+        );
+      },
     );
   }
 
-  Widget _buildSectionQuickActions(_ManagementSection section) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const Text(
-          'Acesso rápido',
-          style: TextStyle(
-            color: _titleTextColor,
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.1,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children:
-                section.items.map((_ManagementItem item) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 14),
-                    child: _buildQuickActionButton(item),
-                  );
-                }).toList(),
-          ),
-        ),
-      ],
-    );
+  List<ManagementParallaxCardData> _managementCarouselCards(
+    List<_ManagementSection> sections,
+  ) {
+    return sections
+        .map((section) {
+          final String id = _carouselCardId(section.title);
+          return ManagementParallaxCardData(
+            id: id,
+            title: section.title,
+            subtitle: section.subtitle,
+            icon: section.icon,
+            imageAssetPath: _carouselImagePathForCard(id),
+            fallbackGradient: _carouselFallbackGradientForCard(id),
+          );
+        })
+        .toList(growable: false);
   }
 
-  Widget _buildQuickActionButton(_ManagementItem item) {
-    return SizedBox(
-      width: 78,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: item.onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: SixMobilePalette.border,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: const Color(0xFFD4E0EE)),
-                    boxShadow: const <BoxShadow>[
-                      BoxShadow(
-                        color: SixMobilePalette.navigationShadow,
-                        blurRadius: 10,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Icon(item.icon, color: _primaryColor, size: 25),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  item.compactTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: _titleTextColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    height: 1.08,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  String _carouselCardId(String title) {
+    switch (title) {
+      case 'Catálogo':
+        return 'catalog';
+      case 'Pessoas':
+        return 'people';
+      case 'Financeiro':
+        return 'finance';
+      case 'Configurações':
+        return 'settings';
+      default:
+        return title.toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  String _carouselImagePathForCard(String id) {
+    switch (id) {
+      case 'catalog':
+        return '${_managementParallaxAssetBasePath}management_catalog.webp';
+      case 'people':
+        return '${_managementParallaxAssetBasePath}management_people.webp';
+      case 'finance':
+        return '${_managementParallaxAssetBasePath}management_finance.webp';
+      case 'settings':
+      default:
+        return '${_managementParallaxAssetBasePath}management_settings.webp';
+    }
+  }
+
+  Gradient _carouselFallbackGradientForCard(String id) {
+    switch (id) {
+      case 'catalog':
+        return const LinearGradient(
+          colors: <Color>[Color(0xFF0E7490), Color(0xFF1D4ED8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case 'people':
+        return const LinearGradient(
+          colors: <Color>[Color(0xFF0F766E), Color(0xFF2563EB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case 'finance':
+        return const LinearGradient(
+          colors: <Color>[Color(0xFF166534), Color(0xFF0C4A6E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case 'settings':
+      default:
+        return const LinearGradient(
+          colors: <Color>[Color(0xFF1E293B), Color(0xFF334155)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+    }
   }
 
   Widget _buildSelectedSectionDetails(_ManagementSection section) {
@@ -694,7 +636,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     required Widget child,
     double horizontalOffset = 0.03,
     double verticalOffset = 0.025,
-    Duration duration = const Duration(milliseconds: 360),
+    Duration duration = _sectionTransitionDuration,
   }) {
     return AnimatedSwitcher(
       duration: duration,
@@ -841,27 +783,4 @@ class _ManagementItem {
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
-
-  String get compactTitle => _compactTitle(title);
-
-  String _compactTitle(String value) {
-    switch (value) {
-      case 'Produtos e Serviços':
-        return 'Produtos';
-      case 'Contas a receber':
-        return 'Receber';
-      case 'Contas a pagar':
-        return 'Pagar';
-      case 'Agenda financeira':
-        return 'Agenda';
-      case 'Formas de recebimento':
-        return 'Receber';
-      case 'Usuários e permissões':
-        return 'Usuários';
-      case 'Modelos de PDF':
-        return 'PDF';
-      default:
-        return value;
-    }
-  }
 }
