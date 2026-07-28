@@ -984,9 +984,9 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
             const SizedBox(height: 12),
             Divider(color: _pdvTheme.cardBorder, height: 1),
             const SizedBox(height: 12),
-            _buildResumoLinhaValor(
+            _buildResumoLinhaValorAnimado(
               l10n?.pdvWebSubtotalLabel ?? 'Subtotal',
-              _formatCurrency(total),
+              total,
             ),
             const SizedBox(height: 10),
             Container(
@@ -1007,8 +1007,14 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    _formatCurrency(total),
+                  _PdvAnimatedCurrencyText(
+                    value: total,
+                    formatter: _formatCurrency,
+                    duration:
+                        _prefereReducaoDeMovimento
+                            ? Duration.zero
+                            : const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1106,13 +1112,13 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
           const SizedBox(height: 4),
           Divider(color: _pdvTheme.cardBorder, height: 1),
           const SizedBox(height: 8),
-          _buildResumoLinhaValor(
+          _buildResumoLinhaValorAnimado(
             l10n?.pdvWebReceivedTotalLabel ?? 'Total recebido',
-            _formatCurrency(_totalPagamentoConfirmado()),
+            _totalPagamentoConfirmado(),
           ),
-          _buildResumoLinhaValor(
+          _buildResumoLinhaValorAnimado(
             l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante',
-            _formatCurrency(_restantePagamentoConfirmado()),
+            _restantePagamentoConfirmado(),
           ),
           if (_pagamentoConfirmadoPrecisaRevisao()) ...<Widget>[
             const SizedBox(height: 4),
@@ -1210,6 +1216,35 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
     );
   }
 
+  Widget _buildResumoLinhaValorAnimado(String label, double value) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: _pdvTheme.secondaryText,
+            ),
+          ),
+        ),
+        _PdvAnimatedCurrencyText(
+          value: value,
+          formatter: _formatCurrency,
+          duration:
+              _prefereReducaoDeMovimento
+                  ? Duration.zero
+                  : const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color: _pdvTheme.primaryText,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildBarraFechamento(double total) {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final bool temItens = _vendaPossuiItens;
@@ -1255,8 +1290,14 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
-                  Text(
-                    _formatCurrency(total),
+                  _PdvAnimatedCurrencyText(
+                    value: total,
+                    formatter: _formatCurrency,
+                    duration:
+                        _prefereReducaoDeMovimento
+                            ? Duration.zero
+                            : const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
@@ -1412,6 +1453,96 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
           },
         ),
       ),
+    );
+  }
+}
+
+class _PdvAnimatedCurrencyText extends StatefulWidget {
+  const _PdvAnimatedCurrencyText({
+    required this.value,
+    required this.style,
+    required this.formatter,
+    required this.duration,
+    required this.curve,
+    this.maxLines,
+    this.overflow,
+    this.textAlign,
+  });
+
+  final double value;
+  final TextStyle style;
+  final String Function(double) formatter;
+  final Duration duration;
+  final Curve curve;
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final TextAlign? textAlign;
+
+  @override
+  State<_PdvAnimatedCurrencyText> createState() =>
+      _PdvAnimatedCurrencyTextState();
+}
+
+class _PdvAnimatedCurrencyTextState extends State<_PdvAnimatedCurrencyText> {
+  late double _currentVisualValue;
+  late double _animationStartValue;
+  late double _targetValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentVisualValue = widget.value;
+    _animationStartValue = widget.value;
+    _targetValue = widget.value;
+  }
+
+  @override
+  void didUpdateWidget(covariant _PdvAnimatedCurrencyText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value == _targetValue) {
+      return;
+    }
+
+    setState(() {
+      _animationStartValue = _currentVisualValue;
+      _targetValue = widget.value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Duration duration = widget.duration;
+
+    if (duration == Duration.zero) {
+      _currentVisualValue = widget.value;
+      _animationStartValue = widget.value;
+      _targetValue = widget.value;
+      return Text(
+        widget.formatter(widget.value),
+        maxLines: widget.maxLines,
+        overflow: widget.overflow,
+        textAlign: widget.textAlign,
+        style: widget.style,
+      );
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(
+        begin: _animationStartValue,
+        end: _targetValue,
+      ),
+      duration: duration,
+      curve: widget.curve,
+      builder: (BuildContext context, double animatedValue, Widget? child) {
+        _currentVisualValue = animatedValue;
+        return Text(
+          widget.formatter(animatedValue),
+          maxLines: widget.maxLines,
+          overflow: widget.overflow,
+          textAlign: widget.textAlign,
+          style: widget.style,
+        );
+      },
     );
   }
 }
