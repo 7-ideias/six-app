@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 
 import '../../core/services/notificacao_service.dart';
 
@@ -6,13 +8,12 @@ class NotificacoesMobileScreen extends StatefulWidget {
   const NotificacoesMobileScreen({super.key});
 
   @override
-  State<NotificacoesMobileScreen> createState() => _NotificacoesMobileScreenState();
+  State<NotificacoesMobileScreen> createState() =>
+      _NotificacoesMobileScreenState();
 }
 
 class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
   static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
   static const Color _accentColor = Color(0xFF2563EB);
   static const Color _surfaceColor = Colors.white;
   static const Color _mutedTextColor = Color(0xFF64748B);
@@ -48,179 +49,46 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
     final List<SixNotificationEvent> events = _notificacaoService.notificacoes;
     final Map<String, List<SixNotificationEvent>> groups = _groupEvents(events);
 
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Notificações',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
+    return SixMobilePageShell(
+      title: 'Notificações',
+      backgroundColor: SixMobilePalette.background,
+      primaryColor: SixMobilePalette.primary,
+      secondaryColor: SixMobilePalette.secondary,
+      accentColor: SixMobilePalette.accent,
+      enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 4,
+      scrollEffectOffset: 24,
+      scrolledSurfaceOpacity: 0.66,
+      actions: <Widget>[
+        if (events.isNotEmpty)
+          IconButton(
+            tooltip: 'Limpar notificações',
+            icon: const Icon(Icons.delete_outline_rounded),
+            onPressed: _notificacaoService.limpar,
           ),
-        ),
-        actions: [
-          if (events.isNotEmpty)
-            IconButton(
-              tooltip: 'Limpar notificações',
-              icon: const Icon(Icons.delete_outline_rounded),
-              onPressed: _notificacaoService.limpar,
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 18),
-            _buildSummaryCards(),
-            const SizedBox(height: 24),
-            if (events.isEmpty)
-              _buildEmptyState()
-            else
-              ...groups.entries.map(
-                (entry) => _buildGroup(context, entry.key, entry.value),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x260B1F3A),
-            blurRadius: 22,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: const Row(
-        children: [
-          _HeaderIcon(),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Central de mensagens',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+      ],
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
+          child: ListView(
+            controller: scrollController,
+            padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+            children: [
+              if (events.isEmpty)
+                _buildEmptyState()
+              else
+                ...groups.entries.map(
+                  (entry) => _buildGroup(context, entry.key, entry.value),
                 ),
-                SizedBox(height: 6),
-                Text(
-                  'Mensagens recebidas do backend em tempo real para a empresa atual.',
-                  style: TextStyle(
-                    color: Color(0xFFD7E3F5),
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCards() {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = (constraints.maxWidth - 12) / 2;
-
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            SizedBox(
-              width: width,
-              child: _buildSummaryCard(
-                value: _notificacaoService.total.toString(),
-                label: 'Recebidas',
-                icon: Icons.notifications_active_outlined,
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: _buildSummaryCard(
-                value: _notificacaoService.comErro.toString(),
-                label: 'Com erro',
-                icon: Icons.report_problem_outlined,
-              ),
-            ),
-          ],
         );
       },
-    );
-  }
-
-  Widget _buildSummaryCard({
-    required String value,
-    required String label,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: _accentColor, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: _titleTextColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _mutedTextColor,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -253,10 +121,7 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
           Text(
             'Quando uma nova venda chegar pelo WebSocket, ela aparecerá aqui.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _mutedTextColor,
-              height: 1.35,
-            ),
+            style: TextStyle(color: _mutedTextColor, height: 1.35),
           ),
         ],
       ),
@@ -294,7 +159,10 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
     );
   }
 
-  Widget _buildNotificationCard(BuildContext context, SixNotificationEvent event) {
+  Widget _buildNotificationCard(
+    BuildContext context,
+    SixNotificationEvent event,
+  ) {
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(20),
@@ -306,7 +174,10 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: event.isError ? const Color(0xFFFECACA) : const Color(0xFFE2E8F0),
+              color:
+                  event.isError
+                      ? const Color(0xFFFECACA)
+                      : const Color(0xFFE2E8F0),
             ),
             boxShadow: const [
               BoxShadow(
@@ -326,14 +197,18 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: event.isError
-                          ? const Color(0xFFFEF2F2)
-                          : const Color(0xFFF1F5F9),
+                      color:
+                          event.isError
+                              ? const Color(0xFFFEF2F2)
+                              : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
                       _iconFor(event),
-                      color: event.isError ? const Color(0xFFDC2626) : _primaryColor,
+                      color:
+                          event.isError
+                              ? const Color(0xFFDC2626)
+                              : _primaryColor,
                       size: 23,
                     ),
                   ),
@@ -345,7 +220,10 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                         width: 10,
                         height: 10,
                         decoration: BoxDecoration(
-                          color: event.isError ? const Color(0xFFDC2626) : _accentColor,
+                          color:
+                              event.isError
+                                  ? const Color(0xFFDC2626)
+                                  : _accentColor,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -461,10 +339,7 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                 const SizedBox(height: 8),
                 Text(
                   event.description,
-                  style: const TextStyle(
-                    color: _mutedTextColor,
-                    height: 1.4,
-                  ),
+                  style: const TextStyle(color: _mutedTextColor, height: 1.4),
                 ),
                 const SizedBox(height: 16),
                 _buildDetailRow('Entidade', event.entity),
@@ -472,9 +347,15 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                 _buildDetailRow('Status', event.status),
                 _buildDetailRow('Horário', event.timeLabel),
                 if (event.payload['valorTotal'] != null)
-                  _buildDetailRow('Valor', event.payload['valorTotal'].toString()),
+                  _buildDetailRow(
+                    'Valor',
+                    event.payload['valorTotal'].toString(),
+                  ),
                 if (event.payload['quantidadeItens'] != null)
-                  _buildDetailRow('Itens', event.payload['quantidadeItens'].toString()),
+                  _buildDetailRow(
+                    'Itens',
+                    event.payload['quantidadeItens'].toString(),
+                  ),
               ],
             ),
           ),
@@ -515,17 +396,21 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
   Map<String, List<SixNotificationEvent>> _groupEvents(
     List<SixNotificationEvent> events,
   ) {
-    final Map<String, List<SixNotificationEvent>> groups = <String, List<SixNotificationEvent>>{};
+    final Map<String, List<SixNotificationEvent>> groups =
+        <String, List<SixNotificationEvent>>{};
 
     for (final SixNotificationEvent event in events) {
-      groups.putIfAbsent(event.groupTitle, () => <SixNotificationEvent>[]).add(event);
+      groups
+          .putIfAbsent(event.groupTitle, () => <SixNotificationEvent>[])
+          .add(event);
     }
 
     return groups;
   }
 
   IconData _iconFor(SixNotificationEvent event) {
-    final String tipoDeEvento = event.payload['tipoDeEvento']?.toString().toUpperCase() ?? '';
+    final String tipoDeEvento =
+        event.payload['tipoDeEvento']?.toString().toUpperCase() ?? '';
     final String channel = event.channel.toUpperCase();
 
     if (event.isError) {
@@ -545,23 +430,5 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
     }
 
     return Icons.campaign_rounded;
-  }
-}
-
-class _HeaderIcon extends StatelessWidget {
-  const _HeaderIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0x1AFFFFFF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0x33FFFFFF)),
-      ),
-      child: const Icon(Icons.notifications_active_outlined, color: Colors.white),
-    );
   }
 }

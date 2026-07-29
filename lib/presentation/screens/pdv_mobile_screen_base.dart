@@ -30,6 +30,14 @@ class PdvMobileScreen extends StatefulWidget {
 
 class _PdvMobileScreenState extends State<PdvMobileScreen> {
   static const double _cardRadius = 22;
+  static const double _initialHeroRadius = 30;
+  static const double _initialActionsRadius = 26;
+  static const double _initialButtonRadius = 20;
+  static const double _initialIllustrationSize = 72;
+  static const double _initialIllustrationInnerSize = 52;
+  static const Duration _entryDuration = Duration(milliseconds: 340);
+  static const Duration _stateTransitionDuration = Duration(milliseconds: 340);
+  static const Duration _pressDuration = Duration(milliseconds: 100);
 
   static const List<_FormaPagamentoMobile>
   _formasPagamentoFallback = <_FormaPagamentoMobile>[
@@ -706,6 +714,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       secondaryColor: SixMobilePalette.secondary,
       accentColor: SixMobilePalette.accent,
       enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 4,
+      scrollEffectOffset: 24,
+      scrolledSurfaceOpacity: 0.66,
       actions: <Widget>[
         IconButton(
           tooltip: 'Ler código',
@@ -727,8 +739,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             padding: EdgeInsets.fromLTRB(16, topInset, 16, bottomPadding),
             children: <Widget>[
               SixStaggeredEntry(
+                duration: _entryDuration,
+                beginOffset: const Offset(0, 0.035),
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 320),
+                  duration: _stateTransitionDuration,
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
                   transitionBuilder: (
@@ -747,9 +761,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   child: _buildHeader(),
                 ),
               ),
-              SizedBox(height: temItens ? 12 : 18),
+              SizedBox(height: temItens ? 12 : 10),
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 70),
+                duration: _entryDuration,
+                beginOffset: const Offset(0, 0.035),
                 child: _buildQuickActionsCard(vendaIniciada: temItens),
               ),
               if (temItens) ...<Widget>[
@@ -763,16 +779,22 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     children: <Widget>[
                       SixStaggeredEntry(
                         delay: const Duration(milliseconds: 120),
+                        duration: _entryDuration,
+                        beginOffset: const Offset(0, 0.035),
                         child: _buildItensCard(),
                       ),
                       const SizedBox(height: 12),
                       SixStaggeredEntry(
                         delay: const Duration(milliseconds: 170),
+                        duration: _entryDuration,
+                        beginOffset: const Offset(0, 0.035),
                         child: _buildPagamentoCard(),
                       ),
                     ],
                   ),
                 ),
+              ] else ...<Widget>[
+                SizedBox(height: _initialBottomBreathingSpace(context)),
               ],
             ],
           ),
@@ -782,14 +804,25 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
+  double _initialBottomBreathingSpace(BuildContext context) {
+    final double height = MediaQuery.sizeOf(context).height;
+    if (height < 680) return 20;
+    if (height < 780) return 52;
+    return 84;
+  }
+
   Widget _buildQuickActionsCard({required bool vendaIniciada}) {
     return Material(
       color: SixMobilePalette.surface,
-      borderRadius: BorderRadius.circular(_cardRadius),
+      borderRadius: BorderRadius.circular(
+        vendaIniciada ? _cardRadius : _initialActionsRadius,
+      ),
       child: Container(
-        padding: EdgeInsets.all(vendaIniciada ? 12 : 14),
+        padding: EdgeInsets.all(vendaIniciada ? 12 : 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_cardRadius),
+          borderRadius: BorderRadius.circular(
+            vendaIniciada ? _cardRadius : _initialActionsRadius,
+          ),
           border: Border.all(
             color:
                 vendaIniciada
@@ -843,26 +876,36 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    _buildQuickActionButton(
-                      label: 'Adicionar produto',
-                      helper: 'Escolher no catálogo',
-                      icon: Icons.add_shopping_cart_rounded,
-                      onTap: _enviando ? null : _abrirSelecaoProduto,
-                      primary: true,
+                    SixStaggeredEntry(
+                      delay: const Duration(milliseconds: 70),
+                      duration: _entryDuration,
+                      beginOffset: const Offset(0, 0.035),
+                      child: _buildQuickActionButton(
+                        label: 'Adicionar produto',
+                        helper: 'Escolher no catálogo',
+                        icon: Icons.add_shopping_cart_rounded,
+                        onTap: _enviando ? null : _abrirSelecaoProduto,
+                        primary: true,
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    _buildQuickActionButton(
-                      label:
-                          _buscandoCodigo
-                              ? 'Buscando...'
-                              : 'Ler código de barras',
-                      helper: 'Usar a câmera do aparelho',
-                      icon: Icons.qr_code_scanner_rounded,
-                      onTap:
-                          _enviando || _buscandoCodigo
-                              ? null
-                              : _abrirScannerCodigoBarras,
-                      loading: _buscandoCodigo,
+                    const SizedBox(height: 8),
+                    SixStaggeredEntry(
+                      delay: const Duration(milliseconds: 140),
+                      duration: _entryDuration,
+                      beginOffset: const Offset(0, 0.035),
+                      child: _buildQuickActionButton(
+                        label:
+                            _buscandoCodigo
+                                ? 'Buscando...'
+                                : 'Ler código de barras',
+                        helper: 'Usar a câmera do aparelho',
+                        icon: Icons.qr_code_scanner_rounded,
+                        onTap:
+                            _enviando || _buscandoCodigo
+                                ? null
+                                : _abrirScannerCodigoBarras,
+                        loading: _buscandoCodigo,
+                      ),
                     ),
                   ],
                 ),
@@ -879,109 +922,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     bool primary = false,
     bool compact = false,
   }) {
-    final bool disabled = onTap == null;
-    return Semantics(
-      button: true,
-      enabled: !disabled,
+    return _PdvActionButton(
       label: label,
-      child: Material(
-        color:
-            disabled
-                ? SixMobilePalette.softNeutralSurface
-                : (primary
-                    ? SixMobilePalette.primary
-                    : SixMobilePalette.softNeutralSurface),
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: disabled ? null : onTap,
-          child: Container(
-            constraints: BoxConstraints(minHeight: compact ? 68 : 74),
-            padding: EdgeInsets.all(compact ? 10 : 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color:
-                    disabled
-                        ? SixMobilePalette.border
-                        : (primary
-                            ? SixMobilePalette.primary
-                            : SixMobilePalette.border),
-              ),
-            ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color:
-                        primary
-                            ? _withAlpha(SixMobilePalette.onPrimary, 0.14)
-                            : SixMobilePalette.surface,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Center(
-                    child:
-                        loading
-                            ? const SizedBox(
-                              width: 17,
-                              height: 17,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                            : Icon(
-                              icon,
-                              color:
-                                  disabled
-                                      ? SixMobilePalette.mutedText
-                                      : (primary
-                                          ? SixMobilePalette.onPrimary
-                                          : SixMobilePalette.accent),
-                              size: 20,
-                            ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color:
-                              primary
-                                  ? SixMobilePalette.onPrimary
-                                  : SixMobilePalette.titleText,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        helper,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color:
-                              primary
-                                  ? SixMobilePalette.heroSupportingText
-                                  : SixMobilePalette.mutedText,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      helper: helper,
+      icon: icon,
+      onTap: onTap,
+      loading: loading,
+      primary: primary,
+      compact: compact,
+      radius: _initialButtonRadius,
+      pressDuration: _pressDuration,
     );
   }
 
@@ -1135,36 +1085,36 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Container(
       key: const ValueKey<String>('pdv-initial-hero'),
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 26),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(_initialHeroRadius),
         border: Border.all(color: SixMobilePalette.activeBorder),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: _withAlpha(SixMobilePalette.primary, 0.07),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
+            color: _withAlpha(SixMobilePalette.primary, 0.055),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           _buildMinimalShoppingIllustration(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 16),
           Text(
             _editandoVendaNaoLiquidada ? 'Venda em aberto' : 'Nova venda',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: SixMobilePalette.titleText,
-              fontSize: 31,
-              fontWeight: FontWeight.w900,
-              height: 1.05,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              height: 1.08,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             _editandoVendaNaoLiquidada
                 ? 'Revise os itens antes de receber.'
@@ -1177,7 +1127,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               height: 1.25,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             _editandoVendaNaoLiquidada
                 ? 'Escolha uma opção abaixo para continuar.'
@@ -1190,7 +1140,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               height: 1.35,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 4),
         ],
       ),
     );
@@ -1201,11 +1151,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       label: 'Ilustração de compra',
       image: true,
       child: Container(
-        width: 124,
-        height: 124,
+        width: _initialIllustrationSize,
+        height: _initialIllustrationSize,
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
-          borderRadius: BorderRadius.circular(38),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: SixMobilePalette.border),
         ),
         child: Stack(
@@ -1215,8 +1165,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               top: 20,
               right: 22,
               child: Container(
-                width: 18,
-                height: 18,
+                width: 10,
+                height: 10,
                 decoration: BoxDecoration(
                   color: SixMobilePalette.softAccentSurface,
                   borderRadius: BorderRadius.circular(999),
@@ -1227,8 +1177,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               left: 24,
               bottom: 24,
               child: Container(
-                width: 22,
-                height: 22,
+                width: 12,
+                height: 12,
                 decoration: BoxDecoration(
                   color: _withAlpha(SixMobilePalette.accent, 0.10),
                   borderRadius: BorderRadius.circular(999),
@@ -1236,24 +1186,24 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               ),
             ),
             Container(
-              width: 70,
-              height: 70,
+              width: _initialIllustrationInnerSize,
+              height: _initialIllustrationInnerSize,
               decoration: BoxDecoration(
                 color: SixMobilePalette.surface,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: SixMobilePalette.activeBorder),
                 boxShadow: const <BoxShadow>[
                   BoxShadow(
                     color: SixMobilePalette.navigationShadow,
-                    blurRadius: 16,
-                    offset: Offset(0, 7),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.shopping_bag_outlined,
                 color: SixMobilePalette.accent,
-                size: 34,
+                size: 26,
               ),
             ),
           ],
@@ -2015,6 +1965,180 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         ),
       ),
     );
+  }
+}
+
+class _PdvActionButton extends StatefulWidget {
+  const _PdvActionButton({
+    required this.label,
+    required this.helper,
+    required this.icon,
+    required this.onTap,
+    required this.pressDuration,
+    this.loading = false,
+    this.primary = false,
+    this.compact = false,
+    this.radius = 20,
+  });
+
+  final String label;
+  final String helper;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Duration pressDuration;
+  final bool loading;
+  final bool primary;
+  final bool compact;
+  final double radius;
+
+  @override
+  State<_PdvActionButton> createState() => _PdvActionButtonState();
+}
+
+class _PdvActionButtonState extends State<_PdvActionButton> {
+  bool _pressed = false;
+
+  bool get _disabled => widget.onTap == null;
+
+  void _setPressed(bool value) {
+    if (_disabled || _pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final double scale = !disableAnimations && _pressed ? 0.98 : 1.0;
+    final Color foreground =
+        widget.primary
+            ? SixMobilePalette.onPrimary
+            : SixMobilePalette.titleText;
+    final Color supporting =
+        widget.primary
+            ? SixMobilePalette.heroSupportingText
+            : SixMobilePalette.mutedText;
+    final Color iconColor =
+        _disabled
+            ? SixMobilePalette.mutedText
+            : (widget.primary
+                ? SixMobilePalette.onPrimary
+                : SixMobilePalette.accent);
+
+    return Semantics(
+      button: true,
+      enabled: !_disabled,
+      label: widget.label,
+      child: AnimatedScale(
+        scale: scale,
+        duration: disableAnimations ? Duration.zero : widget.pressDuration,
+        curve: Curves.easeOut,
+        child: Material(
+          color: _backgroundColor,
+          borderRadius: BorderRadius.circular(widget.radius),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(widget.radius),
+            onTap: _disabled ? null : widget.onTap,
+            onTapDown: (_) => _setPressed(true),
+            onTapUp: (_) => _setPressed(false),
+            onTapCancel: () => _setPressed(false),
+            child: Container(
+              constraints: BoxConstraints(minHeight: widget.compact ? 64 : 66),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.compact ? 10 : 12,
+                vertical: widget.compact ? 10 : 11,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.radius),
+                border: Border.all(color: _borderColor),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color:
+                          widget.primary
+                              ? _PdvMobileScreenState._withAlpha(
+                                SixMobilePalette.onPrimary,
+                                0.13,
+                              )
+                              : SixMobilePalette.surface,
+                      borderRadius: BorderRadius.circular(13),
+                      border:
+                          widget.primary
+                              ? null
+                              : Border.all(color: SixMobilePalette.border),
+                    ),
+                    child: Center(
+                      child:
+                          widget.loading
+                              ? SizedBox(
+                                width: 17,
+                                height: 17,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color:
+                                      widget.primary
+                                          ? SixMobilePalette.onPrimary
+                                          : SixMobilePalette.accent,
+                                ),
+                              )
+                              : Icon(widget.icon, color: iconColor, size: 19),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          widget.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color:
+                                _disabled
+                                    ? SixMobilePalette.mutedText
+                                    : foreground,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.helper,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: supporting,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color get _backgroundColor {
+    if (_disabled) return SixMobilePalette.softNeutralSurface;
+    if (widget.primary) return SixMobilePalette.primary;
+    return SixMobilePalette.softNeutralSurface;
+  }
+
+  Color get _borderColor {
+    if (_disabled) return SixMobilePalette.border;
+    if (widget.primary) return SixMobilePalette.primary;
+    return SixMobilePalette.activeBorder;
   }
 }
 

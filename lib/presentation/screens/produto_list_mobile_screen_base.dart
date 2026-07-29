@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
@@ -249,100 +251,108 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         final bool isSelecao = widget.isSelecao;
         final double bottomPadding = _selecaoMultiplaAtiva ? 170 : 96;
 
-        return Scaffold(
+        return SixMobilePageShell(
+          title: isSelecao ? 'Selecionar item' : '',
           backgroundColor: _backgroundColor,
-          appBar: AppBar(
-            elevation: 0,
-            centerTitle: true,
-            backgroundColor: _primaryColor,
-            foregroundColor: Colors.white,
-            title:
-                isSelecao
-                    ? const Text(
-                      'Selecionar item',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
+          primaryColor: SixMobilePalette.primary,
+          secondaryColor: SixMobilePalette.secondary,
+          accentColor: SixMobilePalette.accent,
+          scrollController: _scrollController,
+          enableAnimatedBackground: false,
+          toolbarHeight: 48,
+          initialContentSpacing: 4,
+          scrollEffectOffset: 24,
+          scrolledSurfaceOpacity: 0.66,
+          actions: const <Widget>[],
+          bodyBuilder: (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return SafeArea(
+              top: false,
+              child: Stack(
+                children: <Widget>[
+                  RefreshIndicator(
+                    onRefresh: _recarregar,
+                    child: ListView(
+                      controller: scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        topInset + (isSelecao ? 8 : 10),
+                        16,
+                        bottomPadding,
                       ),
-                    )
-                    : null,
-            actions: const <Widget>[],
-          ),
-          body: SafeArea(
-            child: Stack(
-              children: <Widget>[
-                RefreshIndicator(
-                  onRefresh: _recarregar,
-                  child: ListView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      isSelecao ? 12 : 14,
-                      16,
-                      bottomPadding,
-                    ),
-                    children: <Widget>[
-                      if (!isSelecao) ...<Widget>[
-                        SixStaggeredEntry(child: _buildHeaderCard()),
-                        const SizedBox(height: 16),
-                      ],
-                      SixStaggeredEntry(
-                        delay: const Duration(milliseconds: 70),
-                        child: _buildTabs(compact: isSelecao),
-                      ),
-                      if (_exibirCampoBusca &&
-                          !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
-                        const SizedBox(height: 12),
+                      children: <Widget>[
+                        if (!isSelecao) ...<Widget>[
+                          SixStaggeredEntry(child: _buildHeaderCard()),
+                          const SizedBox(height: 16),
+                        ],
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 120),
-                          child: _buildSearchField(),
+                          delay: const Duration(milliseconds: 70),
+                          child: _buildTabs(compact: isSelecao),
                         ),
+                        if (_exibirCampoBusca &&
+                            !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
+                          const SizedBox(height: 12),
+                          SixStaggeredEntry(
+                            delay: const Duration(milliseconds: 120),
+                            child: _buildSearchField(),
+                          ),
+                        ],
+                        SizedBox(
+                          height:
+                              _exibirCampoBusca &&
+                                      !_deveExibirHeaderListaFixo(isSelecao)
+                                  ? (isSelecao ? 14 : 18)
+                                  : 14,
+                        ),
+                        if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
+                          _buildListHeader(
+                            itensDaLista.length,
+                            provider.isLoading,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        ..._buildListContent(provider, itensDaLista, isSelecao),
                       ],
-                      SizedBox(
-                        height:
-                            _exibirCampoBusca &&
-                                    !_deveExibirHeaderListaFixo(isSelecao)
-                                ? (isSelecao ? 14 : 18)
-                                : 14,
+                    ),
+                  ),
+                  if (_deveExibirHeaderListaFixo(isSelecao))
+                    Positioned(
+                      top: topInset,
+                      left: 0,
+                      right: 0,
+                      child: _buildHeaderListaFixo(
+                        itensDaLista.length,
+                        provider.isLoading,
                       ),
-                      if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
-                        _buildListHeader(
-                          itensDaLista.length,
-                          provider.isLoading,
+                    ),
+                  if (!isSelecao)
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      child: SafeArea(
+                        minimum: const EdgeInsets.only(bottom: 8),
+                        child: FloatingActionButton.extended(
+                          backgroundColor: _accentColor,
+                          foregroundColor: Colors.white,
+                          elevation: 5,
+                          onPressed: _criarProduto,
+                          icon: const Icon(Icons.add_rounded),
+                          label: Text(
+                            _isProdutoSelecionado
+                                ? 'Novo produto'
+                                : 'Novo serviço',
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                      ],
-                      ..._buildListContent(provider, itensDaLista, isSelecao),
-                    ],
-                  ),
-                ),
-                if (_deveExibirHeaderListaFixo(isSelecao))
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: _buildHeaderListaFixo(
-                      itensDaLista.length,
-                      provider.isLoading,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          floatingActionButton:
-              isSelecao
-                  ? null
-                  : FloatingActionButton.extended(
-                    backgroundColor: _accentColor,
-                    foregroundColor: Colors.white,
-                    elevation: 5,
-                    onPressed: _criarProduto,
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(
-                      _isProdutoSelecionado ? 'Novo produto' : 'Novo serviço',
-                    ),
-                  ),
+                ],
+              ),
+            );
+          },
           bottomNavigationBar:
               _selecaoMultiplaAtiva ? _buildBarraSelecaoMultipla() : null,
         );
@@ -2639,7 +2649,13 @@ class _LoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 32),
-      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: SixMobilePalette.accent,
+          backgroundColor: SixMobilePalette.activeBorder,
+        ),
+      ),
     );
   }
 }

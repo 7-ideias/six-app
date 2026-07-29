@@ -37,7 +37,7 @@ class SixMobilePageShell extends StatefulWidget {
     this.automaticallyImplyLeading = true,
     this.enableAnimatedBackground = true,
     this.enableAppBarBlur = true,
-    this.backgroundIntensity = 0.45,
+    this.backgroundIntensity = 0.80,
     this.scrolledSurfaceOpacity = 0.72,
     this.maxBlurSigma = 16,
     this.scrollEffectOffset = 32,
