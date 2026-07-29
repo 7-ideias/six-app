@@ -9,6 +9,7 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/pagina_principal_web.dart';
+import 'package:sixpos/presentation/components/app_modal_side_sheet.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
@@ -161,7 +162,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
           IconButton(
             tooltip: 'Configurações',
             icon: const Icon(Icons.settings_outlined),
-            onPressed: _showFeatureInProgress,
+            onPressed: _openSettingsPanel,
           ),
           IconButton(
             tooltip: 'Notificações',
@@ -781,6 +782,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   void _openNotifications(BuildContext context) {
     _navigateTo(context, const NotificacoesMobileScreen());
+  }
+
+  void _openSettingsPanel() {
+    showAppModalSideSheet<void>(
+      context: context,
+      child: CoresDoMobile(image: _image, onPickImage: _pickImage),
+    );
   }
 
   void _navigateTo(BuildContext context, Widget page) {

@@ -23,66 +23,99 @@ class CoresDoMobile extends StatelessWidget {
   final File? image;
   final void Function(ImageSource source) onPickImage;
 
-  static const Color _background = SixMobilePalette.background;
   static const Color _surface = SixMobilePalette.surface;
   static const Color _border = SixMobilePalette.border;
   static const Color _title = SixMobilePalette.titleText;
-  static const Color _muted = SixMobilePalette.mutedText;
   static const Color _accent = SixMobilePalette.accent;
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: _surface,
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: <Widget>[
-            _buildHeader(context),
-            Expanded(
-              child: ColoredBox(
-                color: _background,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(14, 16, 14, 18),
-                  children: <Widget>[
-                    _buildSectionLabel('Conta'),
-                    _buildItem(
-                      icon: Icons.person_outline_rounded,
-                      title: 'Meu perfil',
-                      subtitle: 'Dados pessoais e acesso',
-                      onTap: () => _openScreen(
-                        context,
-                        const MeuPerfilMobileScreen(),
-                      ),
-                    ),
-                    _buildItem(
-                      icon: Icons.tune_rounded,
-                      title: 'Preferências',
-                      subtitle: 'Ajustes individuais do app',
-                      onTap: () => _openScreen(
-                        context,
-                        PreferencesMobileScreen(),
-                      ),
-                    ),
-                    _buildItem(
-                      icon: Icons.shield_outlined,
-                      title: 'Gerenciar meus dados',
-                      subtitle: 'Dados e privacidade',
-                      onTap: () => _openScreen(
-                        context,
-                        PreferencesMobileScreen(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(color: _border),
-                    const SizedBox(height: 8),
-                    _buildLogoutItem(context),
-                  ],
-                ),
-              ),
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color panelColor = colorScheme.surface;
+
+    return SafeArea(
+      left: false,
+      child: Material(
+        color: Colors.transparent,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: panelColor,
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(24),
             ),
-            _buildVersionFooter(),
-          ],
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: colorScheme.shadow.withValues(alpha: 0.22),
+                blurRadius: 34,
+                spreadRadius: 1,
+                offset: const Offset(-12, 0),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(24),
+            ),
+            child: Column(
+              children: <Widget>[
+                _buildHeader(context),
+                Expanded(
+                  child: ColoredBox(
+                    color: colorScheme.surfaceContainerLowest,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                      children: <Widget>[
+                        _buildSectionLabel(context, 'Conta'),
+                        _buildItem(
+                          context,
+                          icon: Icons.person_outline_rounded,
+                          title: 'Meu perfil',
+                          subtitle: 'Dados pessoais e acesso',
+                          onTap:
+                              () => _openScreen(
+                                context,
+                                const MeuPerfilMobileScreen(),
+                              ),
+                        ),
+                        _buildItem(
+                          context,
+                          icon: Icons.tune_rounded,
+                          title: 'Preferências',
+                          subtitle: 'Ajustes individuais do app',
+                          onTap:
+                              () => _openScreen(
+                                context,
+                                PreferencesMobileScreen(),
+                              ),
+                        ),
+                        _buildItem(
+                          context,
+                          icon: Icons.shield_outlined,
+                          title: 'Gerenciar meus dados',
+                          subtitle: 'Dados e privacidade',
+                          onTap:
+                              () => _openScreen(
+                                context,
+                                PreferencesMobileScreen(),
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Divider(
+                          height: 22,
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.65,
+                          ),
+                        ),
+                        _buildLogoutItem(context),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildVersionFooter(context),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -101,16 +134,15 @@ class CoresDoMobile extends StatelessWidget {
 
             return Container(
               width: double.infinity,
-              padding: EdgeInsets.fromLTRB(
-                18,
-                MediaQuery.of(context).padding.top + 18,
-                18,
-                18,
-              ),
-              decoration: const BoxDecoration(
-                color: _surface,
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
                 border: Border(
-                  bottom: BorderSide(color: _border),
+                  bottom: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.65),
+                  ),
                 ),
               ),
               child: Row(
@@ -125,8 +157,8 @@ class CoresDoMobile extends StatelessWidget {
                           _userName(usuario),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _title,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                           ),
@@ -136,13 +168,20 @@ class CoresDoMobile extends StatelessWidget {
                           _userEmail(usuario),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _muted,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 12.5,
                           ),
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Fechar',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ],
               ),
@@ -154,6 +193,8 @@ class CoresDoMobile extends StatelessWidget {
   }
 
   Widget _buildAvatar(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: () => _showImagePickerOptions(context),
@@ -162,15 +203,16 @@ class CoresDoMobile extends StatelessWidget {
         children: <Widget>[
           CircleAvatar(
             radius: 32,
-            backgroundColor: SixMobilePalette.softNeutralSurface,
+            backgroundColor: colorScheme.surfaceContainerHighest,
             backgroundImage: image != null ? FileImage(image!) : null,
-            child: image == null
-                ? const Icon(
-                    Icons.person_outline_rounded,
-                    size: 30,
-                    color: _accent,
-                  )
-                : null,
+            child:
+                image == null
+                    ? Icon(
+                      Icons.person_outline_rounded,
+                      size: 30,
+                      color: colorScheme.primary,
+                    )
+                    : null,
           ),
           Positioned(
             right: -2,
@@ -179,14 +221,14 @@ class CoresDoMobile extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: _surface,
+                color: colorScheme.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: _border),
+                border: Border.all(color: colorScheme.outlineVariant),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.camera_alt_outlined,
                 size: 14,
-                color: _accent,
+                color: colorScheme.primary,
               ),
             ),
           ),
@@ -195,13 +237,13 @@ class CoresDoMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
+  Widget _buildSectionLabel(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
       child: Text(
         label.toUpperCase(),
-        style: const TextStyle(
-          color: _muted,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.7,
@@ -210,25 +252,34 @@ class CoresDoMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildItem({
+  Widget _buildItem(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: _surface,
-        borderRadius: BorderRadius.circular(14),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
+          hoverColor: colorScheme.primary.withValues(alpha: 0.06),
+          focusColor: colorScheme.primary.withValues(alpha: 0.08),
+          splashColor: colorScheme.primary.withValues(alpha: 0.08),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
             ),
             child: Row(
               children: <Widget>[
@@ -236,11 +287,10 @@ class CoresDoMobile extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: SixMobilePalette.softNeutralSurface,
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.42),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _border),
                   ),
-                  child: Icon(icon, color: _accent, size: 21),
+                  child: Icon(icon, color: colorScheme.primary, size: 21),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -251,8 +301,8 @@ class CoresDoMobile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _title,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -262,17 +312,17 @@ class CoresDoMobile extends StatelessWidget {
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _muted,
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 12,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
-                  color: _muted,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 ),
               ],
             ),
@@ -283,41 +333,47 @@ class CoresDoMobile extends StatelessWidget {
   }
 
   Widget _buildLogoutItem(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color errorColor = colorScheme.error;
+
     return Material(
-      color: _surface,
-      borderRadius: BorderRadius.circular(14),
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
+        hoverColor: errorColor.withValues(alpha: 0.06),
+        focusColor: errorColor.withValues(alpha: 0.08),
+        splashColor: errorColor.withValues(alpha: 0.08),
         onTap: () => _logout(context),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: SixMobilePalette.errorBorder),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: errorColor.withValues(alpha: 0.28)),
           ),
-          child: const Row(
+          child: Row(
             children: <Widget>[
               SizedBox(
                 width: 40,
                 height: 40,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Color(0xFFFEF2F2),
+                    color: colorScheme.errorContainer.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Icon(
                     Icons.logout_rounded,
-                    color: SixMobilePalette.error,
+                    color: errorColor,
                     size: 21,
                   ),
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Sair da conta',
                   style: TextStyle(
-                    color: SixMobilePalette.error,
+                    color: errorColor,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -330,22 +386,27 @@ class CoresDoMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildVersionFooter() {
+  Widget _buildVersionFooter(BuildContext context) {
     final String version = AppConfig.appVersion.trim();
     final String buildNumber = AppConfig.appBuildNumber.trim();
     final String versionLabel =
         version.isEmpty ? 'versão não informada' : 'versão $version';
-    final String tooltip = buildNumber.isEmpty
-        ? 'Versão atual: ${version.isEmpty ? '-' : version}'
-        : 'Versão atual: ${version.isEmpty ? '-' : version} • build $buildNumber';
+    final String tooltip =
+        buildNumber.isEmpty
+            ? 'Versão atual: ${version.isEmpty ? '-' : version}'
+            : 'Versão atual: ${version.isEmpty ? '-' : version} • build $buildNumber';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
-      decoration: const BoxDecoration(
-        color: _surface,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
-          top: BorderSide(color: _border),
+          top: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.65),
+          ),
         ),
       ),
       child: Tooltip(
@@ -353,8 +414,8 @@ class CoresDoMobile extends StatelessWidget {
         child: Text(
           versionLabel,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: _muted,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -369,7 +430,7 @@ class CoresDoMobile extends StatelessWidget {
     try {
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
     } catch (_) {
-      // O drawer continua funcional mesmo sem os dados do usuário.
+      // O painel continua funcional mesmo sem os dados do usuário.
     }
   }
 
@@ -392,9 +453,7 @@ class CoresDoMobile extends StatelessWidget {
 
   void _openScreen(BuildContext context, Widget screen) {
     Navigator.of(context).pop();
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => screen),
-    );
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -403,9 +462,7 @@ class CoresDoMobile extends StatelessWidget {
     if (!context.mounted) return;
 
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(
-        builder: (_) => const LoginPageMobile(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const LoginPageMobile()),
       (Route<dynamic> route) => false,
     );
   }
@@ -416,9 +473,7 @@ class CoresDoMobile extends StatelessWidget {
       showDragHandle: true,
       backgroundColor: _surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(22),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (BuildContext bottomSheetContext) {
         return SafeArea(
