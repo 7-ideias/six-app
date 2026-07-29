@@ -176,6 +176,29 @@ Estados vazios devem explicar o que acontece, indicar próxima ação, evitar CT
 
 Antes de adicionar ou manter FAB, verifique duplicidade com CTA de conteúdo, utilidade por estado da tela, ergonomia e uso de `SixMobilePalette.accent`.
 
+### Loading estrutural com ícones preservados
+
+Em telas mobile que carregam dados do backend, quando a estrutura da tela, os tipos de cards, ícones, ações ou categorias já forem conhecidos antes da response, mantenha esses elementos visíveis durante o loading. Use skeleton, pulse ou placeholders apenas nos textos, números, badges, subtítulos e detalhes que dependem da resposta.
+
+Use a intenção da tela `lib/presentation/screens/catalog_health_mobile_screen.dart` como referência: o estado de carregamento deve preservar a leitura do painel, manter o usuário orientado sobre quais áreas existem e evitar uma tela genérica sem identidade enquanto o backend responde.
+
+Preferir:
+
+- cards no mesmo formato final, com ícone estático e superfície do design system;
+- skeleton nos valores, metadados e descrições dinâmicas;
+- `Semantics(container: true, liveRegion: true, label: 'Carregando...')` para anunciar o carregamento;
+- `AnimatedSwitcher` ou transição curta ao trocar de loading para erro, vazio ou sucesso;
+- chaves estáveis por estado para evitar animações indevidas;
+- respeito a `MediaQuery.disableAnimations` e `MediaQuery.accessibleNavigation`.
+
+Evitar:
+
+- substituir toda a tela por spinner central quando houver layout conhecido;
+- esconder ícones e ações estáticas até a response chegar;
+- criar skeletons completamente genéricos que não representem a tela final;
+- permitir toque em ações que dependem de dados ainda não carregados, salvo quando forem ações independentes e seguras;
+- bloquear leitura, acessibilidade ou estabilidade visual por causa do loading.
+
 ## Motion, Lottie e loading
 
 O movimento deve ser funcional: explicar mudança de estado, orientar atenção, dar feedback e criar continuidade. Priorize recursos existentes: `SixStaggeredEntry`, `SixAnimatedNumberText`, `SixPulsingBadge`, `AnimatedSwitcher`, `AnimatedContainer`, `AnimatedScale`, `FadeTransition`, `SlideTransition`, `TweenAnimationBuilder`, `flutter_animate`, `SixMobileAnimatedGradientBackground`, `SixLottieActionOverlay`, `SixFullScreenLottieLoading` e `SixBackendLoading`.
