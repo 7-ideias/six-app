@@ -9,9 +9,9 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/pagina_principal_web.dart';
-import 'package:sixpos/presentation/components/app_modal_side_sheet.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
@@ -19,7 +19,6 @@ import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/nav_bar_mobile.dart';
-import '../components/cores_do_mobile.dart';
 import 'catalogo_disponivel_mobile_screen.dart';
 import 'catalogo_nao_disponivel_mobile_screen.dart';
 
@@ -157,13 +156,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
         primaryColor: _primaryColor,
         secondaryColor: _secondaryColor,
         accentColor: _accentColor,
-        drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
+        automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            tooltip: 'Configurações',
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: _openSettingsPanel,
-          ),
+          SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
           IconButton(
             tooltip: 'Notificações',
             icon: _buildNotificationIcon(),
@@ -782,13 +777,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   void _openNotifications(BuildContext context) {
     _navigateTo(context, const NotificacoesMobileScreen());
-  }
-
-  void _openSettingsPanel() {
-    showAppModalSideSheet<void>(
-      context: context,
-      child: CoresDoMobile(image: _image, onPickImage: _pickImage),
-    );
   }
 
   void _navigateTo(BuildContext context, Widget page) {

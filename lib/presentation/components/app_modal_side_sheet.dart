@@ -53,7 +53,7 @@ class _AppModalSideSheetRoute<T> extends PageRoute<T> {
           ? const Duration(milliseconds: 340)
           : reduceMotion
           ? const Duration(milliseconds: 180)
-          : const Duration(milliseconds: 500);
+          : const Duration(milliseconds: 280);
 
   @override
   Duration get reverseTransitionDuration =>
@@ -61,7 +61,7 @@ class _AppModalSideSheetRoute<T> extends PageRoute<T> {
           ? const Duration(milliseconds: 260)
           : reduceMotion
           ? const Duration(milliseconds: 140)
-          : const Duration(milliseconds: 360);
+          : const Duration(milliseconds: 240);
 
   @override
   Widget buildPage(
@@ -128,7 +128,7 @@ class _AppModalSideSheetPageState extends State<_AppModalSideSheetPage> {
     final double t = value.clamp(0.0, 1.0);
     if (reduceMotion) return Curves.easeInCubic.transform(t);
 
-    return Curves.easeInQuart.transform(t);
+    return Curves.easeInCubic.transform(t);
   }
 
   double _panelProgress({
@@ -153,35 +153,10 @@ class _AppModalSideSheetPageState extends State<_AppModalSideSheetPage> {
   }
 
   double _panelScale(double progress, bool reduceMotion) {
-    if (reduceMotion) return lerpDouble(0.985, 1, progress)!;
+    if (reduceMotion) return 1;
 
-    if (progress < 0.84) {
-      final double eased = _transformClamped(
-        Curves.easeOutCubic,
-        progress / 0.84,
-      );
-      return lerpDouble(0.92, 1.006, eased)!;
-    }
-
-    final double settle = _transformClamped(
-      Curves.easeOutCubic,
-      (progress - 0.84) / 0.16,
-    );
-    return lerpDouble(1.006, 1, settle)!;
-  }
-
-  double _panelRotationZ(double progress, bool reduceMotion) {
-    if (reduceMotion) return 0;
-
-    final double t = _transformClamped(Curves.easeOutCubic, progress / 0.86);
-    return lerpDouble(-0.022, 0, t)!;
-  }
-
-  double _panelRotationY(double progress, bool reduceMotion) {
-    if (reduceMotion) return 0;
-
-    final double t = _transformClamped(Curves.easeOutCubic, progress / 0.86);
-    return lerpDouble(0.045, 0, t)!;
+    final double eased = _transformClamped(Curves.easeOutCubic, progress);
+    return lerpDouble(0.985, 1, eased)!;
   }
 
   List<BoxShadow> _panelShadow(
@@ -207,19 +182,13 @@ class _AppModalSideSheetPageState extends State<_AppModalSideSheetPage> {
     required double progress,
     required bool reduceMotion,
   }) {
-    final double x = lerpDouble(reduceMotion ? 28 : 96, 0, progress)!;
-    final double y = lerpDouble(reduceMotion ? -8 : -34, 0, progress)!;
+    final double x = lerpDouble(reduceMotion ? 28 : 88, 0, progress)!;
     final double scale = _panelScale(progress, reduceMotion);
 
     final Matrix4 matrix = Matrix4.identity();
-    if (!reduceMotion) {
-      matrix.setEntry(3, 2, 0.0008);
-    }
 
     return matrix
-      ..translateByDouble(x, y, 0, 1)
-      ..rotateY(_panelRotationY(progress, reduceMotion))
-      ..rotateZ(_panelRotationZ(progress, reduceMotion))
+      ..translateByDouble(x, 0, 0, 1)
       ..scaleByDouble(scale, scale, 1, 1);
   }
 
@@ -399,7 +368,7 @@ class _AppModalSideSheetPageState extends State<_AppModalSideSheetPage> {
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: const BorderRadius.horizontal(
-              left: Radius.circular(24),
+              left: Radius.circular(28),
             ),
             boxShadow: _panelShadow(context, visibility, reduceMotion),
           ),

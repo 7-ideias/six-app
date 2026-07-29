@@ -11,6 +11,7 @@ import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_parallax_card_data.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_parallax_carousel.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
@@ -23,7 +24,6 @@ import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
-import '../components/cores_do_mobile.dart';
 
 class GestaoMobileScreen extends StatefulWidget {
   const GestaoMobileScreen({super.key});
@@ -135,8 +135,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
       accentColor: _accentColor,
-      drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
+      automaticallyImplyLeading: false,
       actions: <Widget>[
+        SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
         IconButton(
           tooltip: 'Notificações',
           icon: _buildNotificationIcon(),

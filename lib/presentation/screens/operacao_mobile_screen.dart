@@ -9,6 +9,7 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
@@ -17,7 +18,6 @@ import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/nav_bar_mobile.dart';
-import '../components/cores_do_mobile.dart';
 
 class OperacaoMobileScreen extends StatefulWidget {
   const OperacaoMobileScreen({super.key});
@@ -122,8 +122,9 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       primaryColor: _primary,
       secondaryColor: _secondary,
       accentColor: _accent,
-      drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
+      automaticallyImplyLeading: false,
       actions: <Widget>[
+        SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
         IconButton(
           tooltip: 'Notificações',
           icon: _notificationIcon(),
