@@ -635,6 +635,486 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a payment method'**
   String get pdvWebSelectPaymentMethodTitle;
+
+  /// No description provided for @procedimentosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedures'**
+  String get procedimentosTitle;
+
+  /// No description provided for @procedimentosSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guides for sales, service and deliveries'**
+  String get procedimentosSubtitle;
+
+  /// No description provided for @procedimentosIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure guidance for sales, service and deliveries.'**
+  String get procedimentosIntroTitle;
+
+  /// No description provided for @procedimentosDemoData.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo data'**
+  String get procedimentosDemoData;
+
+  /// No description provided for @procedimentosFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure filters'**
+  String get procedimentosFiltersLabel;
+
+  /// No description provided for @procedimentosFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get procedimentosFilterAll;
+
+  /// No description provided for @procedimentosFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get procedimentosFilterActive;
+
+  /// No description provided for @procedimentosFilterInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get procedimentosFilterInactive;
+
+  /// No description provided for @procedimentosNewProcedure.
+  ///
+  /// In en, this message translates to:
+  /// **'New procedure'**
+  String get procedimentosNewProcedure;
+
+  /// No description provided for @procedimentosCreateProcedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Create procedure'**
+  String get procedimentosCreateProcedure;
+
+  /// No description provided for @procedimentosOpenAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get procedimentosOpenAction;
+
+  /// No description provided for @procedimentosCreateUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure creation will be available in the next step.'**
+  String get procedimentosCreateUnavailable;
+
+  /// No description provided for @procedimentosEditUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing this procedure will be available in the next step.'**
+  String get procedimentosEditUnavailable;
+
+  /// No description provided for @procedimentosLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading procedures'**
+  String get procedimentosLoading;
+
+  /// No description provided for @procedimentosEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No procedures configured'**
+  String get procedimentosEmptyTitle;
+
+  /// No description provided for @procedimentosEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create guidance to support the team at key moments of the operation.'**
+  String get procedimentosEmptyDescription;
+
+  /// No description provided for @procedimentosFilteredEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No procedures in this filter'**
+  String get procedimentosFilteredEmptyTitle;
+
+  /// No description provided for @procedimentosFilteredEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the filter to see other demo procedures.'**
+  String get procedimentosFilteredEmptyDescription;
+
+  /// No description provided for @procedimentosErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load procedures'**
+  String get procedimentosErrorTitle;
+
+  /// No description provided for @procedimentosErrorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in a moment.'**
+  String get procedimentosErrorDescription;
+
+  /// No description provided for @procedimentosStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get procedimentosStatusDraft;
+
+  /// No description provided for @procedimentosOperationSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale'**
+  String get procedimentosOperationSale;
+
+  /// No description provided for @procedimentosOperationTechnicalService.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical service'**
+  String get procedimentosOperationTechnicalService;
+
+  /// No description provided for @procedimentosOperationQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get procedimentosOperationQuote;
+
+  /// No description provided for @procedimentosOperationDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get procedimentosOperationDelivery;
+
+  /// No description provided for @procedimentosMomentBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Before starting'**
+  String get procedimentosMomentBeforeStart;
+
+  /// No description provided for @procedimentosMomentBeforeFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Before finishing'**
+  String get procedimentosMomentBeforeFinish;
+
+  /// No description provided for @procedimentosMomentBeforeDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Before delivery'**
+  String get procedimentosMomentBeforeDelivery;
+
+  /// No description provided for @procedimentosStageSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'stage'**
+  String get procedimentosStageSingular;
+
+  /// No description provided for @procedimentosStagePlural.
+  ///
+  /// In en, this message translates to:
+  /// **'stages'**
+  String get procedimentosStagePlural;
+
+  /// No description provided for @procedimentosItemSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'item'**
+  String get procedimentosItemSingular;
+
+  /// No description provided for @procedimentosItemPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'items'**
+  String get procedimentosItemPlural;
+
+  /// No description provided for @procedimentosEditorNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New procedure'**
+  String get procedimentosEditorNewTitle;
+
+  /// No description provided for @procedimentosEditorEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit procedure'**
+  String get procedimentosEditorEditTitle;
+
+  /// No description provided for @procedimentosGeneralInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'General information'**
+  String get procedimentosGeneralInfo;
+
+  /// No description provided for @procedimentosNameField.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get procedimentosNameField;
+
+  /// No description provided for @procedimentosDescriptionField.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get procedimentosDescriptionField;
+
+  /// No description provided for @procedimentosOperationContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational context'**
+  String get procedimentosOperationContext;
+
+  /// No description provided for @procedimentosMomentField.
+  ///
+  /// In en, this message translates to:
+  /// **'Moment'**
+  String get procedimentosMomentField;
+
+  /// No description provided for @procedimentosRequireCompletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Require procedure completion'**
+  String get procedimentosRequireCompletion;
+
+  /// No description provided for @procedimentosRequireCompletionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'In a future integration, this procedure may require completion before continuing the operation.'**
+  String get procedimentosRequireCompletionHelp;
+
+  /// No description provided for @procedimentosStages.
+  ///
+  /// In en, this message translates to:
+  /// **'Stages'**
+  String get procedimentosStages;
+
+  /// No description provided for @procedimentosAddStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add stage'**
+  String get procedimentosAddStage;
+
+  /// No description provided for @procedimentosEditStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit stage'**
+  String get procedimentosEditStage;
+
+  /// No description provided for @procedimentosDeleteStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete stage'**
+  String get procedimentosDeleteStage;
+
+  /// No description provided for @procedimentosItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get procedimentosItems;
+
+  /// No description provided for @procedimentosAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get procedimentosAddItem;
+
+  /// No description provided for @procedimentosEditItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get procedimentosEditItem;
+
+  /// No description provided for @procedimentosDeleteItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete item'**
+  String get procedimentosDeleteItem;
+
+  /// No description provided for @procedimentosItemType.
+  ///
+  /// In en, this message translates to:
+  /// **'Item type'**
+  String get procedimentosItemType;
+
+  /// No description provided for @procedimentosStageTitleField.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage title'**
+  String get procedimentosStageTitleField;
+
+  /// No description provided for @procedimentosItemTitleField.
+  ///
+  /// In en, this message translates to:
+  /// **'Title or instruction'**
+  String get procedimentosItemTitleField;
+
+  /// No description provided for @procedimentosItemGuidanceField.
+  ///
+  /// In en, this message translates to:
+  /// **'Supporting text'**
+  String get procedimentosItemGuidanceField;
+
+  /// No description provided for @procedimentosSaveStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Save stage'**
+  String get procedimentosSaveStage;
+
+  /// No description provided for @procedimentosSaveItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Save item'**
+  String get procedimentosSaveItem;
+
+  /// No description provided for @procedimentosResponseInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Instruction'**
+  String get procedimentosResponseInstruction;
+
+  /// No description provided for @procedimentosResponseConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation'**
+  String get procedimentosResponseConfirmation;
+
+  /// No description provided for @procedimentosResponseYesNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes or no'**
+  String get procedimentosResponseYesNo;
+
+  /// No description provided for @procedimentosResponseInstructionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows an instruction to the staff member.'**
+  String get procedimentosResponseInstructionDescription;
+
+  /// No description provided for @procedimentosResponseConfirmationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires the staff member to confirm an action.'**
+  String get procedimentosResponseConfirmationDescription;
+
+  /// No description provided for @procedimentosResponseYesNoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows an objective question.'**
+  String get procedimentosResponseYesNoDescription;
+
+  /// No description provided for @procedimentosValidationName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the procedure name.'**
+  String get procedimentosValidationName;
+
+  /// No description provided for @procedimentosValidationReviewFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the highlighted fields before saving.'**
+  String get procedimentosValidationReviewFields;
+
+  /// No description provided for @procedimentosValidationAtLeastOneStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one stage to the procedure.'**
+  String get procedimentosValidationAtLeastOneStage;
+
+  /// No description provided for @procedimentosValidationStageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the stage title.'**
+  String get procedimentosValidationStageTitle;
+
+  /// No description provided for @procedimentosValidationStageItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Each stage needs at least one item.'**
+  String get procedimentosValidationStageItem;
+
+  /// No description provided for @procedimentosValidationItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the item title.'**
+  String get procedimentosValidationItemTitle;
+
+  /// No description provided for @procedimentosCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure created.'**
+  String get procedimentosCreatedSuccess;
+
+  /// No description provided for @procedimentosUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure updated.'**
+  String get procedimentosUpdatedSuccess;
+
+  /// No description provided for @procedimentosDiscardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get procedimentosDiscardChangesTitle;
+
+  /// No description provided for @procedimentosDiscardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The changes made to this procedure have not been saved yet.'**
+  String get procedimentosDiscardChangesMessage;
+
+  /// No description provided for @procedimentosKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get procedimentosKeepEditing;
+
+  /// No description provided for @procedimentosDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get procedimentosDiscard;
+
+  /// No description provided for @procedimentosConfirmDeleteStageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete stage?'**
+  String get procedimentosConfirmDeleteStageTitle;
+
+  /// No description provided for @procedimentosConfirmDeleteStageMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The items in this stage will also be removed.'**
+  String get procedimentosConfirmDeleteStageMessage;
+
+  /// No description provided for @procedimentosConfirmDeleteItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete item?'**
+  String get procedimentosConfirmDeleteItemTitle;
+
+  /// No description provided for @procedimentosConfirmDeleteItemMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This item will be removed from the procedure.'**
+  String get procedimentosConfirmDeleteItemMessage;
+
+  /// No description provided for @procedimentosEditorDemoNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes will be kept only during this session.'**
+  String get procedimentosEditorDemoNotice;
+
+  /// No description provided for @procedimentosNoStages.
+  ///
+  /// In en, this message translates to:
+  /// **'No stages added'**
+  String get procedimentosNoStages;
+
+  /// No description provided for @procedimentosItemRequiredHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The final required behavior will be defined in the operational integration.'**
+  String get procedimentosItemRequiredHelp;
 }
 
 class _AppLocalizationsDelegate

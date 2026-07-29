@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_parallax_card_data.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_parallax_carousel.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
@@ -21,6 +22,7 @@ import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
@@ -388,6 +390,19 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             subtitle: 'Acessos por perfil e colaborador',
             icon: Icons.admin_panel_settings_outlined,
             onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: context.t('procedimentos.title', fallback: 'Procedimentos'),
+            subtitle: context.t(
+              'procedimentos.subtitle',
+              fallback: 'Guias para vendas, atendimentos e entregas',
+            ),
+            icon: Icons.fact_check_outlined,
+            onTap:
+                () => _navigateTo(
+                  context,
+                  const OperationalProceduresMobileScreen(),
+                ),
           ),
           _ManagementItem(
             title: 'Regionalização',

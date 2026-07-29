@@ -287,6 +287,267 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get pdvWebSelectPaymentMethodTitle =>
       'Selecione uma forma de recebimento';
+
+  @override
+  String get procedimentosTitle => 'Procedimentos';
+
+  @override
+  String get procedimentosSubtitle =>
+      'Guias para vendas, atendimentos e entregas';
+
+  @override
+  String get procedimentosIntroTitle =>
+      'Configure orientações para vendas, atendimentos e entregas.';
+
+  @override
+  String get procedimentosDemoData => 'Dados demonstrativos';
+
+  @override
+  String get procedimentosFiltersLabel => 'Filtros de procedimentos';
+
+  @override
+  String get procedimentosFilterAll => 'Todos';
+
+  @override
+  String get procedimentosFilterActive => 'Ativos';
+
+  @override
+  String get procedimentosFilterInactive => 'Inativos';
+
+  @override
+  String get procedimentosNewProcedure => 'Novo procedimento';
+
+  @override
+  String get procedimentosCreateProcedure => 'Criar procedimento';
+
+  @override
+  String get procedimentosOpenAction => 'Abrir';
+
+  @override
+  String get procedimentosCreateUnavailable =>
+      'A criação de procedimentos será disponibilizada na próxima etapa.';
+
+  @override
+  String get procedimentosEditUnavailable =>
+      'A edição deste procedimento será disponibilizada na próxima etapa.';
+
+  @override
+  String get procedimentosLoading => 'Carregando procedimentos';
+
+  @override
+  String get procedimentosEmptyTitle => 'Nenhum procedimento configurado';
+
+  @override
+  String get procedimentosEmptyDescription =>
+      'Crie orientações para apoiar a equipe nos momentos importantes da operação.';
+
+  @override
+  String get procedimentosFilteredEmptyTitle =>
+      'Nenhum procedimento neste filtro';
+
+  @override
+  String get procedimentosFilteredEmptyDescription =>
+      'Altere o filtro para ver outros procedimentos demonstrativos.';
+
+  @override
+  String get procedimentosErrorTitle =>
+      'Não foi possível carregar os procedimentos';
+
+  @override
+  String get procedimentosErrorDescription => 'Tente novamente em instantes.';
+
+  @override
+  String get procedimentosStatusDraft => 'Rascunho';
+
+  @override
+  String get procedimentosOperationSale => 'Venda';
+
+  @override
+  String get procedimentosOperationTechnicalService => 'Atendimento técnico';
+
+  @override
+  String get procedimentosOperationQuote => 'Orçamento';
+
+  @override
+  String get procedimentosOperationDelivery => 'Entrega';
+
+  @override
+  String get procedimentosMomentBeforeStart => 'Antes de iniciar';
+
+  @override
+  String get procedimentosMomentBeforeFinish => 'Antes de finalizar';
+
+  @override
+  String get procedimentosMomentBeforeDelivery => 'Antes da entrega';
+
+  @override
+  String get procedimentosStageSingular => 'etapa';
+
+  @override
+  String get procedimentosStagePlural => 'etapas';
+
+  @override
+  String get procedimentosItemSingular => 'item';
+
+  @override
+  String get procedimentosItemPlural => 'itens';
+
+  @override
+  String get procedimentosEditorNewTitle => 'Novo procedimento';
+
+  @override
+  String get procedimentosEditorEditTitle => 'Editar procedimento';
+
+  @override
+  String get procedimentosGeneralInfo => 'Informações gerais';
+
+  @override
+  String get procedimentosNameField => 'Nome';
+
+  @override
+  String get procedimentosDescriptionField => 'Descrição';
+
+  @override
+  String get procedimentosOperationContext => 'Contexto operacional';
+
+  @override
+  String get procedimentosMomentField => 'Momento';
+
+  @override
+  String get procedimentosRequireCompletion =>
+      'Exigir conclusão deste procedimento';
+
+  @override
+  String get procedimentosRequireCompletionHelp =>
+      'Na integração futura, esse procedimento poderá exigir conclusão antes de continuar a operação.';
+
+  @override
+  String get procedimentosStages => 'Etapas';
+
+  @override
+  String get procedimentosAddStage => 'Adicionar etapa';
+
+  @override
+  String get procedimentosEditStage => 'Editar etapa';
+
+  @override
+  String get procedimentosDeleteStage => 'Excluir etapa';
+
+  @override
+  String get procedimentosItems => 'Itens';
+
+  @override
+  String get procedimentosAddItem => 'Adicionar item';
+
+  @override
+  String get procedimentosEditItem => 'Editar item';
+
+  @override
+  String get procedimentosDeleteItem => 'Excluir item';
+
+  @override
+  String get procedimentosItemType => 'Tipo de item';
+
+  @override
+  String get procedimentosStageTitleField => 'Título da etapa';
+
+  @override
+  String get procedimentosItemTitleField => 'Título ou instrução';
+
+  @override
+  String get procedimentosItemGuidanceField => 'Texto de apoio';
+
+  @override
+  String get procedimentosSaveStage => 'Salvar etapa';
+
+  @override
+  String get procedimentosSaveItem => 'Salvar item';
+
+  @override
+  String get procedimentosResponseInstruction => 'Orientação';
+
+  @override
+  String get procedimentosResponseConfirmation => 'Confirmação';
+
+  @override
+  String get procedimentosResponseYesNo => 'Sim ou não';
+
+  @override
+  String get procedimentosResponseInstructionDescription =>
+      'Apresenta uma instrução ao colaborador.';
+
+  @override
+  String get procedimentosResponseConfirmationDescription =>
+      'Exige que o colaborador confirme uma ação.';
+
+  @override
+  String get procedimentosResponseYesNoDescription =>
+      'Apresenta uma pergunta objetiva.';
+
+  @override
+  String get procedimentosValidationName => 'Informe o nome do procedimento.';
+
+  @override
+  String get procedimentosValidationReviewFields =>
+      'Revise os campos destacados antes de salvar.';
+
+  @override
+  String get procedimentosValidationAtLeastOneStage =>
+      'Adicione pelo menos uma etapa ao procedimento.';
+
+  @override
+  String get procedimentosValidationStageTitle => 'Informe o título da etapa.';
+
+  @override
+  String get procedimentosValidationStageItem =>
+      'Cada etapa precisa ter pelo menos um item.';
+
+  @override
+  String get procedimentosValidationItemTitle => 'Informe o título do item.';
+
+  @override
+  String get procedimentosCreatedSuccess => 'Procedimento criado.';
+
+  @override
+  String get procedimentosUpdatedSuccess => 'Procedimento atualizado.';
+
+  @override
+  String get procedimentosDiscardChangesTitle => 'Descartar alterações?';
+
+  @override
+  String get procedimentosDiscardChangesMessage =>
+      'As alterações feitas neste procedimento ainda não foram salvas.';
+
+  @override
+  String get procedimentosKeepEditing => 'Continuar editando';
+
+  @override
+  String get procedimentosDiscard => 'Descartar';
+
+  @override
+  String get procedimentosConfirmDeleteStageTitle => 'Excluir etapa?';
+
+  @override
+  String get procedimentosConfirmDeleteStageMessage =>
+      'Os itens desta etapa também serão removidos.';
+
+  @override
+  String get procedimentosConfirmDeleteItemTitle => 'Excluir item?';
+
+  @override
+  String get procedimentosConfirmDeleteItemMessage =>
+      'Este item será removido do procedimento.';
+
+  @override
+  String get procedimentosEditorDemoNotice =>
+      'As alterações serão mantidas apenas durante esta sessão.';
+
+  @override
+  String get procedimentosNoStages => 'Nenhuma etapa adicionada';
+
+  @override
+  String get procedimentosItemRequiredHelp =>
+      'A lógica final de obrigatoriedade será definida na integração operacional.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -334,4 +595,265 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback registrado.';
+
+  @override
+  String get procedimentosTitle => 'Procedimentos';
+
+  @override
+  String get procedimentosSubtitle =>
+      'Guias para vendas, atendimentos e entregas';
+
+  @override
+  String get procedimentosIntroTitle =>
+      'Configure orientações para vendas, atendimentos e entregas.';
+
+  @override
+  String get procedimentosDemoData => 'Dados demonstrativos';
+
+  @override
+  String get procedimentosFiltersLabel => 'Filtros de procedimentos';
+
+  @override
+  String get procedimentosFilterAll => 'Todos';
+
+  @override
+  String get procedimentosFilterActive => 'Ativos';
+
+  @override
+  String get procedimentosFilterInactive => 'Inativos';
+
+  @override
+  String get procedimentosNewProcedure => 'Novo procedimento';
+
+  @override
+  String get procedimentosCreateProcedure => 'Criar procedimento';
+
+  @override
+  String get procedimentosOpenAction => 'Abrir';
+
+  @override
+  String get procedimentosCreateUnavailable =>
+      'A criação de procedimentos será disponibilizada na próxima etapa.';
+
+  @override
+  String get procedimentosEditUnavailable =>
+      'A edição deste procedimento será disponibilizada na próxima etapa.';
+
+  @override
+  String get procedimentosLoading => 'Carregando procedimentos';
+
+  @override
+  String get procedimentosEmptyTitle => 'Nenhum procedimento configurado';
+
+  @override
+  String get procedimentosEmptyDescription =>
+      'Crie orientações para apoiar a equipe nos momentos importantes da operação.';
+
+  @override
+  String get procedimentosFilteredEmptyTitle =>
+      'Nenhum procedimento neste filtro';
+
+  @override
+  String get procedimentosFilteredEmptyDescription =>
+      'Altere o filtro para ver outros procedimentos demonstrativos.';
+
+  @override
+  String get procedimentosErrorTitle =>
+      'Não foi possível carregar os procedimentos';
+
+  @override
+  String get procedimentosErrorDescription => 'Tente novamente em instantes.';
+
+  @override
+  String get procedimentosStatusDraft => 'Rascunho';
+
+  @override
+  String get procedimentosOperationSale => 'Venda';
+
+  @override
+  String get procedimentosOperationTechnicalService => 'Atendimento técnico';
+
+  @override
+  String get procedimentosOperationQuote => 'Orçamento';
+
+  @override
+  String get procedimentosOperationDelivery => 'Entrega';
+
+  @override
+  String get procedimentosMomentBeforeStart => 'Antes de iniciar';
+
+  @override
+  String get procedimentosMomentBeforeFinish => 'Antes de finalizar';
+
+  @override
+  String get procedimentosMomentBeforeDelivery => 'Antes da entrega';
+
+  @override
+  String get procedimentosStageSingular => 'etapa';
+
+  @override
+  String get procedimentosStagePlural => 'etapas';
+
+  @override
+  String get procedimentosItemSingular => 'item';
+
+  @override
+  String get procedimentosItemPlural => 'itens';
+
+  @override
+  String get procedimentosEditorNewTitle => 'Novo procedimento';
+
+  @override
+  String get procedimentosEditorEditTitle => 'Editar procedimento';
+
+  @override
+  String get procedimentosGeneralInfo => 'Informações gerais';
+
+  @override
+  String get procedimentosNameField => 'Nome';
+
+  @override
+  String get procedimentosDescriptionField => 'Descrição';
+
+  @override
+  String get procedimentosOperationContext => 'Contexto operacional';
+
+  @override
+  String get procedimentosMomentField => 'Momento';
+
+  @override
+  String get procedimentosRequireCompletion =>
+      'Exigir conclusão deste procedimento';
+
+  @override
+  String get procedimentosRequireCompletionHelp =>
+      'Na integração futura, esse procedimento poderá exigir conclusão antes de continuar a operação.';
+
+  @override
+  String get procedimentosStages => 'Etapas';
+
+  @override
+  String get procedimentosAddStage => 'Adicionar etapa';
+
+  @override
+  String get procedimentosEditStage => 'Editar etapa';
+
+  @override
+  String get procedimentosDeleteStage => 'Excluir etapa';
+
+  @override
+  String get procedimentosItems => 'Itens';
+
+  @override
+  String get procedimentosAddItem => 'Adicionar item';
+
+  @override
+  String get procedimentosEditItem => 'Editar item';
+
+  @override
+  String get procedimentosDeleteItem => 'Excluir item';
+
+  @override
+  String get procedimentosItemType => 'Tipo de item';
+
+  @override
+  String get procedimentosStageTitleField => 'Título da etapa';
+
+  @override
+  String get procedimentosItemTitleField => 'Título ou instrução';
+
+  @override
+  String get procedimentosItemGuidanceField => 'Texto de apoio';
+
+  @override
+  String get procedimentosSaveStage => 'Salvar etapa';
+
+  @override
+  String get procedimentosSaveItem => 'Salvar item';
+
+  @override
+  String get procedimentosResponseInstruction => 'Orientação';
+
+  @override
+  String get procedimentosResponseConfirmation => 'Confirmação';
+
+  @override
+  String get procedimentosResponseYesNo => 'Sim ou não';
+
+  @override
+  String get procedimentosResponseInstructionDescription =>
+      'Apresenta uma instrução ao colaborador.';
+
+  @override
+  String get procedimentosResponseConfirmationDescription =>
+      'Exige que o colaborador confirme uma ação.';
+
+  @override
+  String get procedimentosResponseYesNoDescription =>
+      'Apresenta uma pergunta objetiva.';
+
+  @override
+  String get procedimentosValidationName => 'Informe o nome do procedimento.';
+
+  @override
+  String get procedimentosValidationReviewFields =>
+      'Revise os campos destacados antes de salvar.';
+
+  @override
+  String get procedimentosValidationAtLeastOneStage =>
+      'Adicione pelo menos uma etapa ao procedimento.';
+
+  @override
+  String get procedimentosValidationStageTitle => 'Informe o título da etapa.';
+
+  @override
+  String get procedimentosValidationStageItem =>
+      'Cada etapa precisa ter pelo menos um item.';
+
+  @override
+  String get procedimentosValidationItemTitle => 'Informe o título do item.';
+
+  @override
+  String get procedimentosCreatedSuccess => 'Procedimento criado.';
+
+  @override
+  String get procedimentosUpdatedSuccess => 'Procedimento atualizado.';
+
+  @override
+  String get procedimentosDiscardChangesTitle => 'Descartar alterações?';
+
+  @override
+  String get procedimentosDiscardChangesMessage =>
+      'As alterações feitas neste procedimento ainda não foram salvas.';
+
+  @override
+  String get procedimentosKeepEditing => 'Continuar editando';
+
+  @override
+  String get procedimentosDiscard => 'Descartar';
+
+  @override
+  String get procedimentosConfirmDeleteStageTitle => 'Excluir etapa?';
+
+  @override
+  String get procedimentosConfirmDeleteStageMessage =>
+      'Os itens desta etapa também serão removidos.';
+
+  @override
+  String get procedimentosConfirmDeleteItemTitle => 'Excluir item?';
+
+  @override
+  String get procedimentosConfirmDeleteItemMessage =>
+      'Este item será removido do procedimento.';
+
+  @override
+  String get procedimentosEditorDemoNotice =>
+      'As alterações serão mantidas apenas durante esta sessão.';
+
+  @override
+  String get procedimentosNoStages => 'Nenhuma etapa adicionada';
+
+  @override
+  String get procedimentosItemRequiredHelp =>
+      'A lógica final de obrigatoriedade será definida na integração operacional.';
 }
