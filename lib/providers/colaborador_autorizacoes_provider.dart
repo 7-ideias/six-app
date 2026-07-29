@@ -31,6 +31,12 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeLancarAssistenciaTecnica =>
       autorizacoes.objAssistenciaTecnicaPode.lancaServico;
   bool get podeEditarCliente => autorizacoes.objClientesPode.podeEditarCliente;
+  bool get podeCadastrarProduto => autorizacoes.podeCadastrarProduto;
+  bool get podeEditarProduto => autorizacoes.objProdutosPode.podeEditarProduto;
+  bool get podeVerEstoqueDeProduto =>
+      autorizacoes.objProdutosPode.podeVerEstoqueDeProduto;
+  bool get podeAcessarCatalogo =>
+      podeCadastrarProduto || podeEditarProduto || podeVerEstoqueDeProduto;
   bool get podeGerarRelatorio =>
       autorizacoes.objRelatoriosPode.geraRelatorioDeVendas;
   bool get podeAcessarFinanceiro =>
@@ -58,9 +64,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final ColaboradorUsuarioDetalhe detalhe = await _apiClient.buscarColaborador(
-        idUnicoDoUsuario,
-      );
+      final ColaboradorUsuarioDetalhe detalhe = await _apiClient
+          .buscarColaborador(idUnicoDoUsuario);
       final Map<String, dynamic> json = detalhe.toJson();
       final Map<String, dynamic> autorizacoesJson = _ensureMap(
         json['objAutorizacoes'],
@@ -68,12 +73,13 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       final ColaboradorAutorizacoesModel carregadas =
           ColaboradorAutorizacoesModel.fromJson(autorizacoesJson);
 
-      _autorizacoes = _deveAssumirAdministradorSemVinculo(
-        detalhe: detalhe,
-        autorizacoes: carregadas,
-      )
-          ? ColaboradorAutorizacoesModel.permitirTudo()
-          : carregadas;
+      _autorizacoes =
+          _deveAssumirAdministradorSemVinculo(
+                detalhe: detalhe,
+                autorizacoes: carregadas,
+              )
+              ? ColaboradorAutorizacoesModel.permitirTudo()
+              : carregadas;
       _idUnicoDoUsuarioCarregado = idUnicoDoUsuario;
     } catch (e) {
       _erro = e.toString();
@@ -119,10 +125,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     }
     if (value is Map) {
       return value.map(
-        (dynamic key, dynamic value) => MapEntry<String, dynamic>(
-          key.toString(),
-          value,
-        ),
+        (dynamic key, dynamic value) =>
+            MapEntry<String, dynamic>(key.toString(), value),
       );
     }
     return <String, dynamic>{};

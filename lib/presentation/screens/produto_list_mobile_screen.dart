@@ -16,10 +16,12 @@ class ProdutolistMobileScreen extends StatelessWidget {
     super.key,
     this.isSelecao = false,
     this.permitirSelecaoMultipla = false,
+    this.tipoInicial = 'PRODUTO',
   });
 
   final bool isSelecao;
   final bool permitirSelecaoMultipla;
+  final String tipoInicial;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,7 @@ class ProdutolistMobileScreen extends StatelessWidget {
             base.ProdutolistMobileScreen(
               isSelecao: isSelecao,
               permitirSelecaoMultipla: permitirSelecaoMultipla,
+              tipoInicial: tipoInicial,
             ),
             Positioned.fill(
               child: AbsorbPointer(
