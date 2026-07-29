@@ -28,9 +28,10 @@ Leia `references/mobile-design-system.md` quando precisar consultar tokens, shel
 2. Se o pedido for somente mobile, preserve arquivos web e evite tema global.
 3. Antes de editar, informe os arquivos que pretende alterar e por que são seguros para mobile.
 4. Reutilize `SixMobilePalette`, `SixMobilePageShell`, `NavBarMobile` e componentes mobile existentes antes de criar padrões novos.
-5. Implemente com escopo mínimo, sem alterar regras de negócio, contratos de API, autenticação, permissões ou fluxos web.
-6. Valide com `dart format <arquivos>`, `git diff --check`, `git diff` e, quando aplicável, `flutter analyze` e testes relacionados.
-7. No relato final, informe arquivos alterados, tokens usados, motion aplicado, acessibilidade, validações e confirmação de ausência de impacto web.
+5. Em telas legadas migradas para o padrão mobile, revise também textos visíveis, moeda, números e datas para respeitar idioma e regionalização globais.
+6. Implemente com escopo mínimo, sem alterar regras de negócio, contratos de API, autenticação, permissões ou fluxos web.
+7. Valide com `dart format <arquivos>`, `git diff --check`, `git diff` e, quando aplicável, `flutter analyze` e testes relacionados.
+8. No relato final, informe arquivos alterados, tokens usados, motion aplicado, acessibilidade, validações e confirmação de ausência de impacto web.
 
 ## Escopo mobile
 
@@ -148,6 +149,24 @@ A padronização do cabeçalho não deve remover ou modificar:
 - estado da tela.
 
 O componente compartilhado deve adaptar-se à tela, e não obrigar a tela a perder funcionalidades para se encaixar no componente.
+
+### Regionalização em telas legadas
+
+Ao migrar cabeçalhos, AppBars ou telas mobile legadas para o padrão oficial, audite também as exibições visíveis ao usuário que costumam ficar acopladas ao legado:
+
+- textos fixos da UI;
+- tooltips, labels, títulos, subtítulos, estados vazios, erros e mensagens de ação;
+- valores monetários;
+- quantidades, totais e números decimais;
+- datas e horários.
+
+Para textos do app, prefira `context.t('chave', fallback: 'Texto em pt-BR')` ou mecanismo de i18n existente, mantendo fallback durante a migração quando a chave ainda não existir no backend. Não traduza textos cadastrados pelo usuário ou conteúdos retornados pelo backend como conteúdo livre.
+
+Para moeda, datas, horas e números, consuma sempre `LocaleSettingsProvider` via `context.watch`, `context.read` ou `context.select`. Não instancie `LocaleSettingsProvider()` manualmente e não mantenha `NumberFormat.currency(locale: 'pt_BR', symbol: 'R$')`, `DateFormat('dd/MM', 'pt_BR')`, separadores `.`/`,` ou símbolos/códigos de moeda hardcoded dentro da tela quando o valor for exibido ao usuário.
+
+Para valores monetários, use `context.read<LocaleSettingsProvider>().formatCurrency(valor)` ou helper local que delegue para o provider global. Para data e hora, combine `formatDate` e `formatTime` do provider ou helper centralizado equivalente. Para quantidades e números, preserve o valor numérico bruto e aplique formatação apenas na renderização.
+
+Não altere payloads, DTOs, providers, endpoints ou códigos técnicos enviados ao backend para acomodar tradução. Labels traduzidos são somente de apresentação.
 
 ## Componentes e estados
 
