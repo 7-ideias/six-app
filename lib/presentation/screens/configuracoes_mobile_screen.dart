@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../l10n/six_i18n.dart';
 import 'empresa_configuracao_screen.dart';
 import 'regionalizacao_configuracao_content.dart';
 

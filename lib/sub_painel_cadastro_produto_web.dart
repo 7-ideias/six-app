@@ -1588,19 +1588,19 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           ),
         );
 
-        final Widget categoriasAviso =
-            _erroCategorias == null
-                ? const SizedBox.shrink()
-                : Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    _erroCategorias!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                );
+        // final Widget categoriasAviso =
+        //     _erroCategorias == null
+        //         ? const SizedBox.shrink()
+        //         : Padding(
+        //           padding: const EdgeInsets.only(top: 12),
+        //           child: Text(
+        //             _erroCategorias!,
+        //             style: TextStyle(
+        //               color: Theme.of(context).colorScheme.error,
+        //               fontWeight: FontWeight.w700,
+        //             ),
+        //           ),
+        //         );
 
         // final Widget categoriasAviso =
         //     _erroCategorias == null
