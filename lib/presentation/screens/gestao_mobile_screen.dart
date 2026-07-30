@@ -4,24 +4,28 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_parallax_card_data.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_parallax_carousel.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
-import '../components/cores_do_mobile.dart';
 
 class GestaoMobileScreen extends StatefulWidget {
   const GestaoMobileScreen({super.key});
@@ -133,8 +137,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
       accentColor: _accentColor,
-      drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
+      automaticallyImplyLeading: false,
       actions: <Widget>[
+        SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
         IconButton(
           tooltip: 'Notificações',
           icon: _buildNotificationIcon(),
@@ -270,18 +275,23 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   }
 
   List<_ManagementSection> _managementSections(BuildContext context) {
+    final bool podeAcessarCatalogo =
+        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+
     return <_ManagementSection>[
       _ManagementSection(
         title: 'Catálogo',
         subtitle: 'Produtos, categorias e estoque sempre à mão.',
         icon: Icons.inventory_2_outlined,
         items: <_ManagementItem>[
-          _ManagementItem(
-            title: 'Produtos e Serviços',
-            subtitle: 'Cadastro, preço, disponibilidade e serviços técnicos',
-            icon: Icons.shopping_bag_outlined,
-            onTap: () => _navigateTo(context, const ProdutolistMobileScreen()),
-          ),
+          if (podeAcessarCatalogo)
+            _ManagementItem(
+              title: 'Produtos e Serviços',
+              subtitle: 'Saúde, cadastro e revisão do catálogo',
+              icon: Icons.shopping_bag_outlined,
+              onTap:
+                  () => _navigateTo(context, const CatalogHealthMobileScreen()),
+            ),
           _ManagementItem(
             title: 'Categorias',
             subtitle: 'Organização do catálogo',
@@ -380,6 +390,19 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             subtitle: 'Acessos por perfil e colaborador',
             icon: Icons.admin_panel_settings_outlined,
             onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: context.t('procedimentos.title', fallback: 'Procedimentos'),
+            subtitle: context.t(
+              'procedimentos.subtitle',
+              fallback: 'Guias para vendas, atendimentos e entregas',
+            ),
+            icon: Icons.fact_check_outlined,
+            onTap:
+                () => _navigateTo(
+                  context,
+                  const OperationalProceduresMobileScreen(),
+                ),
           ),
           _ManagementItem(
             title: 'Regionalização',

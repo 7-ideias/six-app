@@ -296,6 +296,7 @@ class AgendaFinanceiraFiltrosRequest {
     required this.origens,
     required this.categorias,
     required this.formasPagamento,
+    required this.codigosTipoRecebimento,
     this.clienteFornecedor,
     required this.somenteCriticos,
   });
@@ -305,6 +306,7 @@ class AgendaFinanceiraFiltrosRequest {
   final List<String> origens;
   final List<String> categorias;
   final List<String> formasPagamento;
+  final List<String> codigosTipoRecebimento;
   final String? clienteFornecedor;
   final bool somenteCriticos;
 
@@ -315,6 +317,7 @@ class AgendaFinanceiraFiltrosRequest {
       'origens': origens,
       'categorias': categorias,
       'formasPagamento': formasPagamento,
+      'codigosTipoRecebimento': codigosTipoRecebimento,
       'clienteFornecedor': clienteFornecedor,
       'somenteCriticos': somenteCriticos,
     };

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/di/operacao_module.dart';
 import '../../core/services/auth_service.dart';
@@ -11,8 +11,12 @@ import '../../data/models/produto_model.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
+import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/operacao/operacao_service.dart';
+import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
+import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile_motion.dart';
 import 'produto_list_mobile_screen.dart';
 
 class PdvMobileScreen extends StatefulWidget {
@@ -25,11 +29,15 @@ class PdvMobileScreen extends StatefulWidget {
 }
 
 class _PdvMobileScreenState extends State<PdvMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const double _cardRadius = 22;
+  static const double _initialHeroRadius = 30;
+  static const double _initialActionsRadius = 26;
+  static const double _initialButtonRadius = 20;
+  static const double _initialIllustrationSize = 72;
+  static const double _initialIllustrationInnerSize = 52;
+  static const Duration _entryDuration = Duration(milliseconds: 340);
+  static const Duration _stateTransitionDuration = Duration(milliseconds: 340);
+  static const Duration _pressDuration = Duration(milliseconds: 100);
 
   static const List<_FormaPagamentoMobile>
   _formasPagamentoFallback = <_FormaPagamentoMobile>[
@@ -61,7 +69,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   final Set<String> _formasSelecionadas = <String>{};
   final Map<String, TextEditingController> _valorPorForma =
       <String, TextEditingController>{};
-  final ScrollController _scrollController = ScrollController();
   final GlobalKey _pagamentoKey = GlobalKey();
 
   List<_FormaPagamentoMobile> _formasPagamento =
@@ -69,13 +76,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   bool _enviando = false;
   bool _buscandoCodigo = false;
-  bool _acoesRapidasVisiveis = false;
   bool _destacarPagamento = false;
 
   bool get _editandoVendaNaoLiquidada => widget.vendaNaoLiquidada != null;
   double get _total => _itens.fold<double>(0, (s, item) => s + item.subtotal);
   int get _quantidadeItens =>
       _itens.fold<int>(0, (s, item) => s + item.quantidade);
+
+  static Color _withAlpha(Color color, double opacity) {
+    return color.withAlpha((opacity.clamp(0.0, 1.0) * 255).round());
+  }
 
   @override
   void initState() {
@@ -91,7 +101,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
     for (final controller in _valorPorForma.values) {
       controller.dispose();
     }
@@ -360,7 +369,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     await Future<void>.delayed(const Duration(milliseconds: 40));
     final pagamentoContext = _pagamentoKey.currentContext;
-    if (pagamentoContext != null && mounted) {
+    if (pagamentoContext != null && pagamentoContext.mounted) {
       await Scrollable.ensureVisible(
         pagamentoContext,
         duration: const Duration(milliseconds: 520),
@@ -386,7 +395,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     final confirmou = await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
+      barrierColor: _withAlpha(Colors.black, 0.42),
       builder: (bottomSheetContext) {
         final theme = Theme.of(bottomSheetContext);
         return SafeArea(
@@ -431,7 +443,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                           Text(
                             'A venda ficará em aberto para liquidação no caixa.',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: _mutedTextColor,
+                              color: SixMobilePalette.mutedText,
                             ),
                           ),
                         ],
@@ -568,10 +580,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: _accentColor.withOpacity(0.10),
+        color: SixMobilePalette.softAccentSurface,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Icon(icon, color: _accentColor),
+      child: Icon(icon, color: SixMobilePalette.accent),
     );
   }
 
@@ -579,9 +591,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _accentColor.withOpacity(0.07),
+        color: SixMobilePalette.softAccentSurface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _accentColor.withOpacity(0.16)),
+        border: Border.all(color: SixMobilePalette.highlightedBorder),
       ),
       child: Row(
         children: <Widget>[
@@ -589,7 +601,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             child: Text(
               'Valor em aberto',
               style: TextStyle(
-                color: _titleTextColor,
+                color: SixMobilePalette.titleText,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -597,7 +609,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           Text(
             _formatarValor(_total),
             style: const TextStyle(
-              color: _titleTextColor,
+              color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w900,
               fontSize: 18,
             ),
@@ -630,7 +642,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   double _valorDigitadoForma(String codigoForma) {
     final raw = _valorPorForma[codigoForma]?.text ?? '';
-    final normalizado = raw.replaceAll('R\$', '').replaceAll(',', '.').trim();
+    final currencyCode = context.read<LocaleSettingsProvider>().currencyCode;
+    final normalizado =
+        raw
+            .replaceAll(currencyCode, '')
+            .replaceAll('R\$', '')
+            .replaceAll(',', '.')
+            .trim();
     return double.tryParse(normalizado) ?? 0.0;
   }
 
@@ -671,7 +689,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return nomeCompleto.isEmpty ? 'Colaborador' : nomeCompleto;
   }
 
-  String _formatarValor(double valor) => 'R\$ ${valor.toStringAsFixed(2)}';
+  String _formatarValor(double valor) {
+    return context.read<LocaleSettingsProvider>().formatCurrency(valor);
+  }
 
   void _mostrarSnack(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -682,161 +702,539 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   @override
   Widget build(BuildContext context) {
     final temItens = _itens.isNotEmpty;
-    final bottomPadding =
-        temItens ? (_acoesRapidasVisiveis ? 218.0 : 142.0) : 110.0;
+    final bottomPadding = temItens ? 178.0 : 28.0;
 
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        title: Text(
-          _editandoVendaNaoLiquidada ? 'Receber venda' : 'PDV - Ponto de Venda',
-          style: const TextStyle(fontWeight: FontWeight.w800),
+    return SixMobilePageShell(
+      title:
+          _editandoVendaNaoLiquidada
+              ? 'Receber venda'
+              : (temItens ? 'Balcão de venda' : 'Nova venda'),
+      backgroundColor: SixMobilePalette.background,
+      primaryColor: SixMobilePalette.primary,
+      secondaryColor: SixMobilePalette.secondary,
+      accentColor: SixMobilePalette.accent,
+      enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 4,
+      scrollEffectOffset: 24,
+      scrolledSurfaceOpacity: 0.66,
+      actions: <Widget>[
+        IconButton(
+          tooltip: 'Ler código',
+          onPressed:
+              _enviando || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
+          icon: const Icon(Icons.qr_code_scanner_rounded),
         ),
-      ),
-      body: SafeArea(
-        child: ListView(
-          controller: _scrollController,
-          padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
-          children: <Widget>[
-            _buildHeader()
-                .animate()
-                .fade(duration: 320.ms)
-                .slideY(begin: 0.04, curve: Curves.easeOut),
-            const SizedBox(height: 16),
-            if (_itens.isEmpty)
-              _buildEstadoVazio()
-            else ...<Widget>[
-              _buildItensCard(),
-              const SizedBox(height: 14),
-              _buildPagamentoCard(),
+      ],
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
+          child: ListView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16, topInset, 16, bottomPadding),
+            children: <Widget>[
+              SixStaggeredEntry(
+                duration: _entryDuration,
+                beginOffset: const Offset(0, 0.035),
+                child: AnimatedSwitcher(
+                  duration: _stateTransitionDuration,
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (
+                    Widget child,
+                    Animation<double> animation,
+                  ) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SizeTransition(
+                        sizeFactor: animation,
+                        axisAlignment: -1,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _buildHeader(),
+                ),
+              ),
+              SizedBox(height: temItens ? 12 : 10),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 70),
+                duration: _entryDuration,
+                beginOffset: const Offset(0, 0.035),
+                child: _buildQuickActionsCard(vendaIniciada: temItens),
+              ),
+              if (temItens) ...<Widget>[
+                const SizedBox(height: 12),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: Column(
+                    key: const ValueKey<String>('pdv-content'),
+                    children: <Widget>[
+                      SixStaggeredEntry(
+                        delay: const Duration(milliseconds: 120),
+                        duration: _entryDuration,
+                        beginOffset: const Offset(0, 0.035),
+                        child: _buildItensCard(),
+                      ),
+                      const SizedBox(height: 12),
+                      SixStaggeredEntry(
+                        delay: const Duration(milliseconds: 170),
+                        duration: _entryDuration,
+                        beginOffset: const Offset(0, 0.035),
+                        child: _buildPagamentoCard(),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...<Widget>[
+                SizedBox(height: _initialBottomBreathingSpace(context)),
+              ],
             ],
-          ],
-        ),
-      ),
-      floatingActionButton: _buildFloatingActions(),
+          ),
+        );
+      },
       bottomNavigationBar: _itens.isEmpty ? null : _buildBottomActions(),
     );
   }
 
+  double _initialBottomBreathingSpace(BuildContext context) {
+    final double height = MediaQuery.sizeOf(context).height;
+    if (height < 680) return 20;
+    if (height < 780) return 52;
+    return 84;
+  }
+
+  Widget _buildQuickActionsCard({required bool vendaIniciada}) {
+    return Material(
+      color: SixMobilePalette.surface,
+      borderRadius: BorderRadius.circular(
+        vendaIniciada ? _cardRadius : _initialActionsRadius,
+      ),
+      child: Container(
+        padding: EdgeInsets.all(vendaIniciada ? 12 : 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(
+            vendaIniciada ? _cardRadius : _initialActionsRadius,
+          ),
+          border: Border.all(
+            color:
+                vendaIniciada
+                    ? SixMobilePalette.border
+                    : SixMobilePalette.activeBorder,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color:
+                  vendaIniciada
+                      ? SixMobilePalette.navigationShadow
+                      : _withAlpha(SixMobilePalette.primary, 0.06),
+              blurRadius: vendaIniciada ? 16 : 22,
+              offset: const Offset(0, 9),
+            ),
+          ],
+        ),
+        child:
+            vendaIniciada
+                ? Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _buildQuickActionButton(
+                        label: 'Adicionar produto',
+                        helper: 'Produtos e serviços',
+                        icon: Icons.add_shopping_cart_rounded,
+                        onTap: _enviando ? null : _abrirSelecaoProduto,
+                        primary: true,
+                        compact: true,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildQuickActionButton(
+                        label:
+                            _buscandoCodigo
+                                ? 'Buscando...'
+                                : 'Ler código de barras',
+                        helper: 'Scanner',
+                        icon: Icons.qr_code_scanner_rounded,
+                        onTap:
+                            _enviando || _buscandoCodigo
+                                ? null
+                                : _abrirScannerCodigoBarras,
+                        loading: _buscandoCodigo,
+                        compact: true,
+                      ),
+                    ),
+                  ],
+                )
+                : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    SixStaggeredEntry(
+                      delay: const Duration(milliseconds: 70),
+                      duration: _entryDuration,
+                      beginOffset: const Offset(0, 0.035),
+                      child: _buildQuickActionButton(
+                        label: 'Adicionar produto',
+                        helper: 'Escolher no catálogo',
+                        icon: Icons.add_shopping_cart_rounded,
+                        onTap: _enviando ? null : _abrirSelecaoProduto,
+                        primary: true,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SixStaggeredEntry(
+                      delay: const Duration(milliseconds: 140),
+                      duration: _entryDuration,
+                      beginOffset: const Offset(0, 0.035),
+                      child: _buildQuickActionButton(
+                        label:
+                            _buscandoCodigo
+                                ? 'Buscando...'
+                                : 'Ler código de barras',
+                        helper: 'Usar a câmera do aparelho',
+                        icon: Icons.qr_code_scanner_rounded,
+                        onTap:
+                            _enviando || _buscandoCodigo
+                                ? null
+                                : _abrirScannerCodigoBarras,
+                        loading: _buscandoCodigo,
+                      ),
+                    ),
+                  ],
+                ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required String label,
+    required String helper,
+    required IconData icon,
+    required VoidCallback? onTap,
+    bool loading = false,
+    bool primary = false,
+    bool compact = false,
+  }) {
+    return _PdvActionButton(
+      label: label,
+      helper: helper,
+      icon: icon,
+      onTap: onTap,
+      loading: loading,
+      primary: primary,
+      compact: compact,
+      radius: _initialButtonRadius,
+      pressDuration: _pressDuration,
+    );
+  }
+
   Widget _buildHeader() {
+    if (_itens.isEmpty) {
+      return _buildInitialSaleHero();
+    }
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      key: const ValueKey<String>('pdv-active-hero'),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: <Color>[_primaryColor, Color(0xFF123B69)],
+          colors: <Color>[SixMobilePalette.primary, SixMobilePalette.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(_cardRadius),
         boxShadow: const <BoxShadow>[
           BoxShadow(
-            color: Color(0x260B1F3A),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: SixMobilePalette.heroShadow,
+            blurRadius: 18,
+            offset: Offset(0, 9),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              _editandoVendaNaoLiquidada
-                  ? Icons.receipt_long_outlined
-                  : Icons.point_of_sale_outlined,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
+          Row(
+            children: <Widget>[
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: _withAlpha(SixMobilePalette.onPrimary, 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _withAlpha(SixMobilePalette.onPrimary, 0.10),
+                  ),
+                ),
+                child: Icon(
                   _editandoVendaNaoLiquidada
-                      ? 'Venda em aberto'
-                      : 'Balcão de venda',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
+                      ? Icons.receipt_long_outlined
+                      : Icons.point_of_sale_outlined,
+                  color: SixMobilePalette.onPrimary,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '$_quantidadeItens item(ns) • ${_formatarValor(_total)}',
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
-                    fontWeight: FontWeight.w700,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _editandoVendaNaoLiquidada
+                          ? 'Venda em aberto'
+                          : 'Venda no balcão',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: SixMobilePalette.onPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _itens.isEmpty
+                          ? 'Pronta para incluir itens'
+                          : 'Revise itens e pagamento',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: SixMobilePalette.heroSupportingText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text(
+                      'Total da venda',
+                      style: TextStyle(
+                        color: SixMobilePalette.heroLabelText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    _buildAnimatedCurrencyText(
+                      _total,
+                      style: const TextStyle(
+                        color: SixMobilePalette.onPrimary,
+                        fontSize: 27,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: _withAlpha(SixMobilePalette.onPrimary, 0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    const Text(
+                      'Itens',
+                      style: TextStyle(
+                        color: SixMobilePalette.heroLabelText,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SixAnimatedNumberText(
+                      key: ValueKey<String>('pdv-items-$_quantidadeItens'),
+                      value: _quantidadeItens.toString(),
+                      style: const TextStyle(
+                        color: SixMobilePalette.onPrimary,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEstadoVazio() {
+  Widget _buildInitialSaleHero() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      key: const ValueKey<String>('pdv-initial-hero'),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(_initialHeroRadius),
+        border: Border.all(color: SixMobilePalette.activeBorder),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: _withAlpha(SixMobilePalette.primary, 0.055),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              color: _accentColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(
-              Icons.add_shopping_cart,
-              color: _accentColor,
-              size: 36,
-            ),
-          ),
+          const SizedBox(height: 4),
+          _buildMinimalShoppingIllustration(),
           const SizedBox(height: 16),
           Text(
-            _editandoVendaNaoLiquidada
-                ? 'Venda sem itens carregados'
-                : 'Venda ainda vazia',
+            _editandoVendaNaoLiquidada ? 'Venda em aberto' : 'Nova venda',
+            textAlign: TextAlign.center,
             style: const TextStyle(
-              color: _titleTextColor,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
+              color: SixMobilePalette.titleText,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              height: 1.08,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             _editandoVendaNaoLiquidada
-                ? 'Inclua novamente os itens antes de receber esta venda.'
-                : 'Inclua produtos ou serviços para liberar a finalização ou o recebimento posterior.',
+                ? 'Revise os itens antes de receber.'
+                : 'Seu caixa está pronto.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _mutedTextColor, height: 1.4),
+            style: const TextStyle(
+              color: SixMobilePalette.titleText,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+            ),
           ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: _abrirSelecaoProduto,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Adicionar produto ou serviço'),
+          const SizedBox(height: 4),
+          Text(
+            _editandoVendaNaoLiquidada
+                ? 'Escolha uma opção abaixo para continuar.'
+                : 'Escolha uma opção abaixo para começar.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: SixMobilePalette.mutedText,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
           ),
+          const SizedBox(height: 4),
         ],
       ),
+    );
+  }
+
+  Widget _buildMinimalShoppingIllustration() {
+    return Semantics(
+      label: 'Ilustração de compra',
+      image: true,
+      child: Container(
+        width: _initialIllustrationSize,
+        height: _initialIllustrationSize,
+        decoration: BoxDecoration(
+          color: SixMobilePalette.softNeutralSurface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: SixMobilePalette.border),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: <Widget>[
+            Positioned(
+              top: 20,
+              right: 22,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: SixMobilePalette.softAccentSurface,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 24,
+              bottom: 24,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: _withAlpha(SixMobilePalette.accent, 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            Container(
+              width: _initialIllustrationInnerSize,
+              height: _initialIllustrationInnerSize,
+              decoration: BoxDecoration(
+                color: SixMobilePalette.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: SixMobilePalette.activeBorder),
+                boxShadow: const <BoxShadow>[
+                  BoxShadow(
+                    color: SixMobilePalette.navigationShadow,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.shopping_bag_outlined,
+                color: SixMobilePalette.accent,
+                size: 26,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedCurrencyText(double value, {TextStyle? style}) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>('pdv-currency-${value.toStringAsFixed(2)}'),
+      tween: Tween<double>(begin: 0, end: value),
+      duration: const Duration(milliseconds: 620),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double animatedValue, Widget? child) {
+        return Text(
+          _formatarValor(animatedValue),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        );
+      },
+    );
+  }
+
+  Widget _buildStaticCurrencyText(double value, {TextStyle? style}) {
+    return Text(
+      _formatarValor(value),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
     );
   }
 
@@ -940,18 +1338,24 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       scale: selecionado ? 1.025 : 1,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        height: 36,
+        constraints: const BoxConstraints(minHeight: 40),
         decoration: BoxDecoration(
-          color: selecionado ? _accentColor : Colors.white,
+          color:
+              selecionado
+                  ? SixMobilePalette.accent
+                  : SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selecionado ? _accentColor : const Color(0xFFCBD5E1),
+            color:
+                selecionado
+                    ? SixMobilePalette.accent
+                    : SixMobilePalette.activeBorder,
           ),
           boxShadow:
               selecionado
                   ? <BoxShadow>[
                     BoxShadow(
-                      color: _accentColor.withOpacity(0.18),
+                      color: _withAlpha(SixMobilePalette.accent, 0.18),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -969,7 +1373,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 Icon(
                   forma.icone,
                   size: 14,
-                  color: selecionado ? Colors.white : _accentColor,
+                  color:
+                      selecionado
+                          ? SixMobilePalette.onPrimary
+                          : SixMobilePalette.accent,
                 ),
                 const SizedBox(width: 5),
                 Flexible(
@@ -982,7 +1389,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       fontSize: 12,
                       height: 1,
                       fontWeight: FontWeight.w900,
-                      color: selecionado ? Colors.white : _titleTextColor,
+                      color:
+                          selecionado
+                              ? SixMobilePalette.onPrimary
+                              : SixMobilePalette.titleText,
                     ),
                   ),
                 ),
@@ -1025,19 +1435,19 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       decoration: BoxDecoration(
         color:
             _destacarPagamento
-                ? const Color(0xFFFFF7ED)
-                : const Color(0xFFF8FAFC),
+                ? SixMobilePalette.softAccentSurface
+                : SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color:
               _destacarPagamento
-                  ? const Color(0xFFF59E0B)
-                  : const Color(0xFFE2E8F0),
+                  ? SixMobilePalette.highlightedBorder
+                  : SixMobilePalette.border,
         ),
       ),
       child: Row(
         children: <Widget>[
-          const Icon(Icons.touch_app_outlined, color: _accentColor),
+          const Icon(Icons.touch_app_outlined, color: SixMobilePalette.accent),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -1045,7 +1455,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   ? 'Revise itens, quantidades e escolha uma forma para receber esta venda.'
                   : 'Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.',
               style: const TextStyle(
-                color: _mutedTextColor,
+                color: SixMobilePalette.mutedText,
                 height: 1.35,
                 fontWeight: FontWeight.w700,
               ),
@@ -1072,17 +1482,22 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: SixMobilePalette.surface,
+          borderRadius: BorderRadius.circular(_cardRadius),
           border: Border.all(
-            color: destacar ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0),
+            color:
+                destacar
+                    ? SixMobilePalette.highlightedBorder
+                    : SixMobilePalette.border,
             width: destacar ? 1.6 : 1,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color:
-                  destacar ? const Color(0x40F59E0B) : const Color(0x0F000000),
-              blurRadius: destacar ? 18 : 14,
+                  destacar
+                      ? _withAlpha(SixMobilePalette.accent, 0.18)
+                      : SixMobilePalette.navigationShadow,
+              blurRadius: destacar ? 18 : 12,
               offset: const Offset(0, 6),
             ),
           ],
@@ -1092,7 +1507,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(icone, color: _accentColor),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.softAccentSurface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icone, color: SixMobilePalette.accent, size: 19),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -1100,7 +1523,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: _titleTextColor,
+                      color: SixMobilePalette.titleText,
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
                     ),
@@ -1117,22 +1540,30 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Widget _buildItemTile(_VendaItemMobile item) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: SixMobilePalette.border),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color: _accentColor.withOpacity(0.08),
+              color: SixMobilePalette.softAccentSurface,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               item.ehServico
                   ? Icons.handyman_outlined
                   : Icons.shopping_bag_outlined,
-              color: _accentColor,
+              color: SixMobilePalette.accent,
+              size: 21,
             ),
           ),
           const SizedBox(width: 12),
@@ -1142,36 +1573,157 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               children: <Widget>[
                 Text(
                   item.nome,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: _titleTextColor,
+                    color: SixMobilePalette.titleText,
                   ),
                 ),
-                Text(
-                  _formatarValor(item.valorUnitario),
-                  style: const TextStyle(
-                    color: _mutedTextColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    _buildItemMetaChip(
+                      item.ehServico ? 'Serviço' : 'Produto',
+                      item.ehServico
+                          ? Icons.handyman_outlined
+                          : Icons.inventory_2_outlined,
+                    ),
+                    Text(
+                      '${_formatarValor(item.valorUnitario)} un.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: SixMobilePalette.mutedText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _buildStaticCurrencyText(
+                        item.subtotal,
+                        style: const TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    _buildQuantityButton(
+                      icon: Icons.remove_rounded,
+                      label: 'Diminuir quantidade',
+                      onTap:
+                          _enviando ? null : () => _alterarQuantidade(item, -1),
+                    ),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (
+                        Widget child,
+                        Animation<double> animation,
+                      ) {
+                        return ScaleTransition(
+                          scale: animation,
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: SizedBox(
+                        key: ValueKey<String>(
+                          '${item.idProduto}-${item.quantidade}',
+                        ),
+                        width: 34,
+                        child: Text(
+                          '${item.quantidade}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: SixMobilePalette.titleText,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _buildQuantityButton(
+                      icon: Icons.add_rounded,
+                      label: 'Aumentar quantidade',
+                      onTap:
+                          _enviando ? null : () => _alterarQuantidade(item, 1),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            onPressed: _enviando ? null : () => _alterarQuantidade(item, -1),
-            icon: const Icon(Icons.remove_circle_outline),
-          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemMetaChip(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: SixMobilePalette.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 12, color: SixMobilePalette.mutedText),
+          const SizedBox(width: 4),
           Text(
-            '${item.quantidade}',
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-          IconButton(
-            onPressed: _enviando ? null : () => _alterarQuantidade(item, 1),
-            icon: const Icon(Icons.add_circle_outline),
+            label,
+            style: const TextStyle(
+              color: SixMobilePalette.mutedText,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: label,
+      enabled: onTap != null,
+      child: Material(
+        color: SixMobilePalette.surface,
+        shape: const CircleBorder(
+          side: BorderSide(color: SixMobilePalette.border),
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: Icon(
+              icon,
+              size: 19,
+              color:
+                  onTap == null
+                      ? SixMobilePalette.mutedText
+                      : SixMobilePalette.accent,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1196,6 +1748,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Widget _buildValorFormaField(String codigo) {
+    final String currencyCode =
+        context.read<LocaleSettingsProvider>().currencyCode;
     final forma = _formasPagamento.firstWhere(
       (item) => item.codigo == codigo,
       orElse:
@@ -1211,22 +1765,24 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: SixMobilePalette.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(forma.icone, size: 19, color: _accentColor),
+                Icon(forma.icone, size: 19, color: SixMobilePalette.accent),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     forma.titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: _titleTextColor,
+                      color: SixMobilePalette.titleText,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1248,7 +1804,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 labelText: 'Valor recebido',
-                prefixText: 'R\$ ',
+                prefixText: '$currencyCode ',
                 helperText:
                     _formasSelecionadas.length == 1
                         ? 'Se ficar vazio, o total da venda será usado.'
@@ -1271,8 +1827,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          color: SixMobilePalette.surface,
+          border: Border(top: BorderSide(color: SixMobilePalette.border)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: SixMobilePalette.navigationShadow,
+              blurRadius: 18,
+              offset: Offset(0, -8),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1280,20 +1843,45 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Text(
-                    'Total ${_formatarValor(_total)}',
-                    style: const TextStyle(
-                      color: _titleTextColor,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text(
+                        'Total',
+                        style: TextStyle(
+                          color: SixMobilePalette.mutedText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      _buildAnimatedCurrencyText(
+                        _total,
+                        style: const TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  '$_quantidadeItens item(ns)',
-                  style: const TextStyle(
-                    color: _mutedTextColor,
-                    fontWeight: FontWeight.w800,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.softNeutralSurface,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: SixMobilePalette.border),
+                  ),
+                  child: Text(
+                    '$_quantidadeItens item(ns)',
+                    style: const TextStyle(
+                      color: SixMobilePalette.mutedText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -1321,6 +1909,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         : 'Finalizar venda'),
               ),
               style: FilledButton.styleFrom(
+                backgroundColor: SixMobilePalette.accent,
+                foregroundColor: SixMobilePalette.onPrimary,
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
@@ -1342,6 +1932,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       _editandoVendaNaoLiquidada ? 'Voltar' : 'Receber depois',
                     ),
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: SixMobilePalette.primary,
+                      side: const BorderSide(color: SixMobilePalette.border),
                       minimumSize: const Size.fromHeight(44),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1356,8 +1948,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     icon: const Icon(Icons.close_rounded),
                     label: const Text('Cancelar'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      side: const BorderSide(color: Colors.redAccent),
+                      foregroundColor: SixMobilePalette.error,
+                      side: const BorderSide(
+                        color: SixMobilePalette.errorBorder,
+                      ),
                       minimumSize: const Size.fromHeight(44),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1372,119 +1966,179 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       ),
     );
   }
+}
 
-  Widget _buildFloatingActions() {
-    return SizedBox(
-      width: 58,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 230),
-            child:
-                _acoesRapidasVisiveis
-                    ? Column(
-                      key: const ValueKey<String>('acoes-visiveis'),
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        _buildExpandableFabAction(
-                          label: 'Código',
-                          icon: Icons.qr_code_scanner_rounded,
-                          onTap:
-                              _enviando || _buscandoCodigo
-                                  ? null
-                                  : _abrirScannerCodigoBarras,
-                          loading: _buscandoCodigo,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildExpandableFabAction(
-                          label: 'Item',
-                          icon: Icons.add_shopping_cart,
-                          onTap: _enviando ? null : _abrirSelecaoProduto,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    )
-                    : const SizedBox.shrink(
-                      key: ValueKey<String>('acoes-ocultas'),
-                    ),
-          ),
-          SizedBox(
-            width: 58,
-            height: 58,
-            child: FloatingActionButton(
-              heroTag: 'toggle-actions',
-              tooltip:
-                  _acoesRapidasVisiveis ? 'Ocultar ações' : 'Mostrar ações',
-              onPressed:
-                  () => setState(
-                    () => _acoesRapidasVisiveis = !_acoesRapidasVisiveis,
-                  ),
-              backgroundColor: _accentColor,
-              foregroundColor: Colors.white,
-              elevation: 8,
-              shape: const CircleBorder(),
-              child: Icon(
-                _acoesRapidasVisiveis ? Icons.close_rounded : Icons.add_rounded,
-                size: 28,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+class _PdvActionButton extends StatefulWidget {
+  const _PdvActionButton({
+    required this.label,
+    required this.helper,
+    required this.icon,
+    required this.onTap,
+    required this.pressDuration,
+    this.loading = false,
+    this.primary = false,
+    this.compact = false,
+    this.radius = 20,
+  });
+
+  final String label;
+  final String helper;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Duration pressDuration;
+  final bool loading;
+  final bool primary;
+  final bool compact;
+  final double radius;
+
+  @override
+  State<_PdvActionButton> createState() => _PdvActionButtonState();
+}
+
+class _PdvActionButtonState extends State<_PdvActionButton> {
+  bool _pressed = false;
+
+  bool get _disabled => widget.onTap == null;
+
+  void _setPressed(bool value) {
+    if (_disabled || _pressed == value) return;
+    setState(() => _pressed = value);
   }
 
-  Widget _buildExpandableFabAction({
-    required String label,
-    required IconData icon,
-    required VoidCallback? onTap,
-    bool loading = false,
-  }) {
-    final disabled = onTap == null;
-    return Tooltip(
-      message: label,
-      preferBelow: false,
-      child: Semantics(
-        label: label,
-        button: true,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 160),
-          opacity: disabled ? 0.58 : 1,
-          child: Material(
-            color: Colors.white,
-            elevation: disabled ? 1 : 7,
-            shadowColor: Colors.black.withOpacity(0.22),
-            shape: const CircleBorder(
-              side: BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: disabled ? null : onTap,
-              child: SizedBox(
-                width: 42,
-                height: 42,
-                child: Center(
-                  child:
-                      loading
-                          ? const SizedBox(
-                            width: 17,
-                            height: 17,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : Icon(
-                            icon,
-                            size: 20,
-                            color: disabled ? _mutedTextColor : _accentColor,
+  @override
+  Widget build(BuildContext context) {
+    final bool disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final double scale = !disableAnimations && _pressed ? 0.98 : 1.0;
+    final Color foreground =
+        widget.primary
+            ? SixMobilePalette.onPrimary
+            : SixMobilePalette.titleText;
+    final Color supporting =
+        widget.primary
+            ? SixMobilePalette.heroSupportingText
+            : SixMobilePalette.mutedText;
+    final Color iconColor =
+        _disabled
+            ? SixMobilePalette.mutedText
+            : (widget.primary
+                ? SixMobilePalette.onPrimary
+                : SixMobilePalette.accent);
+
+    return Semantics(
+      button: true,
+      enabled: !_disabled,
+      label: widget.label,
+      child: AnimatedScale(
+        scale: scale,
+        duration: disableAnimations ? Duration.zero : widget.pressDuration,
+        curve: Curves.easeOut,
+        child: Material(
+          color: _backgroundColor,
+          borderRadius: BorderRadius.circular(widget.radius),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(widget.radius),
+            onTap: _disabled ? null : widget.onTap,
+            onTapDown: (_) => _setPressed(true),
+            onTapUp: (_) => _setPressed(false),
+            onTapCancel: () => _setPressed(false),
+            child: Container(
+              constraints: BoxConstraints(minHeight: widget.compact ? 64 : 66),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.compact ? 10 : 12,
+                vertical: widget.compact ? 10 : 11,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.radius),
+                border: Border.all(color: _borderColor),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color:
+                          widget.primary
+                              ? _PdvMobileScreenState._withAlpha(
+                                SixMobilePalette.onPrimary,
+                                0.13,
+                              )
+                              : SixMobilePalette.surface,
+                      borderRadius: BorderRadius.circular(13),
+                      border:
+                          widget.primary
+                              ? null
+                              : Border.all(color: SixMobilePalette.border),
+                    ),
+                    child: Center(
+                      child:
+                          widget.loading
+                              ? SizedBox(
+                                width: 17,
+                                height: 17,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color:
+                                      widget.primary
+                                          ? SixMobilePalette.onPrimary
+                                          : SixMobilePalette.accent,
+                                ),
+                              )
+                              : Icon(widget.icon, color: iconColor, size: 19),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          widget.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color:
+                                _disabled
+                                    ? SixMobilePalette.mutedText
+                                    : foreground,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
                           ),
-                ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.helper,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: supporting,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Color get _backgroundColor {
+    if (_disabled) return SixMobilePalette.softNeutralSurface;
+    if (widget.primary) return SixMobilePalette.primary;
+    return SixMobilePalette.softNeutralSurface;
+  }
+
+  Color get _borderColor {
+    if (_disabled) return SixMobilePalette.border;
+    if (widget.primary) return SixMobilePalette.primary;
+    return SixMobilePalette.activeBorder;
   }
 }
 
@@ -1622,7 +2276,7 @@ class _BarcodeScannerMobileScreenState
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.58),
+                color: _PdvMobileScreenState._withAlpha(Colors.black, 0.58),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Text(

@@ -217,6 +217,16 @@ Antes de concluir uma alteração mobile, validar:
 * Movimento deve comunicar estado, prioridade ou feedback de ação.
 * Não usar animação que prejudique leitura, acessibilidade ou performance em aparelhos simples.
 
+## Skill de UI mobile
+
+Para criação, reformulação ou revisão de interfaces Flutter mobile, utilize a Skill local `sixapp-mobile-ui`.
+
+A Skill deve ser aplicada a tarefas envolvendo Design System mobile, AppBar, cards, estados vazios, FAB, bottom sheets, animações, Lottie, acessibilidade e consistência visual.
+
+Quando a tarefa também envolver integração com backend compartilhada entre web e mobile, utilize em conjunto a Skill `sixapp-shared-backend-integration`.
+
+Alterações solicitadas somente para mobile não devem modificar o fluxo Flutter Web nem o tema global sem autorização explícita.
+
 ### Indicadores numéricos animados no Web e Mobile
 
 * Em cards de resumo, KPIs e dashboards, animar números importantes quando a tela carregar ou quando os dados forem atualizados.

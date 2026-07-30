@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sixpos/presentation/components/app_modal_side_sheet.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 
 typedef SixMobileBodyBuilder =
@@ -36,7 +37,7 @@ class SixMobilePageShell extends StatefulWidget {
     this.automaticallyImplyLeading = true,
     this.enableAnimatedBackground = true,
     this.enableAppBarBlur = true,
-    this.backgroundIntensity = 0.45,
+    this.backgroundIntensity = 0.80,
     this.scrolledSurfaceOpacity = 0.72,
     this.maxBlurSigma = 16,
     this.scrollEffectOffset = 32,
@@ -168,6 +169,7 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
   @override
   Widget build(BuildContext context) {
     final double topBarHeight = _resolveTopBarHeight(context);
+    final Widget? leading = widget.leading ?? _buildMenuLeading(context);
     final Widget body = _buildBackground(
       context,
       widget.bodyBuilder(
@@ -180,10 +182,9 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: widget.backgroundColor,
-      drawer: widget.drawer,
       appBar: _SixMobileScrollableAppBar(
         title: widget.title,
-        leading: widget.leading,
+        leading: leading,
         actions: widget.actions,
         titleTextStyle: widget.titleTextStyle,
         centerTitle: widget.centerTitle,
@@ -221,6 +222,19 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
         ],
       ),
       bottomNavigationBar: widget.bottomNavigationBar,
+    );
+  }
+
+  Widget? _buildMenuLeading(BuildContext context) {
+    final Widget? drawer = widget.drawer;
+    if (drawer == null || !widget.automaticallyImplyLeading) return null;
+
+    return IconButton(
+      tooltip: 'Menu',
+      icon: const Icon(Icons.menu_rounded),
+      onPressed: () {
+        showAppModalSideSheet<void>(context: context, child: drawer);
+      },
     );
   }
 }

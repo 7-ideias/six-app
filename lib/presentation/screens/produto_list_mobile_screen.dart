@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sixpos/core/constants/six_animation_assets.dart';
 import 'package:sixpos/data/models/produto_model.dart';
-import 'package:sixpos/presentation/components/six_full_screen_lottie_loading.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 
 import 'produto_list_mobile_screen_base.dart' as base;
 
-/// Mantém a tela de catálogo desacoplada do feedback visual de carregamento.
+/// Mantem a tela de catalogo desacoplada do feedback visual de carregamento.
 ///
-/// A implementação original permanece em [base.ProdutolistMobileScreen]. Este
-/// host observa somente o estado do provider e exibe a animação até o backend
-/// concluir a requisição.
+/// A implementacao original permanece em [base.ProdutolistMobileScreen]. Este
+/// host observa somente o estado do provider e exibe o loading ate o backend
+/// concluir a requisicao.
 class ProdutolistMobileScreen extends StatelessWidget {
   const ProdutolistMobileScreen({
     super.key,
     this.isSelecao = false,
     this.permitirSelecaoMultipla = false,
+    this.tipoInicial = 'PRODUTO',
   });
 
   final bool isSelecao;
   final bool permitirSelecaoMultipla;
+  final String tipoInicial;
 
   @override
   Widget build(BuildContext context) {
@@ -30,14 +31,34 @@ class ProdutolistMobileScreen extends StatelessWidget {
         ProdutosListProvider<ProdutoModel> provider,
         _,
       ) {
-        return SixFullScreenLottieLoading(
-          isLoading: provider.isLoading,
-          animationAsset: SixAnimationAssets.productCatalogLoading,
-          semanticsLabel: _loadingLabel(context),
-          child: base.ProdutolistMobileScreen(
-            isSelecao: isSelecao,
-            permitirSelecaoMultipla: permitirSelecaoMultipla,
-          ),
+        return Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            base.ProdutolistMobileScreen(
+              isSelecao: isSelecao,
+              permitirSelecaoMultipla: permitirSelecaoMultipla,
+              tipoInicial: tipoInicial,
+            ),
+            Positioned.fill(
+              child: AbsorbPointer(
+                absorbing: provider.isLoading,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  reverseDuration: const Duration(milliseconds: 140),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child:
+                      provider.isLoading
+                          ? _ProductCatalogLoadingOverlay(
+                            label: _loadingLabel(context),
+                          )
+                          : const SizedBox.shrink(
+                            key: ValueKey<String>('catalog-loading-hidden'),
+                          ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -52,5 +73,34 @@ class ProdutolistMobileScreen extends StatelessWidget {
       default:
         return 'Carregando produtos e serviços';
     }
+  }
+}
+
+class _ProductCatalogLoadingOverlay extends StatelessWidget {
+  const _ProductCatalogLoadingOverlay({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: const ValueKey<String>('catalog-loading-visible'),
+      container: true,
+      liveRegion: true,
+      label: label,
+      child: const ColoredBox(
+        color: SixMobilePalette.background,
+        child: Center(
+          child: SizedBox.square(
+            dimension: 42,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: SixMobilePalette.accent,
+              backgroundColor: SixMobilePalette.activeBorder,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

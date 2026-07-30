@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
@@ -18,10 +20,12 @@ class ProdutolistMobileScreen extends StatefulWidget {
     super.key,
     this.isSelecao = false,
     this.permitirSelecaoMultipla = false,
+    this.tipoInicial = 'PRODUTO',
   });
 
   final bool isSelecao;
   final bool permitirSelecaoMultipla;
+  final String tipoInicial;
 
   @override
   State<ProdutolistMobileScreen> createState() =>
@@ -30,7 +34,6 @@ class ProdutolistMobileScreen extends StatefulWidget {
 
 class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
   static const Color _secondaryColor = Color(0xFF123B69);
   static const Color _accentColor = Color(0xFF2563EB);
   static const Color _surfaceColor = Colors.white;
@@ -63,7 +66,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String ordenacao = 'nome';
   bool _salvandoPreferencia = false;
   bool _fixarHeaderLista = false;
-  bool _exibirValores = true;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
@@ -93,6 +95,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   @override
   void initState() {
     super.initState();
+    tipoSelecionado = _normalizarTipoProduto(widget.tipoInicial);
     _scrollController.addListener(_atualizarHeaderListaFixo);
     Future.microtask(_carregarPreferenciasDoUsuario);
     Future.microtask(_recarregar);
@@ -249,100 +252,104 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         final bool isSelecao = widget.isSelecao;
         final double bottomPadding = _selecaoMultiplaAtiva ? 170 : 96;
 
-        return Scaffold(
+        return SixMobilePageShell(
+          title: isSelecao ? 'Selecionar item' : '',
           backgroundColor: _backgroundColor,
-          appBar: AppBar(
-            elevation: 0,
-            centerTitle: true,
-            backgroundColor: _primaryColor,
-            foregroundColor: Colors.white,
-            title:
-                isSelecao
-                    ? const Text(
-                      'Selecionar item',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
+          primaryColor: SixMobilePalette.primary,
+          secondaryColor: SixMobilePalette.secondary,
+          accentColor: SixMobilePalette.accent,
+          scrollController: _scrollController,
+          enableAnimatedBackground: false,
+          toolbarHeight: 48,
+          initialContentSpacing: 4,
+          scrollEffectOffset: 24,
+          scrolledSurfaceOpacity: 0.66,
+          actions: const <Widget>[],
+          bodyBuilder: (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return SafeArea(
+              top: false,
+              child: Stack(
+                children: <Widget>[
+                  RefreshIndicator(
+                    onRefresh: _recarregar,
+                    child: ListView(
+                      controller: scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        topInset + 8,
+                        16,
+                        bottomPadding,
                       ),
-                    )
-                    : null,
-            actions: const <Widget>[],
-          ),
-          body: SafeArea(
-            child: Stack(
-              children: <Widget>[
-                RefreshIndicator(
-                  onRefresh: _recarregar,
-                  child: ListView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      isSelecao ? 12 : 14,
-                      16,
-                      bottomPadding,
-                    ),
-                    children: <Widget>[
-                      if (!isSelecao) ...<Widget>[
-                        SixStaggeredEntry(child: _buildHeaderCard()),
-                        const SizedBox(height: 16),
-                      ],
-                      SixStaggeredEntry(
-                        delay: const Duration(milliseconds: 70),
-                        child: _buildTabs(compact: isSelecao),
-                      ),
-                      if (_exibirCampoBusca &&
-                          !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
-                        const SizedBox(height: 12),
+                      children: <Widget>[
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 120),
-                          child: _buildSearchField(),
+                          delay: const Duration(milliseconds: 70),
+                          child: _buildTabs(compact: isSelecao),
                         ),
+                        if (_exibirCampoBusca &&
+                            !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
+                          const SizedBox(height: 12),
+                          SixStaggeredEntry(
+                            delay: const Duration(milliseconds: 120),
+                            child: _buildSearchField(),
+                          ),
+                        ],
+                        SizedBox(
+                          height:
+                              _exibirCampoBusca &&
+                                      !_deveExibirHeaderListaFixo(isSelecao)
+                                  ? (isSelecao ? 14 : 18)
+                                  : 14,
+                        ),
+                        if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
+                          _buildListHeader(
+                            itensDaLista.length,
+                            provider.isLoading,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        ..._buildListContent(provider, itensDaLista, isSelecao),
                       ],
-                      SizedBox(
-                        height:
-                            _exibirCampoBusca &&
-                                    !_deveExibirHeaderListaFixo(isSelecao)
-                                ? (isSelecao ? 14 : 18)
-                                : 14,
+                    ),
+                  ),
+                  if (_deveExibirHeaderListaFixo(isSelecao))
+                    Positioned(
+                      top: topInset,
+                      left: 0,
+                      right: 0,
+                      child: _buildHeaderListaFixo(
+                        itensDaLista.length,
+                        provider.isLoading,
                       ),
-                      if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
-                        _buildListHeader(
-                          itensDaLista.length,
-                          provider.isLoading,
+                    ),
+                  if (!isSelecao)
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      child: SafeArea(
+                        minimum: const EdgeInsets.only(bottom: 8),
+                        child: FloatingActionButton.extended(
+                          backgroundColor: _accentColor,
+                          foregroundColor: Colors.white,
+                          elevation: 5,
+                          onPressed: _criarProduto,
+                          icon: const Icon(Icons.add_rounded),
+                          label: Text(
+                            _isProdutoSelecionado
+                                ? 'Novo produto'
+                                : 'Novo serviço',
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                      ],
-                      ..._buildListContent(provider, itensDaLista, isSelecao),
-                    ],
-                  ),
-                ),
-                if (_deveExibirHeaderListaFixo(isSelecao))
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: _buildHeaderListaFixo(
-                      itensDaLista.length,
-                      provider.isLoading,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          floatingActionButton:
-              isSelecao
-                  ? null
-                  : FloatingActionButton.extended(
-                    backgroundColor: _accentColor,
-                    foregroundColor: Colors.white,
-                    elevation: 5,
-                    onPressed: _criarProduto,
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(
-                      _isProdutoSelecionado ? 'Novo produto' : 'Novo serviço',
-                    ),
-                  ),
+                ],
+              ),
+            );
+          },
           bottomNavigationBar:
               _selecaoMultiplaAtiva ? _buildBarraSelecaoMultipla() : null,
         );
@@ -442,28 +449,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     }).toList();
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: <Color>[_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x220B1F3A),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: _buildSummarySection(),
-    );
-  }
-
   Widget _buildTabs({required bool compact}) {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -493,51 +478,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _alternarExibicaoValores() {
-    setState(() => _exibirValores = !_exibirValores);
-  }
-
-  Widget _buildExibirValoresHeaderButton() {
-    return Tooltip(
-      message: _exibirValores ? 'Esconder resumo' : 'Revelar resumo',
-      child: InkWell(
-        onTap: _alternarExibicaoValores,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color:
-                _exibirValores
-                    ? const Color(0x26FFFFFF)
-                    : const Color(0x14FFFFFF),
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0x3DFFFFFF)),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x18000000),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 160),
-            child: Icon(
-              _exibirValores
-                  ? Icons.visibility_rounded
-                  : Icons.visibility_off_rounded,
-              key: ValueKey<bool>(_exibirValores),
-              color: Colors.white,
-              size: 17,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -599,57 +539,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSummarySection() {
-    return Consumer<ProdutosListProvider<ProdutoModel>>(
-      builder: (
-        BuildContext context,
-        ProdutosListProvider<ProdutoModel> provider,
-        _,
-      ) {
-        final Object? response = provider.fullResponse;
-        if (response is! ProdutoResponseModel) return const SizedBox.shrink();
-
-        final String itensResumo = _formatResumoValorVisivel(
-          response.skusTotaisNoEstoque.toString(),
-        );
-        final String semEstoqueResumo = _formatResumoValorVisivel(
-          _isProdutoSelecionado ? _formatNumber(response.qtSemEstoque) : '-',
-        );
-        final String valorResumo = _formatResumoValorVisivel(
-          _formatCurrency(response.vlEstoqueEmGrana),
-        );
-
-        return Stack(
-          clipBehavior: Clip.none,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.only(right: 44),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  _SummaryCard(label: 'Itens', value: itensResumo),
-                  _SummaryCard(label: 'Sem estoque', value: semEstoqueResumo),
-                  _SummaryCard(
-                    label: 'Valor',
-                    value: valorResumo,
-                    compact: true,
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: _buildExibirValoresHeaderButton(),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -1039,7 +928,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
     final MediaQueryData media = MediaQuery.of(context);
     const double alturaReservadaPeloFab = 96;
-    const double espacamentoAteCatalogo = 230;
+    const double espacamentoAteCatalogo = 152;
 
     final double alturaDisponivel =
         media.size.height -
@@ -1050,10 +939,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         espacamentoAteCatalogo;
 
     return alturaDisponivel < alturaMinima ? alturaMinima : alturaDisponivel;
-  }
-
-  bool _produtoTemImagem(ProdutoModel produto) {
-    return _imagensValidasProduto(produto).isNotEmpty;
   }
 
   List<dynamic> _imagensValidasProduto(ProdutoModel produto) {
@@ -2175,18 +2060,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     aplicarFiltroOrdenacao();
   }
 
-  String _formatResumoValorVisivel(String value) {
-    if (_exibirValores) return value;
-    return '••••';
-  }
-
   String _formatCurrency(double value) {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
-  String _formatNumber(double value) {
-    if (value % 1 == 0) return value.toInt().toString();
-    return value.toStringAsFixed(1).replaceAll('.', ',');
   }
 }
 
@@ -2299,146 +2174,6 @@ class _SegmentButton extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-    this.compact = false,
-  });
-
-  final String label;
-  final String value;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final TextStyle valueStyle = TextStyle(
-      fontSize: compact ? 10.5 : 12,
-      height: 1,
-      fontWeight: FontWeight.w900,
-      color: Colors.white,
-    );
-
-    return Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: const Color(0x18FFFFFF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x2EFFFFFF)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 8.5,
-              height: 1,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFFD7E3F5),
-            ),
-          ),
-          const SizedBox(height: 3),
-          _ResumoAnimatedValue(value: value, style: valueStyle),
-        ],
-      ),
-    );
-  }
-}
-
-class _ResumoAnimatedValue extends StatelessWidget {
-  const _ResumoAnimatedValue({required this.value, required this.style});
-
-  final String value;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    final _ResumoNumberValue? parsed = _ResumoNumberValue.tryParse(value);
-
-    if (parsed == null) {
-      return Text(
-        value,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: style,
-      );
-    }
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: parsed.number),
-      duration: const Duration(milliseconds: 650),
-      curve: Curves.easeOutCubic,
-      builder: (BuildContext context, double animatedValue, Widget? child) {
-        return Text(
-          parsed.format(animatedValue),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: style,
-        );
-      },
-    );
-  }
-}
-
-class _ResumoNumberValue {
-  const _ResumoNumberValue({
-    required this.number,
-    required this.isCurrency,
-    required this.hasDecimal,
-  });
-
-  final double number;
-  final bool isCurrency;
-  final bool hasDecimal;
-
-  static _ResumoNumberValue? tryParse(String value) {
-    final String trimmed = value.trim();
-
-    if (trimmed.isEmpty || trimmed.contains('•') || trimmed == '-') {
-      return null;
-    }
-
-    final bool isCurrency = trimmed.startsWith('R\$');
-    final bool hasDecimal = trimmed.contains(',');
-
-    final String numericText =
-        trimmed
-            .replaceAll('R\$', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '.')
-            .replaceAll(RegExp(r'[^0-9\.-]'), '')
-            .trim();
-
-    if (numericText.isEmpty) return null;
-
-    final double? number = double.tryParse(numericText);
-    if (number == null) return null;
-
-    return _ResumoNumberValue(
-      number: number,
-      isCurrency: isCurrency,
-      hasDecimal: hasDecimal,
-    );
-  }
-
-  String format(double value) {
-    if (isCurrency) {
-      return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-    }
-
-    if (hasDecimal) {
-      return value.toStringAsFixed(1).replaceAll('.', ',');
-    }
-
-    return value.round().toString();
   }
 }
 
@@ -2639,7 +2374,13 @@ class _LoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 32),
-      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: SixMobilePalette.accent,
+          backgroundColor: SixMobilePalette.activeBorder,
+        ),
+      ),
     );
   }
 }

@@ -88,5 +88,358 @@
   "pdvWebSaleTotalLabel": "Total da venda",
   "pdvWebSelectPaymentMethodHint": "Selecione uma forma para informar valores.",
   "pdvWebSelectPaymentMethodMessage": "Escolha pelo menos uma forma e informe um valor para continuar.",
-  "pdvWebSelectPaymentMethodTitle": "Selecione uma forma de recebimento"
+  "pdvWebSelectPaymentMethodTitle": "Selecione uma forma de recebimento",
+  "procedimentosTitle": "Procedimentos",
+  "procedimentosSubtitle": "Guias para vendas, atendimentos e entregas",
+  "procedimentosIntroTitle": "Configure orientações para vendas, atendimentos e entregas.",
+  "procedimentosDemoData": "Dados demonstrativos",
+  "procedimentosFiltersLabel": "Filtros de procedimentos",
+  "procedimentosFilterAll": "Todos",
+  "procedimentosFilterActive": "Ativos",
+  "procedimentosFilterInactive": "Inativos",
+  "procedimentosNewProcedure": "Novo procedimento",
+  "procedimentosCreateProcedure": "Criar procedimento",
+  "procedimentosOpenAction": "Abrir",
+  "procedimentosCreateUnavailable": "A criação de procedimentos será disponibilizada na próxima etapa.",
+  "procedimentosEditUnavailable": "A edição deste procedimento será disponibilizada na próxima etapa.",
+  "procedimentosLoading": "Carregando procedimentos",
+  "procedimentosEmptyTitle": "Nenhum procedimento configurado",
+  "procedimentosEmptyDescription": "Crie orientações para apoiar a equipe nos momentos importantes da operação.",
+  "procedimentosFilteredEmptyTitle": "Nenhum procedimento neste filtro",
+  "procedimentosFilteredEmptyDescription": "Altere o filtro para ver outros procedimentos demonstrativos.",
+  "procedimentosErrorTitle": "Não foi possível carregar os procedimentos",
+  "procedimentosErrorDescription": "Tente novamente em instantes.",
+  "procedimentosStatusDraft": "Rascunho",
+  "procedimentosOperationSale": "Venda",
+  "procedimentosOperationTechnicalService": "Atendimento técnico",
+  "procedimentosOperationQuote": "Orçamento",
+  "procedimentosOperationDelivery": "Entrega",
+  "procedimentosMomentBeforeStart": "Antes de iniciar",
+  "procedimentosMomentBeforeFinish": "Antes de finalizar",
+  "procedimentosMomentBeforeDelivery": "Antes da entrega",
+  "procedimentosStageSingular": "etapa",
+  "procedimentosStagePlural": "etapas",
+  "procedimentosItemSingular": "item",
+  "procedimentosItemPlural": "itens",
+  "procedimentosStageProgress": "Etapa {current} de {total}",
+  "@procedimentosStageProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "procedimentosProcedureSequence": "Procedimento {current} de {total}",
+  "@procedimentosProcedureSequence": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "procedimentosActionsCompleted": "{answered, plural, =0{0 de {total} ações concluídas} =1{1 de {total} ação concluída} other{{answered} de {total} ações concluídas}}",
+  "@procedimentosActionsCompleted": {
+    "placeholders": {
+      "answered": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "procedimentosAnsweredActionsSummary": "{answered, plural, =0{0 de {total} ações respondidas.} =1{1 de {total} ação respondida.} other{{answered} de {total} ações respondidas.}}",
+  "@procedimentosAnsweredActionsSummary": {
+    "placeholders": {
+      "answered": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "procedimentosOptionalPendingSummary": "{count, plural, =0{Nenhum item opcional pendente.} =1{1 item opcional pendente.} other{{count} itens opcionais pendentes.}}",
+  "@procedimentosOptionalPendingSummary": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "procedimentosRequiredPendingSummary": "{count, plural, =0{Nenhum item obrigatório pendente.} =1{1 item obrigatório pendente.} other{{count} itens obrigatórios pendentes.}}",
+  "@procedimentosRequiredPendingSummary": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "procedimentosItemCount": "{count, plural, =0{0 itens} =1{1 item} other{{count} itens}}",
+  "@procedimentosItemCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "procedimentosStageCount": "{count, plural, =0{0 etapas} =1{1 etapa} other{{count} etapas}}",
+  "@procedimentosStageCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "procedimentosStructureSummary": "{stages, plural, =0{0 etapas} =1{1 etapa} other{{stages} etapas}} • {items, plural, =0{0 itens} =1{1 item} other{{items} itens}}",
+  "@procedimentosStructureSummary": {
+    "placeholders": {
+      "stages": { "type": "int" },
+      "items": { "type": "int" }
+    }
+  },
+  "procedimentosStageSemantics": "Etapa {order}: {title}. {itemCount, plural, =0{0 itens} =1{1 item} other{{itemCount} itens}}.",
+  "@procedimentosStageSemantics": {
+    "placeholders": {
+      "order": { "type": "int" },
+      "title": { "type": "String" },
+      "itemCount": { "type": "int" }
+    }
+  },
+  "procedimentosExecutionItemSemantics": "{requiredLabel}: {title}. {type}.",
+  "@procedimentosExecutionItemSemantics": {
+    "placeholders": {
+      "requiredLabel": { "type": "String" },
+      "title": { "type": "String" },
+      "type": { "type": "String" }
+    }
+  },
+  "procedimentosExecutionItemStatus": "{type} • {requiredLabel}",
+  "@procedimentosExecutionItemStatus": {
+    "placeholders": {
+      "type": { "type": "String" },
+      "requiredLabel": { "type": "String" }
+    }
+  },
+  "procedimentosResponseTypeSemantics": "{label}. {description}.",
+  "@procedimentosResponseTypeSemantics": {
+    "placeholders": {
+      "label": { "type": "String" },
+      "description": { "type": "String" }
+    }
+  },
+  "procedimentosResponseTypeSimulatedSemantics": "{label}. {description}. {demoLabel}.",
+  "@procedimentosResponseTypeSimulatedSemantics": {
+    "placeholders": {
+      "label": { "type": "String" },
+      "description": { "type": "String" },
+      "demoLabel": { "type": "String" }
+    }
+  },
+  "procedimentosTriggerSemantics": "{operation}, {moment}, {activation}, {enforcement}, {status}",
+  "@procedimentosTriggerSemantics": {
+    "placeholders": {
+      "operation": { "type": "String" },
+      "moment": { "type": "String" },
+      "activation": { "type": "String" },
+      "enforcement": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+  "procedimentosTriggerSummarySingle": "{operation}, {moment}",
+  "@procedimentosTriggerSummarySingle": {
+    "placeholders": {
+      "operation": { "type": "String" },
+      "moment": { "type": "String" }
+    }
+  },
+  "procedimentosTriggerSummaryMultiple": "{first} • +{remaining}",
+  "@procedimentosTriggerSummaryMultiple": {
+    "placeholders": {
+      "first": { "type": "String" },
+      "remaining": { "type": "int" }
+    }
+  },
+  "procedimentosOptionNumber": "Opção {index}",
+  "@procedimentosOptionNumber": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "procedimentosEditorNewTitle": "Novo procedimento",
+  "procedimentosEditorEditTitle": "Editar procedimento",
+  "procedimentosGeneralInfo": "Informações gerais",
+  "procedimentosNameField": "Nome",
+  "procedimentosDescriptionField": "Descrição",
+  "procedimentosOperationContext": "Contexto operacional",
+  "procedimentosMomentField": "Momento",
+  "procedimentosRequireCompletion": "Exigir conclusão deste procedimento",
+  "procedimentosRequireCompletionHelp": "Na integração futura, esse procedimento poderá exigir conclusão antes de continuar a operação.",
+  "procedimentosStages": "Etapas",
+  "procedimentosAddStage": "Adicionar etapa",
+  "procedimentosEditStage": "Editar etapa",
+  "procedimentosDeleteStage": "Excluir etapa",
+  "procedimentosItems": "Itens",
+  "procedimentosAddItem": "Adicionar item",
+  "procedimentosEditItem": "Editar item",
+  "procedimentosDeleteItem": "Excluir item",
+  "procedimentosItemType": "Tipo de item",
+  "procedimentosStageTitleField": "Título da etapa",
+  "procedimentosItemTitleField": "Título ou instrução",
+  "procedimentosItemGuidanceField": "Texto de apoio",
+  "procedimentosSaveStage": "Salvar etapa",
+  "procedimentosSaveItem": "Salvar item",
+  "procedimentosResponseInstruction": "Orientação",
+  "procedimentosResponseConfirmation": "Confirmação",
+  "procedimentosResponseYesNo": "Sim ou não",
+  "procedimentosResponseInstructionDescription": "Apresenta uma instrução ao colaborador.",
+  "procedimentosResponseConfirmationDescription": "Exige que o colaborador confirme uma ação.",
+  "procedimentosResponseYesNoDescription": "Apresenta uma pergunta objetiva.",
+  "procedimentosValidationName": "Informe o nome do procedimento.",
+  "procedimentosValidationReviewFields": "Revise os campos destacados antes de salvar.",
+  "procedimentosValidationAtLeastOneStage": "Adicione pelo menos uma etapa ao procedimento.",
+  "procedimentosValidationStageTitle": "Informe o título da etapa.",
+  "procedimentosValidationStageItem": "Cada etapa precisa ter pelo menos um item.",
+  "procedimentosValidationItemTitle": "Informe o título do item.",
+  "procedimentosCreatedSuccess": "Procedimento criado.",
+  "procedimentosUpdatedSuccess": "Procedimento atualizado.",
+  "procedimentosDiscardChangesTitle": "Descartar alterações?",
+  "procedimentosDiscardChangesMessage": "As alterações feitas neste procedimento ainda não foram salvas.",
+  "procedimentosKeepEditing": "Continuar editando",
+  "procedimentosDiscard": "Descartar",
+  "procedimentosConfirmDeleteStageTitle": "Excluir etapa?",
+  "procedimentosConfirmDeleteStageMessage": "Os itens desta etapa também serão removidos.",
+  "procedimentosConfirmDeleteItemTitle": "Excluir item?",
+  "procedimentosConfirmDeleteItemMessage": "Este item será removido do procedimento.",
+  "procedimentosEditorDemoNotice": "As alterações serão mantidas apenas durante esta sessão.",
+  "procedimentosNoStages": "Nenhuma etapa adicionada",
+  "procedimentosItemRequiredHelp": "A lógica final de obrigatoriedade será definida na integração operacional.",
+  "procedimentosPreviewAction": "Pré-visualizar",
+  "procedimentosDemonstration": "Demonstração",
+  "procedimentosResponsePhoto": "Tirar foto",
+  "procedimentosResponseSignature": "Assinatura",
+  "procedimentosResponseLocation": "Capturar localização",
+  "procedimentosResponseBarcode": "Ler código de barras",
+  "procedimentosResponseImei": "Informar IMEI",
+  "procedimentosResponseDocument": "Anexar documento",
+  "procedimentosResponseAudio": "Gravar áudio",
+  "procedimentosResponseFreeText": "Texto livre",
+  "procedimentosResponseNumber": "Número",
+  "procedimentosResponseDate": "Data",
+  "procedimentosResponseSingleChoice": "Escolha única",
+  "procedimentosResponseMultipleChoice": "Escolha múltipla",
+  "procedimentosResponsePhotoDescription": "Simula a captura de uma foto como evidência.",
+  "procedimentosResponseSignatureDescription": "Simula a coleta de uma assinatura.",
+  "procedimentosResponseLocationDescription": "Simula a captura de uma localização.",
+  "procedimentosResponseBarcodeDescription": "Simula a leitura de um código de barras.",
+  "procedimentosResponseImeiDescription": "Permite informar um IMEI manualmente.",
+  "procedimentosResponseDocumentDescription": "Simula o anexo de um documento.",
+  "procedimentosResponseAudioDescription": "Simula uma gravação de áudio.",
+  "procedimentosResponseFreeTextDescription": "Permite registrar uma resposta em texto.",
+  "procedimentosResponseNumberDescription": "Permite registrar um valor numérico.",
+  "procedimentosResponseDateDescription": "Permite selecionar uma data.",
+  "procedimentosResponseSingleChoiceDescription": "Permite selecionar uma opção.",
+  "procedimentosResponseMultipleChoiceDescription": "Permite selecionar uma ou mais opções.",
+  "procedimentosTypeCategoryGuide": "Orientar e confirmar",
+  "procedimentosTypeCategoryCollect": "Coletar informação",
+  "procedimentosTypeCategoryEvidence": "Registrar evidência",
+  "procedimentosTypeCategoryIdentify": "Identificar",
+  "procedimentosItemTypePickerHelp": "Escolha como o colaborador vai responder ou registrar esta ação.",
+  "procedimentosPlaceholderField": "Placeholder",
+  "procedimentosUnitField": "Unidade",
+  "procedimentosChoiceOptions": "Opções de escolha",
+  "procedimentosAddOption": "Adicionar opção",
+  "procedimentosRemoveOption": "Remover opção",
+  "procedimentosOptionField": "Opção",
+  "procedimentosValidationChoiceOptions": "Informe pelo menos duas opções.",
+  "procedimentosChangeTypeTitle": "Trocar tipo de item?",
+  "procedimentosChangeTypeMessage": "As opções configuradas serão removidas para este tipo.",
+  "procedimentosSimulatedTypeEditorHelp": "No modo demonstração, esta captura será simulada sem usar recursos do dispositivo.",
+  "procedimentosPreviewTitle": "Pré-visualização",
+  "procedimentosPreviewUntitledProcedure": "Procedimento sem nome",
+  "procedimentosPreviewIncompleteProcedure": "Este procedimento ainda não possui etapas para demonstrar.",
+  "procedimentosPreviewOf": "de",
+  "procedimentosPreviewProgressLabel": "Ações concluídas",
+  "procedimentosPreviewPendingMessage": "Existem ações obrigatórias pendentes nesta etapa.",
+  "procedimentosPreviewRequiredPending": "Responda esta ação obrigatória para continuar.",
+  "procedimentosPreviewNextStage": "Próxima etapa",
+  "procedimentosPreviewFinishDemo": "Finalizar",
+  "procedimentosPreviewReviewStages": "Revisar etapas",
+  "procedimentosPreviewSummaryTitle": "Demonstração concluída",
+  "procedimentosPreviewSummarySavedMessage": "Nenhuma resposta foi salva.",
+  "procedimentosPreviewSummaryAnswered": "Ações respondidas.",
+  "procedimentosPreviewSummaryNoOptionalPending": "Nenhum item opcional pendente.",
+  "procedimentosPreviewSummaryOptionalPending": "Item opcional pendente.",
+  "procedimentosPreviewDiscardTitle": "Descartar respostas?",
+  "procedimentosPreviewDiscardMessage": "As respostas desta demonstração serão descartadas ao sair.",
+  "procedimentosPreviewConfirmAction": "Confirmar ação",
+  "procedimentosPreviewUnderstood": "Marcar como entendido",
+  "procedimentosPreviewUnderstoodDone": "Entendido",
+  "procedimentosPreviewTextHint": "Digite a resposta",
+  "procedimentosPreviewNumberHint": "Digite um número",
+  "procedimentosPreviewSelectDate": "Selecionar data",
+  "procedimentosPreviewImeiHint": "Digite o IMEI",
+  "procedimentosPreviewUseDemoImei": "Usar IMEI demonstrativo",
+  "procedimentosPreviewTakePhoto": "Tirar foto",
+  "procedimentosPreviewSimulateSignature": "Simular assinatura",
+  "procedimentosPreviewCaptureLocation": "Capturar localização",
+  "procedimentosPreviewSimulateBarcode": "Simular leitura",
+  "procedimentosPreviewSimulateDocument": "Simular anexo",
+  "procedimentosPreviewSimulateAudio": "Simular gravação",
+  "procedimentosPreviewRemoveEvidence": "Remover evidência",
+  "procedimentosSimulatedResourceNotice": "Recurso demonstrativo. Nenhum dado real será capturado.",
+  "procedimentosPreviewPhotoAdded": "Foto adicionada",
+  "procedimentosPreviewSignatureAdded": "Assinatura adicionada",
+  "procedimentosPreviewSignatureDemoDetail": "Traço demonstrativo registrado",
+  "procedimentosPreviewLocationAdded": "Localização de demonstração capturada",
+  "procedimentosPreviewBarcodeAdded": "Código lido",
+  "procedimentosPreviewDocumentAdded": "Documento anexado",
+  "procedimentosPreviewAudioAdded": "Áudio gravado",
+  "procedimentosOperationCashRegister": "Caixa",
+  "procedimentosOperationCustomerRegistration": "Cadastro de cliente",
+  "procedimentosTriggerMomentBeforeStart": "Antes de iniciar",
+  "procedimentosTriggerMomentAfterStart": "Após iniciar",
+  "procedimentosTriggerMomentBeforeFinish": "Antes de concluir",
+  "procedimentosTriggerMomentAfterFinish": "Após concluir",
+  "procedimentosTriggerMomentBeforeDelivery": "Antes da entrega",
+  "procedimentosTriggerMomentAfterDelivery": "Após a entrega",
+  "procedimentosTriggerMomentOnDemand": "Sob demanda",
+  "procedimentosActivationManual": "Manual",
+  "procedimentosActivationAutomatic": "Automático",
+  "procedimentosActivationManualDescription": "O colaborador poderá iniciar este procedimento quando necessário.",
+  "procedimentosActivationAutomaticDescription": "Na integração futura, o procedimento será apresentado no momento configurado.",
+  "procedimentosEnforcementInformative": "Informativo",
+  "procedimentosEnforcementRecommended": "Recomendado",
+  "procedimentosEnforcementRequired": "Obrigatório",
+  "procedimentosEnforcementInformativeDescription": "Apresenta o procedimento sem exigir conclusão.",
+  "procedimentosEnforcementRecommendedDescription": "Recomenda a conclusão, mas não deve bloquear a operação.",
+  "procedimentosEnforcementRequiredDescription": "Na integração futura, exigirá conclusão antes de continuar.",
+  "procedimentosWhenExecute": "Quando executar",
+  "procedimentosAddTrigger": "Adicionar gatilho",
+  "procedimentosEditTrigger": "Editar gatilho",
+  "procedimentosDeleteTrigger": "Excluir gatilho",
+  "procedimentosNoTriggers": "Nenhum gatilho configurado.",
+  "procedimentosNoTriggersDescription": "Sem gatilhos, o procedimento ficará disponível apenas para uso e pré-visualização dentro deste módulo.",
+  "procedimentosTriggerCount": "gatilhos",
+  "procedimentosSelectOperationContext": "Selecionar contexto",
+  "procedimentosSelectTriggerMoment": "Selecionar momento",
+  "procedimentosActivationMode": "Modo de execução",
+  "procedimentosEnforcementMode": "Nível de exigência",
+  "procedimentosTriggerEnabledHelp": "Controla se este gatilho será considerado na integração futura.",
+  "procedimentosSaveTrigger": "Salvar gatilho",
+  "procedimentosTriggerMomentCleared": "O momento foi limpo porque não é compatível com o contexto selecionado.",
+  "procedimentosValidationTriggerOperation": "Escolha o contexto operacional.",
+  "procedimentosValidationTriggerMoment": "Escolha o momento de execução.",
+  "procedimentosValidationTriggerMomentInvalid": "Escolha um momento compatível com o contexto.",
+  "procedimentosValidationDuplicateTrigger": "Já existe um gatilho com este contexto, momento e modo de execução.",
+  "procedimentosDeleteTriggerTitle": "Excluir gatilho?",
+  "procedimentosDeleteTriggerMessage": "O procedimento deixará de ser apresentado neste momento operacional.",
+  "procedimentosTriggerSummaryNone": "Sem gatilhos configurados",
+  "procedimentosTriggerSummaryOnlyInactive": "Gatilhos inativos",
+  "procedimentosExecutionConfiguration": "Configuração de execução",
+  "procedimentosTriggerSimulationNotice": "Simulação de gatilho. Nenhuma operação real será bloqueada.",
+  "procedimentosManualDemoExecution": "Execução manual de demonstração.",
+  "procedimentosOperationPointSaleStartBefore": "Antes de iniciar uma venda",
+  "procedimentosOperationPointSaleStartBeforeDescription": "Executado antes de abrir o fluxo de uma nova venda.",
+  "procedimentosMobilePointAvailable": "Disponível no aplicativo mobile.",
+  "procedimentosOperationalExecutionTitle": "Antes de iniciar a venda",
+  "procedimentosOperationalSummaryTitle": "Procedimento concluído",
+  "procedimentosOperationalNoDataSaved": "Nenhuma resposta foi salva nesta integração local experimental.",
+  "procedimentosCompleteAndStartSale": "Concluir e iniciar venda",
+  "procedimentosExperimentalIntegration": "Integração experimental",
+  "procedimentosContinueToStartSale": "Continuar para a venda",
+  "procedimentosContinueWithoutCompleting": "Continuar sem concluir",
+  "procedimentosContinueWithoutCompletingTitle": "Continuar sem concluir?",
+  "procedimentosContinueWithoutCompletingMessage": "Este procedimento é recomendado antes de iniciar a venda.",
+  "procedimentosContinueAnyway": "Continuar mesmo assim",
+  "procedimentosReturnToProcedure": "Voltar ao procedimento",
+  "procedimentosCancelSaleStartTitle": "Cancelar início da venda?",
+  "procedimentosCancelSaleStartMessage": "Este procedimento é obrigatório. Ao sair, a nova venda não será iniciada.",
+  "procedimentosCancelSale": "Cancelar venda",
+  "procedimentosSequenceProgressPrefix": "Procedimento",
+  "procedimentosPreviewNegativeTextLabel": "O que faltou?",
+  "procedimentosPreviewNegativeTextHint": "Digite o que faltou",
+  "procedimentosOperationalLoadError": "Não foi possível carregar os procedimentos."
 }

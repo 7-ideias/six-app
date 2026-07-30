@@ -1691,7 +1691,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                       controller: _tempoGarantiaController,
                       label: 'Tempo da garantia',
                       hintText: 'Ex.: 90 dias',
-                      requiredField: true,
+                      requiredField: !_isModoEdicao,
                     ),
                   ),
                   SizedBox(
@@ -1705,7 +1705,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                         decimal: true,
                       ),
                       hintText: '0,00',
-                      requiredField: true,
+                      requiredField: !_isModoEdicao,
                     ),
                   ),
                 ],

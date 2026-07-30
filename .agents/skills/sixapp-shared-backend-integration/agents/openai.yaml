@@ -1,0 +1,7 @@
+interface:
+  display_name: "SixApp Backend Compartilhado"
+  short_description: "Reutiliza integrações entre Web e Mobile"
+  default_prompt: "Use $sixapp-shared-backend-integration para implementar esta comunicação com o backend sem duplicar contratos ou clients entre Web e Mobile."
+
+policy:
+  allow_implicit_invocation: true

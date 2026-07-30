@@ -287,4 +287,926 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pdvWebSelectPaymentMethodTitle => 'Selecciona una forma de cobro';
+
+  @override
+  String get procedimentosTitle => 'Procedimientos';
+
+  @override
+  String get procedimentosSubtitle =>
+      'Guías para ventas, atenciones y entregas';
+
+  @override
+  String get procedimentosIntroTitle =>
+      'Configura orientaciones para ventas, atenciones y entregas.';
+
+  @override
+  String get procedimentosDemoData => 'Datos demostrativos';
+
+  @override
+  String get procedimentosFiltersLabel => 'Filtros de procedimientos';
+
+  @override
+  String get procedimentosFilterAll => 'Todos';
+
+  @override
+  String get procedimentosFilterActive => 'Activos';
+
+  @override
+  String get procedimentosFilterInactive => 'Inactivos';
+
+  @override
+  String get procedimentosNewProcedure => 'Nuevo procedimiento';
+
+  @override
+  String get procedimentosCreateProcedure => 'Crear procedimiento';
+
+  @override
+  String get procedimentosOpenAction => 'Abrir';
+
+  @override
+  String get procedimentosCreateUnavailable =>
+      'La creación de procedimientos estará disponible en la próxima etapa.';
+
+  @override
+  String get procedimentosEditUnavailable =>
+      'La edición de este procedimiento estará disponible en la próxima etapa.';
+
+  @override
+  String get procedimentosLoading => 'Cargando procedimientos';
+
+  @override
+  String get procedimentosEmptyTitle => 'Ningún procedimiento configurado';
+
+  @override
+  String get procedimentosEmptyDescription =>
+      'Crea orientaciones para apoyar al equipo en los momentos importantes de la operación.';
+
+  @override
+  String get procedimentosFilteredEmptyTitle =>
+      'Ningún procedimiento en este filtro';
+
+  @override
+  String get procedimentosFilteredEmptyDescription =>
+      'Cambia el filtro para ver otros procedimientos demostrativos.';
+
+  @override
+  String get procedimentosErrorTitle =>
+      'No fue posible cargar los procedimientos';
+
+  @override
+  String get procedimentosErrorDescription =>
+      'Inténtalo nuevamente en unos instantes.';
+
+  @override
+  String get procedimentosStatusDraft => 'Borrador';
+
+  @override
+  String get procedimentosOperationSale => 'Venta';
+
+  @override
+  String get procedimentosOperationTechnicalService => 'Atención técnica';
+
+  @override
+  String get procedimentosOperationQuote => 'Presupuesto';
+
+  @override
+  String get procedimentosOperationDelivery => 'Entrega';
+
+  @override
+  String get procedimentosMomentBeforeStart => 'Antes de iniciar';
+
+  @override
+  String get procedimentosMomentBeforeFinish => 'Antes de finalizar';
+
+  @override
+  String get procedimentosMomentBeforeDelivery => 'Antes de la entrega';
+
+  @override
+  String get procedimentosStageSingular => 'etapa';
+
+  @override
+  String get procedimentosStagePlural => 'etapas';
+
+  @override
+  String get procedimentosItemSingular => 'ítem';
+
+  @override
+  String get procedimentosItemPlural => 'ítems';
+
+  @override
+  String procedimentosStageProgress(int current, int total) {
+    return 'Etapa $current de $total';
+  }
+
+  @override
+  String procedimentosProcedureSequence(int current, int total) {
+    return 'Procedimiento $current de $total';
+  }
+
+  @override
+  String procedimentosActionsCompleted(int answered, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      answered,
+      locale: localeName,
+      other: '$answered de $total acciones concluidas',
+      one: '1 de $total acción concluida',
+      zero: '0 de $total acciones concluidas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String procedimentosAnsweredActionsSummary(int answered, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      answered,
+      locale: localeName,
+      other: '$answered de $total acciones respondidas.',
+      one: '1 de $total acción respondida.',
+      zero: '0 de $total acciones respondidas.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String procedimentosOptionalPendingSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ítems opcionales pendientes.',
+      one: '1 ítem opcional pendiente.',
+      zero: 'Ningún ítem opcional pendiente.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String procedimentosRequiredPendingSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ítems obligatorios pendientes.',
+      one: '1 ítem obligatorio pendiente.',
+      zero: 'Ningún ítem obligatorio pendiente.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String procedimentosItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ítems',
+      one: '1 ítem',
+      zero: '0 ítems',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String procedimentosStageCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count etapas',
+      one: '1 etapa',
+      zero: '0 etapas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String procedimentosStructureSummary(int stages, int items) {
+    String _temp0 = intl.Intl.pluralLogic(
+      stages,
+      locale: localeName,
+      other: '$stages etapas',
+      one: '1 etapa',
+      zero: '0 etapas',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      items,
+      locale: localeName,
+      other: '$items ítems',
+      one: '1 ítem',
+      zero: '0 ítems',
+    );
+    return '$_temp0 • $_temp1';
+  }
+
+  @override
+  String procedimentosStageSemantics(int order, String title, int itemCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      itemCount,
+      locale: localeName,
+      other: '$itemCount ítems',
+      one: '1 ítem',
+      zero: '0 ítems',
+    );
+    return 'Etapa $order: $title. $_temp0.';
+  }
+
+  @override
+  String procedimentosExecutionItemSemantics(
+    String requiredLabel,
+    String title,
+    String type,
+  ) {
+    return '$requiredLabel: $title. $type.';
+  }
+
+  @override
+  String procedimentosExecutionItemStatus(String type, String requiredLabel) {
+    return '$type • $requiredLabel';
+  }
+
+  @override
+  String procedimentosResponseTypeSemantics(String label, String description) {
+    return '$label. $description.';
+  }
+
+  @override
+  String procedimentosResponseTypeSimulatedSemantics(
+    String label,
+    String description,
+    String demoLabel,
+  ) {
+    return '$label. $description. $demoLabel.';
+  }
+
+  @override
+  String procedimentosTriggerSemantics(
+    String operation,
+    String moment,
+    String activation,
+    String enforcement,
+    String status,
+  ) {
+    return '$operation, $moment, $activation, $enforcement, $status';
+  }
+
+  @override
+  String procedimentosTriggerSummarySingle(String operation, String moment) {
+    return '$operation, $moment';
+  }
+
+  @override
+  String procedimentosTriggerSummaryMultiple(String first, int remaining) {
+    return '$first • +$remaining';
+  }
+
+  @override
+  String procedimentosOptionNumber(int index) {
+    return 'Opción $index';
+  }
+
+  @override
+  String get procedimentosEditorNewTitle => 'Nuevo procedimiento';
+
+  @override
+  String get procedimentosEditorEditTitle => 'Editar procedimiento';
+
+  @override
+  String get procedimentosGeneralInfo => 'Información general';
+
+  @override
+  String get procedimentosNameField => 'Nombre';
+
+  @override
+  String get procedimentosDescriptionField => 'Descripción';
+
+  @override
+  String get procedimentosOperationContext => 'Contexto operativo';
+
+  @override
+  String get procedimentosMomentField => 'Momento';
+
+  @override
+  String get procedimentosRequireCompletion =>
+      'Exigir conclusión de este procedimiento';
+
+  @override
+  String get procedimentosRequireCompletionHelp =>
+      'En una integración futura, este procedimiento podrá exigir conclusión antes de continuar la operación.';
+
+  @override
+  String get procedimentosStages => 'Etapas';
+
+  @override
+  String get procedimentosAddStage => 'Agregar etapa';
+
+  @override
+  String get procedimentosEditStage => 'Editar etapa';
+
+  @override
+  String get procedimentosDeleteStage => 'Eliminar etapa';
+
+  @override
+  String get procedimentosItems => 'Ítems';
+
+  @override
+  String get procedimentosAddItem => 'Agregar ítem';
+
+  @override
+  String get procedimentosEditItem => 'Editar ítem';
+
+  @override
+  String get procedimentosDeleteItem => 'Eliminar ítem';
+
+  @override
+  String get procedimentosItemType => 'Tipo de ítem';
+
+  @override
+  String get procedimentosStageTitleField => 'Título de la etapa';
+
+  @override
+  String get procedimentosItemTitleField => 'Título o instrucción';
+
+  @override
+  String get procedimentosItemGuidanceField => 'Texto de apoyo';
+
+  @override
+  String get procedimentosSaveStage => 'Guardar etapa';
+
+  @override
+  String get procedimentosSaveItem => 'Guardar ítem';
+
+  @override
+  String get procedimentosResponseInstruction => 'Orientación';
+
+  @override
+  String get procedimentosResponseConfirmation => 'Confirmación';
+
+  @override
+  String get procedimentosResponseYesNo => 'Sí o no';
+
+  @override
+  String get procedimentosResponseInstructionDescription =>
+      'Presenta una instrucción al colaborador.';
+
+  @override
+  String get procedimentosResponseConfirmationDescription =>
+      'Exige que el colaborador confirme una acción.';
+
+  @override
+  String get procedimentosResponseYesNoDescription =>
+      'Presenta una pregunta objetiva.';
+
+  @override
+  String get procedimentosValidationName =>
+      'Ingresa el nombre del procedimiento.';
+
+  @override
+  String get procedimentosValidationReviewFields =>
+      'Revisa los campos destacados antes de guardar.';
+
+  @override
+  String get procedimentosValidationAtLeastOneStage =>
+      'Agrega al menos una etapa al procedimiento.';
+
+  @override
+  String get procedimentosValidationStageTitle =>
+      'Ingresa el título de la etapa.';
+
+  @override
+  String get procedimentosValidationStageItem =>
+      'Cada etapa debe tener al menos un ítem.';
+
+  @override
+  String get procedimentosValidationItemTitle => 'Ingresa el título del ítem.';
+
+  @override
+  String get procedimentosCreatedSuccess => 'Procedimiento creado.';
+
+  @override
+  String get procedimentosUpdatedSuccess => 'Procedimiento actualizado.';
+
+  @override
+  String get procedimentosDiscardChangesTitle => '¿Descartar cambios?';
+
+  @override
+  String get procedimentosDiscardChangesMessage =>
+      'Los cambios realizados en este procedimiento aún no se han guardado.';
+
+  @override
+  String get procedimentosKeepEditing => 'Continuar editando';
+
+  @override
+  String get procedimentosDiscard => 'Descartar';
+
+  @override
+  String get procedimentosConfirmDeleteStageTitle => '¿Eliminar etapa?';
+
+  @override
+  String get procedimentosConfirmDeleteStageMessage =>
+      'Los ítems de esta etapa también serán removidos.';
+
+  @override
+  String get procedimentosConfirmDeleteItemTitle => '¿Eliminar ítem?';
+
+  @override
+  String get procedimentosConfirmDeleteItemMessage =>
+      'Este ítem será removido del procedimiento.';
+
+  @override
+  String get procedimentosEditorDemoNotice =>
+      'Los cambios se mantendrán solo durante esta sesión.';
+
+  @override
+  String get procedimentosNoStages => 'Ninguna etapa agregada';
+
+  @override
+  String get procedimentosItemRequiredHelp =>
+      'La lógica final de obligatoriedad se definirá en la integración operativa.';
+
+  @override
+  String get procedimentosPreviewAction => 'Previsualizar';
+
+  @override
+  String get procedimentosDemonstration => 'Demostración';
+
+  @override
+  String get procedimentosResponsePhoto => 'Tomar foto';
+
+  @override
+  String get procedimentosResponseSignature => 'Firma';
+
+  @override
+  String get procedimentosResponseLocation => 'Capturar ubicación';
+
+  @override
+  String get procedimentosResponseBarcode => 'Leer código de barras';
+
+  @override
+  String get procedimentosResponseImei => 'Informar IMEI';
+
+  @override
+  String get procedimentosResponseDocument => 'Adjuntar documento';
+
+  @override
+  String get procedimentosResponseAudio => 'Grabar audio';
+
+  @override
+  String get procedimentosResponseFreeText => 'Texto libre';
+
+  @override
+  String get procedimentosResponseNumber => 'Número';
+
+  @override
+  String get procedimentosResponseDate => 'Fecha';
+
+  @override
+  String get procedimentosResponseSingleChoice => 'Elección única';
+
+  @override
+  String get procedimentosResponseMultipleChoice => 'Elección múltiple';
+
+  @override
+  String get procedimentosResponsePhotoDescription =>
+      'Simula la captura de una foto como evidencia.';
+
+  @override
+  String get procedimentosResponseSignatureDescription =>
+      'Simula la recolección de una firma.';
+
+  @override
+  String get procedimentosResponseLocationDescription =>
+      'Simula la captura de una ubicación.';
+
+  @override
+  String get procedimentosResponseBarcodeDescription =>
+      'Simula la lectura de un código de barras.';
+
+  @override
+  String get procedimentosResponseImeiDescription =>
+      'Permite informar un IMEI manualmente.';
+
+  @override
+  String get procedimentosResponseDocumentDescription =>
+      'Simula adjuntar un documento.';
+
+  @override
+  String get procedimentosResponseAudioDescription =>
+      'Simula una grabación de audio.';
+
+  @override
+  String get procedimentosResponseFreeTextDescription =>
+      'Permite registrar una respuesta en texto.';
+
+  @override
+  String get procedimentosResponseNumberDescription =>
+      'Permite registrar un valor numérico.';
+
+  @override
+  String get procedimentosResponseDateDescription =>
+      'Permite seleccionar una fecha.';
+
+  @override
+  String get procedimentosResponseSingleChoiceDescription =>
+      'Permite seleccionar una opción.';
+
+  @override
+  String get procedimentosResponseMultipleChoiceDescription =>
+      'Permite seleccionar una o más opciones.';
+
+  @override
+  String get procedimentosTypeCategoryGuide => 'Orientar y confirmar';
+
+  @override
+  String get procedimentosTypeCategoryCollect => 'Recolectar información';
+
+  @override
+  String get procedimentosTypeCategoryEvidence => 'Registrar evidencia';
+
+  @override
+  String get procedimentosTypeCategoryIdentify => 'Identificar';
+
+  @override
+  String get procedimentosItemTypePickerHelp =>
+      'Elige cómo el colaborador responderá o registrará esta acción.';
+
+  @override
+  String get procedimentosPlaceholderField => 'Placeholder';
+
+  @override
+  String get procedimentosUnitField => 'Unidad';
+
+  @override
+  String get procedimentosChoiceOptions => 'Opciones de elección';
+
+  @override
+  String get procedimentosAddOption => 'Agregar opción';
+
+  @override
+  String get procedimentosRemoveOption => 'Eliminar opción';
+
+  @override
+  String get procedimentosOptionField => 'Opción';
+
+  @override
+  String get procedimentosValidationChoiceOptions =>
+      'Ingresa al menos dos opciones.';
+
+  @override
+  String get procedimentosChangeTypeTitle => '¿Cambiar tipo de ítem?';
+
+  @override
+  String get procedimentosChangeTypeMessage =>
+      'Las opciones configuradas serán removidas para este tipo.';
+
+  @override
+  String get procedimentosSimulatedTypeEditorHelp =>
+      'En modo demostración, esta captura será simulada sin usar recursos del dispositivo.';
+
+  @override
+  String get procedimentosPreviewTitle => 'Previsualización';
+
+  @override
+  String get procedimentosPreviewUntitledProcedure =>
+      'Procedimiento sin nombre';
+
+  @override
+  String get procedimentosPreviewIncompleteProcedure =>
+      'Este procedimiento aún no tiene etapas para demostrar.';
+
+  @override
+  String get procedimentosPreviewOf => 'de';
+
+  @override
+  String get procedimentosPreviewProgressLabel => 'Acciones concluidas';
+
+  @override
+  String get procedimentosPreviewPendingMessage =>
+      'Hay acciones obligatorias pendientes en esta etapa.';
+
+  @override
+  String get procedimentosPreviewRequiredPending =>
+      'Responde esta acción obligatoria para continuar.';
+
+  @override
+  String get procedimentosPreviewNextStage => 'Siguiente etapa';
+
+  @override
+  String get procedimentosPreviewFinishDemo => 'Finalizar';
+
+  @override
+  String get procedimentosPreviewReviewStages => 'Revisar etapas';
+
+  @override
+  String get procedimentosPreviewSummaryTitle => 'Demostración concluida';
+
+  @override
+  String get procedimentosPreviewSummarySavedMessage =>
+      'Ninguna respuesta fue guardada.';
+
+  @override
+  String get procedimentosPreviewSummaryAnswered => 'Acciones respondidas.';
+
+  @override
+  String get procedimentosPreviewSummaryNoOptionalPending =>
+      'Ningún ítem opcional pendiente.';
+
+  @override
+  String get procedimentosPreviewSummaryOptionalPending =>
+      'Ítem opcional pendiente.';
+
+  @override
+  String get procedimentosPreviewDiscardTitle => '¿Descartar respuestas?';
+
+  @override
+  String get procedimentosPreviewDiscardMessage =>
+      'Las respuestas de esta demostración serán descartadas al salir.';
+
+  @override
+  String get procedimentosPreviewConfirmAction => 'Confirmar acción';
+
+  @override
+  String get procedimentosPreviewUnderstood => 'Marcar como entendido';
+
+  @override
+  String get procedimentosPreviewUnderstoodDone => 'Entendido';
+
+  @override
+  String get procedimentosPreviewTextHint => 'Ingresa la respuesta';
+
+  @override
+  String get procedimentosPreviewNumberHint => 'Ingresa un número';
+
+  @override
+  String get procedimentosPreviewSelectDate => 'Seleccionar fecha';
+
+  @override
+  String get procedimentosPreviewImeiHint => 'Ingresa el IMEI';
+
+  @override
+  String get procedimentosPreviewUseDemoImei => 'Usar IMEI demostrativo';
+
+  @override
+  String get procedimentosPreviewTakePhoto => 'Tomar foto';
+
+  @override
+  String get procedimentosPreviewSimulateSignature => 'Simular firma';
+
+  @override
+  String get procedimentosPreviewCaptureLocation => 'Capturar ubicación';
+
+  @override
+  String get procedimentosPreviewSimulateBarcode => 'Simular lectura';
+
+  @override
+  String get procedimentosPreviewSimulateDocument => 'Simular anexo';
+
+  @override
+  String get procedimentosPreviewSimulateAudio => 'Simular grabación';
+
+  @override
+  String get procedimentosPreviewRemoveEvidence => 'Remover evidencia';
+
+  @override
+  String get procedimentosSimulatedResourceNotice =>
+      'Recurso demostrativo. Ningún dato real será capturado.';
+
+  @override
+  String get procedimentosPreviewPhotoAdded => 'Foto agregada';
+
+  @override
+  String get procedimentosPreviewSignatureAdded => 'Firma agregada';
+
+  @override
+  String get procedimentosPreviewSignatureDemoDetail =>
+      'Trazo demostrativo registrado';
+
+  @override
+  String get procedimentosPreviewLocationAdded =>
+      'Ubicación de demostración capturada';
+
+  @override
+  String get procedimentosPreviewBarcodeAdded => 'Código leído';
+
+  @override
+  String get procedimentosPreviewDocumentAdded => 'Documento adjuntado';
+
+  @override
+  String get procedimentosPreviewAudioAdded => 'Audio grabado';
+
+  @override
+  String get procedimentosOperationCashRegister => 'Caja';
+
+  @override
+  String get procedimentosOperationCustomerRegistration =>
+      'Registro de cliente';
+
+  @override
+  String get procedimentosTriggerMomentBeforeStart => 'Antes de iniciar';
+
+  @override
+  String get procedimentosTriggerMomentAfterStart => 'Después de iniciar';
+
+  @override
+  String get procedimentosTriggerMomentBeforeFinish => 'Antes de concluir';
+
+  @override
+  String get procedimentosTriggerMomentAfterFinish => 'Después de concluir';
+
+  @override
+  String get procedimentosTriggerMomentBeforeDelivery => 'Antes de la entrega';
+
+  @override
+  String get procedimentosTriggerMomentAfterDelivery => 'Después de la entrega';
+
+  @override
+  String get procedimentosTriggerMomentOnDemand => 'Bajo demanda';
+
+  @override
+  String get procedimentosActivationManual => 'Manual';
+
+  @override
+  String get procedimentosActivationAutomatic => 'Automático';
+
+  @override
+  String get procedimentosActivationManualDescription =>
+      'El colaborador podrá iniciar este procedimiento cuando sea necesario.';
+
+  @override
+  String get procedimentosActivationAutomaticDescription =>
+      'En una integración futura, el procedimiento será presentado en el momento configurado.';
+
+  @override
+  String get procedimentosEnforcementInformative => 'Informativo';
+
+  @override
+  String get procedimentosEnforcementRecommended => 'Recomendado';
+
+  @override
+  String get procedimentosEnforcementRequired => 'Obligatorio';
+
+  @override
+  String get procedimentosEnforcementInformativeDescription =>
+      'Presenta el procedimiento sin exigir conclusión.';
+
+  @override
+  String get procedimentosEnforcementRecommendedDescription =>
+      'Recomienda la conclusión, pero no debe bloquear la operación.';
+
+  @override
+  String get procedimentosEnforcementRequiredDescription =>
+      'En una integración futura, exigirá conclusión antes de continuar.';
+
+  @override
+  String get procedimentosWhenExecute => 'Cuándo ejecutar';
+
+  @override
+  String get procedimentosAddTrigger => 'Agregar gatillo';
+
+  @override
+  String get procedimentosEditTrigger => 'Editar gatillo';
+
+  @override
+  String get procedimentosDeleteTrigger => 'Eliminar gatillo';
+
+  @override
+  String get procedimentosNoTriggers => 'Ningún gatillo configurado.';
+
+  @override
+  String get procedimentosNoTriggersDescription =>
+      'Sin gatillos, el procedimiento estará disponible solo para uso y previsualización dentro de este módulo.';
+
+  @override
+  String get procedimentosTriggerCount => 'gatillos';
+
+  @override
+  String get procedimentosSelectOperationContext => 'Seleccionar contexto';
+
+  @override
+  String get procedimentosSelectTriggerMoment => 'Seleccionar momento';
+
+  @override
+  String get procedimentosActivationMode => 'Modo de ejecución';
+
+  @override
+  String get procedimentosEnforcementMode => 'Nivel de exigencia';
+
+  @override
+  String get procedimentosTriggerEnabledHelp =>
+      'Controla si este gatillo será considerado en una integración futura.';
+
+  @override
+  String get procedimentosSaveTrigger => 'Guardar gatillo';
+
+  @override
+  String get procedimentosTriggerMomentCleared =>
+      'El momento fue limpiado porque no es compatible con el contexto seleccionado.';
+
+  @override
+  String get procedimentosValidationTriggerOperation =>
+      'Elige el contexto operativo.';
+
+  @override
+  String get procedimentosValidationTriggerMoment =>
+      'Elige el momento de ejecución.';
+
+  @override
+  String get procedimentosValidationTriggerMomentInvalid =>
+      'Elige un momento compatible con el contexto.';
+
+  @override
+  String get procedimentosValidationDuplicateTrigger =>
+      'Ya existe un gatillo con este contexto, momento y modo de ejecución.';
+
+  @override
+  String get procedimentosDeleteTriggerTitle => '¿Eliminar gatillo?';
+
+  @override
+  String get procedimentosDeleteTriggerMessage =>
+      'El procedimiento dejará de mostrarse en este momento operativo.';
+
+  @override
+  String get procedimentosTriggerSummaryNone => 'Sin gatillos configurados';
+
+  @override
+  String get procedimentosTriggerSummaryOnlyInactive => 'Gatillos inactivos';
+
+  @override
+  String get procedimentosExecutionConfiguration =>
+      'Configuración de ejecución';
+
+  @override
+  String get procedimentosTriggerSimulationNotice =>
+      'Simulación de gatillo. Ninguna operación real será bloqueada.';
+
+  @override
+  String get procedimentosManualDemoExecution =>
+      'Ejecución manual de demostración.';
+
+  @override
+  String get procedimentosOperationPointSaleStartBefore =>
+      'Antes de iniciar una venta';
+
+  @override
+  String get procedimentosOperationPointSaleStartBeforeDescription =>
+      'Se ejecuta antes de abrir el flujo de una nueva venta.';
+
+  @override
+  String get procedimentosMobilePointAvailable =>
+      'Disponible en la aplicación móvil.';
+
+  @override
+  String get procedimentosOperationalExecutionTitle =>
+      'Antes de iniciar la venta';
+
+  @override
+  String get procedimentosOperationalSummaryTitle => 'Procedimiento concluido';
+
+  @override
+  String get procedimentosOperationalNoDataSaved =>
+      'Ninguna respuesta fue guardada en esta integración local experimental.';
+
+  @override
+  String get procedimentosCompleteAndStartSale => 'Concluir e iniciar venta';
+
+  @override
+  String get procedimentosExperimentalIntegration => 'Integración experimental';
+
+  @override
+  String get procedimentosContinueToStartSale => 'Continuar a la venta';
+
+  @override
+  String get procedimentosContinueWithoutCompleting => 'Continuar sin concluir';
+
+  @override
+  String get procedimentosContinueWithoutCompletingTitle =>
+      '¿Continuar sin concluir?';
+
+  @override
+  String get procedimentosContinueWithoutCompletingMessage =>
+      'Este procedimiento es recomendado antes de iniciar la venta.';
+
+  @override
+  String get procedimentosContinueAnyway => 'Continuar de todos modos';
+
+  @override
+  String get procedimentosReturnToProcedure => 'Volver al procedimiento';
+
+  @override
+  String get procedimentosCancelSaleStartTitle => '¿Cancelar inicio de venta?';
+
+  @override
+  String get procedimentosCancelSaleStartMessage =>
+      'Este procedimiento es obligatorio. Al salir, la nueva venta no será iniciada.';
+
+  @override
+  String get procedimentosCancelSale => 'Cancelar venta';
+
+  @override
+  String get procedimentosSequenceProgressPrefix => 'Procedimiento';
+
+  @override
+  String get procedimentosPreviewNegativeTextLabel => '¿Qué faltó?';
+
+  @override
+  String get procedimentosPreviewNegativeTextHint => 'Describe qué faltó';
+
+  @override
+  String get procedimentosOperationalLoadError =>
+      'No fue posible cargar los procedimientos.';
 }

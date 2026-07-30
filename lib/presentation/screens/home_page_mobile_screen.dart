@@ -5,20 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
+import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
 import '../components/nav_bar_mobile.dart';
-import '../components/cores_do_mobile.dart';
 import 'catalogo_disponivel_mobile_screen.dart';
 import 'catalogo_nao_disponivel_mobile_screen.dart';
 
@@ -43,12 +46,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
+  final OperationalProcedureFlowCoordinator _procedureCoordinator =
+      OperationalProcedureFlowCoordinator();
   final TelaInicialWebApiClient _telaInicialApiClient =
       HttpResumoDaEmpresaApiClient(canal: 'mobile');
 
   TelaInicialModel? _resumoTelaInicial;
   bool _carregandoResumo = true;
   String? _erroResumo;
+  bool _openingNewSale = false;
 
   @override
   void initState() {
@@ -156,13 +162,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
         primaryColor: _primaryColor,
         secondaryColor: _secondaryColor,
         accentColor: _accentColor,
-        drawer: CoresDoMobile(image: _image, onPickImage: _pickImage),
+        automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            tooltip: 'Configurações',
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: _showFeatureInProgress,
-          ),
+          SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
           IconButton(
             tooltip: 'Notificações',
             icon: _buildNotificationIcon(),
@@ -518,7 +520,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       _QuickAction(
         label: 'Nova venda',
         icon: Icons.point_of_sale_rounded,
-        onTap: () => _navigateTo(context, const PdvMobileScreen()),
+        onTap: _startNewSale,
       ),
       _QuickAction(
         label: 'Clientes',
@@ -782,6 +784,23 @@ class _HomePageMobileState extends State<HomePageMobile> {
   void _openNotifications(BuildContext context) {
     _navigateTo(context, const NotificacoesMobileScreen());
   }
+
+  Future<void> _startNewSale() async {
+    if (_openingNewSale) return;
+    _openingNewSale = true;
+    try {
+      final ProcedureFlowResult result = await _procedureCoordinator.execute(
+        context: context,
+        operationPoint: ProcedureOperationPoint.saleStartBefore,
+      );
+      if (!mounted) return;
+      if (result.shouldContinue) _openNewSale();
+    } finally {
+      _openingNewSale = false;
+    }
+  }
+
+  void _openNewSale() => _navigateTo(context, const PdvMobileScreen());
 
   void _navigateTo(BuildContext context, Widget page) {
     Navigator.push(

@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
@@ -982,27 +981,37 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     if (itens.isEmpty) return _emptyState(context);
 
     if (_exibicaoHorizontal) {
-      return Scrollbar(
-        controller: _horizontalScrollController,
-        thumbVisibility: true,
-        thickness: 7,
-        radius: const Radius.circular(999),
-        child: ListView.separated(
-          controller: _horizontalScrollController,
-          primary: false,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(0, 0, 4, 12),
-          itemCount: itens.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder:
-              (context, index) => SizedBox(
-                width: widget.isSelecao ? 340 : 430,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: _productCard(context, itens[index], index),
-                ),
-              ),
-        ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final double itemWidth = _horizontalItemWidth(
+            constraints.maxWidth,
+            itens.length,
+          );
+
+          return Scrollbar(
+            controller: _horizontalScrollController,
+            thumbVisibility: true,
+            thickness: 7,
+            radius: const Radius.circular(999),
+            child: ListView.separated(
+              controller: _horizontalScrollController,
+              primary: false,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(bottom: 12),
+              itemCount: itens.length,
+              separatorBuilder:
+                  (_, __) => const SizedBox(width: _horizontalItemSpacing),
+              itemBuilder:
+                  (context, index) => SizedBox(
+                    width: itemWidth,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: _productCard(context, itens[index], index),
+                    ),
+                  ),
+            ),
+          );
+        },
       );
     }
 
@@ -1021,6 +1030,24 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             (context, index) => _productCard(context, itens[index], index),
       ),
     );
+  }
+
+  static const double _horizontalItemSpacing = 12;
+
+  double _horizontalItemWidth(double availableWidth, int itemCount) {
+    if (itemCount <= 0 || !availableWidth.isFinite || availableWidth <= 0) {
+      return widget.isSelecao ? 340 : 430;
+    }
+
+    final double minWidth = widget.isSelecao ? 340 : 430;
+    final int maxVisibleItems = ((availableWidth + _horizontalItemSpacing) /
+            (minWidth + _horizontalItemSpacing))
+        .floor()
+        .clamp(1, itemCount);
+    final double totalSpacing = _horizontalItemSpacing * (maxVisibleItems - 1);
+    final double itemWidth = (availableWidth - totalSpacing) / maxVisibleItems;
+
+    return itemWidth < minWidth ? minWidth : itemWidth;
   }
 
   Widget _buildSelectionFooter(BuildContext context) {
