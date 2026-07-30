@@ -6,7 +6,6 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/screens/admin_portal_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_novas_ideias_web_page.dart';
-import 'package:sixpos/presentation/screens/pdv_page_web_autorizado.dart';
 import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:sixpos/presentation/screens/register_page_web.dart';

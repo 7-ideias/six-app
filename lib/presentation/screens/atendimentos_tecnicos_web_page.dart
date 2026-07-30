@@ -849,7 +849,7 @@ class _AtendimentosTecnicosWebPageState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      selected ? cliente!.nome : 'Identificar cliente',
+                      selected ? cliente.nome : 'Identificar cliente',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
