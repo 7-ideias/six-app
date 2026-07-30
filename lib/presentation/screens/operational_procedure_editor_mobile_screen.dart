@@ -3,10 +3,18 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_item_editor.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_card.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_demo_badge.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_response_type_metadata.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_state_views.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_trigger_card.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_trigger_editor.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_trigger_metadata.dart'
+    as trigger_meta;
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/screens/operational_procedure_preview_mobile_screen.dart';
 import 'package:sixpos/providers/operational_procedure_provider.dart';
 
 class OperationalProcedureEditorMobileScreen extends StatefulWidget {
@@ -84,6 +92,14 @@ class _OperationalProcedureEditorMobileScreenState
         accentColor: _accentColor,
         enableAnimatedBackground: !reduceMotion,
         actions: <Widget>[
+          IconButton(
+            tooltip: context.t(
+              'procedimentos.previewAction',
+              fallback: 'Pré-visualizar',
+            ),
+            onPressed: _openPreview,
+            icon: const Icon(Icons.play_circle_outline_rounded),
+          ),
           TextButton(
             onPressed: _save,
             child: Text(
@@ -221,6 +237,24 @@ class _OperationalProcedureEditorMobileScreenState
                   const SizedBox(height: 14),
                   _SectionCard(
                     title: context.t(
+                      'procedimentos.whenExecute',
+                      fallback: 'Quando executar',
+                    ),
+                    trailing: TextButton.icon(
+                      onPressed: _addTrigger,
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(
+                        context.t(
+                          'procedimentos.addTrigger',
+                          fallback: 'Adicionar gatilho',
+                        ),
+                      ),
+                    ),
+                    child: _buildTriggersSection(reduceMotion),
+                  ),
+                  const SizedBox(height: 14),
+                  _SectionCard(
+                    title: context.t(
                       'procedimentos.stages',
                       fallback: 'Etapas',
                     ),
@@ -279,6 +313,17 @@ class _OperationalProcedureEditorMobileScreenState
                     label: context.t('common.save', fallback: 'Salvar'),
                     icon: Icons.check_rounded,
                   ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _openPreview,
+                    icon: const Icon(Icons.play_circle_outline_rounded),
+                    label: Text(
+                      context.t(
+                        'procedimentos.previewAction',
+                        fallback: 'Pré-visualizar',
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -292,8 +337,12 @@ class _OperationalProcedureEditorMobileScreenState
     final int itemCount = stage.items.length;
     return Semantics(
       container: true,
-      label:
-          'Etapa ${stage.order}: ${stage.title}. $itemCount ${context.t('procedimentos.itemPlural', fallback: 'itens')}.',
+      label: OperationalProcedureI18n.stageSemantics(
+        context,
+        order: stage.order,
+        title: stage.title,
+        itemCount: itemCount,
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
@@ -315,9 +364,7 @@ class _OperationalProcedureEditorMobileScreenState
               style: const TextStyle(fontWeight: FontWeight.w900),
             ),
             subtitle: Text(
-              itemCount == 1
-                  ? '1 ${context.t('procedimentos.itemSingular', fallback: 'item')}'
-                  : '$itemCount ${context.t('procedimentos.itemPlural', fallback: 'itens')}',
+              OperationalProcedureI18n.itemCount(context, itemCount),
               style: const TextStyle(color: SixMobilePalette.mutedText),
             ),
             trailing: Wrap(
@@ -378,6 +425,60 @@ class _OperationalProcedureEditorMobileScreenState
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTriggersSection(bool reduceMotion) {
+    return AnimatedSwitcher(
+      duration:
+          reduceMotion ? Duration.zero : const Duration(milliseconds: 180),
+      child:
+          _draft.triggers.isEmpty
+              ? _EmptyInline(
+                key: const ValueKey<String>('triggers-empty'),
+                message: context.t(
+                  'procedimentos.noTriggers',
+                  fallback: 'Nenhum gatilho configurado.',
+                ),
+                description: context.t(
+                  'procedimentos.noTriggersDescription',
+                  fallback:
+                      'Sem gatilhos, o procedimento ficará disponível apenas para uso e pré-visualização dentro deste módulo.',
+                ),
+              )
+              : Column(
+                key: ValueKey<int>(_draft.triggers.length),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    context.t(
+                      'procedimentos.triggerCount',
+                      fallback:
+                          '${_draft.triggers.length} gatilho(s) configurado(s)',
+                    ),
+                    style: const TextStyle(
+                      color: SixMobilePalette.mutedText,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ..._draft.triggers.map((ProcedureTrigger trigger) {
+                    return OperationalProcedureTriggerCard(
+                      trigger: trigger,
+                      onTap: () => _editTrigger(trigger),
+                      onEdit: () => _editTrigger(trigger),
+                      onDelete: () => _deleteTrigger(trigger),
+                      onEnabledChanged: (bool enabled) {
+                        _updateDraft(
+                          context
+                              .read<OperationalProcedureProvider>()
+                              .setTriggerEnabled(_draft, trigger, enabled),
+                        );
+                      },
+                    );
+                  }),
+                ],
+              ),
     );
   }
 
@@ -443,6 +544,62 @@ class _OperationalProcedureEditorMobileScreenState
           descriptionBuilder: descriptionBuilder,
         );
       },
+    );
+  }
+
+  Future<void> _addTrigger() async {
+    final ProcedureTrigger? trigger = await _showTriggerSheet();
+    if (trigger == null) return;
+    if (!mounted) return;
+    _updateDraft(
+      context.read<OperationalProcedureProvider>().addTrigger(_draft, trigger),
+    );
+  }
+
+  Future<void> _editTrigger(ProcedureTrigger trigger) async {
+    final ProcedureTrigger? edited = await _showTriggerSheet(trigger: trigger);
+    if (edited == null) return;
+    if (!mounted) return;
+    _updateDraft(
+      context.read<OperationalProcedureProvider>().updateTrigger(
+        _draft,
+        edited,
+      ),
+    );
+  }
+
+  Future<ProcedureTrigger?> _showTriggerSheet({ProcedureTrigger? trigger}) {
+    return showModalBottomSheet<ProcedureTrigger>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (_) => OperationalProcedureTriggerEditorSheet(
+            trigger: trigger,
+            existingTriggers: _draft.triggers,
+          ),
+    );
+  }
+
+  Future<void> _deleteTrigger(ProcedureTrigger trigger) async {
+    final bool confirmed = await _confirm(
+      title: context.t(
+        'procedimentos.deleteTriggerTitle',
+        fallback: 'Excluir gatilho?',
+      ),
+      message:
+          '${trigger_meta.operationTypeLabel(context, trigger.operationType)} • '
+          '${trigger_meta.triggerMomentLabel(context, trigger.triggerMoment)}\n'
+          '${context.t('procedimentos.deleteTriggerMessage', fallback: 'O procedimento deixará de ser apresentado neste momento operacional.')}',
+    );
+    if (!confirmed) return;
+    if (!mounted) return;
+    _updateDraft(
+      context.read<OperationalProcedureProvider>().removeTrigger(
+        _draft,
+        trigger.id,
+      ),
     );
   }
 
@@ -525,7 +682,7 @@ class _OperationalProcedureEditorMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ItemEditorSheet(item: item),
+      builder: (_) => OperationalProcedureItemEditorSheet(item: item),
     );
   }
 
@@ -573,6 +730,21 @@ class _OperationalProcedureEditorMobileScreenState
         'procedimentos.discardChangesMessage',
         fallback:
             'As alterações feitas neste procedimento ainda não foram salvas.',
+      ),
+    );
+  }
+
+  Future<void> _openPreview() async {
+    FocusScope.of(context).unfocus();
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder:
+            (_) => OperationalProcedurePreviewMobileScreen(
+              procedure: _draft.copyWith(
+                name: _nameController.text.trim(),
+                description: _descriptionController.text.trim(),
+              ),
+            ),
       ),
     );
   }
@@ -633,6 +805,16 @@ class _OperationalProcedureEditorMobileScreenState
           return context.t(
             'procedimentos.validationItemTitle',
             fallback: 'Informe o título do item.',
+          );
+        }
+        if (isChoiceResponseType(item.responseType) &&
+            item.options
+                    .where((String option) => option.trim().isNotEmpty)
+                    .length <
+                2) {
+          return context.t(
+            'procedimentos.validationChoiceOptions',
+            fallback: 'Informe pelo menos duas opções nas escolhas.',
           );
         }
       }
@@ -942,162 +1124,6 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
   }
 }
 
-class _ItemEditorSheet extends StatefulWidget {
-  const _ItemEditorSheet({this.item});
-
-  final ProcedureItem? item;
-
-  @override
-  State<_ItemEditorSheet> createState() => _ItemEditorSheetState();
-}
-
-class _ItemEditorSheetState extends State<_ItemEditorSheet> {
-  late final TextEditingController _titleController;
-  late final TextEditingController _guidanceController;
-  late ProcedureResponseType _responseType;
-  late bool _required;
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.item?.title ?? '');
-    _guidanceController = TextEditingController(
-      text: widget.item?.guidance ?? '',
-    );
-    _responseType =
-        widget.item?.responseType ?? ProcedureResponseType.instruction;
-    _required = widget.item?.required ?? false;
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _guidanceController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _SheetSurface(
-      title:
-          widget.item == null
-              ? context.t('procedimentos.addItem', fallback: 'Adicionar item')
-              : context.t('procedimentos.editItem', fallback: 'Editar item'),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            TextFormField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: context.t(
-                  'procedimentos.itemTitleField',
-                  fallback: 'Título ou instrução',
-                ),
-              ),
-              validator: (String? value) {
-                if ((value ?? '').trim().isEmpty) {
-                  return context.t(
-                    'procedimentos.validationItemTitle',
-                    fallback: 'Informe o título do item.',
-                  );
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _guidanceController,
-              minLines: 2,
-              maxLines: 4,
-              decoration: InputDecoration(
-                labelText: context.t(
-                  'procedimentos.itemGuidanceField',
-                  fallback: 'Texto de apoio',
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _SelectorTile(
-              label: context.t(
-                'procedimentos.itemType',
-                fallback: 'Tipo de item',
-              ),
-              value: responseTypeLabel(context, _responseType),
-              icon: responseTypeIcon(_responseType),
-              onTap: _selectResponseType,
-            ),
-            SwitchListTile.adaptive(
-              value: _required,
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                context.t('common.required', fallback: 'Obrigatório'),
-              ),
-              subtitle: Text(
-                context.t(
-                  'procedimentos.itemRequiredHelp',
-                  fallback:
-                      'A lógica final da obrigatoriedade será definida na integração operacional.',
-                ),
-              ),
-              onChanged: (bool value) => setState(() => _required = value),
-            ),
-            const SizedBox(height: 16),
-            _SheetActions(
-              saveLabel: context.t(
-                'procedimentos.saveItem',
-                fallback: 'Salvar item',
-              ),
-              onSave: () {
-                if (!(_formKey.currentState?.validate() ?? false)) return;
-                Navigator.of(context).pop(
-                  ProcedureItem(
-                    id: widget.item?.id ?? '',
-                    title: _titleController.text.trim(),
-                    guidance: _guidanceController.text.trim(),
-                    responseType: _responseType,
-                    required: _required,
-                    order: widget.item?.order ?? 0,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _selectResponseType() async {
-    final ProcedureResponseType? selected =
-        await showModalBottomSheet<ProcedureResponseType>(
-          context: context,
-          useSafeArea: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) {
-            return _OptionSheet<ProcedureResponseType>(
-              title: context.t(
-                'procedimentos.itemType',
-                fallback: 'Tipo de item',
-              ),
-              options: ProcedureResponseType.values,
-              selected: _responseType,
-              labelBuilder:
-                  (ProcedureResponseType value) =>
-                      responseTypeLabel(context, value),
-              iconBuilder: responseTypeIcon,
-              descriptionBuilder:
-                  (ProcedureResponseType value) =>
-                      responseTypeDescription(context, value),
-            );
-          },
-        );
-    if (selected != null) setState(() => _responseType = selected);
-  }
-}
-
 class _ItemRow extends StatelessWidget {
   const _ItemRow({
     required this.item,
@@ -1173,18 +1199,34 @@ class _ItemRow extends StatelessWidget {
 }
 
 class _EmptyInline extends StatelessWidget {
-  const _EmptyInline({required this.message});
+  const _EmptyInline({super.key, required this.message, this.description});
 
   final String message;
+  final String? description;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      message,
-      style: const TextStyle(
-        color: SixMobilePalette.mutedText,
-        fontWeight: FontWeight.w700,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          message,
+          style: const TextStyle(
+            color: SixMobilePalette.mutedText,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (description != null) ...<Widget>[
+          const SizedBox(height: 4),
+          Text(
+            description!,
+            style: const TextStyle(
+              color: SixMobilePalette.mutedText,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -1316,49 +1358,4 @@ class _ConfirmSheet extends StatelessWidget {
       ),
     );
   }
-}
-
-String responseTypeLabel(BuildContext context, ProcedureResponseType type) {
-  return switch (type) {
-    ProcedureResponseType.instruction => context.t(
-      'procedimentos.responseInstruction',
-      fallback: 'Orientação',
-    ),
-    ProcedureResponseType.confirmation => context.t(
-      'procedimentos.responseConfirmation',
-      fallback: 'Confirmação',
-    ),
-    ProcedureResponseType.yesNo => context.t(
-      'procedimentos.responseYesNo',
-      fallback: 'Sim ou não',
-    ),
-  };
-}
-
-String responseTypeDescription(
-  BuildContext context,
-  ProcedureResponseType type,
-) {
-  return switch (type) {
-    ProcedureResponseType.instruction => context.t(
-      'procedimentos.responseInstructionDescription',
-      fallback: 'Apresenta uma instrução ao colaborador.',
-    ),
-    ProcedureResponseType.confirmation => context.t(
-      'procedimentos.responseConfirmationDescription',
-      fallback: 'Exige que o colaborador confirme uma ação.',
-    ),
-    ProcedureResponseType.yesNo => context.t(
-      'procedimentos.responseYesNoDescription',
-      fallback: 'Apresenta uma pergunta objetiva.',
-    ),
-  };
-}
-
-IconData responseTypeIcon(ProcedureResponseType type) {
-  return switch (type) {
-    ProcedureResponseType.instruction => Icons.info_outline_rounded,
-    ProcedureResponseType.confirmation => Icons.task_alt_rounded,
-    ProcedureResponseType.yesNo => Icons.help_outline_rounded,
-  };
 }

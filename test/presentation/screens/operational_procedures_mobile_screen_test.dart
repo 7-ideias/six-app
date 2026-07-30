@@ -180,7 +180,8 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Recepção de aparelho, Ativo, Atendimento técnico, '
-        'Antes de iniciar, 2 etapas • 5 itens, Obrigatório',
+        'Antes de iniciar, 2 etapas • 5 itens, Obrigatório, '
+        'Sem gatilhos configurados',
       ),
       findsOneWidget,
     );

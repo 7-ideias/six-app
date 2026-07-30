@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_trigger_summary.dart';
 
 class OperationalProcedureCard extends StatelessWidget {
   const OperationalProcedureCard({
@@ -26,6 +28,10 @@ class OperationalProcedureCard extends StatelessWidget {
       procedure.required,
     );
     final String structureLabel = structureSummaryLabel(context, procedure);
+    final String triggerLabel = triggerSummaryLabel(
+      context,
+      procedure.triggers,
+    );
 
     return Semantics(
       button: true,
@@ -34,7 +40,7 @@ class OperationalProcedureCard extends StatelessWidget {
       onTap: onTap,
       label:
           '${procedure.name}, $status, $operationType, $moment, '
-          '$structureLabel, $requiredLabel',
+          '$structureLabel, $requiredLabel, $triggerLabel',
       child: Material(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
@@ -93,6 +99,11 @@ class OperationalProcedureCard extends StatelessWidget {
                 _MetaLine(
                   icon: Icons.storefront_outlined,
                   text: '$operationType • $moment',
+                ),
+                const SizedBox(height: 7),
+                OperationalProcedureTriggerSummary(
+                  triggers: procedure.triggers,
+                  compact: true,
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -167,6 +178,14 @@ String operationTypeLabel(BuildContext context, ProcedureOperationType type) {
       'procedimentos.operationDelivery',
       fallback: 'Entrega',
     ),
+    ProcedureOperationType.cashRegister => context.t(
+      'procedimentos.operationCashRegister',
+      fallback: 'Caixa',
+    ),
+    ProcedureOperationType.customerRegistration => context.t(
+      'procedimentos.operationCustomerRegistration',
+      fallback: 'Cadastro de cliente',
+    ),
   };
 }
 
@@ -197,17 +216,11 @@ String structureSummaryLabel(
   BuildContext context,
   OperationalProcedure procedure,
 ) {
-  final String stageLabel =
-      procedure.numberOfStages == 1
-          ? context.t('procedimentos.stageSingular', fallback: 'etapa')
-          : context.t('procedimentos.stagePlural', fallback: 'etapas');
-  final String itemLabel =
-      procedure.numberOfItems == 1
-          ? context.t('procedimentos.itemSingular', fallback: 'item')
-          : context.t('procedimentos.itemPlural', fallback: 'itens');
-
-  return '${procedure.numberOfStages} $stageLabel • '
-      '${procedure.numberOfItems} $itemLabel';
+  return OperationalProcedureI18n.structureSummary(
+    context,
+    stages: procedure.numberOfStages,
+    items: procedure.numberOfItems,
+  );
 }
 
 class _StatusBadge extends StatelessWidget {

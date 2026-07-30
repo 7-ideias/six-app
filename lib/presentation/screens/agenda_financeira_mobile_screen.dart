@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
@@ -19,15 +21,15 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
 
 class _AgendaFinanceiraMobileScreenState
     extends State<AgendaFinanceiraMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
-  static const Color _softBlueColor = Color(0xFFEFF6FF);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.border;
+  static const Color _softBlueColor = SixMobilePalette.softAccentSurface;
 
   final AgendaFinanceiraLancamentoService _service =
       AgendaFinanceiraLancamentoService();
@@ -633,65 +635,79 @@ class _AgendaFinanceiraMobileScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SixMobilePageShell(
+      title: 'Agenda financeira',
       backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Agenda financeira',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Atualizar',
-            onPressed:
-                _carregando ? null : () => _consultar(mostrarFeedback: true),
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            tooltip: 'Novo lançamento',
-            onPressed: _executandoAcao ? null : _novoLancamento,
-            icon: const Icon(Icons.add_rounded),
-          ),
-        ],
+      primaryColor: _primaryColor,
+      secondaryColor: _secondaryColor,
+      accentColor: _accentColor,
+      enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 4,
+      scrollEffectOffset: 24,
+      scrolledSurfaceOpacity: 0.66,
+      leading: IconButton(
+        tooltip: 'Voltar',
+        icon: const Icon(Icons.arrow_back_rounded),
+        onPressed: () => Navigator.of(context).maybePop(),
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => _consultar(mostrarFeedback: true),
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-            children: <Widget>[
-              SixStaggeredEntry(child: _buildHeaderCard()),
-              const SizedBox(height: 12),
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 60),
-                child: _buildFilterCard(),
-              ),
-              if (_carregando || _executandoAcao) ...const <Widget>[
-                SizedBox(height: 10),
-                LinearProgressIndicator(minHeight: 3),
-              ],
-              const SizedBox(height: 14),
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 110),
-                child: _buildResumo(),
-              ),
-              const SizedBox(height: 16),
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 160),
-                child: _buildTabs(),
-              ),
-              const SizedBox(height: 12),
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 210),
-                child: _buildConteudoAba(),
-              ),
+      actions: <Widget>[
+        IconButton(
+          tooltip: 'Atualizar',
+          onPressed:
+              _carregando ? null : () => _consultar(mostrarFeedback: true),
+          icon: const Icon(Icons.refresh_rounded),
+        ),
+        IconButton(
+          tooltip: 'Novo lançamento',
+          onPressed: _executandoAcao ? null : _novoLancamento,
+          icon: const Icon(Icons.add_rounded),
+        ),
+      ],
+      bodyBuilder: _buildContent,
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ScrollController scrollController,
+    double topInset,
+  ) {
+    return SafeArea(
+      top: false,
+      child: RefreshIndicator(
+        onRefresh: () => _consultar(mostrarFeedback: true),
+        child: ListView(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+          children: <Widget>[
+            SixStaggeredEntry(child: _buildHeaderCard()),
+            const SizedBox(height: 12),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 60),
+              child: _buildFilterCard(),
+            ),
+            if (_carregando || _executandoAcao) ...const <Widget>[
+              SizedBox(height: 10),
+              LinearProgressIndicator(minHeight: 3),
             ],
-          ),
+            const SizedBox(height: 14),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 110),
+              child: _buildResumo(),
+            ),
+            const SizedBox(height: 16),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 160),
+              child: _buildTabs(),
+            ),
+            const SizedBox(height: 12),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 210),
+              child: _buildConteudoAba(),
+            ),
+          ],
         ),
       ),
     );
@@ -1049,67 +1065,56 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Widget _buildResumo() {
-    final cards = <_ResumoAgendaCardData>[
+    final items = <_ResumoAgendaCardData>[
       _ResumoAgendaCardData(
         'A receber aberto',
         _totalReceberPrevisto,
         Icons.south_west_rounded,
+        _accentColor,
       ),
       _ResumoAgendaCardData(
         'A pagar aberto',
         _totalPagarPrevisto,
         Icons.north_east_rounded,
+        const Color(0xFF16A34A),
       ),
       _ResumoAgendaCardData(
         'Saldo previsto',
         _saldoPrevisto,
         Icons.query_stats_rounded,
+        const Color(0xFF7C3AED),
       ),
       _ResumoAgendaCardData(
         'Recebido confirmado',
         _totalRecebidoConfirmado,
         Icons.verified_rounded,
+        const Color(0xFF0891B2),
       ),
       _ResumoAgendaCardData(
         'Pago confirmado',
         _totalPagoConfirmado,
         Icons.task_alt_rounded,
+        const Color(0xFFF59E0B),
       ),
       _ResumoAgendaCardData(
         'Saldo confirmado',
         _saldoConfirmado,
         Icons.account_balance_wallet_rounded,
+        _accentColor,
       ),
     ];
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final itemWidth =
-            constraints.maxWidth > 520
-                ? (constraints.maxWidth - 12) / 2
-                : constraints.maxWidth;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children:
-              cards
-                  .map(
-                    (card) => SizedBox(
-                      width: itemWidth,
-                      child: _buildResumoCard(card),
-                    ),
-                  )
-                  .toList(),
-        );
-      },
-    );
-  }
 
-  Widget _buildResumoCard(_ResumoAgendaCardData card) {
+    final maiorValor = items.fold<double>(0, (maior, item) {
+      final valorAbsoluto = item.value.abs();
+      return valorAbsoluto > maior ? valorAbsoluto : maior;
+    });
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _surfaceColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
         boxShadow: const <BoxShadow>[
           BoxShadow(
@@ -1119,50 +1124,129 @@ class _AgendaFinanceiraMobileScreenState
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: _softBlueColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(card.icon, color: _accentColor, size: 19),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: _softBlueColor,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: _accentColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Resumo financeiro',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Distribuição dos valores do período selecionado.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  card.title,
+          const SizedBox(height: 14),
+          ...items.map(
+            (item) => _buildResumoItem(
+              item,
+              percent: maiorValor <= 0 ? 0 : item.value.abs() / maiorValor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoItem(
+    _ResumoAgendaCardData item, {
+    required double percent,
+  }) {
+    final safePercent = percent.clamp(0.0, 1.0).toDouble();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 13),
+      child: Column(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: item.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(item.icon, color: item.color, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: _mutedTextColor,
-                    fontSize: 12,
+                    color: _titleTextColor,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
-                TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: card.value),
-                  duration: const Duration(milliseconds: 650),
-                  curve: Curves.easeOutCubic,
-                  builder:
-                      (context, value, child) => Text(
-                        _formatarMoeda(value),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _titleTextColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+              ),
+              TweenAnimationBuilder<double>(
+                key: ValueKey<String>(
+                  '${item.title}-${item.value.toStringAsFixed(2)}',
                 ),
-              ],
+                tween: Tween<double>(begin: 0, end: item.value),
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeOutCubic,
+                builder:
+                    (context, value, child) => Text(
+                      _formatarMoeda(value),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: safePercent,
+              minHeight: 8,
+              color: item.color,
+              backgroundColor: _borderColor,
             ),
           ),
         ],
@@ -1958,8 +2042,9 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   String _empresaNome(dynamic empresa) {
-    if (empresa is Map<String, dynamic>)
+    if (empresa is Map<String, dynamic>) {
       return empresa['nome']?.toString() ?? '';
+    }
     return empresa?.toString() ?? '';
   }
 
@@ -2021,8 +2106,9 @@ class _AgendaMobileFiltro {
 }
 
 class _ResumoAgendaCardData {
-  const _ResumoAgendaCardData(this.title, this.value, this.icon);
+  const _ResumoAgendaCardData(this.title, this.value, this.icon, this.color);
   final String title;
   final double value;
   final IconData icon;
+  final Color color;
 }

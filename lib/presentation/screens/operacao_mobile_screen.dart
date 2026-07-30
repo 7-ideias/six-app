@@ -5,12 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
+import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
@@ -39,12 +42,15 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
   );
   final NotificacaoService _notificacoes = NotificacaoService();
   final ImagePicker _picker = ImagePicker();
+  final OperationalProcedureFlowCoordinator _procedureCoordinator =
+      OperationalProcedureFlowCoordinator();
 
   TelaInicialModel? _resumo;
   File? _image;
   bool _loading = true;
   String? _erro;
   int _totalNotificacoesConhecidas = 0;
+  bool _openingNewSale = false;
 
   @override
   void initState() {
@@ -151,7 +157,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                   title: 'Nova venda',
                   subtitle: 'Abrir atendimento no caixa',
                   icon: Icons.point_of_sale_rounded,
-                  onTap: () => _go(const PdvMobileScreen()),
+                  onTap: _startNewSale,
                 ),
                 const SizedBox(height: 12),
                 _primaryAction(
@@ -424,6 +430,23 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       ),
     );
   }
+
+  Future<void> _startNewSale() async {
+    if (_openingNewSale) return;
+    _openingNewSale = true;
+    try {
+      final ProcedureFlowResult result = await _procedureCoordinator.execute(
+        context: context,
+        operationPoint: ProcedureOperationPoint.saleStartBefore,
+      );
+      if (!mounted) return;
+      if (result.shouldContinue) _openNewSale();
+    } finally {
+      _openingNewSale = false;
+    }
+  }
+
+  void _openNewSale() => _go(const PdvMobileScreen());
 
   void _go(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));

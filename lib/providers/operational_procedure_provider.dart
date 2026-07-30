@@ -80,6 +80,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
       moment: ProcedureMoment.beforeStart,
       status: ProcedureStatus.active,
       required: false,
+      triggers: const <ProcedureTrigger>[],
       stages: const <ProcedureStage>[],
       createdAt: now,
       updatedAt: now,
@@ -187,8 +188,82 @@ class OperationalProcedureProvider extends ChangeNotifier {
     );
   }
 
+  ProcedureTrigger createTriggerDraft() {
+    final DateTime now = DateTime.now();
+    return ProcedureTrigger(
+      id: _nextId('trigger'),
+      operationPoint: ProcedureOperationPoint.saleStartBefore,
+      operationType: ProcedureOperationType.sale,
+      triggerMoment: ProcedureTriggerMoment.beforeStart,
+      activationMode: ProcedureTriggerActivationMode.automatic,
+      enforcementMode: ProcedureEnforcementMode.recommended,
+      enabled: true,
+      order: 0,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  OperationalProcedure addTrigger(
+    OperationalProcedure procedure,
+    ProcedureTrigger trigger,
+  ) {
+    final List<ProcedureTrigger> triggers = <ProcedureTrigger>[
+      ...procedure.triggers,
+      trigger.copyWith(id: _ensureId(trigger.id, 'trigger')),
+    ];
+    return procedure.copyWith(triggers: _normalizeTriggers(triggers));
+  }
+
+  OperationalProcedure updateTrigger(
+    OperationalProcedure procedure,
+    ProcedureTrigger trigger,
+  ) {
+    return procedure.copyWith(
+      triggers: _normalizeTriggers(
+        procedure.triggers.map((ProcedureTrigger current) {
+          return current.id == trigger.id ? trigger : current;
+        }).toList(),
+      ),
+    );
+  }
+
+  OperationalProcedure removeTrigger(
+    OperationalProcedure procedure,
+    String triggerId,
+  ) {
+    return procedure.copyWith(
+      triggers: _normalizeTriggers(
+        procedure.triggers
+            .where((ProcedureTrigger trigger) => trigger.id != triggerId)
+            .toList(),
+      ),
+    );
+  }
+
+  OperationalProcedure setTriggerEnabled(
+    OperationalProcedure procedure,
+    ProcedureTrigger trigger,
+    bool enabled,
+  ) {
+    return updateTrigger(procedure, trigger.copyWith(enabled: enabled));
+  }
+
   OperationalProcedure _normalizeProcedure(OperationalProcedure procedure) {
-    return procedure.copyWith(stages: _normalizeStages(procedure.stages));
+    return procedure.copyWith(
+      triggers: _normalizeTriggers(procedure.triggers),
+      stages: _normalizeStages(procedure.stages),
+    );
+  }
+
+  List<ProcedureTrigger> _normalizeTriggers(List<ProcedureTrigger> triggers) {
+    return triggers
+        .asMap()
+        .entries
+        .map((MapEntry<int, ProcedureTrigger> entry) {
+          return entry.value.copyWith(order: entry.key + 1);
+        })
+        .toList(growable: false);
   }
 
   List<ProcedureStage> _normalizeStages(List<ProcedureStage> stages) {
@@ -209,7 +284,13 @@ class OperationalProcedureProvider extends ChangeNotifier {
         .asMap()
         .entries
         .map((MapEntry<int, ProcedureItem> entry) {
-          return entry.value.copyWith(order: entry.key + 1);
+          return entry.value.copyWith(
+            order: entry.key + 1,
+            options: entry.value.options
+                .map((String option) => option.trim())
+                .where((String option) => option.isNotEmpty)
+                .toList(growable: false),
+          );
         })
         .toList(growable: false);
   }
