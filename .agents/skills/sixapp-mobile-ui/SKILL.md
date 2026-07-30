@@ -1,6 +1,6 @@
 ---
 name: sixapp-mobile-ui
-description: Use ao criar, reformular ou revisar interfaces Flutter mobile do SixApp, especialmente telas `*_mobile_screen.dart`, componentes em `lib/presentation/components/mobile/`, AppBar mobile, cards, estados vazios, FABs, botões, navegação mobile, bottom sheets, Lottie, motion, contraste, status bar, acessibilidade e consistência com `SixMobilePalette`, `SixMobilePageShell` e `NavBarMobile`. Não use para tarefas exclusivamente backend, integrações de API sem mudança visual, mudanças apenas no Flutter Web, regras de negócio sem impacto de UI, banco de dados, refatorações técnicas puras ou documentação administrativa.
+description: Use ao criar, reformular ou revisar interfaces Flutter mobile do SixApp, especialmente telas `*_mobile_screen.dart`, componentes em `lib/presentation/components/mobile/`, AppBar mobile, cards, estados vazios, FABs, botões, navegação mobile, seletores/dropdowns mobile, bottom sheets, Lottie, motion, contraste, status bar, acessibilidade e consistência com `SixMobilePalette`, `SixMobilePageShell` e `NavBarMobile`. Não use para tarefas exclusivamente backend, integrações de API sem mudança visual, mudanças apenas no Flutter Web, regras de negócio sem impacto de UI, banco de dados, refatorações técnicas puras ou documentação administrativa.
 ---
 
 # UI mobile do SixApp
@@ -212,6 +212,26 @@ Para Lottie, reutilize `SixAnimationAssets` quando possível, registre novos JSO
 Siga `docs/ui/mobile-first-patterns.md`: seletores mobile devem preferir bottom sheets, busca quando necessário, pt-BR ou `AppLocalizations`, `SafeArea`, fechamento previsível e componentes reutilizáveis.
 
 Avalie contraste, tamanho de toque, `Semantics`, labels de ícones, foco quando aplicável, ordem de leitura, conteúdo dinâmico, `liveRegion`, redução de movimento, escala de texto e overflow. Não dependa somente de cor para erro, sucesso ou seleção.
+
+### Padrão obrigatório para seletores e dropdowns mobile
+
+Em telas mobile novas, e em telas mobile existentes quando a alteração tocar seleção de entidade, data, filtro, status, forma de pagamento, categoria ou opção equivalente, trate o uso direto de `DropdownButtonFormField`, `DropdownMenu`, `showDatePicker`, `DatePickerDialog` ou dialogs genéricos de seleção como padrão legado.
+
+O padrão default deve ser:
+
+- campo visual read-only/clicável na tela base, com ícone semântico, label, valor selecionado com `TextOverflow.ellipsis`, borda/superfície coerente com `SixMobilePalette`, área de toque confortável e sem deslocar o layout;
+- `showModalBottomSheet` customizado com `SafeArea`, cantos superiores arredondados, transição suave, título claro, ação de cancelar previsível e conteúdo em pt-BR ou i18n existente;
+- busca local quando a lista já estiver carregada e houver lista média/grande de clientes, fornecedores, produtos, serviços, técnicos, categorias, formas de pagamento ou similares;
+- itens confortáveis com avatar/ícone quando fizer sentido, título, subtítulo opcional, estado selecionado destacado e sem depender apenas de cor;
+- fechamento imediato após seleção simples quando a ação for reversível e clara; botão `Aplicar` quando houver multi-seleção, intervalo de data, filtros combinados ou mudança que não deve alterar o estado antes da confirmação;
+- preservação do valor original até confirmação em seletores de data, período, filtros e multi-seleção;
+- `Semantics`, labels de botões/ícones, foco previsível, suporte a texto maior e respeito a `MediaQuery.disableAnimations`/`accessibleNavigation` quando houver movimento.
+
+Ao editar tela existente, audite os seletores visíveis no fluxo alterado. Se o seletor legado fizer parte do fluxo tocado ou do mesmo bloco visual, migre para este padrão no mesmo patch. Se a tela tiver vários seletores legados fora do escopo direto, não faça refatoração ampla automática; registre o resíduo no relato final.
+
+Antes de criar um novo componente, procure padrão reutilizável em `lib/presentation/components/mobile/` ou tela mobile equivalente. Quando houver repetição clara, crie componente próprio reutilizável, como `ClienteSelectorMobileBottomSheet`, `ProdutoSelectorMobileBottomSheet`, `DateSelectorMobileBottomSheet`, `EntitySelectorMobileBottomSheet` ou `QuickDateSelectorMobileBottomSheet`.
+
+Esse padrão é mobile. Não aplique esta regra a arquivos `*_web.dart`, `*_web_page.dart` ou `*_web_dialog.dart`; seletores web devem seguir padrão web próprio e pedido explícito.
 
 ## Proibições
 

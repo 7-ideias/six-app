@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
+import 'agenda_financeira_lancamento_mobile_create_screen.dart';
 import 'agenda_financeira_lancamento_mobile_edit_screen.dart';
 
 class AgendaFinanceiraMobileScreen extends StatefulWidget {
@@ -35,6 +37,7 @@ class _AgendaFinanceiraMobileScreenState
       AgendaFinanceiraLancamentoService();
   final AgendaFinanceiraAcoesFinanceiras _acoesService =
       AgendaFinanceiraAcoesFinanceiras();
+  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
   final ScrollController _periodosScrollController = ScrollController();
 
   final List<String> _abas = const <String>[
@@ -61,11 +64,39 @@ class _AgendaFinanceiraMobileScreenState
     'Parcial',
     'Cancelado',
   ];
+  final Map<String, String> _codigoTipoPorDescricaoFormaPagamento =
+      <String, String>{
+        'Dinheiro': 'tipo1',
+        'Pix': 'tipo2',
+        'Cartão de crédito': 'tipo3',
+        'Cartão de débito': 'tipo4',
+        'Boleto': 'tipo5',
+        'Fiado': 'tipo6',
+        'Débito automático': 'tipo7',
+        'Transferência': 'tipo8',
+        'Vale': 'tipo9',
+        'Outros': 'tipo10',
+      };
+  final Map<String, String> _descricaoPorCodigoTipoFormaPagamento =
+      <String, String>{
+        'tipo1': 'Dinheiro',
+        'tipo2': 'Pix',
+        'tipo3': 'Cartão de crédito',
+        'tipo4': 'Cartão de débito',
+        'tipo5': 'Boleto',
+        'tipo6': 'Fiado',
+        'tipo7': 'Débito automático',
+        'tipo8': 'Transferência',
+        'tipo9': 'Vale',
+        'tipo10': 'Outros',
+      };
+  List<String> _formasPagamentoFiltro = <String>['Todos'];
 
   int _abaSelecionada = 0;
   String _periodoSelecionado = 'Próximos 7 dias';
   String _tipoSelecionado = 'Todos';
   String _statusSelecionado = 'Todos';
+  final Set<String> _formasPagamentoSelecionadas = <String>{};
 
   bool _carregando = false;
   bool _executandoAcao = false;
@@ -74,13 +105,14 @@ class _AgendaFinanceiraMobileScreenState
 
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
   final List<Map<String, dynamic>> _itensConfirmados = <Map<String, dynamic>>[];
-  Map<String, dynamic> _totaisConfirmados = <String, dynamic>{};
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _consultar();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _carregarTiposPagamentoConfigurados();
+      if (!mounted) return;
+      await _consultar();
       _executarDicaScrollPeriodos();
     });
   }
@@ -96,18 +128,12 @@ class _AgendaFinanceiraMobileScreenState
         .expand(
           (grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>(),
         )
-        .where((item) {
-          final tipoOk =
-              _tipoSelecionado == 'Todos' ||
-              (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
-              (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
-          final statusOk =
-              _statusSelecionado == 'Todos' ||
-              item['status'] == _statusSelecionado;
-          return tipoOk && statusOk;
-        })
+        .where(_passaFiltrosLocais)
         .toList();
   }
+
+  List<Map<String, dynamic>> get _itensConfirmadosFiltrados =>
+      _itensConfirmados.where(_passaFiltrosLocais).toList();
 
   List<Map<String, dynamic>> get _itensSomaveis =>
       _itensAgenda
@@ -119,16 +145,29 @@ class _AgendaFinanceiraMobileScreenState
   double get _totalPagarPrevisto =>
       _somar(_itensSomaveis, 'pagar', 'valorRestante');
   double get _totalRecebidoConfirmado =>
-      _toDouble(_totaisConfirmados['totalRecebidoConfirmado']);
+      _somar(_itensConfirmadosFiltrados, 'receber', 'valorConfirmado');
   double get _totalPagoConfirmado =>
-      _toDouble(_totaisConfirmados['totalPagoConfirmado']);
+      _somar(_itensConfirmadosFiltrados, 'pagar', 'valorConfirmado');
   double get _saldoPrevisto =>
       (_totalRecebidoConfirmado + _totalReceberPrevisto) -
       (_totalPagoConfirmado + _totalPagarPrevisto);
-  double get _saldoConfirmado => _toDouble(
-    _totaisConfirmados['saldoConfirmado'] ??
-        (_totalRecebidoConfirmado - _totalPagoConfirmado),
-  );
+  double get _saldoConfirmado =>
+      _totalRecebidoConfirmado - _totalPagoConfirmado;
+
+  bool _passaFiltrosLocais(Map<String, dynamic> item) {
+    final tipoOk =
+        _tipoSelecionado == 'Todos' ||
+        (_tipoSelecionado == 'Receber' && item['tipo'] == 'receber') ||
+        (_tipoSelecionado == 'Pagar' && item['tipo'] == 'pagar');
+    final statusOk =
+        _statusSelecionado == 'Todos' || item['status'] == _statusSelecionado;
+    final formaOk =
+        _formasPagamentoSelecionadas.isEmpty ||
+        _codigosTipoRecebimentoFiltro().contains(
+          item['codigoTipoRecebimento']?.toString().trim().toLowerCase(),
+        );
+    return tipoOk && statusOk && formaOk;
+  }
 
   Future<void> _executarDicaScrollPeriodos() async {
     if (_dicaPeriodosExecutada) return;
@@ -204,6 +243,7 @@ class _AgendaFinanceiraMobileScreenState
         origens: const <String>[],
         categorias: const <String>[],
         formasPagamento: const <String>[],
+        codigosTipoRecebimento: _codigosTipoRecebimentoFiltro(),
         clienteFornecedor: null,
         somenteCriticos: false,
       ),
@@ -212,6 +252,70 @@ class _AgendaFinanceiraMobileScreenState
         '_',
       ),
     );
+  }
+
+  Future<void> _carregarTiposPagamentoConfigurados() async {
+    try {
+      final InformacoesBasicasCaixaResponse informacoes =
+          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final List<String> formas = _montarFormasPagamentoFiltro(
+        informacoes.tiposRecebimento,
+      );
+      if (!mounted || formas.isEmpty) return;
+      setState(() {
+        _formasPagamentoFiltro = <String>['Todos', ...formas];
+        _formasPagamentoSelecionadas.removeWhere(
+          (String forma) => !_formasPagamentoFiltro.contains(forma),
+        );
+      });
+    } catch (_) {
+      // Mantém as formas padrão quando a configuração do caixa não carregar.
+    }
+  }
+
+  List<String> _montarFormasPagamentoFiltro(List<TiposRecebimento> tipos) {
+    final List<String> descricoes = <String>[];
+    final Map<String, String> codigosAtualizados = Map<String, String>.from(
+      _codigoTipoPorDescricaoFormaPagamento,
+    );
+    final Map<String, String> descricoesAtualizadas = Map<String, String>.from(
+      _descricaoPorCodigoTipoFormaPagamento,
+    );
+    final List<TiposRecebimento> ativos =
+        tipos.where((TiposRecebimento tipo) => tipo.ativo).toList()..sort(
+          (TiposRecebimento a, TiposRecebimento b) =>
+              a.ordemExibicao.compareTo(b.ordemExibicao),
+        );
+    for (final TiposRecebimento tipo in ativos) {
+      final String codigo = tipo.codigoTipo.trim().toLowerCase();
+      if (codigo.isEmpty) continue;
+      final String descricao =
+          tipo.descricaoExibicao.trim().isNotEmpty
+              ? tipo.descricaoExibicao.trim()
+              : (_descricaoPorCodigoTipoFormaPagamento[codigo] ?? codigo);
+      if (descricao.isEmpty || descricoes.contains(descricao)) continue;
+      descricoes.add(descricao);
+      codigosAtualizados[descricao] = codigo;
+      descricoesAtualizadas[codigo] = descricao;
+    }
+    if (descricoes.isNotEmpty) {
+      _codigoTipoPorDescricaoFormaPagamento
+        ..clear()
+        ..addAll(codigosAtualizados);
+      _descricaoPorCodigoTipoFormaPagamento
+        ..clear()
+        ..addAll(descricoesAtualizadas);
+    }
+    return descricoes;
+  }
+
+  List<String> _codigosTipoRecebimentoFiltro() {
+    if (_formasPagamentoSelecionadas.isEmpty) return <String>[];
+    return _formasPagamentoSelecionadas
+        .map((String forma) => _codigoTipoPorDescricaoFormaPagamento[forma])
+        .whereType<String>()
+        .where((String codigo) => codigo.trim().isNotEmpty)
+        .toList();
   }
 
   AgendaFinanceiraPeriodoRequest _periodoRequest() {
@@ -293,12 +397,7 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   void _aplicarConfirmados(Map<String, dynamic> payload) {
-    final totais = payload['totais'];
     final itens = payload['itens'];
-    _totaisConfirmados =
-        totais is Map<String, dynamic>
-            ? Map<String, dynamic>.from(totais)
-            : <String, dynamic>{};
     _itensConfirmados
       ..clear()
       ..addAll(
@@ -341,8 +440,9 @@ class _AgendaFinanceiraMobileScreenState
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
       'origem': item['origem']?.toString() ?? '',
+      'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
       'formaPagamento': _formaPagamentoLabel(
-        item['formaPagamento']?.toString(),
+        _codigoTipoRecebimentoItem(item) ?? item['formaPagamento']?.toString(),
       ),
       'empresa': _empresaNome(item['empresa']),
       'categoria': item['categoria']?.toString() ?? '',
@@ -375,8 +475,9 @@ class _AgendaFinanceiraMobileScreenState
       ),
       'vencimento': _formatarDataIsoParaBr(item['dataVencimento']?.toString()),
       'status': _statusLabel(item['status']?.toString()),
+      'codigoTipoRecebimento': _codigoTipoRecebimentoItem(item),
       'formaPagamento': _formaPagamentoLabel(
-        item['formaPagamento']?.toString(),
+        _codigoTipoRecebimentoItem(item) ?? item['formaPagamento']?.toString(),
       ),
       'empresa': item['empresa']?.toString() ?? '',
       'quantidadeConfirmacoes':
@@ -420,10 +521,10 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _novoLancamento() async {
-    final item = await showSubPainelLancamentoAgendaFinanceiraWeb(
-      context,
-      empresaSelecionada: 'Empresa',
-      empresas: const <String>['Empresa'],
+    final item = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute<Map<String, dynamic>>(
+        builder: (_) => const AgendaFinanceiraLancamentoMobileCreateScreen(),
+      ),
     );
     if (!mounted || item == null) return;
     await _consultar(mostrarFeedback: true);
@@ -469,97 +570,63 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _registrarParcial(Map<String, dynamic> item) async {
-    final valorController = TextEditingController();
-    final observacaoController = TextEditingController();
-    String? erroValor;
-    final valor = await showDialog<double>(
-      context: context,
-      builder:
-          (dialogContext) => StatefulBuilder(
-            builder:
-                (dialogContext, setDialogState) => AlertDialog(
-                  title: const Text('Registrar parcial'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}',
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: valorController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Valor parcial',
-                          errorText: erroValor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: observacaoController,
-                        minLines: 2,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Observação',
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(null),
-                      child: const Text('Cancelar'),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        final valorDigitado = _toDouble(valorController.text);
-                        final valorAberto = _toDouble(
-                          item['valorRestante'] ?? item['valor'],
-                        );
-                        if (valorDigitado <= 0) {
-                          setDialogState(
-                            () =>
-                                erroValor = 'Informe um valor maior que zero.',
-                          );
-                          return;
-                        }
-                        if (valorDigitado >= valorAberto) {
-                          setDialogState(
-                            () =>
-                                erroValor =
-                                    'Informe um valor menor que o aberto.',
-                          );
-                          return;
-                        }
-                        Navigator.of(dialogContext).pop(valorDigitado);
-                      },
-                      child: const Text('Salvar'),
-                    ),
-                  ],
-                ),
+    final List<String> formasDisponiveis =
+        _formasPagamentoFiltro
+            .where(
+              (String forma) => forma != 'Todos' && forma.trim().isNotEmpty,
+            )
+            .toList();
+    if (formasDisponiveis.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Carregue os tipos de recebimento antes de registrar parcial.',
           ),
+        ),
+      );
+      return;
+    }
+    final String codigoAtual =
+        item['codigoTipoRecebimento']?.toString().trim().toLowerCase() ?? '';
+    String formaSelecionada = formasDisponiveis.firstWhere(
+      (String forma) =>
+          _codigoTipoPorDescricaoFormaPagamento[forma] == codigoAtual,
+      orElse: () => formasDisponiveis.first,
     );
-    final observacao = observacaoController.text.trim();
-    valorController.dispose();
-    observacaoController.dispose();
-    if (valor == null) return;
+    final double valorAberto = _toDouble(
+      item['valorRestante'] ?? item['valor'],
+    );
+    final _AgendaParcialResultado? resultado =
+        await showModalBottomSheet<_AgendaParcialResultado>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (BuildContext sheetContext) {
+            return _AgendaParcialBottomSheet(
+              valorAberto: valorAberto,
+              valorAbertoFormatado: _formatarMoeda(valorAberto),
+              formasDisponiveis: formasDisponiveis,
+              codigoTipoPorDescricaoFormaPagamento:
+                  _codigoTipoPorDescricaoFormaPagamento,
+              formaInicial: formaSelecionada,
+            );
+          },
+        );
+    if (resultado == null) return;
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
     await _executarComLoading(() async {
       await _acoesService.executarAbatimento(
         idLancamento: item['id'].toString(),
         request: AgendaFinanceiraParcialRequest(
           tipoLiquidacao: 'PARCIAL',
           dataLiquidacao: DateTime.now(),
-          valorLiquidado: valor,
-          formaPagamentoRealizada: _formaPagamentoBackend(
-            item['formaPagamento']?.toString() ?? 'Pix',
-          ),
+          valorLiquidado: resultado.valor,
+          formaPagamentoRealizada: resultado.codigoTipoRecebimento,
           observacoes:
-              observacao.isEmpty
+              resultado.observacao.trim().isEmpty
                   ? 'Lançamento parcial registrado pela agenda financeira.'
-                  : observacao,
+                  : resultado.observacao.trim(),
         ),
       );
       await _consultar();
@@ -598,9 +665,10 @@ class _AgendaFinanceiraMobileScreenState
           tipoLiquidacao: 'TOTAL',
           dataLiquidacao: DateTime.now(),
           valorLiquidado: valor,
-          formaPagamentoRealizada: _formaPagamentoBackend(
-            item['formaPagamento']?.toString() ?? 'Pix',
-          ),
+          formaPagamentoRealizada:
+              item['codigoTipoRecebimento']?.toString() ??
+              _codigoTipoRecebimentoItem(item) ??
+              'tipo2',
           observacoes: 'Liquidação realizada pela agenda financeira.',
           referenciaExterna: item['id']?.toString(),
         ),
@@ -810,6 +878,10 @@ class _AgendaFinanceiraMobileScreenState
             children: <Widget>[
               _smallInfoChip(Icons.swap_vert_rounded, _tipoSelecionado),
               _smallInfoChip(Icons.flag_outlined, _statusSelecionado),
+              _smallInfoChip(
+                Icons.payments_outlined,
+                _formasPagamentoFiltroLabel(),
+              ),
               OutlinedButton.icon(
                 onPressed: _carregando ? null : _abrirFiltros,
                 icon: const Icon(Icons.tune_rounded, size: 18),
@@ -933,6 +1005,9 @@ class _AgendaFinanceiraMobileScreenState
   Future<void> _abrirFiltros() async {
     String tipoTemp = _tipoSelecionado;
     String statusTemp = _statusSelecionado;
+    final Set<String> formasPagamentoTemp = Set<String>.from(
+      _formasPagamentoSelecionadas,
+    );
     final result = await showModalBottomSheet<_AgendaMobileFiltro>(
       context: context,
       isScrollControlled: true,
@@ -993,6 +1068,25 @@ class _AgendaFinanceiraMobileScreenState
                         onSelected:
                             (value) => setModalState(() => statusTemp = value),
                       ),
+                      const SizedBox(height: 16),
+                      _buildFilterOptions(
+                        title: 'Tipo de pagamento',
+                        values: _formasPagamentoFiltro,
+                        selectedValues: formasPagamentoTemp,
+                        onSelected: (value) {
+                          setModalState(() {
+                            if (value == 'Todos') {
+                              formasPagamentoTemp.clear();
+                              return;
+                            }
+                            if (formasPagamentoTemp.contains(value)) {
+                              formasPagamentoTemp.remove(value);
+                            } else {
+                              formasPagamentoTemp.add(value);
+                            }
+                          });
+                        },
+                      ),
                       const SizedBox(height: 18),
                       SizedBox(
                         width: double.infinity,
@@ -1002,6 +1096,7 @@ class _AgendaFinanceiraMobileScreenState
                                 _AgendaMobileFiltro(
                                   tipo: tipoTemp,
                                   status: statusTemp,
+                                  formasPagamento: formasPagamentoTemp,
                                 ),
                               ),
                           icon: const Icon(Icons.check_rounded),
@@ -1021,13 +1116,17 @@ class _AgendaFinanceiraMobileScreenState
     setState(() {
       _tipoSelecionado = result.tipo;
       _statusSelecionado = result.status;
+      _formasPagamentoSelecionadas
+        ..clear()
+        ..addAll(result.formasPagamento);
     });
   }
 
   Widget _buildFilterOptions({
     required String title,
     required List<String> values,
-    required String selected,
+    String? selected,
+    Set<String>? selectedValues,
     required ValueChanged<String> onSelected,
   }) {
     return Column(
@@ -1047,7 +1146,13 @@ class _AgendaFinanceiraMobileScreenState
           runSpacing: 8,
           children:
               values.map((value) {
-                final isSelected = value == selected;
+                final bool isMultiSelection = selectedValues != null;
+                final isSelected =
+                    isMultiSelection
+                        ? (value == 'Todos'
+                            ? selectedValues.isEmpty
+                            : selectedValues.contains(value))
+                        : value == selected;
                 return ChoiceChip(
                   selected: isSelected,
                   label: Text(value),
@@ -1062,6 +1167,14 @@ class _AgendaFinanceiraMobileScreenState
         ),
       ],
     );
+  }
+
+  String _formasPagamentoFiltroLabel() {
+    if (_formasPagamentoSelecionadas.isEmpty) return 'Todos';
+    if (_formasPagamentoSelecionadas.length == 1) {
+      return _formasPagamentoSelecionadas.first;
+    }
+    return '${_formasPagamentoSelecionadas.length} tipos';
   }
 
   Widget _buildResumo() {
@@ -2002,43 +2115,74 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   String _formaPagamentoLabel(String? formaPagamento) {
-    switch ((formaPagamento ?? '').toUpperCase()) {
+    final String normalizada = (formaPagamento ?? '').trim();
+    final String? descricaoCodigo =
+        _descricaoPorCodigoTipoFormaPagamento[normalizada.toLowerCase()];
+    if (descricaoCodigo != null && descricaoCodigo.trim().isNotEmpty) {
+      return descricaoCodigo;
+    }
+    switch (normalizada.toUpperCase()) {
       case 'BOLETO':
-        return 'Boleto';
+        return _descricaoTipoRecebimentoOuFallback('tipo5', 'Boleto');
       case 'TRANSFERENCIA':
-        return 'Transferência';
+        return _descricaoTipoRecebimentoOuFallback('tipo8', 'Transferência');
       case 'CARTAO_CREDITO':
-        return 'Cartão de crédito';
+        return _descricaoTipoRecebimentoOuFallback(
+          'tipo3',
+          'Cartão de crédito',
+        );
       case 'CARTAO_DEBITO':
-        return 'Cartão de débito';
+        return _descricaoTipoRecebimentoOuFallback('tipo4', 'Cartão de débito');
       case 'DINHEIRO':
-        return 'Dinheiro';
+        return _descricaoTipoRecebimentoOuFallback('tipo1', 'Dinheiro');
       case 'DEBITO_AUTOMATICO':
-        return 'Débito automático';
+        return _descricaoTipoRecebimentoOuFallback(
+          'tipo7',
+          'Débito automático',
+        );
       default:
-        return formaPagamento?.trim().isNotEmpty == true
-            ? formaPagamento!.trim()
-            : 'Pix';
+        return normalizada.isNotEmpty ? normalizada : 'Pix';
     }
   }
 
-  String _formaPagamentoBackend(String label) {
-    switch (label.toLowerCase()) {
-      case 'boleto':
-        return 'BOLETO';
-      case 'transferência':
-        return 'TRANSFERENCIA';
-      case 'cartão de crédito':
-        return 'CARTAO_CREDITO';
-      case 'cartão de débito':
-        return 'CARTAO_DEBITO';
-      case 'dinheiro':
-        return 'DINHEIRO';
-      case 'débito automático':
-        return 'DEBITO_AUTOMATICO';
-      default:
-        return 'PIX';
+  String? _codigoTipoRecebimentoItem(Map<String, dynamic> item) {
+    final codigo =
+        item['codigoTipoRecebimento']?.toString().trim().toLowerCase();
+    if (codigo != null && RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo)) {
+      return codigo;
     }
+    return _codigoTipoPorFormaPagamentoAntiga(
+      item['formaPagamento']?.toString(),
+    );
+  }
+
+  String? _codigoTipoPorFormaPagamentoAntiga(String? formaPagamento) {
+    switch ((formaPagamento ?? '').trim().toUpperCase()) {
+      case 'DINHEIRO':
+        return 'tipo1';
+      case 'PIX':
+        return 'tipo2';
+      case 'CARTAO_CREDITO':
+        return 'tipo3';
+      case 'CARTAO_DEBITO':
+        return 'tipo4';
+      case 'BOLETO':
+        return 'tipo5';
+      case 'DEBITO_AUTOMATICO':
+        return 'tipo7';
+      case 'TRANSFERENCIA':
+        return 'tipo8';
+      default:
+        return null;
+    }
+  }
+
+  String _descricaoTipoRecebimentoOuFallback(String codigo, String fallback) {
+    final descricao =
+        _descricaoPorCodigoTipoFormaPagamento[codigo.trim().toLowerCase()];
+    return descricao != null && descricao.trim().isNotEmpty
+        ? descricao
+        : fallback;
   }
 
   String _empresaNome(dynamic empresa) {
@@ -2100,9 +2244,245 @@ class _AgendaFinanceiraMobileScreenState
 }
 
 class _AgendaMobileFiltro {
-  const _AgendaMobileFiltro({required this.tipo, required this.status});
+  const _AgendaMobileFiltro({
+    required this.tipo,
+    required this.status,
+    required this.formasPagamento,
+  });
   final String tipo;
   final String status;
+  final Set<String> formasPagamento;
+}
+
+class _AgendaParcialResultado {
+  const _AgendaParcialResultado({
+    required this.valor,
+    required this.codigoTipoRecebimento,
+    required this.observacao,
+  });
+
+  final double valor;
+  final String codigoTipoRecebimento;
+  final String observacao;
+}
+
+class _AgendaParcialBottomSheet extends StatefulWidget {
+  const _AgendaParcialBottomSheet({
+    required this.valorAberto,
+    required this.valorAbertoFormatado,
+    required this.formasDisponiveis,
+    required this.codigoTipoPorDescricaoFormaPagamento,
+    required this.formaInicial,
+  });
+
+  final double valorAberto;
+  final String valorAbertoFormatado;
+  final List<String> formasDisponiveis;
+  final Map<String, String> codigoTipoPorDescricaoFormaPagamento;
+  final String formaInicial;
+
+  @override
+  State<_AgendaParcialBottomSheet> createState() =>
+      _AgendaParcialBottomSheetState();
+}
+
+class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
+  final TextEditingController _valorController = TextEditingController();
+  final TextEditingController _observacaoController = TextEditingController();
+
+  late String _formaSelecionada = widget.formaInicial;
+  String? _erroValor;
+
+  @override
+  void dispose() {
+    _valorController.dispose();
+    _observacaoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        14,
+        18,
+        MediaQuery.of(context).viewInsets.bottom + 18,
+      ),
+      decoration: const BoxDecoration(
+        color: _AgendaFinanceiraMobileScreenState._backgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _AgendaFinanceiraMobileScreenState._borderColor,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Registrar parcial',
+                style: TextStyle(
+                  color: _AgendaFinanceiraMobileScreenState._titleTextColor,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Valor em aberto: ${widget.valorAbertoFormatado}',
+                style: const TextStyle(
+                  color: _AgendaFinanceiraMobileScreenState._mutedTextColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _valorController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Valor parcial',
+                  errorText: _erroValor,
+                  filled: true,
+                  fillColor: _AgendaFinanceiraMobileScreenState._surfaceColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Tipo de recebimento',
+                style: TextStyle(
+                  color: _AgendaFinanceiraMobileScreenState._mutedTextColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    widget.formasDisponiveis.map((String forma) {
+                      final bool selecionado = forma == _formaSelecionada;
+                      return ChoiceChip(
+                        selected: selecionado,
+                        label: Text(forma),
+                        avatar:
+                            selecionado
+                                ? const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
+                                : const Icon(Icons.payments_outlined, size: 16),
+                        selectedColor:
+                            _AgendaFinanceiraMobileScreenState._primaryColor,
+                        labelStyle: TextStyle(
+                          color:
+                              selecionado
+                                  ? Colors.white
+                                  : _AgendaFinanceiraMobileScreenState
+                                      ._titleTextColor,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        onSelected:
+                            (_) => setState(() => _formaSelecionada = forma),
+                      );
+                    }).toList(),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _observacaoController,
+                minLines: 2,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Observação',
+                  filled: true,
+                  fillColor: _AgendaFinanceiraMobileScreenState._surfaceColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(null),
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.check_rounded),
+                      label: const Text('Salvar'),
+                      onPressed: _salvar,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _salvar() {
+    final double valorDigitado = _toDouble(_valorController.text);
+    if (valorDigitado <= 0) {
+      setState(() => _erroValor = 'Informe um valor maior que zero.');
+      return;
+    }
+    if (valorDigitado >= widget.valorAberto) {
+      setState(() => _erroValor = 'Informe um valor menor que o aberto.');
+      return;
+    }
+    final String? codigoTipo =
+        widget.codigoTipoPorDescricaoFormaPagamento[_formaSelecionada];
+    if (codigoTipo == null || codigoTipo.trim().isEmpty) {
+      setState(() => _erroValor = 'Selecione um tipo de recebimento.');
+      return;
+    }
+    Navigator.of(context).pop(
+      _AgendaParcialResultado(
+        valor: valorDigitado,
+        codigoTipoRecebimento: codigoTipo,
+        observacao: _observacaoController.text.trim(),
+      ),
+    );
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final String texto = value.trim();
+      final String normalizado =
+          texto.contains(',') && texto.contains('.')
+              ? texto.replaceAll('.', '').replaceAll(',', '.')
+              : texto.replaceAll(',', '.');
+      return double.tryParse(normalizado) ?? 0;
+    }
+    return 0;
+  }
 }
 
 class _ResumoAgendaCardData {
