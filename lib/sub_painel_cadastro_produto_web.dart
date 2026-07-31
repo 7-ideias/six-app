@@ -120,7 +120,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   String? _categoriaSelecionadaId;
   String? _categoriaSelecionadaNome;
 
-
   static const int _maxImageSlots = 5;
   final List<_ProdutoImagemSlot> _imagemSlots =
       List<_ProdutoImagemSlot>.generate(
