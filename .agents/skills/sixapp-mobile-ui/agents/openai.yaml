@@ -1,7 +1,7 @@
 interface:
   display_name: "SixApp UI Mobile"
   short_description: "Mantém Design System e UX mobile"
-  default_prompt: "Use $sixapp-mobile-ui para implementar ou revisar esta interface Flutter mobile com Design System, motion, acessibilidade e sem afetar o fluxo Web."
+  default_prompt: "Use $sixapp-mobile-ui para implementar ou revisar esta interface Flutter mobile com Design System, motion, acessibilidade, regionalização quando aplicável e sem afetar o fluxo Web."
 
 policy:
   allow_implicit_invocation: true

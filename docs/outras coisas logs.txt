@@ -1,0 +1,19 @@
+cartaxo@cartaxo-Latitude-5450:~/IdeaProjects/six-app$ dart pub global run flutterfire_cli:flutterfire configure
+i Found 1 Firebase projects.
+✔ Select a Firebase project to configure your Flutter application with · sixpos-cd87e (sixpos)
+✔ Which platforms should your configuration support (use arrow keys & space to select)? · android, ios
+✔ Generated FirebaseOptions file /home/cartaxo/IdeaProjects/six-app/lib/firebase_options.dart already exists, do you want to override it? · yes
+i Firebase android app br.com.seteideias.appplanilha is not registered on Firebase project sixpos-cd87e.
+i Registered a new Firebase android app on Firebase project sixpos-cd87e.
+✔ Which ios bundle id do you want to use for this configuration, e.g. 'com.example.app'? · br.com.seteideias.appplanilha
+i Firebase ios app br.com.seteideias.appplanilha is not registered on Firebase project sixpos-cd87e.
+i Registered a new Firebase ios app on Firebase project sixpos-cd87e.
+
+Firebase configuration file lib/firebase_options.dart generated successfully with the following Firebase apps:
+
+Platform  Firebase App Id
+android   1:841074493827:android:15e3b2e7d7b5c18cb98eb6
+ios       1:841074493827:ios:9fbc8a60d3d7e6aeb98eb6
+
+Learn more about using this file and next steps from the documentation:
+ > https://firebase.google.com/docs/flutter/setup

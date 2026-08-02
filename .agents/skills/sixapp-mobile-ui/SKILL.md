@@ -1,6 +1,6 @@
 ---
 name: sixapp-mobile-ui
-description: Use ao criar, reformular ou revisar interfaces Flutter mobile do SixApp, especialmente telas `*_mobile_screen.dart`, componentes em `lib/presentation/components/mobile/`, AppBar mobile, cards, estados vazios, FABs, botões, navegação mobile, seletores/dropdowns mobile, bottom sheets, Lottie, motion, contraste, status bar, acessibilidade e consistência com `SixMobilePalette`, `SixMobilePageShell` e `NavBarMobile`. Não use para tarefas exclusivamente backend, integrações de API sem mudança visual, mudanças apenas no Flutter Web, regras de negócio sem impacto de UI, banco de dados, refatorações técnicas puras ou documentação administrativa.
+description: Use ao criar, reformular ou revisar interfaces Flutter mobile do SixApp, especialmente telas `*_mobile_screen.dart`, componentes em `lib/presentation/components/mobile/`, AppBar mobile, cards, estados vazios, FABs, botões, navegação mobile, seletores/dropdowns mobile, bottom sheets, Lottie, motion, contraste, status bar, acessibilidade e consistência com `SixMobilePalette`, `SixMobilePageShell` e `NavBarMobile`. Acione também quando telas mobile envolverem textos, moedas, datas, números, percentuais, mensagens ou configurações do backend para combinar com `sixapp-regionalization`. Não use para tarefas exclusivamente backend, integrações de API sem mudança visual, mudanças apenas no Flutter Web, regras de negócio sem impacto de UI, banco de dados, refatorações técnicas puras ou documentação administrativa.
 ---
 
 # UI mobile do SixApp
@@ -8,6 +8,8 @@ description: Use ao criar, reformular ou revisar interfaces Flutter mobile do Si
 Use esta Skill para manter a experiência mobile Flutter do SixApp consistente, profissional e separada do Flutter Web.
 
 Quando a tarefa visual mobile também envolver endpoint, contrato, parsing, autenticação, tenant, service ou ApiClient compartilhado, use também a Skill `sixapp-shared-backend-integration`. Esta Skill cuida da UI; a Skill de backend cuida da integração.
+
+Quando a tarefa envolver textos visíveis, moeda, data, hora, número, percentual, unidade, status, mensagens ou configurações do comércio, use também `sixapp-regionalization` para classificar o conteúdo e verificar impacto em frontend, contrato, backend, persistência, traduções e testes.
 
 ## Leituras mínimas
 
@@ -20,18 +22,20 @@ Para tarefa visual mobile, leia:
 - a tela ou componente alvo;
 - a tela anterior do fluxo, para continuidade visual.
 
-Leia `references/mobile-design-system.md` quando precisar consultar tokens, shell, motion, Lottie, separação mobile/web ou exemplos. Use `references/implementation-checklist.md` como checklist antes de finalizar.
+Leia `references/mobile-design-system.md` quando precisar consultar tokens, shell, motion, Lottie, separação mobile/web ou exemplos. Leia `references/current-mobile-patterns.md` para uma referência curta dos padrões móveis confirmados no projeto real. Use `references/implementation-checklist.md` como checklist antes de finalizar.
 
 ## Fluxo obrigatório
 
 1. Classifique o escopo: mobile, web, compartilhado, visual, funcional ou visual com backend.
 2. Se o pedido for somente mobile, preserve arquivos web e evite tema global.
-3. Antes de editar, informe os arquivos que pretende alterar e por que são seguros para mobile.
-4. Reutilize `SixMobilePalette`, `SixMobilePageShell`, `NavBarMobile` e componentes mobile existentes antes de criar padrões novos.
-5. Em telas legadas migradas para o padrão mobile, revise também textos visíveis, moeda, números e datas para respeitar idioma e regionalização globais.
-6. Implemente com escopo mínimo, sem alterar regras de negócio, contratos de API, autenticação, permissões ou fluxos web.
-7. Valide com `dart format <arquivos>`, `git diff --check`, `git diff` e, quando aplicável, `flutter analyze` e testes relacionados.
-8. No relato final, informe arquivos alterados, tokens usados, motion aplicado, acessibilidade, validações e confirmação de ausência de impacto web.
+3. Localize componentes, controllers/providers, services e implementações mobile semelhantes.
+4. Mapeie textos e dados regionalizáveis afetados; use `sixapp-regionalization` para classificar conteúdos em estáticos, configuráveis por tenant, dinâmicos de domínio ou dados regionalizáveis.
+5. Antes de editar, informe os arquivos que pretende alterar e por que são seguros para mobile.
+6. Reutilize `SixMobilePalette`, `SixMobilePageShell`, `NavBarMobile` e componentes mobile existentes antes de criar padrões novos.
+7. Em telas legadas migradas para o padrão mobile, revise também textos visíveis, moeda, números e datas para respeitar idioma e regionalização globais.
+8. Implemente com escopo mínimo, sem alterar regras de negócio, contratos de API, autenticação, permissões ou fluxos web.
+9. Valide com `dart format <arquivos>`, `git diff --check`, `git diff` e, quando aplicável, `flutter analyze` e testes relacionados.
+10. No relato final, informe arquivos alterados, tokens usados, motion aplicado, acessibilidade, impacto de regionalização, validações e confirmação de ausência de impacto web.
 
 ## Escopo mobile
 
@@ -209,7 +213,7 @@ Para Lottie, reutilize `SixAnimationAssets` quando possível, registre novos JSO
 
 ## Bottom sheets, textos e acessibilidade
 
-Siga `docs/ui/mobile-first-patterns.md`: seletores mobile devem preferir bottom sheets, busca quando necessário, pt-BR ou `AppLocalizations`, `SafeArea`, fechamento previsível e componentes reutilizáveis.
+Siga `docs/ui/mobile-first-patterns.md`: seletores mobile devem preferir bottom sheets, busca quando necessário, i18n existente com fallback em pt-BR durante migração, `SafeArea`, fechamento previsível e componentes reutilizáveis.
 
 Avalie contraste, tamanho de toque, `Semantics`, labels de ícones, foco quando aplicável, ordem de leitura, conteúdo dinâmico, `liveRegion`, redução de movimento, escala de texto e overflow. Não dependa somente de cor para erro, sucesso ou seleção.
 
