@@ -82,7 +82,6 @@ class _PdvItemMutationResult {
 
 class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     with TickerProviderStateMixin {
-  Map<String, dynamic>? _ultimoEventoWebSocket;
   final List<Map<String, dynamic>> _notificacoes = <Map<String, dynamic>>[];
   int _quantidadeNotificacoesNaoLidas = 0;
   StatusComunicacaoBackend _statusComunicacaoBackend =
@@ -347,7 +346,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       };
 
       setState(() {
-        _ultimoEventoWebSocket = notificacao;
         _notificacoes.insert(0, notificacao);
         _quantidadeNotificacoesNaoLidas = (_quantidadeNotificacoesNaoLidas + 1)
             .clamp(0, 9);
@@ -800,7 +798,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                         setState(() {
                           _notificacoes.clear();
                           _quantidadeNotificacoesNaoLidas = 0;
-                          _ultimoEventoWebSocket = null;
                         });
                         Navigator.of(context).pop();
                       },
@@ -2382,103 +2379,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   //   );
   // }
 
-  Widget _buildCardUltimoEvento() {
-    if (_ultimoEventoWebSocket == null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _pdvTheme.eventCardBackground,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _pdvTheme.eventCardBorder),
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.notifications_none_rounded, color: _pdvTheme.iconColor),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Nenhum evento recebido do backend até agora.',
-                style: TextStyle(
-                  color: _pdvTheme.secondaryText,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final String ordemId =
-        _ultimoEventoWebSocket!['ordemId']?.toString() ?? '-';
-    final String status = _ultimoEventoWebSocket!['status']?.toString() ?? '-';
-    final String mensagem =
-        _ultimoEventoWebSocket!['mensagem']?.toString() ?? 'Sem mensagem';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _pdvTheme.highlightColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _pdvTheme.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(
-                Icons.notifications_active_rounded,
-                color: _pdvTheme.highlightColor,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Último evento do backend',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: _pdvTheme.highlightColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Ordem: $ordemId',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: _pdvTheme.primaryText,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Status: $status',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: _pdvTheme.primaryText,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(mensagem, style: TextStyle(color: _pdvTheme.primaryText)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSeletorModoOperacao() {
     return Expanded(
       child: SingleChildScrollView(
         controller: _seletorScrollController,
         primary: false,
         child: Column(
-          children: <Widget>[
-            _buildCardUltimoEvento(),
-            // const SizedBox(height: 24),
-            DashboardGestaoWeb(),
-            DashboardColaboradorWeb(),
-          ],
+          children: <Widget>[DashboardGestaoWeb(), DashboardColaboradorWeb()],
         ),
       ),
     );
