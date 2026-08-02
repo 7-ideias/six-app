@@ -40,7 +40,8 @@ class _MenuConfigData {
   final IconData icon;
 }
 
-class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget {
+class TopNavigationBarWeb extends StatelessWidget
+    implements PreferredSizeWidget {
   const TopNavigationBarWeb({
     super.key,
     required this.items,
@@ -91,7 +92,9 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
     messenger?.hideCurrentSnackBar();
     messenger?.showSnackBar(
       SnackBar(
-        content: Text('$label: menu criado. A tela será evoluída nos próximos passos.'),
+        content: Text(
+          '$label: menu criado. A tela será evoluída nos próximos passos.',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -110,9 +113,14 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
         final size = MediaQuery.of(dialogContext).size;
         return _EscOverlayScope(
           child: Dialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 24,
+            ),
             clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
             child: SizedBox(
               width: size.width * widthFactor,
               height: size.height * heightFactor,
@@ -169,15 +177,25 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
     }
 
     final opened =
-        _abrirLegado(context, 'Atendimento', 'PDV - Frente de Caixa', mostrarPreparacao: false) ||
-        _abrirLegado(context, 'Executar', 'PDV - Frente de Caixa', mostrarPreparacao: false);
+        _abrirLegado(
+          context,
+          'Atendimento',
+          'PDV - Frente de Caixa',
+          mostrarPreparacao: false,
+        ) ||
+        _abrirLegado(
+          context,
+          'Executar',
+          'PDV - Frente de Caixa',
+          mostrarPreparacao: false,
+        );
 
     if (opened) return;
 
-    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-      '/app',
-      (_) => false,
-    );
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil('/app', (_) => false);
   }
 
   void _abrirAtendimentoTecnico(BuildContext context) {
@@ -209,8 +227,20 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
       context,
       (dialogContext) => ProdutoDashboardWebPage(
         onBack: () => Navigator.of(dialogContext).pop(),
-        onNovoProduto: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos'),
-        onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
+        onNovoProduto:
+            () => _fecharEAbrirLegado(
+              dialogContext,
+              context,
+              'Cadastros',
+              'Produtos',
+            ),
+        onOpenListaCompleta:
+            () => _fecharEAbrirLegado(
+              dialogContext,
+              context,
+              'Cadastros',
+              'Produtos List',
+            ),
       ),
     );
   }
@@ -220,8 +250,20 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
       context,
       (dialogContext) => ServicoDashboardWebPage(
         onBack: () => Navigator.of(dialogContext).pop(),
-        onNovoServico: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos'),
-        onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
+        onNovoServico:
+            () => _fecharEAbrirLegado(
+              dialogContext,
+              context,
+              'Cadastros',
+              'Produtos',
+            ),
+        onOpenListaCompleta:
+            () => _fecharEAbrirLegado(
+              dialogContext,
+              context,
+              'Cadastros',
+              'Produtos List',
+            ),
       ),
     );
   }
@@ -231,10 +273,20 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
       context,
       (dialogContext) => EstoqueDashboardWebPage(
         onBack: () => Navigator.of(dialogContext).pop(),
-        onEntradaEstoque: () => _fecharEPreparar(dialogContext, context, 'Entrada de estoque'),
-        onSaidaEstoque: () => _fecharEPreparar(dialogContext, context, 'Saída de estoque'),
-        onAjusteEstoque: () => _fecharEPreparar(dialogContext, context, 'Ajuste de estoque'),
-        onOpenListaCompleta: () => _fecharEAbrirLegado(dialogContext, context, 'Cadastros', 'Produtos List'),
+        onEntradaEstoque:
+            () =>
+                _fecharEPreparar(dialogContext, context, 'Entrada de estoque'),
+        onSaidaEstoque:
+            () => _fecharEPreparar(dialogContext, context, 'Saída de estoque'),
+        onAjusteEstoque:
+            () => _fecharEPreparar(dialogContext, context, 'Ajuste de estoque'),
+        onOpenListaCompleta:
+            () => _fecharEAbrirLegado(
+              dialogContext,
+              context,
+              'Cadastros',
+              'Produtos List',
+            ),
       ),
     );
   }
@@ -343,23 +395,59 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
   _MenuConfigData _config(String value) {
     switch (value) {
       case 'Empresa':
-        return const _MenuConfigData('Empresa', 'Dados institucionais, contatos e identidade do comércio.', Icons.storefront_rounded);
+        return const _MenuConfigData(
+          'Empresa',
+          'Dados institucionais, contatos e identidade do comércio.',
+          Icons.storefront_rounded,
+        );
       case 'Usuários e permissões':
-        return const _MenuConfigData('Usuários e permissões', 'Acessos, perfis de colaboradores e permissões operacionais.', Icons.admin_panel_settings_rounded);
+        return const _MenuConfigData(
+          'Usuários e permissões',
+          'Acessos, perfis de colaboradores e permissões operacionais.',
+          Icons.admin_panel_settings_rounded,
+        );
       case 'Regionalização':
-        return const _MenuConfigData('Regionalização', 'Idioma, país, moeda, data, hora e formatos locais.', Icons.public_rounded);
+        return const _MenuConfigData(
+          'Regionalização',
+          'Idioma, país, moeda, data, hora e formatos locais.',
+          Icons.public_rounded,
+        );
       case 'Formas de recebimento':
-        return const _MenuConfigData('Formas de recebimento', 'Personalize como sua empresa recebe pagamentos. Os códigos internos são mantidos pelo sistema, mas o nome e o comportamento podem ser ajustados.', Icons.payments_rounded);
+        return const _MenuConfigData(
+          'Formas de recebimento',
+          'Personalize como sua empresa recebe pagamentos. Os códigos internos são mantidos pelo sistema, mas o nome e o comportamento podem ser ajustados.',
+          Icons.payments_rounded,
+        );
       case 'Regras operacionais':
-        return const _MenuConfigData('Regras operacionais', 'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.', Icons.rule_folder_outlined);
+        return const _MenuConfigData(
+          'Regras operacionais',
+          'Estoque, desconto, caixa, comissão e unidades autorizadas para venda.',
+          Icons.rule_folder_outlined,
+        );
       case 'Notificações':
-        return const _MenuConfigData('Notificações', 'Canais, mensagens e automações para clientes e equipe.', Icons.notifications_active_rounded);
+        return const _MenuConfigData(
+          'Notificações',
+          'Canais, mensagens e automações para clientes e equipe.',
+          Icons.notifications_active_rounded,
+        );
       case 'Modelos de PDF':
-        return const _MenuConfigData('Modelos de PDF', 'Modelos de comprovantes, orçamentos e ordens de serviço.', Icons.picture_as_pdf_rounded);
+        return const _MenuConfigData(
+          'Modelos de PDF',
+          'Modelos de comprovantes, orçamentos e ordens de serviço.',
+          Icons.picture_as_pdf_rounded,
+        );
       case 'Integrações':
-        return const _MenuConfigData('Integrações', 'Conexões externas para comunicação, pagamentos e automações.', Icons.hub_rounded);
+        return const _MenuConfigData(
+          'Integrações',
+          'Conexões externas para comunicação, pagamentos e automações.',
+          Icons.hub_rounded,
+        );
       default:
-        return _MenuConfigData(value, 'Configuração do Six preparada para evolução.', Icons.tune_rounded);
+        return _MenuConfigData(
+          value,
+          'Configuração do Six preparada para evolução.',
+          Icons.tune_rounded,
+        );
     }
   }
 
@@ -388,11 +476,13 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
             _abrirPdvFrenteCaixa(context);
             return;
           }
-          if (value == 'Atendimento técnico' || value == 'Nova assistência técnica') {
+          if (value == 'Atendimento técnico' ||
+              value == 'Nova assistência técnica') {
             _abrirAtendimentoTecnico(context);
             return;
           }
-          if (value == 'Atendimentos criados' || value == 'Assistências técnicas') {
+          if (value == 'Atendimentos criados' ||
+              value == 'Assistências técnicas') {
             _abrirAtendimentosCriados(context);
             return;
           }
@@ -401,7 +491,12 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
       ),
       TopNavItemData(
         title: 'Catálogo',
-        subItems: const <String>['Produtos', 'Serviços', 'Categorias', 'Estoque'],
+        subItems: const <String>[
+          'Produtos',
+          'Serviços',
+          'Categorias',
+          'Estoque',
+        ],
         onSelect: (value) {
           if (value == 'Produtos') {
             _abrirProdutos(context);
@@ -424,8 +519,18 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
       ),
       TopNavItemData(
         title: 'Pessoas',
-        subItems: const <String>['Clientes', 'Colaboradores', 'Fornecedores', 'Desempenho'],
+        subItems: const <String>[
+          'Meu Perfil',
+          'Clientes',
+          'Colaboradores',
+          'Fornecedores',
+          'Desempenho',
+        ],
         onSelect: (value) {
+          if (value == 'Meu Perfil') {
+            _abrirLegado(context, 'Início', value);
+            return;
+          }
           if (value == 'Clientes') {
             _abrirClientes(context);
             return;
@@ -482,7 +587,14 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
       ),
       TopNavItemData(
         title: 'Relatórios',
-        subItems: const <String>['Vendas', 'Assistências', 'Caixa', 'Financeiro', 'Produtos', 'Clientes'],
+        subItems: const <String>[
+          'Vendas',
+          'Assistências',
+          'Caixa',
+          'Financeiro',
+          'Produtos',
+          'Clientes',
+        ],
         onSelect: (value) => _mostrarPreparacao(context, 'Relatório de $value'),
       ),
       TopNavItemData(
@@ -502,23 +614,8 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
       ),
       TopNavItemData(
         title: 'Legado',
-        subItems: const <String>[
-          'Meu Perfil',
-          'Clientes',
-          'Clientes List',
-          'Produtos',
-          'Categorias',
-          'Colaboradores',
-          'Colaboradores List',
-          'Fornecedores',
-          'Produtos List',
-          'Preferências do Six',
-        ],
+        subItems: const <String>['Categorias', 'Preferências do Six'],
         onSelect: (value) {
-          if (value == 'Meu Perfil') {
-            _abrirLegado(context, 'Início', value);
-            return;
-          }
           if (value == 'Preferências do Six') {
             _abrirLegado(context, 'Configurações', value);
             return;
@@ -533,7 +630,10 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
-    final currentTheme = brightness == Brightness.dark ? themeProvider.darkTheme : themeProvider.lightTheme;
+    final currentTheme =
+        brightness == Brightness.dark
+            ? themeProvider.darkTheme
+            : themeProvider.lightTheme;
     final colorScheme = currentTheme.colorScheme;
     final effectiveItems = _itemsEfetivos(context);
     final bool isDark = brightness == Brightness.dark;
@@ -547,21 +647,30 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark
-                ? const <Color>[Color(0xFF07111E), Color(0xFF0B1B2E)]
-                : const <Color>[Color(0xFFF4F7FB), Color(0xFFE7F0FA)],
+            colors:
+                isDark
+                    ? const <Color>[Color(0xFF07111E), Color(0xFF0B1B2E)]
+                    : const <Color>[Color(0xFFF4F7FB), Color(0xFFE7F0FA)],
           ),
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xE60A1624) : Colors.white.withOpacity(0.88),
+            color:
+                isDark
+                    ? const Color(0xE60A1624)
+                    : Colors.white.withOpacity(0.88),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.78),
+              color:
+                  isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.white.withOpacity(0.78),
             ),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: const Color(0xFF0B1F3A).withOpacity(isDark ? 0.22 : 0.08),
+                color: const Color(
+                  0xFF0B1F3A,
+                ).withOpacity(isDark ? 0.22 : 0.08),
                 blurRadius: 34,
                 offset: const Offset(0, 18),
               ),
@@ -576,14 +685,19 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     child: Row(
-                      children: effectiveItems
-                          .map(
-                            (item) => Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: _TopNavigationMenuItem(data: item, colorScheme: colorScheme, premium: true),
-                            ),
-                          )
-                          .toList(),
+                      children:
+                          effectiveItems
+                              .map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: _TopNavigationMenuItem(
+                                    data: item,
+                                    colorScheme: colorScheme,
+                                    premium: true,
+                                  ),
+                                ),
+                              )
+                              .toList(),
                     ),
                   ),
                 ),
@@ -593,7 +707,10 @@ class TopNavigationBarWeb extends StatelessWidget implements PreferredSizeWidget
                 notificationWidget ??
                     IconButton(
                       onPressed: onNotificationPressed,
-                      icon: Icon(Icons.notifications_none, color: colorScheme.primary),
+                      icon: Icon(
+                        Icons.notifications_none,
+                        color: colorScheme.primary,
+                      ),
                       tooltip: 'Notificações',
                     ),
               ],
@@ -644,12 +761,18 @@ class _AppVersionPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bg = premium
-        ? (isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF8FAFC))
-        : colorScheme.onPrimary.withOpacity(0.16);
-    final Color border = premium
-        ? (isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2E8F0))
-        : colorScheme.onPrimary.withOpacity(0.20);
+    final Color bg =
+        premium
+            ? (isDark
+                ? Colors.white.withOpacity(0.06)
+                : const Color(0xFFF8FAFC))
+            : colorScheme.onPrimary.withOpacity(0.16);
+    final Color border =
+        premium
+            ? (isDark
+                ? Colors.white.withOpacity(0.08)
+                : const Color(0xFFE2E8F0))
+            : colorScheme.onPrimary.withOpacity(0.20);
     final Color text = premium ? colorScheme.primary : colorScheme.onPrimary;
 
     return Container(
@@ -673,7 +796,11 @@ class _AppVersionPill extends StatelessWidget {
 }
 
 class _TopNavigationMenuItem extends StatefulWidget {
-  const _TopNavigationMenuItem({required this.data, required this.colorScheme, this.premium = false});
+  const _TopNavigationMenuItem({
+    required this.data,
+    required this.colorScheme,
+    this.premium = false,
+  });
 
   final TopNavItemData data;
   final ColorScheme colorScheme;
@@ -702,23 +829,33 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 12,
       color: Theme.of(context).colorScheme.surface,
-      items: widget.data.subItems
-          .map(
-            (item) => PopupMenuItem<String>(
-              value: item,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.arrow_right_rounded, color: widget.colorScheme.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Flexible(child: Text(item, overflow: TextOverflow.ellipsis)),
-                  ],
+      items:
+          widget.data.subItems
+              .map(
+                (item) => PopupMenuItem<String>(
+                  value: item,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.arrow_right_rounded,
+                          color: widget.colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(item, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )
-          .toList(),
+              )
+              .toList(),
     );
     if (mounted) setState(() => _open = false);
     if (selected != null) {
@@ -731,14 +868,20 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
     final bool hasChildren = widget.data.subItems.isNotEmpty;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool active = _open || _hover;
-    final Color textColor = widget.premium
-        ? (active ? widget.colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.76))
-        : widget.colorScheme.onPrimary;
-    final Color bgColor = widget.premium
-        ? (active
-            ? (isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9))
-            : Colors.transparent)
-        : Colors.transparent;
+    final Color textColor =
+        widget.premium
+            ? (active
+                ? widget.colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.76))
+            : widget.colorScheme.onPrimary;
+    final Color bgColor =
+        widget.premium
+            ? (active
+                ? (isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : const Color(0xFFF1F5F9))
+                : Colors.transparent)
+            : Colors.transparent;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -760,9 +903,12 @@ class _TopNavigationMenuItemState extends State<_TopNavigationMenuItem> {
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(999),
-            border: widget.premium && active
-                ? Border.all(color: widget.colorScheme.primary.withOpacity(0.10))
-                : null,
+            border:
+                widget.premium && active
+                    ? Border.all(
+                      color: widget.colorScheme.primary.withOpacity(0.10),
+                    )
+                    : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
