@@ -11,21 +11,67 @@ import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
-import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import 'l10n/six_i18n.dart';
 
-class SubPainelCadastroProduto extends SubPainelWebGeneral {
+class SubPainelCadastroProduto extends StatelessWidget {
   const SubPainelCadastroProduto({
     super.key,
-    required super.body,
-    required super.textoDaAppBar,
+    required this.body,
+    required this.textoDaAppBar,
   });
+
+  final Widget body;
+  final String textoDaAppBar;
+
+  void _fecharSubPainel(BuildContext context) {
+    final NavigatorState navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Size size = MediaQuery.of(context).size;
+
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.escape):
+            () => _fecharSubPainel(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Center(
+          child: Container(
+            width: size.width * 0.9,
+            height: size.height * 0.9,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.14),
+                  blurRadius: 32,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Material(color: theme.colorScheme.surface, child: body),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 void showSubPainelCadastroProduto(
@@ -861,124 +907,164 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String statusText =
+        _isLoading
+            ? (_isModoEdicao
+                ? _t('produto.web.savingUpdate', 'Salvando alteração...')
+                : _t('produto.web.saving', 'Salvando...'))
+            : (_isModoEdicao
+                ? _t('produto.web.readyToEdit', 'Pronto para editar')
+                : _t('produto.web.readyToSubmit', 'Pronto para envio'));
+
+    Widget headerIcon() {
+      return Container(
+        width: 54,
+        height: 54,
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Icon(
+          _isModoEdicao ? Icons.edit_note_rounded : Icons.add_box_outlined,
+          color: colorScheme.primary,
+          size: 28,
+        ),
+      );
+    }
+
+    Widget titleBlock() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            _isModoEdicao
+                ? _t('produto.web.editProductTitle', 'Edição de produto')
+                : _t('produtos.cadastroDeProdutos', 'Cadastro de produtos'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _isModoEdicao
+                ? _t(
+                  'produto.web.editProductSubtitle',
+                  'Revise os dados cadastrados e salve as alterações.',
+                )
+                : _t(
+                  'produto.web.createProductSubtitle',
+                  'Informe dados comerciais, estoque, preço e imagens do catálogo.',
+                ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.35,
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget statusChip() {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: colorScheme.surface.withValues(alpha: 0.78),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(
+              width: 16,
+              height: 16,
+              child:
+                  _isLoading
+                      ? CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      )
+                      : Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 16,
+                        color: colorScheme.primary,
+                      ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              statusText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget closeButton() {
+      return IconButton.filledTonal(
+        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+        tooltip: _t('common.close', 'Fechar'),
+        icon: const Icon(Icons.close_rounded),
+      );
+    }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[
-            colorScheme.primary,
-            colorScheme.primary.withOpacity(0.88),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        color: colorScheme.primary.withValues(alpha: 0.06),
+        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        runAlignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 16,
-        children: <Widget>[
-          Row(
-            mainAxisSize: MainAxisSize.min,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = constraints.maxWidth < 720;
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    headerIcon(),
+                    const SizedBox(width: 14),
+                    Expanded(child: titleBlock()),
+                    const SizedBox(width: 10),
+                    closeButton(),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                statusChip(),
+              ],
+            );
+          }
+
+          return Row(
             children: <Widget>[
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.18)),
-                ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  color: Colors.white,
-                ),
-              ),
+              headerIcon(),
               const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    _isModoEdicao
-                        ? _t(
-                          'produto.web.editProductTitle',
-                          'Edição de produto',
-                        )
-                        : _t(
-                          'produtos.cadastroDeProdutos',
-                          'Cadastro de produtos',
-                        ),
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    _isModoEdicao
-                        ? _t(
-                          'produto.web.editProductSubtitle',
-                          'Modo edição: revise os dados já cadastrados e salve as alterações.',
-                        )
-                        : _t(
-                          'produto.web.createProductSubtitle',
-                          'Visual alinhado ao SixApp, com destaque para foto e ações principais.',
-                        ),
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
+              Expanded(child: titleBlock()),
+              const SizedBox(width: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[statusChip(), closeButton()],
               ),
             ],
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const Icon(Icons.wifi_tethering, size: 16, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(
-                  _isLoading
-                      ? (_isModoEdicao
-                          ? _t(
-                            'produto.web.savingUpdate',
-                            'Salvando alteração...',
-                          )
-                          : _t('produto.web.saving', 'Salvando...'))
-                      : (_isModoEdicao
-                          ? _t('produto.web.readyToEdit', 'Pronto para editar')
-                          : _t(
-                            'produto.web.readyToSubmit',
-                            'Pronto para envio',
-                          )),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -990,65 +1076,83 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     required IconData icon,
     required Widget child,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double value, Widget? animatedChild) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 10 * (1 - value)),
+            child: animatedChild,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(14),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: colorScheme.outlineVariant),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.035),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: colorScheme.primary, size: 22),
                 ),
-                child: Icon(icon, color: colorScheme.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSurface.withOpacity(0.65),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          child,
-        ],
+              ],
+            ),
+            const SizedBox(height: 20),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -1060,13 +1164,25 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
+        color:
+            value
+                ? colorScheme.primary.withValues(alpha: 0.045)
+                : colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(
+          color:
+              value
+                  ? colorScheme.primary.withValues(alpha: 0.28)
+                  : colorScheme.outlineVariant,
+        ),
       ),
       child: Row(
         children: <Widget>[
@@ -1076,17 +1192,20 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               children: <Widget>[
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.62),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.35,
                   ),
                 ),
               ],
@@ -1105,46 +1224,43 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
     return _buildSectionCard(
       context: context,
-      title: 'Fotos do produto',
-      subtitle: 'Fluxo de galeria: selecione um slot e adicione a imagem.',
+      title: _t('produto.web.productPhotosTitle', 'Fotos do produto'),
+      subtitle: _t(
+        'produto.web.productPhotosSubtitle',
+        'Selecione um slot e adicione a imagem principal do catálogo.',
+      ),
       icon: Icons.photo_camera_back_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
-              Text(
-                'Selecionadas: $_totalImagensSelecionadas / $_maxImageSlots',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.onSurface.withOpacity(0.6),
-                ),
+              _buildMetaChip(
+                context: context,
+                icon: Icons.photo_library_outlined,
+                label:
+                    '${_t('produto.web.selectedImagesLabel', 'Selecionadas')}: '
+                    '$_totalImagensSelecionadas / $_maxImageSlots',
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'Slot ativo: ${_slotSelecionadoIndex + 1}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.primary,
-                  ),
-                ),
+              _buildMetaChip(
+                context: context,
+                icon: Icons.adjust_rounded,
+                label:
+                    '${_t('produto.web.activeSlotLabel', 'Slot ativo')}: '
+                    '${_slotSelecionadoIndex + 1}',
+                highlighted: true,
               ),
             ],
           ),
           const SizedBox(height: 14),
           _buildImagemAtiva(context, slotAtivo),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
             children: <Widget>[
               FilledButton.icon(
                 onPressed:
@@ -1154,27 +1270,34 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 icon: const Icon(Icons.upload_file_outlined),
                 label: Text(
                   slotAtivo.image == null
-                      ? 'Adicionar no slot ativo'
-                      : 'Trocar imagem',
+                      ? _t(
+                        'produto.web.addActiveSlotImage',
+                        'Adicionar no slot ativo',
+                      )
+                      : _t('produto.web.changeImage', 'Trocar imagem'),
                 ),
               ),
-              const SizedBox(width: 10),
               OutlinedButton.icon(
                 onPressed:
                     _isLoading || slotAtivo.image == null
                         ? null
                         : () => _removerImagemDoSlot(_slotSelecionadoIndex),
                 icon: const Icon(Icons.delete_outline),
-                label: const Text('Remover do slot ativo'),
+                label: Text(
+                  _t(
+                    'produto.web.removeActiveSlotImage',
+                    'Remover do slot ativo',
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
-            'Slots',
+            _t('produto.web.slotsLabel', 'Slots'),
             style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface.withOpacity(0.78),
+              fontWeight: FontWeight.w800,
+              color: colorScheme.onSurface.withValues(alpha: 0.78),
             ),
           ),
           const SizedBox(height: 10),
@@ -1195,11 +1318,69 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           const SizedBox(height: 12),
           Text(
             _temSlotLivre
-                ? 'Você pode aplicar sugestões de IA no slot ativo (se estiver vazio) ou no próximo slot livre.'
-                : 'Limite de imagens atingido. Remova uma miniatura para continuar.',
+                ? _t(
+                  'produto.web.applyAiSuggestionHint',
+                  'Você pode aplicar sugestões de IA no slot ativo ou no próximo slot livre.',
+                )
+                : _t(
+                  'produto.web.imageLimitReachedHint',
+                  'Limite de imagens atingido. Remova uma miniatura para continuar.',
+                ),
             style: TextStyle(
               fontSize: 12,
-              color: colorScheme.onSurface.withOpacity(0.62),
+              color: colorScheme.onSurfaceVariant,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaChip({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    bool highlighted = false,
+  }) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color:
+            highlighted
+                ? colorScheme.primary.withValues(alpha: 0.10)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color:
+              highlighted
+                  ? colorScheme.primary.withValues(alpha: 0.22)
+                  : colorScheme.outlineVariant,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            icon,
+            size: 15,
+            color:
+                highlighted
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color:
+                  highlighted
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -1948,42 +2129,53 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           ],
         );
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1320),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _buildHeader(context),
-                    const SizedBox(height: 24),
-                    if (telaGrande)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(flex: 7, child: conteudoEsquerdo),
-                          const SizedBox(width: 24),
-                          Expanded(flex: 4, child: conteudoDireito),
-                        ],
-                      )
-                    else ...<Widget>[
-                      _buildFotoCard(context),
-                      const SizedBox(height: 20),
-                      _buildSugestoesImagemCard(context),
-                      const SizedBox(height: 20),
-                      _buildResumoCard(context),
-                      const SizedBox(height: 20),
-                      conteudoEsquerdo,
-                    ],
-                    const SizedBox(height: 24),
-                    _buildActionsBar(context),
-                  ],
+        return Form(
+          key: _formKey,
+          child: Column(
+            children: <Widget>[
+              _buildHeader(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1320),
+                      child:
+                          telaGrande
+                              ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Expanded(flex: 7, child: conteudoEsquerdo),
+                                  const SizedBox(width: 24),
+                                  Expanded(flex: 4, child: conteudoDireito),
+                                ],
+                              )
+                              : Column(
+                                children: <Widget>[
+                                  _buildFotoCard(context),
+                                  const SizedBox(height: 20),
+                                  _buildSugestoesImagemCard(context),
+                                  const SizedBox(height: 20),
+                                  _buildResumoCard(context),
+                                  const SizedBox(height: 20),
+                                  conteudoEsquerdo,
+                                ],
+                              ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                color: Theme.of(context).colorScheme.surface,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1320),
+                    child: _buildActionsBar(context),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
