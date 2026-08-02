@@ -9,6 +9,7 @@ Use este checklist antes de finalizar criação, alteração ou revisão de UI m
 - [ ] Arquivos globais de tema foram evitados ou justificados.
 - [ ] Regra de negócio e backend permanecem preservados.
 - [ ] Quando houve backend compartilhado, a Skill `sixapp-shared-backend-integration` também foi considerada.
+- [ ] Quando houve texto, moeda, data, número, percentual ou configuração, a Skill `sixapp-regionalization` também foi considerada.
 
 ## Design System
 
@@ -42,9 +43,18 @@ Use este checklist antes de finalizar criação, alteração ou revisão de UI m
 - [ ] Estado vazio explica a próxima ação.
 - [ ] Não há CTA duplicado sem justificativa.
 - [ ] FAB foi avaliado conforme estado da tela.
-- [ ] Textos estão em pt-BR ou `AppLocalizations`.
+- [ ] Textos estáticos do app usam i18n existente, com fallback pt-BR apenas durante migração.
 - [ ] Componentes genéricos foram substituídos quando destoavam do padrão mobile.
 - [ ] Bottom sheets e seletores seguem `docs/ui/mobile-first-patterns.md`.
+
+## Regionalização
+
+- [ ] Textos e dados foram classificados como A, B, C ou D conforme `sixapp-regionalization`.
+- [ ] Nenhum texto novo visível ficou espalhado em widget quando deveria estar em i18n.
+- [ ] Conteúdo cadastrado pelo usuário ou retornado como texto livre pelo backend não foi traduzido no frontend.
+- [ ] Moeda usa `LocaleSettingsProvider` ou helper centralizado, sem `R$`, `BRL` ou `pt_BR` hardcoded na UI.
+- [ ] Datas, horas, números e percentuais respeitam locale, timezone e configuração do comércio.
+- [ ] Códigos técnicos enviados ao backend foram preservados.
 
 ## Acessibilidade
 
