@@ -1,0 +1,7 @@
+interface:
+  display_name: "SixApp UI Web"
+  short_description: "Mantém Design System e UX Web"
+  default_prompt: "Use $sixapp-web-ui para implementar ou revisar esta interface Flutter Web com Design System, responsividade, estados e sem afetar o Mobile."
+
+policy:
+  allow_implicit_invocation: true

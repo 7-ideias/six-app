@@ -4,7 +4,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
+import 'package:sixpos/core/utils/produto_cadastro_form_utils.dart';
 import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
@@ -14,12 +16,13 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 
 class CadastroProdutoMobileScreen extends StatefulWidget {
   const CadastroProdutoMobileScreen({
     super.key,
     this.produtoParaEdicao,
-    this.tipoInicial = 'PRODUTO',
+    this.tipoInicial = ProdutoCadastroFormUtils.tipoProduto,
   });
 
   final ProdutoModel? produtoParaEdicao;
@@ -68,7 +71,9 @@ class _CadastroProdutoMobileScreenState
 
   final _nomeController = TextEditingController();
   final _codigoController = TextEditingController();
-  final _modeloController = TextEditingController(text: 'UNIDADE');
+  final _modeloController = TextEditingController(
+    text: ProdutoCadastroFormUtils.modeloPadrao,
+  );
   final _grupoController = TextEditingController();
   final _precoVendaController = TextEditingController();
   final _estoqueMinController = TextEditingController(text: '1');
@@ -107,8 +112,22 @@ class _CadastroProdutoMobileScreenState
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
+  ProdutoCadastroNumberFormat _numberFormat() {
+    final localeSettings = context.read<LocaleSettingsProvider>();
+    return ProdutoCadastroNumberFormat(
+      decimalSeparator: localeSettings.decimalSeparator,
+      thousandSeparator: localeSettings.thousandSeparator,
+    );
+  }
+
+  String _decimalInputHint({int decimalPlaces = 2}) {
+    final decimalSeparator =
+        context.read<LocaleSettingsProvider>().decimalSeparator;
+    return '0$decimalSeparator${'0' * decimalPlaces}';
+  }
+
   String _tipoLabel(String tipo) {
-    return _normalizarTipo(tipo) == 'SERVICO'
+    return _normalizarTipo(tipo) == ProdutoCadastroFormUtils.tipoServico
         ? _t('produto.mobile.typeService', 'Serviço')
         : _t('produto.mobile.typeProduct', 'Produto');
   }
@@ -161,11 +180,7 @@ class _CadastroProdutoMobileScreenState
   }
 
   String _normalizarTipo(String value) {
-    final tipo = value.trim().toUpperCase();
-    if (tipo == 'SERVICO' || tipo == 'SERVIÇO') {
-      return 'SERVICO';
-    }
-    return 'PRODUTO';
+    return ProdutoCadastroFormUtils.normalizarTipo(value);
   }
 
   void _preencherCamposSeModoEdicao() {
@@ -183,7 +198,7 @@ class _CadastroProdutoMobileScreenState
     _categoriaSelecionadaNome = produto.objCategoria?.nomeCategoria;
     _modeloController.text =
         produto.modeloProduto.trim().isEmpty
-            ? 'UNIDADE'
+            ? ProdutoCadastroFormUtils.modeloPadrao
             : produto.modeloProduto;
     _grupoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
     _estoqueMaxController.text = produto.estoqueMaximo.toString();
@@ -258,18 +273,17 @@ class _CadastroProdutoMobileScreenState
   }
 
   CategoriaCatalogoModel? get _categoriaSelecionadaEncontrada {
-    final String? id = _categoriaSelecionadaId;
-    if (id == null || id.trim().isEmpty) return null;
-
-    for (final CategoriaCatalogoModel categoria in _categoriasCatalogo) {
-      if (categoria.id == id) return categoria;
-    }
-
-    return null;
+    return ProdutoCadastroFormUtils.encontrarCategoriaPorId(
+      _categoriasCatalogo,
+      _categoriaSelecionadaId,
+    );
   }
 
   bool _categoriaCompativelComTipoAtual(CategoriaCatalogoModel categoria) {
-    return categoria.tipo == 'AMBOS' || categoria.tipo == _tipoSelecionado;
+    return ProdutoCadastroFormUtils.categoriaCompativelComTipo(
+      categoria,
+      _tipoSelecionado,
+    );
   }
 
   void _validarCategoriaSelecionadaComTipoAtual() {
@@ -297,17 +311,6 @@ class _CadastroProdutoMobileScreenState
         )
         .where(_categoriaCompativelComTipoAtual)
         .toList(growable: false);
-  }
-
-  ObjCategoria? _montarObjCategoria() {
-    final String? id = _categoriaSelecionadaId;
-    if (id == null || id.trim().isEmpty) return null;
-
-    final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
-    return ObjCategoria(
-      idCategoria: id.trim(),
-      nomeCategoria: categoria?.nome ?? _categoriaSelecionadaNome ?? '',
-    );
   }
 
   Future<void> _abrirGestaoCategorias() async {
@@ -358,60 +361,33 @@ class _CadastroProdutoMobileScreenState
     );
   }
 
-  double _toDouble(TextEditingController controller) {
-    return double.tryParse(controller.text.replaceAll(',', '.').trim()) ?? 0.0;
-  }
-
-  int _toInt(TextEditingController controller) {
-    return int.tryParse(controller.text.trim()) ?? 0;
-  }
-
   ProdutoModel _montarProduto() {
-    final valorVendaEntrada =
-        _valorVendaEntradaController.text.trim().isEmpty
-            ? _toDouble(_precoVendaController)
-            : _toDouble(_valorVendaEntradaController);
-    final ObjCategoria? objCategoria = _montarObjCategoria();
-
-    return ProdutoModel(
-      id: _produtoEmEdicaoId,
-      ativo: _ativo,
-      codigoDeBarras: _codigoController.text.trim(),
-      nomeProduto: _nomeController.text.trim(),
-      tipoProduto: _tipoSelecionado,
-      objCategoria: objCategoria,
-      objAgrupamento: ObjAgrupamento(
-        grupoDoProduto:
-            _grupoController.text.trim().isEmpty
-                ? 'Sem grupo'
-                : _grupoController.text.trim(),
-      ),
-      objetoServico: ObjetoServico(
-        tempoDaGarantia:
-            _tempoGarantiaController.text.trim().isEmpty
-                ? 'Sem garantia'
-                : _tempoGarantiaController.text.trim(),
-        podeAlterarOValorNaHora: _podeAlterarValorNaHora,
-      ),
-      modeloProduto:
-          _modeloController.text.trim().isEmpty
-              ? 'UNIDADE'
-              : _modeloController.text.trim(),
-      estoqueMaximo: _toInt(_estoqueMaxController),
-      estoqueMinimo: _toInt(_estoqueMinController),
-      precoVenda: _toDouble(_precoVendaController),
-      objComissao: ObjComissao(
+    return ProdutoCadastroFormUtils.montarProduto(
+      ProdutoCadastroFormData(
+        id: _produtoEmEdicaoId,
+        ativo: _ativo,
+        codigoDeBarras: _codigoController.text,
+        nomeProduto: _nomeController.text,
+        tipoProduto: _tipoSelecionado,
+        categoriaSelecionadaId: _categoriaSelecionadaId,
+        categoriaSelecionadaNome: _categoriaSelecionadaNome,
+        categoriaSelecionada: _categoriaSelecionadaEncontrada,
+        grupoProduto: _grupoController.text,
+        tempoGarantia: _tempoGarantiaController.text,
+        podeAlterarValorNaHora: _podeAlterarValorNaHora,
+        modeloProduto: _modeloController.text,
+        estoqueMaximo: _estoqueMaxController.text,
+        estoqueMinimo: _estoqueMinController.text,
+        precoVenda: _precoVendaController.text,
         produtoTemComissaoEspecial: _produtoTemComissaoEspecial,
-        valorFixoDeComissaoParaEsseProduto: _toDouble(_valorComissaoController),
+        valorComissao: _valorComissaoController.text,
+        quantidadeEntrada: _quantidadeEntradaController.text,
+        valorCusto: _valorCustoController.text,
+        valorVendaEntrada: _valorVendaEntradaController.text,
+        imagens: _imagensParaEnvio,
+        numberFormat: _numberFormat(),
+        usarPrecoVendaComoValorEntradaQuandoVazio: true,
       ),
-      objEntradaSaidaProduto: <ObjEntradaSaidaProduto>[
-        ObjEntradaSaidaProduto(
-          quantidade: _toDouble(_quantidadeEntradaController),
-          valorCusto: _toDouble(_valorCustoController),
-          valorDaVenda: valorVendaEntrada,
-        ),
-      ],
-      imagens: _imagensParaEnvio,
     );
   }
 
@@ -706,7 +682,7 @@ class _CadastroProdutoMobileScreenState
       label: _t('produto.mobile.typeLabel', 'Tipo'),
       value: _tipoLabel(_tipoSelecionado),
       icon:
-          _tipoSelecionado == 'SERVICO'
+          _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
               ? Icons.design_services_outlined
               : Icons.inventory_2_outlined,
       enabled: !_isLoading,
@@ -989,7 +965,7 @@ class _CadastroProdutoMobileScreenState
                   ),
                 ),
                 child: Icon(
-                  _tipoSelecionado == 'SERVICO'
+                  _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
                       ? Icons.design_services_outlined
                       : Icons.inventory_2_outlined,
                   color: SixMobilePalette.onPrimary,
@@ -1518,7 +1494,7 @@ class _CadastroProdutoMobileScreenState
           _buildTextField(
             controller: _modeloController,
             label: _t('produto.mobile.modelLabel', 'Modelo'),
-            hintText: 'UNIDADE',
+            hintText: ProdutoCadastroFormUtils.modeloPadrao,
           ),
           const SizedBox(height: 12),
           _buildTextField(
@@ -1547,7 +1523,7 @@ class _CadastroProdutoMobileScreenState
           _buildTextField(
             controller: _precoVendaController,
             label: _t('produto.mobile.salePriceLabel', 'Preço de venda'),
-            hintText: '0,00',
+            hintText: _decimalInputHint(),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 12),
@@ -1620,7 +1596,7 @@ class _CadastroProdutoMobileScreenState
               'produto.mobile.commissionValueLabel',
               'Valor fixo da comissão',
             ),
-            hintText: '0,00',
+            hintText: _decimalInputHint(),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 12),
@@ -2005,16 +1981,22 @@ class _TipoProdutoSelectorSheet extends StatelessWidget {
             icon: Icons.inventory_2_outlined,
             title: productLabel,
             subtitle: productSubtitle,
-            selected: selectedType == 'PRODUTO',
-            onTap: () => Navigator.of(context).pop('PRODUTO'),
+            selected: selectedType == ProdutoCadastroFormUtils.tipoProduto,
+            onTap:
+                () => Navigator.of(
+                  context,
+                ).pop(ProdutoCadastroFormUtils.tipoProduto),
           ),
           const SizedBox(height: 10),
           _SelectionOptionTile(
             icon: Icons.design_services_outlined,
             title: serviceLabel,
             subtitle: serviceSubtitle,
-            selected: selectedType == 'SERVICO',
-            onTap: () => Navigator.of(context).pop('SERVICO'),
+            selected: selectedType == ProdutoCadastroFormUtils.tipoServico,
+            onTap:
+                () => Navigator.of(
+                  context,
+                ).pop(ProdutoCadastroFormUtils.tipoServico),
           ),
         ],
       ),

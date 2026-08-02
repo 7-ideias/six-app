@@ -4,6 +4,7 @@ import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:sixpos/core/services/produto_service.dart';
+import 'package:sixpos/core/utils/produto_cadastro_form_utils.dart';
 import 'package:sixpos/data/models/imagem_sugestao_model.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
@@ -12,8 +13,10 @@ import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 import 'l10n/six_i18n.dart';
 
@@ -75,6 +78,8 @@ class _ProdutoImagemSlot {
 }
 
 class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
+  static const String _categoriaSemCategoriaMenuId = '__sem_categoria__';
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ProdutoService _produtoService = ProdutoService();
   final ImagemSugestaoApiClient _imagemSugestaoApiClient =
@@ -88,7 +93,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   final TextEditingController _tempoGarantiaController =
       TextEditingController();
   final TextEditingController _modeloProdutoController = TextEditingController(
-    text: 'UNIDADE',
+    text: ProdutoCadastroFormUtils.modeloPadrao,
   );
   final TextEditingController _estoqueMaximoController = TextEditingController(
     text: '1000',
@@ -112,7 +117,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   bool _podeAlterarValorNaHora = false;
   bool _produtoTemComissaoEspecial = false;
   bool _isLoading = false;
-  String _tipoSelecionado = 'PRODUTO';
+  String _tipoSelecionado = ProdutoCadastroFormUtils.tipoProduto;
   List<CategoriaCatalogoModel> _categoriasCatalogo =
       const <CategoriaCatalogoModel>[];
   bool _carregandoCategorias = false;
@@ -162,6 +167,34 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   bool get _isModoEdicao =>
       widget.modoEdicao && widget.produtoParaEdicao != null;
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
+
+  ProdutoCadastroNumberFormat _numberFormat() {
+    final localeSettings = context.read<LocaleSettingsProvider>();
+    return ProdutoCadastroNumberFormat(
+      decimalSeparator: localeSettings.decimalSeparator,
+      thousandSeparator: localeSettings.thousandSeparator,
+    );
+  }
+
+  String _decimalInputHint({int decimalPlaces = 2}) {
+    final decimalSeparator =
+        context.read<LocaleSettingsProvider>().decimalSeparator;
+    return '0$decimalSeparator${'0' * decimalPlaces}';
+  }
+
+  String _tipoLabel(String tipo) {
+    return ProdutoCadastroFormUtils.normalizarTipo(tipo) ==
+            ProdutoCadastroFormUtils.tipoServico
+        ? _t('produto.web.typeService', 'Serviço')
+        : _t('produto.web.typeProduct', 'Produto');
+  }
+
+  String _categoriaDisplayName(CategoriaCatalogoModel categoria) {
+    if (categoria.ativo) return categoria.nome;
+    return '${categoria.nome} (${_t('common.inactive', 'Inativa')})';
+  }
 
   @override
   void initState() {
@@ -250,7 +283,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           requiredField
               ? (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Campo obrigatório';
+                  return _t('common.required', 'Campo obrigatório');
                 }
                 return null;
               }
@@ -258,17 +291,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     );
   }
 
-  double _toDouble(TextEditingController controller) {
-    return double.tryParse(controller.text.replaceAll(',', '.').trim()) ?? 0.0;
-  }
-
-  int _toInt(TextEditingController controller) {
-    return int.tryParse(controller.text.trim()) ?? 0;
-  }
-
   bool get _camposMinimosParaSugestao {
     return _nomeProdutoController.text.trim().isNotEmpty &&
-        (_tipoSelecionado == 'PRODUTO' || _tipoSelecionado == 'SERVICO');
+        (_tipoSelecionado == ProdutoCadastroFormUtils.tipoProduto ||
+            _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico);
   }
 
   void _onCamposSugestoesAlterados() {
@@ -309,7 +335,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       descricao: descricao,
       categoria:
           _categoriaSelecionadaNome ?? _grupoProdutoController.text.trim(),
-      tipo: _tipoSelecionado == 'SERVICO' ? 'servico' : 'produto',
+      tipo:
+          _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
+              ? 'servico'
+              : 'produto',
       quantidade: 6,
     );
   }
@@ -416,12 +445,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _produtoEmEdicaoId = produto.id;
     _codigoBarrasController.text = produto.codigoDeBarras;
     _nomeProdutoController.text = produto.nomeProduto;
-    _tipoSelecionado =
-        produto.tipoProduto.isEmpty ? 'PRODUTO' : produto.tipoProduto;
+    _tipoSelecionado = ProdutoCadastroFormUtils.normalizarTipo(
+      produto.tipoProduto,
+    );
     _grupoProdutoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
     _categoriaSelecionadaId = produto.objCategoria?.idCategoria;
     _categoriaSelecionadaNome = produto.objCategoria?.nomeCategoria;
-    _modeloProdutoController.text = produto.modeloProduto;
+    _modeloProdutoController.text =
+        produto.modeloProduto.trim().isEmpty
+            ? ProdutoCadastroFormUtils.modeloPadrao
+            : produto.modeloProduto;
     _estoqueMaximoController.text = produto.estoqueMaximo.toString();
     _estoqueMinimoController.text = produto.estoqueMinimo.toString();
     _precoVendaController.text = produto.precoVenda.toString();
@@ -476,6 +509,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       setState(() {
         _categoriasCatalogo = response.categorias;
         _carregandoCategorias = false;
+        _validarCategoriaSelecionadaComTipoAtual();
         _sincronizarNomeCategoriaSelecionada();
       });
     } on CategoriaCatalogoApiException catch (error) {
@@ -483,13 +517,17 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       setState(() {
         _carregandoCategorias = false;
         _erroCategorias =
-            'Erro ao carregar categorias (HTTP ${error.statusCode}).';
+            '${_t('produto.web.categoryLoadHttpError', 'Erro ao carregar categorias')} '
+            '(HTTP ${error.statusCode}).';
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _carregandoCategorias = false;
-        _erroCategorias = 'Não foi possível carregar categorias.';
+        _erroCategorias = _t(
+          'produto.web.categoryLoadError',
+          'Não foi possível carregar categorias.',
+        );
       });
     }
   }
@@ -502,36 +540,78 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   CategoriaCatalogoModel? get _categoriaSelecionadaEncontrada {
-    final String? id = _categoriaSelecionadaId;
-    if (id == null || id.trim().isEmpty) return null;
-
-    for (final CategoriaCatalogoModel categoria in _categoriasCatalogo) {
-      if (categoria.id == id) return categoria;
-    }
-
-    return null;
+    return ProdutoCadastroFormUtils.encontrarCategoriaPorId(
+      _categoriasCatalogo,
+      _categoriaSelecionadaId,
+    );
   }
 
   List<CategoriaCatalogoModel> get _categoriasCompativeis {
     return _categoriasCatalogo
-        .where((CategoriaCatalogoModel categoria) => categoria.ativo)
+        .where(
+          (CategoriaCatalogoModel categoria) =>
+              categoria.ativo || categoria.id == _categoriaSelecionadaId,
+        )
         .where(_categoriaCompativelComTipoAtual)
         .toList(growable: false);
   }
 
   bool _categoriaCompativelComTipoAtual(CategoriaCatalogoModel categoria) {
-    return categoria.tipo == 'AMBOS' || categoria.tipo == _tipoSelecionado;
+    return ProdutoCadastroFormUtils.categoriaCompativelComTipo(
+      categoria,
+      _tipoSelecionado,
+    );
   }
 
-  ObjCategoria? _montarObjCategoria() {
+  void _validarCategoriaSelecionadaComTipoAtual() {
     final String? id = _categoriaSelecionadaId;
-    if (id == null || id.trim().isEmpty) return null;
+    if (id == null || id.trim().isEmpty) {
+      return;
+    }
 
     final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
+    if (categoria == null && _categoriasCatalogo.isNotEmpty) {
+      _categoriaSelecionadaId = null;
+      _categoriaSelecionadaNome = null;
+      return;
+    }
 
-    return ObjCategoria(
-      idCategoria: id.trim(),
-      nomeCategoria: categoria?.nome ?? _categoriaSelecionadaNome ?? '',
+    if (categoria != null && !_categoriaCompativelComTipoAtual(categoria)) {
+      _categoriaSelecionadaId = null;
+      _categoriaSelecionadaNome = null;
+    }
+  }
+
+  Widget _buildTipoDropdown(BuildContext context, double width) {
+    final String label = _t('produto.web.typeLabel', 'Tipo');
+
+    return SizedBox(
+      width: width,
+      child: _SixWebDropdownField(
+        label: label,
+        value: _tipoSelecionado,
+        icon: Icons.inventory_2_outlined,
+        tooltip: '${_t('common.select', 'Selecionar')} $label',
+        options: <_SixWebDropdownOption>[
+          _SixWebDropdownOption(
+            value: ProdutoCadastroFormUtils.tipoProduto,
+            label: _t('produto.web.typeProduct', 'Produto'),
+            icon: Icons.inventory_2_outlined,
+          ),
+          _SixWebDropdownOption(
+            value: ProdutoCadastroFormUtils.tipoServico,
+            label: _t('produto.web.typeService', 'Serviço'),
+            icon: Icons.handyman_outlined,
+          ),
+        ],
+        onSelected: (String value) {
+          setState(() {
+            _tipoSelecionado = ProdutoCadastroFormUtils.normalizarTipo(value);
+            _validarCategoriaSelecionadaComTipoAtual();
+          });
+          _onCamposSugestoesAlterados();
+        },
+      ),
     );
   }
 
@@ -543,89 +623,82 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     );
     final String? valor =
         categoriaSelecionadaExiste ? _categoriaSelecionadaId : null;
+    final String label = _t('produto.web.categoryLabel', 'Categoria');
 
     return SizedBox(
       width: width,
-      child: DropdownButtonFormField<String?>(
-        value: valor,
-        decoration: _inputDecoration(
-          context,
-          'Categoria',
-          hintText:
-              _carregandoCategorias
-                  ? 'Carregando...'
-                  : 'Selecione uma categoria',
-        ),
-        items: <DropdownMenuItem<String?>>[
-          const DropdownMenuItem<String?>(
-            value: null,
-            child: Text('Sem categoria'),
+      child: _SixWebDropdownField(
+        label: label,
+        value: valor ?? _categoriaSemCategoriaMenuId,
+        icon: Icons.category_outlined,
+        enabled: !_carregandoCategorias,
+        placeholder:
+            _carregandoCategorias
+                ? _t('common.loading', 'Carregando...')
+                : _t('produto.web.categoryHint', 'Selecione uma categoria'),
+        showPlaceholder: _carregandoCategorias,
+        errorText: _carregandoCategorias ? null : _erroCategorias,
+        tooltip: '${_t('common.select', 'Selecionar')} $label',
+        options: <_SixWebDropdownOption>[
+          _SixWebDropdownOption(
+            value: _categoriaSemCategoriaMenuId,
+            label: _t('produto.web.categoryNone', 'Sem categoria'),
+            icon: Icons.remove_circle_outline_rounded,
           ),
           ...categorias.map(
-            (CategoriaCatalogoModel categoria) => DropdownMenuItem<String?>(
+            (CategoriaCatalogoModel categoria) => _SixWebDropdownOption(
               value: categoria.id,
-              child: Text(categoria.nome, overflow: TextOverflow.ellipsis),
+              label: _categoriaDisplayName(categoria),
+              icon:
+                  categoria.ativo
+                      ? Icons.label_outline_rounded
+                      : Icons.visibility_off_outlined,
             ),
           ),
         ],
-        onChanged:
-            _carregandoCategorias
-                ? null
-                : (String? value) {
-                  setState(() {
-                    _categoriaSelecionadaId = value;
-                    final CategoriaCatalogoModel? categoria =
-                        _categoriaSelecionadaEncontrada;
-                    _categoriaSelecionadaNome = categoria?.nome;
-                  });
-                  _onCamposSugestoesAlterados();
-                },
+        onSelected: (String selectedValue) {
+          final String? value =
+              selectedValue == _categoriaSemCategoriaMenuId
+                  ? null
+                  : selectedValue;
+          setState(() {
+            _categoriaSelecionadaId = value;
+            final CategoriaCatalogoModel? categoria =
+                _categoriaSelecionadaEncontrada;
+            _categoriaSelecionadaNome = categoria?.nome;
+          });
+          _onCamposSugestoesAlterados();
+        },
       ),
     );
   }
 
   ProdutoModel _montarProduto() {
-    final ObjCategoria? objCategoria = _montarObjCategoria();
-
-    return ProdutoModel(
-      id: _produtoEmEdicaoId,
-      ativo: _ativo,
-      codigoDeBarras: _codigoBarrasController.text.trim(),
-      nomeProduto: _nomeProdutoController.text.trim(),
-      tipoProduto: _tipoSelecionado,
-      objCategoria: objCategoria,
-      objAgrupamento: ObjAgrupamento(
-        grupoDoProduto:
-            _grupoProdutoController.text.trim().isEmpty
-                ? 'Sem grupo'
-                : _grupoProdutoController.text.trim(),
-      ),
-      objetoServico: ObjetoServico(
-        tempoDaGarantia:
-            _tempoGarantiaController.text.trim().isEmpty
-                ? 'Sem garantia'
-                : _tempoGarantiaController.text.trim(),
-        podeAlterarOValorNaHora: _podeAlterarValorNaHora,
-      ),
-      modeloProduto:
-          _modeloProdutoController.text.trim().isEmpty
-              ? 'UNIDADE'
-              : _modeloProdutoController.text.trim(),
-      estoqueMaximo: _toInt(_estoqueMaximoController),
-      estoqueMinimo: _toInt(_estoqueMinimoController),
-      precoVenda: _toDouble(_precoVendaController),
-      objComissao: ObjComissao(
+    return ProdutoCadastroFormUtils.montarProduto(
+      ProdutoCadastroFormData(
+        id: _produtoEmEdicaoId,
+        ativo: _ativo,
+        codigoDeBarras: _codigoBarrasController.text,
+        nomeProduto: _nomeProdutoController.text,
+        tipoProduto: _tipoSelecionado,
+        categoriaSelecionadaId: _categoriaSelecionadaId,
+        categoriaSelecionadaNome: _categoriaSelecionadaNome,
+        categoriaSelecionada: _categoriaSelecionadaEncontrada,
+        grupoProduto: _grupoProdutoController.text,
+        tempoGarantia: _tempoGarantiaController.text,
+        podeAlterarValorNaHora: _podeAlterarValorNaHora,
+        modeloProduto: _modeloProdutoController.text,
+        estoqueMaximo: _estoqueMaximoController.text,
+        estoqueMinimo: _estoqueMinimoController.text,
+        precoVenda: _precoVendaController.text,
         produtoTemComissaoEspecial: _produtoTemComissaoEspecial,
-        valorFixoDeComissaoParaEsseProduto: _toDouble(_valorComissaoController),
+        valorComissao: _valorComissaoController.text,
+        quantidadeEntrada: _quantidadeEntradaController.text,
+        valorCusto: _valorCustoController.text,
+        valorVendaEntrada: _valorVendaEntradaController.text,
+        imagens: _imagensParaEnvio,
+        numberFormat: _numberFormat(),
       ),
-      objEntradaSaidaProduto: <ObjEntradaSaidaProduto>[
-        ObjEntradaSaidaProduto(
-          quantidade: _toDouble(_quantidadeEntradaController),
-          valorCusto: _toDouble(_valorCustoController),
-          valorDaVenda: _toDouble(_valorVendaEntradaController),
-        ),
-      ],
-      imagens: _imagensParaEnvio,
     );
   }
 
@@ -732,16 +805,22 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Sucesso'),
+            title: Text(_t('common.success', 'Sucesso')),
             content: Text(
               _isModoEdicao
-                  ? 'Produto atualizado com sucesso!'
-                  : 'Produto cadastrado com sucesso!',
+                  ? _t(
+                    'produto.web.updateSuccess',
+                    'Produto atualizado com sucesso!',
+                  )
+                  : _t(
+                    'produto.web.createSuccess',
+                    'Produto cadastrado com sucesso!',
+                  ),
             ),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Fechar'),
+                child: Text(_t('common.close', 'Fechar')),
               ),
             ],
           );
@@ -758,13 +837,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         builder: (context) {
           return AlertDialog(
             title: Text(
-              _isModoEdicao ? 'Erro ao atualizar' : 'Erro ao cadastrar',
+              _isModoEdicao
+                  ? _t('produto.web.updateErrorTitle', 'Erro ao atualizar')
+                  : _t('produto.web.createErrorTitle', 'Erro ao cadastrar'),
             ),
             content: Text(e.toString()),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Fechar'),
+                child: Text(_t('common.close', 'Fechar')),
               ),
             ],
           );
@@ -832,8 +913,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 children: <Widget>[
                   Text(
                     _isModoEdicao
-                        ? 'Edição de produto'
-                        : context.t('produtos.cadastroDeProdutos'),
+                        ? _t(
+                          'produto.web.editProductTitle',
+                          'Edição de produto',
+                        )
+                        : _t(
+                          'produtos.cadastroDeProdutos',
+                          'Cadastro de produtos',
+                        ),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -843,8 +930,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   SizedBox(height: 6),
                   Text(
                     _isModoEdicao
-                        ? 'Modo edição: revise os dados já cadastrados e salve as alterações.'
-                        : 'Visual mais alinhado ao SixApp, com destaque para foto e ações principais.',
+                        ? _t(
+                          'produto.web.editProductSubtitle',
+                          'Modo edição: revise os dados já cadastrados e salve as alterações.',
+                        )
+                        : _t(
+                          'produto.web.createProductSubtitle',
+                          'Visual alinhado ao SixApp, com destaque para foto e ações principais.',
+                        ),
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
@@ -866,11 +959,17 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 Text(
                   _isLoading
                       ? (_isModoEdicao
-                          ? 'Salvando alteração...'
-                          : 'Salvando...')
+                          ? _t(
+                            'produto.web.savingUpdate',
+                            'Salvando alteração...',
+                          )
+                          : _t('produto.web.saving', 'Salvando...'))
                       : (_isModoEdicao
-                          ? 'Pronto para editar'
-                          : 'Pronto para envio'),
+                          ? _t('produto.web.readyToEdit', 'Pronto para editar')
+                          : _t(
+                            'produto.web.readyToSubmit',
+                            'Pronto para envio',
+                          )),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -1307,54 +1406,64 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   Widget _buildResumoCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final localeSettings = context.watch<LocaleSettingsProvider>();
 
-    final String preco =
-        _precoVendaController.text.trim().isEmpty
-            ? 'R\$ 0,00'
-            : 'R\$ ${_precoVendaController.text.trim()}';
+    final double precoVenda = ProdutoCadastroFormUtils.parseDecimal(
+      _precoVendaController.text,
+      numberFormat: ProdutoCadastroNumberFormat(
+        decimalSeparator: localeSettings.decimalSeparator,
+        thousandSeparator: localeSettings.thousandSeparator,
+      ),
+    );
+    final String preco = localeSettings.formatCurrency(precoVenda);
 
     return _buildSectionCard(
       context: context,
-      title: 'Resumo rápido',
-      subtitle: 'Leitura objetiva para o usuário conferir antes de salvar.',
+      title: _t('produto.web.quickSummaryTitle', 'Resumo rápido'),
+      subtitle: _t(
+        'produto.web.quickSummarySubtitle',
+        'Leitura objetiva para conferir antes de salvar.',
+      ),
       icon: Icons.summarize_outlined,
       child: Column(
         children: <Widget>[
           _buildInfoRow(
-            'Nome',
+            _t('produto.web.nameLabel', 'Nome'),
             _nomeProdutoController.text.trim().isEmpty
                 ? '-'
                 : _nomeProdutoController.text.trim(),
           ),
-          _buildInfoRow('Tipo', _tipoSelecionado),
           _buildInfoRow(
-            'Categoria',
+            _t('produto.web.typeLabel', 'Tipo'),
+            _tipoLabel(_tipoSelecionado),
+          ),
+          _buildInfoRow(
+            _t('produto.web.categoryLabel', 'Categoria'),
             _categoriaSelecionadaNome == null ||
                     _categoriaSelecionadaNome!.trim().isEmpty
                 ? '-'
                 : _categoriaSelecionadaNome!,
           ),
           _buildInfoRow(
-            'Categoria',
-            _categoriaSelecionadaNome == null ||
-                    _categoriaSelecionadaNome!.trim().isEmpty
-                ? '-'
-                : _categoriaSelecionadaNome!,
-          ),
-          _buildInfoRow(
-            'Modelo',
+            _t('produto.web.modelLabel', 'Modelo'),
             _modeloProdutoController.text.trim().isEmpty
                 ? '-'
                 : _modeloProdutoController.text.trim(),
           ),
-          _buildInfoRow('Preço', preco),
+          _buildInfoRow(_t('produto.web.priceLabel', 'Preço'), preco),
           _buildInfoRow(
-            'Grupo',
+            _t('produto.web.groupLabel', 'Grupo'),
             _grupoProdutoController.text.trim().isEmpty
                 ? '-'
                 : _grupoProdutoController.text.trim(),
           ),
-          _buildInfoRow('Status', _ativo ? 'Ativo' : 'Inativo', isLast: true),
+          _buildInfoRow(
+            _t('produto.web.statusLabel', 'Status'),
+            _ativo
+                ? _t('common.active', 'Ativo')
+                : _t('common.inactive', 'Inativo'),
+            isLast: true,
+          ),
           const SizedBox(height: 14),
           Container(
             width: double.infinity,
@@ -1364,9 +1473,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               borderRadius: BorderRadius.circular(18),
             ),
             child: Text(
-              _tipoSelecionado == 'SERVICO'
-                  ? 'Modo serviço ligado: destaque maior para garantia e alteração de valor.'
-                  : 'Modo produto ligado: foco em estoque, custo e preço de venda.',
+              _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
+                  ? _t(
+                    'produto.web.serviceModeSummary',
+                    'Modo serviço ligado: destaque maior para garantia e alteração de valor.',
+                  )
+                  : _t(
+                    'produto.web.productModeSummary',
+                    'Modo produto ligado: foco em estoque, custo e preço de venda.',
+                  ),
               style: TextStyle(
                 color: colorScheme.onSurface.withOpacity(0.74),
                 fontSize: 12,
@@ -1415,6 +1530,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             width: 86,
             child: Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.black.withOpacity(0.54),
@@ -1426,6 +1543,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             child: Text(
               value,
               textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
@@ -1461,8 +1580,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         children: <Widget>[
           Text(
             _isModoEdicao
-                ? 'Revise os dados e conclua a alteração.'
-                : 'Revise os dados e conclua o cadastro.',
+                ? _t(
+                  'produto.web.reviewAndSaveUpdate',
+                  'Revise os dados e conclua a alteração.',
+                )
+                : _t(
+                  'produto.web.reviewAndSaveCreate',
+                  'Revise os dados e conclua o cadastro.',
+                ),
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
           Wrap(
@@ -1472,7 +1597,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               OutlinedButton(
                 onPressed:
                     _isLoading ? null : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
+                child: Text(_t('common.cancel', 'Cancelar')),
               ),
               FilledButton.icon(
                 onPressed: _isLoading ? null : _salvarProduto,
@@ -1487,9 +1612,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 label: Text(
                   _isLoading
                       ? (_isModoEdicao
-                          ? 'Salvando alteração...'
-                          : 'Salvando...')
-                      : (_isModoEdicao ? 'Salvar alteração' : 'Salvar produto'),
+                          ? _t(
+                            'produto.web.savingUpdate',
+                            'Salvando alteração...',
+                          )
+                          : _t('produto.web.saving', 'Salvando...'))
+                      : (_isModoEdicao
+                          ? _t('produto.web.saveUpdate', 'Salvar alteração')
+                          : _t('produto.web.saveProduct', 'Salvar produto')),
                 ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
@@ -1514,8 +1644,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
         final Widget dadosPrincipais = _buildSectionCard(
           context: context,
-          title: 'Dados principais',
-          subtitle: 'Identificação comercial e classificação do item.',
+          title: _t('produto.web.mainDataTitle', 'Dados principais'),
+          subtitle: _t(
+            'produto.web.mainDataSubtitle',
+            'Identificação comercial e classificação do item.',
+          ),
           icon: Icons.badge_outlined,
           child: Wrap(
             spacing: 16,
@@ -1526,8 +1659,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _codigoBarrasController,
-                  label: 'Código de barras',
-                  hintText: 'Ex.: 789000000001',
+                  label: _t('produto.web.skuLabel', 'Código de barras'),
+                  hintText: _t('produto.web.skuHint', 'Ex.: 789000000001'),
                   requiredField: true,
                 ),
               ),
@@ -1536,39 +1669,17 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _nomeProdutoController,
-                  label: 'Nome do produto',
-                  hintText: 'descreva seu produto aqui',
+                  label: _t('produto.web.productNameLabel', 'Nome do produto'),
+                  hintText: _t(
+                    'produto.web.productNameHint',
+                    'Descreva seu produto aqui',
+                  ),
                   requiredField: true,
                 ),
               ),
-              SizedBox(
-                width: telaGrande ? 190 : (telaMedia ? 180 : double.infinity),
-                child: DropdownButtonFormField<String>(
-                  value: _tipoSelecionado,
-                  decoration: _inputDecoration(context, 'Tipo'),
-                  items: const <DropdownMenuItem<String>>[
-                    DropdownMenuItem(value: 'PRODUTO', child: Text('PRODUTO')),
-                    DropdownMenuItem(value: 'SERVICO', child: Text('SERVIÇO')),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _tipoSelecionado = value;
-                      if (_categoriaSelecionadaEncontrada != null &&
-                          !_categoriaCompativelComTipoAtual(
-                            _categoriaSelecionadaEncontrada!,
-                          )) {
-                        _categoriaSelecionadaId = null;
-                        _categoriaSelecionadaNome = null;
-                      }
-                    });
-                    _onCamposSugestoesAlterados();
-                  },
-                ),
-              ),
-              _buildCategoriaDropdown(
+              _buildTipoDropdown(
                 context,
-                telaGrande ? 280 : (telaMedia ? 260 : double.infinity),
+                telaGrande ? 190 : (telaMedia ? 180 : double.infinity),
               ),
               _buildCategoriaDropdown(
                 context,
@@ -1579,47 +1690,31 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _modeloProdutoController,
-                  label: 'Modelo',
-                  hintText: 'UNIDADE',
+                  label: _t('produto.web.modelLabel', 'Modelo'),
+                  hintText: ProdutoCadastroFormUtils.modeloPadrao,
                   requiredField: true,
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 250 : (telaMedia ? 240 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _grupoProdutoController,
+                  label: _t('produto.web.groupLabel', 'Grupo'),
+                  hintText: _t('produto.web.groupHint', 'Ex.: Acessórios'),
                 ),
               ),
             ],
           ),
         );
 
-        // final Widget categoriasAviso =
-        //     _erroCategorias == null
-        //         ? const SizedBox.shrink()
-        //         : Padding(
-        //           padding: const EdgeInsets.only(top: 12),
-        //           child: Text(
-        //             _erroCategorias!,
-        //             style: TextStyle(
-        //               color: Theme.of(context).colorScheme.error,
-        //               fontWeight: FontWeight.w700,
-        //             ),
-        //           ),
-        //         );
-
-        // final Widget categoriasAviso =
-        //     _erroCategorias == null
-        //         ? const SizedBox.shrink()
-        //         : Padding(
-        //           padding: const EdgeInsets.only(top: 12),
-        //           child: Text(
-        //             _erroCategorias!,
-        //             style: TextStyle(
-        //               color: Theme.of(context).colorScheme.error,
-        //               fontWeight: FontWeight.w700,
-        //             ),
-        //           ),
-        //         );
-
         final Widget estoquePreco = _buildSectionCard(
           context: context,
-          title: 'Estoque e preço',
-          subtitle: 'Controle de limites, custo e preço comercial.',
+          title: _t('produto.web.stockPriceTitle', 'Estoque e preço'),
+          subtitle: _t(
+            'produto.web.stockPriceSubtitle',
+            'Controle de limites, custo e preço comercial.',
+          ),
           icon: Icons.sell_outlined,
           child: Wrap(
             spacing: 16,
@@ -1630,7 +1725,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _estoqueMaximoController,
-                  label: 'Estoque máximo',
+                  label: _t('produto.web.maxStockLabel', 'Estoque máximo'),
                   keyboardType: TextInputType.number,
                   requiredField: true,
                 ),
@@ -1640,7 +1735,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _estoqueMinimoController,
-                  label: 'Estoque mínimo',
+                  label: _t('produto.web.minStockLabel', 'Estoque mínimo'),
                   keyboardType: TextInputType.number,
                   requiredField: true,
                 ),
@@ -1650,21 +1745,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _precoVendaController,
-                  label: 'Preço de venda',
+                  label: _t('produto.web.salePriceLabel', 'Preço de venda'),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  hintText: '0,00',
-                  requiredField: true,
-                ),
-              ),
-              SizedBox(
-                width: telaGrande ? 250 : (telaMedia ? 240 : double.infinity),
-                child: _buildTextField(
-                  context: context,
-                  controller: _grupoProdutoController,
-                  label: 'Grupo do produto',
-                  hintText: 'Ex.: Acessórios',
+                  hintText: _decimalInputHint(),
                   requiredField: true,
                 ),
               ),
@@ -1674,8 +1759,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
         final Widget servicoComissao = _buildSectionCard(
           context: context,
-          title: 'Serviço, comissão e regras',
-          subtitle: 'Campos que ajudam a deixar a operação mais flexível.',
+          title: _t(
+            'produto.web.serviceCommissionRulesTitle',
+            'Serviço, comissão e regras',
+          ),
+          subtitle: _t(
+            'produto.web.serviceCommissionRulesSubtitle',
+            'Campos que ajudam a deixar a operação mais flexível.',
+          ),
           icon: Icons.settings_suggest_outlined,
           child: Column(
             children: <Widget>[
@@ -1689,9 +1780,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     child: _buildTextField(
                       context: context,
                       controller: _tempoGarantiaController,
-                      label: 'Tempo da garantia',
-                      hintText: 'Ex.: 90 dias',
-                      requiredField: !_isModoEdicao,
+                      label: _t(
+                        'produto.web.warrantyLabel',
+                        'Tempo da garantia',
+                      ),
+                      hintText: _t('produto.web.warrantyHint', 'Ex.: 90 dias'),
                     ),
                   ),
                   SizedBox(
@@ -1700,12 +1793,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     child: _buildTextField(
                       context: context,
                       controller: _valorComissaoController,
-                      label: 'Valor fixo da comissão',
+                      label: _t(
+                        'produto.web.commissionValueLabel',
+                        'Valor fixo da comissão',
+                      ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      hintText: '0,00',
-                      requiredField: !_isModoEdicao,
+                      hintText: _decimalInputHint(),
                     ),
                   ),
                 ],
@@ -1719,8 +1814,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     width: telaGrande ? 320 : double.infinity,
                     child: _buildSwitchTile(
                       context: context,
-                      title: 'Produto ativo',
-                      subtitle: 'Disponível para venda e listagens.',
+                      title: _t(
+                        'produto.web.activeProductTitle',
+                        'Produto ativo',
+                      ),
+                      subtitle: _t(
+                        'produto.web.activeProductSubtitle',
+                        'Disponível para venda e listagens.',
+                      ),
                       value: _ativo,
                       onChanged: (value) => setState(() => _ativo = value),
                     ),
@@ -1729,9 +1830,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     width: telaGrande ? 320 : double.infinity,
                     child: _buildSwitchTile(
                       context: context,
-                      title: 'Alterar valor na hora',
-                      subtitle:
-                          'Permite ajustar o valor durante o atendimento.',
+                      title: _t(
+                        'produto.web.changePriceAtSaleTitle',
+                        'Alterar valor na hora',
+                      ),
+                      subtitle: _t(
+                        'produto.web.changePriceAtSaleSubtitle',
+                        'Permite ajustar o valor durante o atendimento.',
+                      ),
                       value: _podeAlterarValorNaHora,
                       onChanged:
                           (value) =>
@@ -1742,8 +1848,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     width: telaGrande ? 320 : double.infinity,
                     child: _buildSwitchTile(
                       context: context,
-                      title: 'Comissão especial',
-                      subtitle: 'Aplica comissão específica para este item.',
+                      title: _t(
+                        'produto.web.specialCommissionTitle',
+                        'Comissão especial',
+                      ),
+                      subtitle: _t(
+                        'produto.web.specialCommissionSubtitle',
+                        'Aplica comissão específica para este item.',
+                      ),
                       value: _produtoTemComissaoEspecial,
                       onChanged:
                           (value) => setState(
@@ -1759,8 +1871,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
         final Widget movimentacao = _buildSectionCard(
           context: context,
-          title: 'Entrada e saída do produto',
-          subtitle: 'Dados iniciais de movimentação e precificação.',
+          title: _t('produto.web.entryExitTitle', 'Entrada e saída do produto'),
+          subtitle: _t(
+            'produto.web.entryExitSubtitle',
+            'Dados iniciais de movimentação e precificação.',
+          ),
           icon: Icons.swap_horiz_outlined,
           child: Wrap(
             spacing: 16,
@@ -1771,7 +1886,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _quantidadeEntradaController,
-                  label: 'Quantidade',
+                  label: _t('produto.web.entryQuantityLabel', 'Quantidade'),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -1783,10 +1898,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _valorCustoController,
-                  label: 'Valor de custo',
+                  label: _t('produto.web.costValueLabel', 'Valor de custo'),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  hintText: _decimalInputHint(),
                   requiredField: true,
                 ),
               ),
@@ -1795,10 +1911,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 child: _buildTextField(
                   context: context,
                   controller: _valorVendaEntradaController,
-                  label: 'Valor da venda',
+                  label: _t(
+                    'produto.web.entrySaleValueLabel',
+                    'Valor da venda',
+                  ),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  hintText: _decimalInputHint(),
                   requiredField: true,
                 ),
               ),
@@ -1867,6 +1987,352 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SixWebDropdownOption {
+  const _SixWebDropdownOption({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+}
+
+class _SixWebDropdownField extends StatefulWidget {
+  const _SixWebDropdownField({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.icon,
+    required this.onSelected,
+    this.enabled = true,
+    this.placeholder,
+    this.errorText,
+    this.tooltip,
+    this.showPlaceholder = false,
+  });
+
+  final String label;
+  final String value;
+  final List<_SixWebDropdownOption> options;
+  final IconData icon;
+  final ValueChanged<String> onSelected;
+  final bool enabled;
+  final String? placeholder;
+  final String? errorText;
+  final String? tooltip;
+  final bool showPlaceholder;
+
+  @override
+  State<_SixWebDropdownField> createState() => _SixWebDropdownFieldState();
+}
+
+class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
+  bool _open = false;
+  bool _hover = false;
+
+  _SixWebDropdownOption? get _selectedOption {
+    for (final _SixWebDropdownOption option in widget.options) {
+      if (option.value == widget.value) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String get _displayLabel {
+    if (widget.showPlaceholder && widget.placeholder != null) {
+      return widget.placeholder!;
+    }
+
+    final _SixWebDropdownOption? selectedOption = _selectedOption;
+    if (selectedOption != null) {
+      return selectedOption.label;
+    }
+
+    if (widget.placeholder != null) {
+      return widget.placeholder!;
+    }
+
+    return widget.options.isEmpty ? '' : widget.options.first.label;
+  }
+
+  String get _effectiveValue {
+    final _SixWebDropdownOption? selectedOption = _selectedOption;
+    if (selectedOption != null) {
+      return selectedOption.value;
+    }
+
+    return widget.options.isEmpty ? widget.value : widget.options.first.value;
+  }
+
+  Future<void> _showMenu() async {
+    if (!widget.enabled || widget.options.isEmpty) {
+      return;
+    }
+
+    setState(() => _open = true);
+
+    final RenderBox box = context.findRenderObject()! as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String effectiveValue = _effectiveValue;
+
+    final String? selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(
+          position.dx,
+          position.dy + box.size.height + 8,
+          box.size.width,
+          box.size.height,
+        ),
+        Offset.zero & overlay.size,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 12,
+      color: colorScheme.surface,
+      constraints: BoxConstraints(
+        minWidth: box.size.width,
+        maxWidth: box.size.width,
+        maxHeight: 360,
+      ),
+      items:
+          widget.options
+              .map(
+                (_SixWebDropdownOption option) => PopupMenuItem<String>(
+                  value: option.value,
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  child: _SixWebDropdownMenuItem(
+                    option: option,
+                    selected: option.value == effectiveValue,
+                    colorScheme: colorScheme,
+                  ),
+                ),
+              )
+              .toList(),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _open = false);
+    if (selected != null && selected != widget.value) {
+      widget.onSelected(selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool active = widget.enabled && (_open || _hover);
+    final bool hasError =
+        widget.errorText != null && widget.errorText!.trim().isNotEmpty;
+    final Color borderColor =
+        hasError
+            ? colorScheme.error
+            : active
+            ? colorScheme.primary.withValues(alpha: 0.42)
+            : colorScheme.outline.withValues(alpha: 0.22);
+    final Color backgroundColor =
+        widget.enabled
+            ? (active
+                ? colorScheme.primary.withValues(alpha: 0.05)
+                : colorScheme.surface)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.34);
+
+    return Semantics(
+      button: true,
+      enabled: widget.enabled,
+      label: '${widget.label}: $_displayLabel',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Tooltip(
+            message: widget.tooltip ?? widget.label,
+            waitDuration: const Duration(milliseconds: 450),
+            child: MouseRegion(
+              cursor:
+                  widget.enabled
+                      ? SystemMouseCursors.click
+                      : SystemMouseCursors.basic,
+              onEnter: (_) => setState(() => _hover = true),
+              onExit: (_) => setState(() => _hover = false),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: widget.enabled ? _showMenu : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    height: 58,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: backgroundColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: borderColor),
+                      boxShadow:
+                          active
+                              ? <BoxShadow>[
+                                BoxShadow(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.10,
+                                  ),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ]
+                              : null,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          widget.icon,
+                          size: 20,
+                          color:
+                              widget.enabled
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                widget.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _displayLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color:
+                                      widget.showPlaceholder
+                                          ? colorScheme.onSurfaceVariant
+                                          : colorScheme.onSurface,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        AnimatedRotation(
+                          turns: _open ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color:
+                                active
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (hasError) ...<Widget>[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                widget.errorText!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SixWebDropdownMenuItem extends StatelessWidget {
+  const _SixWebDropdownMenuItem({
+    required this.option,
+    required this.selected,
+    required this.colorScheme,
+  });
+
+  final _SixWebDropdownOption option;
+  final bool selected;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color:
+            selected
+                ? colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            selected ? Icons.check_circle_rounded : option.icon,
+            color:
+                selected
+                    ? colorScheme.primary
+                    : colorScheme.primary.withValues(alpha: 0.78),
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              option.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

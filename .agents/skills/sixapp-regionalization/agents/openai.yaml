@@ -1,0 +1,7 @@
+interface:
+  display_name: "SixApp Regionalização"
+  short_description: "Alinha i18n, backend e moeda"
+  default_prompt: "Use $sixapp-regionalization para classificar textos e dados regionalizáveis, alinhar Flutter e backend e preservar contratos."
+
+policy:
+  allow_implicit_invocation: true
