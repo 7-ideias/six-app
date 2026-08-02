@@ -9,6 +9,10 @@ import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 
 class CadastroProdutoMobileScreen extends StatefulWidget {
@@ -42,13 +46,16 @@ class _ProdutoImagemSlot {
 
 class _CadastroProdutoMobileScreenState
     extends State<CadastroProdutoMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.border;
+  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
+  static const Color _softNeutralColor = SixMobilePalette.softNeutralSurface;
 
   static const int _maxImageSlots = 5;
 
@@ -97,6 +104,19 @@ class _CadastroProdutoMobileScreenState
   int _slotSelecionadoIndex = 0;
 
   bool get _isModoEdicao => widget.produtoParaEdicao != null;
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
+
+  String _tipoLabel(String tipo) {
+    return _normalizarTipo(tipo) == 'SERVICO'
+        ? _t('produto.mobile.typeService', 'Serviço')
+        : _t('produto.mobile.typeProduct', 'Produto');
+  }
+
+  String _categoriaDisplayName(CategoriaCatalogoModel categoria) {
+    if (categoria.ativo) return categoria.nome;
+    return '${categoria.nome} (${_t('common.inactive', 'Inativa')})';
+  }
 
   _ProdutoImagemSlot get _slotSelecionado =>
       _imagemSlots[_slotSelecionadoIndex];
@@ -215,13 +235,17 @@ class _CadastroProdutoMobileScreenState
       setState(() {
         _carregandoCategorias = false;
         _erroCategorias =
-            'Erro ao carregar categorias (HTTP ${error.statusCode}).';
+            '${_t('produto.mobile.categoryLoadHttpError', 'Erro ao carregar categorias')} '
+            '(HTTP ${error.statusCode}).';
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _carregandoCategorias = false;
-        _erroCategorias = 'Não foi possível carregar categorias.';
+        _erroCategorias = _t(
+          'produto.mobile.categoryLoadError',
+          'Não foi possível carregar categorias.',
+        );
       });
     }
   }
@@ -300,6 +324,12 @@ class _CadastroProdutoMobileScreenState
 
   Future<void> _playSlotsHint() async {
     if (_slotsHintPlayed || !mounted || !_slotsScrollController.hasClients) {
+      return;
+    }
+
+    final MediaQueryData? mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery?.disableAnimations == true ||
+        mediaQuery?.accessibleNavigation == true) {
       return;
     }
 
@@ -410,8 +440,14 @@ class _CadastroProdutoMobileScreenState
         SnackBar(
           content: Text(
             _isModoEdicao
-                ? 'Produto atualizado com sucesso!'
-                : 'Produto cadastrado com sucesso!',
+                ? _t(
+                  'produto.mobile.updateSuccess',
+                  'Produto atualizado com sucesso!',
+                )
+                : _t(
+                  'produto.mobile.createSuccess',
+                  'Produto cadastrado com sucesso!',
+                ),
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -425,8 +461,8 @@ class _CadastroProdutoMobileScreenState
         SnackBar(
           content: Text(
             _isModoEdicao
-                ? 'Erro ao atualizar produto: $mensagem'
-                : 'Erro ao cadastrar produto: $mensagem',
+                ? '${_t('produto.mobile.updateError', 'Erro ao atualizar produto')}: $mensagem'
+                : '${_t('produto.mobile.createError', 'Erro ao cadastrar produto')}: $mensagem',
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -495,8 +531,13 @@ class _CadastroProdutoMobileScreenState
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível carregar a imagem.'),
+        SnackBar(
+          content: Text(
+            _t(
+              'produto.mobile.imageLoadError',
+              'Não foi possível carregar a imagem.',
+            ),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -518,34 +559,37 @@ class _CadastroProdutoMobileScreenState
 
     showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x47000000),
+      useSafeArea: true,
+      builder: (BuildContext context) {
+        return _MobileBottomSheetFrame(
+          child: Semantics(
+            container: true,
+            label: _t('produto.mobile.imageSheetTitle', 'Imagem do produto'),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Imagem do produto',
-                    style: TextStyle(
-                      color: _titleTextColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
+                const _MobileSheetHandle(),
+                const SizedBox(height: 16),
+                Text(
+                  _t('produto.mobile.imageSheetTitle', 'Imagem do produto'),
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 12),
                 _ImageActionTile(
                   icon: Icons.photo_camera_outlined,
-                  title: 'Tirar foto',
-                  subtitle: 'Usar a câmera do dispositivo.',
+                  title: _t('produto.mobile.takePhoto', 'Tirar foto'),
+                  subtitle: _t(
+                    'produto.mobile.takePhotoSubtitle',
+                    'Usar a câmera do dispositivo.',
+                  ),
                   onTap: () {
                     Navigator.of(context).pop();
                     _selecionarImagem(
@@ -557,8 +601,14 @@ class _CadastroProdutoMobileScreenState
                 const SizedBox(height: 10),
                 _ImageActionTile(
                   icon: Icons.upload_file_outlined,
-                  title: 'Enviar da galeria',
-                  subtitle: 'Escolher uma imagem salva no aparelho.',
+                  title: _t(
+                    'produto.mobile.uploadFromGallery',
+                    'Enviar da galeria',
+                  ),
+                  subtitle: _t(
+                    'produto.mobile.uploadFromGallerySubtitle',
+                    'Escolher uma imagem salva no aparelho.',
+                  ),
                   onTap: () {
                     Navigator.of(context).pop();
                     _selecionarImagem(
@@ -571,8 +621,11 @@ class _CadastroProdutoMobileScreenState
                   const SizedBox(height: 10),
                   _ImageActionTile(
                     icon: Icons.delete_outline,
-                    title: 'Remover imagem',
-                    subtitle: 'Limpar o slot selecionado.',
+                    title: _t('produto.mobile.removeImage', 'Remover imagem'),
+                    subtitle: _t(
+                      'produto.mobile.removeImageSubtitle',
+                      'Limpar o slot selecionado.',
+                    ),
                     isDanger: true,
                     onTap: () {
                       Navigator.of(context).pop();
@@ -599,10 +652,16 @@ class _CadastroProdutoMobileScreenState
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: _surfaceColor,
+      hintStyle: const TextStyle(color: _mutedTextColor),
+      labelStyle: const TextStyle(color: _mutedTextColor),
+      floatingLabelStyle: const TextStyle(
+        color: _accentColor,
+        fontWeight: FontWeight.w800,
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: const BorderSide(color: _borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -610,11 +669,11 @@ class _CadastroProdutoMobileScreenState
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFDC2626)),
+        borderSide: const BorderSide(color: SixMobilePalette.errorBorder),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.4),
+        borderSide: const BorderSide(color: SixMobilePalette.error, width: 1.4),
       ),
     );
   }
@@ -634,12 +693,68 @@ class _CadastroProdutoMobileScreenState
           requiredField
               ? (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Campo obrigatório';
+                  return _t('common.required', 'Campo obrigatório');
                 }
                 return null;
               }
               : null,
     );
+  }
+
+  Widget _buildTipoField() {
+    return _MobileSelectorField(
+      label: _t('produto.mobile.typeLabel', 'Tipo'),
+      value: _tipoLabel(_tipoSelecionado),
+      icon:
+          _tipoSelecionado == 'SERVICO'
+              ? Icons.design_services_outlined
+              : Icons.inventory_2_outlined,
+      enabled: !_isLoading,
+      onTap: _abrirSeletorTipo,
+    );
+  }
+
+  Future<void> _abrirSeletorTipo() async {
+    if (_isLoading) return;
+
+    final String? selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x47000000),
+      useSafeArea: true,
+      builder: (BuildContext context) {
+        return _MobileBottomSheetFrame(
+          child: _TipoProdutoSelectorSheet(
+            title: _t('produto.mobile.typeSheetTitle', 'Tipo do cadastro'),
+            subtitle: _t(
+              'produto.mobile.typeSheetSubtitle',
+              'Escolha se este cadastro será vendido como produto ou serviço.',
+            ),
+            selectedType: _tipoSelecionado,
+            productLabel: _t('produto.mobile.typeProduct', 'Produto'),
+            productSubtitle: _t(
+              'produto.mobile.typeProductSubtitle',
+              'Item com estoque, custo e quantidade.',
+            ),
+            serviceLabel: _t('produto.mobile.typeService', 'Serviço'),
+            serviceSubtitle: _t(
+              'produto.mobile.typeServiceSubtitle',
+              'Atendimento, mão de obra ou serviço sem estoque físico.',
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null || selected == _tipoSelecionado) {
+      return;
+    }
+
+    setState(() {
+      _tipoSelecionado = selected;
+      _validarCategoriaSelecionadaComTipoAtual();
+    });
   }
 
   Widget _buildCategoriaField() {
@@ -648,65 +763,52 @@ class _CadastroProdutoMobileScreenState
       (CategoriaCatalogoModel categoria) =>
           categoria.id == _categoriaSelecionadaId,
     );
-    final String? valor =
-        categoriaSelecionadaExiste ? _categoriaSelecionadaId : null;
+    final CategoriaCatalogoModel? categoriaSelecionada =
+        categoriaSelecionadaExiste ? _categoriaSelecionadaEncontrada : null;
+    final String? categoriaLabel =
+        categoriaSelecionada != null
+            ? _categoriaDisplayName(categoriaSelecionada)
+            : _categoriaSelecionadaNome?.trim();
+    final String value =
+        categoriaLabel != null && categoriaLabel.isNotEmpty
+            ? categoriaLabel
+            : _t('produto.mobile.categoryNone', 'Sem categoria');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        DropdownButtonFormField<String?>(
-          value: valor,
-          decoration: _inputDecoration(
-            'Categoria',
-            hintText:
-                _carregandoCategorias
-                    ? 'Carregando categorias...'
-                    : 'Selecione uma categoria',
-          ),
-          items: <DropdownMenuItem<String?>>[
-            const DropdownMenuItem<String?>(
-              value: null,
-              child: Text('Sem categoria'),
-            ),
-            ...categorias.map(
-              (CategoriaCatalogoModel categoria) => DropdownMenuItem<String?>(
-                value: categoria.id,
-                child: Text(
-                  categoria.ativo
-                      ? categoria.nome
-                      : '${categoria.nome} (Inativa)',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-          onChanged:
-              _isLoading || _carregandoCategorias
-                  ? null
-                  : (String? value) {
-                    setState(() {
-                      _categoriaSelecionadaId = value;
-                      final CategoriaCatalogoModel? categoria =
-                          _categoriaSelecionadaEncontrada;
-                      _categoriaSelecionadaNome = categoria?.nome;
-                    });
-                  },
+        _MobileSelectorField(
+          label: _t('produto.mobile.categoryLabel', 'Categoria'),
+          value: value,
+          icon: Icons.category_outlined,
+          enabled: !_isLoading && !_carregandoCategorias,
+          loading: _carregandoCategorias,
+          onTap: _abrirSeletorCategoria,
         ),
         if (_carregandoCategorias)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
             child: Row(
               children: <Widget>[
-                SizedBox(
+                const SizedBox(
                   height: 14,
                   width: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: _accentColor,
+                  ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Buscando categorias...',
-                    style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                    _t(
+                      'produto.mobile.loadingCategories',
+                      'Buscando categorias...',
+                    ),
+                    style: const TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -723,7 +825,7 @@ class _CadastroProdutoMobileScreenState
                 Text(
                   _erroCategorias!,
                   style: const TextStyle(
-                    color: Color(0xFFB91C1C),
+                    color: SixMobilePalette.error,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -731,7 +833,7 @@ class _CadastroProdutoMobileScreenState
                 OutlinedButton.icon(
                   onPressed: _isLoading ? null : _carregarCategoriasCatalogo,
                   icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Tentar novamente'),
+                  label: Text(_t('common.tryAgain', 'Tentar novamente')),
                 ),
               ],
             ),
@@ -746,20 +848,110 @@ class _CadastroProdutoMobileScreenState
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
-                const Text(
-                  'Nenhuma categoria disponível para este tipo.',
-                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                Text(
+                  _t(
+                    'produto.mobile.noCategoriesForType',
+                    'Nenhuma categoria disponível para este tipo.',
+                  ),
+                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
                 TextButton.icon(
                   onPressed: _isLoading ? null : _abrirGestaoCategorias,
                   icon: const Icon(Icons.category_outlined, size: 18),
-                  label: const Text('Gerenciar categorias'),
+                  label: Text(
+                    _t(
+                      'produto.mobile.manageCategories',
+                      'Gerenciar categorias',
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
       ],
     );
+  }
+
+  Future<void> _abrirSeletorCategoria() async {
+    if (_isLoading || _carregandoCategorias) return;
+
+    final _CategoriaSelectionResult?
+    result = await showModalBottomSheet<_CategoriaSelectionResult>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x47000000),
+      useSafeArea: true,
+      builder: (BuildContext sheetContext) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.72,
+          minChildSize: 0.46,
+          maxChildSize: 0.9,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return _MobileBottomSheetFrame(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: _CategoriaSelectorSheet(
+                title: _t(
+                  'produto.mobile.categorySheetTitle',
+                  'Selecionar categoria',
+                ),
+                subtitle: _t(
+                  'produto.mobile.categorySheetSubtitle',
+                  'A lista mostra apenas categorias compatíveis com o tipo atual.',
+                ),
+                searchHint: _t(
+                  'produto.mobile.categorySearchHint',
+                  'Buscar categoria',
+                ),
+                noCategoryLabel: _t(
+                  'produto.mobile.categoryNone',
+                  'Sem categoria',
+                ),
+                noCategorySubtitle: _t(
+                  'produto.mobile.categoryNoneSubtitle',
+                  'Salvar este cadastro sem vínculo de categoria.',
+                ),
+                selectedLabel: _t('common.selected', 'Selecionado'),
+                inactiveLabel: _t('common.inactive', 'Inativa'),
+                emptyTitle: _t(
+                  'produto.mobile.categoryEmptySearchTitle',
+                  'Nenhuma categoria encontrada',
+                ),
+                emptySubtitle: _t(
+                  'produto.mobile.categoryEmptySearchSubtitle',
+                  'Ajuste a busca ou gerencie as categorias do catálogo.',
+                ),
+                manageLabel: _t(
+                  'produto.mobile.manageCategories',
+                  'Gerenciar categorias',
+                ),
+                categories: _categoriasCompativeis,
+                selectedCategoryId: _categoriaSelecionadaId,
+                scrollController: scrollController,
+                onManageCategories: () {
+                  Navigator.of(sheetContext).pop();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      _abrirGestaoCategorias();
+                    }
+                  });
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || result == null) return;
+
+    setState(() {
+      _categoriaSelecionadaId = result.id;
+      final CategoriaCatalogoModel? categoria = _categoriaSelecionadaEncontrada;
+      _categoriaSelecionadaNome = categoria?.nome;
+    });
   }
 
   Widget _buildHeaderCard() {
@@ -775,60 +967,118 @@ class _CadastroProdutoMobileScreenState
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x260B1F3A),
+            color: SixMobilePalette.heroShadow,
             blurRadius: 22,
             offset: Offset(0, 12),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x33FFFFFF)),
-            ),
-            child: Icon(
-              _tipoSelecionado == 'SERVICO'
-                  ? Icons.design_services_outlined
-                  : Icons.inventory_2_outlined,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isModoEdicao ? 'Editar produto' : 'Novo produto',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: SixMobilePalette.onPrimary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: SixMobilePalette.onPrimary.withValues(alpha: 0.20),
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  _isModoEdicao
-                      ? 'Atualize os dados, fotos e status do cadastro.'
-                      : 'Cadastre dados comerciais, estoque e até 5 imagens.',
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
-                    height: 1.35,
-                  ),
+                child: Icon(
+                  _tipoSelecionado == 'SERVICO'
+                      ? Icons.design_services_outlined
+                      : Icons.inventory_2_outlined,
+                  color: SixMobilePalette.onPrimary,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isModoEdicao
+                          ? _t(
+                            'produto.mobile.editProductTitle',
+                            'Editar produto',
+                          )
+                          : _t(
+                            'produto.mobile.newProductTitle',
+                            'Novo produto',
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: SixMobilePalette.onPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _isModoEdicao
+                          ? _t(
+                            'produto.mobile.editProductSubtitle',
+                            'Atualize os dados, fotos e status do cadastro.',
+                          )
+                          : _t(
+                            'produto.mobile.newProductSubtitle',
+                            'Cadastre dados comerciais, estoque e até 5 imagens.',
+                          ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: SixMobilePalette.heroSupportingText,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
+          const SizedBox(height: 14),
           _StatusPill(ativo: _ativo),
         ],
       ),
     );
+  }
+
+  Widget _buildFieldPair({required Widget first, required Widget second}) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 360) {
+          return Column(
+            children: <Widget>[first, const SizedBox(height: 12), second],
+          );
+        }
+
+        return Row(
+          children: <Widget>[
+            Expanded(child: first),
+            const SizedBox(width: 12),
+            Expanded(child: second),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStaggeredEntry({
+    required Duration delay,
+    required Widget child,
+  }) {
+    final MediaQueryData? mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery?.disableAnimations == true ||
+        mediaQuery?.accessibleNavigation == true) {
+      return child;
+    }
+
+    return SixStaggeredEntry(delay: delay, child: child);
   }
 
   Widget _buildSectionCard({
@@ -843,12 +1093,12 @@ class _CadastroProdutoMobileScreenState
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _borderColor),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
+            color: SixMobilePalette.navigationShadow,
+            blurRadius: 16,
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -861,7 +1111,7 @@ class _CadastroProdutoMobileScreenState
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: _softAccentColor,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: _accentColor, size: 22),
@@ -873,6 +1123,8 @@ class _CadastroProdutoMobileScreenState
                   children: [
                     Text(
                       title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: _titleTextColor,
                         fontSize: 17,
@@ -882,6 +1134,8 @@ class _CadastroProdutoMobileScreenState
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
@@ -904,8 +1158,11 @@ class _CadastroProdutoMobileScreenState
     final slot = _slotSelecionado;
 
     return _buildSectionCard(
-      title: 'Fotos do produto',
-      subtitle: 'Use câmera ou upload. O backend receberá até 5 imagens.',
+      title: _t('produto.mobile.photosTitle', 'Fotos do produto'),
+      subtitle: _t(
+        'produto.mobile.photosSubtitle',
+        'Use câmera ou upload. O backend receberá até 5 imagens.',
+      ),
       icon: Icons.photo_camera_back_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -914,12 +1171,16 @@ class _CadastroProdutoMobileScreenState
             children: [
               _SmallInfoPill(
                 icon: Icons.collections_outlined,
-                label: '$_totalImagensSelecionadas / $_maxImageSlots imagens',
+                label:
+                    '$_totalImagensSelecionadas / $_maxImageSlots '
+                    '${_t('produto.mobile.imagesCountSuffix', 'imagens')}',
               ),
               const SizedBox(width: 8),
               _SmallInfoPill(
                 icon: Icons.ads_click_outlined,
-                label: 'Slot ${_slotSelecionadoIndex + 1}',
+                label:
+                    '${_t('produto.mobile.imageSlot', 'Slot')} '
+                    '${_slotSelecionadoIndex + 1}',
               ),
             ],
           ),
@@ -939,7 +1200,7 @@ class _CadastroProdutoMobileScreenState
                           _slotSelecionadoIndex,
                         ),
                 icon: const Icon(Icons.photo_camera_outlined),
-                label: const Text('Tirar foto'),
+                label: Text(_t('produto.mobile.takePhoto', 'Tirar foto')),
               ),
               OutlinedButton.icon(
                 onPressed:
@@ -950,7 +1211,11 @@ class _CadastroProdutoMobileScreenState
                           _slotSelecionadoIndex,
                         ),
                 icon: const Icon(Icons.upload_file_outlined),
-                label: Text(slot.image == null ? 'Upload' : 'Trocar'),
+                label: Text(
+                  slot.image == null
+                      ? _t('produto.mobile.uploadShort', 'Upload')
+                      : _t('produto.mobile.changeImage', 'Trocar'),
+                ),
               ),
               if (slot.image != null)
                 TextButton.icon(
@@ -959,7 +1224,7 @@ class _CadastroProdutoMobileScreenState
                           ? null
                           : () => _removerImagemDoSlot(_slotSelecionadoIndex),
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text('Remover'),
+                  label: Text(_t('produto.mobile.remove', 'Remover')),
                 ),
             ],
           ),
@@ -982,77 +1247,81 @@ class _CadastroProdutoMobileScreenState
   Widget _buildImagemAtiva(_ProdutoImagemSlot slot) {
     final bool hasImage = slot.image != null;
 
-    return InkWell(
-      onTap: _isLoading ? null : _abrirOpcoesImagem,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        height: 210,
-        width: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: hasImage ? _accentColor : const Color(0xFFE2E8F0),
-            width: hasImage ? 1.4 : 1,
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child:
-                  hasImage
-                      ? _buildImageContent(slot, fit: BoxFit.cover)
-                      : _buildImagePlaceholder(),
+    return Semantics(
+      button: true,
+      label: _t('produto.mobile.imageSlotAction', 'Alterar imagem do produto'),
+      child: InkWell(
+        onTap: _isLoading ? null : _abrirOpcoesImagem,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          height: 210,
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: _softAccentColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: hasImage ? _accentColor : _borderColor,
+              width: hasImage ? 1.4 : 1,
             ),
-            if (slot.isLoading)
+          ),
+          child: Stack(
+            children: [
               Positioned.fill(
-                child: Container(
-                  color: Colors.black.withOpacity(0.28),
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
+                child:
+                    hasImage
+                        ? _buildImageContent(slot, fit: BoxFit.cover)
+                        : _buildImagePlaceholder(),
               ),
-            if (hasImage)
-              Positioned(
-                left: 10,
-                bottom: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.56),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    slot.image?.origem == 'UPLOAD'
-                        ? 'Upload mobile'
-                        : 'Imagem salva',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+              if (slot.isLoading)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.28),
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
                 ),
-              ),
-            Positioned(
-              right: 10,
-              bottom: 10,
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.black.withOpacity(0.56),
-                child: const Icon(
-                  Icons.more_horiz,
-                  color: Colors.white,
-                  size: 20,
+              if (hasImage)
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.56),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      slot.image?.origem == 'UPLOAD'
+                          ? _t('produto.mobile.imageUploadTag', 'Upload mobile')
+                          : _t('produto.mobile.imageSavedTag', 'Imagem salva'),
+                      style: const TextStyle(
+                        color: SixMobilePalette.onPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                right: 10,
+                bottom: 10,
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.black.withValues(alpha: 0.56),
+                  child: const Icon(
+                    Icons.more_horiz,
+                    color: SixMobilePalette.onPrimary,
+                    size: 20,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1061,17 +1330,29 @@ class _CadastroProdutoMobileScreenState
   Widget _buildImagePlaceholder() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Icon(Icons.add_photo_alternate_outlined, size: 42, color: _accentColor),
-        SizedBox(height: 10),
-        Text(
-          'Nenhuma imagem neste slot',
-          style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900),
+      children: [
+        const Icon(
+          Icons.add_photo_alternate_outlined,
+          size: 42,
+          color: _accentColor,
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 10),
         Text(
-          'Toque para tirar foto ou fazer upload',
-          style: TextStyle(color: _mutedTextColor, fontSize: 12),
+          _t('produto.mobile.emptyImageSlotTitle', 'Nenhuma imagem neste slot'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: _titleTextColor,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _t(
+            'produto.mobile.emptyImageSlotSubtitle',
+            'Toque para tirar foto ou fazer upload',
+          ),
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: _mutedTextColor, fontSize: 12),
         ),
       ],
     );
@@ -1082,61 +1363,71 @@ class _CadastroProdutoMobileScreenState
     final bool selected = index == _slotSelecionadoIndex;
     final bool hasImage = slot.image != null;
 
-    return InkWell(
-      onTap: () => setState(() => _slotSelecionadoIndex = index),
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        width: 82,
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEFF6FF) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? _accentColor : const Color(0xFFE2E8F0),
-            width: selected ? 1.6 : 1,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label:
+          '${_t('produto.mobile.imageSlot', 'Slot')} ${index + 1}'
+          '${hasImage ? ', ${_t('produto.mobile.withImage', 'com imagem')}' : ''}',
+      child: InkWell(
+        onTap: () => setState(() => _slotSelecionadoIndex = index),
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          width: 82,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: selected ? _softAccentColor : _surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? _accentColor : _borderColor,
+              width: selected ? 1.6 : 1,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
+          child: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: _softNeutralColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child:
+                      slot.isLoading
+                          ? const Center(
+                            child: SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _accentColor,
+                              ),
+                            ),
+                          )
+                          : hasImage
+                          ? _buildImageContent(slot, fit: BoxFit.cover)
+                          : const Center(
+                            child: Icon(
+                              Icons.add_photo_alternate_outlined,
+                              color: _mutedTextColor,
+                              size: 20,
+                            ),
+                          ),
                 ),
-                child:
-                    slot.isLoading
-                        ? const Center(
-                          child: SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                        : hasImage
-                        ? _buildImageContent(slot, fit: BoxFit.cover)
-                        : const Center(
-                          child: Icon(
-                            Icons.add_photo_alternate_outlined,
-                            color: _mutedTextColor,
-                            size: 20,
-                          ),
-                        ),
               ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              '${index + 1}',
-              style: TextStyle(
-                color: selected ? _accentColor : _mutedTextColor,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
+              const SizedBox(height: 5),
+              Text(
+                '${index + 1}',
+                style: TextStyle(
+                  color: selected ? _accentColor : _mutedTextColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1196,55 +1487,47 @@ class _CadastroProdutoMobileScreenState
 
   Widget _buildDadosPrincipaisCard() {
     return _buildSectionCard(
-      title: 'Dados principais',
-      subtitle: 'Identificação comercial e classificação.',
+      title: _t('produto.mobile.mainDataTitle', 'Dados principais'),
+      subtitle: _t(
+        'produto.mobile.mainDataSubtitle',
+        'Identificação comercial e classificação.',
+      ),
       icon: Icons.badge_outlined,
       child: Column(
         children: [
           _buildTextField(
             controller: _nomeController,
-            label: 'Nome do produto',
-            hintText: 'Ex.: Tela iPhone 13',
+            label: _t('produto.mobile.productNameLabel', 'Nome do produto'),
+            hintText: _t(
+              'produto.mobile.productNameHint',
+              'Ex.: Tela iPhone 13',
+            ),
             requiredField: true,
           ),
           const SizedBox(height: 12),
           _buildTextField(
             controller: _codigoController,
-            label: 'Código de barras / SKU',
-            hintText: 'Ex.: 789000000001',
+            label: _t('produto.mobile.skuLabel', 'Código de barras / SKU'),
+            hintText: _t('produto.mobile.skuHint', 'Ex.: 789000000001'),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _tipoSelecionado,
-            decoration: _inputDecoration('Tipo'),
-            items: const [
-              DropdownMenuItem(value: 'PRODUTO', child: Text('Produto')),
-              DropdownMenuItem(value: 'SERVICO', child: Text('Serviço')),
-            ],
-            onChanged:
-                _isLoading
-                    ? null
-                    : (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _tipoSelecionado = value;
-                        _validarCategoriaSelecionadaComTipoAtual();
-                      });
-                    },
-          ),
+          _buildTipoField(),
           const SizedBox(height: 12),
           _buildCategoriaField(),
           const SizedBox(height: 12),
           _buildTextField(
             controller: _modeloController,
-            label: 'Modelo',
+            label: _t('produto.mobile.modelLabel', 'Modelo'),
             hintText: 'UNIDADE',
           ),
           const SizedBox(height: 12),
           _buildTextField(
             controller: _grupoController,
-            label: 'Grupo',
-            hintText: 'Ex.: Peças, acessórios, mão de obra',
+            label: _t('produto.mobile.groupLabel', 'Grupo'),
+            hintText: _t(
+              'produto.mobile.groupHint',
+              'Ex.: Peças, acessórios, mão de obra',
+            ),
           ),
         ],
       ),
@@ -1253,66 +1536,61 @@ class _CadastroProdutoMobileScreenState
 
   Widget _buildEstoquePrecoCard() {
     return _buildSectionCard(
-      title: 'Preço e estoque',
-      subtitle: 'Valores comerciais e limites de controle.',
+      title: _t('produto.mobile.priceStockTitle', 'Preço e estoque'),
+      subtitle: _t(
+        'produto.mobile.priceStockSubtitle',
+        'Valores comerciais e limites de controle.',
+      ),
       icon: Icons.sell_outlined,
       child: Column(
         children: [
           _buildTextField(
             controller: _precoVendaController,
-            label: 'Preço de venda',
+            label: _t('produto.mobile.salePriceLabel', 'Preço de venda'),
             hintText: '0,00',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  controller: _estoqueMinController,
-                  label: 'Estoque mín.',
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTextField(
-                  controller: _estoqueMaxController,
-                  label: 'Estoque máx.',
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-            ],
+          _buildFieldPair(
+            first: _buildTextField(
+              controller: _estoqueMinController,
+              label: _t('produto.mobile.minStockLabel', 'Estoque mín.'),
+              keyboardType: TextInputType.number,
+            ),
+            second: _buildTextField(
+              controller: _estoqueMaxController,
+              label: _t('produto.mobile.maxStockLabel', 'Estoque máx.'),
+              keyboardType: TextInputType.number,
+            ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  controller: _quantidadeEntradaController,
-                  label: 'Entrada',
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                ),
+          _buildFieldPair(
+            first: _buildTextField(
+              controller: _quantidadeEntradaController,
+              label: _t('produto.mobile.entryQtyLabel', 'Entrada'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTextField(
-                  controller: _valorCustoController,
-                  label: 'Custo',
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                ),
+            ),
+            second: _buildTextField(
+              controller: _valorCustoController,
+              label: _t('produto.mobile.costLabel', 'Custo'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
           _buildTextField(
             controller: _valorVendaEntradaController,
-            label: 'Valor da venda na movimentação',
-            hintText: 'Usa o preço de venda se ficar vazio',
+            label: _t(
+              'produto.mobile.entrySaleValueLabel',
+              'Valor da venda na movimentação',
+            ),
+            hintText: _t(
+              'produto.mobile.entrySaleValueHint',
+              'Usa o preço de venda se ficar vazio',
+            ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
         ],
@@ -1322,35 +1600,50 @@ class _CadastroProdutoMobileScreenState
 
   Widget _buildRegrasCard() {
     return _buildSectionCard(
-      title: 'Regras e status',
-      subtitle: 'Configurações rápidas para operação no balcão.',
+      title: _t('produto.mobile.rulesTitle', 'Regras e status'),
+      subtitle: _t(
+        'produto.mobile.rulesSubtitle',
+        'Configurações rápidas para operação no balcão.',
+      ),
       icon: Icons.settings_suggest_outlined,
       child: Column(
         children: [
           _buildTextField(
             controller: _tempoGarantiaController,
-            label: 'Tempo da garantia',
-            hintText: 'Ex.: 90 dias',
+            label: _t('produto.mobile.warrantyLabel', 'Tempo da garantia'),
+            hintText: _t('produto.mobile.warrantyHint', 'Ex.: 90 dias'),
           ),
           const SizedBox(height: 12),
           _buildTextField(
             controller: _valorComissaoController,
-            label: 'Valor fixo da comissão',
+            label: _t(
+              'produto.mobile.commissionValueLabel',
+              'Valor fixo da comissão',
+            ),
             hintText: '0,00',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 12),
           _SwitchCard(
-            title: 'Produto ativo',
-            subtitle: 'Disponível para venda e listagens.',
+            title: _t('produto.mobile.activeProductTitle', 'Produto ativo'),
+            subtitle: _t(
+              'produto.mobile.activeProductSubtitle',
+              'Disponível para venda e listagens.',
+            ),
             value: _ativo,
             onChanged:
                 _isLoading ? null : (value) => setState(() => _ativo = value),
           ),
           const SizedBox(height: 10),
           _SwitchCard(
-            title: 'Alterar valor na hora',
-            subtitle: 'Permite ajustar o valor durante o atendimento.',
+            title: _t(
+              'produto.mobile.changePriceAtSaleTitle',
+              'Alterar valor na hora',
+            ),
+            subtitle: _t(
+              'produto.mobile.changePriceAtSaleSubtitle',
+              'Permite ajustar o valor durante o atendimento.',
+            ),
             value: _podeAlterarValorNaHora,
             onChanged:
                 _isLoading
@@ -1360,8 +1653,14 @@ class _CadastroProdutoMobileScreenState
           ),
           const SizedBox(height: 10),
           _SwitchCard(
-            title: 'Comissão especial',
-            subtitle: 'Aplica comissão específica para este item.',
+            title: _t(
+              'produto.mobile.specialCommissionTitle',
+              'Comissão especial',
+            ),
+            subtitle: _t(
+              'produto.mobile.specialCommissionSubtitle',
+              'Aplica comissão específica para este item.',
+            ),
             value: _produtoTemComissaoEspecial,
             onChanged:
                 _isLoading
@@ -1376,90 +1675,768 @@ class _CadastroProdutoMobileScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SixMobilePageShell(
+      title:
+          _isModoEdicao
+              ? _t('produto.mobile.editProductTitle', 'Editar produto')
+              : _t('produto.mobile.createProductTitle', 'Cadastrar produto'),
       backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: Text(
-          _isModoEdicao ? 'Editar produto' : 'Cadastrar produto',
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-            children: [
-              _buildHeaderCard(),
-              const SizedBox(height: 16),
-              _buildFotoCard(),
-              const SizedBox(height: 16),
-              _buildDadosPrincipaisCard(),
-              const SizedBox(height: 16),
-              _buildEstoquePrecoCard(),
-              const SizedBox(height: 16),
-              _buildRegrasCard(),
-            ],
+      primaryColor: _primaryColor,
+      secondaryColor: _secondaryColor,
+      accentColor: _accentColor,
+      enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 4,
+      scrollEffectOffset: 24,
+      scrolledSurfaceOpacity: 0.66,
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              controller: scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 112),
+              children: [
+                _buildStaggeredEntry(
+                  delay: const Duration(milliseconds: 60),
+                  child: _buildHeaderCard(),
+                ),
+                const SizedBox(height: 16),
+                _buildStaggeredEntry(
+                  delay: const Duration(milliseconds: 110),
+                  child: _buildFotoCard(),
+                ),
+                const SizedBox(height: 16),
+                _buildStaggeredEntry(
+                  delay: const Duration(milliseconds: 160),
+                  child: _buildDadosPrincipaisCard(),
+                ),
+                const SizedBox(height: 16),
+                _buildStaggeredEntry(
+                  delay: const Duration(milliseconds: 210),
+                  child: _buildEstoquePrecoCard(),
+                ),
+                const SizedBox(height: 16),
+                _buildStaggeredEntry(
+                  delay: const Duration(milliseconds: 260),
+                  child: _buildRegrasCard(),
+                ),
+              ],
+            ),
           ),
+        );
+      },
+      bottomNavigationBar: _buildBottomActionBar(),
+    );
+  }
+
+  Widget _buildBottomActionBar() {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+        decoration: const BoxDecoration(
+          color: _surfaceColor,
+          border: Border(top: BorderSide(color: _borderColor)),
+          boxShadow: [
+            BoxShadow(
+              color: SixMobilePalette.navigationShadow,
+              blurRadius: 18,
+              offset: Offset(0, -8),
+            ),
+          ],
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 18,
-                offset: Offset(0, -8),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed:
+                    _isLoading ? null : () => Navigator.of(context).pop(false),
+                child: Text(_t('common.cancel', 'Cancelar')),
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed:
-                      _isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                  child: const Text('Cancelar'),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: FilledButton.icon(
+                onPressed: _isLoading ? null : _salvar,
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: SixMobilePalette.onPrimary,
+                          ),
+                        )
+                        : const Icon(Icons.save_outlined),
+                label: Text(
+                  _isLoading
+                      ? _t('common.saving', 'Salvando...')
+                      : (_isModoEdicao
+                          ? _t('produto.mobile.saveEdit', 'Salvar edição')
+                          : _t('produto.mobile.saveProduct', 'Salvar produto')),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: FilledButton.icon(
-                  onPressed: _isLoading ? null : _salvar,
-                  icon:
-                      _isLoading
-                          ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                          : const Icon(Icons.save_outlined),
-                  label: Text(
-                    _isLoading
-                        ? 'Salvando...'
-                        : (_isModoEdicao ? 'Salvar edição' : 'Salvar produto'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoriaSelectionResult {
+  const _CategoriaSelectionResult(this.id);
+
+  final String? id;
+}
+
+class _MobileBottomSheetFrame extends StatelessWidget {
+  const _MobileBottomSheetFrame({
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(16, 12, 16, 16),
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: padding,
+        decoration: BoxDecoration(
+          color: SixMobilePalette.surface,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: SixMobilePalette.heroShadow,
+              blurRadius: 28,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _MobileSheetHandle extends StatelessWidget {
+  const _MobileSheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 42,
+        height: 4,
+        decoration: BoxDecoration(
+          color: SixMobilePalette.activeBorder,
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileSelectorField extends StatelessWidget {
+  const _MobileSelectorField({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+    this.enabled = true,
+    this.loading = false,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool enabled;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool effectiveEnabled = enabled && !loading;
+
+    return Semantics(
+      button: true,
+      enabled: effectiveEnabled,
+      label: '$label. $value',
+      child: Material(
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: effectiveEnabled ? onTap : null,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 58),
+            padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color:
+                    effectiveEnabled
+                        ? SixMobilePalette.border
+                        : SixMobilePalette.activeBorder,
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.softAccentSurface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: SixMobilePalette.accent, size: 19),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.mutedText,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              effectiveEnabled
+                                  ? SixMobilePalette.titleText
+                                  : SixMobilePalette.mutedText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(width: 8),
+                if (loading)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: SixMobilePalette.accent,
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color:
+                        effectiveEnabled
+                            ? SixMobilePalette.accent
+                            : SixMobilePalette.mutedText,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TipoProdutoSelectorSheet extends StatelessWidget {
+  const _TipoProdutoSelectorSheet({
+    required this.title,
+    required this.subtitle,
+    required this.selectedType,
+    required this.productLabel,
+    required this.productSubtitle,
+    required this.serviceLabel,
+    required this.serviceSubtitle,
+  });
+
+  final String title;
+  final String subtitle;
+  final String selectedType;
+  final String productLabel;
+  final String productSubtitle;
+  final String serviceLabel;
+  final String serviceSubtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: title,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const _MobileSheetHandle(),
+          const SizedBox(height: 16),
+          _SheetTitleBlock(
+            icon: Icons.tune_rounded,
+            title: title,
+            subtitle: subtitle,
+          ),
+          const SizedBox(height: 16),
+          _SelectionOptionTile(
+            icon: Icons.inventory_2_outlined,
+            title: productLabel,
+            subtitle: productSubtitle,
+            selected: selectedType == 'PRODUTO',
+            onTap: () => Navigator.of(context).pop('PRODUTO'),
+          ),
+          const SizedBox(height: 10),
+          _SelectionOptionTile(
+            icon: Icons.design_services_outlined,
+            title: serviceLabel,
+            subtitle: serviceSubtitle,
+            selected: selectedType == 'SERVICO',
+            onTap: () => Navigator.of(context).pop('SERVICO'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoriaSelectorSheet extends StatefulWidget {
+  const _CategoriaSelectorSheet({
+    required this.title,
+    required this.subtitle,
+    required this.searchHint,
+    required this.noCategoryLabel,
+    required this.noCategorySubtitle,
+    required this.selectedLabel,
+    required this.inactiveLabel,
+    required this.emptyTitle,
+    required this.emptySubtitle,
+    required this.manageLabel,
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.scrollController,
+    required this.onManageCategories,
+  });
+
+  final String title;
+  final String subtitle;
+  final String searchHint;
+  final String noCategoryLabel;
+  final String noCategorySubtitle;
+  final String selectedLabel;
+  final String inactiveLabel;
+  final String emptyTitle;
+  final String emptySubtitle;
+  final String manageLabel;
+  final List<CategoriaCatalogoModel> categories;
+  final String? selectedCategoryId;
+  final ScrollController scrollController;
+  final VoidCallback onManageCategories;
+
+  @override
+  State<_CategoriaSelectorSheet> createState() =>
+      _CategoriaSelectorSheetState();
+}
+
+class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<CategoriaCatalogoModel> get _filteredCategories {
+    final String normalizedQuery = _normalize(_query);
+    if (normalizedQuery.isEmpty) return widget.categories;
+
+    return widget.categories
+        .where((CategoriaCatalogoModel categoria) {
+          return _normalize(
+            '${categoria.nome} ${categoria.descricao}',
+          ).contains(normalizedQuery);
+        })
+        .toList(growable: false);
+  }
+
+  String _normalize(String value) => value.trim().toLowerCase();
+
+  @override
+  Widget build(BuildContext context) {
+    final List<CategoriaCatalogoModel> filtered = _filteredCategories;
+
+    return Semantics(
+      container: true,
+      label: widget.title,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const _MobileSheetHandle(),
+          const SizedBox(height: 16),
+          _SheetTitleBlock(
+            icon: Icons.category_outlined,
+            title: widget.title,
+            subtitle: widget.subtitle,
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _searchController,
+            onChanged: (String value) => setState(() => _query = value),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: widget.searchHint,
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: SixMobilePalette.accent,
+              ),
+              suffixIcon:
+                  _query.isEmpty
+                      ? null
+                      : IconButton(
+                        tooltip: widget.searchHint,
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+              filled: true,
+              fillColor: SixMobilePalette.softNeutralSurface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView(
+              controller: widget.scrollController,
+              children: <Widget>[
+                _SelectionOptionTile(
+                  icon: Icons.not_interested_rounded,
+                  title: widget.noCategoryLabel,
+                  subtitle: widget.noCategorySubtitle,
+                  selected: widget.selectedCategoryId == null,
+                  trailingLabel:
+                      widget.selectedCategoryId == null
+                          ? widget.selectedLabel
+                          : null,
+                  onTap:
+                      () => Navigator.of(
+                        context,
+                      ).pop(const _CategoriaSelectionResult(null)),
+                ),
+                const SizedBox(height: 10),
+                ...filtered.map((CategoriaCatalogoModel categoria) {
+                  final bool selected =
+                      categoria.id == widget.selectedCategoryId;
+                  final String subtitle =
+                      categoria.descricao.trim().isNotEmpty
+                          ? categoria.descricao
+                          : (categoria.ativo ? '' : widget.inactiveLabel);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _SelectionOptionTile(
+                      icon: Icons.sell_outlined,
+                      title:
+                          categoria.ativo
+                              ? categoria.nome
+                              : '${categoria.nome} (${widget.inactiveLabel})',
+                      subtitle: subtitle,
+                      selected: selected,
+                      trailingLabel: selected ? widget.selectedLabel : null,
+                      onTap:
+                          () => Navigator.of(
+                            context,
+                          ).pop(_CategoriaSelectionResult(categoria.id)),
+                    ),
+                  );
+                }),
+                if (filtered.isEmpty) ...<Widget>[
+                  const SizedBox(height: 8),
+                  _SelectorEmptyState(
+                    title: widget.emptyTitle,
+                    subtitle: widget.emptySubtitle,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: widget.onManageCategories,
+              icon: const Icon(Icons.category_outlined),
+              label: Text(
+                widget.manageLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetTitleBlock extends StatelessWidget {
+  const _SheetTitleBlock({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: SixMobilePalette.softAccentSurface,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: SixMobilePalette.accent, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: SixMobilePalette.titleText,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: SixMobilePalette.mutedText,
+                  fontSize: 12,
+                  height: 1.3,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _SelectionOptionTile extends StatelessWidget {
+  const _SelectionOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+    this.trailingLabel,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+  final String? trailingLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: trailingLabel == null ? title : '$title, $trailingLabel',
+      child: Material(
+        color:
+            selected
+                ? SixMobilePalette.softAccentSurface
+                : SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color:
+                    selected
+                        ? SixMobilePalette.highlightedBorder
+                        : SixMobilePalette.border,
+                width: selected ? 1.3 : 1,
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: SixMobilePalette.activeBorder),
+                  ),
+                  child: Icon(icon, color: SixMobilePalette.accent, size: 21),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      if (subtitle.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: SixMobilePalette.mutedText,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (trailingLabel != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: SixMobilePalette.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      trailingLabel!,
+                      style: const TextStyle(
+                        color: SixMobilePalette.accent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  )
+                else
+                  Icon(
+                    selected
+                        ? Icons.check_circle_rounded
+                        : Icons.chevron_right_rounded,
+                    color:
+                        selected
+                            ? SixMobilePalette.accent
+                            : SixMobilePalette.mutedText,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectorEmptyState extends StatelessWidget {
+  const _SelectorEmptyState({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: SixMobilePalette.border),
+      ),
+      child: Column(
+        children: <Widget>[
+          const Icon(
+            Icons.search_off_rounded,
+            color: SixMobilePalette.mutedText,
+            size: 28,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: SixMobilePalette.titleText,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: SixMobilePalette.mutedText,
+              fontSize: 12,
+              height: 1.3,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1472,16 +2449,27 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color background =
+        ativo ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2);
+    final Color foreground =
+        ativo ? const Color(0xFF15803D) : SixMobilePalette.error;
+    final String label =
+        ativo
+            ? context.t('common.active', fallback: 'Ativo')
+            : context.t('common.inactive', fallback: 'Inativo');
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: ativo ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+        color: background,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        ativo ? 'Ativo' : 'Inativo',
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: ativo ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
+          color: foreground,
           fontSize: 11,
           fontWeight: FontWeight.w900,
         ),
@@ -1502,17 +2490,13 @@ class _SmallInfoPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: SixMobilePalette.softAccentSurface,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 14,
-              color: _CadastroProdutoMobileScreenState._accentColor,
-            ),
+            Icon(icon, size: 14, color: SixMobilePalette.accent),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
@@ -1520,7 +2504,7 @@ class _SmallInfoPill extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: _CadastroProdutoMobileScreenState._accentColor,
+                  color: SixMobilePalette.accent,
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1551,63 +2535,69 @@ class _ImageActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground =
-        isDanger ? const Color(0xFFDC2626) : const Color(0xFF2563EB);
+        isDanger ? SixMobilePalette.error : SixMobilePalette.accent;
     final background =
-        isDanger ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF);
+        isDanger ? const Color(0xFFFEF2F2) : SixMobilePalette.softAccentSurface;
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
+    return Semantics(
+      button: true,
+      label: title,
+      child: Material(
+        color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: background,
-                  borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: SixMobilePalette.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: background,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: foreground),
                 ),
-                child: Icon(icon, color: foreground),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color:
-                            isDanger
-                                ? const Color(0xFFB91C1C)
-                                : _CadastroProdutoMobileScreenState
-                                    ._titleTextColor,
-                        fontWeight: FontWeight.w900,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              isDanger
+                                  ? SixMobilePalette.error
+                                  : SixMobilePalette.titleText,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color:
-                            _CadastroProdutoMobileScreenState._mutedTextColor,
-                        fontSize: 12,
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.mutedText,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: foreground),
-            ],
+                Icon(Icons.chevron_right_rounded, color: foreground),
+              ],
+            ),
           ),
         ),
       ),
@@ -1634,7 +2624,7 @@ class _SwitchCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: SixMobilePalette.border),
       ),
       child: Row(
         children: [
@@ -1644,16 +2634,20 @@ class _SwitchCard extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: _CadastroProdutoMobileScreenState._titleTextColor,
+                    color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: _CadastroProdutoMobileScreenState._mutedTextColor,
+                    color: SixMobilePalette.mutedText,
                     fontSize: 12,
                     height: 1.3,
                   ),
@@ -1661,7 +2655,11 @@ class _SwitchCard extends StatelessWidget {
               ],
             ),
           ),
-          Switch(value: value, onChanged: onChanged),
+          Switch(
+            value: value,
+            activeThumbColor: SixMobilePalette.accent,
+            onChanged: onChanged,
+          ),
         ],
       ),
     );
