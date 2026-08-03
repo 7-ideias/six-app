@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
+import '../../data/models/colaborador_usuario_model.dart';
+import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../l10n/six_i18n.dart';
@@ -33,9 +35,11 @@ class _AtendimentosTecnicosMobileScreenState
   static const Color _borderColor = SixMobilePalette.activeBorder;
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
+  final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      HttpColaboradorUsuarioApiClient();
   final TextEditingController _searchController = TextEditingController();
 
-  late Future<List<AtendimentoTecnicoModel>> _future;
+  late Future<_AtendimentosTecnicosMobileState> _future;
   String? _statusSelecionado;
   DateTime? _dataInicioFiltro;
   DateTime? _dataFimFiltro;
@@ -55,8 +59,15 @@ class _AtendimentosTecnicosMobileScreenState
     super.dispose();
   }
 
-  Future<List<AtendimentoTecnicoModel>> _carregar() {
-    return _service.listar();
+  Future<_AtendimentosTecnicosMobileState> _carregar() async {
+    final List<dynamic> results = await Future.wait<dynamic>(<Future<dynamic>>[
+      _service.listar(),
+      _colaboradorApiClient.listarTecnicosAssistenciaTecnica(),
+    ]);
+    return _AtendimentosTecnicosMobileState(
+      atendimentos: results[0] as List<AtendimentoTecnicoModel>,
+      tecnicos: results[1] as List<ColaboradorUsuarioResumo>,
+    );
   }
 
   Future<void> _recarregar() async {
@@ -153,7 +164,7 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   Widget _buildBody(ScrollController scrollController, double topInset) {
-    return FutureBuilder<List<AtendimentoTecnicoModel>>(
+    return FutureBuilder<_AtendimentosTecnicosMobileState>(
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -168,8 +179,8 @@ class _AtendimentosTecnicosMobileScreenState
           );
         }
 
-        final List<AtendimentoTecnicoModel> atendimentos =
-            snapshot.data ?? const <AtendimentoTecnicoModel>[];
+        final _AtendimentosTecnicosMobileState state = snapshot.data!;
+        final List<AtendimentoTecnicoModel> atendimentos = state.atendimentos;
         final List<AtendimentoTecnicoModel> filtrados = _filtrar(atendimentos);
 
         return RefreshIndicator(
@@ -201,7 +212,7 @@ class _AtendimentosTecnicosMobileScreenState
               const SizedBox(height: 14),
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 260),
-                child: _advancedFilters(atendimentos),
+                child: _advancedFilters(atendimentos, state.tecnicos),
               ),
               const SizedBox(height: 14),
               SixStaggeredEntry(
@@ -698,8 +709,14 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _advancedFilters(List<AtendimentoTecnicoModel> atendimentos) {
-    final List<_TecnicoFiltroOption> tecnicos = _tecnicoOptions(atendimentos);
+  Widget _advancedFilters(
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<ColaboradorUsuarioResumo> tecnicosDisponiveis,
+  ) {
+    final List<_TecnicoFiltroOption> tecnicos = _tecnicoOptions(
+      atendimentos,
+      tecnicosDisponiveis,
+    );
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1236,14 +1253,33 @@ class _AtendimentosTecnicosMobileScreenState
 
   List<_TecnicoFiltroOption> _tecnicoOptions(
     List<AtendimentoTecnicoModel> atendimentos,
+    List<ColaboradorUsuarioResumo> tecnicos,
   ) {
     final Map<String, _TecnicoFiltroOption> mapa =
         <String, _TecnicoFiltroOption>{};
-    for (final AtendimentoTecnicoModel atendimento in atendimentos) {
-      final String key = _tecnicoKeyAtendimento(atendimento);
-      mapa[key] = _TecnicoFiltroOption(
-        key: key,
-        label: _tecnicoLabelAtendimento(atendimento),
+    for (final ColaboradorUsuarioResumo tecnico in tecnicos) {
+      if (!tecnico.ehTecnicoAssistenciaTecnica) continue;
+      final String id =
+          tecnico.idUnicoPessoal.trim().isNotEmpty
+              ? tecnico.idUnicoPessoal.trim()
+              : tecnico.email.trim();
+      final String nome =
+          tecnico.nomeDeGuerra.trim().isNotEmpty
+              ? tecnico.nomeDeGuerra.trim()
+              : tecnico.nome.trim().isNotEmpty
+              ? tecnico.nome.trim()
+              : tecnico.email.trim();
+      final String key = id.isNotEmpty ? id : nome.toLowerCase();
+      if (key.isEmpty || nome.isEmpty) continue;
+      mapa[key] = _TecnicoFiltroOption(key: key, label: nome);
+    }
+    if (atendimentos.any(
+      (AtendimentoTecnicoModel atendimento) =>
+          _tecnicoKeyAtendimento(atendimento) == _semTecnicoKey,
+    )) {
+      mapa[_semTecnicoKey] = const _TecnicoFiltroOption(
+        key: _semTecnicoKey,
+        label: 'Sem técnico responsável',
       );
     }
     final List<_TecnicoFiltroOption> options = mapa.values.toList(
@@ -1395,6 +1431,16 @@ class _TecnicoFiltroOption {
 
   final String key;
   final String label;
+}
+
+class _AtendimentosTecnicosMobileState {
+  const _AtendimentosTecnicosMobileState({
+    required this.atendimentos,
+    required this.tecnicos,
+  });
+
+  final List<AtendimentoTecnicoModel> atendimentos;
+  final List<ColaboradorUsuarioResumo> tecnicos;
 }
 
 class _PeriodoFiltroMobileSheet extends StatefulWidget {

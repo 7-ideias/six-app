@@ -11,6 +11,7 @@ class ColaboradorUsuarioResumo {
     required this.dataCadastro,
     this.status = 'ATIVO',
     this.ativo = true,
+    this.ehUmTecnicoEFazAssistenciaTecnica,
   });
 
   final String idUnicoPessoal;
@@ -22,6 +23,10 @@ class ColaboradorUsuarioResumo {
   final DateTime? dataCadastro;
   final String status;
   final bool ativo;
+  final bool? ehUmTecnicoEFazAssistenciaTecnica;
+
+  bool get ehTecnicoAssistenciaTecnica =>
+      ehUmTecnicoEFazAssistenciaTecnica == true;
 
   factory ColaboradorUsuarioResumo.fromJson(Map<String, dynamic> json) {
     final String status = json['status']?.toString() ?? 'ATIVO';
@@ -35,6 +40,9 @@ class ColaboradorUsuarioResumo {
       dataCadastro: DateTime.tryParse(json['dataCadastro']?.toString() ?? ''),
       status: status,
       ativo: _toBool(json['ativo'], fallback: status.toUpperCase() == 'ATIVO'),
+      ehUmTecnicoEFazAssistenciaTecnica: _tecnicoAssistenciaTecnicaFromJson(
+        json,
+      ),
     );
   }
 
@@ -46,6 +54,7 @@ class ColaboradorUsuarioResumo {
     String? foto,
     String? status,
     bool? ativo,
+    bool? ehUmTecnicoEFazAssistenciaTecnica,
   }) {
     return ColaboradorUsuarioResumo(
       idUnicoPessoal: idUnicoPessoal,
@@ -57,7 +66,58 @@ class ColaboradorUsuarioResumo {
       dataCadastro: dataCadastro,
       status: status ?? this.status,
       ativo: ativo ?? this.ativo,
+      ehUmTecnicoEFazAssistenciaTecnica:
+          ehUmTecnicoEFazAssistenciaTecnica ??
+          this.ehUmTecnicoEFazAssistenciaTecnica,
     );
+  }
+
+  static bool? _tecnicoAssistenciaTecnicaFromJson(Map<String, dynamic> json) {
+    final bool? direct = _toBoolOrNull(
+      json['ehUmTecnicoEFazAssistenciaTecnica'],
+    );
+    if (direct != null) return direct;
+
+    final bool? nested = _toBoolOrNull(
+      _ensureMap(
+        json['objAssistenciaTecnicaPode'],
+      )['ehUmTecnicoEFazAssistenciaTecnica'],
+    );
+    if (nested != null) return nested;
+
+    return _toBoolOrNull(
+      _ensureMap(
+        _ensureMap(json['objAutorizacoes'])['objAssistenciaTecnicaPode'],
+      )['ehUmTecnicoEFazAssistenciaTecnica'],
+    );
+  }
+
+  static Map<String, dynamic> _ensureMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map(
+        (dynamic key, dynamic value) =>
+            MapEntry<String, dynamic>(key.toString(), value),
+      );
+    }
+    return <String, dynamic>{};
+  }
+
+  static bool? _toBoolOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final String normalized = value.toString().trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1' || normalized == 'sim') {
+      return true;
+    }
+    if (normalized == 'false' ||
+        normalized == '0' ||
+        normalized == 'nao' ||
+        normalized == 'não') {
+      return false;
+    }
+    return null;
   }
 
   static bool _toBool(dynamic value, {required bool fallback}) {
@@ -66,7 +126,10 @@ class ColaboradorUsuarioResumo {
     if (normalized == 'true' || normalized == '1' || normalized == 'sim') {
       return true;
     }
-    if (normalized == 'false' || normalized == '0' || normalized == 'nao' || normalized == 'não') {
+    if (normalized == 'false' ||
+        normalized == '0' ||
+        normalized == 'nao' ||
+        normalized == 'não') {
       return false;
     }
     return fallback;

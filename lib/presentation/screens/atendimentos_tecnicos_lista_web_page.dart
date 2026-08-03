@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
+import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
+import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../providers/locale_settings_provider.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
@@ -30,6 +32,8 @@ class _AtendimentosTecnicosListaWebPageState
   static const String _semTecnicoKey = '__sem_tecnico__';
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
+  final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      HttpColaboradorUsuarioApiClient();
   final TextEditingController _buscaController = TextEditingController();
 
   late Future<_ListaAtendimentosState> _future;
@@ -57,10 +61,12 @@ class _AtendimentosTecnicosListaWebPageState
     final results = await Future.wait<dynamic>(<Future<dynamic>>[
       _service.buscarDominiosBase(),
       _service.listar(),
+      _colaboradorApiClient.listarTecnicosAssistenciaTecnica(),
     ]);
     return _ListaAtendimentosState(
       dominios: results[0] as AtendimentoTecnicoDominiosBaseModel,
       atendimentos: results[1] as List<AtendimentoTecnicoModel>,
+      tecnicos: results[2] as List<ColaboradorUsuarioResumo>,
     );
   }
 
@@ -216,12 +222,34 @@ class _AtendimentosTecnicosListaWebPageState
 
   List<_TecnicoFiltroOption> _tecnicoOptions(
     List<AtendimentoTecnicoModel> atendimentos,
+    List<ColaboradorUsuarioResumo> tecnicos,
   ) {
-    final mapa = <String, _TecnicoFiltroOption>{};
-    for (final atendimento in atendimentos) {
-      final key = _tecnicoKeyAtendimento(atendimento);
-      final label = _tecnicoLabelAtendimento(atendimento);
-      mapa[key] = _TecnicoFiltroOption(key: key, label: label);
+    final Map<String, _TecnicoFiltroOption> mapa =
+        <String, _TecnicoFiltroOption>{};
+    for (final ColaboradorUsuarioResumo tecnico in tecnicos) {
+      if (!tecnico.ehTecnicoAssistenciaTecnica) continue;
+      final String id =
+          tecnico.idUnicoPessoal.trim().isNotEmpty
+              ? tecnico.idUnicoPessoal.trim()
+              : tecnico.email.trim();
+      final String nome =
+          tecnico.nomeDeGuerra.trim().isNotEmpty
+              ? tecnico.nomeDeGuerra.trim()
+              : tecnico.nome.trim().isNotEmpty
+              ? tecnico.nome.trim()
+              : tecnico.email.trim();
+      final String key = id.isNotEmpty ? id : nome.toLowerCase();
+      if (key.isEmpty || nome.isEmpty) continue;
+      mapa[key] = _TecnicoFiltroOption(key: key, label: nome);
+    }
+    if (atendimentos.any(
+      (AtendimentoTecnicoModel atendimento) =>
+          _tecnicoKeyAtendimento(atendimento) == _semTecnicoKey,
+    )) {
+      mapa[_semTecnicoKey] = const _TecnicoFiltroOption(
+        key: _semTecnicoKey,
+        label: 'Sem técnico responsável',
+      );
     }
     final options = mapa.values.toList(growable: false)..sort((a, b) {
       if (a.key == _semTecnicoKey) return 1;
@@ -419,97 +447,34 @@ class _AtendimentosTecnicosListaWebPageState
     List<DominioOpcaoModel> status,
   ) async {
     if (status.isEmpty || _alterandoStatus) return;
-    final observacaoController = TextEditingController();
-    DominioOpcaoModel? statusSelecionado = _statusAtual(atendimento, status);
-
     final alterou = await showDialog<bool>(
       context: context,
+      barrierDismissible: !_alterandoStatus,
       builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              title: const Text('Mudar status'),
-              content: SizedBox(
-                width: 460,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    DropdownButtonFormField<DominioOpcaoModel>(
-                      value: statusSelecionado,
-                      decoration: const InputDecoration(
-                        labelText: 'Novo status',
-                      ),
-                      items:
-                          status
-                              .map(
-                                (opcao) => DropdownMenuItem<DominioOpcaoModel>(
-                                  value: opcao,
-                                  child: Text(opcao.nomePadraoPtBr),
-                                ),
-                              )
-                              .toList(),
-                      onChanged:
-                          (opcao) =>
-                              setDialogState(() => statusSelecionado = opcao),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: observacaoController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Observação da mudança',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancelar'),
-                ),
-                FilledButton.icon(
-                  onPressed:
-                      statusSelecionado == null
-                          ? null
-                          : () async {
-                            setState(() => _alterandoStatus = true);
-                            try {
-                              await _service.alterarStatus(
-                                id: atendimento.id,
-                                status: statusSelecionado!,
-                                observacao:
-                                    observacaoController.text.trim().isEmpty
-                                        ? null
-                                        : observacaoController.text.trim(),
-                              );
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop(true);
-                              }
-                            } catch (error) {
-                              if (mounted) {
-                                _mostrarMensagem(
-                                  'Não foi possível alterar o status: $error',
-                                );
-                              }
-                            } finally {
-                              if (mounted) {
-                                setState(() => _alterandoStatus = false);
-                              }
-                            }
-                          },
-                  icon: const Icon(Icons.check_rounded),
-                  label: const Text('Salvar'),
-                ),
-              ],
-            );
+        return _AlterarStatusAtendimentoWebDialog(
+          atendimento: atendimento,
+          status: status,
+          statusAtual: _statusAtual(atendimento, status),
+          statusAtualLabel: _statusLabel(atendimento, status),
+          onSalvar: (DominioOpcaoModel novoStatus, String? observacao) async {
+            setState(() => _alterandoStatus = true);
+            try {
+              await _service.alterarStatus(
+                id: atendimento.id,
+                status: novoStatus,
+                observacao: observacao,
+              );
+              return true;
+            } finally {
+              if (mounted) {
+                setState(() => _alterandoStatus = false);
+              }
+            }
           },
         );
       },
     );
 
-    observacaoController.dispose();
     if (alterou == true && mounted) {
       _recarregar();
       _mostrarMensagem('Status atualizado no histórico.');
@@ -572,7 +537,12 @@ class _AtendimentosTecnicosListaWebPageState
                       children: <Widget>[
                         _buildResumo(theme, state.atendimentos, isCompact),
                         const SizedBox(height: 12),
-                        _buildBusca(theme, isCompact, state.atendimentos),
+                        _buildBusca(
+                          theme,
+                          isCompact,
+                          state.atendimentos,
+                          state.tecnicos,
+                        ),
                       ],
                     ),
                   ),
@@ -941,9 +911,10 @@ class _AtendimentosTecnicosListaWebPageState
     ThemeData theme,
     bool isCompact,
     List<AtendimentoTecnicoModel> atendimentos,
+    List<ColaboradorUsuarioResumo> tecnicos,
   ) {
     final colorScheme = theme.colorScheme;
-    final tecnicoOptions = _tecnicoOptions(atendimentos);
+    final tecnicoOptions = _tecnicoOptions(atendimentos, tecnicos);
     return Container(
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
@@ -1906,6 +1877,553 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
+typedef _SalvarStatusAtendimento =
+    Future<bool> Function(DominioOpcaoModel status, String? observacao);
+
+class _AlterarStatusAtendimentoWebDialog extends StatefulWidget {
+  const _AlterarStatusAtendimentoWebDialog({
+    required this.atendimento,
+    required this.status,
+    required this.statusAtual,
+    required this.statusAtualLabel,
+    required this.onSalvar,
+  });
+
+  final AtendimentoTecnicoModel atendimento;
+  final List<DominioOpcaoModel> status;
+  final DominioOpcaoModel? statusAtual;
+  final String statusAtualLabel;
+  final _SalvarStatusAtendimento onSalvar;
+
+  @override
+  State<_AlterarStatusAtendimentoWebDialog> createState() =>
+      _AlterarStatusAtendimentoWebDialogState();
+}
+
+class _AlterarStatusAtendimentoWebDialogState
+    extends State<_AlterarStatusAtendimentoWebDialog> {
+  late DominioOpcaoModel? _statusSelecionado = widget.statusAtual;
+  final TextEditingController _observacaoController = TextEditingController();
+  bool _salvando = false;
+
+  @override
+  void dispose() {
+    _observacaoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _salvar() async {
+    final statusSelecionado = _statusSelecionado;
+    if (statusSelecionado == null || _salvando) return;
+    setState(() => _salvando = true);
+    final observacao = _observacaoController.text.trim();
+    final salvou = await widget.onSalvar(
+      statusSelecionado,
+      observacao.isEmpty ? null : observacao,
+    );
+    if (!mounted) return;
+    setState(() => _salvando = false);
+    if (salvou) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  String get _cliente {
+    final nome = widget.atendimento.nomeClienteSnapshot?.trim() ?? '';
+    return nome.isEmpty ? 'Cliente não informado' : nome;
+  }
+
+  String get _equipamento {
+    final equipamento = widget.atendimento.equipamento;
+    final partes = <String>[
+      equipamento?.tipo ?? '',
+      equipamento?.marca ?? '',
+      equipamento?.modelo ?? '',
+    ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
+    return partes.isEmpty ? widget.atendimento.numero : partes.join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 620),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool compact = constraints.maxWidth < 520;
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 18 : 24,
+                      compact ? 18 : 22,
+                      compact ? 12 : 16,
+                      compact ? 16 : 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.06),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: colorScheme.outline.withOpacity(0.14),
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Icon(
+                            Icons.swap_horiz_rounded,
+                            color: colorScheme.primary,
+                            size: 27,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'Mudar status',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Registre a próxima etapa do atendimento técnico.',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          onPressed:
+                              _salvando
+                                  ? null
+                                  : () => Navigator.of(context).pop(false),
+                          tooltip: 'Fechar',
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(compact ? 18 : 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _StatusContextCard(
+                          numero: widget.atendimento.numero,
+                          equipamento: _equipamento,
+                          cliente: _cliente,
+                          statusAtual: widget.statusAtualLabel,
+                        ),
+                        const SizedBox(height: 16),
+                        _StatusWebSelector(
+                          label: 'Novo status',
+                          value: _statusSelecionado,
+                          options: widget.status,
+                          enabled: !_salvando,
+                          onChanged:
+                              (value) =>
+                                  setState(() => _statusSelecionado = value),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: _observacaoController,
+                          enabled: !_salvando,
+                          minLines: 3,
+                          maxLines: 5,
+                          decoration: const InputDecoration(
+                            labelText: 'Observação da mudança',
+                            hintText:
+                                'Informe um detalhe útil para o histórico, se necessário.',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 18 : 24,
+                      14,
+                      compact ? 18 : 24,
+                      compact ? 18 : 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      border: Border(
+                        top: BorderSide(
+                          color: colorScheme.outline.withOpacity(0.12),
+                        ),
+                      ),
+                    ),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment:
+                          compact ? WrapAlignment.start : WrapAlignment.end,
+                      children: <Widget>[
+                        OutlinedButton(
+                          onPressed:
+                              _salvando
+                                  ? null
+                                  : () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton.icon(
+                          onPressed:
+                              _statusSelecionado == null || _salvando
+                                  ? null
+                                  : _salvar,
+                          icon:
+                              _salvando
+                                  ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                    ),
+                                  )
+                                  : const Icon(Icons.check_rounded),
+                          label: Text(_salvando ? 'Salvando...' : 'Salvar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusContextCard extends StatelessWidget {
+  const _StatusContextCard({
+    required this.numero,
+    required this.equipamento,
+    required this.cliente,
+    required this.statusAtual,
+  });
+
+  final String numero;
+  final String equipamento;
+  final String cliente;
+  final String statusAtual;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceVariant.withOpacity(0.22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(
+              Icons.devices_other_outlined,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  equipamento,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$numero • $cliente',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    _StatusPill(
+                      icon: Icons.flag_outlined,
+                      label: 'Status atual',
+                      value: statusAtual,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 15, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusWebSelector extends StatefulWidget {
+  const _StatusWebSelector({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final String label;
+  final DominioOpcaoModel? value;
+  final List<DominioOpcaoModel> options;
+  final ValueChanged<DominioOpcaoModel> onChanged;
+  final bool enabled;
+
+  @override
+  State<_StatusWebSelector> createState() => _StatusWebSelectorState();
+}
+
+class _StatusWebSelectorState extends State<_StatusWebSelector> {
+  final GlobalKey _fieldKey = GlobalKey();
+  bool _opened = false;
+
+  Future<void> _openMenu() async {
+    if (!widget.enabled) return;
+    final context = _fieldKey.currentContext;
+    if (context == null) return;
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final overlay =
+        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+    if (overlay == null) return;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        renderBox.localToGlobal(Offset.zero, ancestor: overlay),
+        renderBox.localToGlobal(
+          renderBox.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    setState(() => _opened = true);
+    final selected = await showMenu<DominioOpcaoModel>(
+      context: context,
+      position: position,
+      constraints: BoxConstraints.tightFor(width: renderBox.size.width),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      items:
+          widget.options
+              .map(
+                (option) => PopupMenuItem<DominioOpcaoModel>(
+                  value: option,
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          option.nomePadraoPtBr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (option.id == widget.value?.id)
+                        Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+    );
+    if (!mounted) return;
+    setState(() => _opened = false);
+    if (selected != null) widget.onChanged(selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final value = widget.value?.nomePadraoPtBr ?? 'Selecione um status';
+    return InkWell(
+      key: _fieldKey,
+      onTap: _openMenu,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color:
+              widget.enabled
+                  ? colorScheme.surface
+                  : colorScheme.surfaceVariant.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                _opened
+                    ? colorScheme.primary
+                    : colorScheme.outline.withOpacity(0.18),
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(
+                Icons.flag_outlined,
+                color: colorScheme.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color:
+                          widget.enabled
+                              ? colorScheme.onSurface
+                              : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            AnimatedRotation(
+              turns: _opened ? 0.5 : 0,
+              duration: const Duration(milliseconds: 160),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PeriodoFiltroWebDialog extends StatefulWidget {
   const _PeriodoFiltroWebDialog({
     required this.dataInicio,
@@ -2158,8 +2676,10 @@ class _ListaAtendimentosState {
   const _ListaAtendimentosState({
     required this.dominios,
     required this.atendimentos,
+    required this.tecnicos,
   });
 
   final AtendimentoTecnicoDominiosBaseModel dominios;
   final List<AtendimentoTecnicoModel> atendimentos;
+  final List<ColaboradorUsuarioResumo> tecnicos;
 }

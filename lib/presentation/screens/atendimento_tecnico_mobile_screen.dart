@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/services/auth_service.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/produto_model.dart';
-import '../../data/models/usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
-import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
-import '../../providers/usuario_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import 'produto_list_mobile_screen.dart';
@@ -115,10 +111,8 @@ class _AtendimentoTecnicoMobileScreenState
     try {
       final response = await _clienteApiClient.listarClientesUsuario();
       final List<ColaboradorUsuarioResumo> colaboradores =
-          await _colaboradorApiClient.listarColaboradores();
-      final _ResponsavelTecnicoMobile? admin = await _carregarAdminAtual();
+          await _colaboradorApiClient.listarTecnicosAssistenciaTecnica();
       final List<_ResponsavelTecnicoMobile> responsaveis = _montarResponsaveis(
-        admin,
         colaboradores,
       );
 
@@ -140,52 +134,7 @@ class _AtendimentoTecnicoMobileScreenState
     }
   }
 
-  Future<_ResponsavelTecnicoMobile?> _carregarAdminAtual() async {
-    final AuthService authService = AuthService();
-    final String idUsuario = (await authService.getUserId())?.trim() ?? '';
-
-    try {
-      if (UsuarioProvider().usuario == null) {
-        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-      }
-    } catch (_) {
-      // Mantem a tela funcional mesmo quando os dados pessoais nao carregarem.
-    }
-
-    final UsuarioModel? usuario = UsuarioProvider().usuario;
-    final String email =
-        (usuario?.email.trim().isNotEmpty == true
-            ? usuario!.email.trim()
-            : (await authService.getUserEmail())?.trim()) ??
-        '';
-    final String nome = _nomeUsuario(usuario, fallbackEmail: email);
-    final String id = idUsuario.isNotEmpty ? idUsuario : email;
-
-    if (id.isEmpty && nome.isEmpty) return null;
-
-    return _ResponsavelTecnicoMobile(
-      id: id.isEmpty ? nome : id,
-      nome: nome.isEmpty ? 'ADMIN' : nome,
-      subtitulo:
-          email.isEmpty ? 'ADMIN do sistema' : 'ADMIN do sistema • $email',
-      isAdmin: true,
-    );
-  }
-
-  String _nomeUsuario(UsuarioModel? usuario, {required String fallbackEmail}) {
-    if (usuario == null) return fallbackEmail;
-    final String nomeDeGuerra = usuario.nomeDeGuerra.trim();
-    if (nomeDeGuerra.isNotEmpty) return nomeDeGuerra;
-    final String nomeCompleto = <String>[usuario.nome, usuario.sobrenome]
-        .map((String item) => item.trim())
-        .where((String item) => item.isNotEmpty)
-        .join(' ');
-    if (nomeCompleto.isNotEmpty) return nomeCompleto;
-    return fallbackEmail;
-  }
-
   List<_ResponsavelTecnicoMobile> _montarResponsaveis(
-    _ResponsavelTecnicoMobile? admin,
     List<ColaboradorUsuarioResumo> colaboradores,
   ) {
     final Map<String, _ResponsavelTecnicoMobile> mapa =
@@ -200,9 +149,8 @@ class _AtendimentoTecnicoMobileScreenState
       mapa[key] = responsavel;
     }
 
-    if (admin != null) add(admin);
-
     for (final ColaboradorUsuarioResumo colaborador in colaboradores) {
+      if (!colaborador.ehTecnicoAssistenciaTecnica) continue;
       final String id =
           colaborador.idUnicoPessoal.trim().isNotEmpty
               ? colaborador.idUnicoPessoal.trim()
@@ -1278,13 +1226,11 @@ class _ResponsavelTecnicoMobile {
     required this.id,
     required this.nome,
     required this.subtitulo,
-    this.isAdmin = false,
   });
 
   final String id;
   final String nome;
   final String subtitulo;
-  final bool isAdmin;
 }
 
 class _AtendimentoTecnicoResponsavelSelectorMobile extends StatefulWidget {
@@ -1392,7 +1338,7 @@ class _AtendimentoTecnicoResponsavelSelectorMobileState
                             ),
                             SizedBox(height: 3),
                             Text(
-                              'Selecione o ADMIN ou colaborador responsável.',
+                              'Selecione um técnico autorizado para assistência.',
                               style: TextStyle(
                                 color: _mutedTextColor,
                                 fontSize: 12,
@@ -1562,9 +1508,7 @@ class _ResponsavelSelectorItem extends StatelessWidget {
                         ? _accentColor.withValues(alpha: 0.12)
                         : const Color(0xFFF1F5F9),
                 child: Icon(
-                  responsavel.isAdmin
-                      ? Icons.admin_panel_settings_outlined
-                      : Icons.person_outline_rounded,
+                  Icons.person_outline_rounded,
                   color: selected ? _accentColor : _primaryColor,
                 ),
               ),
