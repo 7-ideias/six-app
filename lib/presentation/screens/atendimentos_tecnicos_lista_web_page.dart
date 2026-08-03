@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart' as sharing;
 
 import '../../data/models/atendimento_tecnico_models.dart';
+import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
+import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../l10n/six_i18n.dart';
+import '../../providers/locale_settings_provider.dart';
+import '../components/web/six_web_recebimento_dialog.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
-import 'atendimento_tecnico_receber_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
 
 class AtendimentosTecnicosListaWebPage extends StatefulWidget {
@@ -25,12 +31,20 @@ class AtendimentosTecnicosListaWebPage extends StatefulWidget {
 
 class _AtendimentosTecnicosListaWebPageState
     extends State<AtendimentosTecnicosListaWebPage> {
+  static const String _semTecnicoKey = '__sem_tecnico__';
+
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
+  final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      HttpColaboradorUsuarioApiClient();
   final TextEditingController _buscaController = TextEditingController();
 
   late Future<_ListaAtendimentosState> _future;
   bool _alterandoStatus = false;
   bool _gerandoLink = false;
+  bool _gerandoLinkStatus = false;
+  DateTime? _dataInicioFiltro;
+  DateTime? _dataFimFiltro;
+  String? _tecnicoFiltroKey;
 
   @override
   void initState() {
@@ -50,15 +64,32 @@ class _AtendimentosTecnicosListaWebPageState
     final results = await Future.wait<dynamic>(<Future<dynamic>>[
       _service.buscarDominiosBase(),
       _service.listar(),
+      _colaboradorApiClient.listarTecnicosAssistenciaTecnica(),
     ]);
     return _ListaAtendimentosState(
       dominios: results[0] as AtendimentoTecnicoDominiosBaseModel,
       atendimentos: results[1] as List<AtendimentoTecnicoModel>,
+      tecnicos: results[2] as List<ColaboradorUsuarioResumo>,
     );
   }
 
   void _onBuscaChanged() {
     if (mounted) setState(() {});
+  }
+
+  bool get _possuiFiltrosAtivos =>
+      _buscaController.text.trim().isNotEmpty ||
+      _dataInicioFiltro != null ||
+      _dataFimFiltro != null ||
+      _tecnicoFiltroKey != null;
+
+  void _limparFiltros() {
+    setState(() {
+      _dataInicioFiltro = null;
+      _dataFimFiltro = null;
+      _tecnicoFiltroKey = null;
+      _buscaController.clear();
+    });
   }
 
   void _recarregar() {
@@ -110,14 +141,37 @@ class _AtendimentosTecnicosListaWebPageState
 
   List<AtendimentoTecnicoModel> _filtrar(List<AtendimentoTecnicoModel> itens) {
     final termo = _buscaController.text.trim().toLowerCase();
-    if (termo.isEmpty) return itens;
+    final inicio =
+        _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
+    final fim = _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
+    final tecnicoKey = _tecnicoFiltroKey;
+
     return itens
         .where((atendimento) {
+          final dataReferencia = _dataReferenciaFiltro(atendimento);
+          if (inicio != null) {
+            if (dataReferencia == null || dataReferencia.isBefore(inicio)) {
+              return false;
+            }
+          }
+          if (fim != null) {
+            if (dataReferencia == null || dataReferencia.isAfter(fim)) {
+              return false;
+            }
+          }
+          if (tecnicoKey != null &&
+              _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
+            return false;
+          }
+
+          if (termo.isEmpty) return true;
+
           final equipamento = atendimento.equipamento;
           final texto =
               <String>[
                 atendimento.numero,
                 atendimento.nomeClienteSnapshot ?? '',
+                atendimento.nomeTecnicoResponsavelSnapshot ?? '',
                 atendimento.statusCodigo,
                 atendimento.statusNomePtBr ?? '',
                 atendimento.assinaturaAprovada
@@ -137,10 +191,144 @@ class _AtendimentosTecnicosListaWebPageState
                 equipamento?.imei ?? '',
                 atendimento.defeitoRelatado ?? '',
                 atendimento.diagnosticoTecnico ?? '',
+                _formatarDataCurta(atendimento.dataEntregaPrevista),
               ].join(' ').toLowerCase();
           return texto.contains(termo);
         })
         .toList(growable: false);
+  }
+
+  DateTime _inicioDoDia(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  DateTime _fimDoDia(DateTime value) =>
+      DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
+
+  bool _entregaAtrasada(AtendimentoTecnicoModel atendimento) {
+    final DateTime? entrega = atendimento.dataEntregaPrevista;
+    if (entrega == null ||
+        atendimento.operacaoLiquidada ||
+        _atendimentoFinalizadoOperacionalmente(atendimento)) {
+      return false;
+    }
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime dataEntrega = _inicioDoDia(entrega);
+    return dataEntrega.isBefore(hoje);
+  }
+
+  bool _atendimentoFinalizadoOperacionalmente(
+    AtendimentoTecnicoModel atendimento,
+  ) {
+    final String statusCodigo = atendimento.statusCodigo.trim().toUpperCase();
+    if (<String>{
+      'DELIVERED',
+      'ENTREGUE',
+      'CANCELED',
+      'CANCELADO',
+      'CANCELADA',
+      'NO_REPAIR',
+      'SEM_REPARO',
+      'FINALIZED',
+      'FINALIZADO',
+      'CONCLUIDO',
+      'CONCLUÍDO',
+    }.contains(statusCodigo)) {
+      return true;
+    }
+
+    final String statusTexto =
+        <String>[
+          atendimento.statusNomePtBr ?? '',
+          atendimento.statusNomeEnUs ?? '',
+          atendimento.statusNomeEsEs ?? '',
+        ].join(' ').toUpperCase();
+    return statusTexto.contains('ENTREG') ||
+        statusTexto.contains('DELIVER') ||
+        statusTexto.contains('CANCEL') ||
+        statusTexto.contains('SEM REPARO') ||
+        statusTexto.contains('NO REPAIR') ||
+        statusTexto.contains('FINALIZ') ||
+        statusTexto.contains('CONCLU');
+  }
+
+  DateTime? _dataReferenciaFiltro(AtendimentoTecnicoModel atendimento) {
+    return atendimento.dataEntregaPrevista ??
+        atendimento.dataAtualizacao ??
+        atendimento.dataUltimaAlteracaoOrcamento ??
+        atendimento.dataVencimentoEm ??
+        atendimento.validadeOrcamentoEm;
+  }
+
+  String _tecnicoKeyAtendimento(AtendimentoTecnicoModel atendimento) {
+    final id = atendimento.idTecnicoResponsavel?.trim() ?? '';
+    if (id.isNotEmpty) return id;
+    final nome = atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    if (nome.isNotEmpty) return nome.toLowerCase();
+    return _semTecnicoKey;
+  }
+
+  String _tecnicoLabelAtendimento(AtendimentoTecnicoModel atendimento) {
+    final nome = atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    return nome.isEmpty ? 'Sem técnico responsável' : nome;
+  }
+
+  List<_TecnicoFiltroOption> _tecnicoOptions(
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<ColaboradorUsuarioResumo> tecnicos,
+  ) {
+    final Map<String, _TecnicoFiltroOption> mapa =
+        <String, _TecnicoFiltroOption>{};
+    for (final ColaboradorUsuarioResumo tecnico in tecnicos) {
+      if (!tecnico.ehTecnicoAssistenciaTecnica) continue;
+      final String id =
+          tecnico.idUnicoPessoal.trim().isNotEmpty
+              ? tecnico.idUnicoPessoal.trim()
+              : tecnico.email.trim();
+      final String nome =
+          tecnico.nomeDeGuerra.trim().isNotEmpty
+              ? tecnico.nomeDeGuerra.trim()
+              : tecnico.nome.trim().isNotEmpty
+              ? tecnico.nome.trim()
+              : tecnico.email.trim();
+      final String key = id.isNotEmpty ? id : nome.toLowerCase();
+      if (key.isEmpty || nome.isEmpty) continue;
+      mapa[key] = _TecnicoFiltroOption(key: key, label: nome);
+    }
+    if (atendimentos.any(
+      (AtendimentoTecnicoModel atendimento) =>
+          _tecnicoKeyAtendimento(atendimento) == _semTecnicoKey,
+    )) {
+      mapa[_semTecnicoKey] = const _TecnicoFiltroOption(
+        key: _semTecnicoKey,
+        label: 'Sem técnico responsável',
+      );
+    }
+    final options = mapa.values.toList(growable: false)..sort((a, b) {
+      if (a.key == _semTecnicoKey) return 1;
+      if (b.key == _semTecnicoKey) return -1;
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+    });
+    return options;
+  }
+
+  String _tecnicoFiltroLabel(List<_TecnicoFiltroOption> options) {
+    final key = _tecnicoFiltroKey;
+    if (key == null) return 'Todos os técnicos';
+    for (final option in options) {
+      if (option.key == key) return option.label;
+    }
+    return 'Técnico selecionado';
+  }
+
+  String _periodoFiltroLabel() {
+    final inicio = _dataInicioFiltro;
+    final fim = _dataFimFiltro;
+    if (inicio == null && fim == null) return 'Todas as datas';
+    if (inicio != null && fim != null) {
+      return '${_formatarDataCurta(inicio)} até ${_formatarDataCurta(fim)}';
+    }
+    if (inicio != null) return 'A partir de ${_formatarDataCurta(inicio)}';
+    return 'Até ${_formatarDataCurta(fim!)}';
   }
 
   DominioOpcaoModel? _statusAtual(
@@ -175,25 +363,84 @@ class _AtendimentosTecnicosListaWebPageState
     return normalizado;
   }
 
+  DominioOpcaoModel? _statusEtapaAtual(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
+    for (final opcao in status) {
+      if (opcao.id == atendimento.statusId ||
+          opcao.codigo.trim().toUpperCase() == codigoAtual) {
+        return opcao;
+      }
+    }
+    return null;
+  }
+
+  List<DominioOpcaoModel> _statusFlowSteps(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final steps = status.toList(growable: false)
+      ..sort((a, b) => a.ordem.compareTo(b.ordem));
+    final current = _statusEtapaAtual(atendimento, steps);
+    final codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
+    final filtered = steps
+        .where(
+          (step) =>
+              !step.finalizador ||
+              step.id == current?.id ||
+              step.codigo.trim().toUpperCase() == codigoAtual,
+        )
+        .toList(growable: false);
+    return filtered.isEmpty ? steps : filtered;
+  }
+
+  double _statusProgressValue(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final steps = _statusFlowSteps(atendimento, status);
+    if (steps.isEmpty) return 0;
+    final current = _statusEtapaAtual(atendimento, steps);
+    if (current == null) return 0;
+    final currentIndex = steps.indexWhere((step) => step.id == current.id);
+    if (currentIndex < 0) return 0;
+    return ((currentIndex + 1) / steps.length).clamp(0, 1).toDouble();
+  }
+
+  Color _statusProgressColor(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final current = _statusEtapaAtual(atendimento, status);
+    return _colorFromHex(current?.cor, theme.colorScheme.primary);
+  }
+
+  Color _colorFromHex(String? value, Color fallback) {
+    final hex = (value ?? '').replaceAll('#', '').trim();
+    if (hex.length != 6 && hex.length != 8) return fallback;
+    try {
+      final normalized = hex.length == 6 ? 'FF$hex' : hex;
+      return Color(int.parse(normalized, radix: 16));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   String _formatarMoeda(double value) =>
-      'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+      context.read<LocaleSettingsProvider>().formatCurrency(value);
 
   String _formatarData(DateTime? value) {
     if (value == null) return '-';
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    final hora = value.hour.toString().padLeft(2, '0');
-    final minuto = value.minute.toString().padLeft(2, '0');
-    return '$dia/$mes/$ano $hora:$minuto';
+    final locale = context.read<LocaleSettingsProvider>();
+    return '${locale.formatDate(value)} ${locale.formatTime(value)}';
   }
 
   String _formatarDataCurta(DateTime? value) {
     if (value == null) return '-';
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    return '$dia/$mes/$ano';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   String _assinaturaResumo(AtendimentoTecnicoModel atendimento) {
@@ -213,6 +460,24 @@ class _AtendimentosTecnicosListaWebPageState
       equipamento?.modelo ?? '',
     ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
     return partes.isEmpty ? atendimento.numero : partes.join(' ');
+  }
+
+  String _clienteLabelAtendimento(AtendimentoTecnicoModel atendimento) {
+    final String cliente = atendimento.nomeClienteSnapshot?.trim() ?? '';
+    return cliente.isEmpty ? 'Cliente não informado' : cliente;
+  }
+
+  String? _codigoTipoRecebimentoInicial(AtendimentoTecnicoModel atendimento) {
+    if (atendimento.recebimentos.isEmpty) return null;
+    final String codigo =
+        atendimento.recebimentos.last.codigoFormaRecebimento.trim();
+    return codigo.isEmpty ? null : codigo;
+  }
+
+  String _observacaoRecebimentoPadrao(SixWebRecebimentoResultado resultado) {
+    return resultado.total
+        ? 'Recebimento total realizado no atendimento técnico web.'
+        : 'Recebimento parcial realizado no atendimento técnico web.';
   }
 
   int _totalEmAberto(List<AtendimentoTecnicoModel> atendimentos) =>
@@ -251,13 +516,41 @@ class _AtendimentosTecnicosListaWebPageState
       _mostrarMensagem('Este atendimento já está liquidado.');
       return;
     }
-    final recebeu = await showDialog<bool>(
-      context: context,
-      builder: (_) => AtendimentoTecnicoReceberDialog(atendimento: atendimento),
-    );
-    if (recebeu == true && mounted) {
+    final SixWebRecebimentoResultado? resultado =
+        await SixWebRecebimentoDialog.show(
+          context,
+          titulo: 'Receber atendimento técnico',
+          descricao: _equipamentoTitulo(atendimento),
+          contato: _clienteLabelAtendimento(atendimento),
+          valorAberto: atendimento.valorEmAberto,
+          codigoTipoInicial: _codigoTipoRecebimentoInicial(atendimento),
+          permitirParcial: true,
+          observacaoInicial:
+              'Recebimento realizado no atendimento técnico web.',
+        );
+
+    if (resultado == null || !mounted) return;
+    try {
+      await _service.receber(
+        id: atendimento.id,
+        input: AtendimentoTecnicoRecebimentoInput(
+          codigoFormaRecebimento: resultado.codigoTipoRecebimento,
+          nomeFormaRecebimento: resultado.descricaoTipoRecebimento,
+          valor: resultado.valor,
+          observacao:
+              resultado.observacao ?? _observacaoRecebimentoPadrao(resultado),
+        ),
+      );
+      if (!mounted) return;
       _recarregar();
-      _mostrarMensagem('Recebimento lançado e auditoria registrada.');
+      _mostrarMensagem(
+        resultado.total
+            ? 'Atendimento recebido com sucesso.'
+            : 'Parcial recebida com sucesso.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem('Não foi possível lançar o recebimento: $error');
     }
   }
 
@@ -313,51 +606,63 @@ class _AtendimentosTecnicosListaWebPageState
     }
   }
 
-  Future<void> _abrirAlterarStatusDialog(
+  Future<void> _gerarLinkStatusPublico(
     AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
   ) async {
-    if (status.isEmpty || _alterandoStatus) return;
-    final observacaoController = TextEditingController();
-    DominioOpcaoModel? statusSelecionado = _statusAtual(atendimento, status);
-
-    final alterou = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              title: const Text('Mudar status'),
+    if (_gerandoLinkStatus) return;
+    setState(() => _gerandoLinkStatus = true);
+    try {
+      final baseUrl = '${Uri.base.origin}/atendimento/status';
+      final response = await _service.gerarLinkStatusPublico(
+        id: atendimento.id,
+        baseUrl: baseUrl,
+      );
+      if (!mounted) return;
+      final link = response.link.trim();
+      if (link.isEmpty) {
+        throw Exception(
+          context.t(
+            'atendimentoTecnico.publicStatus.linkMissing',
+            fallback: 'Link não retornado pelo backend.',
+          ),
+        );
+      }
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!mounted) return;
+      final String textoCompartilhamento = _mensagemCompartilhamentoStatus(
+        atendimento,
+        link,
+      );
+      await showDialog<void>(
+        context: context,
+        builder:
+            (dialogContext) => AlertDialog(
+              title: Text(
+                context.t(
+                  'atendimentoTecnico.publicStatus.linkTitle',
+                  fallback: 'Link público de status',
+                ),
+              ),
               content: SizedBox(
-                width: 460,
+                width: 560,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    DropdownButtonFormField<DominioOpcaoModel>(
-                      value: statusSelecionado,
-                      decoration: const InputDecoration(
-                        labelText: 'Novo status',
+                    Text(
+                      context.t(
+                        'atendimentoTecnico.publicStatus.linkCopied',
+                        fallback: 'Link copiado para a área de transferência.',
                       ),
-                      items:
-                          status
-                              .map(
-                                (opcao) => DropdownMenuItem<DominioOpcaoModel>(
-                                  value: opcao,
-                                  child: Text(opcao.nomePadraoPtBr),
-                                ),
-                              )
-                              .toList(),
-                      onChanged:
-                          (opcao) =>
-                              setDialogState(() => statusSelecionado = opcao),
                     ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: observacaoController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Observação da mudança',
+                    const SizedBox(height: 12),
+                    SelectableText(link),
+                    const SizedBox(height: 12),
+                    Text(
+                      context.t(
+                        'atendimentoTecnico.publicStatus.linkHelp',
+                        fallback:
+                            'Envie este link ao cliente para acompanhar o status atual do serviço.',
                       ),
                     ),
                   ],
@@ -365,49 +670,117 @@ class _AtendimentosTecnicosListaWebPageState
               ),
               actions: <Widget>[
                 TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancelar'),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(context.t('common.close', fallback: 'Fechar')),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: link));
+                    if (!mounted) return;
+                    _mostrarMensagem(
+                      context.t(
+                        'atendimentoTecnico.publicStatus.linkCopiedShort',
+                        fallback: 'Link de status copiado.',
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.content_copy_rounded),
+                  label: Text(context.t('common.copy', fallback: 'Copiar')),
                 ),
                 FilledButton.icon(
                   onPressed:
-                      statusSelecionado == null
-                          ? null
-                          : () async {
-                            setState(() => _alterandoStatus = true);
-                            try {
-                              await _service.alterarStatus(
-                                id: atendimento.id,
-                                status: statusSelecionado!,
-                                observacao:
-                                    observacaoController.text.trim().isEmpty
-                                        ? null
-                                        : observacaoController.text.trim(),
-                              );
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop(true);
-                              }
-                            } catch (error) {
-                              if (mounted) {
-                                _mostrarMensagem(
-                                  'Não foi possível alterar o status: $error',
-                                );
-                              }
-                            } finally {
-                              if (mounted)
-                                setState(() => _alterandoStatus = false);
-                            }
-                          },
-                  icon: const Icon(Icons.check_rounded),
-                  label: const Text('Salvar'),
+                      () => _compartilharStatusPublico(
+                        textoCompartilhamento,
+                        link,
+                      ),
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: Text(
+                    context.t('common.share', fallback: 'Compartilhar'),
+                  ),
                 ),
               ],
-            );
+            ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        '${context.t('atendimentoTecnico.publicStatus.linkError', fallback: 'Não foi possível gerar o link de status')}: $error',
+      );
+    } finally {
+      if (mounted) setState(() => _gerandoLinkStatus = false);
+    }
+  }
+
+  String _mensagemCompartilhamentoStatus(
+    AtendimentoTecnicoModel atendimento,
+    String link,
+  ) {
+    final chamada = context.t(
+      'atendimentoTecnico.publicStatus.shareMessage',
+      fallback: 'Acompanhe o status do seu serviço pelo link abaixo:',
+    );
+    return <String>[
+      chamada,
+      '${atendimento.numero} - ${_equipamentoTitulo(atendimento)}',
+      link,
+    ].join('\n\n');
+  }
+
+  Future<void> _compartilharStatusPublico(String mensagem, String link) async {
+    try {
+      await sharing.Share.share(
+        mensagem,
+        subject: context.t(
+          'atendimentoTecnico.publicStatus.shareSubject',
+          fallback: 'Status do serviço',
+        ),
+      );
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!mounted) return;
+      _mostrarMensagem(
+        context.t(
+          'atendimentoTecnico.publicStatus.shareFallback',
+          fallback:
+              'Não foi possível abrir o compartilhamento. O link foi copiado.',
+        ),
+      );
+    }
+  }
+
+  Future<void> _abrirAlterarStatusDialog(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) async {
+    if (status.isEmpty || _alterandoStatus) return;
+    final alterou = await showDialog<bool>(
+      context: context,
+      barrierDismissible: !_alterandoStatus,
+      builder: (dialogContext) {
+        return _AlterarStatusAtendimentoWebDialog(
+          atendimento: atendimento,
+          status: status,
+          statusAtual: _statusAtual(atendimento, status),
+          statusAtualLabel: _statusLabel(atendimento, status),
+          onSalvar: (DominioOpcaoModel novoStatus, String? observacao) async {
+            setState(() => _alterandoStatus = true);
+            try {
+              await _service.alterarStatus(
+                id: atendimento.id,
+                status: novoStatus,
+                observacao: observacao,
+              );
+              return true;
+            } finally {
+              if (mounted) {
+                setState(() => _alterandoStatus = false);
+              }
+            }
           },
         );
       },
     );
 
-    observacaoController.dispose();
     if (alterou == true && mounted) {
       _recarregar();
       _mostrarMensagem('Status atualizado no histórico.');
@@ -423,6 +796,13 @@ class _AtendimentosTecnicosListaWebPageState
 
   @override
   Widget build(BuildContext context) {
+    context.select<LocaleSettingsProvider, String>(
+      (provider) =>
+          '${provider.currencyCode}|${provider.thousandSeparator}|'
+          '${provider.decimalSeparator}|${provider.decimalPlaces}|'
+          '${provider.dateFormat}|${provider.timeFormat}',
+    );
+
     final theme = Theme.of(context);
     final content = FutureBuilder<_ListaAtendimentosState>(
       future: _future,
@@ -463,7 +843,12 @@ class _AtendimentosTecnicosListaWebPageState
                       children: <Widget>[
                         _buildResumo(theme, state.atendimentos, isCompact),
                         const SizedBox(height: 12),
-                        _buildBusca(theme, isCompact),
+                        _buildBusca(
+                          theme,
+                          isCompact,
+                          state.atendimentos,
+                          state.tecnicos,
+                        ),
                       ],
                     ),
                   ),
@@ -828,8 +1213,14 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  Widget _buildBusca(ThemeData theme, bool isCompact) {
+  Widget _buildBusca(
+    ThemeData theme,
+    bool isCompact,
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<ColaboradorUsuarioResumo> tecnicos,
+  ) {
     final colorScheme = theme.colorScheme;
+    final tecnicoOptions = _tecnicoOptions(atendimentos, tecnicos);
     return Container(
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
@@ -837,56 +1228,229 @@ class _AtendimentosTecnicosListaWebPageState
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
       ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: TextField(
-              controller: _buscaController,
-              decoration: InputDecoration(
-                hintText:
-                    'Buscar atendimento por cliente, status, equipamento ou número...',
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: colorScheme.primary,
-                ),
-                suffixIcon:
-                    _buscaController.text.trim().isEmpty
-                        ? null
-                        : IconButton(
-                          icon: const Icon(Icons.clear_rounded),
-                          onPressed: () => _buscaController.clear(),
-                        ),
-                filled: true,
-                fillColor: colorScheme.surface,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.12),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary,
-                    width: 1.4,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double searchWidth =
+              isCompact
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth * 0.44).clamp(320.0, 560.0);
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              SizedBox(
+                width: searchWidth,
+                child: TextField(
+                  controller: _buscaController,
+                  decoration: InputDecoration(
+                    hintText:
+                        'Buscar por cliente, técnico, status, equipamento ou número...',
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: colorScheme.primary,
+                    ),
+                    suffixIcon:
+                        _buscaController.text.trim().isEmpty
+                            ? null
+                            : IconButton(
+                              icon: const Icon(Icons.clear_rounded),
+                              onPressed: () => _buscaController.clear(),
+                            ),
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.outline.withOpacity(0.12),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 1.4,
+                      ),
+                    ),
                   ),
                 ),
               ),
+              _filterTrigger(
+                theme,
+                width: isCompact ? constraints.maxWidth : 220,
+                label: 'Data',
+                value: _periodoFiltroLabel(),
+                icon: Icons.event_outlined,
+                onTap: _abrirFiltroDataWeb,
+              ),
+              _tecnicoFilterMenu(
+                theme,
+                width: isCompact ? constraints.maxWidth : 240,
+                options: tecnicoOptions,
+              ),
+              if (_possuiFiltrosAtivos)
+                OutlinedButton.icon(
+                  onPressed: _limparFiltros,
+                  icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+                  label: const Text('Limpar filtros'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 15,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              if (!isCompact)
+                _metricBadge(
+                  theme,
+                  'Auditoria ativa',
+                  Icons.manage_history_rounded,
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _abrirFiltroDataWeb() async {
+    final result = await showDialog<_PeriodoFiltro>(
+      context: context,
+      builder: (context) {
+        return _PeriodoFiltroWebDialog(
+          dataInicio: _dataInicioFiltro,
+          dataFim: _dataFimFiltro,
+          formatarData: _formatarDataCurta,
+        );
+      },
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _dataInicioFiltro = result.dataInicio;
+      _dataFimFiltro = result.dataFim;
+    });
+  }
+
+  Widget _filterTrigger(
+    ThemeData theme, {
+    required double width,
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: _filterDisplay(theme, label: label, value: value, icon: icon),
+        ),
+      ),
+    );
+  }
+
+  Widget _filterDisplay(
+    ThemeData theme, {
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, color: colorScheme.primary, size: 19),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withOpacity(0.58),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
           ),
-          if (!isCompact) ...<Widget>[
-            const SizedBox(width: 12),
-            _metricBadge(
-              theme,
-              'Auditoria ativa',
-              Icons.manage_history_rounded,
+          const SizedBox(width: 8),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tecnicoFilterMenu(
+    ThemeData theme, {
+    required double width,
+    required List<_TecnicoFiltroOption> options,
+  }) {
+    return PopupMenuButton<String>(
+      tooltip: 'Filtrar por técnico responsável',
+      onSelected: (value) {
+        setState(() {
+          _tecnicoFiltroKey = value == '__todos__' ? null : value;
+        });
+      },
+      itemBuilder:
+          (context) => <PopupMenuEntry<String>>[
+            CheckedPopupMenuItem<String>(
+              value: '__todos__',
+              checked: _tecnicoFiltroKey == null,
+              child: const Text('Todos os técnicos'),
+            ),
+            const PopupMenuDivider(),
+            ...options.map(
+              (option) => CheckedPopupMenuItem<String>(
+                value: option.key,
+                checked: _tecnicoFiltroKey == option.key,
+                child: Text(option.label),
+              ),
             ),
           ],
-        ],
+      child: SizedBox(
+        width: width,
+        child: _filterDisplay(
+          theme,
+          label: 'Técnico responsável',
+          value: _tecnicoFiltroLabel(options),
+          icon: Icons.engineering_outlined,
+        ),
       ),
     );
   }
@@ -900,6 +1464,7 @@ class _AtendimentosTecnicosListaWebPageState
     final statusTexto = _statusLabel(atendimento, status);
     final colorScheme = theme.colorScheme;
     final bool pendente = !atendimento.operacaoLiquidada;
+    final bool entregaAtrasada = _entregaAtrasada(atendimento);
     final clienteSnapshot = atendimento.nomeClienteSnapshot?.trim() ?? '';
     final String cliente =
         clienteSnapshot.isNotEmpty ? clienteSnapshot : 'Cliente não informado';
@@ -941,7 +1506,7 @@ class _AtendimentosTecnicosListaWebPageState
                     const SizedBox(width: 10),
                     _coloredChip(
                       theme,
-                      pendente ? 'Em aberto' : 'Liquidada',
+                      pendente ? 'Financeiro aberto' : 'Financeiro liquidado',
                       pendente
                           ? Icons.account_balance_wallet_outlined
                           : Icons.price_check_rounded,
@@ -984,6 +1549,7 @@ class _AtendimentosTecnicosListaWebPageState
                   if (atendimento.assinaturaAprovada) _signedChip(theme),
                   if (atendimento.requerNovaAssinatura)
                     _pendingSignatureChip(theme),
+                  if (entregaAtrasada) _lateDeliveryChip(theme),
                   _chip(theme, statusTexto, Icons.flag_outlined),
                   _chip(
                     theme,
@@ -1000,6 +1566,11 @@ class _AtendimentosTecnicosListaWebPageState
                     '${atendimento.historicoAuditoria.length} aud.',
                     Icons.manage_history_rounded,
                   ),
+                  _chip(
+                    theme,
+                    _tecnicoLabelAtendimento(atendimento),
+                    Icons.engineering_outlined,
+                  ),
                   _metricChip(
                     theme,
                     'Total',
@@ -1014,11 +1585,24 @@ class _AtendimentosTecnicosListaWebPageState
                   ),
                   _chip(
                     theme,
+                    'Atualização ${_formatarDataCurta(atendimento.dataAtualizacao)}',
+                    Icons.update_rounded,
+                  ),
+                  if (atendimento.dataEntregaPrevista != null)
+                    _chip(
+                      theme,
+                      'Entrega ${_formatarDataCurta(atendimento.dataEntregaPrevista)}',
+                      Icons.assignment_turned_in_outlined,
+                    ),
+                  _chip(
+                    theme,
                     'Validade ${_formatarDataCurta(atendimento.validadeOrcamentoEm)}',
                     Icons.event_available_outlined,
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              _statusProgressBar(theme, atendimento, status),
             ],
           ),
         ),
@@ -1046,6 +1630,21 @@ class _AtendimentosTecnicosListaWebPageState
           label: 'Editar',
           icon: Icons.edit_note_rounded,
           onPressed: () => _abrirEditarAtendimento(atendimento),
+        ),
+        _actionButton(
+          theme,
+          label:
+              _gerandoLinkStatus
+                  ? context.t('common.generating', fallback: 'Gerando...')
+                  : context.t(
+                    'atendimentoTecnico.publicStatus.action',
+                    fallback: 'Status público',
+                  ),
+          icon: Icons.ios_share_rounded,
+          onPressed:
+              _gerandoLinkStatus
+                  ? null
+                  : () => _gerarLinkStatusPublico(atendimento),
         ),
         _actionButton(
           theme,
@@ -1160,6 +1759,10 @@ class _AtendimentosTecnicosListaWebPageState
                       'Validade',
                       _formatarDataCurta(atendimento.validadeOrcamentoEm),
                     ),
+                    _detailLine(
+                      'Entrega prevista',
+                      _formatarDataCurta(atendimento.dataEntregaPrevista),
+                    ),
                     if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty)
                       _detailLine('Defeito', atendimento.defeitoRelatado!),
                     if ((atendimento.diagnosticoTecnico ?? '')
@@ -1268,6 +1871,16 @@ class _AtendimentosTecnicosListaWebPageState
                 icon: const Icon(Icons.draw_outlined),
                 label: const Text('Link assinatura'),
               ),
+              OutlinedButton.icon(
+                onPressed: () => _gerarLinkStatusPublico(atendimento),
+                icon: const Icon(Icons.ios_share_rounded),
+                label: Text(
+                  context.t(
+                    'atendimentoTecnico.publicStatus.action',
+                    fallback: 'Status público',
+                  ),
+                ),
+              ),
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Fechar'),
@@ -1292,6 +1905,168 @@ class _AtendimentosTecnicosListaWebPageState
           ),
           Expanded(child: Text(value)),
         ],
+      ),
+    );
+  }
+
+  Widget _statusProgressBar(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    if (status.isEmpty) return const SizedBox.shrink();
+    final colorScheme = theme.colorScheme;
+    final progress = _statusProgressValue(atendimento, status);
+    final color = _statusProgressColor(theme, atendimento, status);
+    final steps = _statusFlowSteps(atendimento, status);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          context.t(
+            'atendimentoTecnico.publicStatus.progressShort',
+            fallback: 'Progresso do serviço',
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 7),
+        _statusBulletProgressBar(
+          theme: theme,
+          progress: progress,
+          steps: steps.length,
+          color: color,
+          valueKey:
+              'web-status-progress-${atendimento.id}-${atendimento.statusCodigo}',
+        ),
+      ],
+    );
+  }
+
+  Widget _statusBulletProgressBar({
+    required ThemeData theme,
+    required double progress,
+    required int steps,
+    required Color color,
+    required String valueKey,
+  }) {
+    final colorScheme = theme.colorScheme;
+    const double height = 22;
+    const double trackHeight = 6;
+    const double bulletSize = 13;
+    final int safeSteps = steps <= 0 ? 1 : steps;
+    final double safeProgress = progress.clamp(0, 1).toDouble();
+    final double completedSteps = safeProgress * safeSteps;
+    final int currentStep = completedSteps.ceil().clamp(0, safeSteps).toInt();
+    final double lineProgress =
+        safeSteps <= 1
+            ? safeProgress
+            : ((completedSteps - 1) / (safeSteps - 1)).clamp(0, 1).toDouble();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+        if (!width.isFinite || width <= 0) return const SizedBox.shrink();
+        return SizedBox(
+          height: height,
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: <Widget>[
+              Positioned(
+                left: bulletSize / 2,
+                right: bulletSize / 2,
+                top: (height - trackHeight) / 2,
+                child: Container(
+                  height: trackHeight,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.72,
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: bulletSize / 2,
+                top: (height - trackHeight) / 2,
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey<String>(valueKey),
+                  tween: Tween<double>(begin: 0, end: lineProgress),
+                  duration: const Duration(milliseconds: 980),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) {
+                    return Container(
+                      width: (width - bulletSize) * value,
+                      height: trackHeight,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              for (int index = 0; index < safeSteps; index++)
+                _statusProgressBullet(
+                  width: width,
+                  height: height,
+                  bulletSize: bulletSize,
+                  index: index,
+                  steps: safeSteps,
+                  currentStep: currentStep,
+                  color: color,
+                  colorScheme: colorScheme,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _statusProgressBullet({
+    required double width,
+    required double height,
+    required double bulletSize,
+    required int index,
+    required int steps,
+    required int currentStep,
+    required Color color,
+    required ColorScheme colorScheme,
+  }) {
+    final double position = steps == 1 ? 0 : index / (steps - 1);
+    final bool reached = index < currentStep;
+    return Positioned(
+      left: (width - bulletSize) * position,
+      top: (height - bulletSize) / 2,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        width: bulletSize,
+        height: bulletSize,
+        decoration: BoxDecoration(
+          color: reached ? color : colorScheme.surface,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color:
+                reached
+                    ? color
+                    : colorScheme.outlineVariant.withValues(alpha: 0.95),
+            width: reached ? 2 : 1.2,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: (reached ? color : Colors.black).withValues(alpha: 0.10),
+              blurRadius: reached ? 8 : 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1457,16 +2232,23 @@ class _AtendimentosTecnicosListaWebPageState
     theme.colorScheme.error,
   );
 
+  Widget _lateDeliveryChip(ThemeData theme) => _coloredChip(
+    theme,
+    'Entrega atrasada',
+    Icons.warning_amber_rounded,
+    theme.colorScheme.error,
+  );
+
   Widget _liquidadaChip(ThemeData theme) => _coloredChip(
     theme,
-    'Liquidada',
+    'Financeiro liquidado',
     Icons.price_check_rounded,
     theme.colorScheme.primary,
   );
 
   Widget _naoLiquidadaChip(ThemeData theme) => _coloredChip(
     theme,
-    'Não liquidada',
+    'Financeiro aberto',
     Icons.account_balance_wallet_outlined,
     theme.colorScheme.error,
   );
@@ -1609,12 +2391,809 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
+typedef _SalvarStatusAtendimento =
+    Future<bool> Function(DominioOpcaoModel status, String? observacao);
+
+class _AlterarStatusAtendimentoWebDialog extends StatefulWidget {
+  const _AlterarStatusAtendimentoWebDialog({
+    required this.atendimento,
+    required this.status,
+    required this.statusAtual,
+    required this.statusAtualLabel,
+    required this.onSalvar,
+  });
+
+  final AtendimentoTecnicoModel atendimento;
+  final List<DominioOpcaoModel> status;
+  final DominioOpcaoModel? statusAtual;
+  final String statusAtualLabel;
+  final _SalvarStatusAtendimento onSalvar;
+
+  @override
+  State<_AlterarStatusAtendimentoWebDialog> createState() =>
+      _AlterarStatusAtendimentoWebDialogState();
+}
+
+class _AlterarStatusAtendimentoWebDialogState
+    extends State<_AlterarStatusAtendimentoWebDialog> {
+  late DominioOpcaoModel? _statusSelecionado = widget.statusAtual;
+  final TextEditingController _observacaoController = TextEditingController();
+  bool _salvando = false;
+
+  @override
+  void dispose() {
+    _observacaoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _salvar() async {
+    final statusSelecionado = _statusSelecionado;
+    if (statusSelecionado == null || _salvando) return;
+    setState(() => _salvando = true);
+    final observacao = _observacaoController.text.trim();
+    final salvou = await widget.onSalvar(
+      statusSelecionado,
+      observacao.isEmpty ? null : observacao,
+    );
+    if (!mounted) return;
+    setState(() => _salvando = false);
+    if (salvou) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  String get _cliente {
+    final nome = widget.atendimento.nomeClienteSnapshot?.trim() ?? '';
+    return nome.isEmpty ? 'Cliente não informado' : nome;
+  }
+
+  String get _equipamento {
+    final equipamento = widget.atendimento.equipamento;
+    final partes = <String>[
+      equipamento?.tipo ?? '',
+      equipamento?.marca ?? '',
+      equipamento?.modelo ?? '',
+    ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
+    return partes.isEmpty ? widget.atendimento.numero : partes.join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 620),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool compact = constraints.maxWidth < 520;
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 18 : 24,
+                      compact ? 18 : 22,
+                      compact ? 12 : 16,
+                      compact ? 16 : 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.06),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: colorScheme.outline.withOpacity(0.14),
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Icon(
+                            Icons.swap_horiz_rounded,
+                            color: colorScheme.primary,
+                            size: 27,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'Mudar status',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Registre a próxima etapa do atendimento técnico.',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          onPressed:
+                              _salvando
+                                  ? null
+                                  : () => Navigator.of(context).pop(false),
+                          tooltip: 'Fechar',
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(compact ? 18 : 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _StatusContextCard(
+                          numero: widget.atendimento.numero,
+                          equipamento: _equipamento,
+                          cliente: _cliente,
+                          statusAtual: widget.statusAtualLabel,
+                        ),
+                        const SizedBox(height: 16),
+                        _StatusWebSelector(
+                          label: 'Novo status',
+                          value: _statusSelecionado,
+                          options: widget.status,
+                          enabled: !_salvando,
+                          onChanged:
+                              (value) =>
+                                  setState(() => _statusSelecionado = value),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: _observacaoController,
+                          enabled: !_salvando,
+                          minLines: 3,
+                          maxLines: 5,
+                          decoration: const InputDecoration(
+                            labelText: 'Observação da mudança',
+                            hintText:
+                                'Informe um detalhe útil para o histórico, se necessário.',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 18 : 24,
+                      14,
+                      compact ? 18 : 24,
+                      compact ? 18 : 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      border: Border(
+                        top: BorderSide(
+                          color: colorScheme.outline.withOpacity(0.12),
+                        ),
+                      ),
+                    ),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment:
+                          compact ? WrapAlignment.start : WrapAlignment.end,
+                      children: <Widget>[
+                        OutlinedButton(
+                          onPressed:
+                              _salvando
+                                  ? null
+                                  : () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton.icon(
+                          onPressed:
+                              _statusSelecionado == null || _salvando
+                                  ? null
+                                  : _salvar,
+                          icon:
+                              _salvando
+                                  ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                    ),
+                                  )
+                                  : const Icon(Icons.check_rounded),
+                          label: Text(_salvando ? 'Salvando...' : 'Salvar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusContextCard extends StatelessWidget {
+  const _StatusContextCard({
+    required this.numero,
+    required this.equipamento,
+    required this.cliente,
+    required this.statusAtual,
+  });
+
+  final String numero;
+  final String equipamento;
+  final String cliente;
+  final String statusAtual;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceVariant.withOpacity(0.22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(
+              Icons.devices_other_outlined,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  equipamento,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$numero • $cliente',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    _StatusPill(
+                      icon: Icons.flag_outlined,
+                      label: 'Status atual',
+                      value: statusAtual,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 15, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusWebSelector extends StatefulWidget {
+  const _StatusWebSelector({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final String label;
+  final DominioOpcaoModel? value;
+  final List<DominioOpcaoModel> options;
+  final ValueChanged<DominioOpcaoModel> onChanged;
+  final bool enabled;
+
+  @override
+  State<_StatusWebSelector> createState() => _StatusWebSelectorState();
+}
+
+class _StatusWebSelectorState extends State<_StatusWebSelector> {
+  final GlobalKey _fieldKey = GlobalKey();
+  bool _opened = false;
+
+  Future<void> _openMenu() async {
+    if (!widget.enabled) return;
+    final context = _fieldKey.currentContext;
+    if (context == null) return;
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final overlay =
+        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+    if (overlay == null) return;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        renderBox.localToGlobal(Offset.zero, ancestor: overlay),
+        renderBox.localToGlobal(
+          renderBox.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    setState(() => _opened = true);
+    final selected = await showMenu<DominioOpcaoModel>(
+      context: context,
+      position: position,
+      constraints: BoxConstraints.tightFor(width: renderBox.size.width),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      items:
+          widget.options
+              .map(
+                (option) => PopupMenuItem<DominioOpcaoModel>(
+                  value: option,
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          option.nomePadraoPtBr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (option.id == widget.value?.id)
+                        Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+    );
+    if (!mounted) return;
+    setState(() => _opened = false);
+    if (selected != null) widget.onChanged(selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final value = widget.value?.nomePadraoPtBr ?? 'Selecione um status';
+    return InkWell(
+      key: _fieldKey,
+      onTap: _openMenu,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color:
+              widget.enabled
+                  ? colorScheme.surface
+                  : colorScheme.surfaceVariant.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                _opened
+                    ? colorScheme.primary
+                    : colorScheme.outline.withOpacity(0.18),
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(
+                Icons.flag_outlined,
+                color: colorScheme.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color:
+                          widget.enabled
+                              ? colorScheme.onSurface
+                              : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            AnimatedRotation(
+              turns: _opened ? 0.5 : 0,
+              duration: const Duration(milliseconds: 160),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PeriodoFiltroWebDialog extends StatefulWidget {
+  const _PeriodoFiltroWebDialog({
+    required this.dataInicio,
+    required this.dataFim,
+    required this.formatarData,
+  });
+
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final String Function(DateTime?) formatarData;
+
+  @override
+  State<_PeriodoFiltroWebDialog> createState() =>
+      _PeriodoFiltroWebDialogState();
+}
+
+class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
+  late DateTime? _inicio = widget.dataInicio;
+  late DateTime? _fim = widget.dataFim;
+  late final TextEditingController _inicioController = TextEditingController(
+    text: _inicio == null ? '' : widget.formatarData(_inicio),
+  );
+  late final TextEditingController _fimController = TextEditingController(
+    text: _fim == null ? '' : widget.formatarData(_fim),
+  );
+  String? _erro;
+
+  @override
+  void dispose() {
+    _inicioController.dispose();
+    _fimController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final now = DateTime.now();
+    return AlertDialog(
+      title: const Text('Filtrar por data'),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Use a data de atualização do atendimento.',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _dateInput(
+                    theme,
+                    controller: _inicioController,
+                    label: 'Início',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _dateInput(
+                    theme,
+                    controller: _fimController,
+                    label: 'Fim',
+                  ),
+                ),
+              ],
+            ),
+            if (_erro != null) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                _erro!,
+                style: TextStyle(
+                  color: colorScheme.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                ActionChip(
+                  label: const Text('Hoje'),
+                  onPressed: () => _setPeriodo(now, now),
+                ),
+                ActionChip(
+                  label: const Text('Últimos 7 dias'),
+                  onPressed:
+                      () => _setPeriodo(
+                        now.subtract(const Duration(days: 6)),
+                        now,
+                      ),
+                ),
+                ActionChip(
+                  label: const Text('Últimos 30 dias'),
+                  onPressed:
+                      () => _setPeriodo(
+                        now.subtract(const Duration(days: 29)),
+                        now,
+                      ),
+                ),
+                ActionChip(
+                  label: const Text('Este mês'),
+                  onPressed:
+                      () => _setPeriodo(DateTime(now.year, now.month), now),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed:
+              () => Navigator.of(
+                context,
+              ).pop(const _PeriodoFiltro(dataInicio: null, dataFim: null)),
+          child: const Text('Limpar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton.icon(
+          onPressed: _aplicar,
+          icon: const Icon(Icons.check_rounded),
+          label: const Text('Aplicar'),
+        ),
+      ],
+    );
+  }
+
+  Widget _dateInput(
+    ThemeData theme, {
+    required TextEditingController controller,
+    required String label,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.datetime,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: 'dd/mm/aaaa',
+        prefixIcon: Icon(Icons.event_outlined, color: colorScheme.primary),
+        filled: true,
+        fillColor: colorScheme.surface,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.16),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        ),
+      ),
+      onSubmitted: (_) => _aplicar(),
+    );
+  }
+
+  void _aplicar() {
+    final inicio = _parseData(_inicioController.text);
+    final fim = _parseData(_fimController.text);
+
+    if (inicio == null && _inicioController.text.trim().isNotEmpty) {
+      setState(() => _erro = 'Informe a data inicial em um formato válido.');
+      return;
+    }
+    if (fim == null && _fimController.text.trim().isNotEmpty) {
+      setState(() => _erro = 'Informe a data final em um formato válido.');
+      return;
+    }
+    if (inicio != null && fim != null && fim.isBefore(inicio)) {
+      setState(() => _erro = 'A data final não pode ser anterior à inicial.');
+      return;
+    }
+
+    Navigator.of(context).pop(_PeriodoFiltro(dataInicio: inicio, dataFim: fim));
+  }
+
+  DateTime? _parseData(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    final iso = RegExp(r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$').firstMatch(text);
+    if (iso != null) {
+      return _validDate(
+        int.parse(iso.group(1)!),
+        int.parse(iso.group(2)!),
+        int.parse(iso.group(3)!),
+      );
+    }
+
+    final local = RegExp(
+      r'^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$',
+    ).firstMatch(text);
+    if (local == null) return null;
+
+    final first = int.parse(local.group(1)!);
+    final second = int.parse(local.group(2)!);
+    final rawYear = int.parse(local.group(3)!);
+    final year = rawYear < 100 ? rawYear + 2000 : rawYear;
+
+    if (first > 12) return _validDate(year, second, first);
+    if (second > 12) return _validDate(year, first, second);
+    return _validDate(year, second, first);
+  }
+
+  DateTime? _validDate(int year, int month, int day) {
+    if (year < 2000 || year > DateTime.now().year + 5) return null;
+    final date = DateTime(year, month, day);
+    if (date.year != year || date.month != month || date.day != day) {
+      return null;
+    }
+    return date;
+  }
+
+  void _setPeriodo(DateTime inicio, DateTime fim) {
+    setState(() {
+      _inicio = DateTime(inicio.year, inicio.month, inicio.day);
+      _fim = DateTime(fim.year, fim.month, fim.day);
+      _inicioController.text = widget.formatarData(_inicio);
+      _fimController.text = widget.formatarData(_fim);
+      _erro = null;
+    });
+  }
+}
+
+class _PeriodoFiltro {
+  const _PeriodoFiltro({required this.dataInicio, required this.dataFim});
+
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+}
+
+class _TecnicoFiltroOption {
+  const _TecnicoFiltroOption({required this.key, required this.label});
+
+  final String key;
+  final String label;
+}
+
 class _ListaAtendimentosState {
   const _ListaAtendimentosState({
     required this.dominios,
     required this.atendimentos,
+    required this.tecnicos,
   });
 
   final AtendimentoTecnicoDominiosBaseModel dominios;
   final List<AtendimentoTecnicoModel> atendimentos;
+  final List<ColaboradorUsuarioResumo> tecnicos;
 }

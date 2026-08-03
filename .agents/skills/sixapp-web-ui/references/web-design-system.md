@@ -21,7 +21,7 @@ Esta referência resume padrões Web identificados no código atual e nas decis�
 - `lib/presentation/screens/formas_recebimento_configuracao_content.dart`
   - Boa referência recente de configuração Web: resumo superior, cards compactos, skeleton, erro/vazio, barra inferior e dialog de edição.
 - `lib/presentation/screens/produto_dashboard_web_page.dart`
-  - Boa referência de dashboard e gráficos animados, com interação por hover/toque e chaves estáveis.
+  - Referência preferencial para a estrutura superior de páginas e modais Web, além de boa referência de dashboard e gráficos animados, com interação por hover/toque e chaves estáveis.
 - `lib/presentation/screens/regionalizacao_configuracao_content.dart`
   - Boa referência de configuração regional: provider global, codes técnicos, preview, skeleton e `context.t`.
 
@@ -38,6 +38,8 @@ Esta referência resume padrões Web identificados no código atual e nas decis�
 - `AppTextStylesWeb` e `AppCard` existem, mas não são um design system rico. Não os trate como única fonte de verdade.
 
 ## Layout Web
+
+Para estrutura superior de páginas, modais e side sheets Web, leia também `references/web-page-layout-patterns.md`. A tela Web `Produtos` deve orientar a linguagem visual do cabeçalho principal: superfície clara, ícone contextual em bloco suave, título único, subtítulo curto, ações agrupadas à direita, primária em destaque, secundárias discretas e fechamento claro.
 
 Padrão recorrente para subpainéis e listagens importantes:
 
@@ -101,5 +103,6 @@ No código atual ainda existem telas Web com `R$`, `pt_BR`, strings fixas e form
 - Usar spinner central genérico quando skeleton ou estrutura final for conhecida.
 - Duplicar client, DTO, mapper, service ou parsing entre Web e Mobile.
 - Transformar modernização visual pontual em refatoração ampla.
+- Criar cabeçalhos empilhados, com uma barra superior independente e um segundo banner/hero repetindo título, ícone, retorno ou fechamento.
 - Alterar permissões, tenant, autenticação ou contrato apenas por layout.
 - Persistir labels traduzidos no backend em vez de códigos técnicos.

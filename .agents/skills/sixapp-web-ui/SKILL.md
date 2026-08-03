@@ -20,6 +20,8 @@ Para tarefa visual Web, leia:
 - uma ou duas implementações Web semelhantes;
 - `references/web-design-system.md`.
 
+Leia também `references/web-page-layout-patterns.md` quando a tarefa envolver criação, atualização, adequação ou revisão visual de página Web, modal, side sheet, cadastro, edição, visualização, resumo, dashboard, listagem ou cabeçalho.
+
 Leia `sixapp-regionalization/references/frontend-localization.md` e `sixapp-regionalization/references/backend-configuration-contract.md` quando houver conteúdo de usuário, i18n, moeda, data, hora, número, percentual, medidas ou configuração do backend.
 
 ## Fluxo Obrigatório
@@ -62,6 +64,14 @@ Procure primeiro por:
 - telas recentes equivalentes de configuração, catálogo, dashboard e atendimento.
 
 Evite listas cruas com `ListTile` simples em subpainéis importantes. Prefira card superior de contexto, área organizada de busca/filtros, cards compactos com hierarquia clara e barra inferior discreta para contagem, atualização e ações secundárias.
+
+## Estrutura Superior De Páginas E Modais
+
+A tela Web `Produtos`, implementada principalmente em `lib/presentation/screens/produto_dashboard_web_page.dart` e consolidada pelos componentes de `lib/presentation/components/web_dashboard_widgets.dart`, é a referência preferencial para a estrutura superior de páginas e modais Web do SixApp.
+
+Use essa referência como linguagem visual, hierarquia, composição, espaçamento e tratamento de ações, não como cópia literal dos cards, KPIs ou gráficos de Produtos. Antes de modificar outra página, inspecione a implementação atual e estável dessa referência e reutilize tokens, componentes e padrões existentes.
+
+Para detalhes obrigatórios de anatomia, variantes por tipo de página, regras de ação, responsividade, padrões proibidos e checklist, leia `references/web-page-layout-patterns.md`.
 
 ## Responsividade E Estados
 

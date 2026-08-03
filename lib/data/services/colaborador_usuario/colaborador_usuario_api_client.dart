@@ -4,10 +4,12 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../models/colaborador_autorizacoes_model.dart';
 import '../../models/colaborador_usuario_model.dart';
 
 abstract class ColaboradorUsuarioApiClient {
   Future<List<ColaboradorUsuarioResumo>> listarColaboradores();
+  Future<List<ColaboradorUsuarioResumo>> listarTecnicosAssistenciaTecnica();
   Future<ColaboradorUsuarioDetalhe> buscarColaborador(String idUnicoDoUsuario);
   Future<void> editarColaborador(Map<String, dynamic> payload);
 }
@@ -18,7 +20,8 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     Future<String?> Function()? accessTokenProvider,
     Future<String?> Function()? empresaIdProvider,
   }) : _httpClient = httpClient ?? http.Client(),
-       _accessTokenProvider = accessTokenProvider ?? AuthService().getAccessToken,
+       _accessTokenProvider =
+           accessTokenProvider ?? AuthService().getAccessToken,
        _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
 
   final http.Client _httpClient;
@@ -32,13 +35,18 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     return <String, String>{
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId,
-      'Authori' 'zation': 'Bear' 'er $token',
+      'Authori'
+              'zation':
+          'Bear'
+          'er $token',
     };
   }
 
   @override
   Future<List<ColaboradorUsuarioResumo>> listarColaboradores() async {
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/listar');
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/colaborador/listar',
+    );
     final http.Response response = await _httpClient.get(
       uri,
       headers: await _getHeaders(),
@@ -79,8 +87,68 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
   }
 
   @override
-  Future<ColaboradorUsuarioDetalhe> buscarColaborador(String idUnicoDoUsuario) async {
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/buscar').replace(
+  Future<List<ColaboradorUsuarioResumo>>
+  listarTecnicosAssistenciaTecnica() async {
+    final List<ColaboradorUsuarioResumo> colaboradores =
+        await listarColaboradores();
+    if (colaboradores.isEmpty) return const <ColaboradorUsuarioResumo>[];
+
+    final List<ColaboradorUsuarioResumo?> filtrados =
+        await Future.wait<ColaboradorUsuarioResumo?>(
+          colaboradores.map(_filtrarTecnicoAssistenciaTecnica),
+        );
+
+    return filtrados.whereType<ColaboradorUsuarioResumo>().toList(
+      growable: false,
+    );
+  }
+
+  Future<ColaboradorUsuarioResumo?> _filtrarTecnicoAssistenciaTecnica(
+    ColaboradorUsuarioResumo colaborador,
+  ) async {
+    if (!colaborador.ativo) return null;
+
+    final bool? permissaoConhecida =
+        colaborador.ehUmTecnicoEFazAssistenciaTecnica;
+    if (colaborador.ehTecnicoAssistenciaTecnica) return colaborador;
+    if (permissaoConhecida == false) return null;
+
+    final String idUnicoDoUsuario = colaborador.idUnicoPessoal.trim();
+    if (idUnicoDoUsuario.isEmpty) return null;
+
+    final ColaboradorUsuarioDetalhe detalhe = await buscarColaborador(
+      idUnicoDoUsuario,
+    );
+    final Map<String, dynamic> autorizacoes = _ensureMap(
+      detalhe.toJson()['objAutorizacoes'],
+    );
+    final ColaboradorAutorizacoesModel model =
+        ColaboradorAutorizacoesModel.fromJson(autorizacoes);
+
+    if (!model.objAssistenciaTecnicaPode.ehUmTecnicoEFazAssistenciaTecnica) {
+      return null;
+    }
+    return colaborador.copyWith(ehUmTecnicoEFazAssistenciaTecnica: true);
+  }
+
+  static Map<String, dynamic> _ensureMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map(
+        (dynamic key, dynamic value) =>
+            MapEntry<String, dynamic>(key.toString(), value),
+      );
+    }
+    return <String, dynamic>{};
+  }
+
+  @override
+  Future<ColaboradorUsuarioDetalhe> buscarColaborador(
+    String idUnicoDoUsuario,
+  ) async {
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/colaborador/buscar',
+    ).replace(
       queryParameters: <String, String>{'idUnicoDoUsuario': idUnicoDoUsuario},
     );
 
@@ -114,18 +182,21 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
   Future<ColaboradorUsuarioDetalhe> _buscarDetalheResumidoParaEdicao(
     String idUnicoDoUsuario,
   ) async {
-    final List<ColaboradorUsuarioResumo> colaboradores = await listarColaboradores();
+    final List<ColaboradorUsuarioResumo> colaboradores =
+        await listarColaboradores();
     final ColaboradorUsuarioResumo resumo = colaboradores.firstWhere(
-      (ColaboradorUsuarioResumo item) => item.idUnicoPessoal == idUnicoDoUsuario,
-      orElse: () => ColaboradorUsuarioResumo(
-        idUnicoPessoal: idUnicoDoUsuario,
-        nome: '',
-        nomeDeGuerra: '',
-        celularDeAcesso: '',
-        email: '',
-        foto: '',
-        dataCadastro: null,
-      ),
+      (ColaboradorUsuarioResumo item) =>
+          item.idUnicoPessoal == idUnicoDoUsuario,
+      orElse:
+          () => ColaboradorUsuarioResumo(
+            idUnicoPessoal: idUnicoDoUsuario,
+            nome: '',
+            nomeDeGuerra: '',
+            celularDeAcesso: '',
+            email: '',
+            foto: '',
+            dataCadastro: null,
+          ),
     );
     final Map<String, dynamic> autorizacoes =
         await _buscarAutorizacoesParaEdicao(idUnicoDoUsuario);
@@ -133,7 +204,9 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     return ColaboradorUsuarioDetalhe.fromJson(<String, dynamic>{
       'foto': resumo.foto,
       'celularDeAcesso': resumo.celularDeAcesso,
-      'sen' 'haParaPermitirOAcessoDoColaborador': null,
+      'sen'
+              'haParaPermitirOAcessoDoColaborador':
+          null,
       'objInformacoesDoCadastro': <String, dynamic>{
         'idUnicoDoUsuario': resumo.idUnicoPessoal,
         'dataCadastro': resumo.dataCadastro?.toIso8601String(),
@@ -147,7 +220,9 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
         'nome': resumo.nome,
         'nomeDeGuerra': resumo.nomeDeGuerra,
         'celular': resumo.celularDeAcesso,
-        'sen' 'ha': null,
+        'sen'
+                'ha':
+            null,
         'cpf': null,
         'rg': null,
         'dataDeNascimento': null,
@@ -169,7 +244,9 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
   Future<Map<String, dynamic>> _buscarAutorizacoesParaEdicao(
     String idUnicoDoUsuario,
   ) async {
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/permissoes').replace(
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/colaborador/permissoes',
+    ).replace(
       queryParameters: <String, String>{'idUnicoDoUsuario': idUnicoDoUsuario},
     );
 
@@ -207,12 +284,8 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
         'ehUmTecnicoEFazAssistenciaTecnica': false,
         'comissaoDeAssistencia': 0,
       },
-      'objClientesPode': <String, dynamic>{
-        'podeEditarCliente': false,
-      },
-      'objRelatoriosPode': <String, dynamic>{
-        'geraRelatorioDeVendas': false,
-      },
+      'objClientesPode': <String, dynamic>{'podeEditarCliente': false},
+      'objRelatoriosPode': <String, dynamic>{'geraRelatorioDeVendas': false},
       'objLancamentosFinanceirosPode': <String, dynamic>{
         'podeReceberNoCaixa': false,
         'podeVerQuantoVendeu': false,
@@ -222,7 +295,9 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
 
   @override
   Future<void> editarColaborador(Map<String, dynamic> payload) async {
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/editar');
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/colaborador/editar',
+    );
 
     final http.Response response = await _httpClient.post(
       uri,
@@ -230,7 +305,9 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
       body: jsonEncode(payload),
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201 && response.statusCode != 204) {
+    if (response.statusCode != 200 &&
+        response.statusCode != 201 &&
+        response.statusCode != 204) {
       throw ColaboradorUsuarioApiException(
         statusCode: response.statusCode,
         body: response.body,

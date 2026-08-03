@@ -17,7 +17,9 @@ class AtendimentoTecnicoEquipamentoModel {
   final String? acessorios;
   final String? observacoesEntrada;
 
-  factory AtendimentoTecnicoEquipamentoModel.fromJson(Map<String, dynamic>? json) {
+  factory AtendimentoTecnicoEquipamentoModel.fromJson(
+    Map<String, dynamic>? json,
+  ) {
     if (json == null) return const AtendimentoTecnicoEquipamentoModel();
     return AtendimentoTecnicoEquipamentoModel(
       tipo: json['tipo']?.toString(),
@@ -31,14 +33,14 @@ class AtendimentoTecnicoEquipamentoModel {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'tipo': tipo,
-        'marca': marca,
-        'modelo': modelo,
-        'numeroSerie': numeroSerie,
-        'imei': imei,
-        'acessorios': acessorios,
-        'observacoesEntrada': observacoesEntrada,
-      };
+    'tipo': tipo,
+    'marca': marca,
+    'modelo': modelo,
+    'numeroSerie': numeroSerie,
+    'imei': imei,
+    'acessorios': acessorios,
+    'observacoesEntrada': observacoesEntrada,
+  };
 }
 
 class AtendimentoTecnicoItemModel {
@@ -123,17 +125,17 @@ class AtendimentoTecnicoItemInput {
   final bool? movimentaEstoque;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'tipoItemId': tipoItemId,
-        'tipoItemCodigo': tipoItemCodigo,
-        'idSku': idSku,
-        'descricaoSnapshot': descricaoSnapshot,
-        'quantidade': quantidade,
-        'valorUnitario': valorUnitario,
-        'desconto': desconto,
-        'idTecnicoResponsavel': idTecnicoResponsavel,
-        'nomeTecnicoResponsavel': nomeTecnicoResponsavel,
-        'movimentaEstoque': movimentaEstoque,
-      };
+    'tipoItemId': tipoItemId,
+    'tipoItemCodigo': tipoItemCodigo,
+    'idSku': idSku,
+    'descricaoSnapshot': descricaoSnapshot,
+    'quantidade': quantidade,
+    'valorUnitario': valorUnitario,
+    'desconto': desconto,
+    'idTecnicoResponsavel': idTecnicoResponsavel,
+    'nomeTecnicoResponsavel': nomeTecnicoResponsavel,
+    'movimentaEstoque': movimentaEstoque,
+  };
 }
 
 class AtendimentoTecnicoHistoricoStatusModel {
@@ -171,7 +173,9 @@ class AtendimentoTecnicoHistoricoStatusModel {
   final String? idUsuario;
   final DateTime? dataHora;
 
-  factory AtendimentoTecnicoHistoricoStatusModel.fromJson(Map<String, dynamic> json) {
+  factory AtendimentoTecnicoHistoricoStatusModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return AtendimentoTecnicoHistoricoStatusModel(
       statusAnteriorId: (json['statusAnteriorId'] as num?)?.toInt(),
       statusAnteriorCodigo: json['statusAnteriorCodigo']?.toString(),
@@ -246,7 +250,9 @@ class AtendimentoTecnicoRecebimentoModel {
   final String? idUsuario;
   final DateTime? dataHora;
 
-  factory AtendimentoTecnicoRecebimentoModel.fromJson(Map<String, dynamic> json) {
+  factory AtendimentoTecnicoRecebimentoModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return AtendimentoTecnicoRecebimentoModel(
       id: json['id']?.toString() ?? '',
       codigoFormaRecebimento: json['codigoFormaRecebimento']?.toString() ?? '',
@@ -287,6 +293,7 @@ class AtendimentoTecnicoModel {
     this.assinaturaDataHora,
     this.validadeOrcamentoEm,
     this.dataVencimentoEm,
+    this.dataEntregaPrevista,
     this.versaoOrcamento = 1,
     this.dataUltimaAlteracaoOrcamento,
     this.descricao,
@@ -320,6 +327,7 @@ class AtendimentoTecnicoModel {
   final DateTime? assinaturaDataHora;
   final DateTime? validadeOrcamentoEm;
   final DateTime? dataVencimentoEm;
+  final DateTime? dataEntregaPrevista;
   final int versaoOrcamento;
   final DateTime? dataUltimaAlteracaoOrcamento;
   final AtendimentoTecnicoEquipamentoModel? equipamento;
@@ -347,7 +355,8 @@ class AtendimentoTecnicoModel {
       idCliente: json['idCliente']?.toString(),
       nomeClienteSnapshot: json['nomeClienteSnapshot']?.toString(),
       idTecnicoResponsavel: json['idTecnicoResponsavel']?.toString(),
-      nomeTecnicoResponsavelSnapshot: json['nomeTecnicoResponsavelSnapshot']?.toString(),
+      nomeTecnicoResponsavelSnapshot:
+          json['nomeTecnicoResponsavelSnapshot']?.toString(),
       statusId: (json['statusId'] as num?)?.toInt() ?? 0,
       statusCodigo: json['statusCodigo']?.toString() ?? '',
       statusI18nKey: json['statusI18nKey']?.toString() ?? '',
@@ -357,53 +366,315 @@ class AtendimentoTecnicoModel {
       assinaturaAprovada: json['assinaturaAprovada'] == true,
       requerNovaAssinatura: json['requerNovaAssinatura'] == true,
       assinaturaNomeAssinante: json['assinaturaNomeAssinante']?.toString(),
-      assinaturaDataHora: DateTime.tryParse(json['assinaturaDataHora']?.toString() ?? ''),
-      validadeOrcamentoEm: DateTime.tryParse(json['validadeOrcamentoEm']?.toString() ?? ''),
-      dataVencimentoEm: DateTime.tryParse(json['dataVencimentoEm']?.toString() ?? ''),
+      assinaturaDataHora: DateTime.tryParse(
+        json['assinaturaDataHora']?.toString() ?? '',
+      ),
+      validadeOrcamentoEm: DateTime.tryParse(
+        json['validadeOrcamentoEm']?.toString() ?? '',
+      ),
+      dataVencimentoEm: DateTime.tryParse(
+        json['dataVencimentoEm']?.toString() ?? '',
+      ),
+      dataEntregaPrevista: DateTime.tryParse(
+        json['dataEntregaPrevista']?.toString() ?? '',
+      ),
       versaoOrcamento: (json['versaoOrcamento'] as num?)?.toInt() ?? 1,
-      dataUltimaAlteracaoOrcamento: DateTime.tryParse(json['dataUltimaAlteracaoOrcamento']?.toString() ?? ''),
-      equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(json['equipamento'] is Map<String, dynamic> ? json['equipamento'] as Map<String, dynamic> : null),
+      dataUltimaAlteracaoOrcamento: DateTime.tryParse(
+        json['dataUltimaAlteracaoOrcamento']?.toString() ?? '',
+      ),
+      equipamento: AtendimentoTecnicoEquipamentoModel.fromJson(
+        json['equipamento'] is Map<String, dynamic>
+            ? json['equipamento'] as Map<String, dynamic>
+            : null,
+      ),
       defeitoRelatado: json['defeitoRelatado']?.toString(),
       diagnosticoTecnico: json['diagnosticoTecnico']?.toString(),
       valorTotalProdutos: (json['valorTotalProdutos'] as num?)?.toDouble() ?? 0,
       valorTotalServicos: (json['valorTotalServicos'] as num?)?.toDouble() ?? 0,
-      valorTotalAtendimento: (json['valorTotalAtendimento'] as num?)?.toDouble() ?? 0,
+      valorTotalAtendimento:
+          (json['valorTotalAtendimento'] as num?)?.toDouble() ?? 0,
       valorRecebido: (json['valorRecebido'] as num?)?.toDouble() ?? 0,
       valorEmAberto: (json['valorEmAberto'] as num?)?.toDouble() ?? 0,
       operacaoLiquidada: json['operacaoLiquidada'] == true,
-      statusLiquidacaoCodigo: json['statusLiquidacaoCodigo']?.toString() ?? 'NAO_LIQUIDADA',
+      statusLiquidacaoCodigo:
+          json['statusLiquidacaoCodigo']?.toString() ?? 'NAO_LIQUIDADA',
       itens: _parseItens(json['itens']),
       historicoStatus: _parseHistoricoStatus(json['historicoStatus']),
       historicoAuditoria: _parseHistoricoAuditoria(json['historicoAuditoria']),
       recebimentos: _parseRecebimentos(json['recebimentos']),
-      dataAtualizacao: DateTime.tryParse(json['dataAtualizacao']?.toString() ?? ''),
+      dataAtualizacao: DateTime.tryParse(
+        json['dataAtualizacao']?.toString() ?? '',
+      ),
     );
   }
 
   static List<AtendimentoTecnicoItemModel> _parseItens(dynamic value) {
     if (value is! List) return <AtendimentoTecnicoItemModel>[];
-    return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoItemModel.fromJson).toList(growable: false);
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoItemModel.fromJson)
+        .toList(growable: false);
   }
 
-  static List<AtendimentoTecnicoHistoricoStatusModel> _parseHistoricoStatus(dynamic value) {
+  static List<AtendimentoTecnicoHistoricoStatusModel> _parseHistoricoStatus(
+    dynamic value,
+  ) {
     if (value is! List) return <AtendimentoTecnicoHistoricoStatusModel>[];
-    return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoHistoricoStatusModel.fromJson).toList(growable: false);
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoHistoricoStatusModel.fromJson)
+        .toList(growable: false);
   }
 
-  static List<AtendimentoTecnicoAuditoriaModel> _parseHistoricoAuditoria(dynamic value) {
+  static List<AtendimentoTecnicoAuditoriaModel> _parseHistoricoAuditoria(
+    dynamic value,
+  ) {
     if (value is! List) return <AtendimentoTecnicoAuditoriaModel>[];
-    return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoAuditoriaModel.fromJson).toList(growable: false);
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoAuditoriaModel.fromJson)
+        .toList(growable: false);
   }
 
-  static List<AtendimentoTecnicoRecebimentoModel> _parseRecebimentos(dynamic value) {
+  static List<AtendimentoTecnicoRecebimentoModel> _parseRecebimentos(
+    dynamic value,
+  ) {
     if (value is! List) return <AtendimentoTecnicoRecebimentoModel>[];
-    return value.whereType<Map<String, dynamic>>().map(AtendimentoTecnicoRecebimentoModel.fromJson).toList(growable: false);
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoRecebimentoModel.fromJson)
+        .toList(growable: false);
+  }
+}
+
+class AtendimentoTecnicoStatusPublicoLinkModel {
+  const AtendimentoTecnicoStatusPublicoLinkModel({
+    required this.status,
+    required this.code,
+    required this.message,
+    required this.token,
+    required this.link,
+    this.expiraEm,
+  });
+
+  final String status;
+  final String code;
+  final String message;
+  final String token;
+  final String link;
+  final DateTime? expiraEm;
+
+  factory AtendimentoTecnicoStatusPublicoLinkModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AtendimentoTecnicoStatusPublicoLinkModel(
+      status: json['status']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+      token: json['token']?.toString() ?? '',
+      link: json['link']?.toString() ?? '',
+      expiraEm: DateTime.tryParse(json['expiraEm']?.toString() ?? ''),
+    );
+  }
+}
+
+class AtendimentoTecnicoStatusPublicoModel {
+  const AtendimentoTecnicoStatusPublicoModel({
+    required this.status,
+    required this.code,
+    required this.message,
+    required this.token,
+    required this.idUnicoDaEmpresa,
+    required this.numero,
+    required this.statusId,
+    required this.statusCodigo,
+    required this.statusI18nKey,
+    required this.etapas,
+    required this.historicoStatus,
+    this.expiraEm,
+    this.descricao,
+    this.nomeClienteSnapshot,
+    this.equipamentoResumo,
+    this.defeitoRelatado,
+    this.statusNomePtBr,
+    this.statusNomeEnUs,
+    this.statusNomeEsEs,
+    this.assinaturaAprovada = false,
+    this.requerNovaAssinatura = false,
+    this.dataEntregaPrevista,
+    this.dataCadastro,
+    this.dataAtualizacao,
+  });
+
+  final String status;
+  final String code;
+  final String message;
+  final String token;
+  final String idUnicoDaEmpresa;
+  final DateTime? expiraEm;
+  final String numero;
+  final String? descricao;
+  final String? nomeClienteSnapshot;
+  final String? equipamentoResumo;
+  final String? defeitoRelatado;
+  final int statusId;
+  final String statusCodigo;
+  final String statusI18nKey;
+  final String? statusNomePtBr;
+  final String? statusNomeEnUs;
+  final String? statusNomeEsEs;
+  final bool assinaturaAprovada;
+  final bool requerNovaAssinatura;
+  final DateTime? dataEntregaPrevista;
+  final DateTime? dataCadastro;
+  final DateTime? dataAtualizacao;
+  final List<AtendimentoTecnicoStatusPublicoEtapaModel> etapas;
+  final List<AtendimentoTecnicoStatusPublicoHistoricoModel> historicoStatus;
+
+  factory AtendimentoTecnicoStatusPublicoModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AtendimentoTecnicoStatusPublicoModel(
+      status: json['status']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+      token: json['token']?.toString() ?? '',
+      idUnicoDaEmpresa: json['idUnicoDaEmpresa']?.toString() ?? '',
+      expiraEm: DateTime.tryParse(json['expiraEm']?.toString() ?? ''),
+      numero: json['numero']?.toString() ?? '',
+      descricao: json['descricao']?.toString(),
+      nomeClienteSnapshot: json['nomeClienteSnapshot']?.toString(),
+      equipamentoResumo: json['equipamentoResumo']?.toString(),
+      defeitoRelatado: json['defeitoRelatado']?.toString(),
+      statusId: (json['statusId'] as num?)?.toInt() ?? 0,
+      statusCodigo: json['statusCodigo']?.toString() ?? '',
+      statusI18nKey: json['statusI18nKey']?.toString() ?? '',
+      statusNomePtBr: json['statusNomePtBr']?.toString(),
+      statusNomeEnUs: json['statusNomeEnUs']?.toString(),
+      statusNomeEsEs: json['statusNomeEsEs']?.toString(),
+      assinaturaAprovada: json['assinaturaAprovada'] == true,
+      requerNovaAssinatura: json['requerNovaAssinatura'] == true,
+      dataEntregaPrevista: DateTime.tryParse(
+        json['dataEntregaPrevista']?.toString() ?? '',
+      ),
+      dataCadastro: DateTime.tryParse(json['dataCadastro']?.toString() ?? ''),
+      dataAtualizacao: DateTime.tryParse(
+        json['dataAtualizacao']?.toString() ?? '',
+      ),
+      etapas: _parseEtapas(json['etapas']),
+      historicoStatus: _parseHistoricoStatusPublico(json['historicoStatus']),
+    );
+  }
+
+  static List<AtendimentoTecnicoStatusPublicoEtapaModel> _parseEtapas(
+    dynamic value,
+  ) {
+    if (value is! List) return <AtendimentoTecnicoStatusPublicoEtapaModel>[];
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoStatusPublicoEtapaModel.fromJson)
+        .toList(growable: false);
+  }
+
+  static List<AtendimentoTecnicoStatusPublicoHistoricoModel>
+  _parseHistoricoStatusPublico(dynamic value) {
+    if (value is! List) {
+      return <AtendimentoTecnicoStatusPublicoHistoricoModel>[];
+    }
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoStatusPublicoHistoricoModel.fromJson)
+        .toList(growable: false);
+  }
+}
+
+class AtendimentoTecnicoStatusPublicoEtapaModel {
+  const AtendimentoTecnicoStatusPublicoEtapaModel({
+    required this.id,
+    required this.codigo,
+    required this.i18nKey,
+    required this.nomePtBr,
+    required this.nomeEnUs,
+    required this.nomeEsEs,
+    required this.ordem,
+    required this.cor,
+    required this.icone,
+    required this.finalizador,
+    required this.atual,
+    required this.concluida,
+  });
+
+  final int id;
+  final String codigo;
+  final String i18nKey;
+  final String nomePtBr;
+  final String nomeEnUs;
+  final String nomeEsEs;
+  final int ordem;
+  final String cor;
+  final String icone;
+  final bool finalizador;
+  final bool atual;
+  final bool concluida;
+
+  factory AtendimentoTecnicoStatusPublicoEtapaModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AtendimentoTecnicoStatusPublicoEtapaModel(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      codigo: json['codigo']?.toString() ?? '',
+      i18nKey: json['i18nKey']?.toString() ?? '',
+      nomePtBr: json['nomePtBr']?.toString() ?? '',
+      nomeEnUs: json['nomeEnUs']?.toString() ?? '',
+      nomeEsEs: json['nomeEsEs']?.toString() ?? '',
+      ordem: (json['ordem'] as num?)?.toInt() ?? 0,
+      cor: json['cor']?.toString() ?? '',
+      icone: json['icone']?.toString() ?? '',
+      finalizador: json['finalizador'] == true,
+      atual: json['atual'] == true,
+      concluida: json['concluida'] == true,
+    );
+  }
+}
+
+class AtendimentoTecnicoStatusPublicoHistoricoModel {
+  const AtendimentoTecnicoStatusPublicoHistoricoModel({
+    required this.statusId,
+    required this.statusCodigo,
+    required this.statusI18nKey,
+    this.statusNomePtBr,
+    this.statusNomeEnUs,
+    this.statusNomeEsEs,
+    this.dataHora,
+  });
+
+  final int statusId;
+  final String statusCodigo;
+  final String statusI18nKey;
+  final String? statusNomePtBr;
+  final String? statusNomeEnUs;
+  final String? statusNomeEsEs;
+  final DateTime? dataHora;
+
+  factory AtendimentoTecnicoStatusPublicoHistoricoModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AtendimentoTecnicoStatusPublicoHistoricoModel(
+      statusId: (json['statusId'] as num?)?.toInt() ?? 0,
+      statusCodigo: json['statusCodigo']?.toString() ?? '',
+      statusI18nKey: json['statusI18nKey']?.toString() ?? '',
+      statusNomePtBr: json['statusNomePtBr']?.toString(),
+      statusNomeEnUs: json['statusNomeEnUs']?.toString(),
+      statusNomeEsEs: json['statusNomeEsEs']?.toString(),
+      dataHora: DateTime.tryParse(json['dataHora']?.toString() ?? ''),
+    );
   }
 }
 
 class AtendimentoTecnicoCreateInput {
   const AtendimentoTecnicoCreateInput({
     required this.validadeOrcamentoEm,
+    this.dataEntregaPrevista,
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
@@ -419,6 +690,7 @@ class AtendimentoTecnicoCreateInput {
   });
 
   final DateTime validadeOrcamentoEm;
+  final DateTime? dataEntregaPrevista;
   final String? descricao;
   final String? idCliente;
   final String? nomeClienteSnapshot;
@@ -433,20 +705,22 @@ class AtendimentoTecnicoCreateInput {
   final List<AtendimentoTecnicoItemInput> itens;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'descricao': descricao,
-        'idCliente': idCliente,
-        'nomeClienteSnapshot': nomeClienteSnapshot,
-        'idTecnicoResponsavel': idTecnicoResponsavel,
-        'nomeTecnicoResponsavelSnapshot': nomeTecnicoResponsavelSnapshot,
-        'prioridadeId': prioridadeId,
-        'prioridadeCodigo': prioridadeCodigo,
-        'origemCodigo': origemCodigo,
-        'validadeOrcamentoEm': _dateOnly(validadeOrcamentoEm),
-        'equipamento': equipamento?.toJson(),
-        'defeitoRelatado': defeitoRelatado,
-        'diagnosticoTecnico': diagnosticoTecnico,
-        'itens': itens.map((item) => item.toJson()).toList(),
-      };
+    'descricao': descricao,
+    'idCliente': idCliente,
+    'nomeClienteSnapshot': nomeClienteSnapshot,
+    'idTecnicoResponsavel': idTecnicoResponsavel,
+    'nomeTecnicoResponsavelSnapshot': nomeTecnicoResponsavelSnapshot,
+    'prioridadeId': prioridadeId,
+    'prioridadeCodigo': prioridadeCodigo,
+    'origemCodigo': origemCodigo,
+    'validadeOrcamentoEm': _dateOnly(validadeOrcamentoEm),
+    'dataEntregaPrevista':
+        dataEntregaPrevista == null ? null : _dateOnly(dataEntregaPrevista!),
+    'equipamento': equipamento?.toJson(),
+    'defeitoRelatado': defeitoRelatado,
+    'diagnosticoTecnico': diagnosticoTecnico,
+    'itens': itens.map((item) => item.toJson()).toList(),
+  };
 
   static String _dateOnly(DateTime value) {
     final year = value.year.toString().padLeft(4, '0');
@@ -459,6 +733,7 @@ class AtendimentoTecnicoCreateInput {
 class AtendimentoTecnicoUpdateInput {
   const AtendimentoTecnicoUpdateInput({
     required this.validadeOrcamentoEm,
+    this.dataEntregaPrevista,
     this.descricao,
     this.idCliente,
     this.nomeClienteSnapshot,
@@ -472,6 +747,7 @@ class AtendimentoTecnicoUpdateInput {
   });
 
   final DateTime validadeOrcamentoEm;
+  final DateTime? dataEntregaPrevista;
   final String? descricao;
   final String? idCliente;
   final String? nomeClienteSnapshot;
@@ -484,18 +760,24 @@ class AtendimentoTecnicoUpdateInput {
   final String? observacaoAuditoria;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'descricao': descricao,
-        'idCliente': idCliente,
-        'nomeClienteSnapshot': nomeClienteSnapshot,
-        'idTecnicoResponsavel': idTecnicoResponsavel,
-        'nomeTecnicoResponsavelSnapshot': nomeTecnicoResponsavelSnapshot,
-        'validadeOrcamentoEm': AtendimentoTecnicoCreateInput._dateOnly(validadeOrcamentoEm),
-        'equipamento': equipamento?.toJson(),
-        'defeitoRelatado': defeitoRelatado,
-        'diagnosticoTecnico': diagnosticoTecnico,
-        'itens': itens.map((item) => item.toJson()).toList(),
-        'observacaoAuditoria': observacaoAuditoria,
-      };
+    'descricao': descricao,
+    'idCliente': idCliente,
+    'nomeClienteSnapshot': nomeClienteSnapshot,
+    'idTecnicoResponsavel': idTecnicoResponsavel,
+    'nomeTecnicoResponsavelSnapshot': nomeTecnicoResponsavelSnapshot,
+    'validadeOrcamentoEm': AtendimentoTecnicoCreateInput._dateOnly(
+      validadeOrcamentoEm,
+    ),
+    'dataEntregaPrevista':
+        dataEntregaPrevista == null
+            ? null
+            : AtendimentoTecnicoCreateInput._dateOnly(dataEntregaPrevista!),
+    'equipamento': equipamento?.toJson(),
+    'defeitoRelatado': defeitoRelatado,
+    'diagnosticoTecnico': diagnosticoTecnico,
+    'itens': itens.map((item) => item.toJson()).toList(),
+    'observacaoAuditoria': observacaoAuditoria,
+  };
 }
 
 class AtendimentoTecnicoRecebimentoInput {
@@ -512,9 +794,9 @@ class AtendimentoTecnicoRecebimentoInput {
   final String? observacao;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'codigoFormaRecebimento': codigoFormaRecebimento,
-        'nomeFormaRecebimento': nomeFormaRecebimento,
-        'valor': valor,
-        'observacao': observacao,
-      };
+    'codigoFormaRecebimento': codigoFormaRecebimento,
+    'nomeFormaRecebimento': nomeFormaRecebimento,
+    'valor': valor,
+    'observacao': observacao,
+  };
 }

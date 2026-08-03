@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../core/services/auth_service.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/produto_model.dart';
-import '../../data/models/usuario_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
+import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
-import '../../domain/services/usuario/usuario_service.dart';
-import '../../providers/usuario_provider.dart';
+import '../../l10n/six_i18n.dart';
+import '../../providers/locale_settings_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
+import '../components/mobile/six_mobile_page_shell.dart';
 import 'produto_list_mobile_screen.dart';
 
 class AtendimentoTecnicoMobileScreen extends StatefulWidget {
@@ -24,17 +25,18 @@ class AtendimentoTecnicoMobileScreen extends StatefulWidget {
 
 class _AtendimentoTecnicoMobileScreenState
     extends State<AtendimentoTecnicoMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.activeBorder;
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
-  final ClienteUsuarioApiClient _clienteApiClient = HttpClienteUsuarioApiClient();
+  final ClienteUsuarioApiClient _clienteApiClient =
+      HttpClienteUsuarioApiClient();
   final ColaboradorUsuarioApiClient _colaboradorApiClient =
       HttpColaboradorUsuarioApiClient();
   final List<_AtendimentoItemMobile> _itens = <_AtendimentoItemMobile>[];
@@ -60,16 +62,17 @@ class _AtendimentoTecnicoMobileScreenState
   String? _erro;
   DateTime _validadeOrcamentoEm = _defaultDate();
   DateTime _vencimentoFinanceiroEm = _defaultDate();
+  DateTime _dataEntregaPrevista = _defaultDate();
 
   int get _quantidadeItens => _itens.fold<int>(
-        0,
-        (int total, _AtendimentoItemMobile item) => total + item.quantidade,
-      );
+    0,
+    (int total, _AtendimentoItemMobile item) => total + item.quantidade,
+  );
 
   double get _totalItens => _itens.fold<double>(
-        0,
-        (double total, _AtendimentoItemMobile item) => total + item.total,
-      );
+    0,
+    (double total, _AtendimentoItemMobile item) => total + item.total,
+  );
 
   static DateTime _inicioHoje() {
     final now = DateTime.now();
@@ -109,16 +112,18 @@ class _AtendimentoTecnicoMobileScreenState
     try {
       final response = await _clienteApiClient.listarClientesUsuario();
       final List<ColaboradorUsuarioResumo> colaboradores =
-          await _colaboradorApiClient.listarColaboradores();
-      final _ResponsavelTecnicoMobile? admin = await _carregarAdminAtual();
-      final List<_ResponsavelTecnicoMobile> responsaveis =
-          _montarResponsaveis(admin, colaboradores);
+          await _colaboradorApiClient.listarTecnicosAssistenciaTecnica();
+      final List<_ResponsavelTecnicoMobile> responsaveis = _montarResponsaveis(
+        colaboradores,
+      );
 
       if (!mounted) return;
       setState(() {
-        _clientes = response.clientes.where((cliente) => cliente.ativo).toList();
+        _clientes =
+            response.clientes.where((cliente) => cliente.ativo).toList();
         _responsaveis = responsaveis;
-        _responsavelSelecionado ??= responsaveis.isEmpty ? null : responsaveis.first;
+        _responsavelSelecionado ??=
+            responsaveis.isEmpty ? null : responsaveis.first;
         _carregando = false;
       });
     } catch (error) {
@@ -130,73 +135,31 @@ class _AtendimentoTecnicoMobileScreenState
     }
   }
 
-  Future<_ResponsavelTecnicoMobile?> _carregarAdminAtual() async {
-    final AuthService authService = AuthService();
-    final String idUsuario = (await authService.getUserId())?.trim() ?? '';
-
-    try {
-      if (UsuarioProvider().usuario == null) {
-        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-      }
-    } catch (_) {
-      // Mantem a tela funcional mesmo quando os dados pessoais nao carregarem.
-    }
-
-    final UsuarioModel? usuario = UsuarioProvider().usuario;
-    final String email =
-        (usuario?.email.trim().isNotEmpty == true
-                ? usuario!.email.trim()
-                : (await authService.getUserEmail())?.trim()) ??
-            '';
-    final String nome = _nomeUsuario(usuario, fallbackEmail: email);
-    final String id = idUsuario.isNotEmpty ? idUsuario : email;
-
-    if (id.isEmpty && nome.isEmpty) return null;
-
-    return _ResponsavelTecnicoMobile(
-      id: id.isEmpty ? nome : id,
-      nome: nome.isEmpty ? 'ADMIN' : nome,
-      subtitulo: email.isEmpty ? 'ADMIN do sistema' : 'ADMIN do sistema • $email',
-      isAdmin: true,
-    );
-  }
-
-  String _nomeUsuario(UsuarioModel? usuario, {required String fallbackEmail}) {
-    if (usuario == null) return fallbackEmail;
-    final String nomeDeGuerra = usuario.nomeDeGuerra.trim();
-    if (nomeDeGuerra.isNotEmpty) return nomeDeGuerra;
-    final String nomeCompleto = <String>[usuario.nome, usuario.sobrenome]
-        .map((String item) => item.trim())
-        .where((String item) => item.isNotEmpty)
-        .join(' ');
-    if (nomeCompleto.isNotEmpty) return nomeCompleto;
-    return fallbackEmail;
-  }
-
   List<_ResponsavelTecnicoMobile> _montarResponsaveis(
-    _ResponsavelTecnicoMobile? admin,
     List<ColaboradorUsuarioResumo> colaboradores,
   ) {
     final Map<String, _ResponsavelTecnicoMobile> mapa =
         <String, _ResponsavelTecnicoMobile>{};
 
     void add(_ResponsavelTecnicoMobile responsavel) {
-      final String key = responsavel.id.trim().isNotEmpty
-          ? responsavel.id.trim()
-          : responsavel.nome.toLowerCase().trim();
+      final String key =
+          responsavel.id.trim().isNotEmpty
+              ? responsavel.id.trim()
+              : responsavel.nome.toLowerCase().trim();
       if (key.isEmpty || mapa.containsKey(key)) return;
       mapa[key] = responsavel;
     }
 
-    if (admin != null) add(admin);
-
     for (final ColaboradorUsuarioResumo colaborador in colaboradores) {
-      final String id = colaborador.idUnicoPessoal.trim().isNotEmpty
-          ? colaborador.idUnicoPessoal.trim()
-          : colaborador.email.trim();
-      final String nome = colaborador.nomeDeGuerra.trim().isNotEmpty
-          ? colaborador.nomeDeGuerra.trim()
-          : colaborador.nome.trim().isNotEmpty
+      if (!colaborador.ehTecnicoAssistenciaTecnica) continue;
+      final String id =
+          colaborador.idUnicoPessoal.trim().isNotEmpty
+              ? colaborador.idUnicoPessoal.trim()
+              : colaborador.email.trim();
+      final String nome =
+          colaborador.nomeDeGuerra.trim().isNotEmpty
+              ? colaborador.nomeDeGuerra.trim()
+              : colaborador.nome.trim().isNotEmpty
               ? colaborador.nome.trim()
               : colaborador.email.trim();
       if (id.isEmpty && nome.isEmpty) continue;
@@ -239,13 +202,27 @@ class _AtendimentoTecnicoMobileScreenState
     setState(() => _vencimentoFinanceiroEm = data);
   }
 
+  Future<void> _selecionarDataEntregaPrevista() async {
+    final data = await _selecionarData(
+      initialDate: _dataEntregaPrevista,
+      title: 'Entrega prevista',
+      applyButtonLabel: 'Aplicar entrega',
+      firstDate: DateTime(2000),
+    );
+    if (data == null) return;
+    setState(() => _dataEntregaPrevista = data);
+  }
+
   Future<DateTime?> _selecionarData({
     required DateTime initialDate,
     required String title,
     required String applyButtonLabel,
+    DateTime? firstDate,
   }) async {
     final inicio = _inicioHoje();
-    final initial = initialDate.isBefore(inicio) ? inicio : initialDate;
+    final primeiraData = firstDate ?? inicio;
+    final initial =
+        initialDate.isBefore(primeiraData) ? primeiraData : initialDate;
     final selected = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
@@ -256,7 +233,7 @@ class _AtendimentoTecnicoMobileScreenState
         return DateSelectorMobileBottomSheet(
           title: title,
           initialDate: initial,
-          firstDate: inicio,
+          firstDate: primeiraData,
           lastDate: inicio.add(const Duration(days: 365)),
           applyButtonLabel: applyButtonLabel,
         );
@@ -299,18 +276,18 @@ class _AtendimentoTecnicoMobileScreenState
 
     final _ResponsavelTecnicoMobile? responsavel =
         await showModalBottomSheet<_ResponsavelTecnicoMobile>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
-      builder: (context) {
-        return AtendimentoTecnicoResponsavelSelectorMobile(
-          responsaveis: _responsaveis,
-          responsavelSelecionado: _responsavelSelecionado,
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: const Color(0x66000000),
+          builder: (context) {
+            return _AtendimentoTecnicoResponsavelSelectorMobile(
+              responsaveis: _responsaveis,
+              responsavelSelecionado: _responsavelSelecionado,
+            );
+          },
         );
-      },
-    );
 
     if (responsavel == null || !mounted) return;
     setState(() => _responsavelSelecionado = responsavel);
@@ -320,18 +297,20 @@ class _AtendimentoTecnicoMobileScreenState
     final dynamic result = await Navigator.push<dynamic>(
       context,
       MaterialPageRoute<dynamic>(
-        builder: (_) => const ProdutolistMobileScreen(
-          isSelecao: true,
-          permitirSelecaoMultipla: true,
-        ),
+        builder:
+            (_) => const ProdutolistMobileScreen(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+            ),
       ),
     );
 
     if (!mounted || result == null) return;
 
-    final List<ProdutoModel> produtos = result is List
-        ? result.whereType<ProdutoModel>().toList(growable: false)
-        : <ProdutoModel>[if (result is ProdutoModel) result];
+    final List<ProdutoModel> produtos =
+        result is List
+            ? result.whereType<ProdutoModel>().toList(growable: false)
+            : <ProdutoModel>[if (result is ProdutoModel) result];
     if (produtos.isEmpty) return;
 
     setState(() {
@@ -359,9 +338,10 @@ class _AtendimentoTecnicoMobileScreenState
       _AtendimentoItemMobile(
         chave: chave,
         idSku: produto.id ?? produto.codigoDeBarras,
-        descricao: produto.nomeProduto.trim().isEmpty
-            ? 'Item sem nome'
-            : produto.nomeProduto,
+        descricao:
+            produto.nomeProduto.trim().isEmpty
+                ? 'Item sem nome'
+                : produto.nomeProduto,
         tipoItemId: servico ? 20 : 10,
         tipoCodigo: tipoCodigo,
         quantidade: 1,
@@ -379,7 +359,9 @@ class _AtendimentoTecnicoMobileScreenState
 
   void _alterarQuantidade(_AtendimentoItemMobile item, int delta) {
     setState(() {
-      final int index = _itens.indexWhere((element) => element.chave == item.chave);
+      final int index = _itens.indexWhere(
+        (element) => element.chave == item.chave,
+      );
       if (index < 0) return;
       final int quantidade = _itens[index].quantidade + delta;
       if (quantidade <= 0) {
@@ -391,7 +373,9 @@ class _AtendimentoTecnicoMobileScreenState
   }
 
   void _removerItem(_AtendimentoItemMobile item) {
-    setState(() => _itens.removeWhere((element) => element.chave == item.chave));
+    setState(
+      () => _itens.removeWhere((element) => element.chave == item.chave),
+    );
   }
 
   Future<void> _salvar() async {
@@ -407,7 +391,19 @@ class _AtendimentoTecnicoMobileScreenState
       _mostrarMensagem('Informe o defeito relatado pelo cliente.');
       return;
     }
-
+    final DateTime inicioHoje = _inicioHoje();
+    if (_validadeOrcamentoEm.isBefore(inicioHoje)) {
+      _mostrarMensagem(
+        'A validade do orçamento não pode ser anterior à data atual.',
+      );
+      return;
+    }
+    if (_vencimentoFinanceiroEm.isBefore(inicioHoje)) {
+      _mostrarMensagem(
+        'O vencimento financeiro não pode ser anterior à data atual.',
+      );
+      return;
+    }
     final _ResponsavelTecnicoMobile? responsavel = _responsavelSelecionado;
 
     setState(() => _salvando = true);
@@ -415,6 +411,7 @@ class _AtendimentoTecnicoMobileScreenState
       final atendimento = await _service.criar(
         AtendimentoTecnicoCreateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
+          dataEntregaPrevista: _dataEntregaPrevista,
           descricao: _textoOuNulo(_descricaoController.text),
           idCliente: cliente.id,
           nomeClienteSnapshot: cliente.nome,
@@ -470,6 +467,7 @@ class _AtendimentoTecnicoMobileScreenState
       _itens.clear();
       _validadeOrcamentoEm = _defaultDate();
       _vencimentoFinanceiroEm = _defaultDate();
+      _dataEntregaPrevista = _defaultDate();
     });
   }
 
@@ -479,14 +477,11 @@ class _AtendimentoTecnicoMobileScreenState
   }
 
   String _formatarData(DateTime value) {
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    return '$dia/$mes/$ano';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   String _formatarMoeda(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+    return context.read<LocaleSettingsProvider>().formatCurrency(value);
   }
 
   void _mostrarMensagem(String mensagem) {
@@ -498,39 +493,65 @@ class _AtendimentoTecnicoMobileScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Novo atendimento técnico',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
+    context.select<LocaleSettingsProvider, String>(
+      (LocaleSettingsProvider provider) =>
+          '${provider.currencyCode}|${provider.thousandSeparator}|'
+          '${provider.decimalSeparator}|${provider.decimalPlaces}|'
+          '${provider.dateFormat}',
+    );
+
+    return SixMobilePageShell(
+      title: _t(
+        'atendimentoTecnico.mobile.createTitle',
+        'Novo atendimento técnico',
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _carregarDados,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-            children: <Widget>[
-              _buildHeader(),
-              const SizedBox(height: 16),
-              if (_carregando)
-                _buildLoadingCard()
-              else if (_erro != null)
-                _buildErrorCard()
-              else
-                _buildFormCard(),
-            ],
-          ),
+      backgroundColor: _backgroundColor,
+      primaryColor: _primaryColor,
+      secondaryColor: _secondaryColor,
+      accentColor: _accentColor,
+      enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 8,
+      scrollEffectOffset: 28,
+      scrolledSurfaceOpacity: 0.70,
+      leading: IconButton(
+        tooltip: _t('common.back', 'Voltar'),
+        icon: const Icon(Icons.arrow_back_rounded),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      bodyBuilder: _buildContent,
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ScrollController scrollController,
+    double topInset,
+  ) {
+    return SafeArea(
+      top: false,
+      child: RefreshIndicator(
+        onRefresh: _carregarDados,
+        child: ListView(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+          children: <Widget>[
+            _buildHeader(),
+            const SizedBox(height: 16),
+            if (_carregando)
+              _buildLoadingCard()
+            else if (_erro != null)
+              _buildErrorCard()
+            else
+              _buildFormCard(),
+          ],
         ),
       ),
     );
   }
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
   Widget _buildHeader() {
     final String? responsavel = _responsavelSelecionado?.nome;
@@ -572,11 +593,14 @@ class _AtendimentoTecnicoMobileScreenState
                   responsavel != null && responsavel.trim().isNotEmpty
                       ? 'Responsável: $responsavel'
                       : _itens.isEmpty
-                          ? 'Cliente, equipamento e defeito em uma tela rápida para balcão.'
-                          : '$_quantidadeItens item(ns) • ${_formatarMoeda(_totalItens)}',
+                      ? 'Cliente, equipamento e defeito em uma tela rápida para balcão.'
+                      : '$_quantidadeItens item(ns) • ${_formatarMoeda(_totalItens)}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+                  style: const TextStyle(
+                    color: Color(0xFFD7E3F5),
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -751,6 +775,12 @@ class _AtendimentoTecnicoMobileScreenState
           const SizedBox(height: 16),
           _sectionTitle('Datas'),
           const SizedBox(height: 12),
+          _dateTile(
+            label: 'Entrega prevista',
+            value: _formatarData(_dataEntregaPrevista),
+            onTap: _selecionarDataEntregaPrevista,
+          ),
+          const SizedBox(height: 10),
           Row(
             children: <Widget>[
               Expanded(
@@ -778,13 +808,14 @@ class _AtendimentoTecnicoMobileScreenState
             height: 52,
             child: FilledButton.icon(
               onPressed: _salvando ? null : _salvar,
-              icon: _salvando
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2.3),
-                    )
-                  : const Icon(Icons.playlist_add_check_rounded),
+              icon:
+                  _salvando
+                      ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2.3),
+                      )
+                      : const Icon(Icons.playlist_add_check_rounded),
               label: Text(
                 _salvando
                     ? 'Iniciando atendimento...'
@@ -823,10 +854,7 @@ class _AtendimentoTecnicoMobileScreenState
             ],
           ),
           const SizedBox(height: 12),
-          if (_itens.isEmpty)
-            _emptyItens()
-          else
-            ..._itens.map(_itemTile),
+          if (_itens.isEmpty) _emptyItens() else ..._itens.map(_itemTile),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -881,7 +909,9 @@ class _AtendimentoTecnicoMobileScreenState
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    servico ? Icons.handyman_outlined : Icons.inventory_2_outlined,
+                    servico
+                        ? Icons.handyman_outlined
+                        : Icons.inventory_2_outlined,
                     color: _accentColor,
                     size: 21,
                   ),
@@ -959,7 +989,10 @@ class _AtendimentoTecnicoMobileScreenState
     );
   }
 
-  Widget _quantityButton({required IconData icon, required VoidCallback? onTap}) {
+  Widget _quantityButton({
+    required IconData icon,
+    required VoidCallback? onTap,
+  }) {
     return Material(
       color: const Color(0xFFEFF6FF),
       borderRadius: BorderRadius.circular(12),
@@ -1228,18 +1261,15 @@ class _ResponsavelTecnicoMobile {
     required this.id,
     required this.nome,
     required this.subtitulo,
-    this.isAdmin = false,
   });
 
   final String id;
   final String nome;
   final String subtitulo;
-  final bool isAdmin;
 }
 
-class AtendimentoTecnicoResponsavelSelectorMobile extends StatefulWidget {
-  const AtendimentoTecnicoResponsavelSelectorMobile({
-    super.key,
+class _AtendimentoTecnicoResponsavelSelectorMobile extends StatefulWidget {
+  const _AtendimentoTecnicoResponsavelSelectorMobile({
     required this.responsaveis,
     required this.responsavelSelecionado,
   });
@@ -1248,19 +1278,19 @@ class AtendimentoTecnicoResponsavelSelectorMobile extends StatefulWidget {
   final _ResponsavelTecnicoMobile? responsavelSelecionado;
 
   @override
-  State<AtendimentoTecnicoResponsavelSelectorMobile> createState() =>
+  State<_AtendimentoTecnicoResponsavelSelectorMobile> createState() =>
       _AtendimentoTecnicoResponsavelSelectorMobileState();
 }
 
 class _AtendimentoTecnicoResponsavelSelectorMobileState
-    extends State<AtendimentoTecnicoResponsavelSelectorMobile> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+    extends State<_AtendimentoTecnicoResponsavelSelectorMobile> {
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.activeBorder;
 
   final TextEditingController _searchController = TextEditingController();
   String _filter = '';
@@ -1268,10 +1298,12 @@ class _AtendimentoTecnicoResponsavelSelectorMobileState
   List<_ResponsavelTecnicoMobile> get _responsaveisFiltrados {
     final String term = _normalize(_filter);
     if (term.isEmpty) return widget.responsaveis;
-    return widget.responsaveis.where((_ResponsavelTecnicoMobile item) {
-      final String source = _normalize('${item.nome} ${item.subtitulo}');
-      return source.contains(term);
-    }).toList(growable: false);
+    return widget.responsaveis
+        .where((_ResponsavelTecnicoMobile item) {
+          final String source = _normalize('${item.nome} ${item.subtitulo}');
+          return source.contains(term);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -1341,7 +1373,7 @@ class _AtendimentoTecnicoResponsavelSelectorMobileState
                             ),
                             SizedBox(height: 3),
                             Text(
-                              'Selecione o ADMIN ou colaborador responsável.',
+                              'Selecione um técnico autorizado para assistência.',
                               style: TextStyle(
                                 color: _mutedTextColor,
                                 fontSize: 12,
@@ -1363,19 +1395,21 @@ class _AtendimentoTecnicoResponsavelSelectorMobileState
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (String value) => setState(() => _filter = value),
+                    onChanged:
+                        (String value) => setState(() => _filter = value),
                     decoration: InputDecoration(
                       hintText: 'Buscar responsável',
                       prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _searchController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: const Icon(Icons.close_rounded),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _filter = '');
-                              },
-                            ),
+                      suffixIcon:
+                          _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                icon: const Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _filter = '');
+                                },
+                              ),
                       filled: true,
                       fillColor: _surfaceColor,
                       border: OutlineInputBorder(
@@ -1388,32 +1422,38 @@ class _AtendimentoTecnicoResponsavelSelectorMobileState
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            const BorderSide(color: _accentColor, width: 1.4),
+                        borderSide: const BorderSide(
+                          color: _accentColor,
+                          width: 1.4,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: responsaveis.isEmpty
-                      ? _emptyState()
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
-                          itemBuilder: (BuildContext context, int index) {
-                            final _ResponsavelTecnicoMobile responsavel =
-                                responsaveis[index];
-                            final bool selected = _isSelected(responsavel);
-                            return _ResponsavelSelectorItem(
-                              responsavel: responsavel,
-                              selected: selected,
-                              onTap: () => Navigator.of(context).pop(responsavel),
-                            );
-                          },
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemCount: responsaveis.length,
-                        ),
+                  child:
+                      responsaveis.isEmpty
+                          ? _emptyState()
+                          : ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+                            itemBuilder: (BuildContext context, int index) {
+                              final _ResponsavelTecnicoMobile responsavel =
+                                  responsaveis[index];
+                              final bool selected = _isSelected(responsavel);
+                              return _ResponsavelSelectorItem(
+                                responsavel: responsavel,
+                                selected: selected,
+                                onTap:
+                                    () =>
+                                        Navigator.of(context).pop(responsavel),
+                              );
+                            },
+                            separatorBuilder:
+                                (_, __) => const SizedBox(height: 10),
+                            itemCount: responsaveis.length,
+                          ),
                 ),
               ],
             ),
@@ -1498,13 +1538,12 @@ class _ResponsavelSelectorItem extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 22,
-                backgroundColor: selected
-                    ? _accentColor.withOpacity(0.12)
-                    : const Color(0xFFF1F5F9),
+                backgroundColor:
+                    selected
+                        ? _accentColor.withValues(alpha: 0.12)
+                        : const Color(0xFFF1F5F9),
                 child: Icon(
-                  responsavel.isAdmin
-                      ? Icons.admin_panel_settings_outlined
-                      : Icons.person_outline_rounded,
+                  Icons.person_outline_rounded,
                   color: selected ? _accentColor : _primaryColor,
                 ),
               ),
@@ -1573,13 +1612,13 @@ class AtendimentoTecnicoClienteSelectorMobile extends StatefulWidget {
 
 class _AtendimentoTecnicoClienteSelectorMobileState
     extends State<AtendimentoTecnicoClienteSelectorMobile> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.activeBorder;
 
   final TextEditingController _searchController = TextEditingController();
   String _filter = '';
@@ -1590,12 +1629,14 @@ class _AtendimentoTecnicoClienteSelectorMobileState
       return widget.clientes;
     }
 
-    return widget.clientes.where((ClienteUsuario cliente) {
-      final String source = _normalize(
-        '${cliente.nome} ${cliente.telefone} ${cliente.email} ${cliente.documento}',
-      );
-      return source.contains(term);
-    }).toList(growable: false);
+    return widget.clientes
+        .where((ClienteUsuario cliente) {
+          final String source = _normalize(
+            '${cliente.nome} ${cliente.telefone} ${cliente.email} ${cliente.documento}',
+          );
+          return source.contains(term);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -1686,19 +1727,21 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (String value) => setState(() => _filter = value),
+                    onChanged:
+                        (String value) => setState(() => _filter = value),
                     decoration: InputDecoration(
                       hintText: 'Buscar cliente',
                       prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _searchController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: const Icon(Icons.close_rounded),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _filter = '');
-                              },
-                            ),
+                      suffixIcon:
+                          _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                icon: const Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _filter = '');
+                                },
+                              ),
                       filled: true,
                       fillColor: _surfaceColor,
                       border: OutlineInputBorder(
@@ -1711,31 +1754,35 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            const BorderSide(color: _accentColor, width: 1.4),
+                        borderSide: const BorderSide(
+                          color: _accentColor,
+                          width: 1.4,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: clientes.isEmpty
-                      ? _emptyState()
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
-                          itemBuilder: (BuildContext context, int index) {
-                            final ClienteUsuario cliente = clientes[index];
-                            final bool selected = _isSelected(cliente);
-                            return _ClienteSelectorItem(
-                              cliente: cliente,
-                              selected: selected,
-                              onTap: () => Navigator.of(context).pop(cliente),
-                            );
-                          },
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemCount: clientes.length,
-                        ),
+                  child:
+                      clientes.isEmpty
+                          ? _emptyState()
+                          : ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+                            itemBuilder: (BuildContext context, int index) {
+                              final ClienteUsuario cliente = clientes[index];
+                              final bool selected = _isSelected(cliente);
+                              return _ClienteSelectorItem(
+                                cliente: cliente,
+                                selected: selected,
+                                onTap: () => Navigator.of(context).pop(cliente),
+                              );
+                            },
+                            separatorBuilder:
+                                (_, __) => const SizedBox(height: 10),
+                            itemCount: clientes.length,
+                          ),
                 ),
               ],
             ),
@@ -1766,7 +1813,10 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                   color: const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Icon(Icons.search_off_rounded, color: _primaryColor),
+                child: const Icon(
+                  Icons.search_off_rounded,
+                  color: _primaryColor,
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -1847,9 +1897,10 @@ class _ClienteSelectorItem extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 22,
-                backgroundColor: selected
-                    ? _accentColor.withOpacity(0.12)
-                    : const Color(0xFFF1F5F9),
+                backgroundColor:
+                    selected
+                        ? _accentColor.withValues(alpha: 0.12)
+                        : const Color(0xFFF1F5F9),
                 child: Text(
                   _initials(cliente.nome),
                   style: TextStyle(

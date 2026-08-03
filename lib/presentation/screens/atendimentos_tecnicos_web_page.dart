@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
+import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
 import '../../data/models/produto_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
+import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../providers/locale_settings_provider.dart';
 import 'pdv_cliente_identificacao_dialog.dart';
 import 'produto_lista_sub_painel_web.dart';
 
@@ -29,6 +33,8 @@ class _AtendimentosTecnicosWebPageState
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ClienteUsuarioApiClient _clienteApiClient =
       HttpClienteUsuarioApiClient();
+  final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      HttpColaboradorUsuarioApiClient();
 
   final TextEditingController _clienteController = TextEditingController();
   final TextEditingController _descricaoController = TextEditingController();
@@ -47,7 +53,9 @@ class _AtendimentosTecnicosWebPageState
   late Future<_AtendimentoTecnicoViewState> _future;
   DateTime _validadeOrcamentoEm = _defaultValidadeOrcamento();
   DateTime _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
+  DateTime _dataEntregaPrevista = _defaultValidadeOrcamento();
   String? _clienteSelecionadoId;
+  _ResponsavelTecnicoWeb? _responsavelSelecionado;
   bool _salvando = false;
 
   static DateTime _inicioHoje() {
@@ -89,12 +97,18 @@ class _AtendimentosTecnicosWebPageState
       _service.buscarDominiosBase(),
       _service.listar(),
       _clienteApiClient.listarClientesUsuario(),
+      _colaboradorApiClient.listarTecnicosAssistenciaTecnica(),
     ]);
+    final List<_ResponsavelTecnicoWeb> responsaveis = _montarResponsaveis(
+      results[3] as List<ColaboradorUsuarioResumo>,
+    );
+    _responsavelSelecionado = _resolverResponsavelSelecionado(responsaveis);
 
     return _AtendimentoTecnicoViewState(
       dominios: results[0] as AtendimentoTecnicoDominiosBaseModel,
       atendimentos: results[1] as List<AtendimentoTecnicoModel>,
       clientes: (results[2] as ClienteUsuarioListResponse).clientes,
+      responsaveis: responsaveis,
     );
   }
 
@@ -105,6 +119,7 @@ class _AtendimentosTecnicosWebPageState
   void _limparFormulario() {
     _clienteSelecionadoId = null;
     _clienteController.clear();
+    _responsavelSelecionado = null;
     _descricaoController.clear();
     _tipoEquipamentoController.text = 'SMARTPHONE';
     _marcaController.clear();
@@ -116,6 +131,7 @@ class _AtendimentosTecnicosWebPageState
     _diagnosticoController.clear();
     _validadeOrcamentoEm = _defaultValidadeOrcamento();
     _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
+    _dataEntregaPrevista = _defaultValidadeOrcamento();
     _itens.clear();
   }
 
@@ -126,6 +142,65 @@ class _AtendimentosTecnicosWebPageState
       if (cliente.id == id) return cliente;
     }
     return null;
+  }
+
+  List<_ResponsavelTecnicoWeb> _montarResponsaveis(
+    List<ColaboradorUsuarioResumo> colaboradores,
+  ) {
+    final Map<String, _ResponsavelTecnicoWeb> mapa =
+        <String, _ResponsavelTecnicoWeb>{};
+
+    void add(_ResponsavelTecnicoWeb responsavel) {
+      final String key =
+          responsavel.id.trim().isNotEmpty
+              ? responsavel.id.trim()
+              : responsavel.nome.toLowerCase().trim();
+      if (key.isEmpty || mapa.containsKey(key)) return;
+      mapa[key] = responsavel;
+    }
+
+    for (final ColaboradorUsuarioResumo colaborador in colaboradores) {
+      if (!colaborador.ehTecnicoAssistenciaTecnica) continue;
+      final String id =
+          colaborador.idUnicoPessoal.trim().isNotEmpty
+              ? colaborador.idUnicoPessoal.trim()
+              : colaborador.email.trim();
+      final String nome =
+          colaborador.nomeDeGuerra.trim().isNotEmpty
+              ? colaborador.nomeDeGuerra.trim()
+              : colaborador.nome.trim().isNotEmpty
+              ? colaborador.nome.trim()
+              : colaborador.email.trim();
+      if (id.isEmpty && nome.isEmpty) continue;
+
+      final String subtitulo = <String>[
+        'Técnico autorizado',
+        colaborador.email,
+        colaborador.celularDeAcesso,
+      ].where((String item) => item.trim().isNotEmpty).join(' • ');
+
+      add(
+        _ResponsavelTecnicoWeb(
+          id: id.isEmpty ? nome : id,
+          nome: nome.isEmpty ? 'Técnico autorizado' : nome,
+          subtitulo: subtitulo,
+        ),
+      );
+    }
+
+    return mapa.values.toList(growable: false);
+  }
+
+  _ResponsavelTecnicoWeb? _resolverResponsavelSelecionado(
+    List<_ResponsavelTecnicoWeb> responsaveis,
+  ) {
+    if (responsaveis.isEmpty) return null;
+    final _ResponsavelTecnicoWeb? atual = _responsavelSelecionado;
+    if (atual == null) return responsaveis.first;
+    return responsaveis.firstWhere(
+      (_ResponsavelTecnicoWeb item) => item.id == atual.id,
+      orElse: () => responsaveis.first,
+    );
   }
 
   Future<void> _abrirIdentificacaoCliente(List<ClienteUsuario> clientes) async {
@@ -153,6 +228,28 @@ class _AtendimentosTecnicosWebPageState
     });
   }
 
+  Future<void> _abrirSelecaoResponsavel(
+    List<_ResponsavelTecnicoWeb> responsaveis,
+  ) async {
+    if (responsaveis.isEmpty) {
+      _mostrarMensagem('Nenhum responsável técnico disponível para seleção.');
+      return;
+    }
+
+    final _ResponsavelTecnicoWeb? result =
+        await showDialog<_ResponsavelTecnicoWeb>(
+          context: context,
+          builder:
+              (_) => _ResponsavelTecnicoWebSelectorDialog(
+                responsaveis: responsaveis,
+                responsavelSelecionado: _responsavelSelecionado,
+              ),
+        );
+
+    if (!mounted || result == null) return;
+    setState(() => _responsavelSelecionado = result);
+  }
+
   Future<void> _selecionarValidadeOrcamento() async {
     final data = await _selecionarData(
       initialDate: _validadeOrcamentoEm,
@@ -171,15 +268,28 @@ class _AtendimentosTecnicosWebPageState
     setState(() => _vencimentoFinanceiroEm = data);
   }
 
+  Future<void> _selecionarDataEntregaPrevista() async {
+    final data = await _selecionarData(
+      initialDate: _dataEntregaPrevista,
+      helpText: 'Entrega prevista',
+      firstDate: DateTime(2000),
+    );
+    if (data == null) return;
+    setState(() => _dataEntregaPrevista = data);
+  }
+
   Future<DateTime?> _selecionarData({
     required DateTime initialDate,
     required String helpText,
+    DateTime? firstDate,
   }) async {
     final inicio = _inicioHoje();
+    final primeiraData = firstDate ?? inicio;
     final data = await showDatePicker(
       context: context,
-      initialDate: initialDate.isBefore(inicio) ? inicio : initialDate,
-      firstDate: inicio,
+      initialDate:
+          initialDate.isBefore(primeiraData) ? primeiraData : initialDate,
+      firstDate: primeiraData,
       lastDate: inicio.add(const Duration(days: 365)),
       helpText: helpText,
     );
@@ -192,7 +302,10 @@ class _AtendimentosTecnicosWebPageState
       context: context,
       builder: (dialogContext) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -250,7 +363,9 @@ class _AtendimentosTecnicosWebPageState
 
   void _alterarQuantidade(_AtendimentoItemDraft item, int delta) {
     setState(() {
-      final index = _itens.indexWhere((elemento) => elemento.chave == item.chave);
+      final index = _itens.indexWhere(
+        (elemento) => elemento.chave == item.chave,
+      );
       if (index < 0) return;
       final quantidade = _itens[index].quantidade + delta;
       if (quantidade <= 0) {
@@ -262,7 +377,9 @@ class _AtendimentosTecnicosWebPageState
   }
 
   void _removerItem(_AtendimentoItemDraft item) {
-    setState(() => _itens.removeWhere((elemento) => elemento.chave == item.chave));
+    setState(
+      () => _itens.removeWhere((elemento) => elemento.chave == item.chave),
+    );
   }
 
   String _chaveProduto(ProdutoModel produto) {
@@ -303,22 +420,30 @@ class _AtendimentosTecnicosWebPageState
 
     final inicioHoje = _inicioHoje();
     if (_validadeOrcamentoEm.isBefore(inicioHoje)) {
-      _mostrarMensagem('A validade do orçamento não pode ser anterior à data atual.');
+      _mostrarMensagem(
+        'A validade do orçamento não pode ser anterior à data atual.',
+      );
       return;
     }
     if (_vencimentoFinanceiroEm.isBefore(inicioHoje)) {
-      _mostrarMensagem('O vencimento financeiro não pode ser anterior à data atual.');
+      _mostrarMensagem(
+        'O vencimento financeiro não pode ser anterior à data atual.',
+      );
       return;
     }
+    final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
 
     setState(() => _salvando = true);
     try {
       await _service.criar(
         AtendimentoTecnicoCreateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
+          dataEntregaPrevista: _dataEntregaPrevista,
           descricao: _textoOuNulo(_descricaoController.text),
           idCliente: cliente.id,
           nomeClienteSnapshot: cliente.nome,
+          idTecnicoResponsavel: responsavel?.id,
+          nomeTecnicoResponsavelSnapshot: responsavel?.nome,
           equipamento: AtendimentoTecnicoEquipamentoModel(
             tipo: _textoOuNulo(_tipoEquipamentoController.text),
             marca: _textoOuNulo(_marcaController.text),
@@ -330,7 +455,9 @@ class _AtendimentosTecnicosWebPageState
           ),
           defeitoRelatado: _textoOuNulo(_defeitoController.text),
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
-          itens: _itens.map((item) => item.toInput()).toList(growable: false),
+          itens: _itens
+              .map((item) => item.toInput(responsavel: responsavel))
+              .toList(growable: false),
         ),
         dataVencimentoEm: _vencimentoFinanceiroEm,
       );
@@ -338,7 +465,9 @@ class _AtendimentosTecnicosWebPageState
       if (!mounted) return;
       setState(_limparFormulario);
       _recarregar();
-      _mostrarMensagem('Atendimento técnico criado com vencimento financeiro definido.');
+      _mostrarMensagem(
+        'Atendimento técnico criado com vencimento financeiro definido.',
+      );
     } catch (error) {
       if (!mounted) return;
       _mostrarMensagem('Não foi possível criar o atendimento: $error');
@@ -353,22 +482,20 @@ class _AtendimentosTecnicosWebPageState
   }
 
   String _formatarMoeda(double value) =>
-      'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+      context.read<LocaleSettingsProvider>().formatCurrency(value);
 
   String _formatarData(DateTime? value) {
     if (value == null) return '-';
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    return '$dia/$mes/$ano';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   int _totalClientesAtivos(List<ClienteUsuario> clientes) =>
       clientes.where((cliente) => cliente.ativo).length;
 
-  int _totalAbertos(List<AtendimentoTecnicoModel> atendimentos) => atendimentos
-      .where((atendimento) => !atendimento.operacaoLiquidada)
-      .length;
+  int _totalAbertos(List<AtendimentoTecnicoModel> atendimentos) =>
+      atendimentos
+          .where((atendimento) => !atendimento.operacaoLiquidada)
+          .length;
 
   double _valorAberto(List<AtendimentoTecnicoModel> atendimentos) =>
       atendimentos.fold<double>(
@@ -425,7 +552,11 @@ class _AtendimentosTecnicosWebPageState
                         horizontalPadding,
                         16,
                       ),
-                      child: _buildFluxoAtendimento(theme, state, isCompact: isCompact),
+                      child: _buildFluxoAtendimento(
+                        theme,
+                        state,
+                        isCompact: isCompact,
+                      ),
                     ),
                   ),
                 ],
@@ -440,12 +571,13 @@ class _AtendimentosTecnicosWebPageState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Atendimentos técnicos'),
-        leading: widget.onBack == null
-            ? null
-            : IconButton(
-                onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
-              ),
+        leading:
+            widget.onBack == null
+                ? null
+                : IconButton(
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
       ),
       body: content,
     );
@@ -460,7 +592,9 @@ class _AtendimentosTecnicosWebPageState
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.12),
+            ),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -520,7 +654,9 @@ class _AtendimentosTecnicosWebPageState
                 'Fluxo com cliente, equipamento, diagnóstico, itens e vencimento financeiro.',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.66)),
+                style: TextStyle(
+                  color: colorScheme.onSurface.withOpacity(0.66),
+                ),
               ),
             ],
           ),
@@ -565,21 +701,22 @@ class _AtendimentosTecnicosWebPageState
           ),
         ],
       ),
-      child: isCompact
-          ? Column(
-              children: <Widget>[
-                titleBlock,
-                const SizedBox(height: 14),
-                Align(alignment: Alignment.centerRight, child: actions),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: titleBlock),
-                const SizedBox(width: 16),
-                actions,
-              ],
-            ),
+      child:
+          isCompact
+              ? Column(
+                children: <Widget>[
+                  titleBlock,
+                  const SizedBox(height: 14),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(child: titleBlock),
+                  const SizedBox(width: 16),
+                  actions,
+                ],
+              ),
     );
   }
 
@@ -590,9 +727,10 @@ class _AtendimentosTecnicosWebPageState
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = isCompact
-            ? constraints.maxWidth
-            : ((constraints.maxWidth - 36) / 4).clamp(190.0, 360.0);
+        final cardWidth =
+            isCompact
+                ? constraints.maxWidth
+                : ((constraints.maxWidth - 36) / 4).clamp(190.0, 360.0);
         return Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -608,10 +746,18 @@ class _AtendimentosTecnicosWebPageState
             _summaryCard(
               theme,
               width: cardWidth,
+              label: 'Entrega prevista',
+              value: _formatarData(_dataEntregaPrevista),
+              helper: 'Prazo de término',
+              icon: Icons.event_available_outlined,
+            ),
+            _summaryCard(
+              theme,
+              width: cardWidth,
               label: 'Vencimento financeiro',
               value: _formatarData(_vencimentoFinanceiroEm),
               helper: 'Data da cobrança',
-              icon: Icons.event_available_outlined,
+              icon: Icons.account_balance_wallet_outlined,
             ),
             _summaryCard(
               theme,
@@ -654,6 +800,12 @@ class _AtendimentosTecnicosWebPageState
         ),
         const SizedBox(height: 18),
         _buildClienteSelecionadoCard(theme, state.clientes, cliente),
+        const SizedBox(height: 14),
+        _buildResponsavelSelecionadoCard(
+          theme,
+          state.responsaveis,
+          _responsavelSelecionado,
+        ),
         const SizedBox(height: 18),
         _buildFormGrid(
           children: <Widget>[
@@ -673,7 +825,8 @@ class _AtendimentosTecnicosWebPageState
                 decoration: _inputDecoration(
                   theme,
                   label: 'Validade do orçamento',
-                  helper: 'Obrigatório. O orçamento não pode ficar indeterminado.',
+                  helper:
+                      'Obrigatório. O orçamento não pode ficar indeterminado.',
                   icon: Icons.event_outlined,
                 ),
                 child: Text(
@@ -694,6 +847,22 @@ class _AtendimentosTecnicosWebPageState
                 ),
                 child: Text(
                   _formatarData(_vencimentoFinanceiroEm),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: _selecionarDataEntregaPrevista,
+              child: InputDecorator(
+                decoration: _inputDecoration(
+                  theme,
+                  label: 'Entrega prevista',
+                  helper: 'Data prevista para entrega ou término.',
+                  icon: Icons.assignment_turned_in_outlined,
+                ),
+                child: Text(
+                  _formatarData(_dataEntregaPrevista),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -815,14 +984,18 @@ class _AtendimentosTecnicosWebPageState
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: selected
-                ? theme.colorScheme.primary.withOpacity(0.07)
-                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.58),
+            color:
+                selected
+                    ? theme.colorScheme.primary.withOpacity(0.07)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                      0.58,
+                    ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: selected
-                  ? theme.colorScheme.primary.withOpacity(0.24)
-                  : theme.colorScheme.outline.withOpacity(0.12),
+              color:
+                  selected
+                      ? theme.colorScheme.primary.withOpacity(0.24)
+                      : theme.colorScheme.outline.withOpacity(0.12),
             ),
           ),
           child: Row(
@@ -831,9 +1004,10 @@ class _AtendimentosTecnicosWebPageState
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? theme.colorScheme.primary.withOpacity(0.10)
-                      : theme.colorScheme.surface,
+                  color:
+                      selected
+                          ? theme.colorScheme.primary.withOpacity(0.10)
+                          : theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
@@ -863,7 +1037,9 @@ class _AtendimentosTecnicosWebPageState
                           : 'Clique para buscar e selecionar um cliente cadastrado.',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -871,8 +1047,104 @@ class _AtendimentosTecnicosWebPageState
               const SizedBox(width: 12),
               OutlinedButton.icon(
                 onPressed: () => _abrirIdentificacaoCliente(clientes),
-                icon: Icon(selected ? Icons.swap_horiz_rounded : Icons.search_rounded),
+                icon: Icon(
+                  selected ? Icons.swap_horiz_rounded : Icons.search_rounded,
+                ),
                 label: Text(selected ? 'Trocar cliente' : 'Buscar cliente'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResponsavelSelecionadoCard(
+    ThemeData theme,
+    List<_ResponsavelTecnicoWeb> responsaveis,
+    _ResponsavelTecnicoWeb? responsavel,
+  ) {
+    final bool selected = responsavel != null;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _abrirSelecaoResponsavel(responsaveis),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color:
+                selected
+                    ? theme.colorScheme.primary.withOpacity(0.07)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                      0.58,
+                    ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color:
+                  selected
+                      ? theme.colorScheme.primary.withOpacity(0.24)
+                      : theme.colorScheme.outline.withOpacity(0.12),
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color:
+                      selected
+                          ? theme.colorScheme.primary.withOpacity(0.10)
+                          : theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  selected
+                      ? Icons.engineering_rounded
+                      : Icons.engineering_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      selected
+                          ? responsavel.nome
+                          : 'Selecionar responsável técnico',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      selected
+                          ? responsavel.subtitulo
+                          : 'Apenas ADMIN ou colaboradores com permissão técnica aparecem aqui.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => _abrirSelecaoResponsavel(responsaveis),
+                icon: Icon(
+                  selected ? Icons.swap_horiz_rounded : Icons.search_rounded,
+                ),
+                label: Text(
+                  selected ? 'Trocar responsável' : 'Buscar responsável',
+                ),
               ),
             ],
           ),
@@ -898,7 +1170,8 @@ class _AtendimentosTecnicosWebPageState
               final title = _sectionHeader(
                 theme,
                 title: 'Itens do orçamento/serviço',
-                subtitle: 'Adicione peças/produtos e mão de obra no mesmo atendimento.',
+                subtitle:
+                    'Adicione peças/produtos e mão de obra no mesmo atendimento.',
                 icon: Icons.inventory_2_outlined,
               );
               final actions = Wrap(
@@ -920,7 +1193,11 @@ class _AtendimentosTecnicosWebPageState
               if (compact) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[title, const SizedBox(height: 12), actions],
+                  children: <Widget>[
+                    title,
+                    const SizedBox(height: 12),
+                    actions,
+                  ],
                 );
               }
               return Row(
@@ -938,7 +1215,9 @@ class _AtendimentosTecnicosWebPageState
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.45),
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                  0.45,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -948,9 +1227,13 @@ class _AtendimentosTecnicosWebPageState
             )
           else
             Column(
-              children: _itens
-                  .map((item) => _buildItemRow(theme, item, isCompact: isCompact))
-                  .toList(),
+              children:
+                  _itens
+                      .map(
+                        (item) =>
+                            _buildItemRow(theme, item, isCompact: isCompact),
+                      )
+                      .toList(),
             ),
         ],
       ),
@@ -1013,50 +1296,53 @@ class _AtendimentosTecnicosWebPageState
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: isCompact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(children: <Widget>[icon, const SizedBox(width: 10), info]),
-                const SizedBox(height: 10),
-                Row(
-                  children: <Widget>[
-                    quantity,
-                    const Spacer(),
-                    Text(
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[icon, const SizedBox(width: 10), info],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      quantity,
+                      const Spacer(),
+                      Text(
+                        _formatarMoeda(item.total),
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      IconButton(
+                        tooltip: 'Remover item',
+                        onPressed: () => _removerItem(item),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  icon,
+                  const SizedBox(width: 10),
+                  info,
+                  quantity,
+                  SizedBox(
+                    width: 104,
+                    child: Text(
                       _formatarMoeda(item.total),
+                      textAlign: TextAlign.right,
                       style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
-                    IconButton(
-                      tooltip: 'Remover item',
-                      onPressed: () => _removerItem(item),
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                icon,
-                const SizedBox(width: 10),
-                info,
-                quantity,
-                SizedBox(
-                  width: 104,
-                  child: Text(
-                    _formatarMoeda(item.total),
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Remover item',
-                  onPressed: () => _removerItem(item),
-                  icon: const Icon(Icons.delete_outline),
-                ),
-              ],
-            ),
+                  IconButton(
+                    tooltip: 'Remover item',
+                    onPressed: () => _removerItem(item),
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                ],
+              ),
     );
   }
 
@@ -1083,6 +1369,12 @@ class _AtendimentosTecnicosWebPageState
         ),
         _metricChip(
           theme,
+          _formatarData(_dataEntregaPrevista),
+          'entrega prevista',
+          Icons.assignment_turned_in_outlined,
+        ),
+        _metricChip(
+          theme,
           _formatarMoeda(_totalProdutos),
           'produtos',
           Icons.inventory_2_outlined,
@@ -1103,13 +1395,14 @@ class _AtendimentosTecnicosWebPageState
     );
     final action = FilledButton.icon(
       onPressed: _salvando ? null : () => _salvarAtendimento(clientes),
-      icon: _salvando
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.check_rounded),
+      icon:
+          _salvando
+              ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+              : const Icon(Icons.check_rounded),
       label: Text(_salvando ? 'Salvando...' : 'Criar atendimento'),
     );
 
@@ -1120,22 +1413,23 @@ class _AtendimentosTecnicosWebPageState
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.primary.withOpacity(0.16)),
       ),
-      child: isCompact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                metrics,
-                const SizedBox(height: 14),
-                SizedBox(width: double.infinity, child: action),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: metrics),
-                const SizedBox(width: 12),
-                action,
-              ],
-            ),
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  metrics,
+                  const SizedBox(height: 14),
+                  SizedBox(width: double.infinity, child: action),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(child: metrics),
+                  const SizedBox(width: 12),
+                  action,
+                ],
+              ),
     );
   }
 
@@ -1188,27 +1482,29 @@ class _AtendimentosTecnicosWebPageState
         final compact = constraints.maxWidth < 720;
         if (compact) {
           return Column(
-            children: children
-                .map(
-                  (child) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: child,
-                  ),
-                )
-                .toList(),
+            children:
+                children
+                    .map(
+                      (child) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: child,
+                      ),
+                    )
+                    .toList(),
           );
         }
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: children
-              .map(
-                (child) => SizedBox(
-                  width: (constraints.maxWidth - 12) / 2,
-                  child: child,
-                ),
-              )
-              .toList(),
+          children:
+              children
+                  .map(
+                    (child) => SizedBox(
+                      width: (constraints.maxWidth - 12) / 2,
+                      child: child,
+                    ),
+                  )
+                  .toList(),
         );
       },
     );
@@ -1227,13 +1523,16 @@ class _AtendimentosTecnicosWebPageState
       hintText: hint,
       helperText: helper,
       alignLabelWithHint: alignLabelWithHint,
-      prefixIcon: icon == null ? null : Icon(icon, color: theme.colorScheme.primary),
+      prefixIcon:
+          icon == null ? null : Icon(icon, color: theme.colorScheme.primary),
       filled: true,
       fillColor: theme.colorScheme.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.12)),
+        borderSide: BorderSide(
+          color: theme.colorScheme.outline.withOpacity(0.12),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1260,9 +1559,10 @@ class _AtendimentosTecnicosWebPageState
           color: highlight ? colorScheme.primary : colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: highlight
-                ? colorScheme.primary
-                : colorScheme.outline.withOpacity(0.12),
+            color:
+                highlight
+                    ? colorScheme.primary
+                    : colorScheme.outline.withOpacity(0.12),
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -1278,9 +1578,10 @@ class _AtendimentosTecnicosWebPageState
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: highlight
-                    ? Colors.white.withOpacity(0.15)
-                    : colorScheme.primary.withOpacity(0.08),
+                color:
+                    highlight
+                        ? Colors.white.withOpacity(0.15)
+                        : colorScheme.primary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -1299,9 +1600,10 @@ class _AtendimentosTecnicosWebPageState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: highlight
-                          ? Colors.white.withOpacity(0.86)
-                          : colorScheme.onSurface.withOpacity(0.62),
+                      color:
+                          highlight
+                              ? Colors.white.withOpacity(0.86)
+                              : colorScheme.onSurface.withOpacity(0.62),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -1323,9 +1625,10 @@ class _AtendimentosTecnicosWebPageState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: highlight
-                          ? Colors.white.withOpacity(0.78)
-                          : colorScheme.onSurface.withOpacity(0.56),
+                      color:
+                          highlight
+                              ? Colors.white.withOpacity(0.78)
+                              : colorScheme.onSurface.withOpacity(0.56),
                       fontSize: 12,
                     ),
                   ),
@@ -1399,7 +1702,12 @@ class _AtendimentosTecnicosWebPageState
     );
   }
 
-  Widget _metricChip(ThemeData theme, String value, String label, IconData icon) {
+  Widget _metricChip(
+    ThemeData theme,
+    String value,
+    String label,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
@@ -1414,7 +1722,10 @@ class _AtendimentosTecnicosWebPageState
           const SizedBox(width: 7),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
         ],
       ),
     );
@@ -1469,16 +1780,275 @@ class _AtendimentoTecnicoErrorState extends StatelessWidget {
   }
 }
 
+class _ResponsavelTecnicoWebSelectorDialog extends StatefulWidget {
+  const _ResponsavelTecnicoWebSelectorDialog({
+    required this.responsaveis,
+    required this.responsavelSelecionado,
+  });
+
+  final List<_ResponsavelTecnicoWeb> responsaveis;
+  final _ResponsavelTecnicoWeb? responsavelSelecionado;
+
+  @override
+  State<_ResponsavelTecnicoWebSelectorDialog> createState() =>
+      _ResponsavelTecnicoWebSelectorDialogState();
+}
+
+class _ResponsavelTecnicoWebSelectorDialogState
+    extends State<_ResponsavelTecnicoWebSelectorDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  String _filter = '';
+
+  List<_ResponsavelTecnicoWeb> get _responsaveisFiltrados {
+    final String term = _normalize(_filter);
+    if (term.isEmpty) return widget.responsaveis;
+    return widget.responsaveis
+        .where((_ResponsavelTecnicoWeb item) {
+          return _normalize('${item.nome} ${item.subtitulo}').contains(term);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<_ResponsavelTecnicoWeb> responsaveis = _responsaveisFiltrados;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 680),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.engineering_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Responsável técnico',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Selecione um técnico autorizado para assistência.',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Fechar',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _searchController,
+                onChanged: (String value) => setState(() => _filter = value),
+                decoration: InputDecoration(
+                  hintText: 'Buscar responsável',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon:
+                      _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                            tooltip: 'Limpar busca',
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _filter = '');
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Flexible(
+                child:
+                    responsaveis.isEmpty
+                        ? _buildEmpty(theme)
+                        : ListView.separated(
+                          shrinkWrap: true,
+                          itemBuilder: (BuildContext context, int index) {
+                            final _ResponsavelTecnicoWeb responsavel =
+                                responsaveis[index];
+                            final bool selected =
+                                widget.responsavelSelecionado?.id ==
+                                responsavel.id;
+                            return _buildItem(theme, responsavel, selected);
+                          },
+                          separatorBuilder:
+                              (_, __) => const SizedBox(height: 10),
+                          itemCount: responsaveis.length,
+                        ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.45),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        'Nenhum responsável encontrado.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+
+  Widget _buildItem(
+    ThemeData theme,
+    _ResponsavelTecnicoWeb responsavel,
+    bool selected,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Navigator.of(context).pop(responsavel),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                selected
+                    ? theme.colorScheme.primary.withOpacity(0.08)
+                    : theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color:
+                  selected
+                      ? theme.colorScheme.primary.withOpacity(0.28)
+                      : theme.colorScheme.outline.withOpacity(0.12),
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 21,
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.09),
+                child: Icon(
+                  Icons.person_outline_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      responsavel.nome,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    if (responsavel.subtitulo.trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 3),
+                      Text(
+                        responsavel.subtitulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedOpacity(
+                opacity: selected ? 1 : 0,
+                duration: const Duration(milliseconds: 140),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+}
+
 class _AtendimentoTecnicoViewState {
   const _AtendimentoTecnicoViewState({
     required this.dominios,
     required this.atendimentos,
     required this.clientes,
+    required this.responsaveis,
   });
 
   final AtendimentoTecnicoDominiosBaseModel dominios;
   final List<AtendimentoTecnicoModel> atendimentos;
   final List<ClienteUsuario> clientes;
+  final List<_ResponsavelTecnicoWeb> responsaveis;
+}
+
+class _ResponsavelTecnicoWeb {
+  const _ResponsavelTecnicoWeb({
+    required this.id,
+    required this.nome,
+    required this.subtitulo,
+  });
+
+  final String id;
+  final String nome;
+  final String subtitulo;
 }
 
 class _AtendimentoItemDraft {
@@ -1511,7 +2081,7 @@ class _AtendimentoItemDraft {
     );
   }
 
-  AtendimentoTecnicoItemInput toInput() {
+  AtendimentoTecnicoItemInput toInput({_ResponsavelTecnicoWeb? responsavel}) {
     final produto = tipoCodigo == 'PRODUCT';
     return AtendimentoTecnicoItemInput(
       tipoItemId: produto ? 10 : 20,
@@ -1520,6 +2090,8 @@ class _AtendimentoItemDraft {
       descricaoSnapshot: descricao,
       quantidade: quantidade.toDouble(),
       valorUnitario: valorUnitario,
+      idTecnicoResponsavel: responsavel?.id,
+      nomeTecnicoResponsavel: responsavel?.nome,
       movimentaEstoque: produto,
     );
   }

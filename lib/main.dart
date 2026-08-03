@@ -15,6 +15,7 @@ import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.d
 import 'package:sixpos/presentation/screens/colaborador_convite_publico_web_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_assinatura_publica_page.dart';
+import 'package:sixpos/presentation/screens/atendimento_tecnico_status_publico_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_web_page.dart';
@@ -49,19 +50,23 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
-          create: (_) => ProdutosListProvider<ProdutoModel>(
-            fetchFunction: ProdutoService().produtosList,
-          ),
+          create:
+              (_) => ProdutosListProvider<ProdutoModel>(
+                fetchFunction: ProdutoService().produtosList,
+              ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
-        ChangeNotifierProvider(create: (_) => ColaboradorAutorizacoesProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ColaboradorAutorizacoesProvider(),
+        ),
         ChangeNotifierProvider(
           lazy: false,
-          create: (_) => LocaleSettingsProvider(
-            regionalizacaoService: RegionalizacaoService(
-              apiClient: HttpRegionalizacaoApiClient(),
-            ),
-          )..initialize(),
+          create:
+              (_) => LocaleSettingsProvider(
+                regionalizacaoService: RegionalizacaoService(
+                  apiClient: HttpRegionalizacaoApiClient(),
+                ),
+              )..initialize(),
         ),
       ],
       child: MyApp(hasSeenOnboarding: hasSeenOnboarding),
@@ -90,42 +95,81 @@ class MyApp extends StatelessWidget {
     final Uri routeUri = Uri.parse(routeName);
 
     if (routeUri.path == '/' || routeUri.path == '/home') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const WebRootPage());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const WebRootPage(),
+      );
     }
     if (routeUri.path == '/login') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const LoginPageWeb());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const LoginPageWeb(),
+      );
     }
     if (routeUri.path == '/admin') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const LoginPageWeb());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const LoginPageWeb(),
+      );
     }
     if (routeUri.path == '/admin/dashboard') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AdminPortalWebPage());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AdminPortalWebPage(),
+      );
     }
     if (routeUri.path == '/admin/novas-ideias') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AdminNovasIdeiasWebPage());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AdminNovasIdeiasWebPage(),
+      );
     }
     if (routeUri.path == '/register') {
       return _slidePageRoute(settings: settings, page: const RegisterPageWeb());
     }
     if (routeUri.path == '/forgot-password') {
-      return _slidePageRoute(settings: settings, page: const EsqueceuSenhaWeb());
+      return _slidePageRoute(
+        settings: settings,
+        page: const EsqueceuSenhaWeb(),
+      );
     }
     if (routeUri.path == '/app') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const PaginaPrincipalWeb());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const PaginaPrincipalWeb(),
+      );
     }
     if (routeUri.path == '/app/atendimentos-tecnicos') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AtendimentosTecnicosWebPage());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AtendimentosTecnicosWebPage(),
+      );
     }
     if (routeUri.path == '/app/atendimentos-tecnicos/criados') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const AtendimentosTecnicosListaWebPage());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AtendimentosTecnicosListaWebPage(),
+      );
     }
     if (routeUri.path == '/app/configuracoes/status-atendimento-tecnico') {
-      return MaterialPageRoute<void>(settings: settings, builder: (_) => const StatusAtendimentoTecnicoConfigWebPage());
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const StatusAtendimentoTecnicoConfigWebPage(),
+      );
     }
     if (routeUri.path == '/atendimento/assinatura') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
+        builder:
+            (_) =>
+                AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
+      );
+    }
+    if (routeUri.path == '/atendimento/status') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder:
+            (_) => AtendimentoTecnicoStatusPublicoPage(initialUri: routeUri),
       );
     }
     if (routeUri.path == '/onboarding') {
@@ -142,7 +186,8 @@ class MyApp extends StatelessWidget {
     }
 
     final bool isPublicOsRoute =
-        routeUri.pathSegments.isNotEmpty && routeUri.pathSegments.first == 'ordem-servico';
+        routeUri.pathSegments.isNotEmpty &&
+        routeUri.pathSegments.first == 'ordem-servico';
     final bool isPublicClienteAutoCadastroRoute =
         routeUri.pathSegments.length >= 2 &&
         routeUri.pathSegments[0] == 'cliente' &&
@@ -155,10 +200,11 @@ class MyApp extends StatelessWidget {
     if (isPublicColaboradorConviteRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => ColaboradorConvitePublicoWebPage(
-          codigo: routeUri.pathSegments[2],
-          initialUri: routeUri,
-        ),
+        builder:
+            (_) => ColaboradorConvitePublicoWebPage(
+              codigo: routeUri.pathSegments[2],
+              initialUri: routeUri,
+            ),
       );
     }
     if (isPublicClienteAutoCadastroRoute) {
@@ -168,16 +214,22 @@ class MyApp extends StatelessWidget {
       );
     }
     if (isPublicOsRoute) {
-      final String ordemId = routeUri.pathSegments.length > 1
-          ? routeUri.pathSegments[1]
-          : 'os-sem-id';
+      final String ordemId =
+          routeUri.pathSegments.length > 1
+              ? routeUri.pathSegments[1]
+              : 'os-sem-id';
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
+        builder:
+            (_) =>
+                OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
       );
     }
 
-    return MaterialPageRoute<void>(settings: settings, builder: (_) => const WebRootPage());
+    return MaterialPageRoute<void>(
+      settings: settings,
+      builder: (_) => const WebRootPage(),
+    );
   }
 
   PageRouteBuilder<void> _slidePageRoute({
@@ -193,10 +245,13 @@ class MyApp extends StatelessWidget {
         final slide = Tween<Offset>(
           begin: const Offset(1.0, 0.0),
           end: Offset.zero,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic));
-        final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
         );
+        final fade = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
         return SlideTransition(
           position: slide,
           child: FadeTransition(opacity: fade, child: child),
@@ -212,7 +267,8 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
-      onGenerateTitle: (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
+      onGenerateTitle:
+          (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
@@ -225,9 +281,12 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: kIsWeb
-          ? null
-          : (hasSeenOnboarding ? const AuthGateMobile() : OnboardingScreen()),
+      home:
+          kIsWeb
+              ? null
+              : (hasSeenOnboarding
+                  ? const AuthGateMobile()
+                  : OnboardingScreen()),
       initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
     );
