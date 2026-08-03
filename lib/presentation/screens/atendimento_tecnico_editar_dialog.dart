@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
+import '../../data/models/cliente_usuario_model.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/produto_model.dart';
+import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../l10n/six_i18n.dart';
+import '../../providers/locale_settings_provider.dart';
 import 'produto_lista_sub_painel_web.dart';
 
 class AtendimentoTecnicoEditarDialog extends StatefulWidget {
@@ -21,6 +25,8 @@ class AtendimentoTecnicoEditarDialog extends StatefulWidget {
 class _AtendimentoTecnicoEditarDialogState
     extends State<AtendimentoTecnicoEditarDialog> {
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
+  final ClienteUsuarioApiClient _clienteApiClient =
+      HttpClienteUsuarioApiClient();
   final ColaboradorUsuarioApiClient _colaboradorApiClient =
       HttpColaboradorUsuarioApiClient();
   final TextEditingController _descricaoController = TextEditingController();
@@ -39,10 +45,14 @@ class _AtendimentoTecnicoEditarDialogState
   late DateTime _validadeOrcamentoEm;
   late DateTime _validadeOrcamentoOriginalEm;
   late DateTime _dataVencimentoEm;
+  late DateTime _dataEntregaPrevista;
   final List<_AtendimentoItemEditavel> _itens = <_AtendimentoItemEditavel>[];
+  List<_ClienteAtendimentoWeb> _clientes = const <_ClienteAtendimentoWeb>[];
   List<_ResponsavelTecnicoWeb> _responsaveis = const <_ResponsavelTecnicoWeb>[];
+  _ClienteAtendimentoWeb? _clienteSelecionado;
   _ResponsavelTecnicoWeb? _responsavelSelecionado;
   bool _salvando = false;
+  bool _carregandoClientes = false;
   bool _carregandoResponsaveis = false;
 
   @override
@@ -50,6 +60,10 @@ class _AtendimentoTecnicoEditarDialogState
     super.initState();
     final atendimento = widget.atendimento;
     final equipamento = atendimento.equipamento;
+    _clienteSelecionado = _clienteInicial(atendimento);
+    _clientes = <_ClienteAtendimentoWeb>[
+      if (_clienteSelecionado != null) _clienteSelecionado!,
+    ];
     _responsavelSelecionado = _responsavelInicial(atendimento);
     _descricaoController.text = atendimento.descricao ?? '';
     _tipoEquipamentoController.text = equipamento?.tipo ?? '';
@@ -71,7 +85,13 @@ class _AtendimentoTecnicoEditarDialogState
           atendimento.validadeOrcamentoEm ??
           DateTime.now().add(const Duration(days: 7)),
     );
+    _dataEntregaPrevista = _normalizarData(
+      atendimento.dataEntregaPrevista ??
+          atendimento.validadeOrcamentoEm ??
+          DateTime.now().add(const Duration(days: 7)),
+    );
     _itens.addAll(atendimento.itens.map(_AtendimentoItemEditavel.fromModel));
+    _carregarClientes();
     _carregarResponsaveis();
   }
 
@@ -94,6 +114,68 @@ class _AtendimentoTecnicoEditarDialogState
       DateTime(value.year, value.month, value.day);
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
+
+  Future<void> _carregarClientes() async {
+    setState(() => _carregandoClientes = true);
+    try {
+      final ClienteUsuarioListResponse response =
+          await _clienteApiClient.listarClientesUsuario();
+      final List<_ClienteAtendimentoWeb> clientes =
+          response.clientes
+              .where((ClienteUsuario cliente) => cliente.ativo)
+              .map(_ClienteAtendimentoWeb.fromCliente)
+              .toList();
+
+      final _ClienteAtendimentoWeb? clienteAtual = _clienteSelecionado;
+      if (clienteAtual != null &&
+          !clientes.any(
+            (_ClienteAtendimentoWeb item) => item.id == clienteAtual.id,
+          )) {
+        clientes.insert(0, clienteAtual);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _clientes = clientes;
+        _clienteSelecionado = _resolverClienteSelecionado(clientes);
+        _carregandoClientes = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _carregandoClientes = false);
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.edit.clientsLoadError',
+          'Não foi possível carregar os clientes.',
+        ),
+      );
+    }
+  }
+
+  _ClienteAtendimentoWeb? _clienteInicial(AtendimentoTecnicoModel atendimento) {
+    final String id = atendimento.idCliente?.trim() ?? '';
+    final String nome = atendimento.nomeClienteSnapshot?.trim() ?? '';
+    if (id.isEmpty && nome.isEmpty) return null;
+    return _ClienteAtendimentoWeb(
+      id: id,
+      nome: nome.isEmpty ? 'Cliente não informado' : nome,
+      subtitulo:
+          id.isEmpty ? 'Snapshot do atendimento' : 'Cliente do atendimento',
+      nomeInformado: nome.isNotEmpty,
+    );
+  }
+
+  _ClienteAtendimentoWeb? _resolverClienteSelecionado(
+    List<_ClienteAtendimentoWeb> clientes,
+  ) {
+    if (clientes.isEmpty) return null;
+    final _ClienteAtendimentoWeb? atual = _clienteSelecionado;
+    if (atual == null) return null;
+    for (final _ClienteAtendimentoWeb cliente in clientes) {
+      if (cliente.id == atual.id) return cliente;
+    }
+    return clientes.first;
+  }
 
   Future<void> _carregarResponsaveis() async {
     setState(() => _carregandoResponsaveis = true);
@@ -229,6 +311,26 @@ class _AtendimentoTecnicoEditarDialogState
     });
   }
 
+  Future<void> _selecionarDataEntregaPrevista() async {
+    final hoje = DateTime.now();
+    final inicio = DateTime(hoje.year, hoje.month, hoje.day);
+    final primeiraData = DateTime(2000);
+    final selecionada = await showDatePicker(
+      context: context,
+      initialDate:
+          _dataEntregaPrevista.isBefore(primeiraData)
+              ? primeiraData
+              : _dataEntregaPrevista,
+      firstDate: primeiraData,
+      lastDate: inicio.add(const Duration(days: 3650)),
+      helpText: 'Entrega prevista',
+    );
+    if (selecionada == null) return;
+    setState(() {
+      _dataEntregaPrevista = _normalizarData(selecionada);
+    });
+  }
+
   Future<void> _abrirSelecaoItens(String tipoInicial) async {
     final result = await showDialog<dynamic>(
       context: context,
@@ -303,6 +405,38 @@ class _AtendimentoTecnicoEditarDialogState
     setState(() => _responsavelSelecionado = responsavel);
   }
 
+  Future<void> _abrirSelecaoCliente() async {
+    if (_carregandoClientes) {
+      _mostrarMensagem(
+        _t('atendimentoTecnico.edit.loadingClients', 'Carregando clientes.'),
+      );
+      return;
+    }
+    if (_clientes.isEmpty) {
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.edit.noClients',
+          'Nenhum cliente disponível para seleção.',
+        ),
+      );
+      return;
+    }
+
+    final _ClienteAtendimentoWeb? cliente =
+        await showDialog<_ClienteAtendimentoWeb>(
+          context: context,
+          builder: (BuildContext context) {
+            return _ClienteAtendimentoEditarWebDialog(
+              clientes: _clientes,
+              clienteSelecionado: _clienteSelecionado,
+            );
+          },
+        );
+
+    if (cliente == null || !mounted) return;
+    setState(() => _clienteSelecionado = cliente);
+  }
+
   void _adicionarProduto(ProdutoModel produto) {
     final tipoCodigo = _ehServico(produto) ? 'SERVICE' : 'PRODUCT';
     final chave =
@@ -370,7 +504,14 @@ class _AtendimentoTecnicoEditarDialogState
       );
       return;
     }
-
+    final _ClienteAtendimentoWeb? cliente = _clienteSelecionado;
+    if (cliente == null) {
+      _mostrarMensagem('Selecione um cliente antes de salvar.');
+      return;
+    }
+    final String? idCliente = _textoOuNulo(cliente.id);
+    final String? nomeClienteSnapshot =
+        cliente.nomeInformado ? _textoOuNulo(cliente.nome) : null;
     final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
 
     setState(() => _salvando = true);
@@ -380,7 +521,10 @@ class _AtendimentoTecnicoEditarDialogState
         dataVencimentoEm: _dataVencimentoEm,
         input: AtendimentoTecnicoUpdateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
+          dataEntregaPrevista: _dataEntregaPrevista,
           descricao: _textoOuNulo(_descricaoController.text),
+          idCliente: idCliente,
+          nomeClienteSnapshot: nomeClienteSnapshot,
           idTecnicoResponsavel: responsavel?.id,
           nomeTecnicoResponsavelSnapshot: responsavel?.nome,
           equipamento: AtendimentoTecnicoEquipamentoModel(
@@ -422,10 +566,7 @@ class _AtendimentoTecnicoEditarDialogState
   }
 
   String _formatarData(DateTime value) {
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    return '$dia/$mes/$ano';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   String _formatarMoeda(double value) =>
@@ -492,7 +633,7 @@ class _AtendimentoTecnicoEditarDialogState
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Text(
-                        'Ao salvar alterações de produtos, serviços, validade, vencimento financeiro ou observações, esta versão do orçamento exigirá nova assinatura do cliente.',
+                        'Ao salvar alterações de produtos, serviços, validade, entrega prevista, vencimento financeiro ou observações, esta versão do orçamento exigirá nova assinatura do cliente.',
                         style: TextStyle(
                           color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w700,
@@ -506,6 +647,7 @@ class _AtendimentoTecnicoEditarDialogState
                         labelText: 'Descrição interna',
                       ),
                     ),
+                    _clienteSelectorField(theme),
                     _responsavelSelectorField(theme),
                     InkWell(
                       onTap: _selecionarValidade,
@@ -533,6 +675,22 @@ class _AtendimentoTecnicoEditarDialogState
                         ),
                         child: Text(
                           _formatarData(_dataVencimentoEm),
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: _selecionarDataEntregaPrevista,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Entrega prevista',
+                          helperText:
+                              'Prazo operacional para término ou entrega.',
+                          suffixIcon: Icon(Icons.assignment_turned_in_outlined),
+                        ),
+                        child: Text(
+                          _formatarData(_dataEntregaPrevista),
                           style: const TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
@@ -713,6 +871,73 @@ class _AtendimentoTecnicoEditarDialogState
     );
   }
 
+  Widget _clienteSelectorField(ThemeData theme) {
+    final _ClienteAtendimentoWeb? cliente = _clienteSelecionado;
+    final bool hasSelection = cliente != null;
+    final ColorScheme colorScheme = theme.colorScheme;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: _salvando ? null : _abrirSelecaoCliente,
+        borderRadius: BorderRadius.circular(12),
+        child: InputDecorator(
+          isEmpty: !hasSelection,
+          decoration: InputDecoration(
+            labelText: _t('atendimentoTecnico.edit.clientLabel', 'Cliente'),
+            helperText:
+                _carregandoClientes
+                    ? _t(
+                      'atendimentoTecnico.edit.loadingClients',
+                      'Carregando clientes.',
+                    )
+                    : _t(
+                      'atendimentoTecnico.edit.clientHelper',
+                      'Cliente vinculado ao atendimento técnico.',
+                    ),
+            suffixIcon:
+                _carregandoClientes
+                    ? const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                    : const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.person_search_outlined, color: colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  hasSelection
+                      ? cliente.nome
+                      : _t(
+                        'atendimentoTecnico.edit.selectClient',
+                        'Selecione o cliente',
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color:
+                        hasSelection
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurfaceVariant,
+                    fontWeight:
+                        hasSelection ? FontWeight.w900 : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _responsavelSelectorField(ThemeData theme) {
     final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
     final bool hasSelection = responsavel != null;
@@ -832,6 +1057,353 @@ class _AtendimentoTecnicoEditarDialogState
             icon: const Icon(Icons.delete_outline),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ClienteAtendimentoWeb {
+  const _ClienteAtendimentoWeb({
+    required this.id,
+    required this.nome,
+    required this.subtitulo,
+    required this.nomeInformado,
+  });
+
+  final String id;
+  final String nome;
+  final String subtitulo;
+  final bool nomeInformado;
+
+  factory _ClienteAtendimentoWeb.fromCliente(ClienteUsuario cliente) {
+    final String nome = cliente.nome.trim();
+    final String subtitulo = <String>[
+      cliente.documento,
+      cliente.telefone,
+      cliente.email,
+    ].where((String item) => item.trim().isNotEmpty).join(' • ');
+    return _ClienteAtendimentoWeb(
+      id: cliente.id,
+      nome: nome.isEmpty ? 'Cliente sem nome' : nome,
+      subtitulo: subtitulo.isEmpty ? 'Cliente cadastrado' : subtitulo,
+      nomeInformado: nome.isNotEmpty,
+    );
+  }
+}
+
+class _ClienteAtendimentoEditarWebDialog extends StatefulWidget {
+  const _ClienteAtendimentoEditarWebDialog({
+    required this.clientes,
+    required this.clienteSelecionado,
+  });
+
+  final List<_ClienteAtendimentoWeb> clientes;
+  final _ClienteAtendimentoWeb? clienteSelecionado;
+
+  @override
+  State<_ClienteAtendimentoEditarWebDialog> createState() =>
+      _ClienteAtendimentoEditarWebDialogState();
+}
+
+class _ClienteAtendimentoEditarWebDialogState
+    extends State<_ClienteAtendimentoEditarWebDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  String _filter = '';
+
+  List<_ClienteAtendimentoWeb> get _clientesFiltrados {
+    final String term = _normalize(_filter);
+    if (term.isEmpty) return widget.clientes;
+    return widget.clientes
+        .where((_ClienteAtendimentoWeb item) {
+          return _normalize('${item.nome} ${item.subtitulo}').contains(term);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<_ClienteAtendimentoWeb> clientes = _clientesFiltrados;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 12, 14),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.person_search_outlined,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          context.t(
+                            'atendimentoTecnico.edit.selectClientTitle',
+                            fallback: 'Selecionar cliente',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          context.t(
+                            'atendimentoTecnico.edit.selectClientSubtitle',
+                            fallback:
+                                'Busque e selecione o cliente vinculado ao atendimento.',
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: context.t('common.close', fallback: 'Fechar'),
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (String value) => setState(() => _filter = value),
+                decoration: InputDecoration(
+                  hintText: context.t(
+                    'atendimentoTecnico.edit.searchClient',
+                    fallback: 'Buscar cliente',
+                  ),
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon:
+                      _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                            tooltip: context.t(
+                              'common.clear',
+                              fallback: 'Limpar',
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _filter = '');
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                  filled: true,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child:
+                  clientes.isEmpty
+                      ? _ClienteAtendimentoWebEmptyState(
+                        text: context.t(
+                          'atendimentoTecnico.edit.noClientFound',
+                          fallback: 'Nenhum cliente encontrado.',
+                        ),
+                      )
+                      : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: clientes.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (BuildContext context, int index) {
+                          final _ClienteAtendimentoWeb cliente =
+                              clientes[index];
+                          final bool selected =
+                              widget.clienteSelecionado?.id == cliente.id;
+                          return _ClienteAtendimentoWebItem(
+                            cliente: cliente,
+                            selected: selected,
+                            onTap: () => Navigator.of(context).pop(cliente),
+                          );
+                        },
+                      ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+}
+
+class _ClienteAtendimentoWebItem extends StatelessWidget {
+  const _ClienteAtendimentoWebItem({
+    required this.cliente,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _ClienteAtendimentoWeb cliente;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                selected
+                    ? colorScheme.primary.withValues(alpha: 0.08)
+                    : colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color:
+                  selected
+                      ? colorScheme.primary.withValues(alpha: 0.38)
+                      : colorScheme.outline.withValues(alpha: 0.18),
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 21,
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.10),
+                child: Text(
+                  _iniciais(cliente.nome),
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      cliente.nome,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (cliente.subtitulo.trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 3),
+                      Text(
+                        cliente.subtitulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color:
+                    selected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _iniciais(String nome) {
+    final List<String> partes = nome
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String item) => item.isNotEmpty)
+        .toList(growable: false);
+    if (partes.isEmpty) return 'CL';
+    if (partes.length == 1) return partes.first.substring(0, 1).toUpperCase();
+    return '${partes.first.substring(0, 1)}${partes.last.substring(0, 1)}'
+        .toUpperCase();
+  }
+}
+
+class _ClienteAtendimentoWebEmptyState extends StatelessWidget {
+  const _ClienteAtendimentoWebEmptyState({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.person_search_outlined,
+              size: 36,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

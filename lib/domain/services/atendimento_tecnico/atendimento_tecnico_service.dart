@@ -12,11 +12,15 @@ class AtendimentoTecnicoService {
     return _apiClient.buscarDominiosBase();
   }
 
-  Future<List<DominioStatusAtendimentoCustomizacaoModel>> listarCustomizacoesStatusAtendimento() {
+  Future<List<DominioStatusAtendimentoCustomizacaoModel>>
+  listarCustomizacoesStatusAtendimento() {
     return _apiClient.listarCustomizacoesStatusAtendimento();
   }
 
-  Future<List<DominioStatusAtendimentoCustomizacaoModel>> salvarCustomizacoesStatusAtendimento(List<Map<String, dynamic>> customizacoes) {
+  Future<List<DominioStatusAtendimentoCustomizacaoModel>>
+  salvarCustomizacoesStatusAtendimento(
+    List<Map<String, dynamic>> customizacoes,
+  ) {
     return _apiClient.salvarCustomizacoesStatusAtendimento(customizacoes);
   }
 
@@ -24,19 +28,37 @@ class AtendimentoTecnicoService {
     return _apiClient.listar();
   }
 
-  Future<AtendimentoTecnicoModel> criar(AtendimentoTecnicoCreateInput input, {DateTime? dataVencimentoEm}) {
+  Future<AtendimentoTecnicoModel> criar(
+    AtendimentoTecnicoCreateInput input, {
+    DateTime? dataVencimentoEm,
+  }) {
     return _apiClient.criar(input, dataVencimentoEm: dataVencimentoEm);
   }
 
-  Future<AtendimentoTecnicoModel> atualizar({required String id, required AtendimentoTecnicoUpdateInput input, DateTime? dataVencimentoEm}) {
-    return _apiClient.atualizar(id: id, input: input, dataVencimentoEm: dataVencimentoEm);
+  Future<AtendimentoTecnicoModel> atualizar({
+    required String id,
+    required AtendimentoTecnicoUpdateInput input,
+    DateTime? dataVencimentoEm,
+  }) {
+    return _apiClient.atualizar(
+      id: id,
+      input: input,
+      dataVencimentoEm: dataVencimentoEm,
+    );
   }
 
-  Future<AtendimentoTecnicoModel> receber({required String id, required AtendimentoTecnicoRecebimentoInput input}) {
+  Future<AtendimentoTecnicoModel> receber({
+    required String id,
+    required AtendimentoTecnicoRecebimentoInput input,
+  }) {
     return _apiClient.receber(id: id, input: input);
   }
 
-  Future<AtendimentoTecnicoModel> alterarStatus({required String id, required DominioOpcaoModel status, String? observacao}) {
+  Future<AtendimentoTecnicoModel> alterarStatus({
+    required String id,
+    required DominioOpcaoModel status,
+    String? observacao,
+  }) {
     return _apiClient.alterarStatus(
       id: id,
       statusId: status.id,
@@ -46,15 +68,61 @@ class AtendimentoTecnicoService {
     );
   }
 
-  Future<Map<String, dynamic>> gerarLinkAssinatura({required String id, required String baseUrl}) {
+  Future<Map<String, dynamic>> gerarLinkAssinatura({
+    required String id,
+    required String baseUrl,
+  }) {
     return _apiClient.gerarLinkAssinatura(id: id, baseUrl: baseUrl);
   }
 
-  Future<Map<String, dynamic>> consultarAssinaturaPublica({required String idUnicoDaEmpresa, required String token}) {
-    return _apiClient.consultarAssinaturaPublica(idUnicoDaEmpresa: idUnicoDaEmpresa, token: token);
+  Future<AtendimentoTecnicoStatusPublicoLinkModel> gerarLinkStatusPublico({
+    required String id,
+    required String baseUrl,
+  }) {
+    return _apiClient.gerarLinkStatusPublico(id: id, baseUrl: baseUrl);
   }
 
-  Future<Map<String, dynamic>> aprovarAssinaturaPublica({required String idUnicoDaEmpresa, required String token, required String nomeAssinante, required String? documentoAssinante, required String assinaturaDataUrl, required String? observacao}) {
+  Future<AtendimentoTecnicoStatusPublicoModel> consultarStatusPublico({
+    required String idUnicoDaEmpresa,
+    required String token,
+  }) {
+    return _apiClient.consultarStatusPublico(
+      idUnicoDaEmpresa: idUnicoDaEmpresa,
+      token: token,
+    );
+  }
+
+  Future<AtendimentoTecnicoStatusPublicoLinkModel>
+  gerarLinkAssinaturaPeloStatusPublico({
+    required String idUnicoDaEmpresa,
+    required String token,
+    required String baseUrl,
+  }) {
+    return _apiClient.gerarLinkAssinaturaPeloStatusPublico(
+      idUnicoDaEmpresa: idUnicoDaEmpresa,
+      token: token,
+      baseUrl: baseUrl,
+    );
+  }
+
+  Future<Map<String, dynamic>> consultarAssinaturaPublica({
+    required String idUnicoDaEmpresa,
+    required String token,
+  }) {
+    return _apiClient.consultarAssinaturaPublica(
+      idUnicoDaEmpresa: idUnicoDaEmpresa,
+      token: token,
+    );
+  }
+
+  Future<Map<String, dynamic>> aprovarAssinaturaPublica({
+    required String idUnicoDaEmpresa,
+    required String token,
+    required String nomeAssinante,
+    required String? documentoAssinante,
+    required String assinaturaDataUrl,
+    required String? observacao,
+  }) {
     return _apiClient.aprovarAssinaturaPublica(
       idUnicoDaEmpresa: idUnicoDaEmpresa,
       token: token,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
@@ -8,6 +9,7 @@ import '../../data/models/produto_model.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../providers/locale_settings_provider.dart';
 import 'pdv_cliente_identificacao_dialog.dart';
 import 'produto_lista_sub_painel_web.dart';
 
@@ -51,6 +53,7 @@ class _AtendimentosTecnicosWebPageState
   late Future<_AtendimentoTecnicoViewState> _future;
   DateTime _validadeOrcamentoEm = _defaultValidadeOrcamento();
   DateTime _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
+  DateTime _dataEntregaPrevista = _defaultValidadeOrcamento();
   String? _clienteSelecionadoId;
   _ResponsavelTecnicoWeb? _responsavelSelecionado;
   bool _salvando = false;
@@ -128,6 +131,7 @@ class _AtendimentosTecnicosWebPageState
     _diagnosticoController.clear();
     _validadeOrcamentoEm = _defaultValidadeOrcamento();
     _vencimentoFinanceiroEm = _defaultVencimentoFinanceiro();
+    _dataEntregaPrevista = _defaultValidadeOrcamento();
     _itens.clear();
   }
 
@@ -264,15 +268,28 @@ class _AtendimentosTecnicosWebPageState
     setState(() => _vencimentoFinanceiroEm = data);
   }
 
+  Future<void> _selecionarDataEntregaPrevista() async {
+    final data = await _selecionarData(
+      initialDate: _dataEntregaPrevista,
+      helpText: 'Entrega prevista',
+      firstDate: DateTime(2000),
+    );
+    if (data == null) return;
+    setState(() => _dataEntregaPrevista = data);
+  }
+
   Future<DateTime?> _selecionarData({
     required DateTime initialDate,
     required String helpText,
+    DateTime? firstDate,
   }) async {
     final inicio = _inicioHoje();
+    final primeiraData = firstDate ?? inicio;
     final data = await showDatePicker(
       context: context,
-      initialDate: initialDate.isBefore(inicio) ? inicio : initialDate,
-      firstDate: inicio,
+      initialDate:
+          initialDate.isBefore(primeiraData) ? primeiraData : initialDate,
+      firstDate: primeiraData,
       lastDate: inicio.add(const Duration(days: 365)),
       helpText: helpText,
     );
@@ -414,7 +431,6 @@ class _AtendimentosTecnicosWebPageState
       );
       return;
     }
-
     final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
 
     setState(() => _salvando = true);
@@ -422,6 +438,7 @@ class _AtendimentosTecnicosWebPageState
       await _service.criar(
         AtendimentoTecnicoCreateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
+          dataEntregaPrevista: _dataEntregaPrevista,
           descricao: _textoOuNulo(_descricaoController.text),
           idCliente: cliente.id,
           nomeClienteSnapshot: cliente.nome,
@@ -465,14 +482,11 @@ class _AtendimentosTecnicosWebPageState
   }
 
   String _formatarMoeda(double value) =>
-      'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+      context.read<LocaleSettingsProvider>().formatCurrency(value);
 
   String _formatarData(DateTime? value) {
     if (value == null) return '-';
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    return '$dia/$mes/$ano';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   int _totalClientesAtivos(List<ClienteUsuario> clientes) =>
@@ -732,10 +746,18 @@ class _AtendimentosTecnicosWebPageState
             _summaryCard(
               theme,
               width: cardWidth,
+              label: 'Entrega prevista',
+              value: _formatarData(_dataEntregaPrevista),
+              helper: 'Prazo de término',
+              icon: Icons.event_available_outlined,
+            ),
+            _summaryCard(
+              theme,
+              width: cardWidth,
               label: 'Vencimento financeiro',
               value: _formatarData(_vencimentoFinanceiroEm),
               helper: 'Data da cobrança',
-              icon: Icons.event_available_outlined,
+              icon: Icons.account_balance_wallet_outlined,
             ),
             _summaryCard(
               theme,
@@ -825,6 +847,22 @@ class _AtendimentosTecnicosWebPageState
                 ),
                 child: Text(
                   _formatarData(_vencimentoFinanceiroEm),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: _selecionarDataEntregaPrevista,
+              child: InputDecorator(
+                decoration: _inputDecoration(
+                  theme,
+                  label: 'Entrega prevista',
+                  helper: 'Data prevista para entrega ou término.',
+                  icon: Icons.assignment_turned_in_outlined,
+                ),
+                child: Text(
+                  _formatarData(_dataEntregaPrevista),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -1328,6 +1366,12 @@ class _AtendimentosTecnicosWebPageState
           _formatarData(_vencimentoFinanceiroEm),
           'vencimento financeiro',
           Icons.account_balance_wallet_outlined,
+        ),
+        _metricChip(
+          theme,
+          _formatarData(_dataEntregaPrevista),
+          'entrega prevista',
+          Icons.assignment_turned_in_outlined,
         ),
         _metricChip(
           theme,

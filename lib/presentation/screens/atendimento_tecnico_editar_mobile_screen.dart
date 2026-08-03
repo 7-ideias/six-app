@@ -66,6 +66,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
   _ResponsavelTecnicoMobile? _responsavelSelecionado;
   late DateTime _validadeOrcamentoEm;
   late DateTime _vencimentoFinanceiroEm;
+  late DateTime _dataEntregaPrevista;
   bool _salvando = false;
   bool _carregandoDados = false;
 
@@ -116,6 +117,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
     );
     _vencimentoFinanceiroEm = _normalizarData(
       atendimento.dataVencimentoEm ?? _validadeOrcamentoEm,
+    );
+    _dataEntregaPrevista = _normalizarData(
+      atendimento.dataEntregaPrevista ?? _validadeOrcamentoEm,
     );
     _itens.addAll(
       atendimento.itens.map(_AtendimentoItemEditavelMobile.fromModel),
@@ -521,6 +525,12 @@ class _AtendimentoTecnicoEditarMobileScreenState
           const SizedBox(height: 16),
           _sectionTitle('Datas'),
           const SizedBox(height: 12),
+          _dateTile(
+            label: 'Entrega prevista',
+            value: _formatarData(_dataEntregaPrevista),
+            onTap: _selecionarEntregaPrevista,
+          ),
+          const SizedBox(height: 10),
           Row(
             children: <Widget>[
               Expanded(
@@ -972,14 +982,27 @@ class _AtendimentoTecnicoEditarMobileScreenState
     setState(() => _vencimentoFinanceiroEm = data);
   }
 
+  Future<void> _selecionarEntregaPrevista() async {
+    final DateTime? data = await _selecionarData(
+      title: 'Entrega prevista',
+      initialDate: _dataEntregaPrevista,
+      applyButtonLabel: 'Aplicar entrega',
+      firstDate: DateTime(2000),
+    );
+    if (data == null || !mounted) return;
+    setState(() => _dataEntregaPrevista = data);
+  }
+
   Future<DateTime?> _selecionarData({
     required String title,
     required DateTime initialDate,
     required String applyButtonLabel,
+    DateTime? firstDate,
   }) async {
     final DateTime inicio = _normalizarData(DateTime.now());
+    final DateTime primeiraData = firstDate ?? inicio;
     final DateTime initial =
-        initialDate.isBefore(inicio) ? inicio : initialDate;
+        initialDate.isBefore(primeiraData) ? primeiraData : initialDate;
     final DateTime? selected = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
@@ -990,7 +1013,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
         return DateSelectorMobileBottomSheet(
           title: title,
           initialDate: initial,
-          firstDate: inicio,
+          firstDate: primeiraData,
           lastDate: inicio.add(const Duration(days: 365)),
           applyButtonLabel: applyButtonLabel,
         );
@@ -1004,20 +1027,22 @@ class _AtendimentoTecnicoEditarMobileScreenState
     if (_salvando) return;
 
     final _ClienteAtendimentoMobile? cliente = _clienteSelecionado;
-    final String? idCliente = cliente == null ? null : _textoOuNulo(cliente.id);
+    if (cliente == null) {
+      _mostrarMensagem('Selecione um cliente antes de salvar.');
+      return;
+    }
+    final String? idCliente = _textoOuNulo(cliente.id);
     final String? nomeClienteSnapshot =
-        cliente != null && cliente.nomeInformado
-            ? _textoOuNulo(cliente.nome)
-            : null;
+        cliente.nomeInformado ? _textoOuNulo(cliente.nome) : null;
 
     final _ResponsavelTecnicoMobile? responsavel = _responsavelSelecionado;
-
     setState(() => _salvando = true);
     try {
       await _service.atualizar(
         id: widget.atendimento.id,
         input: AtendimentoTecnicoUpdateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
+          dataEntregaPrevista: _dataEntregaPrevista,
           descricao: _textoOuNulo(_descricaoController.text),
           idCliente: idCliente,
           nomeClienteSnapshot: nomeClienteSnapshot,

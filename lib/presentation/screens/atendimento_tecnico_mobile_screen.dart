@@ -62,6 +62,7 @@ class _AtendimentoTecnicoMobileScreenState
   String? _erro;
   DateTime _validadeOrcamentoEm = _defaultDate();
   DateTime _vencimentoFinanceiroEm = _defaultDate();
+  DateTime _dataEntregaPrevista = _defaultDate();
 
   int get _quantidadeItens => _itens.fold<int>(
     0,
@@ -201,13 +202,27 @@ class _AtendimentoTecnicoMobileScreenState
     setState(() => _vencimentoFinanceiroEm = data);
   }
 
+  Future<void> _selecionarDataEntregaPrevista() async {
+    final data = await _selecionarData(
+      initialDate: _dataEntregaPrevista,
+      title: 'Entrega prevista',
+      applyButtonLabel: 'Aplicar entrega',
+      firstDate: DateTime(2000),
+    );
+    if (data == null) return;
+    setState(() => _dataEntregaPrevista = data);
+  }
+
   Future<DateTime?> _selecionarData({
     required DateTime initialDate,
     required String title,
     required String applyButtonLabel,
+    DateTime? firstDate,
   }) async {
     final inicio = _inicioHoje();
-    final initial = initialDate.isBefore(inicio) ? inicio : initialDate;
+    final primeiraData = firstDate ?? inicio;
+    final initial =
+        initialDate.isBefore(primeiraData) ? primeiraData : initialDate;
     final selected = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
@@ -218,7 +233,7 @@ class _AtendimentoTecnicoMobileScreenState
         return DateSelectorMobileBottomSheet(
           title: title,
           initialDate: initial,
-          firstDate: inicio,
+          firstDate: primeiraData,
           lastDate: inicio.add(const Duration(days: 365)),
           applyButtonLabel: applyButtonLabel,
         );
@@ -376,7 +391,19 @@ class _AtendimentoTecnicoMobileScreenState
       _mostrarMensagem('Informe o defeito relatado pelo cliente.');
       return;
     }
-
+    final DateTime inicioHoje = _inicioHoje();
+    if (_validadeOrcamentoEm.isBefore(inicioHoje)) {
+      _mostrarMensagem(
+        'A validade do orçamento não pode ser anterior à data atual.',
+      );
+      return;
+    }
+    if (_vencimentoFinanceiroEm.isBefore(inicioHoje)) {
+      _mostrarMensagem(
+        'O vencimento financeiro não pode ser anterior à data atual.',
+      );
+      return;
+    }
     final _ResponsavelTecnicoMobile? responsavel = _responsavelSelecionado;
 
     setState(() => _salvando = true);
@@ -384,6 +411,7 @@ class _AtendimentoTecnicoMobileScreenState
       final atendimento = await _service.criar(
         AtendimentoTecnicoCreateInput(
           validadeOrcamentoEm: _validadeOrcamentoEm,
+          dataEntregaPrevista: _dataEntregaPrevista,
           descricao: _textoOuNulo(_descricaoController.text),
           idCliente: cliente.id,
           nomeClienteSnapshot: cliente.nome,
@@ -439,6 +467,7 @@ class _AtendimentoTecnicoMobileScreenState
       _itens.clear();
       _validadeOrcamentoEm = _defaultDate();
       _vencimentoFinanceiroEm = _defaultDate();
+      _dataEntregaPrevista = _defaultDate();
     });
   }
 
@@ -746,6 +775,12 @@ class _AtendimentoTecnicoMobileScreenState
           const SizedBox(height: 16),
           _sectionTitle('Datas'),
           const SizedBox(height: 12),
+          _dateTile(
+            label: 'Entrega prevista',
+            value: _formatarData(_dataEntregaPrevista),
+            onTap: _selecionarDataEntregaPrevista,
+          ),
+          const SizedBox(height: 10),
           Row(
             children: <Widget>[
               Expanded(

@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart' as sharing;
 
+import '../../core/config/app_config.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
+import '../../data/models/dominio_models.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import '../components/mobile_motion.dart';
 import 'atendimento_tecnico_editar_mobile_screen.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
@@ -44,6 +49,8 @@ class _AtendimentosTecnicosMobileScreenState
   DateTime? _dataInicioFiltro;
   DateTime? _dataFimFiltro;
   String? _tecnicoFiltroKey;
+  bool _processandoAcao = false;
+  bool _gerandoLinkStatus = false;
 
   @override
   void initState() {
@@ -61,12 +68,14 @@ class _AtendimentosTecnicosMobileScreenState
 
   Future<_AtendimentosTecnicosMobileState> _carregar() async {
     final List<dynamic> results = await Future.wait<dynamic>(<Future<dynamic>>[
+      _service.buscarDominiosBase(),
       _service.listar(),
       _colaboradorApiClient.listarTecnicosAssistenciaTecnica(),
     ]);
     return _AtendimentosTecnicosMobileState(
-      atendimentos: results[0] as List<AtendimentoTecnicoModel>,
-      tecnicos: results[1] as List<ColaboradorUsuarioResumo>,
+      dominios: results[0] as AtendimentoTecnicoDominiosBaseModel,
+      atendimentos: results[1] as List<AtendimentoTecnicoModel>,
+      tecnicos: results[2] as List<ColaboradorUsuarioResumo>,
     );
   }
 
@@ -239,7 +248,10 @@ class _AtendimentosTecnicosMobileScreenState
                         padding: const EdgeInsets.only(bottom: 12),
                         child: SixStaggeredEntry(
                           delay: Duration(milliseconds: 340 + entry.key * 45),
-                          child: _atendimentoCard(entry.value),
+                          child: _atendimentoCard(
+                            entry.value,
+                            state.dominios.statusAtendimentoTecnico,
+                          ),
                         ),
                       ),
                     ),
@@ -916,114 +928,214 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _atendimentoCard(AtendimentoTecnicoModel atendimento) {
+  Widget _atendimentoCard(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) {
     final String cliente = _clienteLabel(atendimento);
     final String status = _statusLabel(atendimento);
     final String equipamento = _equipamentoTitulo(atendimento);
     final bool pendente = !atendimento.operacaoLiquidada;
+    final bool entregaAtrasada = _entregaAtrasada(atendimento);
 
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: () => _editarAtendimento(atendimento),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: _borderColor),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x0F000000),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _iconBox(Icons.devices_other_outlined, size: 46),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      equipamento,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${atendimento.numero} • $cliente',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if ((atendimento.defeitoRelatado ?? '')
-                        .trim()
-                        .isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: _borderColor),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 14,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _iconBox(Icons.devices_other_outlined, size: 46),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
                       Text(
-                        atendimento.defeitoRelatado!.trim(),
-                        maxLines: 2,
+                        equipamento,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${atendimento.numero} • $cliente',
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: _mutedTextColor,
-                          height: 1.25,
                           fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
-                      children: <Widget>[
-                        _chip(
-                          pendente ? 'Em aberto' : 'Liquidado',
-                          pendente
-                              ? Icons.account_balance_wallet_outlined
-                              : Icons.price_check_rounded,
+                      if ((atendimento.defeitoRelatado ?? '')
+                          .trim()
+                          .isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 8),
+                        Text(
+                          atendimento.defeitoRelatado!.trim(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _mutedTextColor,
+                            height: 1.25,
+                            fontSize: 12,
+                          ),
                         ),
-                        _chip(status, Icons.flag_outlined),
-                        _chip(
-                          '${atendimento.itens.length} item(ns)',
-                          Icons.inventory_2_outlined,
-                        ),
-                        _chip(
-                          _tecnicoLabelAtendimento(atendimento),
-                          Icons.engineering_outlined,
-                        ),
-                        _chip(
-                          _formatarData(_dataReferenciaFiltro(atendimento)),
-                          Icons.update_rounded,
-                        ),
-                        if (atendimento.assinaturaAprovada)
-                          _chip('Assinado', Icons.verified_rounded),
                       ],
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 7,
+                        runSpacing: 7,
+                        children: <Widget>[
+                          _chip(
+                            pendente
+                                ? 'Financeiro aberto'
+                                : 'Financeiro liquidado',
+                            pendente
+                                ? Icons.account_balance_wallet_outlined
+                                : Icons.price_check_rounded,
+                          ),
+                          _chip(status, Icons.flag_outlined),
+                          if (entregaAtrasada)
+                            _alertChip(
+                              'Entrega atrasada',
+                              Icons.warning_amber_rounded,
+                            ),
+                          _chip(
+                            '${atendimento.itens.length} item(ns)',
+                            Icons.inventory_2_outlined,
+                          ),
+                          _chip(
+                            _tecnicoLabelAtendimento(atendimento),
+                            Icons.engineering_outlined,
+                          ),
+                          if (atendimento.dataEntregaPrevista != null)
+                            _chip(
+                              'Entrega ${_formatarData(atendimento.dataEntregaPrevista)}',
+                              Icons.assignment_turned_in_outlined,
+                            ),
+                          _chip(
+                            'Atualizado ${_formatarData(atendimento.dataAtualizacao)}',
+                            Icons.update_rounded,
+                          ),
+                          if (atendimento.assinaturaAprovada)
+                            _chip('Assinado', Icons.verified_rounded),
+                        ],
+                      ),
+                      const SizedBox(height: 11),
+                      _statusProgressBar(atendimento, statusDisponiveis),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.edit_note_rounded, color: _mutedTextColor),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                _cardActionButton(
+                  label: 'Receber',
+                  icon: Icons.payments_outlined,
+                  filled: true,
+                  onPressed:
+                      atendimento.operacaoLiquidada || _processandoAcao
+                          ? null
+                          : () => _abrirRecebimento(atendimento),
+                ),
+                _cardActionButton(
+                  label: 'Editar',
+                  icon: Icons.edit_note_rounded,
+                  onPressed:
+                      _processandoAcao
+                          ? null
+                          : () => _editarAtendimento(atendimento),
+                ),
+                _cardActionButton(
+                  label:
+                      _gerandoLinkStatus
+                          ? _t('common.generating', 'Gerando...')
+                          : _t(
+                            'atendimentoTecnico.publicStatus.actionShort',
+                            'Status',
+                          ),
+                  icon: Icons.ios_share_rounded,
+                  onPressed:
+                      _processandoAcao || _gerandoLinkStatus
+                          ? null
+                          : () => _compartilharStatusPublico(atendimento),
+                ),
+                _cardActionButton(
+                  label: 'Mudar status',
+                  icon: Icons.swap_horiz_rounded,
+                  onPressed:
+                      statusDisponiveis.isEmpty || _processandoAcao
+                          ? null
+                          : () => _abrirAlterarStatus(
+                            atendimento,
+                            statusDisponiveis,
+                          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _cardActionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool filled = false,
+  }) {
+    final ButtonStyle style =
+        filled
+            ? FilledButton.styleFrom(
+              backgroundColor: _accentColor,
+              foregroundColor: SixMobilePalette.onPrimary,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            )
+            : OutlinedButton.styleFrom(
+              foregroundColor: _primaryColor,
+              side: const BorderSide(color: _borderColor),
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            );
+
+    final Widget child = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 17),
+        const SizedBox(width: 6),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ],
+    );
+
+    return filled
+        ? FilledButton(onPressed: onPressed, style: style, child: child)
+        : OutlinedButton(onPressed: onPressed, style: style, child: child);
   }
 
   Future<void> _editarAtendimento(AtendimentoTecnicoModel atendimento) async {
@@ -1048,6 +1160,173 @@ class _AtendimentosTecnicosMobileScreenState
     );
 
     if (mounted) await _recarregar();
+  }
+
+  Future<void> _abrirRecebimento(AtendimentoTecnicoModel atendimento) async {
+    if (_processandoAcao) return;
+    if (atendimento.operacaoLiquidada || atendimento.valorEmAberto <= 0) {
+      _mostrarMensagem('Este atendimento já está liquidado.');
+      return;
+    }
+
+    final SixMobileRecebimentoResultado? resultado =
+        await SixMobileRecebimentoBottomSheet.show(
+          context,
+          titulo: 'Receber atendimento técnico',
+          descricao: _equipamentoTitulo(atendimento),
+          contato: _clienteLabel(atendimento),
+          valorAberto: atendimento.valorEmAberto,
+          codigoTipoInicial: _codigoTipoRecebimentoInicial(atendimento),
+          permitirParcial: true,
+          observacaoInicial:
+              'Recebimento realizado no atendimento técnico mobile.',
+        );
+
+    if (resultado == null || !mounted) return;
+    setState(() => _processandoAcao = true);
+    try {
+      await _service.receber(
+        id: atendimento.id,
+        input: AtendimentoTecnicoRecebimentoInput(
+          codigoFormaRecebimento: resultado.codigoTipoRecebimento,
+          nomeFormaRecebimento: resultado.descricaoTipoRecebimento,
+          valor: resultado.valor,
+          observacao:
+              resultado.observacao ?? _observacaoRecebimentoPadrao(resultado),
+        ),
+      );
+      if (!mounted) return;
+      await _recarregar();
+      _mostrarMensagem(
+        resultado.total
+            ? 'Atendimento recebido com sucesso.'
+            : 'Parcial recebida com sucesso.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem('Não foi possível lançar o recebimento: $error');
+    } finally {
+      if (mounted) setState(() => _processandoAcao = false);
+    }
+  }
+
+  Future<void> _compartilharStatusPublico(
+    AtendimentoTecnicoModel atendimento,
+  ) async {
+    if (_processandoAcao || _gerandoLinkStatus) return;
+    final String origin = AppConfig.publicFrontendOrigin.trim();
+    if (origin.isEmpty) {
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.publicStatus.publicUrlMissing',
+          'URL pública do aplicativo não configurada.',
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _processandoAcao = true;
+      _gerandoLinkStatus = true;
+    });
+    try {
+      final response = await _service.gerarLinkStatusPublico(
+        id: atendimento.id,
+        baseUrl: '$origin/atendimento/status',
+      );
+      if (!mounted) return;
+      final String link = response.link.trim();
+      if (link.isEmpty) {
+        throw Exception(
+          _t(
+            'atendimentoTecnico.publicStatus.linkMissing',
+            'Link não retornado pelo backend.',
+          ),
+        );
+      }
+
+      await Clipboard.setData(ClipboardData(text: link));
+      final String mensagem = <String>[
+        _t(
+          'atendimentoTecnico.publicStatus.shareMessage',
+          'Acompanhe o status do seu serviço pelo link abaixo:',
+        ),
+        '${atendimento.numero} - ${_equipamentoTitulo(atendimento)}',
+        link,
+      ].join('\n\n');
+      await sharing.Share.share(
+        mensagem,
+        subject: _t(
+          'atendimentoTecnico.publicStatus.shareSubject',
+          'Status do serviço',
+        ),
+      );
+      if (!mounted) return;
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.publicStatus.linkCopiedShort',
+          'Link de status copiado.',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        '${_t('atendimentoTecnico.publicStatus.linkError', 'Não foi possível gerar o link de status')}: $error',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processandoAcao = false;
+          _gerandoLinkStatus = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _abrirAlterarStatus(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) async {
+    if (_processandoAcao) return;
+    if (statusDisponiveis.isEmpty) {
+      _mostrarMensagem('Nenhum status disponível para seleção.');
+      return;
+    }
+
+    final _StatusAtendimentoMobileResult? result =
+        await showModalBottomSheet<_StatusAtendimentoMobileResult>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: const Color(0x66000000),
+          builder: (BuildContext context) {
+            return _StatusAtendimentoMobileSheet(
+              atendimento: atendimento,
+              status: statusDisponiveis,
+              statusAtual: _statusAtual(atendimento, statusDisponiveis),
+              statusAtualLabel: _statusLabel(atendimento),
+            );
+          },
+        );
+
+    if (result == null || !mounted) return;
+    setState(() => _processandoAcao = true);
+    try {
+      await _service.alterarStatus(
+        id: atendimento.id,
+        status: result.status,
+        observacao: _textoOuNulo(result.observacao),
+      );
+      if (!mounted) return;
+      await _recarregar();
+      _mostrarMensagem('Status atualizado no histórico.');
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem('Não foi possível alterar o status: $error');
+    } finally {
+      if (mounted) setState(() => _processandoAcao = false);
+    }
   }
 
   Widget _emptyState() {
@@ -1142,6 +1421,37 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
+  Widget _alertChip(String label, IconData icon) {
+    const Color color = Color(0xFFDC2626);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEBEE),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _sectionTitle(String title) {
     return Text(
       title,
@@ -1206,6 +1516,7 @@ class _AtendimentosTecnicosMobileScreenState
                 equipamento?.imei ?? '',
                 atendimento.defeitoRelatado ?? '',
                 atendimento.diagnosticoTecnico ?? '',
+                _formatarData(atendimento.dataEntregaPrevista),
               ].join(' ').toLowerCase();
           return source.contains(termo);
         })
@@ -1229,8 +1540,56 @@ class _AtendimentosTecnicosMobileScreenState
     return DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
   }
 
+  bool _entregaAtrasada(AtendimentoTecnicoModel atendimento) {
+    final DateTime? entrega = atendimento.dataEntregaPrevista;
+    if (entrega == null ||
+        atendimento.operacaoLiquidada ||
+        _atendimentoFinalizadoOperacionalmente(atendimento)) {
+      return false;
+    }
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime dataEntrega = _inicioDoDia(entrega);
+    return dataEntrega.isBefore(hoje);
+  }
+
+  bool _atendimentoFinalizadoOperacionalmente(
+    AtendimentoTecnicoModel atendimento,
+  ) {
+    final String statusCodigo = atendimento.statusCodigo.trim().toUpperCase();
+    if (<String>{
+      'DELIVERED',
+      'ENTREGUE',
+      'CANCELED',
+      'CANCELADO',
+      'CANCELADA',
+      'NO_REPAIR',
+      'SEM_REPARO',
+      'FINALIZED',
+      'FINALIZADO',
+      'CONCLUIDO',
+      'CONCLUÍDO',
+    }.contains(statusCodigo)) {
+      return true;
+    }
+
+    final String statusTexto =
+        <String>[
+          atendimento.statusNomePtBr ?? '',
+          atendimento.statusNomeEnUs ?? '',
+          atendimento.statusNomeEsEs ?? '',
+        ].join(' ').toUpperCase();
+    return statusTexto.contains('ENTREG') ||
+        statusTexto.contains('DELIVER') ||
+        statusTexto.contains('CANCEL') ||
+        statusTexto.contains('SEM REPARO') ||
+        statusTexto.contains('NO REPAIR') ||
+        statusTexto.contains('FINALIZ') ||
+        statusTexto.contains('CONCLU');
+  }
+
   DateTime? _dataReferenciaFiltro(AtendimentoTecnicoModel atendimento) {
-    return atendimento.dataAtualizacao ??
+    return atendimento.dataEntregaPrevista ??
+        atendimento.dataAtualizacao ??
         atendimento.dataUltimaAlteracaoOrcamento ??
         atendimento.dataVencimentoEm ??
         atendimento.validadeOrcamentoEm;
@@ -1373,6 +1732,238 @@ class _AtendimentosTecnicosMobileScreenState
     return codigo.isEmpty ? 'Sem status' : codigo;
   }
 
+  DominioOpcaoModel? _statusAtual(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    for (final DominioOpcaoModel opcao in status) {
+      if (opcao.id == atendimento.statusId) return opcao;
+    }
+    final String codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
+    for (final DominioOpcaoModel opcao in status) {
+      if (opcao.codigo.trim().toUpperCase() == codigoAtual) return opcao;
+    }
+    return null;
+  }
+
+  DominioOpcaoModel? _statusEtapaAtual(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final String codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
+    for (final DominioOpcaoModel opcao in status) {
+      if (opcao.id == atendimento.statusId ||
+          opcao.codigo.trim().toUpperCase() == codigoAtual) {
+        return opcao;
+      }
+    }
+    return null;
+  }
+
+  List<DominioOpcaoModel> _statusFlowSteps(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final List<DominioOpcaoModel> steps = status.toList(growable: false)
+      ..sort((DominioOpcaoModel a, DominioOpcaoModel b) {
+        return a.ordem.compareTo(b.ordem);
+      });
+    final DominioOpcaoModel? current = _statusEtapaAtual(atendimento, steps);
+    final String codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
+    final List<DominioOpcaoModel> filtered = steps
+        .where(
+          (DominioOpcaoModel step) =>
+              !step.finalizador ||
+              step.id == current?.id ||
+              step.codigo.trim().toUpperCase() == codigoAtual,
+        )
+        .toList(growable: false);
+    return filtered.isEmpty ? steps : filtered;
+  }
+
+  double _statusProgressValue(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final List<DominioOpcaoModel> steps = _statusFlowSteps(atendimento, status);
+    if (steps.isEmpty) return 0;
+    final DominioOpcaoModel? current = _statusEtapaAtual(atendimento, steps);
+    if (current == null) return 0;
+    final int currentIndex = steps.indexWhere(
+      (DominioOpcaoModel step) => step.id == current.id,
+    );
+    if (currentIndex < 0) return 0;
+    return ((currentIndex + 1) / steps.length).clamp(0, 1).toDouble();
+  }
+
+  Color _statusProgressColor(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final DominioOpcaoModel? current = _statusEtapaAtual(atendimento, status);
+    return _colorFromHex(current?.cor, _accentColor);
+  }
+
+  Color _colorFromHex(String? value, Color fallback) {
+    final String hex = (value ?? '').replaceAll('#', '').trim();
+    if (hex.length != 6 && hex.length != 8) return fallback;
+    try {
+      final String normalized = hex.length == 6 ? 'FF$hex' : hex;
+      return Color(int.parse(normalized, radix: 16));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  Widget _statusProgressBar(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    if (status.isEmpty) return const SizedBox.shrink();
+    final double progress = _statusProgressValue(atendimento, status);
+    final Color color = _statusProgressColor(atendimento, status);
+    final List<DominioOpcaoModel> steps = _statusFlowSteps(atendimento, status);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          _t(
+            'atendimentoTecnico.publicStatus.progressShort',
+            'Progresso do serviço',
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: _mutedTextColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 7),
+        _statusBulletProgressBar(
+          progress: progress,
+          steps: steps.length,
+          color: color,
+          valueKey:
+              'mobile-status-progress-${atendimento.id}-${atendimento.statusCodigo}',
+        ),
+      ],
+    );
+  }
+
+  Widget _statusBulletProgressBar({
+    required double progress,
+    required int steps,
+    required Color color,
+    required String valueKey,
+  }) {
+    const double height = 22;
+    const double trackHeight = 6;
+    const double bulletSize = 13;
+    final int safeSteps = steps <= 0 ? 1 : steps;
+    final double safeProgress = progress.clamp(0, 1).toDouble();
+    final double completedSteps = safeProgress * safeSteps;
+    final int currentStep = completedSteps.ceil().clamp(0, safeSteps).toInt();
+    final double lineProgress =
+        safeSteps <= 1
+            ? safeProgress
+            : ((completedSteps - 1) / (safeSteps - 1)).clamp(0, 1).toDouble();
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double width = constraints.maxWidth;
+        if (!width.isFinite || width <= 0) return const SizedBox.shrink();
+        return SizedBox(
+          height: height,
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: <Widget>[
+              Positioned(
+                left: bulletSize / 2,
+                right: bulletSize / 2,
+                top: (height - trackHeight) / 2,
+                child: Container(
+                  height: trackHeight,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.softNeutralSurface,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: bulletSize / 2,
+                top: (height - trackHeight) / 2,
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey<String>(valueKey),
+                  tween: Tween<double>(begin: 0, end: lineProgress),
+                  duration: const Duration(milliseconds: 980),
+                  curve: Curves.easeOutCubic,
+                  builder: (BuildContext context, double value, Widget? child) {
+                    return Container(
+                      width: (width - bulletSize) * value,
+                      height: trackHeight,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              for (int index = 0; index < safeSteps; index++)
+                _statusProgressBullet(
+                  width: width,
+                  height: height,
+                  bulletSize: bulletSize,
+                  index: index,
+                  steps: safeSteps,
+                  currentStep: currentStep,
+                  color: color,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _statusProgressBullet({
+    required double width,
+    required double height,
+    required double bulletSize,
+    required int index,
+    required int steps,
+    required int currentStep,
+    required Color color,
+  }) {
+    final double position = steps == 1 ? 0 : index / (steps - 1);
+    final bool reached = index < currentStep;
+    return Positioned(
+      left: (width - bulletSize) * position,
+      top: (height - bulletSize) / 2,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        width: bulletSize,
+        height: bulletSize,
+        decoration: BoxDecoration(
+          color: reached ? color : _surfaceColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: reached ? color : SixMobilePalette.activeBorder,
+            width: reached ? 2 : 1.2,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: (reached ? color : Colors.black).withValues(alpha: 0.10),
+              blurRadius: reached ? 8 : 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _equipamentoTitulo(AtendimentoTecnicoModel atendimento) {
     final AtendimentoTecnicoEquipamentoModel? equipamento =
         atendimento.equipamento;
@@ -1391,6 +1982,31 @@ class _AtendimentosTecnicosMobileScreenState
   String _formatarData(DateTime? value) {
     if (value == null) return '-';
     return context.read<LocaleSettingsProvider>().formatDate(value);
+  }
+
+  String? _codigoTipoRecebimentoInicial(AtendimentoTecnicoModel atendimento) {
+    if (atendimento.recebimentos.isEmpty) return null;
+    final String codigo =
+        atendimento.recebimentos.last.codigoFormaRecebimento.trim();
+    return codigo.isEmpty ? null : codigo;
+  }
+
+  String _observacaoRecebimentoPadrao(SixMobileRecebimentoResultado resultado) {
+    return resultado.total
+        ? 'Recebimento total realizado no atendimento técnico mobile.'
+        : 'Recebimento parcial realizado no atendimento técnico mobile.';
+  }
+
+  String? _textoOuNulo(String value) {
+    final String text = value.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
   }
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
@@ -1435,10 +2051,12 @@ class _TecnicoFiltroOption {
 
 class _AtendimentosTecnicosMobileState {
   const _AtendimentosTecnicosMobileState({
+    required this.dominios,
     required this.atendimentos,
     required this.tecnicos,
   });
 
+  final AtendimentoTecnicoDominiosBaseModel dominios;
   final List<AtendimentoTecnicoModel> atendimentos;
   final List<ColaboradorUsuarioResumo> tecnicos;
 }
@@ -1960,6 +2578,350 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
         ),
       ),
     );
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+}
+
+class _StatusAtendimentoMobileResult {
+  const _StatusAtendimentoMobileResult({
+    required this.status,
+    required this.observacao,
+  });
+
+  final DominioOpcaoModel status;
+  final String observacao;
+}
+
+class _StatusAtendimentoMobileSheet extends StatefulWidget {
+  const _StatusAtendimentoMobileSheet({
+    required this.atendimento,
+    required this.status,
+    required this.statusAtual,
+    required this.statusAtualLabel,
+  });
+
+  final AtendimentoTecnicoModel atendimento;
+  final List<DominioOpcaoModel> status;
+  final DominioOpcaoModel? statusAtual;
+  final String statusAtualLabel;
+
+  @override
+  State<_StatusAtendimentoMobileSheet> createState() =>
+      _StatusAtendimentoMobileSheetState();
+}
+
+class _StatusAtendimentoMobileSheetState
+    extends State<_StatusAtendimentoMobileSheet> {
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.activeBorder;
+
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _observacaoController = TextEditingController();
+  late DominioOpcaoModel? _statusSelecionado = widget.statusAtual;
+  String _filter = '';
+
+  List<DominioOpcaoModel> get _statusFiltrados {
+    final String term = _normalize(_filter);
+    final List<DominioOpcaoModel> sorted = List<DominioOpcaoModel>.from(
+      widget.status,
+    )..sort(
+      (DominioOpcaoModel a, DominioOpcaoModel b) => a.ordem.compareTo(b.ordem),
+    );
+    if (term.isEmpty) return sorted;
+    return sorted
+        .where((DominioOpcaoModel item) {
+          return _normalize(
+            '${_statusLabel(item)} ${item.codigo} ${item.i18nKey}',
+          ).contains(term);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _observacaoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.82,
+      minChildSize: 0.48,
+      maxChildSize: 0.94,
+      expand: false,
+      builder: (BuildContext context, ScrollController scrollController) {
+        final List<DominioOpcaoModel> status = _statusFiltrados;
+        return Container(
+          decoration: const BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: <Widget>[
+                      _sheetIcon(Icons.swap_horiz_rounded),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            const Text(
+                              'Mudar status',
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${widget.atendimento.numero} • Atual: ${widget.statusAtualLabel}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 12,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged:
+                        (String value) => setState(() => _filter = value),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar status',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon:
+                          _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                icon: const Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _filter = '');
+                                },
+                              ),
+                      filled: true,
+                      fillColor: _surfaceColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: _accentColor,
+                          width: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                    itemBuilder: (BuildContext context, int index) {
+                      final DominioOpcaoModel item = status[index];
+                      return _statusItem(
+                        status: item,
+                        selected: _statusSelecionado?.id == item.id,
+                        onTap: () => setState(() => _statusSelecionado = item),
+                      );
+                    },
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemCount: status.length,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                  child: TextField(
+                    controller: _observacaoController,
+                    minLines: 2,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'Observação opcional',
+                      filled: true,
+                      fillColor: _surfaceColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancelar'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed:
+                              _statusSelecionado == null
+                                  ? null
+                                  : () => Navigator.of(context).pop(
+                                    _StatusAtendimentoMobileResult(
+                                      status: _statusSelecionado!,
+                                      observacao: _observacaoController.text,
+                                    ),
+                                  ),
+                          icon: const Icon(Icons.check_rounded),
+                          label: const Text('Aplicar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetIcon(IconData icon) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Icon(icon, color: _accentColor),
+    );
+  }
+
+  Widget _statusItem({
+    required DominioOpcaoModel status,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 21,
+                backgroundColor:
+                    selected
+                        ? const Color(0xFFDCEBFF)
+                        : const Color(0xFFF1F5F9),
+                child: const Icon(
+                  Icons.flag_outlined,
+                  color: _accentColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _statusLabel(status),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      status.codigo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: selected ? _accentColor : _mutedTextColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _statusLabel(DominioOpcaoModel status) {
+    final String nome = status.nomePadraoPtBr.trim();
+    return nome.isEmpty ? status.codigo : nome;
   }
 
   String _normalize(String value) {

@@ -71,6 +71,67 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.offline': 'Offline',
     'common.required': 'Obrigatório',
     'common.optional': 'Opcional',
+    'common.refresh': 'Atualizar',
+    'common.copy': 'Copiar',
+    'common.share': 'Compartilhar',
+    'common.number': 'Número',
+    'common.customer': 'Cliente',
+    'common.updatedAt': 'Atualizado em',
+    'common.notInformed': 'Não informada',
+    'common.generating': 'Gerando...',
+    'atendimentoTecnico.status': 'Status',
+    'atendimentoTecnico.customerNotInformed': 'Cliente não informado',
+    'atendimentoTecnico.expectedDelivery': 'Entrega prevista',
+    'atendimentoTecnico.equipment': 'Equipamento',
+    'atendimentoTecnico.reportedIssue': 'Defeito',
+    'atendimentoTecnico.publicStatus.title': 'Status do serviço',
+    'atendimentoTecnico.publicStatus.subtitle':
+        'Acompanhe a etapa atual do atendimento técnico pelo link público.',
+    'atendimentoTecnico.publicStatus.progressTitle': 'Progresso do atendimento',
+    'atendimentoTecnico.publicStatus.progressShort': 'Progresso do serviço',
+    'atendimentoTecnico.publicStatus.serviceData': 'Dados do serviço',
+    'atendimentoTecnico.publicStatus.history': 'Histórico de status',
+    'atendimentoTecnico.publicStatus.noHistory':
+        'Nenhuma mudança de status registrada.',
+    'atendimentoTecnico.publicStatus.loading':
+        'Carregando status do serviço...',
+    'atendimentoTecnico.publicStatus.errorTitle':
+        'Não foi possível carregar o status',
+    'atendimentoTecnico.publicStatus.invalidLink':
+        'Link inválido. Token ou comércio não informado.',
+    'atendimentoTecnico.publicStatus.linkTitle': 'Link público de status',
+    'atendimentoTecnico.publicStatus.linkCopied':
+        'Link copiado para a área de transferência.',
+    'atendimentoTecnico.publicStatus.linkCopiedShort':
+        'Link de status copiado.',
+    'atendimentoTecnico.publicStatus.linkHelp':
+        'Envie este link ao cliente para acompanhar o status atual do serviço.',
+    'atendimentoTecnico.publicStatus.linkMissing':
+        'Link não retornado pelo backend.',
+    'atendimentoTecnico.publicStatus.linkError':
+        'Não foi possível gerar o link de status',
+    'atendimentoTecnico.publicStatus.shareMessage':
+        'Acompanhe o status do seu serviço pelo link abaixo:',
+    'atendimentoTecnico.publicStatus.shareSubject': 'Status do serviço',
+    'atendimentoTecnico.publicStatus.shareFallback':
+        'Não foi possível abrir o compartilhamento. O link foi copiado.',
+    'atendimentoTecnico.publicStatus.publicUrlMissing':
+        'URL pública do aplicativo não configurada.',
+    'atendimentoTecnico.publicStatus.action': 'Status público',
+    'atendimentoTecnico.publicStatus.actionShort': 'Status',
+    'atendimentoTecnico.publicStatus.signaturePendingTitle':
+        'Assinatura de aprovação pendente',
+    'atendimentoTecnico.publicStatus.signaturePendingDescription':
+        'Você pode acompanhar o status normalmente. Para aprovar o serviço, clique no botão e assine na próxima página.',
+    'atendimentoTecnico.publicStatus.signatureRenewTitle':
+        'Nova assinatura necessária',
+    'atendimentoTecnico.publicStatus.signatureRenewDescription':
+        'O atendimento foi alterado depois da última aprovação. Você pode acompanhar o status normalmente e assinar a versão atual quando quiser aprovar.',
+    'atendimentoTecnico.publicStatus.signatureAction': 'Assinar aprovação',
+    'atendimentoTecnico.publicStatus.signatureLinkMissing':
+        'Link de assinatura não retornado pelo backend.',
+    'atendimentoTecnico.publicStatus.signatureLinkError':
+        'Não foi possível abrir a assinatura.',
     'auth.loginRequiredFields': 'Por favor, preencha o e-mail e a senha',
     'auth.loginTitleMobile': 'Entrar',
     'auth.loginSubtitleMobile':
@@ -541,6 +602,62 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.offline': 'Offline',
     'common.required': 'Required',
     'common.optional': 'Optional',
+    'common.refresh': 'Refresh',
+    'common.copy': 'Copy',
+    'common.share': 'Share',
+    'common.number': 'Number',
+    'common.customer': 'Customer',
+    'common.updatedAt': 'Updated at',
+    'common.notInformed': 'Not informed',
+    'common.generating': 'Generating...',
+    'atendimentoTecnico.status': 'Status',
+    'atendimentoTecnico.customerNotInformed': 'Customer not informed',
+    'atendimentoTecnico.expectedDelivery': 'Expected delivery',
+    'atendimentoTecnico.equipment': 'Equipment',
+    'atendimentoTecnico.reportedIssue': 'Reported issue',
+    'atendimentoTecnico.publicStatus.title': 'Service status',
+    'atendimentoTecnico.publicStatus.subtitle':
+        'Track the current technical service stage through the public link.',
+    'atendimentoTecnico.publicStatus.progressTitle': 'Service progress',
+    'atendimentoTecnico.publicStatus.progressShort': 'Service progress',
+    'atendimentoTecnico.publicStatus.serviceData': 'Service data',
+    'atendimentoTecnico.publicStatus.history': 'Status history',
+    'atendimentoTecnico.publicStatus.noHistory': 'No status changes recorded.',
+    'atendimentoTecnico.publicStatus.loading': 'Loading service status...',
+    'atendimentoTecnico.publicStatus.errorTitle': 'Could not load the status',
+    'atendimentoTecnico.publicStatus.invalidLink':
+        'Invalid link. Token or business not informed.',
+    'atendimentoTecnico.publicStatus.linkTitle': 'Public status link',
+    'atendimentoTecnico.publicStatus.linkCopied': 'Link copied to clipboard.',
+    'atendimentoTecnico.publicStatus.linkCopiedShort': 'Status link copied.',
+    'atendimentoTecnico.publicStatus.linkHelp':
+        'Send this link to the customer to track the current service status.',
+    'atendimentoTecnico.publicStatus.linkMissing':
+        'The backend did not return a link.',
+    'atendimentoTecnico.publicStatus.linkError':
+        'Could not generate the status link',
+    'atendimentoTecnico.publicStatus.shareMessage':
+        'Track your service status through the link below:',
+    'atendimentoTecnico.publicStatus.shareSubject': 'Service status',
+    'atendimentoTecnico.publicStatus.shareFallback':
+        'Could not open sharing. The link was copied.',
+    'atendimentoTecnico.publicStatus.publicUrlMissing':
+        'Public app URL is not configured.',
+    'atendimentoTecnico.publicStatus.action': 'Public status',
+    'atendimentoTecnico.publicStatus.actionShort': 'Status',
+    'atendimentoTecnico.publicStatus.signaturePendingTitle':
+        'Approval signature pending',
+    'atendimentoTecnico.publicStatus.signaturePendingDescription':
+        'You can keep tracking the status normally. To approve the service, tap the button and sign on the next page.',
+    'atendimentoTecnico.publicStatus.signatureRenewTitle':
+        'New signature required',
+    'atendimentoTecnico.publicStatus.signatureRenewDescription':
+        'This service was changed after the last approval. You can keep tracking the status normally and sign the current version when you want to approve it.',
+    'atendimentoTecnico.publicStatus.signatureAction': 'Sign approval',
+    'atendimentoTecnico.publicStatus.signatureLinkMissing':
+        'The backend did not return a signature link.',
+    'atendimentoTecnico.publicStatus.signatureLinkError':
+        'Could not open the signature.',
     'procedimentos.title': 'Procedures',
     'procedimentos.subtitle': 'Guides for sales, service and deliveries',
     'procedimentos.introTitle':
@@ -969,6 +1086,66 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.offline': 'Offline',
     'common.required': 'Obligatorio',
     'common.optional': 'Opcional',
+    'common.refresh': 'Actualizar',
+    'common.copy': 'Copiar',
+    'common.share': 'Compartir',
+    'common.number': 'Número',
+    'common.customer': 'Cliente',
+    'common.updatedAt': 'Actualizado el',
+    'common.notInformed': 'No informado',
+    'common.generating': 'Generando...',
+    'atendimentoTecnico.status': 'Estado',
+    'atendimentoTecnico.customerNotInformed': 'Cliente no informado',
+    'atendimentoTecnico.expectedDelivery': 'Entrega prevista',
+    'atendimentoTecnico.equipment': 'Equipo',
+    'atendimentoTecnico.reportedIssue': 'Defecto',
+    'atendimentoTecnico.publicStatus.title': 'Estado del servicio',
+    'atendimentoTecnico.publicStatus.subtitle':
+        'Sigue la etapa actual del servicio técnico por el link público.',
+    'atendimentoTecnico.publicStatus.progressTitle': 'Progreso del servicio',
+    'atendimentoTecnico.publicStatus.progressShort': 'Progreso del servicio',
+    'atendimentoTecnico.publicStatus.serviceData': 'Datos del servicio',
+    'atendimentoTecnico.publicStatus.history': 'Historial de estado',
+    'atendimentoTecnico.publicStatus.noHistory':
+        'No hay cambios de estado registrados.',
+    'atendimentoTecnico.publicStatus.loading':
+        'Cargando estado del servicio...',
+    'atendimentoTecnico.publicStatus.errorTitle': 'No se pudo cargar el estado',
+    'atendimentoTecnico.publicStatus.invalidLink':
+        'Link inválido. Token o comercio no informado.',
+    'atendimentoTecnico.publicStatus.linkTitle': 'Link público de estado',
+    'atendimentoTecnico.publicStatus.linkCopied':
+        'Link copiado al portapapeles.',
+    'atendimentoTecnico.publicStatus.linkCopiedShort':
+        'Link de estado copiado.',
+    'atendimentoTecnico.publicStatus.linkHelp':
+        'Envía este link al cliente para seguir el estado actual del servicio.',
+    'atendimentoTecnico.publicStatus.linkMissing':
+        'El backend no devolvió un link.',
+    'atendimentoTecnico.publicStatus.linkError':
+        'No se pudo generar el link de estado',
+    'atendimentoTecnico.publicStatus.shareMessage':
+        'Sigue el estado de tu servicio en el siguiente link:',
+    'atendimentoTecnico.publicStatus.shareSubject': 'Estado del servicio',
+    'atendimentoTecnico.publicStatus.shareFallback':
+        'No se pudo abrir el compartir. El link fue copiado.',
+    'atendimentoTecnico.publicStatus.publicUrlMissing':
+        'La URL pública de la aplicación no está configurada.',
+    'atendimentoTecnico.publicStatus.action': 'Estado público',
+    'atendimentoTecnico.publicStatus.actionShort': 'Estado',
+    'atendimentoTecnico.publicStatus.signaturePendingTitle':
+        'Firma de aprobación pendiente',
+    'atendimentoTecnico.publicStatus.signaturePendingDescription':
+        'Puedes seguir el estado normalmente. Para aprobar el servicio, toca el botón y firma en la siguiente página.',
+    'atendimentoTecnico.publicStatus.signatureRenewTitle':
+        'Nueva firma necesaria',
+    'atendimentoTecnico.publicStatus.signatureRenewDescription':
+        'El servicio fue modificado después de la última aprobación. Puedes seguir el estado normalmente y firmar la versión actual cuando quieras aprobarla.',
+    'atendimentoTecnico.publicStatus.signatureAction': 'Firmar aprobación',
+    'atendimentoTecnico.publicStatus.signatureLinkMissing':
+        'El backend no devolvió un link de firma.',
+    'atendimentoTecnico.publicStatus.signatureLinkError':
+        'No se pudo abrir la firma.',
     'auth.loginRequiredFields':
         'Completa el correo electrónico y la contraseña',
     'auth.loginTitleMobile': 'Entrar',

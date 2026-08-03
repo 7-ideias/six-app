@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart' as sharing;
 
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../components/web/six_web_recebimento_dialog.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
-import 'atendimento_tecnico_receber_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
 
 class AtendimentosTecnicosListaWebPage extends StatefulWidget {
@@ -39,6 +41,7 @@ class _AtendimentosTecnicosListaWebPageState
   late Future<_ListaAtendimentosState> _future;
   bool _alterandoStatus = false;
   bool _gerandoLink = false;
+  bool _gerandoLinkStatus = false;
   DateTime? _dataInicioFiltro;
   DateTime? _dataFimFiltro;
   String? _tecnicoFiltroKey;
@@ -188,6 +191,7 @@ class _AtendimentosTecnicosListaWebPageState
                 equipamento?.imei ?? '',
                 atendimento.defeitoRelatado ?? '',
                 atendimento.diagnosticoTecnico ?? '',
+                _formatarDataCurta(atendimento.dataEntregaPrevista),
               ].join(' ').toLowerCase();
           return texto.contains(termo);
         })
@@ -200,8 +204,56 @@ class _AtendimentosTecnicosListaWebPageState
   DateTime _fimDoDia(DateTime value) =>
       DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
 
+  bool _entregaAtrasada(AtendimentoTecnicoModel atendimento) {
+    final DateTime? entrega = atendimento.dataEntregaPrevista;
+    if (entrega == null ||
+        atendimento.operacaoLiquidada ||
+        _atendimentoFinalizadoOperacionalmente(atendimento)) {
+      return false;
+    }
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime dataEntrega = _inicioDoDia(entrega);
+    return dataEntrega.isBefore(hoje);
+  }
+
+  bool _atendimentoFinalizadoOperacionalmente(
+    AtendimentoTecnicoModel atendimento,
+  ) {
+    final String statusCodigo = atendimento.statusCodigo.trim().toUpperCase();
+    if (<String>{
+      'DELIVERED',
+      'ENTREGUE',
+      'CANCELED',
+      'CANCELADO',
+      'CANCELADA',
+      'NO_REPAIR',
+      'SEM_REPARO',
+      'FINALIZED',
+      'FINALIZADO',
+      'CONCLUIDO',
+      'CONCLUÍDO',
+    }.contains(statusCodigo)) {
+      return true;
+    }
+
+    final String statusTexto =
+        <String>[
+          atendimento.statusNomePtBr ?? '',
+          atendimento.statusNomeEnUs ?? '',
+          atendimento.statusNomeEsEs ?? '',
+        ].join(' ').toUpperCase();
+    return statusTexto.contains('ENTREG') ||
+        statusTexto.contains('DELIVER') ||
+        statusTexto.contains('CANCEL') ||
+        statusTexto.contains('SEM REPARO') ||
+        statusTexto.contains('NO REPAIR') ||
+        statusTexto.contains('FINALIZ') ||
+        statusTexto.contains('CONCLU');
+  }
+
   DateTime? _dataReferenciaFiltro(AtendimentoTecnicoModel atendimento) {
-    return atendimento.dataAtualizacao ??
+    return atendimento.dataEntregaPrevista ??
+        atendimento.dataAtualizacao ??
         atendimento.dataUltimaAlteracaoOrcamento ??
         atendimento.dataVencimentoEm ??
         atendimento.validadeOrcamentoEm;
@@ -311,6 +363,72 @@ class _AtendimentosTecnicosListaWebPageState
     return normalizado;
   }
 
+  DominioOpcaoModel? _statusEtapaAtual(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
+    for (final opcao in status) {
+      if (opcao.id == atendimento.statusId ||
+          opcao.codigo.trim().toUpperCase() == codigoAtual) {
+        return opcao;
+      }
+    }
+    return null;
+  }
+
+  List<DominioOpcaoModel> _statusFlowSteps(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final steps = status.toList(growable: false)
+      ..sort((a, b) => a.ordem.compareTo(b.ordem));
+    final current = _statusEtapaAtual(atendimento, steps);
+    final codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
+    final filtered = steps
+        .where(
+          (step) =>
+              !step.finalizador ||
+              step.id == current?.id ||
+              step.codigo.trim().toUpperCase() == codigoAtual,
+        )
+        .toList(growable: false);
+    return filtered.isEmpty ? steps : filtered;
+  }
+
+  double _statusProgressValue(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final steps = _statusFlowSteps(atendimento, status);
+    if (steps.isEmpty) return 0;
+    final current = _statusEtapaAtual(atendimento, steps);
+    if (current == null) return 0;
+    final currentIndex = steps.indexWhere((step) => step.id == current.id);
+    if (currentIndex < 0) return 0;
+    return ((currentIndex + 1) / steps.length).clamp(0, 1).toDouble();
+  }
+
+  Color _statusProgressColor(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final current = _statusEtapaAtual(atendimento, status);
+    return _colorFromHex(current?.cor, theme.colorScheme.primary);
+  }
+
+  Color _colorFromHex(String? value, Color fallback) {
+    final hex = (value ?? '').replaceAll('#', '').trim();
+    if (hex.length != 6 && hex.length != 8) return fallback;
+    try {
+      final normalized = hex.length == 6 ? 'FF$hex' : hex;
+      return Color(int.parse(normalized, radix: 16));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   String _formatarMoeda(double value) =>
       context.read<LocaleSettingsProvider>().formatCurrency(value);
 
@@ -342,6 +460,24 @@ class _AtendimentosTecnicosListaWebPageState
       equipamento?.modelo ?? '',
     ].where((parte) => parte.trim().isNotEmpty).toList(growable: false);
     return partes.isEmpty ? atendimento.numero : partes.join(' ');
+  }
+
+  String _clienteLabelAtendimento(AtendimentoTecnicoModel atendimento) {
+    final String cliente = atendimento.nomeClienteSnapshot?.trim() ?? '';
+    return cliente.isEmpty ? 'Cliente não informado' : cliente;
+  }
+
+  String? _codigoTipoRecebimentoInicial(AtendimentoTecnicoModel atendimento) {
+    if (atendimento.recebimentos.isEmpty) return null;
+    final String codigo =
+        atendimento.recebimentos.last.codigoFormaRecebimento.trim();
+    return codigo.isEmpty ? null : codigo;
+  }
+
+  String _observacaoRecebimentoPadrao(SixWebRecebimentoResultado resultado) {
+    return resultado.total
+        ? 'Recebimento total realizado no atendimento técnico web.'
+        : 'Recebimento parcial realizado no atendimento técnico web.';
   }
 
   int _totalEmAberto(List<AtendimentoTecnicoModel> atendimentos) =>
@@ -380,13 +516,41 @@ class _AtendimentosTecnicosListaWebPageState
       _mostrarMensagem('Este atendimento já está liquidado.');
       return;
     }
-    final recebeu = await showDialog<bool>(
-      context: context,
-      builder: (_) => AtendimentoTecnicoReceberDialog(atendimento: atendimento),
-    );
-    if (recebeu == true && mounted) {
+    final SixWebRecebimentoResultado? resultado =
+        await SixWebRecebimentoDialog.show(
+          context,
+          titulo: 'Receber atendimento técnico',
+          descricao: _equipamentoTitulo(atendimento),
+          contato: _clienteLabelAtendimento(atendimento),
+          valorAberto: atendimento.valorEmAberto,
+          codigoTipoInicial: _codigoTipoRecebimentoInicial(atendimento),
+          permitirParcial: true,
+          observacaoInicial:
+              'Recebimento realizado no atendimento técnico web.',
+        );
+
+    if (resultado == null || !mounted) return;
+    try {
+      await _service.receber(
+        id: atendimento.id,
+        input: AtendimentoTecnicoRecebimentoInput(
+          codigoFormaRecebimento: resultado.codigoTipoRecebimento,
+          nomeFormaRecebimento: resultado.descricaoTipoRecebimento,
+          valor: resultado.valor,
+          observacao:
+              resultado.observacao ?? _observacaoRecebimentoPadrao(resultado),
+        ),
+      );
+      if (!mounted) return;
       _recarregar();
-      _mostrarMensagem('Recebimento lançado e auditoria registrada.');
+      _mostrarMensagem(
+        resultado.total
+            ? 'Atendimento recebido com sucesso.'
+            : 'Parcial recebida com sucesso.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem('Não foi possível lançar o recebimento: $error');
     }
   }
 
@@ -439,6 +603,148 @@ class _AtendimentosTecnicosListaWebPageState
       _mostrarMensagem('Não foi possível gerar o link: $error');
     } finally {
       if (mounted) setState(() => _gerandoLink = false);
+    }
+  }
+
+  Future<void> _gerarLinkStatusPublico(
+    AtendimentoTecnicoModel atendimento,
+  ) async {
+    if (_gerandoLinkStatus) return;
+    setState(() => _gerandoLinkStatus = true);
+    try {
+      final baseUrl = '${Uri.base.origin}/atendimento/status';
+      final response = await _service.gerarLinkStatusPublico(
+        id: atendimento.id,
+        baseUrl: baseUrl,
+      );
+      if (!mounted) return;
+      final link = response.link.trim();
+      if (link.isEmpty) {
+        throw Exception(
+          context.t(
+            'atendimentoTecnico.publicStatus.linkMissing',
+            fallback: 'Link não retornado pelo backend.',
+          ),
+        );
+      }
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!mounted) return;
+      final String textoCompartilhamento = _mensagemCompartilhamentoStatus(
+        atendimento,
+        link,
+      );
+      await showDialog<void>(
+        context: context,
+        builder:
+            (dialogContext) => AlertDialog(
+              title: Text(
+                context.t(
+                  'atendimentoTecnico.publicStatus.linkTitle',
+                  fallback: 'Link público de status',
+                ),
+              ),
+              content: SizedBox(
+                width: 560,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      context.t(
+                        'atendimentoTecnico.publicStatus.linkCopied',
+                        fallback: 'Link copiado para a área de transferência.',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SelectableText(link),
+                    const SizedBox(height: 12),
+                    Text(
+                      context.t(
+                        'atendimentoTecnico.publicStatus.linkHelp',
+                        fallback:
+                            'Envie este link ao cliente para acompanhar o status atual do serviço.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(context.t('common.close', fallback: 'Fechar')),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: link));
+                    if (!mounted) return;
+                    _mostrarMensagem(
+                      context.t(
+                        'atendimentoTecnico.publicStatus.linkCopiedShort',
+                        fallback: 'Link de status copiado.',
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.content_copy_rounded),
+                  label: Text(context.t('common.copy', fallback: 'Copiar')),
+                ),
+                FilledButton.icon(
+                  onPressed:
+                      () => _compartilharStatusPublico(
+                        textoCompartilhamento,
+                        link,
+                      ),
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: Text(
+                    context.t('common.share', fallback: 'Compartilhar'),
+                  ),
+                ),
+              ],
+            ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        '${context.t('atendimentoTecnico.publicStatus.linkError', fallback: 'Não foi possível gerar o link de status')}: $error',
+      );
+    } finally {
+      if (mounted) setState(() => _gerandoLinkStatus = false);
+    }
+  }
+
+  String _mensagemCompartilhamentoStatus(
+    AtendimentoTecnicoModel atendimento,
+    String link,
+  ) {
+    final chamada = context.t(
+      'atendimentoTecnico.publicStatus.shareMessage',
+      fallback: 'Acompanhe o status do seu serviço pelo link abaixo:',
+    );
+    return <String>[
+      chamada,
+      '${atendimento.numero} - ${_equipamentoTitulo(atendimento)}',
+      link,
+    ].join('\n\n');
+  }
+
+  Future<void> _compartilharStatusPublico(String mensagem, String link) async {
+    try {
+      await sharing.Share.share(
+        mensagem,
+        subject: context.t(
+          'atendimentoTecnico.publicStatus.shareSubject',
+          fallback: 'Status do serviço',
+        ),
+      );
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!mounted) return;
+      _mostrarMensagem(
+        context.t(
+          'atendimentoTecnico.publicStatus.shareFallback',
+          fallback:
+              'Não foi possível abrir o compartilhamento. O link foi copiado.',
+        ),
+      );
     }
   }
 
@@ -1158,6 +1464,7 @@ class _AtendimentosTecnicosListaWebPageState
     final statusTexto = _statusLabel(atendimento, status);
     final colorScheme = theme.colorScheme;
     final bool pendente = !atendimento.operacaoLiquidada;
+    final bool entregaAtrasada = _entregaAtrasada(atendimento);
     final clienteSnapshot = atendimento.nomeClienteSnapshot?.trim() ?? '';
     final String cliente =
         clienteSnapshot.isNotEmpty ? clienteSnapshot : 'Cliente não informado';
@@ -1199,7 +1506,7 @@ class _AtendimentosTecnicosListaWebPageState
                     const SizedBox(width: 10),
                     _coloredChip(
                       theme,
-                      pendente ? 'Em aberto' : 'Liquidada',
+                      pendente ? 'Financeiro aberto' : 'Financeiro liquidado',
                       pendente
                           ? Icons.account_balance_wallet_outlined
                           : Icons.price_check_rounded,
@@ -1242,6 +1549,7 @@ class _AtendimentosTecnicosListaWebPageState
                   if (atendimento.assinaturaAprovada) _signedChip(theme),
                   if (atendimento.requerNovaAssinatura)
                     _pendingSignatureChip(theme),
+                  if (entregaAtrasada) _lateDeliveryChip(theme),
                   _chip(theme, statusTexto, Icons.flag_outlined),
                   _chip(
                     theme,
@@ -1277,9 +1585,15 @@ class _AtendimentosTecnicosListaWebPageState
                   ),
                   _chip(
                     theme,
-                    'Atualização ${_formatarDataCurta(_dataReferenciaFiltro(atendimento))}',
+                    'Atualização ${_formatarDataCurta(atendimento.dataAtualizacao)}',
                     Icons.update_rounded,
                   ),
+                  if (atendimento.dataEntregaPrevista != null)
+                    _chip(
+                      theme,
+                      'Entrega ${_formatarDataCurta(atendimento.dataEntregaPrevista)}',
+                      Icons.assignment_turned_in_outlined,
+                    ),
                   _chip(
                     theme,
                     'Validade ${_formatarDataCurta(atendimento.validadeOrcamentoEm)}',
@@ -1287,6 +1601,8 @@ class _AtendimentosTecnicosListaWebPageState
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              _statusProgressBar(theme, atendimento, status),
             ],
           ),
         ),
@@ -1314,6 +1630,21 @@ class _AtendimentosTecnicosListaWebPageState
           label: 'Editar',
           icon: Icons.edit_note_rounded,
           onPressed: () => _abrirEditarAtendimento(atendimento),
+        ),
+        _actionButton(
+          theme,
+          label:
+              _gerandoLinkStatus
+                  ? context.t('common.generating', fallback: 'Gerando...')
+                  : context.t(
+                    'atendimentoTecnico.publicStatus.action',
+                    fallback: 'Status público',
+                  ),
+          icon: Icons.ios_share_rounded,
+          onPressed:
+              _gerandoLinkStatus
+                  ? null
+                  : () => _gerarLinkStatusPublico(atendimento),
         ),
         _actionButton(
           theme,
@@ -1428,6 +1759,10 @@ class _AtendimentosTecnicosListaWebPageState
                       'Validade',
                       _formatarDataCurta(atendimento.validadeOrcamentoEm),
                     ),
+                    _detailLine(
+                      'Entrega prevista',
+                      _formatarDataCurta(atendimento.dataEntregaPrevista),
+                    ),
                     if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty)
                       _detailLine('Defeito', atendimento.defeitoRelatado!),
                     if ((atendimento.diagnosticoTecnico ?? '')
@@ -1536,6 +1871,16 @@ class _AtendimentosTecnicosListaWebPageState
                 icon: const Icon(Icons.draw_outlined),
                 label: const Text('Link assinatura'),
               ),
+              OutlinedButton.icon(
+                onPressed: () => _gerarLinkStatusPublico(atendimento),
+                icon: const Icon(Icons.ios_share_rounded),
+                label: Text(
+                  context.t(
+                    'atendimentoTecnico.publicStatus.action',
+                    fallback: 'Status público',
+                  ),
+                ),
+              ),
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Fechar'),
@@ -1560,6 +1905,168 @@ class _AtendimentosTecnicosListaWebPageState
           ),
           Expanded(child: Text(value)),
         ],
+      ),
+    );
+  }
+
+  Widget _statusProgressBar(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    if (status.isEmpty) return const SizedBox.shrink();
+    final colorScheme = theme.colorScheme;
+    final progress = _statusProgressValue(atendimento, status);
+    final color = _statusProgressColor(theme, atendimento, status);
+    final steps = _statusFlowSteps(atendimento, status);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          context.t(
+            'atendimentoTecnico.publicStatus.progressShort',
+            fallback: 'Progresso do serviço',
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 7),
+        _statusBulletProgressBar(
+          theme: theme,
+          progress: progress,
+          steps: steps.length,
+          color: color,
+          valueKey:
+              'web-status-progress-${atendimento.id}-${atendimento.statusCodigo}',
+        ),
+      ],
+    );
+  }
+
+  Widget _statusBulletProgressBar({
+    required ThemeData theme,
+    required double progress,
+    required int steps,
+    required Color color,
+    required String valueKey,
+  }) {
+    final colorScheme = theme.colorScheme;
+    const double height = 22;
+    const double trackHeight = 6;
+    const double bulletSize = 13;
+    final int safeSteps = steps <= 0 ? 1 : steps;
+    final double safeProgress = progress.clamp(0, 1).toDouble();
+    final double completedSteps = safeProgress * safeSteps;
+    final int currentStep = completedSteps.ceil().clamp(0, safeSteps).toInt();
+    final double lineProgress =
+        safeSteps <= 1
+            ? safeProgress
+            : ((completedSteps - 1) / (safeSteps - 1)).clamp(0, 1).toDouble();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+        if (!width.isFinite || width <= 0) return const SizedBox.shrink();
+        return SizedBox(
+          height: height,
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: <Widget>[
+              Positioned(
+                left: bulletSize / 2,
+                right: bulletSize / 2,
+                top: (height - trackHeight) / 2,
+                child: Container(
+                  height: trackHeight,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.72,
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: bulletSize / 2,
+                top: (height - trackHeight) / 2,
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey<String>(valueKey),
+                  tween: Tween<double>(begin: 0, end: lineProgress),
+                  duration: const Duration(milliseconds: 980),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) {
+                    return Container(
+                      width: (width - bulletSize) * value,
+                      height: trackHeight,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              for (int index = 0; index < safeSteps; index++)
+                _statusProgressBullet(
+                  width: width,
+                  height: height,
+                  bulletSize: bulletSize,
+                  index: index,
+                  steps: safeSteps,
+                  currentStep: currentStep,
+                  color: color,
+                  colorScheme: colorScheme,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _statusProgressBullet({
+    required double width,
+    required double height,
+    required double bulletSize,
+    required int index,
+    required int steps,
+    required int currentStep,
+    required Color color,
+    required ColorScheme colorScheme,
+  }) {
+    final double position = steps == 1 ? 0 : index / (steps - 1);
+    final bool reached = index < currentStep;
+    return Positioned(
+      left: (width - bulletSize) * position,
+      top: (height - bulletSize) / 2,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        width: bulletSize,
+        height: bulletSize,
+        decoration: BoxDecoration(
+          color: reached ? color : colorScheme.surface,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color:
+                reached
+                    ? color
+                    : colorScheme.outlineVariant.withValues(alpha: 0.95),
+            width: reached ? 2 : 1.2,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: (reached ? color : Colors.black).withValues(alpha: 0.10),
+              blurRadius: reached ? 8 : 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1725,16 +2232,23 @@ class _AtendimentosTecnicosListaWebPageState
     theme.colorScheme.error,
   );
 
+  Widget _lateDeliveryChip(ThemeData theme) => _coloredChip(
+    theme,
+    'Entrega atrasada',
+    Icons.warning_amber_rounded,
+    theme.colorScheme.error,
+  );
+
   Widget _liquidadaChip(ThemeData theme) => _coloredChip(
     theme,
-    'Liquidada',
+    'Financeiro liquidado',
     Icons.price_check_rounded,
     theme.colorScheme.primary,
   );
 
   Widget _naoLiquidadaChip(ThemeData theme) => _coloredChip(
     theme,
-    'Não liquidada',
+    'Financeiro aberto',
     Icons.account_balance_wallet_outlined,
     theme.colorScheme.error,
   );

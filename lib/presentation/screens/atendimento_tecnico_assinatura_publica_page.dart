@@ -1,20 +1,27 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../providers/locale_settings_provider.dart';
 
 class AtendimentoTecnicoAssinaturaPublicaPage extends StatefulWidget {
-  const AtendimentoTecnicoAssinaturaPublicaPage({super.key, required this.initialUri});
+  const AtendimentoTecnicoAssinaturaPublicaPage({
+    super.key,
+    required this.initialUri,
+  });
 
   final Uri initialUri;
 
   @override
-  State<AtendimentoTecnicoAssinaturaPublicaPage> createState() => _AtendimentoTecnicoAssinaturaPublicaPageState();
+  State<AtendimentoTecnicoAssinaturaPublicaPage> createState() =>
+      _AtendimentoTecnicoAssinaturaPublicaPageState();
 }
 
-class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTecnicoAssinaturaPublicaPage> {
+class _AtendimentoTecnicoAssinaturaPublicaPageState
+    extends State<AtendimentoTecnicoAssinaturaPublicaPage> {
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _documentoController = TextEditingController();
@@ -31,7 +38,8 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
   void initState() {
     super.initState();
     _token = widget.initialUri.queryParameters['token'] ?? '';
-    _idUnicoDaEmpresa = widget.initialUri.queryParameters['idUnicoDaEmpresa'] ?? '';
+    _idUnicoDaEmpresa =
+        widget.initialUri.queryParameters['idUnicoDaEmpresa'] ?? '';
     _future = _carregar();
   }
 
@@ -47,7 +55,10 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
     if (_token.isEmpty || _idUnicoDaEmpresa.isEmpty) {
       throw Exception('Link inválido. Token ou comércio não informado.');
     }
-    final response = await _service.consultarAssinaturaPublica(idUnicoDaEmpresa: _idUnicoDaEmpresa, token: _token);
+    final response = await _service.consultarAssinaturaPublica(
+      idUnicoDaEmpresa: _idUnicoDaEmpresa,
+      token: _token,
+    );
     final atendimentoJson = response['atendimento'];
     if (atendimentoJson is! Map<String, dynamic>) {
       throw Exception('Atendimento não encontrado para este link.');
@@ -72,7 +83,9 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
       return;
     }
     if (!_aceitou) {
-      _mostrarMensagem('Confirme que aprova os produtos, serviços, valores e validade do orçamento.');
+      _mostrarMensagem(
+        'Confirme que aprova os produtos, serviços, valores, validade e entrega prevista.',
+      );
       return;
     }
     if (_pontosAssinatura.whereType<Offset>().length < 4) {
@@ -88,9 +101,15 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
         idUnicoDaEmpresa: _idUnicoDaEmpresa,
         token: _token,
         nomeAssinante: nome,
-        documentoAssinante: _documentoController.text.trim().isEmpty ? null : _documentoController.text.trim(),
+        documentoAssinante:
+            _documentoController.text.trim().isEmpty
+                ? null
+                : _documentoController.text.trim(),
         assinaturaDataUrl: _assinaturaSerializada(),
-        observacao: _observacaoController.text.trim().isEmpty ? null : _observacaoController.text.trim(),
+        observacao:
+            _observacaoController.text.trim().isEmpty
+                ? null
+                : _observacaoController.text.trim(),
       );
       if (!mounted) return;
       _recarregarAssinatura();
@@ -108,26 +127,31 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
   }
 
   String _assinaturaSerializada() {
-    final pontos = _pontosAssinatura.map((ponto) {
-      if (ponto == null) return null;
-      return <String, double>{'x': ponto.dx, 'y': ponto.dy};
-    }).toList(growable: false);
-    return jsonEncode(<String, dynamic>{'tipo': 'flutter-points-signature', 'pontos': pontos});
+    final pontos = _pontosAssinatura
+        .map((ponto) {
+          if (ponto == null) return null;
+          return <String, double>{'x': ponto.dx, 'y': ponto.dy};
+        })
+        .toList(growable: false);
+    return jsonEncode(<String, dynamic>{
+      'tipo': 'flutter-points-signature',
+      'pontos': pontos,
+    });
   }
 
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
   }
 
-  String _formatarMoeda(double value) => 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+  String _formatarMoeda(double value) =>
+      context.read<LocaleSettingsProvider>().formatCurrency(value);
 
   String _formatarData(DateTime? value) {
     if (value == null) return 'Não informada';
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    return '$dia/$mes/$ano';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   @override
@@ -138,8 +162,15 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
       body: FutureBuilder<_AssinaturaPublicaState>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return _ErroPublico(mensagem: snapshot.error.toString(), onRetry: _recarregarAssinatura);
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return _ErroPublico(
+              mensagem: snapshot.error.toString(),
+              onRetry: _recarregarAssinatura,
+            );
+          }
           final state = snapshot.data!;
           final atendimento = state.atendimento;
           return Center(
@@ -152,15 +183,31 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
                     theme,
                     Row(
                       children: <Widget>[
-                        Icon(Icons.draw_outlined, color: theme.colorScheme.primary, size: 42),
+                        Icon(
+                          Icons.draw_outlined,
+                          color: theme.colorScheme.primary,
+                          size: 42,
+                        ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Text('Aprovação de serviço', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                              Text(
+                                'Aprovação de serviço',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                               const SizedBox(height: 4),
-                              Text(state.utilizado ? 'Este link já foi utilizado.' : 'Confira o atendimento, a validade do orçamento e assine para aprovar.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                              Text(
+                                state.utilizado
+                                    ? 'Este link já foi utilizado.'
+                                    : 'Confira o atendimento, a validade do orçamento, a entrega prevista e assine para aprovar.',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -172,7 +219,9 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
                   const SizedBox(height: 14),
                   _buildItens(theme, atendimento),
                   const SizedBox(height: 14),
-                  state.utilizado ? _buildJaUtilizado(theme) : _buildAssinatura(theme),
+                  state.utilizado
+                      ? _buildJaUtilizado(theme)
+                      : _buildAssinatura(theme),
                 ],
               ),
             ),
@@ -184,24 +233,47 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
 
   Widget _buildResumo(ThemeData theme, AtendimentoTecnicoModel atendimento) {
     final equipamento = atendimento.equipamento;
-    final equipamentoTexto = <String>[equipamento?.tipo ?? '', equipamento?.marca ?? '', equipamento?.modelo ?? '']
-        .where((item) => item.trim().isNotEmpty)
-        .join(' ');
+    final equipamentoTexto = <String>[
+      equipamento?.tipo ?? '',
+      equipamento?.marca ?? '',
+      equipamento?.modelo ?? '',
+    ].where((item) => item.trim().isNotEmpty).join(' ');
     return _card(
       theme,
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text('Dados do atendimento', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Dados do atendimento',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 12),
           _linha('Número', atendimento.numero),
-          _linha('Cliente', atendimento.nomeClienteSnapshot ?? 'Cliente não informado'),
-          _linha('Status', atendimento.statusNomePtBr ?? atendimento.statusCodigo),
+          _linha(
+            'Cliente',
+            atendimento.nomeClienteSnapshot ?? 'Cliente não informado',
+          ),
+          _linha(
+            'Status',
+            atendimento.statusNomePtBr ?? atendimento.statusCodigo,
+          ),
           _linha('Validade', _formatarData(atendimento.validadeOrcamentoEm)),
-          _linha('Equipamento', equipamentoTexto.isEmpty ? 'Não informado' : equipamentoTexto),
-          if ((equipamento?.imei ?? '').trim().isNotEmpty) _linha('IMEI', equipamento!.imei!),
-          if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) _linha('Defeito', atendimento.defeitoRelatado!),
-          if ((atendimento.diagnosticoTecnico ?? '').trim().isNotEmpty) _linha('Diagnóstico', atendimento.diagnosticoTecnico!),
+          _linha(
+            'Entrega prevista',
+            _formatarData(atendimento.dataEntregaPrevista),
+          ),
+          _linha(
+            'Equipamento',
+            equipamentoTexto.isEmpty ? 'Não informado' : equipamentoTexto,
+          ),
+          if ((equipamento?.imei ?? '').trim().isNotEmpty)
+            _linha('IMEI', equipamento!.imei!),
+          if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty)
+            _linha('Defeito', atendimento.defeitoRelatado!),
+          if ((atendimento.diagnosticoTecnico ?? '').trim().isNotEmpty)
+            _linha('Diagnóstico', atendimento.diagnosticoTecnico!),
           const Divider(height: 28),
           Wrap(
             spacing: 10,
@@ -223,10 +295,18 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text('Produtos e serviços', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Produtos e serviços',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 12),
           if (atendimento.itens.isEmpty)
-            Text('Nenhum item informado.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant))
+            Text(
+              'Nenhum item informado.',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            )
           else
             ...atendimento.itens.map((item) => _item(theme, item)),
         ],
@@ -240,29 +320,71 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text('Assinatura', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Assinatura',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 12),
-          TextField(controller: _nomeController, decoration: const InputDecoration(labelText: 'Nome do assinante')),
+          TextField(
+            controller: _nomeController,
+            decoration: const InputDecoration(labelText: 'Nome do assinante'),
+          ),
           const SizedBox(height: 12),
-          TextField(controller: _documentoController, decoration: const InputDecoration(labelText: 'Documento do assinante')),
+          TextField(
+            controller: _documentoController,
+            decoration: const InputDecoration(
+              labelText: 'Documento do assinante',
+            ),
+          ),
           const SizedBox(height: 12),
-          TextField(controller: _observacaoController, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Observação opcional')),
+          TextField(
+            controller: _observacaoController,
+            minLines: 2,
+            maxLines: 4,
+            decoration: const InputDecoration(labelText: 'Observação opcional'),
+          ),
           const SizedBox(height: 16),
           Row(
             children: <Widget>[
-              Expanded(child: Text('Assine no campo abaixo', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
-              TextButton.icon(onPressed: () => setState(_pontosAssinatura.clear), icon: const Icon(Icons.cleaning_services_outlined), label: const Text('Limpar')),
+              Expanded(
+                child: Text(
+                  'Assine no campo abaixo',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => setState(_pontosAssinatura.clear),
+                icon: const Icon(Icons.cleaning_services_outlined),
+                label: const Text('Limpar'),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Container(
             height: 220,
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: theme.colorScheme.outlineVariant)),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
             child: GestureDetector(
-              onPanStart: (details) => setState(() => _pontosAssinatura.add(details.localPosition)),
-              onPanUpdate: (details) => setState(() => _pontosAssinatura.add(details.localPosition)),
+              onPanStart:
+                  (details) => setState(
+                    () => _pontosAssinatura.add(details.localPosition),
+                  ),
+              onPanUpdate:
+                  (details) => setState(
+                    () => _pontosAssinatura.add(details.localPosition),
+                  ),
               onPanEnd: (_) => setState(() => _pontosAssinatura.add(null)),
-              child: CustomPaint(painter: _AssinaturaPainter(_pontosAssinatura), child: const SizedBox.expand()),
+              child: CustomPaint(
+                painter: _AssinaturaPainter(_pontosAssinatura),
+                child: const SizedBox.expand(),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -270,7 +392,9 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
             contentPadding: EdgeInsets.zero,
             value: _aceitou,
             onChanged: (value) => setState(() => _aceitou = value == true),
-            title: const Text('Aprovo os produtos, serviços, valores, condições e validade apresentados neste atendimento.'),
+            title: const Text(
+              'Aprovo os produtos, serviços, valores, condições, validade e entrega prevista apresentados neste atendimento.',
+            ),
             controlAffinity: ListTileControlAffinity.leading,
           ),
           const SizedBox(height: 14),
@@ -278,7 +402,14 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: _salvando ? null : _aprovar,
-              icon: _salvando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.check_circle_outline),
+              icon:
+                  _salvando
+                      ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.check_circle_outline),
               label: Text(_salvando ? 'Enviando...' : 'Aprovar e assinar'),
             ),
           ),
@@ -292,9 +423,17 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
       theme,
       Row(
         children: <Widget>[
-          Icon(Icons.verified_outlined, color: theme.colorScheme.primary, size: 36),
+          Icon(
+            Icons.verified_outlined,
+            color: theme.colorScheme.primary,
+            size: 36,
+          ),
           const SizedBox(width: 12),
-          const Expanded(child: Text('Este atendimento já foi aprovado por assinatura. Solicite um novo link à loja se precisar revisar.')),
+          const Expanded(
+            child: Text(
+              'Este atendimento já foi aprovado por assinatura. Solicite um novo link à loja se precisar revisar.',
+            ),
+          ),
         ],
       ),
     );
@@ -304,7 +443,11 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: theme.colorScheme.outlineVariant)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
       child: child,
     );
   }
@@ -312,7 +455,19 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
   Widget _linha(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[SizedBox(width: 140, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))), Expanded(child: Text(value))]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
     );
   }
 
@@ -320,8 +475,26 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
     return Container(
       width: 180,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.48), borderRadius: BorderRadius.circular(16)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Text(label, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)), const SizedBox(height: 4), Text(_formatarMoeda(value), style: const TextStyle(fontWeight: FontWeight.w900))]),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.48,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _formatarMoeda(value),
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
     );
   }
 
@@ -330,21 +503,48 @@ class _AtendimentoTecnicoAssinaturaPublicaPageState extends State<AtendimentoTec
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(16)),
-      child: Row(children: <Widget>[
-        Icon(servico ? Icons.handyman_outlined : Icons.inventory_2_outlined, color: theme.colorScheme.primary),
-        const SizedBox(width: 10),
-        Expanded(child: Text(item.descricaoSnapshot, style: const TextStyle(fontWeight: FontWeight.w900))),
-        Text('${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}'),
-        const SizedBox(width: 12),
-        SizedBox(width: 100, child: Text(_formatarMoeda(item.valorTotal), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w900))),
-      ]),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.35,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            servico ? Icons.handyman_outlined : Icons.inventory_2_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              item.descricaoSnapshot,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+          Text(
+            '${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}',
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 100,
+            child: Text(
+              _formatarMoeda(item.valorTotal),
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _AssinaturaPublicaState {
-  const _AssinaturaPublicaState({required this.utilizado, required this.atendimento});
+  const _AssinaturaPublicaState({
+    required this.utilizado,
+    required this.atendimento,
+  });
   final bool utilizado;
   final AtendimentoTecnicoModel atendimento;
 }
@@ -361,16 +561,38 @@ class _ErroPublico extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 560),
         padding: const EdgeInsets.all(26),
-        decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(26), border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.30))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-          Icon(Icons.link_off_rounded, color: theme.colorScheme.error, size: 46),
-          const SizedBox(height: 12),
-          Text('Não foi possível abrir o link', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 8),
-          Text(mensagem, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente')),
-        ]),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(
+            color: theme.colorScheme.error.withValues(alpha: 0.30),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.link_off_rounded,
+              color: theme.colorScheme.error,
+              size: 46,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Não foi possível abrir o link',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(mensagem, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -382,20 +604,28 @@ class _AssinaturaPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 2.8
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+    final paint =
+        Paint()
+          ..color = Colors.black87
+          ..strokeWidth = 2.8
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
     for (int i = 0; i < points.length - 1; i++) {
       final current = points[i];
       final next = points[i + 1];
-      if (current != null && next != null) canvas.drawLine(current, next, paint);
+      if (current != null && next != null) {
+        canvas.drawLine(current, next, paint);
+      }
     }
-    final guide = Paint()
-      ..color = Colors.black12
-      ..strokeWidth = 1;
-    canvas.drawLine(Offset(18, size.height - 32), Offset(size.width - 18, size.height - 32), guide);
+    final guide =
+        Paint()
+          ..color = Colors.black12
+          ..strokeWidth = 1;
+    canvas.drawLine(
+      Offset(18, size.height - 32),
+      Offset(size.width - 18, size.height - 32),
+      guide,
+    );
   }
 
   @override
