@@ -32,6 +32,7 @@ class AtendimentosTecnicosListaWebPage extends StatefulWidget {
 class _AtendimentosTecnicosListaWebPageState
     extends State<AtendimentosTecnicosListaWebPage> {
   static const String _semTecnicoKey = '__sem_tecnico__';
+  static const String _todosTecnicosKey = '__todos__';
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ColaboradorUsuarioApiClient _colaboradorApiClient =
@@ -45,6 +46,7 @@ class _AtendimentosTecnicosListaWebPageState
   DateTime? _dataInicioFiltro;
   DateTime? _dataFimFiltro;
   String? _tecnicoFiltroKey;
+  String? _statusFiltroLabel;
 
   @override
   void initState() {
@@ -81,13 +83,15 @@ class _AtendimentosTecnicosListaWebPageState
       _buscaController.text.trim().isNotEmpty ||
       _dataInicioFiltro != null ||
       _dataFimFiltro != null ||
-      _tecnicoFiltroKey != null;
+      _tecnicoFiltroKey != null ||
+      _statusFiltroLabel != null;
 
   void _limparFiltros() {
     setState(() {
       _dataInicioFiltro = null;
       _dataFimFiltro = null;
       _tecnicoFiltroKey = null;
+      _statusFiltroLabel = null;
       _buscaController.clear();
     });
   }
@@ -139,12 +143,16 @@ class _AtendimentosTecnicosListaWebPageState
     }
   }
 
-  List<AtendimentoTecnicoModel> _filtrar(List<AtendimentoTecnicoModel> itens) {
+  List<AtendimentoTecnicoModel> _filtrar(
+    List<AtendimentoTecnicoModel> itens,
+    List<DominioOpcaoModel> statusOptions,
+  ) {
     final termo = _buscaController.text.trim().toLowerCase();
     final inicio =
         _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
     final fim = _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
     final tecnicoKey = _tecnicoFiltroKey;
+    final statusLabel = _statusFiltroLabel;
 
     return itens
         .where((atendimento) {
@@ -161,6 +169,10 @@ class _AtendimentosTecnicosListaWebPageState
           }
           if (tecnicoKey != null &&
               _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
+            return false;
+          }
+          if (statusLabel != null &&
+              _statusLabel(atendimento, statusOptions) != statusLabel) {
             return false;
           }
 
@@ -432,6 +444,23 @@ class _AtendimentosTecnicosListaWebPageState
   String _formatarMoeda(double value) =>
       context.read<LocaleSettingsProvider>().formatCurrency(value);
 
+  String _formatarInteiro(double value) {
+    final inteiro = value.round();
+    final negativo = inteiro < 0;
+    final digits = inteiro.abs().toString();
+    final separadorMilhar =
+        context.read<LocaleSettingsProvider>().thousandSeparator;
+    final buffer = StringBuffer();
+    for (var index = 0; index < digits.length; index++) {
+      final remaining = digits.length - index;
+      if (index > 0 && remaining % 3 == 0) {
+        buffer.write(separadorMilhar);
+      }
+      buffer.write(digits[index]);
+    }
+    return '${negativo ? '-' : ''}$buffer';
+  }
+
   String _formatarData(DateTime? value) {
     if (value == null) return '-';
     final locale = context.read<LocaleSettingsProvider>();
@@ -491,10 +520,12 @@ class _AtendimentosTecnicosListaWebPageState
           .length;
 
   double _valorAberto(List<AtendimentoTecnicoModel> atendimentos) =>
-      atendimentos.fold<double>(
-        0,
-        (total, atendimento) => total + atendimento.valorEmAberto,
-      );
+      atendimentos
+          .where((atendimento) => !atendimento.operacaoLiquidada)
+          .fold<double>(
+            0,
+            (total, atendimento) => total + atendimento.valorEmAberto,
+          );
 
   Future<void> _abrirEditarAtendimento(
     AtendimentoTecnicoModel atendimento,
@@ -817,7 +848,8 @@ class _AtendimentosTecnicosListaWebPageState
           );
         }
         final state = snapshot.data!;
-        final atendimentos = _filtrar(state.atendimentos);
+        final statusOptions = state.dominios.statusAtendimentoTecnico;
+        final atendimentos = _filtrar(state.atendimentos, statusOptions);
         return LayoutBuilder(
           builder: (context, constraints) {
             final isCompact = constraints.maxWidth < 920;
@@ -841,13 +873,14 @@ class _AtendimentosTecnicosListaWebPageState
                     ),
                     child: Column(
                       children: <Widget>[
-                        _buildResumo(theme, state.atendimentos, isCompact),
+                        _buildResumo(theme, atendimentos, isCompact),
                         const SizedBox(height: 12),
                         _buildBusca(
                           theme,
                           isCompact,
                           state.atendimentos,
                           state.tecnicos,
+                          statusOptions,
                         ),
                       ],
                     ),
@@ -871,7 +904,7 @@ class _AtendimentosTecnicosListaWebPageState
                                     (context, index) => _buildAtendimentoCard(
                                       theme,
                                       atendimentos[index],
-                                      state.dominios.statusAtendimentoTecnico,
+                                      statusOptions,
                                       isCompact,
                                     ),
                               ),
@@ -1063,6 +1096,15 @@ class _AtendimentosTecnicosListaWebPageState
     final emAberto = _totalEmAberto(atendimentos);
     final assinados = _totalAssinados(atendimentos);
     final valorAberto = _valorAberto(atendimentos);
+    final bool possuiFiltrosAtivos = _possuiFiltrosAtivos;
+    final String resumoFiltradoHelper = context.t(
+      'atendimentoTecnico.lista.summary.filteredScope',
+      fallback: 'No filtro ativo',
+    );
+    final String saldoFiltradoHelper = context.t(
+      'atendimentoTecnico.lista.summary.filteredOpenBalance',
+      fallback: 'Saldo no filtro',
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1078,32 +1120,44 @@ class _AtendimentosTecnicosListaWebPageState
               theme,
               width: cardWidth,
               label: 'Atendimentos',
-              value: '$total',
-              helper: 'Total criado',
+              value: total.toDouble(),
+              formatter: _formatarInteiro,
+              helper:
+                  possuiFiltrosAtivos ? resumoFiltradoHelper : 'Total criado',
               icon: Icons.assignment_turned_in_outlined,
             ),
             _summaryCard(
               theme,
               width: cardWidth,
               label: 'Em aberto',
-              value: '$emAberto',
-              helper: 'Aguardam recebimento',
+              value: emAberto.toDouble(),
+              formatter: _formatarInteiro,
+              helper:
+                  possuiFiltrosAtivos
+                      ? resumoFiltradoHelper
+                      : 'Aguardam recebimento',
               icon: Icons.account_balance_wallet_outlined,
             ),
             _summaryCard(
               theme,
               width: cardWidth,
               label: 'Assinados',
-              value: '$assinados',
-              helper: 'Com aceite do cliente',
+              value: assinados.toDouble(),
+              formatter: _formatarInteiro,
+              helper:
+                  possuiFiltrosAtivos
+                      ? resumoFiltradoHelper
+                      : 'Com aceite do cliente',
               icon: Icons.verified_rounded,
             ),
             _summaryCard(
               theme,
               width: cardWidth,
               label: 'Valor aberto',
-              value: _formatarMoeda(valorAberto),
-              helper: 'Saldo pendente',
+              value: valorAberto,
+              formatter: _formatarMoeda,
+              helper:
+                  possuiFiltrosAtivos ? saldoFiltradoHelper : 'Saldo pendente',
               icon: Icons.payments_outlined,
               highlight: true,
             ),
@@ -1117,7 +1171,8 @@ class _AtendimentosTecnicosListaWebPageState
     ThemeData theme, {
     required double width,
     required String label,
-    required String value,
+    required double value,
+    required String Function(double value) formatter,
     required String helper,
     required IconData icon,
     bool highlight = false,
@@ -1181,15 +1236,26 @@ class _AtendimentosTecnicosListaWebPageState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight ? Colors.white : colorScheme.onSurface,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
+                  TweenAnimationBuilder<double>(
+                    key: ValueKey<String>(
+                      'summary-$label-${value.toStringAsFixed(4)}',
                     ),
+                    tween: Tween<double>(begin: 0, end: value),
+                    duration: const Duration(milliseconds: 720),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animatedValue, _) {
+                      return Text(
+                        formatter(animatedValue),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              highlight ? Colors.white : colorScheme.onSurface,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -1222,6 +1288,7 @@ class _AtendimentosTecnicosListaWebPageState
     final colorScheme = theme.colorScheme;
     final tecnicoOptions = _tecnicoOptions(atendimentos, tecnicos);
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -1233,86 +1300,111 @@ class _AtendimentosTecnicosListaWebPageState
           final double searchWidth =
               isCompact
                   ? constraints.maxWidth
-                  : (constraints.maxWidth * 0.44).clamp(320.0, 560.0);
-          return Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
+                  : (constraints.maxWidth * 0.42).clamp(320.0, 620.0);
+          final filtroData = _filterTrigger(
+            theme,
+            width: isCompact ? constraints.maxWidth : 220,
+            label: 'Data',
+            value: _periodoFiltroLabel(),
+            icon: Icons.event_outlined,
+            onTap: _abrirFiltroDataWeb,
+          );
+          final filtroTecnico = _tecnicoFilterMenu(
+            width: isCompact ? constraints.maxWidth : 250,
+            options: tecnicoOptions,
+          );
+          final limparFiltros =
+              _possuiFiltrosAtivos
+                  ? OutlinedButton.icon(
+                    onPressed: _limparFiltros,
+                    icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+                    label: const Text('Limpar filtros'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  )
+                  : null;
+          final auditoria = _metricBadge(
+            theme,
+            'Auditoria ativa',
+            Icons.manage_history_rounded,
+          );
+          final searchField = SizedBox(
+            width: searchWidth,
+            child: TextField(
+              controller: _buscaController,
+              decoration: InputDecoration(
+                hintText:
+                    'Buscar por cliente, técnico, status, equipamento ou número...',
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: colorScheme.primary,
+                ),
+                suffixIcon:
+                    _buscaController.text.trim().isEmpty
+                        ? null
+                        : IconButton(
+                          icon: const Icon(Icons.clear_rounded),
+                          onPressed: () => _buscaController.clear(),
+                        ),
+                filled: true,
+                fillColor: colorScheme.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: colorScheme.outline.withOpacity(0.12),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 1.4,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          if (isCompact || constraints.maxWidth < 1120) {
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                searchField,
+                filtroData,
+                filtroTecnico,
+                if (limparFiltros != null) limparFiltros,
+                if (!isCompact) auditoria,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              SizedBox(
-                width: searchWidth,
-                child: TextField(
-                  controller: _buscaController,
-                  decoration: InputDecoration(
-                    hintText:
-                        'Buscar por cliente, técnico, status, equipamento ou número...',
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      color: colorScheme.primary,
-                    ),
-                    suffixIcon:
-                        _buscaController.text.trim().isEmpty
-                            ? null
-                            : IconButton(
-                              icon: const Icon(Icons.clear_rounded),
-                              onPressed: () => _buscaController.clear(),
-                            ),
-                    filled: true,
-                    fillColor: colorScheme.surface,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 14,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: colorScheme.outline.withOpacity(0.12),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 1.4,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              _filterTrigger(
-                theme,
-                width: isCompact ? constraints.maxWidth : 220,
-                label: 'Data',
-                value: _periodoFiltroLabel(),
-                icon: Icons.event_outlined,
-                onTap: _abrirFiltroDataWeb,
-              ),
-              _tecnicoFilterMenu(
-                theme,
-                width: isCompact ? constraints.maxWidth : 240,
-                options: tecnicoOptions,
-              ),
-              if (_possuiFiltrosAtivos)
-                OutlinedButton.icon(
-                  onPressed: _limparFiltros,
-                  icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
-                  label: const Text('Limpar filtros'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 15,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-              if (!isCompact)
-                _metricBadge(
-                  theme,
-                  'Auditoria ativa',
-                  Icons.manage_history_rounded,
-                ),
+              Expanded(child: searchField),
+              const SizedBox(width: 12),
+              filtroData,
+              const SizedBox(width: 12),
+              filtroTecnico,
+              const SizedBox(width: 12),
+              if (limparFiltros != null) ...<Widget>[
+                limparFiltros,
+                const SizedBox(width: 12),
+              ],
+              auditoria,
             ],
           );
         },
@@ -1415,43 +1507,24 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  Widget _tecnicoFilterMenu(
-    ThemeData theme, {
+  Widget _tecnicoFilterMenu({
     required double width,
     required List<_TecnicoFiltroOption> options,
   }) {
-    return PopupMenuButton<String>(
+    return _TecnicoFiltroDropdown(
+      width: width,
+      label: 'Técnico responsável',
+      displayValue: _tecnicoFiltroLabel(options),
       tooltip: 'Filtrar por técnico responsável',
-      onSelected: (value) {
+      icon: Icons.engineering_outlined,
+      selectedKey: _tecnicoFiltroKey,
+      todosKey: _todosTecnicosKey,
+      options: options,
+      onChanged: (value) {
         setState(() {
-          _tecnicoFiltroKey = value == '__todos__' ? null : value;
+          _tecnicoFiltroKey = value == _todosTecnicosKey ? null : value;
         });
       },
-      itemBuilder:
-          (context) => <PopupMenuEntry<String>>[
-            CheckedPopupMenuItem<String>(
-              value: '__todos__',
-              checked: _tecnicoFiltroKey == null,
-              child: const Text('Todos os técnicos'),
-            ),
-            const PopupMenuDivider(),
-            ...options.map(
-              (option) => CheckedPopupMenuItem<String>(
-                value: option.key,
-                checked: _tecnicoFiltroKey == option.key,
-                child: Text(option.label),
-              ),
-            ),
-          ],
-      child: SizedBox(
-        width: width,
-        child: _filterDisplay(
-          theme,
-          label: 'Técnico responsável',
-          value: _tecnicoFiltroLabel(options),
-          icon: Icons.engineering_outlined,
-        ),
-      ),
     );
   }
 
@@ -3177,6 +3250,266 @@ class _PeriodoFiltro {
 
   final DateTime? dataInicio;
   final DateTime? dataFim;
+}
+
+class _TecnicoFiltroDropdown extends StatefulWidget {
+  const _TecnicoFiltroDropdown({
+    required this.width,
+    required this.label,
+    required this.displayValue,
+    required this.tooltip,
+    required this.icon,
+    required this.selectedKey,
+    required this.todosKey,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final double width;
+  final String label;
+  final String displayValue;
+  final String tooltip;
+  final IconData icon;
+  final String? selectedKey;
+  final String todosKey;
+  final List<_TecnicoFiltroOption> options;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_TecnicoFiltroDropdown> createState() => _TecnicoFiltroDropdownState();
+}
+
+class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
+  final GlobalKey _fieldKey = GlobalKey();
+  bool _opened = false;
+  bool _hovered = false;
+
+  Future<void> _openMenu() async {
+    final fieldContext = _fieldKey.currentContext;
+    if (fieldContext == null) return;
+    final renderBox = fieldContext.findRenderObject() as RenderBox?;
+    final overlay =
+        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+    if (renderBox == null || overlay == null) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
+    final position = RelativeRect.fromRect(
+      Rect.fromLTWH(
+        offset.dx,
+        offset.dy + renderBox.size.height + 8,
+        renderBox.size.width,
+        renderBox.size.height,
+      ),
+      Offset.zero & overlay.size,
+    );
+    final theme = Theme.of(context);
+
+    setState(() => _opened = true);
+    final selected = await showMenu<String>(
+      context: context,
+      position: position,
+      constraints: BoxConstraints.tightFor(width: renderBox.size.width),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 12,
+      color: theme.colorScheme.surface,
+      items: <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          value: widget.todosKey,
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: _TecnicoFiltroMenuItem(
+            label: 'Todos os técnicos',
+            icon: Icons.groups_2_outlined,
+            selected: widget.selectedKey == null,
+            colorScheme: theme.colorScheme,
+          ),
+        ),
+        if (widget.options.isNotEmpty) const PopupMenuDivider(height: 8),
+        ...widget.options.map(
+          (option) => PopupMenuItem<String>(
+            value: option.key,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: _TecnicoFiltroMenuItem(
+              label: option.label,
+              icon: Icons.engineering_outlined,
+              selected: widget.selectedKey == option.key,
+              colorScheme: theme.colorScheme,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted) return;
+    setState(() => _opened = false);
+    final currentKey = widget.selectedKey ?? widget.todosKey;
+    if (selected != null && selected != currentKey) widget.onChanged(selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bool active = widget.selectedKey != null;
+    final bool emphasized = _opened || _hovered || active;
+    return SizedBox(
+      key: _fieldKey,
+      width: widget.width,
+      child: Semantics(
+        button: true,
+        label: widget.tooltip,
+        value: widget.displayValue,
+        child: Tooltip(
+          message: widget.tooltip,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _openMenu,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        emphasized
+                            ? colorScheme.primary.withValues(alpha: 0.05)
+                            : colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color:
+                          _opened
+                              ? colorScheme.primary
+                              : active
+                              ? colorScheme.primary.withValues(alpha: 0.34)
+                              : colorScheme.outline.withValues(
+                                alpha: _hovered ? 0.24 : 0.12,
+                              ),
+                      width: _opened ? 1.4 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(widget.icon, color: colorScheme.primary, size: 19),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              widget.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.58,
+                                ),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.displayValue,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: _opened ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 160),
+                        curve: Curves.easeOutCubic,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TecnicoFiltroMenuItem extends StatelessWidget {
+  const _TecnicoFiltroMenuItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.colorScheme,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color:
+            selected
+                ? colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            icon,
+            size: 18,
+            color:
+                selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: selected ? colorScheme.primary : colorScheme.onSurface,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          AnimatedOpacity(
+            opacity: selected ? 1 : 0,
+            duration: const Duration(milliseconds: 120),
+            child: Icon(
+              Icons.check_rounded,
+              size: 18,
+              color: colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TecnicoFiltroOption {
