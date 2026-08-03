@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
+import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../l10n/six_i18n.dart';
+import '../../providers/locale_settings_provider.dart';
+import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile_motion.dart';
 import 'atendimento_tecnico_editar_mobile_screen.dart';
+import 'atendimento_tecnico_mobile_screen.dart';
 
 class AtendimentosTecnicosMobileScreen extends StatefulWidget {
   const AtendimentosTecnicosMobileScreen({super.key});
@@ -15,14 +21,14 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
 
 class _AtendimentosTecnicosMobileScreenState
     extends State<AtendimentosTecnicosMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.activeBorder;
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final TextEditingController _searchController = TextEditingController();
@@ -61,98 +67,153 @@ class _AtendimentosTecnicosMobileScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    context.select<LocaleSettingsProvider, String>(
+      (LocaleSettingsProvider provider) =>
+          '${provider.currencyCode}|${provider.thousandSeparator}|'
+          '${provider.decimalSeparator}|${provider.decimalPlaces}',
+    );
+
+    return SixMobilePageShell(
+      title: _t('atendimentoTecnico.mobile.listTitle', 'Atendimentos técnicos'),
       backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Atendimentos Técnicos',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
-        ),
+      primaryColor: _primaryColor,
+      secondaryColor: _secondaryColor,
+      accentColor: _accentColor,
+      enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 8,
+      scrollEffectOffset: 28,
+      scrolledSurfaceOpacity: 0.70,
+      leading: IconButton(
+        tooltip: _t('common.back', 'Voltar'),
+        icon: const Icon(Icons.arrow_back_rounded),
+        onPressed: () => Navigator.of(context).maybePop(),
       ),
-      body: SafeArea(
-        child: FutureBuilder<List<AtendimentoTecnicoModel>>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return _loadingState();
-            }
-
-            if (snapshot.hasError) {
-              return _errorState(snapshot.error.toString());
-            }
-
-            final List<AtendimentoTecnicoModel> atendimentos =
-                snapshot.data ?? const <AtendimentoTecnicoModel>[];
-            final List<AtendimentoTecnicoModel> filtrados =
-                _filtrar(atendimentos);
-
-            return RefreshIndicator(
-              onRefresh: _recarregar,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                children: <Widget>[
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 60),
-                    child: _hero(filtrados, totalGeral: atendimentos.length),
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
+          child: Stack(
+            children: <Widget>[
+              _buildBody(scrollController, topInset),
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: SafeArea(
+                  minimum: const EdgeInsets.only(bottom: 8),
+                  child: FloatingActionButton.extended(
+                    backgroundColor: _accentColor,
+                    foregroundColor: SixMobilePalette.onPrimary,
+                    elevation: 5,
+                    onPressed: _novoAtendimento,
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(
+                      _t(
+                        'atendimentoTecnico.mobile.newFab',
+                        'Novo atendimento',
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 120),
-                    child: _summaryGrid(filtrados),
-                  ),
-                  const SizedBox(height: 16),
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 180),
-                    child: _statusOverview(atendimentos),
-                  ),
-                  const SizedBox(height: 14),
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 220),
-                    child: _statusFilter(atendimentos),
-                  ),
-                  const SizedBox(height: 14),
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 260),
-                    child: _searchBox(),
-                  ),
-                  const SizedBox(height: 16),
-                  _sectionTitle(
-                    _searchController.text.trim().isEmpty &&
-                            _statusSelecionado == null
-                        ? 'Atendimentos recentes'
-                        : 'Resultado do filtro',
-                  ),
-                  const SizedBox(height: 12),
-                  if (filtrados.isEmpty)
-                    _emptyState()
-                  else
-                    ...filtrados.take(20).toList().asMap().entries.map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: SixStaggeredEntry(
-                              delay: Duration(milliseconds: 320 + entry.key * 45),
-                              child: _atendimentoCard(entry.value),
-                            ),
-                          ),
-                        ),
-                ],
+                ),
               ),
-            );
-          },
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _loadingState() {
+  Widget _buildBody(ScrollController scrollController, double topInset) {
+    return FutureBuilder<List<AtendimentoTecnicoModel>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return _loadingState(scrollController, topInset);
+        }
+
+        if (snapshot.hasError) {
+          return _errorState(
+            snapshot.error.toString(),
+            scrollController,
+            topInset,
+          );
+        }
+
+        final List<AtendimentoTecnicoModel> atendimentos =
+            snapshot.data ?? const <AtendimentoTecnicoModel>[];
+        final List<AtendimentoTecnicoModel> filtrados = _filtrar(atendimentos);
+
+        return RefreshIndicator(
+          onRefresh: _recarregar,
+          child: ListView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 104),
+            children: <Widget>[
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 60),
+                child: _hero(filtrados, totalGeral: atendimentos.length),
+              ),
+              const SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 120),
+                child: _summaryGrid(filtrados),
+              ),
+              const SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 180),
+                child: _statusOverview(atendimentos),
+              ),
+              const SizedBox(height: 14),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 220),
+                child: _statusFilter(atendimentos),
+              ),
+              const SizedBox(height: 14),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 260),
+                child: _searchBox(),
+              ),
+              const SizedBox(height: 16),
+              _sectionTitle(
+                _searchController.text.trim().isEmpty &&
+                        _statusSelecionado == null
+                    ? 'Atendimentos recentes'
+                    : 'Resultado do filtro',
+              ),
+              const SizedBox(height: 12),
+              if (filtrados.isEmpty)
+                _emptyState()
+              else
+                ...filtrados
+                    .take(20)
+                    .toList()
+                    .asMap()
+                    .entries
+                    .map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: SixStaggeredEntry(
+                          delay: Duration(milliseconds: 320 + entry.key * 45),
+                          child: _atendimentoCard(entry.value),
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _loadingState(ScrollController scrollController, double topInset) {
     return ListView(
+      controller: scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 104),
       children: <Widget>[
         _loadingBlock(height: 128),
         const SizedBox(height: 16),
@@ -199,12 +260,17 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _errorState(String message) {
+  Widget _errorState(
+    String message,
+    ScrollController scrollController,
+    double topInset,
+  ) {
     return RefreshIndicator(
       onRefresh: _recarregar,
       child: ListView(
+        controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 104),
         children: <Widget>[
           _card(
             child: Column(
@@ -246,8 +312,8 @@ class _AtendimentosTecnicosMobileScreenState
     required int totalGeral,
   }) {
     final int pendentes = _totalPendentes(atendimentos);
-    final bool filtrando = _statusSelecionado != null ||
-        _searchController.text.trim().isNotEmpty;
+    final bool filtrando =
+        _statusSelecionado != null || _searchController.text.trim().isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -293,11 +359,14 @@ class _AtendimentosTecnicosMobileScreenState
                   filtrando
                       ? '${atendimentos.length} de $totalGeral atendimento(s) no filtro.'
                       : pendentes == 1
-                          ? '1 atendimento ainda precisa de atenção.'
-                          : '$pendentes atendimentos ainda precisam de atenção.',
+                      ? '1 atendimento ainda precisa de atenção.'
+                      : '$pendentes atendimentos ainda precisam de atenção.',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
+                  style: const TextStyle(
+                    color: Color(0xFFD7E3F5),
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -343,9 +412,7 @@ class _AtendimentosTecnicosMobileScreenState
           spacing: 12,
           runSpacing: 12,
           children: items
-              .map(
-                (item) => SizedBox(width: width, child: _summaryCard(item)),
-              )
+              .map((item) => SizedBox(width: width, child: _summaryCard(item)))
               .toList(growable: false),
         );
       },
@@ -355,14 +422,17 @@ class _AtendimentosTecnicosMobileScreenState
   Widget _summaryCard(_SummaryItem item) {
     final Color background = item.highlight ? _primaryColor : _surfaceColor;
     final Color foreground = item.highlight ? Colors.white : _titleTextColor;
-    final Color muted = item.highlight ? const Color(0xFFD7E3F5) : _mutedTextColor;
+    final Color muted =
+        item.highlight ? const Color(0xFFD7E3F5) : _mutedTextColor;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: item.highlight ? _primaryColor : _borderColor),
+        border: Border.all(
+          color: item.highlight ? _primaryColor : _borderColor,
+        ),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x0F000000),
@@ -378,9 +448,10 @@ class _AtendimentosTecnicosMobileScreenState
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: item.highlight
-                  ? const Color(0x1AFFFFFF)
-                  : const Color(0xFFEFF6FF),
+              color:
+                  item.highlight
+                      ? const Color(0x1AFFFFFF)
+                      : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -421,12 +492,18 @@ class _AtendimentosTecnicosMobileScreenState
       fontWeight: FontWeight.w900,
     );
     return int.tryParse(value) == null
-        ? Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)
+        ? Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        )
         : SixAnimatedNumberText(value: value, style: style);
   }
 
   Widget _statusOverview(List<AtendimentoTecnicoModel> atendimentos) {
-    final List<_StatusCount> status = _statusCounts(atendimentos).take(4).toList();
+    final List<_StatusCount> status =
+        _statusCounts(atendimentos).take(4).toList();
 
     return _card(
       child: Column(
@@ -553,9 +630,10 @@ class _AtendimentosTecnicosMobileScreenState
                       label: status.label,
                       count: status.count,
                       selected: _statusSelecionado == status.label,
-                      onSelected: () => setState(() {
-                        _statusSelecionado = status.label;
-                      }),
+                      onSelected:
+                          () => setState(() {
+                            _statusSelecionado = status.label;
+                          }),
                     ),
                   ),
                 ),
@@ -596,12 +674,13 @@ class _AtendimentosTecnicosMobileScreenState
       decoration: InputDecoration(
         hintText: 'Buscar por cliente, status, equipamento ou número',
         prefixIcon: const Icon(Icons.search_rounded, color: _accentColor),
-        suffixIcon: _searchController.text.trim().isEmpty
-            ? null
-            : IconButton(
-                onPressed: _searchController.clear,
-                icon: const Icon(Icons.clear_rounded),
-              ),
+        suffixIcon:
+            _searchController.text.trim().isEmpty
+                ? null
+                : IconButton(
+                  onPressed: _searchController.clear,
+                  icon: const Icon(Icons.clear_rounded),
+                ),
         filled: true,
         fillColor: _surfaceColor,
         border: OutlineInputBorder(
@@ -616,7 +695,10 @@ class _AtendimentosTecnicosMobileScreenState
           borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(color: _accentColor, width: 1.4),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -676,7 +758,9 @@ class _AtendimentosTecnicosMobileScreenState
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) ...<Widget>[
+                    if ((atendimento.defeitoRelatado ?? '')
+                        .trim()
+                        .isNotEmpty) ...<Widget>[
                       const SizedBox(height: 8),
                       Text(
                         atendimento.defeitoRelatado!.trim(),
@@ -701,7 +785,10 @@ class _AtendimentosTecnicosMobileScreenState
                               : Icons.price_check_rounded,
                         ),
                         _chip(status, Icons.flag_outlined),
-                        _chip('${atendimento.itens.length} item(ns)', Icons.inventory_2_outlined),
+                        _chip(
+                          '${atendimento.itens.length} item(ns)',
+                          Icons.inventory_2_outlined,
+                        ),
                         if (atendimento.assinaturaAprovada)
                           _chip('Assinado', Icons.verified_rounded),
                       ],
@@ -721,15 +808,25 @@ class _AtendimentosTecnicosMobileScreenState
   Future<void> _editarAtendimento(AtendimentoTecnicoModel atendimento) async {
     final bool? alterou = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => AtendimentoTecnicoEditarMobileScreen(
-          atendimento: atendimento,
-        ),
+        builder:
+            (_) =>
+                AtendimentoTecnicoEditarMobileScreen(atendimento: atendimento),
       ),
     );
 
     if (alterou == true && mounted) {
       await _recarregar();
     }
+  }
+
+  Future<void> _novoAtendimento() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => const AtendimentoTecnicoMobileScreen(),
+      ),
+    );
+
+    if (mounted) await _recarregar();
   }
 
   Widget _emptyState() {
@@ -842,30 +939,35 @@ class _AtendimentosTecnicosMobileScreenState
     final String termo = _searchController.text.trim().toLowerCase();
     final String? statusSelecionado = _statusSelecionado;
     final List<AtendimentoTecnicoModel> sorted =
-        List<AtendimentoTecnicoModel>.from(atendimentos)..sort(_compareRecentes);
+        List<AtendimentoTecnicoModel>.from(atendimentos)
+          ..sort(_compareRecentes);
 
-    return sorted.where((AtendimentoTecnicoModel atendimento) {
-      if (statusSelecionado != null &&
-          _statusLabel(atendimento) != statusSelecionado) {
-        return false;
-      }
+    return sorted
+        .where((AtendimentoTecnicoModel atendimento) {
+          if (statusSelecionado != null &&
+              _statusLabel(atendimento) != statusSelecionado) {
+            return false;
+          }
 
-      if (termo.isEmpty) return true;
+          if (termo.isEmpty) return true;
 
-      final AtendimentoTecnicoEquipamentoModel? equipamento = atendimento.equipamento;
-      final String source = <String>[
-        atendimento.numero,
-        _clienteLabel(atendimento),
-        _statusLabel(atendimento),
-        equipamento?.tipo ?? '',
-        equipamento?.marca ?? '',
-        equipamento?.modelo ?? '',
-        equipamento?.imei ?? '',
-        atendimento.defeitoRelatado ?? '',
-        atendimento.diagnosticoTecnico ?? '',
-      ].join(' ').toLowerCase();
-      return source.contains(termo);
-    }).toList(growable: false);
+          final AtendimentoTecnicoEquipamentoModel? equipamento =
+              atendimento.equipamento;
+          final String source =
+              <String>[
+                atendimento.numero,
+                _clienteLabel(atendimento),
+                _statusLabel(atendimento),
+                equipamento?.tipo ?? '',
+                equipamento?.marca ?? '',
+                equipamento?.modelo ?? '',
+                equipamento?.imei ?? '',
+                atendimento.defeitoRelatado ?? '',
+                atendimento.diagnosticoTecnico ?? '',
+              ].join(' ').toLowerCase();
+          return source.contains(termo);
+        })
+        .toList(growable: false);
   }
 
   int _compareRecentes(
@@ -885,28 +987,36 @@ class _AtendimentosTecnicosMobileScreenState
     }
 
     final List<_StatusCount> result = counts.entries
-        .map((entry) => _StatusCount(entry.key, entry.value))
-        .toList(growable: false)
-      ..sort((a, b) => b.count.compareTo(a.count));
+      .map((entry) => _StatusCount(entry.key, entry.value))
+      .toList(growable: false)..sort((a, b) => b.count.compareTo(a.count));
     return result;
   }
 
   int _totalPendentes(List<AtendimentoTecnicoModel> atendimentos) {
     return atendimentos
-        .where((AtendimentoTecnicoModel atendimento) =>
-            !atendimento.operacaoLiquidada || atendimento.requerNovaAssinatura)
+        .where(
+          (AtendimentoTecnicoModel atendimento) =>
+              !atendimento.operacaoLiquidada ||
+              atendimento.requerNovaAssinatura,
+        )
         .length;
   }
 
   int _totalEmAberto(List<AtendimentoTecnicoModel> atendimentos) {
     return atendimentos
-        .where((AtendimentoTecnicoModel atendimento) => !atendimento.operacaoLiquidada)
+        .where(
+          (AtendimentoTecnicoModel atendimento) =>
+              !atendimento.operacaoLiquidada,
+        )
         .length;
   }
 
   int _totalAssinados(List<AtendimentoTecnicoModel> atendimentos) {
     return atendimentos
-        .where((AtendimentoTecnicoModel atendimento) => atendimento.assinaturaAprovada)
+        .where(
+          (AtendimentoTecnicoModel atendimento) =>
+              atendimento.assinaturaAprovada,
+        )
         .length;
   }
 
@@ -931,7 +1041,8 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   String _equipamentoTitulo(AtendimentoTecnicoModel atendimento) {
-    final AtendimentoTecnicoEquipamentoModel? equipamento = atendimento.equipamento;
+    final AtendimentoTecnicoEquipamentoModel? equipamento =
+        atendimento.equipamento;
     final List<String> partes = <String>[
       equipamento?.tipo ?? '',
       equipamento?.marca ?? '',
@@ -941,8 +1052,10 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   String _formatarMoeda(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+    return context.read<LocaleSettingsProvider>().formatCurrency(value);
   }
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
 }
 
 class _SummaryItem {
