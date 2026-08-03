@@ -21,6 +21,8 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
 
 class _AtendimentosTecnicosMobileScreenState
     extends State<AtendimentosTecnicosMobileScreen> {
+  static const String _semTecnicoKey = '__sem_tecnico__';
+
   static const Color _backgroundColor = SixMobilePalette.background;
   static const Color _primaryColor = SixMobilePalette.primary;
   static const Color _secondaryColor = SixMobilePalette.secondary;
@@ -35,6 +37,9 @@ class _AtendimentosTecnicosMobileScreenState
 
   late Future<List<AtendimentoTecnicoModel>> _future;
   String? _statusSelecionado;
+  DateTime? _dataInicioFiltro;
+  DateTime? _dataFimFiltro;
+  String? _tecnicoFiltroKey;
 
   @override
   void initState() {
@@ -65,12 +70,33 @@ class _AtendimentosTecnicosMobileScreenState
     if (mounted) setState(() {});
   }
 
+  bool get _hasAdvancedFilters =>
+      _dataInicioFiltro != null ||
+      _dataFimFiltro != null ||
+      _tecnicoFiltroKey != null;
+
+  bool get _hasAnyFilter =>
+      _hasAdvancedFilters ||
+      _statusSelecionado != null ||
+      _searchController.text.trim().isNotEmpty;
+
+  void _limparFiltros() {
+    setState(() {
+      _statusSelecionado = null;
+      _dataInicioFiltro = null;
+      _dataFimFiltro = null;
+      _tecnicoFiltroKey = null;
+      _searchController.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     context.select<LocaleSettingsProvider, String>(
       (LocaleSettingsProvider provider) =>
           '${provider.currencyCode}|${provider.thousandSeparator}|'
-          '${provider.decimalSeparator}|${provider.decimalPlaces}',
+          '${provider.decimalSeparator}|${provider.decimalPlaces}|'
+          '${provider.dateFormat}',
     );
 
     return SixMobilePageShell(
@@ -175,12 +201,16 @@ class _AtendimentosTecnicosMobileScreenState
               const SizedBox(height: 14),
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 260),
+                child: _advancedFilters(atendimentos),
+              ),
+              const SizedBox(height: 14),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 300),
                 child: _searchBox(),
               ),
               const SizedBox(height: 16),
               _sectionTitle(
-                _searchController.text.trim().isEmpty &&
-                        _statusSelecionado == null
+                !_hasAnyFilter
                     ? 'Atendimentos recentes'
                     : 'Resultado do filtro',
               ),
@@ -197,7 +227,7 @@ class _AtendimentosTecnicosMobileScreenState
                       (entry) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: SixStaggeredEntry(
-                          delay: Duration(milliseconds: 320 + entry.key * 45),
+                          delay: Duration(milliseconds: 340 + entry.key * 45),
                           child: _atendimentoCard(entry.value),
                         ),
                       ),
@@ -668,6 +698,172 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
+  Widget _advancedFilters(List<AtendimentoTecnicoModel> atendimentos) {
+    final List<_TecnicoFiltroOption> tecnicos = _tecnicoOptions(atendimentos);
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Expanded(
+                child: Text(
+                  'Filtros do atendimento',
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (_hasAnyFilter)
+                TextButton.icon(
+                  onPressed: _limparFiltros,
+                  icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
+                  label: const Text('Limpar'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _accentColor,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _filterField(
+            label: 'Data',
+            value: _periodoFiltroLabel(),
+            icon: Icons.event_outlined,
+            active: _dataInicioFiltro != null || _dataFimFiltro != null,
+            onTap: _abrirFiltroPeriodo,
+          ),
+          const SizedBox(height: 10),
+          _filterField(
+            label: 'Técnico responsável',
+            value: _tecnicoFiltroLabel(tecnicos),
+            icon: Icons.engineering_outlined,
+            active: _tecnicoFiltroKey != null,
+            onTap: () => _abrirFiltroTecnico(tecnicos),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterField({
+    required String label,
+    required String value,
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: active ? const Color(0xFFBFDBFE) : _borderColor,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              _iconBox(
+                icon,
+                size: 38,
+                backgroundColor:
+                    active ? const Color(0xFFDCEBFF) : const Color(0xFFEFF6FF),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: _accentColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirFiltroPeriodo() async {
+    final _PeriodoFiltro? result = await showModalBottomSheet<_PeriodoFiltro>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (BuildContext context) {
+        return _PeriodoFiltroMobileSheet(
+          dataInicio: _dataInicioFiltro,
+          dataFim: _dataFimFiltro,
+          formatarData: _formatarData,
+        );
+      },
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _dataInicioFiltro = result.dataInicio;
+      _dataFimFiltro = result.dataFim;
+    });
+  }
+
+  Future<void> _abrirFiltroTecnico(List<_TecnicoFiltroOption> tecnicos) async {
+    final String? result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (BuildContext context) {
+        return _TecnicoFiltroMobileSheet(
+          tecnicos: tecnicos,
+          selectedKey: _tecnicoFiltroKey,
+        );
+      },
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _tecnicoFiltroKey =
+          result == _TecnicoFiltroMobileSheet.todosKey ? null : result;
+    });
+  }
+
   Widget _searchBox() {
     return TextField(
       controller: _searchController,
@@ -788,6 +984,14 @@ class _AtendimentosTecnicosMobileScreenState
                         _chip(
                           '${atendimento.itens.length} item(ns)',
                           Icons.inventory_2_outlined,
+                        ),
+                        _chip(
+                          _tecnicoLabelAtendimento(atendimento),
+                          Icons.engineering_outlined,
+                        ),
+                        _chip(
+                          _formatarData(_dataReferenciaFiltro(atendimento)),
+                          Icons.update_rounded,
                         ),
                         if (atendimento.assinaturaAprovada)
                           _chip('Assinado', Icons.verified_rounded),
@@ -938,12 +1142,32 @@ class _AtendimentosTecnicosMobileScreenState
   ) {
     final String termo = _searchController.text.trim().toLowerCase();
     final String? statusSelecionado = _statusSelecionado;
+    final DateTime? inicio =
+        _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
+    final DateTime? fim =
+        _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
+    final String? tecnicoKey = _tecnicoFiltroKey;
     final List<AtendimentoTecnicoModel> sorted =
         List<AtendimentoTecnicoModel>.from(atendimentos)
           ..sort(_compareRecentes);
 
     return sorted
         .where((AtendimentoTecnicoModel atendimento) {
+          final DateTime? dataReferencia = _dataReferenciaFiltro(atendimento);
+          if (inicio != null) {
+            if (dataReferencia == null || dataReferencia.isBefore(inicio)) {
+              return false;
+            }
+          }
+          if (fim != null) {
+            if (dataReferencia == null || dataReferencia.isAfter(fim)) {
+              return false;
+            }
+          }
+          if (tecnicoKey != null &&
+              _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
+            return false;
+          }
           if (statusSelecionado != null &&
               _statusLabel(atendimento) != statusSelecionado) {
             return false;
@@ -957,6 +1181,7 @@ class _AtendimentosTecnicosMobileScreenState
               <String>[
                 atendimento.numero,
                 _clienteLabel(atendimento),
+                _tecnicoLabelAtendimento(atendimento),
                 _statusLabel(atendimento),
                 equipamento?.tipo ?? '',
                 equipamento?.marca ?? '',
@@ -977,6 +1202,78 @@ class _AtendimentosTecnicosMobileScreenState
     final DateTime firstDate = first.dataAtualizacao ?? DateTime(1900);
     final DateTime secondDate = second.dataAtualizacao ?? DateTime(1900);
     return secondDate.compareTo(firstDate);
+  }
+
+  DateTime _inicioDoDia(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTime _fimDoDia(DateTime value) {
+    return DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
+  }
+
+  DateTime? _dataReferenciaFiltro(AtendimentoTecnicoModel atendimento) {
+    return atendimento.dataAtualizacao ??
+        atendimento.dataUltimaAlteracaoOrcamento ??
+        atendimento.dataVencimentoEm ??
+        atendimento.validadeOrcamentoEm;
+  }
+
+  String _tecnicoKeyAtendimento(AtendimentoTecnicoModel atendimento) {
+    final String id = atendimento.idTecnicoResponsavel?.trim() ?? '';
+    if (id.isNotEmpty) return id;
+    final String nome =
+        atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    if (nome.isNotEmpty) return nome.toLowerCase();
+    return _semTecnicoKey;
+  }
+
+  String _tecnicoLabelAtendimento(AtendimentoTecnicoModel atendimento) {
+    final String nome =
+        atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    return nome.isEmpty ? 'Sem técnico responsável' : nome;
+  }
+
+  List<_TecnicoFiltroOption> _tecnicoOptions(
+    List<AtendimentoTecnicoModel> atendimentos,
+  ) {
+    final Map<String, _TecnicoFiltroOption> mapa =
+        <String, _TecnicoFiltroOption>{};
+    for (final AtendimentoTecnicoModel atendimento in atendimentos) {
+      final String key = _tecnicoKeyAtendimento(atendimento);
+      mapa[key] = _TecnicoFiltroOption(
+        key: key,
+        label: _tecnicoLabelAtendimento(atendimento),
+      );
+    }
+    final List<_TecnicoFiltroOption> options = mapa.values.toList(
+      growable: false,
+    )..sort((_TecnicoFiltroOption a, _TecnicoFiltroOption b) {
+      if (a.key == _semTecnicoKey) return 1;
+      if (b.key == _semTecnicoKey) return -1;
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+    });
+    return options;
+  }
+
+  String _tecnicoFiltroLabel(List<_TecnicoFiltroOption> options) {
+    final String? selected = _tecnicoFiltroKey;
+    if (selected == null) return 'Todos os técnicos';
+    for (final _TecnicoFiltroOption option in options) {
+      if (option.key == selected) return option.label;
+    }
+    return 'Técnico selecionado';
+  }
+
+  String _periodoFiltroLabel() {
+    final DateTime? inicio = _dataInicioFiltro;
+    final DateTime? fim = _dataFimFiltro;
+    if (inicio == null && fim == null) return 'Todas as datas';
+    if (inicio != null && fim != null) {
+      return '${_formatarData(inicio)} até ${_formatarData(fim)}';
+    }
+    if (inicio != null) return 'A partir de ${_formatarData(inicio)}';
+    return 'Até ${_formatarData(fim!)}';
   }
 
   List<_StatusCount> _statusCounts(List<AtendimentoTecnicoModel> atendimentos) {
@@ -1055,6 +1352,11 @@ class _AtendimentosTecnicosMobileScreenState
     return context.read<LocaleSettingsProvider>().formatCurrency(value);
   }
 
+  String _formatarData(DateTime? value) {
+    if (value == null) return '-';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
+  }
+
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
 }
 
@@ -1079,4 +1381,542 @@ class _StatusCount {
 
   final String label;
   final int count;
+}
+
+class _PeriodoFiltro {
+  const _PeriodoFiltro({required this.dataInicio, required this.dataFim});
+
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+}
+
+class _TecnicoFiltroOption {
+  const _TecnicoFiltroOption({required this.key, required this.label});
+
+  final String key;
+  final String label;
+}
+
+class _PeriodoFiltroMobileSheet extends StatefulWidget {
+  const _PeriodoFiltroMobileSheet({
+    required this.dataInicio,
+    required this.dataFim,
+    required this.formatarData,
+  });
+
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final String Function(DateTime?) formatarData;
+
+  @override
+  State<_PeriodoFiltroMobileSheet> createState() =>
+      _PeriodoFiltroMobileSheetState();
+}
+
+class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.activeBorder;
+
+  late DateTime? _inicio = widget.dataInicio;
+  late DateTime? _fim = widget.dataFim;
+  bool _editandoInicio = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final DateTime now = DateTime.now();
+    final DateTime initialDate = (_editandoInicio ? _inicio : _fim) ?? now;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.82,
+      minChildSize: 0.48,
+      maxChildSize: 0.94,
+      expand: false,
+      builder: (BuildContext context, ScrollController scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: <Widget>[
+                    _sheetIcon(Icons.event_outlined),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            'Filtrar por data',
+                            style: TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Use a data de atualização do atendimento.',
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 9,
+                  runSpacing: 9,
+                  children: <Widget>[
+                    _dateTargetChip(
+                      label: 'Início',
+                      value: widget.formatarData(_inicio),
+                      selected: _editandoInicio,
+                      onTap: () => setState(() => _editandoInicio = true),
+                    ),
+                    _dateTargetChip(
+                      label: 'Fim',
+                      value: widget.formatarData(_fim),
+                      selected: !_editandoInicio,
+                      onTap: () => setState(() => _editandoInicio = false),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    _shortcutChip('Hoje', () => _setPeriodo(now, now)),
+                    _shortcutChip(
+                      'Últimos 7 dias',
+                      () => _setPeriodo(
+                        now.subtract(const Duration(days: 6)),
+                        now,
+                      ),
+                    ),
+                    _shortcutChip(
+                      'Últimos 30 dias',
+                      () => _setPeriodo(
+                        now.subtract(const Duration(days: 29)),
+                        now,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: _surfaceColor,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: _borderColor),
+                  ),
+                  child: CalendarDatePicker(
+                    key: ValueKey<String>(
+                      '${_editandoInicio ? 'inicio' : 'fim'}-${initialDate.toIso8601String()}',
+                    ),
+                    initialDate: initialDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(now.year + 5, 12, 31),
+                    onDateChanged: _selecionarData,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed:
+                            () => Navigator.of(context).pop(
+                              const _PeriodoFiltro(
+                                dataInicio: null,
+                                dataFim: null,
+                              ),
+                            ),
+                        child: const Text('Limpar'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed:
+                            () => Navigator.of(context).pop(
+                              _PeriodoFiltro(
+                                dataInicio: _inicio,
+                                dataFim: _fim,
+                              ),
+                            ),
+                        icon: const Icon(Icons.check_rounded),
+                        label: const Text('Aplicar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetIcon(IconData icon) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Icon(icon, color: _accentColor),
+    );
+  }
+
+  Widget _dateTargetChip({
+    required String label,
+    required String value,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return ChoiceChip(
+      selected: selected,
+      showCheckmark: false,
+      label: Text('$label: $value'),
+      onSelected: (_) => onTap(),
+      selectedColor: _accentColor,
+      backgroundColor: const Color(0xFFF8FAFC),
+      side: BorderSide(color: selected ? _accentColor : _borderColor),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : _titleTextColor,
+        fontWeight: FontWeight.w900,
+        fontSize: 12,
+      ),
+    );
+  }
+
+  Widget _shortcutChip(String label, VoidCallback onTap) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: onTap,
+      backgroundColor: const Color(0xFFF8FAFC),
+      side: const BorderSide(color: _borderColor),
+      labelStyle: const TextStyle(
+        color: _titleTextColor,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+
+  void _selecionarData(DateTime value) {
+    final DateTime normalized = DateTime(value.year, value.month, value.day);
+    setState(() {
+      if (_editandoInicio) {
+        _inicio = normalized;
+        if (_fim != null && _fim!.isBefore(normalized)) {
+          _fim = normalized;
+        }
+      } else {
+        _fim = normalized;
+        if (_inicio != null && _inicio!.isAfter(normalized)) {
+          _inicio = normalized;
+        }
+      }
+    });
+  }
+
+  void _setPeriodo(DateTime inicio, DateTime fim) {
+    setState(() {
+      _inicio = DateTime(inicio.year, inicio.month, inicio.day);
+      _fim = DateTime(fim.year, fim.month, fim.day);
+    });
+  }
+}
+
+class _TecnicoFiltroMobileSheet extends StatefulWidget {
+  const _TecnicoFiltroMobileSheet({
+    required this.tecnicos,
+    required this.selectedKey,
+  });
+
+  static const String todosKey = '__todos__';
+
+  final List<_TecnicoFiltroOption> tecnicos;
+  final String? selectedKey;
+
+  @override
+  State<_TecnicoFiltroMobileSheet> createState() =>
+      _TecnicoFiltroMobileSheetState();
+}
+
+class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.activeBorder;
+
+  final TextEditingController _searchController = TextEditingController();
+  String _filter = '';
+
+  List<_TecnicoFiltroOption> get _filtrados {
+    final String term = _normalize(_filter);
+    if (term.isEmpty) return widget.tecnicos;
+    return widget.tecnicos
+        .where((_TecnicoFiltroOption item) {
+          return _normalize(item.label).contains(term);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.68,
+      minChildSize: 0.38,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (BuildContext context, ScrollController scrollController) {
+        final List<_TecnicoFiltroOption> tecnicos = _filtrados;
+        return Container(
+          decoration: const BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.engineering_outlined,
+                          color: _accentColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              'Técnico responsável',
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Filtre pelos responsáveis dos atendimentos.',
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 12,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged:
+                        (String value) => setState(() => _filter = value),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar técnico',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon:
+                          _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                icon: const Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _filter = '');
+                                },
+                              ),
+                      filled: true,
+                      fillColor: _surfaceColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: _borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: _accentColor,
+                          width: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+                    itemBuilder: (BuildContext context, int index) {
+                      if (index == 0) {
+                        return _tecnicoItem(
+                          label: 'Todos os técnicos',
+                          selected: widget.selectedKey == null,
+                          icon: Icons.groups_outlined,
+                          onTap:
+                              () => Navigator.of(
+                                context,
+                              ).pop(_TecnicoFiltroMobileSheet.todosKey),
+                        );
+                      }
+                      final _TecnicoFiltroOption tecnico = tecnicos[index - 1];
+                      return _tecnicoItem(
+                        label: tecnico.label,
+                        selected: widget.selectedKey == tecnico.key,
+                        icon: Icons.engineering_outlined,
+                        onTap: () => Navigator.of(context).pop(tecnico.key),
+                      );
+                    },
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemCount: tecnicos.length + 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tecnicoItem({
+    required String label,
+    required bool selected,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 21,
+                backgroundColor:
+                    selected
+                        ? const Color(0xFFDCEBFF)
+                        : const Color(0xFFF1F5F9),
+                child: Icon(icon, color: _accentColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: selected ? _accentColor : _mutedTextColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _normalize(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
 }

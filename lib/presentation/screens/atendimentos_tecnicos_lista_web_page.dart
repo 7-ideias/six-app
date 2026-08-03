@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/dominio_models.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../providers/locale_settings_provider.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
 import 'atendimento_tecnico_receber_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
@@ -25,12 +27,17 @@ class AtendimentosTecnicosListaWebPage extends StatefulWidget {
 
 class _AtendimentosTecnicosListaWebPageState
     extends State<AtendimentosTecnicosListaWebPage> {
+  static const String _semTecnicoKey = '__sem_tecnico__';
+
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final TextEditingController _buscaController = TextEditingController();
 
   late Future<_ListaAtendimentosState> _future;
   bool _alterandoStatus = false;
   bool _gerandoLink = false;
+  DateTime? _dataInicioFiltro;
+  DateTime? _dataFimFiltro;
+  String? _tecnicoFiltroKey;
 
   @override
   void initState() {
@@ -59,6 +66,21 @@ class _AtendimentosTecnicosListaWebPageState
 
   void _onBuscaChanged() {
     if (mounted) setState(() {});
+  }
+
+  bool get _possuiFiltrosAtivos =>
+      _buscaController.text.trim().isNotEmpty ||
+      _dataInicioFiltro != null ||
+      _dataFimFiltro != null ||
+      _tecnicoFiltroKey != null;
+
+  void _limparFiltros() {
+    setState(() {
+      _dataInicioFiltro = null;
+      _dataFimFiltro = null;
+      _tecnicoFiltroKey = null;
+      _buscaController.clear();
+    });
   }
 
   void _recarregar() {
@@ -110,14 +132,37 @@ class _AtendimentosTecnicosListaWebPageState
 
   List<AtendimentoTecnicoModel> _filtrar(List<AtendimentoTecnicoModel> itens) {
     final termo = _buscaController.text.trim().toLowerCase();
-    if (termo.isEmpty) return itens;
+    final inicio =
+        _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
+    final fim = _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
+    final tecnicoKey = _tecnicoFiltroKey;
+
     return itens
         .where((atendimento) {
+          final dataReferencia = _dataReferenciaFiltro(atendimento);
+          if (inicio != null) {
+            if (dataReferencia == null || dataReferencia.isBefore(inicio)) {
+              return false;
+            }
+          }
+          if (fim != null) {
+            if (dataReferencia == null || dataReferencia.isAfter(fim)) {
+              return false;
+            }
+          }
+          if (tecnicoKey != null &&
+              _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
+            return false;
+          }
+
+          if (termo.isEmpty) return true;
+
           final equipamento = atendimento.equipamento;
           final texto =
               <String>[
                 atendimento.numero,
                 atendimento.nomeClienteSnapshot ?? '',
+                atendimento.nomeTecnicoResponsavelSnapshot ?? '',
                 atendimento.statusCodigo,
                 atendimento.statusNomePtBr ?? '',
                 atendimento.assinaturaAprovada
@@ -141,6 +186,69 @@ class _AtendimentosTecnicosListaWebPageState
           return texto.contains(termo);
         })
         .toList(growable: false);
+  }
+
+  DateTime _inicioDoDia(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  DateTime _fimDoDia(DateTime value) =>
+      DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
+
+  DateTime? _dataReferenciaFiltro(AtendimentoTecnicoModel atendimento) {
+    return atendimento.dataAtualizacao ??
+        atendimento.dataUltimaAlteracaoOrcamento ??
+        atendimento.dataVencimentoEm ??
+        atendimento.validadeOrcamentoEm;
+  }
+
+  String _tecnicoKeyAtendimento(AtendimentoTecnicoModel atendimento) {
+    final id = atendimento.idTecnicoResponsavel?.trim() ?? '';
+    if (id.isNotEmpty) return id;
+    final nome = atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    if (nome.isNotEmpty) return nome.toLowerCase();
+    return _semTecnicoKey;
+  }
+
+  String _tecnicoLabelAtendimento(AtendimentoTecnicoModel atendimento) {
+    final nome = atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    return nome.isEmpty ? 'Sem técnico responsável' : nome;
+  }
+
+  List<_TecnicoFiltroOption> _tecnicoOptions(
+    List<AtendimentoTecnicoModel> atendimentos,
+  ) {
+    final mapa = <String, _TecnicoFiltroOption>{};
+    for (final atendimento in atendimentos) {
+      final key = _tecnicoKeyAtendimento(atendimento);
+      final label = _tecnicoLabelAtendimento(atendimento);
+      mapa[key] = _TecnicoFiltroOption(key: key, label: label);
+    }
+    final options = mapa.values.toList(growable: false)..sort((a, b) {
+      if (a.key == _semTecnicoKey) return 1;
+      if (b.key == _semTecnicoKey) return -1;
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+    });
+    return options;
+  }
+
+  String _tecnicoFiltroLabel(List<_TecnicoFiltroOption> options) {
+    final key = _tecnicoFiltroKey;
+    if (key == null) return 'Todos os técnicos';
+    for (final option in options) {
+      if (option.key == key) return option.label;
+    }
+    return 'Técnico selecionado';
+  }
+
+  String _periodoFiltroLabel() {
+    final inicio = _dataInicioFiltro;
+    final fim = _dataFimFiltro;
+    if (inicio == null && fim == null) return 'Todas as datas';
+    if (inicio != null && fim != null) {
+      return '${_formatarDataCurta(inicio)} até ${_formatarDataCurta(fim)}';
+    }
+    if (inicio != null) return 'A partir de ${_formatarDataCurta(inicio)}';
+    return 'Até ${_formatarDataCurta(fim!)}';
   }
 
   DominioOpcaoModel? _statusAtual(
@@ -176,24 +284,17 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   String _formatarMoeda(double value) =>
-      'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+      context.read<LocaleSettingsProvider>().formatCurrency(value);
 
   String _formatarData(DateTime? value) {
     if (value == null) return '-';
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    final hora = value.hour.toString().padLeft(2, '0');
-    final minuto = value.minute.toString().padLeft(2, '0');
-    return '$dia/$mes/$ano $hora:$minuto';
+    final locale = context.read<LocaleSettingsProvider>();
+    return '${locale.formatDate(value)} ${locale.formatTime(value)}';
   }
 
   String _formatarDataCurta(DateTime? value) {
     if (value == null) return '-';
-    final dia = value.day.toString().padLeft(2, '0');
-    final mes = value.month.toString().padLeft(2, '0');
-    final ano = value.year.toString();
-    return '$dia/$mes/$ano';
+    return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
   String _assinaturaResumo(AtendimentoTecnicoModel atendimento) {
@@ -393,8 +494,9 @@ class _AtendimentosTecnicosListaWebPageState
                                 );
                               }
                             } finally {
-                              if (mounted)
+                              if (mounted) {
                                 setState(() => _alterandoStatus = false);
+                              }
                             }
                           },
                   icon: const Icon(Icons.check_rounded),
@@ -423,6 +525,13 @@ class _AtendimentosTecnicosListaWebPageState
 
   @override
   Widget build(BuildContext context) {
+    context.select<LocaleSettingsProvider, String>(
+      (provider) =>
+          '${provider.currencyCode}|${provider.thousandSeparator}|'
+          '${provider.decimalSeparator}|${provider.decimalPlaces}|'
+          '${provider.dateFormat}|${provider.timeFormat}',
+    );
+
     final theme = Theme.of(context);
     final content = FutureBuilder<_ListaAtendimentosState>(
       future: _future,
@@ -463,7 +572,7 @@ class _AtendimentosTecnicosListaWebPageState
                       children: <Widget>[
                         _buildResumo(theme, state.atendimentos, isCompact),
                         const SizedBox(height: 12),
-                        _buildBusca(theme, isCompact),
+                        _buildBusca(theme, isCompact, state.atendimentos),
                       ],
                     ),
                   ),
@@ -828,8 +937,13 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  Widget _buildBusca(ThemeData theme, bool isCompact) {
+  Widget _buildBusca(
+    ThemeData theme,
+    bool isCompact,
+    List<AtendimentoTecnicoModel> atendimentos,
+  ) {
     final colorScheme = theme.colorScheme;
+    final tecnicoOptions = _tecnicoOptions(atendimentos);
     return Container(
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
@@ -837,56 +951,229 @@ class _AtendimentosTecnicosListaWebPageState
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
       ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: TextField(
-              controller: _buscaController,
-              decoration: InputDecoration(
-                hintText:
-                    'Buscar atendimento por cliente, status, equipamento ou número...',
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: colorScheme.primary,
-                ),
-                suffixIcon:
-                    _buscaController.text.trim().isEmpty
-                        ? null
-                        : IconButton(
-                          icon: const Icon(Icons.clear_rounded),
-                          onPressed: () => _buscaController.clear(),
-                        ),
-                filled: true,
-                fillColor: colorScheme.surface,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.12),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary,
-                    width: 1.4,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double searchWidth =
+              isCompact
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth * 0.44).clamp(320.0, 560.0);
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              SizedBox(
+                width: searchWidth,
+                child: TextField(
+                  controller: _buscaController,
+                  decoration: InputDecoration(
+                    hintText:
+                        'Buscar por cliente, técnico, status, equipamento ou número...',
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: colorScheme.primary,
+                    ),
+                    suffixIcon:
+                        _buscaController.text.trim().isEmpty
+                            ? null
+                            : IconButton(
+                              icon: const Icon(Icons.clear_rounded),
+                              onPressed: () => _buscaController.clear(),
+                            ),
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.outline.withOpacity(0.12),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 1.4,
+                      ),
+                    ),
                   ),
                 ),
               ),
+              _filterTrigger(
+                theme,
+                width: isCompact ? constraints.maxWidth : 220,
+                label: 'Data',
+                value: _periodoFiltroLabel(),
+                icon: Icons.event_outlined,
+                onTap: _abrirFiltroDataWeb,
+              ),
+              _tecnicoFilterMenu(
+                theme,
+                width: isCompact ? constraints.maxWidth : 240,
+                options: tecnicoOptions,
+              ),
+              if (_possuiFiltrosAtivos)
+                OutlinedButton.icon(
+                  onPressed: _limparFiltros,
+                  icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+                  label: const Text('Limpar filtros'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 15,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              if (!isCompact)
+                _metricBadge(
+                  theme,
+                  'Auditoria ativa',
+                  Icons.manage_history_rounded,
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _abrirFiltroDataWeb() async {
+    final result = await showDialog<_PeriodoFiltro>(
+      context: context,
+      builder: (context) {
+        return _PeriodoFiltroWebDialog(
+          dataInicio: _dataInicioFiltro,
+          dataFim: _dataFimFiltro,
+          formatarData: _formatarDataCurta,
+        );
+      },
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _dataInicioFiltro = result.dataInicio;
+      _dataFimFiltro = result.dataFim;
+    });
+  }
+
+  Widget _filterTrigger(
+    ThemeData theme, {
+    required double width,
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: _filterDisplay(theme, label: label, value: value, icon: icon),
+        ),
+      ),
+    );
+  }
+
+  Widget _filterDisplay(
+    ThemeData theme, {
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, color: colorScheme.primary, size: 19),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withOpacity(0.58),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
           ),
-          if (!isCompact) ...<Widget>[
-            const SizedBox(width: 12),
-            _metricBadge(
-              theme,
-              'Auditoria ativa',
-              Icons.manage_history_rounded,
+          const SizedBox(width: 8),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tecnicoFilterMenu(
+    ThemeData theme, {
+    required double width,
+    required List<_TecnicoFiltroOption> options,
+  }) {
+    return PopupMenuButton<String>(
+      tooltip: 'Filtrar por técnico responsável',
+      onSelected: (value) {
+        setState(() {
+          _tecnicoFiltroKey = value == '__todos__' ? null : value;
+        });
+      },
+      itemBuilder:
+          (context) => <PopupMenuEntry<String>>[
+            CheckedPopupMenuItem<String>(
+              value: '__todos__',
+              checked: _tecnicoFiltroKey == null,
+              child: const Text('Todos os técnicos'),
+            ),
+            const PopupMenuDivider(),
+            ...options.map(
+              (option) => CheckedPopupMenuItem<String>(
+                value: option.key,
+                checked: _tecnicoFiltroKey == option.key,
+                child: Text(option.label),
+              ),
             ),
           ],
-        ],
+      child: SizedBox(
+        width: width,
+        child: _filterDisplay(
+          theme,
+          label: 'Técnico responsável',
+          value: _tecnicoFiltroLabel(options),
+          icon: Icons.engineering_outlined,
+        ),
       ),
     );
   }
@@ -1000,6 +1287,11 @@ class _AtendimentosTecnicosListaWebPageState
                     '${atendimento.historicoAuditoria.length} aud.',
                     Icons.manage_history_rounded,
                   ),
+                  _chip(
+                    theme,
+                    _tecnicoLabelAtendimento(atendimento),
+                    Icons.engineering_outlined,
+                  ),
                   _metricChip(
                     theme,
                     'Total',
@@ -1011,6 +1303,11 @@ class _AtendimentosTecnicosListaWebPageState
                     'Aberto',
                     _formatarMoeda(atendimento.valorEmAberto),
                     Icons.account_balance_wallet_outlined,
+                  ),
+                  _chip(
+                    theme,
+                    'Atualização ${_formatarDataCurta(_dataReferenciaFiltro(atendimento))}',
+                    Icons.update_rounded,
                   ),
                   _chip(
                     theme,
@@ -1607,6 +1904,254 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PeriodoFiltroWebDialog extends StatefulWidget {
+  const _PeriodoFiltroWebDialog({
+    required this.dataInicio,
+    required this.dataFim,
+    required this.formatarData,
+  });
+
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final String Function(DateTime?) formatarData;
+
+  @override
+  State<_PeriodoFiltroWebDialog> createState() =>
+      _PeriodoFiltroWebDialogState();
+}
+
+class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
+  late DateTime? _inicio = widget.dataInicio;
+  late DateTime? _fim = widget.dataFim;
+  late final TextEditingController _inicioController = TextEditingController(
+    text: _inicio == null ? '' : widget.formatarData(_inicio),
+  );
+  late final TextEditingController _fimController = TextEditingController(
+    text: _fim == null ? '' : widget.formatarData(_fim),
+  );
+  String? _erro;
+
+  @override
+  void dispose() {
+    _inicioController.dispose();
+    _fimController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final now = DateTime.now();
+    return AlertDialog(
+      title: const Text('Filtrar por data'),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Use a data de atualização do atendimento.',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _dateInput(
+                    theme,
+                    controller: _inicioController,
+                    label: 'Início',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _dateInput(
+                    theme,
+                    controller: _fimController,
+                    label: 'Fim',
+                  ),
+                ),
+              ],
+            ),
+            if (_erro != null) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                _erro!,
+                style: TextStyle(
+                  color: colorScheme.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                ActionChip(
+                  label: const Text('Hoje'),
+                  onPressed: () => _setPeriodo(now, now),
+                ),
+                ActionChip(
+                  label: const Text('Últimos 7 dias'),
+                  onPressed:
+                      () => _setPeriodo(
+                        now.subtract(const Duration(days: 6)),
+                        now,
+                      ),
+                ),
+                ActionChip(
+                  label: const Text('Últimos 30 dias'),
+                  onPressed:
+                      () => _setPeriodo(
+                        now.subtract(const Duration(days: 29)),
+                        now,
+                      ),
+                ),
+                ActionChip(
+                  label: const Text('Este mês'),
+                  onPressed:
+                      () => _setPeriodo(DateTime(now.year, now.month), now),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed:
+              () => Navigator.of(
+                context,
+              ).pop(const _PeriodoFiltro(dataInicio: null, dataFim: null)),
+          child: const Text('Limpar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton.icon(
+          onPressed: _aplicar,
+          icon: const Icon(Icons.check_rounded),
+          label: const Text('Aplicar'),
+        ),
+      ],
+    );
+  }
+
+  Widget _dateInput(
+    ThemeData theme, {
+    required TextEditingController controller,
+    required String label,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.datetime,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: 'dd/mm/aaaa',
+        prefixIcon: Icon(Icons.event_outlined, color: colorScheme.primary),
+        filled: true,
+        fillColor: colorScheme.surface,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.16),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        ),
+      ),
+      onSubmitted: (_) => _aplicar(),
+    );
+  }
+
+  void _aplicar() {
+    final inicio = _parseData(_inicioController.text);
+    final fim = _parseData(_fimController.text);
+
+    if (inicio == null && _inicioController.text.trim().isNotEmpty) {
+      setState(() => _erro = 'Informe a data inicial em um formato válido.');
+      return;
+    }
+    if (fim == null && _fimController.text.trim().isNotEmpty) {
+      setState(() => _erro = 'Informe a data final em um formato válido.');
+      return;
+    }
+    if (inicio != null && fim != null && fim.isBefore(inicio)) {
+      setState(() => _erro = 'A data final não pode ser anterior à inicial.');
+      return;
+    }
+
+    Navigator.of(context).pop(_PeriodoFiltro(dataInicio: inicio, dataFim: fim));
+  }
+
+  DateTime? _parseData(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    final iso = RegExp(r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$').firstMatch(text);
+    if (iso != null) {
+      return _validDate(
+        int.parse(iso.group(1)!),
+        int.parse(iso.group(2)!),
+        int.parse(iso.group(3)!),
+      );
+    }
+
+    final local = RegExp(
+      r'^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$',
+    ).firstMatch(text);
+    if (local == null) return null;
+
+    final first = int.parse(local.group(1)!);
+    final second = int.parse(local.group(2)!);
+    final rawYear = int.parse(local.group(3)!);
+    final year = rawYear < 100 ? rawYear + 2000 : rawYear;
+
+    if (first > 12) return _validDate(year, second, first);
+    if (second > 12) return _validDate(year, first, second);
+    return _validDate(year, second, first);
+  }
+
+  DateTime? _validDate(int year, int month, int day) {
+    if (year < 2000 || year > DateTime.now().year + 5) return null;
+    final date = DateTime(year, month, day);
+    if (date.year != year || date.month != month || date.day != day) {
+      return null;
+    }
+    return date;
+  }
+
+  void _setPeriodo(DateTime inicio, DateTime fim) {
+    setState(() {
+      _inicio = DateTime(inicio.year, inicio.month, inicio.day);
+      _fim = DateTime(fim.year, fim.month, fim.day);
+      _inicioController.text = widget.formatarData(_inicio);
+      _fimController.text = widget.formatarData(_fim);
+      _erro = null;
+    });
+  }
+}
+
+class _PeriodoFiltro {
+  const _PeriodoFiltro({required this.dataInicio, required this.dataFim});
+
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+}
+
+class _TecnicoFiltroOption {
+  const _TecnicoFiltroOption({required this.key, required this.label});
+
+  final String key;
+  final String label;
 }
 
 class _ListaAtendimentosState {
