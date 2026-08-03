@@ -33,6 +33,7 @@ class _AtendimentosTecnicosListaWebPageState
     extends State<AtendimentosTecnicosListaWebPage> {
   static const String _semTecnicoKey = '__sem_tecnico__';
   static const String _todosTecnicosKey = '__todos__';
+  static const String _todosStatusKey = '__todos_status__';
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ColaboradorUsuarioApiClient _colaboradorApiClient =
@@ -330,6 +331,34 @@ class _AtendimentosTecnicosListaWebPageState
       if (option.key == key) return option.label;
     }
     return 'Técnico selecionado';
+  }
+
+  List<_StatusFiltroOption> _statusFiltroOptions(
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<DominioOpcaoModel> statusOptions,
+  ) {
+    final Map<String, int> counts = <String, int>{};
+    for (final atendimento in atendimentos) {
+      final label = _statusLabel(atendimento, statusOptions);
+      counts[label] = (counts[label] ?? 0) + 1;
+    }
+    final options = counts.entries
+      .map((entry) => _StatusFiltroOption(label: entry.key, count: entry.value))
+      .toList(growable: false)..sort((a, b) {
+      final countCompare = b.count.compareTo(a.count);
+      if (countCompare != 0) return countCompare;
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+    });
+    return options;
+  }
+
+  String _statusFiltroDisplayLabel(List<_StatusFiltroOption> options) {
+    final selected = _statusFiltroLabel;
+    if (selected == null) return 'Todos os status';
+    for (final option in options) {
+      if (option.label == selected) return option.label;
+    }
+    return 'Status selecionado';
   }
 
   String _periodoFiltroLabel() {
@@ -1111,7 +1140,10 @@ class _AtendimentosTecnicosListaWebPageState
         final cardWidth =
             isCompact
                 ? constraints.maxWidth
-                : ((constraints.maxWidth - 36) / 4).clamp(190.0, 360.0);
+                : ((constraints.maxWidth - 36) / 4).clamp(
+                  190.0,
+                  constraints.maxWidth,
+                );
         return Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -1284,9 +1316,14 @@ class _AtendimentosTecnicosListaWebPageState
     bool isCompact,
     List<AtendimentoTecnicoModel> atendimentos,
     List<ColaboradorUsuarioResumo> tecnicos,
+    List<DominioOpcaoModel> statusOptions,
   ) {
     final colorScheme = theme.colorScheme;
     final tecnicoOptions = _tecnicoOptions(atendimentos, tecnicos);
+    final statusFiltroOptions = _statusFiltroOptions(
+      atendimentos,
+      statusOptions,
+    );
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 12 : 14),
@@ -1312,6 +1349,11 @@ class _AtendimentosTecnicosListaWebPageState
           final filtroTecnico = _tecnicoFilterMenu(
             width: isCompact ? constraints.maxWidth : 250,
             options: tecnicoOptions,
+          );
+          final filtroStatus = _statusFilterMenu(
+            width: isCompact ? constraints.maxWidth : 250,
+            options: statusFiltroOptions,
+            total: atendimentos.length,
           );
           final limparFiltros =
               _possuiFiltrosAtivos
@@ -1376,7 +1418,11 @@ class _AtendimentosTecnicosListaWebPageState
             ),
           );
 
-          if (isCompact || constraints.maxWidth < 1120) {
+          final bool useWrappedFilters =
+              isCompact ||
+              constraints.maxWidth < (_possuiFiltrosAtivos ? 1480 : 1320);
+
+          if (useWrappedFilters) {
             return Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -1385,6 +1431,7 @@ class _AtendimentosTecnicosListaWebPageState
                 searchField,
                 filtroData,
                 filtroTecnico,
+                filtroStatus,
                 if (limparFiltros != null) limparFiltros,
                 if (!isCompact) auditoria,
               ],
@@ -1399,6 +1446,8 @@ class _AtendimentosTecnicosListaWebPageState
               filtroData,
               const SizedBox(width: 12),
               filtroTecnico,
+              const SizedBox(width: 12),
+              filtroStatus,
               const SizedBox(width: 12),
               if (limparFiltros != null) ...<Widget>[
                 limparFiltros,
@@ -1523,6 +1572,28 @@ class _AtendimentosTecnicosListaWebPageState
       onChanged: (value) {
         setState(() {
           _tecnicoFiltroKey = value == _todosTecnicosKey ? null : value;
+        });
+      },
+    );
+  }
+
+  Widget _statusFilterMenu({
+    required double width,
+    required List<_StatusFiltroOption> options,
+    required int total,
+  }) {
+    return _StatusFiltroDropdown(
+      width: width,
+      label: 'Status',
+      displayValue: _statusFiltroDisplayLabel(options),
+      tooltip: 'Filtrar por status',
+      selectedLabel: _statusFiltroLabel,
+      todosKey: _todosStatusKey,
+      total: total,
+      options: options,
+      onChanged: (value) {
+        setState(() {
+          _statusFiltroLabel = value == _todosStatusKey ? null : value;
         });
       },
     );
@@ -3110,6 +3181,17 @@ class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
                       ),
                 ),
                 ActionChip(
+                  label: const Text('Próximos 7 dias'),
+                  onPressed:
+                      () => _setPeriodo(now, now.add(const Duration(days: 6))),
+                ),
+                ActionChip(
+                  label: const Text('Vencidos'),
+                  onPressed:
+                      () =>
+                          _setPeriodoAte(now.subtract(const Duration(days: 1))),
+                ),
+                ActionChip(
                   label: const Text('Últimos 30 dias'),
                   onPressed:
                       () => _setPeriodo(
@@ -3239,6 +3321,16 @@ class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
       _inicio = DateTime(inicio.year, inicio.month, inicio.day);
       _fim = DateTime(fim.year, fim.month, fim.day);
       _inicioController.text = widget.formatarData(_inicio);
+      _fimController.text = widget.formatarData(_fim);
+      _erro = null;
+    });
+  }
+
+  void _setPeriodoAte(DateTime fim) {
+    setState(() {
+      _inicio = null;
+      _fim = DateTime(fim.year, fim.month, fim.day);
+      _inicioController.clear();
       _fimController.text = widget.formatarData(_fim);
       _erro = null;
     });
@@ -3512,11 +3604,222 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
   }
 }
 
+class _StatusFiltroDropdown extends StatefulWidget {
+  const _StatusFiltroDropdown({
+    required this.width,
+    required this.label,
+    required this.displayValue,
+    required this.tooltip,
+    required this.selectedLabel,
+    required this.todosKey,
+    required this.total,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final double width;
+  final String label;
+  final String displayValue;
+  final String tooltip;
+  final String? selectedLabel;
+  final String todosKey;
+  final int total;
+  final List<_StatusFiltroOption> options;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_StatusFiltroDropdown> createState() => _StatusFiltroDropdownState();
+}
+
+class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
+  final GlobalKey _fieldKey = GlobalKey();
+  bool _opened = false;
+  bool _hovered = false;
+
+  Future<void> _openMenu() async {
+    final fieldContext = _fieldKey.currentContext;
+    if (fieldContext == null) return;
+    final renderBox = fieldContext.findRenderObject() as RenderBox?;
+    final overlay =
+        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+    if (renderBox == null || overlay == null) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
+    final position = RelativeRect.fromRect(
+      Rect.fromLTWH(
+        offset.dx,
+        offset.dy + renderBox.size.height + 8,
+        renderBox.size.width,
+        renderBox.size.height,
+      ),
+      Offset.zero & overlay.size,
+    );
+    final theme = Theme.of(context);
+
+    setState(() => _opened = true);
+    final selected = await showMenu<String>(
+      context: context,
+      position: position,
+      constraints: BoxConstraints.tightFor(width: renderBox.size.width),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 12,
+      color: theme.colorScheme.surface,
+      items: <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          value: widget.todosKey,
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: _TecnicoFiltroMenuItem(
+            label: 'Todos os status (${widget.total})',
+            icon: Icons.flag_outlined,
+            selected: widget.selectedLabel == null,
+            colorScheme: theme.colorScheme,
+          ),
+        ),
+        if (widget.options.isNotEmpty) const PopupMenuDivider(height: 8),
+        ...widget.options.map(
+          (option) => PopupMenuItem<String>(
+            value: option.label,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: _TecnicoFiltroMenuItem(
+              label: '${option.label} (${option.count})',
+              icon: Icons.flag_outlined,
+              selected: widget.selectedLabel == option.label,
+              colorScheme: theme.colorScheme,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted) return;
+    setState(() => _opened = false);
+    final currentKey = widget.selectedLabel ?? widget.todosKey;
+    if (selected != null && selected != currentKey) widget.onChanged(selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bool active = widget.selectedLabel != null;
+    final bool emphasized = _opened || _hovered || active;
+    return SizedBox(
+      key: _fieldKey,
+      width: widget.width,
+      child: Semantics(
+        button: true,
+        label: widget.tooltip,
+        value: widget.displayValue,
+        child: Tooltip(
+          message: widget.tooltip,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _openMenu,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        emphasized
+                            ? colorScheme.primary.withValues(alpha: 0.05)
+                            : colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color:
+                          _opened
+                              ? colorScheme.primary
+                              : active
+                              ? colorScheme.primary.withValues(alpha: 0.34)
+                              : colorScheme.outline.withValues(
+                                alpha: _hovered ? 0.24 : 0.12,
+                              ),
+                      width: _opened ? 1.4 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.flag_outlined,
+                        color: colorScheme.primary,
+                        size: 19,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              widget.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.58,
+                                ),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.displayValue,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: _opened ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 160),
+                        curve: Curves.easeOutCubic,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TecnicoFiltroOption {
   const _TecnicoFiltroOption({required this.key, required this.label});
 
   final String key;
   final String label;
+}
+
+class _StatusFiltroOption {
+  const _StatusFiltroOption({required this.label, required this.count});
+
+  final String label;
+  final int count;
 }
 
 class _ListaAtendimentosState {
