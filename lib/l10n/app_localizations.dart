@@ -204,6 +204,30 @@ abstract class AppLocalizations {
   /// **'Session active'**
   String get pdvWebSessionActive;
 
+  /// No description provided for @pdvCashSessionChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking cash session'**
+  String get pdvCashSessionChecking;
+
+  /// No description provided for @pdvCashSessionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Session unavailable'**
+  String get pdvCashSessionUnavailable;
+
+  /// No description provided for @pdvCashSessionNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'No open session'**
+  String get pdvCashSessionNotOpen;
+
+  /// No description provided for @pdvCashSessionClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Session closed'**
+  String get pdvCashSessionClosed;
+
   /// No description provided for @pdvWebStatusInProgress.
   ///
   /// In en, this message translates to:

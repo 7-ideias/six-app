@@ -4,7 +4,7 @@ import '../../core/state/loading_do_mobile_comunicando_com_backend_controller.da
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../l10n/app_localizations.dart';
 import '../components/six_lottie_action_overlay.dart';
-import 'pdv_mobile_screen_base.dart' as base;
+import 'pdv_mobile.dart' as base;
 
 /// Mantém o PDV original isolado e adiciona feedback visual reutilizável para
 /// as chamadas de finalização e liquidação de venda.

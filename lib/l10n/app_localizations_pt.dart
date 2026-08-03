@@ -61,6 +61,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get pdvWebSessionActive => 'Sessão ativa';
 
   @override
+  String get pdvCashSessionChecking => 'Verificando sessão do caixa';
+
+  @override
+  String get pdvCashSessionUnavailable => 'Sessão indisponível';
+
+  @override
+  String get pdvCashSessionNotOpen => 'Sem sessão aberta';
+
+  @override
+  String get pdvCashSessionClosed => 'Sessão fechada';
+
+  @override
   String get pdvWebStatusInProgress => 'Em andamento';
 
   @override

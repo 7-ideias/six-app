@@ -1273,28 +1273,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
-    final resumo = _resumo;
-    final dinheiro = _fechamentoDinheiroController.text.trim().isEmpty
-        ? (resumo?.totalDinheiro ?? 0)
-        : _parseCurrency(_fechamentoDinheiroController.text);
-    final pix = _fechamentoPixController.text.trim().isEmpty
-        ? (resumo?.totalPix ?? 0)
-        : _parseCurrency(_fechamentoPixController.text);
-    final cartao = _fechamentoCartaoController.text.trim().isEmpty
-        ? ((resumo?.totalCartaoCredito ?? 0) + (resumo?.totalCartaoDebito ?? 0))
-        : _parseCurrency(_fechamentoCartaoController.text);
-
     setState(() => _isLoading = true);
     try {
-      await _caixaService.fecharCaixa(
-        FecharCaixaRequest(
-          idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
-          valorDinheiroApurado: dinheiro,
-          valorPixApurado: pix,
-          valorCartaoApurado: cartao,
-          observacaoFechamento: _fechamentoObservacaoController.text.trim(),
-        ),
-      );
+      await _caixaService.fecharCaixa(_montarRequestFechamentoCaixa());
       await _carregarDadosIniciais();
       if (!mounted) return;
       setState(() {
@@ -1310,6 +1291,27 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  FecharCaixaRequest _montarRequestFechamentoCaixa() {
+    final resumo = _resumo;
+    final dinheiro = _fechamentoDinheiroController.text.trim().isEmpty
+        ? (resumo?.totalDinheiro ?? 0)
+        : _parseCurrency(_fechamentoDinheiroController.text);
+    final pix = _fechamentoPixController.text.trim().isEmpty
+        ? (resumo?.totalPix ?? 0)
+        : _parseCurrency(_fechamentoPixController.text);
+    final cartao = _fechamentoCartaoController.text.trim().isEmpty
+        ? ((resumo?.totalCartaoCredito ?? 0) + (resumo?.totalCartaoDebito ?? 0))
+        : _parseCurrency(_fechamentoCartaoController.text);
+
+    return FecharCaixaRequest(
+      idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
+      valorDinheiroApurado: dinheiro,
+      valorPixApurado: pix,
+      valorCartaoApurado: cartao,
+      observacaoFechamento: _fechamentoObservacaoController.text.trim(),
+    );
   }
 
   Future<void> _confirmarEncerramentoSessao() async {
@@ -1336,7 +1338,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     setState(() => _isLoading = true);
     try {
-      await _caixaService.encerrarSessao();
+      await _caixaService.fecharCaixa(_montarRequestFechamentoCaixa());
       await _carregarDadosIniciais();
       if (!mounted) return;
       setState(() => _mostrarPainelFechamento = false);

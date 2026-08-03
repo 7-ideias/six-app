@@ -32,18 +32,21 @@ import 'package:sixpos/l10n/app_localizations.dart';
 import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
 
 import 'data/models/cliente_usuario_model.dart';
+import 'data/models/caixa_models.dart';
 import 'data/models/produto_model.dart';
 import 'data/models/operacao_models.dart';
+import 'core/di/caixa_module.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/websocket_service.dart';
 import 'presentation/screens/login_page_web.dart';
 import 'design_system/themes/zebra_list_item.dart';
+import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'top_navigation_bar_web.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
-part 'pdv_page_web_venda_section.dart';
+part 'presentation/screens/pdv_web.dart';
 
 class PaginaPrincipalWeb extends StatefulWidget {
   const PaginaPrincipalWeb({super.key});
@@ -102,6 +105,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   late PdvVisualTheme _pdvTheme;
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
+  final CaixaService _caixaService = CaixaModule.caixaService;
 
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
 
@@ -113,6 +117,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _registrandoReceberDepois = false;
   bool _overlayRecebimentoAberto = false;
   bool _modoExpandidoFrenteCaixa = false;
+  bool _carregandoSessaoCaixaPdv = false;
+  bool _erroSessaoCaixaPdv = false;
+  CaixaSessao? _sessaoCaixaPdv;
   int _dashboardInicioSelecionado = 0;
   ClienteUsuario? _clienteIdentificado;
 
@@ -1050,12 +1057,51 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     setState(() {
       _moduloAtual = ModuloCentralPDV.vendas;
     });
+    _carregarSessaoCaixaPdv();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focarCodigoBarras();
       }
     });
+  }
+
+  Future<void> _carregarSessaoCaixaPdv() async {
+    if (_carregandoSessaoCaixaPdv) {
+      return;
+    }
+
+    setState(() {
+      _carregandoSessaoCaixaPdv = true;
+      _erroSessaoCaixaPdv = false;
+    });
+
+    try {
+      final CaixaSessao? sessao = await _caixaService.buscarSessaoAtual();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _sessaoCaixaPdv = sessao;
+        _erroSessaoCaixaPdv = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _sessaoCaixaPdv = null;
+        _erroSessaoCaixaPdv = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregandoSessaoCaixaPdv = false;
+        });
+      }
+    }
   }
 
   bool get _atalhosContextuaisDisponiveis {
@@ -1352,6 +1398,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _clearAllItemVisualState();
       _moduloAtual = moduloDestino;
     });
+
+    if (moduloDestino == ModuloCentralPDV.vendas) {
+      _carregarSessaoCaixaPdv();
+    }
   }
 
   Future<void> _confirmarLimparVendaAtual() async {

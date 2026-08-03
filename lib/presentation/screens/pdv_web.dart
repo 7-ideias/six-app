@@ -1,4 +1,4 @@
-part of 'pagina_principal_web.dart';
+part of '../../pagina_principal_web.dart';
 
 bool acionarPdvFrenteCaixaPeloElemento(Element element) {
   if (element is StatefulElement && element.state is _PaginaPrincipalWebState) {
@@ -9,7 +9,7 @@ bool acionarPdvFrenteCaixaPeloElemento(Element element) {
   return false;
 }
 
-extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
+extension _PdvWeb on _PaginaPrincipalWebState {
   bool get _vendaPossuiItens => _produtosSelecionados.isNotEmpty;
 
   bool get _clienteSelecionadoNaVenda {
@@ -88,10 +88,7 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
                         color: _pdvTheme.primaryText,
                       ),
                     ),
-                    _buildAtalhoPdvChip(
-                      icon: Icons.point_of_sale_outlined,
-                      label: l10n?.pdvWebSessionActive ?? 'Sessão ativa',
-                    ),
+                    _buildSessaoCaixaPdvChip(l10n),
                     if (_vendaPossuiItens)
                       _buildStatusChip(
                         label: l10n?.pdvWebStatusInProgress ?? 'Em andamento',
@@ -247,6 +244,70 @@ extension _PdvPageWebVendaSection on _PaginaPrincipalWebState {
         ),
       ],
     );
+  }
+
+  Widget _buildSessaoCaixaPdvChip(AppLocalizations? l10n) {
+    if (_carregandoSessaoCaixaPdv) {
+      return _buildStatusChip(
+        label: l10n?.pdvCashSessionChecking ?? 'Verificando sessão do caixa',
+        icon: Icons.sync_rounded,
+        foregroundColor: _pdvTheme.iconColor,
+        backgroundColor: _pdvTheme.iconColor.withValues(alpha: 0.11),
+      );
+    }
+
+    if (_erroSessaoCaixaPdv) {
+      return _buildStatusChip(
+        label: l10n?.pdvCashSessionUnavailable ?? 'Sessão indisponível',
+        icon: Icons.cloud_off_outlined,
+        foregroundColor: _pdvTheme.warningColor,
+        backgroundColor: _pdvTheme.warningColor.withValues(alpha: 0.15),
+      );
+    }
+
+    final CaixaSessao? sessao = _sessaoCaixaPdv;
+    if (sessao == null) {
+      return _buildStatusChip(
+        label: l10n?.pdvCashSessionNotOpen ?? 'Sem sessão aberta',
+        icon: Icons.point_of_sale_outlined,
+        foregroundColor: _pdvTheme.warningColor,
+        backgroundColor: _pdvTheme.warningColor.withValues(alpha: 0.15),
+      );
+    }
+
+    final bool aberta = _sessaoCaixaPdvAberta(sessao);
+    return _buildStatusChip(
+      label: _labelSessaoCaixaPdv(sessao, l10n),
+      icon: aberta ? Icons.point_of_sale_outlined : Icons.lock_clock_outlined,
+      foregroundColor: aberta ? _pdvTheme.successColor : _pdvTheme.warningColor,
+      backgroundColor:
+          aberta
+              ? _pdvTheme.successColor.withValues(alpha: 0.12)
+              : _pdvTheme.warningColor.withValues(alpha: 0.15),
+    );
+  }
+
+  bool _sessaoCaixaPdvAberta(CaixaSessao sessao) {
+    final String status = sessao.status.trim().toLowerCase();
+    return status == 'aberta' ||
+        status == 'open' ||
+        status == 'active' ||
+        status == 'ativa' ||
+        status == 'true';
+  }
+
+  String _labelSessaoCaixaPdv(CaixaSessao sessao, AppLocalizations? l10n) {
+    final String nomeCaixa = sessao.nomeCaixa.trim();
+    final String statusLabel =
+        _sessaoCaixaPdvAberta(sessao)
+            ? (l10n?.pdvWebSessionActive ?? 'Sessão ativa')
+            : (l10n?.pdvCashSessionClosed ?? 'Sessão fechada');
+
+    if (nomeCaixa.isEmpty) {
+      return statusLabel;
+    }
+
+    return '$nomeCaixa · $statusLabel';
   }
 
   Widget _buildStatusChip({
@@ -1466,7 +1527,6 @@ class _PdvAnimatedCurrencyText extends StatefulWidget {
     required this.curve,
     this.maxLines,
     this.overflow,
-    this.textAlign,
   });
 
   final double value;
@@ -1476,7 +1536,6 @@ class _PdvAnimatedCurrencyText extends StatefulWidget {
   final Curve curve;
   final int? maxLines;
   final TextOverflow? overflow;
-  final TextAlign? textAlign;
 
   @override
   State<_PdvAnimatedCurrencyText> createState() =>
@@ -1521,16 +1580,12 @@ class _PdvAnimatedCurrencyTextState extends State<_PdvAnimatedCurrencyText> {
         widget.formatter(widget.value),
         maxLines: widget.maxLines,
         overflow: widget.overflow,
-        textAlign: widget.textAlign,
         style: widget.style,
       );
     }
 
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(
-        begin: _animationStartValue,
-        end: _targetValue,
-      ),
+      tween: Tween<double>(begin: _animationStartValue, end: _targetValue),
       duration: duration,
       curve: widget.curve,
       builder: (BuildContext context, double animatedValue, Widget? child) {
@@ -1539,7 +1594,6 @@ class _PdvAnimatedCurrencyTextState extends State<_PdvAnimatedCurrencyText> {
           widget.formatter(animatedValue),
           maxLines: widget.maxLines,
           overflow: widget.overflow,
-          textAlign: widget.textAlign,
           style: widget.style,
         );
       },

@@ -3,16 +3,18 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/di/operacao_module.dart';
+import '../../core/di/caixa_module.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/utils/produto_helper.dart';
 import '../../data/models/caixa_models.dart';
 import '../../data/models/operacao_models.dart';
 import '../../data/models/produto_model.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
-import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
+import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/operacao/operacao_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
@@ -62,7 +64,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   ];
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  final CaixaService _caixaService = CaixaModule.caixaService;
   final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient =
       VendaNaoLiquidadaApiClient();
   final List<_VendaItemMobile> _itens = <_VendaItemMobile>[];
@@ -77,6 +79,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   bool _enviando = false;
   bool _buscandoCodigo = false;
   bool _destacarPagamento = false;
+  bool _carregandoSessaoCaixa = false;
+  bool _erroSessaoCaixa = false;
+  CaixaSessao? _sessaoCaixa;
 
   bool get _editandoVendaNaoLiquidada => widget.vendaNaoLiquidada != null;
   double get _total => _itens.fold<double>(0, (s, item) => s + item.subtotal);
@@ -96,6 +101,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         venda.itens.map(_VendaItemMobile.fromVendaNaoLiquidadaItem),
       );
     }
+    _carregarSessaoCaixa();
     _carregarTiposPagamentoConfigurados();
   }
 
@@ -110,7 +116,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Future<void> _carregarTiposPagamentoConfigurados() async {
     try {
       final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+          await _caixaService.buscarInformacoesBasicasDoCaixa();
       final List<_FormaPagamentoMobile> formas =
           _montarFormasPagamentoConfiguradas(informacoes.tiposRecebimento);
       if (!mounted || formas.isEmpty) return;
@@ -120,6 +126,44 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       });
     } catch (_) {
       // Mantém o fallback local para não bloquear o PDV se o backend falhar.
+    }
+  }
+
+  Future<void> _carregarSessaoCaixa() async {
+    if (_carregandoSessaoCaixa) {
+      return;
+    }
+
+    setState(() {
+      _carregandoSessaoCaixa = true;
+      _erroSessaoCaixa = false;
+    });
+
+    try {
+      final CaixaSessao? sessao = await _caixaService.buscarSessaoAtual();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _sessaoCaixa = sessao;
+        _erroSessaoCaixa = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _sessaoCaixa = null;
+        _erroSessaoCaixa = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregandoSessaoCaixa = false;
+        });
+      }
     }
   }
 
@@ -1015,6 +1059,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          _buildSessaoCaixaMobileChip(),
           const SizedBox(height: 16),
           Row(
             children: <Widget>[
@@ -1128,6 +1174,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             ),
           ),
           const SizedBox(height: 4),
+          _buildSessaoCaixaMobileChip(),
+          const SizedBox(height: 8),
           Text(
             _editandoVendaNaoLiquidada
                 ? 'Escolha uma opção abaixo para continuar.'
@@ -1144,6 +1192,113 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildSessaoCaixaMobileChip() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final _SessaoCaixaMobileView view = _sessaoCaixaMobileView(l10n);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: double.infinity),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        decoration: BoxDecoration(
+          color: view.backgroundColor,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: view.borderColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(view.icon, size: 15, color: view.foregroundColor),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                view.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: view.foregroundColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _SessaoCaixaMobileView _sessaoCaixaMobileView(AppLocalizations? l10n) {
+    if (_carregandoSessaoCaixa) {
+      return _SessaoCaixaMobileView(
+        label: l10n?.pdvCashSessionChecking ?? 'Verificando sessão do caixa',
+        icon: Icons.sync_rounded,
+        foregroundColor: SixMobilePalette.primary,
+        backgroundColor: _withAlpha(SixMobilePalette.primary, 0.09),
+        borderColor: _withAlpha(SixMobilePalette.primary, 0.14),
+      );
+    }
+
+    if (_erroSessaoCaixa) {
+      return _SessaoCaixaMobileView(
+        label: l10n?.pdvCashSessionUnavailable ?? 'Sessão indisponível',
+        icon: Icons.cloud_off_outlined,
+        foregroundColor: SixMobilePalette.error,
+        backgroundColor: _withAlpha(SixMobilePalette.error, 0.08),
+        borderColor: _withAlpha(SixMobilePalette.error, 0.16),
+      );
+    }
+
+    final CaixaSessao? sessao = _sessaoCaixa;
+    if (sessao == null) {
+      const Color warningColor = Color(0xFF92400E);
+      return _SessaoCaixaMobileView(
+        label: l10n?.pdvCashSessionNotOpen ?? 'Sem sessão aberta',
+        icon: Icons.point_of_sale_outlined,
+        foregroundColor: warningColor,
+        backgroundColor: _withAlpha(warningColor, 0.10),
+        borderColor: _withAlpha(warningColor, 0.18),
+      );
+    }
+
+    final bool aberta = _sessaoCaixaAberta(sessao);
+    const Color successColor = Color(0xFF047857);
+    const Color warningColor = Color(0xFF92400E);
+    final Color foreground = aberta ? successColor : warningColor;
+
+    return _SessaoCaixaMobileView(
+      label: _labelSessaoCaixa(sessao, l10n),
+      icon: aberta ? Icons.point_of_sale_outlined : Icons.lock_clock_outlined,
+      foregroundColor: foreground,
+      backgroundColor: _withAlpha(foreground, aberta ? 0.11 : 0.10),
+      borderColor: _withAlpha(foreground, aberta ? 0.16 : 0.18),
+    );
+  }
+
+  bool _sessaoCaixaAberta(CaixaSessao sessao) {
+    final String status = sessao.status.trim().toLowerCase();
+    return status == 'aberta' ||
+        status == 'open' ||
+        status == 'active' ||
+        status == 'ativa' ||
+        status == 'true';
+  }
+
+  String _labelSessaoCaixa(CaixaSessao sessao, AppLocalizations? l10n) {
+    final String nomeCaixa = sessao.nomeCaixa.trim();
+    final String statusLabel =
+        _sessaoCaixaAberta(sessao)
+            ? (l10n?.pdvWebSessionActive ?? 'Sessão ativa')
+            : (l10n?.pdvCashSessionClosed ?? 'Sessão fechada');
+
+    if (nomeCaixa.isEmpty) {
+      return statusLabel;
+    }
+
+    return '$nomeCaixa · $statusLabel';
   }
 
   Widget _buildMinimalShoppingIllustration() {
@@ -2208,6 +2363,22 @@ class _FormaPagamentoMobile {
   final String codigo;
   final String titulo;
   final IconData icone;
+}
+
+class _SessaoCaixaMobileView {
+  const _SessaoCaixaMobileView({
+    required this.label,
+    required this.icon,
+    required this.foregroundColor,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color foregroundColor;
+  final Color backgroundColor;
+  final Color borderColor;
 }
 
 class _BarcodeScannerMobileScreen extends StatefulWidget {
