@@ -9,6 +9,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/dashboard_inicio_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
@@ -16,6 +17,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_a
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
 
@@ -49,12 +51,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
   final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   @override
   void initState() {
     super.initState();
     _notificacaoService.addListener(_onNotificacoesChanged);
     _dashboardProvider.addListener(_onDashboardChanged);
+    _usuarioProvider.addListener(_onUsuarioChanged);
     if (!kIsWeb) {
       _configurarWebSocketMobile();
     }
@@ -64,6 +68,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   void dispose() {
     _notificacaoService.removeListener(_onNotificacoesChanged);
     _dashboardProvider.removeListener(_onDashboardChanged);
+    _usuarioProvider.removeListener(_onUsuarioChanged);
     _dashboardProvider.dispose();
     if (!kIsWeb) {
       onMensagemRecebida = null;
@@ -81,6 +86,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   void _onDashboardChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _onUsuarioChanged() {
     if (!mounted) return;
     setState(() {});
   }
@@ -135,13 +145,18 @@ class _HomePageMobileState extends State<HomePageMobile> {
         secondaryColor: _secondaryColor,
         accentColor: _accentColor,
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          tooltip: context.t(
+            'gestao.settings.item.notifications.title',
+            fallback: 'Notificações',
+          ),
+          icon: _buildNotificationIcon(),
+          onPressed: () => _openNotifications(context),
+        ),
         actions: [
           SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
-          IconButton(
-            tooltip: 'Notificações',
-            icon: _buildNotificationIcon(),
-            onPressed: () => _openNotifications(context),
-          ),
+          _buildTopOptionsButton(context),
+          const SizedBox(width: 6),
         ],
         bodyBuilder: _buildHomeContent,
         bottomNavigationBar:
@@ -167,6 +182,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
           children: [
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 40),
+              child: _buildGreetingHeader(context),
+            ),
+            const SizedBox(height: 16),
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 80),
               child: _buildPeriodFilter(),
@@ -205,6 +225,84 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   // ─── NOTIFICATION ICON ─────────────────────────────────────────────────────
+
+  Widget _buildTopOptionsButton(BuildContext context) {
+    return Tooltip(
+      message: context.t('common.moreOptions', fallback: 'Mais opções'),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () {},
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
+              ),
+              color: SixMobilePalette.onPrimary.withValues(alpha: 0.08),
+            ),
+            child: const Icon(Icons.tune_rounded, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreetingHeader(BuildContext context) {
+    final String nome = _resolveGreetingName();
+
+    return Semantics(
+      header: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context
+                .t('dashboardInicio.mobileGreeting', fallback: 'Olá, {nome}!')
+                .replaceAll('{nome}', nome),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: SixMobilePalette.onPrimary,
+              fontSize: 28,
+              height: 1.08,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.t(
+              'dashboardInicio.mobileGreetingSubtitle',
+              fallback: 'Veja os principais movimentos do comércio hoje.',
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: SixMobilePalette.heroSupportingText,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _resolveGreetingName() {
+    final usuario = _usuarioProvider.usuario;
+    final String nomeDeGuerra = usuario?.nomeDeGuerra.trim() ?? '';
+    if (nomeDeGuerra.isNotEmpty) return nomeDeGuerra;
+
+    final String nome = usuario?.nome.trim() ?? '';
+    if (nome.isNotEmpty) return nome.split(RegExp(r'\s+')).first;
+
+    return 'bem-vindo';
+  }
 
   Widget _buildNotificationIcon() {
     final int naoLidas = _notificacaoService.naoLidas;
