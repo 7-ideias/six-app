@@ -50,18 +50,20 @@ class VendaNaoLiquidadaModel {
       nomeCliente: (json['nomeCliente'] ?? '').toString(),
       idColaboradorCriacao: (json['idColaboradorCriacao'] ?? '').toString(),
       nomeColaboradorCriacao: (json['nomeColaboradorCriacao'] ?? '').toString(),
-      itens: itensJson is List
-          ? itensJson
-              .whereType<Map<String, dynamic>>()
-              .map(VendaNaoLiquidadaItemModel.fromJson)
-              .toList(growable: false)
-          : <VendaNaoLiquidadaItemModel>[],
+      itens:
+          itensJson is List
+              ? itensJson
+                  .whereType<Map<String, dynamic>>()
+                  .map(VendaNaoLiquidadaItemModel.fromJson)
+                  .toList(growable: false)
+              : <VendaNaoLiquidadaItemModel>[],
     );
   }
 
   static double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
-    return double.tryParse((value ?? '0').toString().replaceAll(',', '.')) ?? 0.0;
+    return double.tryParse((value ?? '0').toString().replaceAll(',', '.')) ??
+        0.0;
   }
 
   static DateTime? _toDateTime(dynamic value) {
@@ -113,7 +115,8 @@ class VendaNaoLiquidadaItemModel {
 
   static double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
-    return double.tryParse((value ?? '0').toString().replaceAll(',', '.')) ?? 0.0;
+    return double.tryParse((value ?? '0').toString().replaceAll(',', '.')) ??
+        0.0;
   }
 }
 
@@ -124,6 +127,7 @@ class LiquidarVendaNaoLiquidadaInput {
     required this.itens,
     this.observacao,
     this.referencia,
+    this.idSessaoCaixa,
   });
 
   final String codigoTipoRecebimento;
@@ -131,6 +135,7 @@ class LiquidarVendaNaoLiquidadaInput {
   final List<VendaNaoLiquidadaItemModel> itens;
   final String? observacao;
   final String? referencia;
+  final String? idSessaoCaixa;
 
   Map<String, dynamic> toJson() {
     return {
@@ -139,6 +144,7 @@ class LiquidarVendaNaoLiquidadaInput {
       'itens': itens.map((item) => item.toJson()).toList(growable: false),
       'observacao': observacao,
       'referencia': referencia,
+      'idSessaoCaixa': idSessaoCaixa,
     };
   }
 }

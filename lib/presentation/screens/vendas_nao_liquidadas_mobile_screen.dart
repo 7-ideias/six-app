@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../core/services/agenda_financeira_acoes_financeiras.dart';
 import '../../data/models/agenda_financeira_lancamento_model.dart';
+import '../../data/models/caixa_models.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
+import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../l10n/six_i18n.dart';
@@ -34,6 +36,7 @@ class _VendasNaoLiquidadasMobileScreenState
   final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
   final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
       AgendaFinanceiraAcoesFinanceiras();
+  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
 
   bool _loading = true;
   bool _cancelando = false;
@@ -92,6 +95,7 @@ class _VendasNaoLiquidadasMobileScreenState
 
     setState(() => _cancelando = true);
     try {
+      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
       if (resultado.total) {
         await _api.liquidar(
           idRecebimento: venda.idRecebimento,
@@ -106,6 +110,7 @@ class _VendasNaoLiquidadasMobileScreenState
                 venda.idOperacaoApp.isNotEmpty
                     ? venda.idOperacaoApp
                     : venda.idOperacaoFinanceira,
+            idSessaoCaixa: idSessaoCaixa,
           ),
         );
         if (mounted) {
@@ -127,6 +132,7 @@ class _VendasNaoLiquidadasMobileScreenState
             observacoes:
                 resultado.observacao ??
                 'Recebimento parcial realizado no PDV mobile.',
+            idSessaoCaixa: idSessaoCaixa,
           ),
         );
         if (mounted) {
@@ -145,6 +151,14 @@ class _VendasNaoLiquidadasMobileScreenState
     } finally {
       if (mounted) setState(() => _cancelando = false);
     }
+  }
+
+  Future<String?> _buscarIdSessaoCaixaAberta() async {
+    final CaixaSessao? sessao = await _caixaApiClient.getSessaoAtual();
+    final String? idSessaoCaixa = sessao?.idSessaoCaixa.trim();
+    return idSessaoCaixa == null || idSessaoCaixa.isEmpty
+        ? null
+        : idSessaoCaixa;
   }
 
   Future<void> _confirmarCancelamentoVenda(VendaNaoLiquidadaModel venda) async {

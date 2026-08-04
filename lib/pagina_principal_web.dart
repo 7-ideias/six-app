@@ -25,6 +25,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
@@ -43,6 +44,7 @@ import 'presentation/screens/login_page_web.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
+import 'providers/locale_settings_provider.dart';
 import 'top_navigation_bar_web.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
@@ -108,6 +110,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   final CaixaService _caixaService = CaixaModule.caixaService;
 
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
+  ModuloCentralPDV? _moduloRetornoOperacoesCaixa;
 
   final List<Map<String, dynamic>> _produtosSelecionados =
       <Map<String, dynamic>>[];
@@ -999,6 +1002,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _abrirSelecaoProdutoWeb({String tipoInicial = 'PRODUTO'}) async {
+    if (!await _garantirSessaoCaixaAbertaParaVenda()) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
     final dynamic result = await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) {
@@ -1066,6 +1076,34 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 
+  void _abrirOperacoesCaixa({
+    ModuloCentralPDV retorno = ModuloCentralPDV.seletor,
+  }) {
+    setState(() {
+      _moduloRetornoOperacoesCaixa = retorno;
+      _moduloAtual = ModuloCentralPDV.operacoesCaixa;
+    });
+  }
+
+  void _voltarDeOperacoesCaixa() {
+    final ModuloCentralPDV retorno =
+        _moduloRetornoOperacoesCaixa ?? ModuloCentralPDV.seletor;
+
+    setState(() {
+      _moduloRetornoOperacoesCaixa = null;
+      _moduloAtual = retorno;
+    });
+
+    if (retorno == ModuloCentralPDV.vendas) {
+      _carregarSessaoCaixaPdv();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _focarCodigoBarras();
+        }
+      });
+    }
+  }
+
   Future<void> _carregarSessaoCaixaPdv() async {
     if (_carregandoSessaoCaixaPdv) {
       return;
@@ -1102,6 +1140,70 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         });
       }
     }
+  }
+
+  bool _sessaoCaixaPdvAberta(CaixaSessao sessao) {
+    final String status = sessao.status.trim().toLowerCase();
+    return status == 'aberta' ||
+        status == 'open' ||
+        status == 'active' ||
+        status == 'ativa' ||
+        status == 'true';
+  }
+
+  bool get _pdvTemSessaoCaixaAberta {
+    final CaixaSessao? sessao = _sessaoCaixaPdv;
+    return sessao != null && _sessaoCaixaPdvAberta(sessao);
+  }
+
+  bool get _pdvPodeLancarVenda {
+    return !_carregandoSessaoCaixaPdv &&
+        !_erroSessaoCaixaPdv &&
+        _pdvTemSessaoCaixaAberta;
+  }
+
+  Future<bool> _garantirSessaoCaixaAbertaParaVenda() async {
+    if (_pdvPodeLancarVenda) {
+      return true;
+    }
+
+    if (!_carregandoSessaoCaixaPdv) {
+      await _carregarSessaoCaixaPdv();
+      if (_pdvPodeLancarVenda) {
+        return true;
+      }
+    }
+
+    if (!mounted) {
+      return false;
+    }
+
+    _mostrarAvisoSessaoCaixaObrigatoriaPdv();
+    return false;
+  }
+
+  void _mostrarAvisoSessaoCaixaObrigatoriaPdv() {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.t(
+            'pdv.cashSessionRequiredMessage',
+            fallback: 'Abra uma sessão de caixa antes de lançar vendas no PDV.',
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: context.t(
+            'pdv.openCashOperations',
+            fallback: 'Operações de caixa',
+          ),
+          onPressed: () {
+            _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas);
+          },
+        ),
+      ),
+    );
   }
 
   bool get _atalhosContextuaisDisponiveis {
@@ -1788,6 +1890,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
+    if (!await _garantirSessaoCaixaAbertaParaVenda()) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
     if (_produtosSelecionados.isEmpty) {
       _mostrarDialogMensagem(
         'Venda vazia',
@@ -1958,11 +2067,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    if (mounted) {
-      setState(() {
-        _overlayRecebimentoAberto = true;
-      });
+    if (!await _garantirSessaoCaixaAbertaParaVenda()) {
+      return;
     }
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _overlayRecebimentoAberto = true;
+    });
 
     try {
       await showDialog<void>(
@@ -2096,7 +2210,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   String _formatCurrency(double value) {
-    return 'R\$ ${value.toStringAsFixed(2)}';
+    try {
+      return context.read<LocaleSettingsProvider>().formatCurrency(value);
+    } catch (_) {
+      return value.toStringAsFixed(2);
+    }
   }
 
   String _clienteAtualLabel() {
@@ -2182,11 +2300,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: OperacoesCaixaWebPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: _voltarDeOperacoesCaixa,
           ),
         );
 

@@ -15,10 +15,12 @@ import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/operacao/operacao_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile_motion.dart';
+import 'operacoes_caixa_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
 class PdvMobileScreen extends StatefulWidget {
@@ -87,6 +89,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   double get _total => _itens.fold<double>(0, (s, item) => s + item.subtotal);
   int get _quantidadeItens =>
       _itens.fold<int>(0, (s, item) => s + item.quantidade);
+  bool get _busyOrLoadingSession =>
+      _enviando || _buscandoCodigo || _carregandoSessaoCaixa;
 
   static Color _withAlpha(Color color, double opacity) {
     return color.withAlpha((opacity.clamp(0.0, 1.0) * 255).round());
@@ -165,6 +169,49 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         });
       }
     }
+  }
+
+  bool get _caixaAbertoParaVenda {
+    final CaixaSessao? sessao = _sessaoCaixa;
+    return sessao != null && _sessaoCaixaAberta(sessao);
+  }
+
+  Future<bool> _garantirCaixaAbertoParaVenda() async {
+    if (_caixaAbertoParaVenda) {
+      return true;
+    }
+
+    if (!_carregandoSessaoCaixa) {
+      await _carregarSessaoCaixa();
+      if (_caixaAbertoParaVenda) {
+        return true;
+      }
+    }
+
+    if (!mounted) {
+      return false;
+    }
+
+    _mostrarSnack(
+      _txt(
+        'pdv.cashSessionRequiredMessage',
+        'Abra uma sessão de caixa antes de lançar vendas no PDV.',
+      ),
+    );
+    return false;
+  }
+
+  Future<void> _abrirOperacoesCaixaMobile() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => const OperacoesCaixaMobileScreen(),
+      ),
+    );
+
+    if (!mounted) return;
+    await _carregarSessaoCaixa();
+    await _carregarTiposPagamentoConfigurados();
   }
 
   List<_FormaPagamentoMobile> _montarFormasPagamentoConfiguradas(
@@ -262,6 +309,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _abrirSelecaoProduto() async {
+    if (!await _garantirCaixaAbertoParaVenda()) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
     final dynamic result = await Navigator.push<dynamic>(
       context,
       MaterialPageRoute<dynamic>(
@@ -288,6 +342,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Future<void> _abrirScannerCodigoBarras() async {
     if (_enviando || _buscandoCodigo) return;
+    if (!await _garantirCaixaAbertoParaVenda()) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
 
     final codigo = await Navigator.push<String>(
       context,
@@ -377,6 +437,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _finalizarVenda() async {
+    if (!await _garantirCaixaAbertoParaVenda()) {
+      return;
+    }
+
     if (_itens.isEmpty) {
       _mostrarSnack('Inclua pelo menos um item para finalizar.');
       return;
@@ -430,6 +494,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Future<void> _receberDepois() async {
     if (_editandoVendaNaoLiquidada) {
       Navigator.of(context).pop(false);
+      return;
+    }
+    if (!await _garantirCaixaAbertoParaVenda()) {
+      return;
+    }
+    if (!mounted) {
       return;
     }
     if (_itens.isEmpty) {
@@ -540,6 +610,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     required bool receberDepois,
     required List<FormaPagamentoSelecionada> formasPagamento,
   }) async {
+    if (!await _garantirCaixaAbertoParaVenda()) {
+      return;
+    }
+
     setState(() => _enviando = true);
     try {
       if (_editandoVendaNaoLiquidada && !receberDepois) {
@@ -591,12 +665,20 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             .map((item) => item.toVendaNaoLiquidadaItem())
             .toList(growable: false),
         observacao: 'Recebido pelo PDV mobile',
+        idSessaoCaixa: _idSessaoCaixaAtual,
       ),
     );
 
     if (!mounted) return;
     _mostrarSnack('Venda recebida com sucesso.');
     Navigator.of(context).pop(true);
+  }
+
+  String? get _idSessaoCaixaAtual {
+    final String? idSessaoCaixa = _sessaoCaixa?.idSessaoCaixa.trim();
+    return idSessaoCaixa == null || idSessaoCaixa.isEmpty
+        ? null
+        : idSessaoCaixa;
   }
 
   void _limparVenda() {
@@ -737,6 +819,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return context.read<LocaleSettingsProvider>().formatCurrency(valor);
   }
 
+  String _txt(String key, String fallback) =>
+      context.t(key, fallback: fallback);
+
   void _mostrarSnack(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
@@ -764,9 +849,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       scrolledSurfaceOpacity: 0.66,
       actions: <Widget>[
         IconButton(
+          tooltip: _txt('pdv.openCashOperations', 'Operações de caixa'),
+          onPressed: _busyOrLoadingSession ? null : _abrirOperacoesCaixaMobile,
+          icon: const Icon(Icons.point_of_sale_rounded),
+        ),
+        IconButton(
           tooltip: 'Ler código',
           onPressed:
-              _enviando || _buscandoCodigo ? null : _abrirScannerCodigoBarras,
+              _enviando || _buscandoCodigo || !_caixaAbertoParaVenda
+                  ? null
+                  : _abrirScannerCodigoBarras,
           icon: const Icon(Icons.qr_code_scanner_rounded),
         ),
       ],
@@ -806,6 +898,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 ),
               ),
               SizedBox(height: temItens ? 12 : 10),
+              if (!_caixaAbertoParaVenda) ...<Widget>[
+                SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 40),
+                  duration: _entryDuration,
+                  beginOffset: const Offset(0, 0.035),
+                  child: _buildCaixaObrigatorioNotice(),
+                ),
+                const SizedBox(height: 10),
+              ],
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 70),
                 duration: _entryDuration,
@@ -855,6 +956,130 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return 84;
   }
 
+  Widget _buildCaixaObrigatorioNotice() {
+    final Color color =
+        _erroSessaoCaixa ? SixMobilePalette.error : const Color(0xFF92400E);
+    final String title =
+        _carregandoSessaoCaixa
+            ? _txt(
+              'pdv.cashSessionCheckingTitle',
+              'Verificando sessão do caixa',
+            )
+            : _erroSessaoCaixa
+            ? _txt(
+              'pdv.cashSessionUnavailableTitle',
+              'Não foi possível validar o caixa',
+            )
+            : _txt('pdv.cashSessionRequiredTitle', 'Abra o caixa para vender');
+    final String message =
+        _carregandoSessaoCaixa
+            ? _txt(
+              'pdv.cashSessionCheckingMessage',
+              'Aguarde a sincronização antes de lançar uma nova venda.',
+            )
+            : _erroSessaoCaixa
+            ? _txt(
+              'pdv.cashSessionUnavailableMessage',
+              'Atualize a sessão ou acesse operações de caixa para conferir a situação.',
+            )
+            : _txt(
+              'pdv.cashSessionRequiredMessage',
+              'Abra uma sessão de caixa antes de lançar vendas no PDV.',
+            );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _withAlpha(color, 0.08),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _withAlpha(color, 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                _carregandoSessaoCaixa
+                    ? Icons.sync_rounded
+                    : Icons.lock_open_rounded,
+                color: color,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      message,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: SixMobilePalette.mutedText,
+                        height: 1.3,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed:
+                      _carregandoSessaoCaixa ? null : _carregarSessaoCaixa,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(_txt('common.refresh', 'Atualizar')),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed:
+                      _busyOrLoadingSession ? null : _abrirOperacoesCaixaMobile,
+                  icon: const Icon(Icons.point_of_sale_rounded),
+                  label: Text(
+                    _txt('pdv.openCashOperations', 'Operações de caixa'),
+                  ),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    backgroundColor: SixMobilePalette.accent,
+                    foregroundColor: SixMobilePalette.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuickActionsCard({required bool vendaIniciada}) {
     return Material(
       color: SixMobilePalette.surface,
@@ -886,34 +1111,67 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         ),
         child:
             vendaIniciada
-                ? Row(
+                ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Expanded(
-                      child: _buildQuickActionButton(
-                        label: 'Adicionar produto',
-                        helper: 'Produtos e serviços',
-                        icon: Icons.add_shopping_cart_rounded,
-                        onTap: _enviando ? null : _abrirSelecaoProduto,
-                        primary: true,
-                        compact: true,
-                      ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: _buildQuickActionButton(
+                            label: 'Adicionar produto',
+                            helper: 'Produtos e serviços',
+                            icon: Icons.add_shopping_cart_rounded,
+                            onTap:
+                                _enviando || !_caixaAbertoParaVenda
+                                    ? null
+                                    : _abrirSelecaoProduto,
+                            primary: true,
+                            compact: true,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildQuickActionButton(
+                            label:
+                                _buscandoCodigo
+                                    ? 'Buscando...'
+                                    : 'Ler código de barras',
+                            helper: 'Scanner',
+                            icon: Icons.qr_code_scanner_rounded,
+                            onTap:
+                                _enviando ||
+                                        _buscandoCodigo ||
+                                        !_caixaAbertoParaVenda
+                                    ? null
+                                    : _abrirScannerCodigoBarras,
+                            loading: _buscandoCodigo,
+                            compact: true,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildQuickActionButton(
-                        label:
-                            _buscandoCodigo
-                                ? 'Buscando...'
-                                : 'Ler código de barras',
-                        helper: 'Scanner',
-                        icon: Icons.qr_code_scanner_rounded,
-                        onTap:
-                            _enviando || _buscandoCodigo
-                                ? null
-                                : _abrirScannerCodigoBarras,
-                        loading: _buscandoCodigo,
-                        compact: true,
+                    const SizedBox(height: 10),
+                    _buildQuickActionButton(
+                      label: _txt(
+                        'pdv.openCashOperations',
+                        'Operações de caixa',
                       ),
+                      helper:
+                          _caixaAbertoParaVenda
+                              ? _txt(
+                                'pdv.cashSessionReviewActionHint',
+                                'Conferir sessão',
+                              )
+                              : _txt(
+                                'pdv.cashSessionOpenOrRefreshHint',
+                                'Abrir ou atualizar sessão',
+                              ),
+                      icon: Icons.point_of_sale_rounded,
+                      onTap:
+                          _busyOrLoadingSession
+                              ? null
+                              : _abrirOperacoesCaixaMobile,
+                      compact: true,
                     ),
                   ],
                 )
@@ -928,7 +1186,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         label: 'Adicionar produto',
                         helper: 'Escolher no catálogo',
                         icon: Icons.add_shopping_cart_rounded,
-                        onTap: _enviando ? null : _abrirSelecaoProduto,
+                        onTap:
+                            _enviando || !_caixaAbertoParaVenda
+                                ? null
+                                : _abrirSelecaoProduto,
                         primary: true,
                       ),
                     ),
@@ -945,10 +1206,39 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         helper: 'Usar a câmera do aparelho',
                         icon: Icons.qr_code_scanner_rounded,
                         onTap:
-                            _enviando || _buscandoCodigo
+                            _enviando ||
+                                    _buscandoCodigo ||
+                                    !_caixaAbertoParaVenda
                                 ? null
                                 : _abrirScannerCodigoBarras,
                         loading: _buscandoCodigo,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SixStaggeredEntry(
+                      delay: const Duration(milliseconds: 190),
+                      duration: _entryDuration,
+                      beginOffset: const Offset(0, 0.035),
+                      child: _buildQuickActionButton(
+                        label: _txt(
+                          'pdv.openCashOperations',
+                          'Operações de caixa',
+                        ),
+                        helper:
+                            _caixaAbertoParaVenda
+                                ? _txt(
+                                  'pdv.cashSessionReviewActionHint',
+                                  'Conferir sessão',
+                                )
+                                : _txt(
+                                  'pdv.cashSessionOpenOrRefreshHint',
+                                  'Abrir ou atualizar sessão',
+                                ),
+                        icon: Icons.point_of_sale_rounded,
+                        onTap:
+                            _busyOrLoadingSession
+                                ? null
+                                : _abrirOperacoesCaixaMobile,
                       ),
                     ),
                   ],
@@ -1043,9 +1333,14 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      _itens.isEmpty
-                          ? 'Pronta para incluir itens'
-                          : 'Revise itens e pagamento',
+                      !_caixaAbertoParaVenda
+                          ? _txt(
+                            'pdv.cashSessionBlockedSubtitle',
+                            'Caixa fechado: venda bloqueada',
+                          )
+                          : (_itens.isEmpty
+                              ? 'Pronta para incluir itens'
+                              : 'Revise itens e pagamento'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1164,7 +1459,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           Text(
             _editandoVendaNaoLiquidada
                 ? 'Revise os itens antes de receber.'
-                : 'Seu caixa está pronto.',
+                : (_caixaAbertoParaVenda
+                    ? 'Seu caixa está pronto.'
+                    : _txt(
+                      'pdv.cashSessionOpenToSellHint',
+                      'Abra o caixa para vender.',
+                    )),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: SixMobilePalette.titleText,
@@ -1519,7 +1819,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(999),
-          onTap: _enviando ? null : () => _alternarFormaPagamento(forma),
+          onTap:
+              _enviando || !_caixaAbertoParaVenda
+                  ? null
+                  : () => _alternarFormaPagamento(forma),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
@@ -1776,7 +2079,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       icon: Icons.remove_rounded,
                       label: 'Diminuir quantidade',
                       onTap:
-                          _enviando ? null : () => _alterarQuantidade(item, -1),
+                          _enviando || !_caixaAbertoParaVenda
+                              ? null
+                              : () => _alterarQuantidade(item, -1),
                     ),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 180),
@@ -1811,7 +2116,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       icon: Icons.add_rounded,
                       label: 'Aumentar quantidade',
                       onTap:
-                          _enviando ? null : () => _alterarQuantidade(item, 1),
+                          _enviando || !_caixaAbertoParaVenda
+                              ? null
+                              : () => _alterarQuantidade(item, 1),
                     ),
                   ],
                 ),
@@ -1944,7 +2251,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 ),
                 TextButton(
                   onPressed:
-                      _enviando ? null : () => _preencherValorRestante(codigo),
+                      _enviando || !_caixaAbertoParaVenda
+                          ? null
+                          : () => _preencherValorRestante(codigo),
                   child: const Text('Completar'),
                 ),
               ],
@@ -1952,7 +2261,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             const SizedBox(height: 8),
             TextField(
               controller: _valorPorForma[codigo],
-              enabled: !_enviando,
+              enabled: !_enviando && _caixaAbertoParaVenda,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -2043,7 +2352,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             ),
             const SizedBox(height: 10),
             FilledButton.icon(
-              onPressed: _enviando ? null : _finalizarVenda,
+              onPressed:
+                  _enviando || !_caixaAbertoParaVenda ? null : _finalizarVenda,
               icon:
                   _enviando
                       ? const SizedBox(
@@ -2077,7 +2387,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               children: <Widget>[
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _enviando ? null : _receberDepois,
+                    onPressed:
+                        _enviando ||
+                                (!_editandoVendaNaoLiquidada &&
+                                    !_caixaAbertoParaVenda)
+                            ? null
+                            : _receberDepois,
                     icon: Icon(
                       _editandoVendaNaoLiquidada
                           ? Icons.arrow_back_rounded

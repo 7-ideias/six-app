@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
+import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/models/venda_nao_liquidada_models.dart';
+import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/data/services/caixa/venda_nao_liquidada_api_client.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
@@ -22,6 +24,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
   final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
       AgendaFinanceiraAcoesFinanceiras();
+  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
 
   bool _loading = true;
   bool _processando = false;
@@ -196,6 +199,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
     setState(() => _processando = true);
     try {
+      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
       if (resultado.total) {
         await _api.liquidar(
           idRecebimento: venda.idRecebimento,
@@ -208,6 +212,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
                 venda.idOperacaoApp.isNotEmpty
                     ? venda.idOperacaoApp
                     : venda.idOperacaoFinanceira,
+            idSessaoCaixa: idSessaoCaixa,
           ),
         );
         if (mounted) {
@@ -222,6 +227,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.formaPagamentoBackend,
             observacoes: resultado.observacao ?? observacaoParcialPadrao,
+            idSessaoCaixa: idSessaoCaixa,
           ),
         );
         if (mounted) {
@@ -235,6 +241,14 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     } finally {
       if (mounted) setState(() => _processando = false);
     }
+  }
+
+  Future<String?> _buscarIdSessaoCaixaAberta() async {
+    final CaixaSessao? sessao = await _caixaApiClient.getSessaoAtual();
+    final String? idSessaoCaixa = sessao?.idSessaoCaixa.trim();
+    return idSessaoCaixa == null || idSessaoCaixa.isEmpty
+        ? null
+        : idSessaoCaixa;
   }
 
   Future<void> _confirmarCancelamentoVenda(VendaNaoLiquidadaModel venda) async {
