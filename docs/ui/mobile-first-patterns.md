@@ -6,6 +6,8 @@ Este documento define padrões obrigatórios para telas mobile do SixApp.
 
 A versão mobile não deve ser apenas uma adaptação visual da web. Ela deve ter componentes, transições e fluxos adequados ao uso com toque, tela pequena e contexto operacional rápido.
 
+A versão mobile também não deve ser um wrapper de tela ou conteúdo Web. Reaproveite integração com backend, models, services, mappers, providers/controladores sem responsabilidade visual e helpers. Não reaproveite telas completas, formulários grandes, dashboards, modais Web ou conteúdo principal usando `embedded`, `isMobile`, `isWeb`, `LayoutBuilder` ou condicionais equivalentes.
+
 O layout mobile deve transmitir:
 
 - fluidez;
@@ -105,7 +107,7 @@ Preferir componentes genéricos e reutilizáveis quando possível:
 - `QuickActionBottomSheet`;
 - `MobileSearchableSelector`.
 
-Evitar duplicação de lógica visual dentro de telas grandes.
+Evitar duplicação de lógica visual dentro de telas grandes quando o componente for pequeno, neutro e claramente mobile. Não extrair uma tela inteira ou formulário principal para ser compartilhado com Web. Para funcionalidades que existem nas duas plataformas, crie telas e composições separadas consumindo a mesma camada de backend/domínio.
 
 ## Checklist de aceite mobile
 
@@ -115,6 +117,7 @@ Uma implementação mobile só deve ser considerada pronta se:
 - não usa componente padrão com aparência desalinhada;
 - não quebra cards durante interações;
 - não reutiliza tela web indevidamente;
+- não usa wrapper sobre conteúdo visual principal Web;
 - mantém regra de negócio original;
 - usa componentes reutilizáveis quando aplicável;
 - está formatada com `dart format`;
