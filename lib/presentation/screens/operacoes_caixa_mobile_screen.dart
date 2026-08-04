@@ -50,7 +50,7 @@ class _OperacoesCaixaMobileScreenState
   bool _busy = false;
   bool _vincularVenda = false;
   bool _mostrarPainelFechamento = false;
-  bool _mostrarApenasHoje = true;
+  bool _mostrarApenasHoje = false;
   String? _erro;
 
   CaixaSessao? _sessaoAtual;
@@ -201,20 +201,35 @@ class _OperacoesCaixaMobileScreenState
     try {
       final List<MovimentoCaixa> movimentos = await _caixaService
           .listarMovimentacoes(idSessaoCaixa);
+      if (!mounted) return;
+      setState(() => _movimentos = movimentos);
+    } catch (error) {
+      if (mounted) _snack(_mensagemErro(error));
+    }
+
+    try {
       final InformacoesCaixaComSomatorioResponse movimentosComSomatorio =
           await _caixaService.buscarResumoDeMovimentosComSomatorio(
             idSessaoCaixa,
           );
+      if (!mounted) return;
+      setState(() {
+        _movimentosComSomatorio = movimentosComSomatorio;
+        if (_movimentos.isEmpty &&
+            movimentosComSomatorio.movimento.isNotEmpty) {
+          _movimentos = movimentosComSomatorio.movimento;
+        }
+      });
+    } catch (error) {
+      if (mounted) _snack(_mensagemErro(error));
+    }
+
+    try {
       final ResumoCaixa resumo = await _caixaService.buscarResumo(
         idSessaoCaixa,
       );
-
       if (!mounted) return;
-      setState(() {
-        _movimentos = movimentos;
-        _movimentosComSomatorio = movimentosComSomatorio;
-        _resumo = resumo;
-      });
+      setState(() => _resumo = resumo);
     } catch (error) {
       if (mounted) _snack(_mensagemErro(error));
     }
