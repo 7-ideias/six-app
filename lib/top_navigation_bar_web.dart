@@ -6,7 +6,7 @@ import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
-import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/configuracao_secao_web_page.dart';
 import 'package:sixpos/presentation/screens/cores_fontes_web_page.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_web_page.dart';

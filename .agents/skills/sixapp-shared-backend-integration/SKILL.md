@@ -5,7 +5,11 @@ description: Use ao criar, alterar ou revisar integrações Flutter com o backen
 
 # Integrações compartilhadas com o backend do SixApp
 
-Implemente integrações com uma única fonte de verdade para Web, Android e iOS. As interfaces gráficas podem ser diferentes; o contrato da API e a camada de comunicação não podem ser recriados por plataforma.
+Implemente integrações com uma única fonte de verdade para Web, Android e iOS. As interfaces gráficas devem ser diferentes quando a experiência de plataforma exigir; o contrato da API e a camada de comunicação não podem ser recriados por plataforma.
+
+Esta skill autoriza compartilhamento de backend/domínio, não compartilhamento de tela. Não implemente Web e Mobile reaproveitando a mesma tela, formulário grande, dashboard, modal ou conteúdo principal via wrapper, `embedded`, `isMobile`, `isWeb`, `LayoutBuilder` ou flags equivalentes.
+
+Antes de qualquer ajuste, implementação ou refactor que toque integração usada por Web e Mobile, valide explicitamente a fronteira: backend/domínio pode ser compartilhado; UI principal deve continuar específica por plataforma. Se a mudança exigir mexer em tela, confirme antes de editar que ela não cria nem preserva wrapper visual Web/Mobile.
 
 Leia primeiro:
 
@@ -41,6 +45,15 @@ Podem permanecer específicos por interface ou plataforma:
 
 Providers Web e Mobile não precisam ser idênticos quando as jornadas forem diferentes. Ambos devem depender da mesma integração compartilhada.
 
+Devem permanecer específicos por interface:
+
+- arquivos de tela;
+- composição principal da jornada;
+- dashboards;
+- formulários extensos;
+- modais/side sheets/bottom sheets;
+- headers, barras de ação, navegação e responsividade visual.
+
 ## 1. Investigue antes de editar
 
 Antes de criar qualquer classe:
@@ -48,11 +61,12 @@ Antes de criar qualquer classe:
 1. Pesquise o endpoint literal, rota parcial e método HTTP.
 2. Pesquise nomes do domínio, requests, responses, models, clients, services, providers e telas.
 3. Localize as telas Web e Mobile relacionadas, inclusive implementações futuras ou parciais.
-4. Trace o fluxo existente: `UI -> estado -> service -> ApiClient -> endpoint -> response`.
-5. Confirme como são obtidos token, empresa, headers, base URL, client HTTP e erros.
-6. Verifique se a integração já existe em outra interface.
-7. Verifique duplicações, código legado e contratos equivalentes.
-8. Para tarefas amplas, apresente um plano curto de reaproveitamento antes de editar.
+4. Verifique se alguma tela/conteúdo principal está sendo compartilhado por wrapper, `embedded`, `isMobile`, `isWeb`, `LayoutBuilder` ou import cruzado; não use esse padrão como base para o ajuste.
+5. Trace o fluxo existente: `UI -> estado -> service -> ApiClient -> endpoint -> response`.
+6. Confirme como são obtidos token, empresa, headers, base URL, client HTTP e erros.
+7. Verifique se a integração já existe em outra interface.
+8. Verifique duplicações, código legado e contratos equivalentes.
+9. Para tarefas amplas, apresente um plano curto de reaproveitamento de integração antes de editar, deixando explícito que telas e composição visual não serão reaproveitadas.
 
 Use pesquisas como:
 
@@ -68,9 +82,10 @@ Não conclua que a integração não existe após uma única busca.
 
 ### Integração já existe
 
-Reutilize ApiClient, request, response, parsing, mapper e service existentes. Crie somente a UI ausente, o estado de apresentação específico, pequenos métodos compartilhados realmente faltantes e adapters tecnicamente necessários.
+Reutilize ApiClient, request, response, parsing, mapper e service existentes. Crie a UI ausente como composição própria da plataforma, além do estado de apresentação específico, pequenos métodos compartilhados realmente faltantes e adapters tecnicamente necessários.
 
 Não copie a integração para uma pasta `web`, `mobile` ou para dentro da tela.
+Não mova a UI para um componente compartilhado para depois embrulhar em Web e Mobile.
 
 ### Integração existe parcialmente
 
@@ -192,6 +207,8 @@ Não crie `WebApiClient` e `MobileApiClient` para o mesmo endpoint sem demonstra
 - Ambas devem usar os mesmos requests e responses.
 - Parsing e regra semântica devem ocorrer uma vez.
 - Estado visual pode ser diferente.
+- A árvore visual principal deve ser diferente e específica por plataforma.
+- Antes de implementar/refatorar, confirme que a mudança não introduz nem mantém wrapper visual entre Web e Mobile.
 - Não force o mesmo Provider quando isso prejudicar jornadas distintas.
 - Não mova regras de UI para data.
 - Não mova detalhes HTTP para Providers.

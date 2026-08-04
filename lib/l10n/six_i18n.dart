@@ -575,6 +575,80 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.previewNegativeTextHint': 'Digite o que faltou',
     'procedimentos.operationalLoadError':
         'Não foi possível carregar os procedimentos.',
+
+    // Gestão — seções
+    'gestao.title': 'Gestão',
+    'gestao.catalog.title': 'Catálogo',
+    'gestao.catalog.subtitle': 'Produtos, categorias e estoque',
+    'gestao.people.title': 'Pessoas',
+    'gestao.people.subtitle': 'Clientes, equipe e parceiros',
+    'gestao.finance.title': 'Financeiro',
+    'gestao.finance.subtitle': 'Contas, agenda e recebimentos',
+    'gestao.settings.title': 'Configurações',
+    'gestao.settings.subtitle': 'Empresa, idioma e integrações',
+
+    // Gestão — itens de Catálogo
+    'gestao.catalog.productsServices': 'Produtos e Serviços',
+    'gestao.catalog.productsServicesDesc':
+        'Saúde, cadastro e revisão do catálogo',
+    'gestao.catalog.categories': 'Categorias',
+    'gestao.catalog.categoriesDesc': 'Organização do catálogo',
+    'gestao.catalog.inventory': 'Estoque',
+    'gestao.catalog.inventoryDesc': 'Saldos, entradas e ajustes',
+
+    // Gestão — itens de Pessoas
+    'gestao.people.clients': 'Clientes',
+    'gestao.people.clientsDesc': 'Base de atendimento e relacionamento',
+    'gestao.people.collaborators': 'Colaboradores',
+    'gestao.people.collaboratorsDesc': 'Equipe, acessos e responsabilidades',
+    'gestao.people.suppliers': 'Fornecedores',
+    'gestao.people.suppliersDesc': 'Parceiros e compras do comércio',
+
+    // Gestão — itens de Financeiro
+    'gestao.finance.receivable': 'Contas a receber',
+    'gestao.finance.receivableDesc': 'Recebíveis e cobranças em aberto',
+    'gestao.finance.payable': 'Contas a pagar',
+    'gestao.finance.payableDesc': 'Despesas e compromissos',
+    'gestao.finance.schedule': 'Agenda financeira',
+    'gestao.finance.scheduleDesc': 'Previsões, fiado e crediário',
+    'gestao.finance.paymentMethods': 'Formas de recebimento',
+    'gestao.finance.paymentMethodsDesc': 'Dinheiro, cartão, Pix e outros meios',
+
+    // Gestão — grupos de Configurações
+    'gestao.settings.group.company': 'Empresa',
+    'gestao.settings.group.teamAccess': 'Equipe e acesso',
+    'gestao.settings.group.operation': 'Operação',
+    'gestao.settings.group.communication': 'Comunicação',
+    'gestao.settings.group.docsIntegrations': 'Documentos e integrações',
+
+    // Gestão — itens de Configurações
+    'gestao.settings.item.company.title': 'Empresa',
+    'gestao.settings.item.company.subtitle':
+        'Dados cadastrais e identidade do comércio',
+    'gestao.settings.item.regionalization.title': 'Regionalização',
+    'gestao.settings.item.regionalization.subtitle':
+        'Idioma, moeda, país e formatos locais',
+    'gestao.settings.item.users.title': 'Usuários e permissões',
+    'gestao.settings.item.users.subtitle':
+        'Acessos, perfis e segurança da equipe',
+    'gestao.settings.item.procedures.title': 'Procedimentos',
+    'gestao.settings.item.procedures.subtitle':
+        'Guias para vendas, atendimentos e entregas',
+    'gestao.settings.item.notifications.title': 'Notificações',
+    'gestao.settings.item.notifications.subtitle':
+        'Eventos recebidos e alertas do sistema',
+    'gestao.settings.item.pdfTemplates.title': 'Modelos de PDF',
+    'gestao.settings.item.pdfTemplates.subtitle':
+        'Orçamentos, OS, recibos e documentos',
+    'gestao.settings.item.integrations.title': 'Integrações',
+    'gestao.settings.item.integrations.subtitle':
+        'Serviços externos e automações',
+
+    // Gestão — badges e cabeçalho admin
+    'gestao.settings.badge.experimental': 'Experimental',
+    'gestao.settings.badge.comingSoon': 'Em breve',
+    'gestao.settings.adminHeader.title': 'Configurações da empresa',
+    'gestao.featureInProgress': 'Fluxo mobile em evolução.',
   },
   'en': {
     'app.title': 'Six',
@@ -1059,6 +1133,78 @@ const Map<String, Map<String, String>> _fallbacks = {
     'configuracoes.recebimento.emptyTitle': 'No payment methods found',
     'configuracoes.recebimento.emptyDescription':
         'Refresh the screen to sync the configured company types.',
+
+    // Management — sections
+    'gestao.title': 'Management',
+    'gestao.catalog.title': 'Catalog',
+    'gestao.catalog.subtitle': 'Products, categories and inventory',
+    'gestao.people.title': 'People',
+    'gestao.people.subtitle': 'Customers, team and partners',
+    'gestao.finance.title': 'Finance',
+    'gestao.finance.subtitle': 'Accounts, schedule and receipts',
+    'gestao.settings.title': 'Settings',
+    'gestao.settings.subtitle': 'Company, language and integrations',
+
+    // Management — Catalog items
+    'gestao.catalog.productsServices': 'Products & Services',
+    'gestao.catalog.productsServicesDesc': 'Health, records and catalog review',
+    'gestao.catalog.categories': 'Categories',
+    'gestao.catalog.categoriesDesc': 'Catalog organization',
+    'gestao.catalog.inventory': 'Inventory',
+    'gestao.catalog.inventoryDesc': 'Balances, entries and adjustments',
+
+    // Management — People items
+    'gestao.people.clients': 'Customers',
+    'gestao.people.clientsDesc': 'Service and relationship base',
+    'gestao.people.collaborators': 'Collaborators',
+    'gestao.people.collaboratorsDesc': 'Team, access and responsibilities',
+    'gestao.people.suppliers': 'Suppliers',
+    'gestao.people.suppliersDesc': 'Partners and business purchases',
+
+    // Management — Finance items
+    'gestao.finance.receivable': 'Accounts receivable',
+    'gestao.finance.receivableDesc': 'Receivables and open billings',
+    'gestao.finance.payable': 'Accounts payable',
+    'gestao.finance.payableDesc': 'Expenses and commitments',
+    'gestao.finance.schedule': 'Financial schedule',
+    'gestao.finance.scheduleDesc': 'Forecasts, credit and installments',
+    'gestao.finance.paymentMethods': 'Payment methods',
+    'gestao.finance.paymentMethodsDesc': 'Cash, card, Pix and other means',
+
+    // Management — Settings groups
+    'gestao.settings.group.company': 'Company',
+    'gestao.settings.group.teamAccess': 'Team & access',
+    'gestao.settings.group.operation': 'Operation',
+    'gestao.settings.group.communication': 'Communication',
+    'gestao.settings.group.docsIntegrations': 'Documents & integrations',
+
+    // Management — Settings items
+    'gestao.settings.item.company.title': 'Company',
+    'gestao.settings.item.company.subtitle':
+        'Business registration and identity',
+    'gestao.settings.item.regionalization.title': 'Regionalization',
+    'gestao.settings.item.regionalization.subtitle':
+        'Language, currency, country and local formats',
+    'gestao.settings.item.users.title': 'Users & permissions',
+    'gestao.settings.item.users.subtitle': 'Access, profiles and team security',
+    'gestao.settings.item.procedures.title': 'Procedures',
+    'gestao.settings.item.procedures.subtitle':
+        'Guides for sales, services and deliveries',
+    'gestao.settings.item.notifications.title': 'Notifications',
+    'gestao.settings.item.notifications.subtitle':
+        'Received events and system alerts',
+    'gestao.settings.item.pdfTemplates.title': 'PDF templates',
+    'gestao.settings.item.pdfTemplates.subtitle':
+        'Quotes, work orders, receipts and documents',
+    'gestao.settings.item.integrations.title': 'Integrations',
+    'gestao.settings.item.integrations.subtitle':
+        'External services and automations',
+
+    // Management — badges and admin header
+    'gestao.settings.badge.experimental': 'Experimental',
+    'gestao.settings.badge.comingSoon': 'Coming soon',
+    'gestao.settings.adminHeader.title': 'Company settings',
+    'gestao.featureInProgress': 'Mobile flow in progress.',
   },
   'es': {
     'app.title': 'Six',
@@ -1561,5 +1707,80 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.previewNegativeTextHint': 'Describe qué faltó',
     'procedimentos.operationalLoadError':
         'No fue posible cargar los procedimientos.',
+
+    // Gestión — secciones
+    'gestao.title': 'Gestión',
+    'gestao.catalog.title': 'Catálogo',
+    'gestao.catalog.subtitle': 'Productos, categorías e inventario',
+    'gestao.people.title': 'Personas',
+    'gestao.people.subtitle': 'Clientes, equipo y socios',
+    'gestao.finance.title': 'Financiero',
+    'gestao.finance.subtitle': 'Cuentas, agenda y recibos',
+    'gestao.settings.title': 'Configuración',
+    'gestao.settings.subtitle': 'Empresa, idioma e integraciones',
+
+    // Gestión — ítems de Catálogo
+    'gestao.catalog.productsServices': 'Productos y Servicios',
+    'gestao.catalog.productsServicesDesc':
+        'Salud, registros y revisión del catálogo',
+    'gestao.catalog.categories': 'Categorías',
+    'gestao.catalog.categoriesDesc': 'Organización del catálogo',
+    'gestao.catalog.inventory': 'Inventario',
+    'gestao.catalog.inventoryDesc': 'Saldos, entradas y ajustes',
+
+    // Gestión — ítems de Personas
+    'gestao.people.clients': 'Clientes',
+    'gestao.people.clientsDesc': 'Base de atención y relación',
+    'gestao.people.collaborators': 'Colaboradores',
+    'gestao.people.collaboratorsDesc': 'Equipo, accesos y responsabilidades',
+    'gestao.people.suppliers': 'Proveedores',
+    'gestao.people.suppliersDesc': 'Socios y compras del comercio',
+
+    // Gestión — ítems de Financiero
+    'gestao.finance.receivable': 'Cuentas por cobrar',
+    'gestao.finance.receivableDesc': 'Cobros y facturas pendientes',
+    'gestao.finance.payable': 'Cuentas por pagar',
+    'gestao.finance.payableDesc': 'Gastos y compromisos',
+    'gestao.finance.schedule': 'Agenda financiera',
+    'gestao.finance.scheduleDesc': 'Previsiones, fiado y créditos',
+    'gestao.finance.paymentMethods': 'Formas de cobro',
+    'gestao.finance.paymentMethodsDesc':
+        'Efectivo, tarjeta, Pix y otros medios',
+
+    // Gestión — grupos de Configuración
+    'gestao.settings.group.company': 'Empresa',
+    'gestao.settings.group.teamAccess': 'Equipo y acceso',
+    'gestao.settings.group.operation': 'Operación',
+    'gestao.settings.group.communication': 'Comunicación',
+    'gestao.settings.group.docsIntegrations': 'Documentos e integraciones',
+
+    // Gestión — ítems de Configuración
+    'gestao.settings.item.company.title': 'Empresa',
+    'gestao.settings.item.company.subtitle':
+        'Datos de registro e identidad del comercio',
+    'gestao.settings.item.regionalization.title': 'Regionalización',
+    'gestao.settings.item.regionalization.subtitle':
+        'Idioma, moneda, país y formatos locales',
+    'gestao.settings.item.users.title': 'Usuarios y permisos',
+    'gestao.settings.item.users.subtitle':
+        'Accesos, perfiles y seguridad del equipo',
+    'gestao.settings.item.procedures.title': 'Procedimientos',
+    'gestao.settings.item.procedures.subtitle':
+        'Guías para ventas, servicios y entregas',
+    'gestao.settings.item.notifications.title': 'Notificaciones',
+    'gestao.settings.item.notifications.subtitle':
+        'Eventos recibidos y alertas del sistema',
+    'gestao.settings.item.pdfTemplates.title': 'Plantillas PDF',
+    'gestao.settings.item.pdfTemplates.subtitle':
+        'Presupuestos, OS, recibos y documentos',
+    'gestao.settings.item.integrations.title': 'Integraciones',
+    'gestao.settings.item.integrations.subtitle':
+        'Servicios externos y automatizaciones',
+
+    // Gestión — badges y encabezado admin
+    'gestao.settings.badge.experimental': 'Experimental',
+    'gestao.settings.badge.comingSoon': 'Próximamente',
+    'gestao.settings.adminHeader.title': 'Configuración de la empresa',
+    'gestao.featureInProgress': 'Flujo móvil en evolución.',
   },
 };

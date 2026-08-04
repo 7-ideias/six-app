@@ -25,6 +25,8 @@ Backend:
 * Priorizar código simples, limpo e sustentável.
 * Não misturar refatorações grandes com correções pontuais.
 * Como Flutter Web, Android e iOS compartilham a mesma base, requests, models, services e clients devem ficar em camada reutilizável.
+* Compartilhamento entre Web e Mobile deve parar na camada reutilizável de backend/domínio/estado quando aplicável. Não reaproveitar telas, widgets de tela inteira ou conteúdo visual principal por meio de `embedded`, wrappers, flags de plataforma ou condicionais para produzir versões Web e Mobile.
+* Web e Mobile devem ter arquivos de tela próprios e composição visual própria, mesmo quando consumirem o mesmo endpoint, model, mapper, service ou provider.
 * Evitar lógica HTTP diretamente dentro de telas.
 * Evitar duplicar chamadas entre web e mobile.
 * Movimento deve comunicar estado, prioridade, feedback de ação ou descoberta de conteúdo escondido, como listas horizontais roláveis.
@@ -33,6 +35,8 @@ Backend:
 
 * Manter separação entre tela, controller/service, models e componentes reutilizáveis.
 * Requests, models, services e clients devem ficar em camada reutilizável.
+* Telas e fluxos visuais devem ser específicos por plataforma: uma tela Web não deve ser embrulhada por uma tela Mobile, e uma tela Mobile não deve ser usada dentro de modal/página Web.
+* Componentes compartilhados só são aceitáveis quando forem átomos ou utilitários neutros de design system, sem definir a estrutura principal da jornada. Cards, formulários extensos, conteúdos completos de configuração e dashboards devem ter composição Web e Mobile separadas.
 * Evitar lógica de negócio pesada dentro de widgets.
 * Evitar chamadas HTTP diretamente em telas.
 * Evitar duplicação de chamadas entre web, Android e iOS.
@@ -107,6 +111,8 @@ Backend:
 
 Toda alteração em telas mobile deve seguir uma abordagem mobile-first real, sem reaproveitar diretamente padrões visuais de web ou componentes padrão que prejudiquem a experiência.
 
+É proibido implementar tela mobile como wrapper de conteúdo Web compartilhado. Reaproveitamento permitido: endpoint, ApiClient, requests/responses, models, mappers, services, providers/controladores de regra não visual e helpers de formatação. Reaproveitamento não permitido: tela completa, conteúdo principal de tela, formulário grande de configuração, dashboard, modal Web adaptado, widget com parâmetro `embedded`/`isMobile`/`isWeb` para mudar a mesma árvore visual entre plataformas.
+
 ### Componentes de seleção no mobile
 
 Em telas mobile, evitar o uso direto de componentes padrão que abrem listas ou modais com aparência genérica de Android/Material quando isso causar quebra visual ou experiência ruim.
@@ -164,6 +170,7 @@ Antes de concluir uma alteração mobile, validar:
 
 - a versão web não foi alterada sem pedido explícito;
 - a tela mobile não reaproveita view web indevidamente;
+- a tela mobile possui composição própria, sem wrapper de tela/conteúdo Web compartilhado;
 - não houve alteração de regra de negócio;
 - não houve criação de endpoint desnecessário;
 - componentes de seleção não quebram o layout base;

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
+import '../../l10n/six_i18n.dart';
+import '../../providers/locale_settings_provider.dart';
 import '../components/web_dashboard_widgets.dart';
 import 'colaborador_convite_web_body.dart';
 
@@ -28,7 +30,6 @@ class _ColaboradoresUsuarioListPageState
     extends State<ColaboradoresUsuarioListPage> {
   late final ColaboradorUsuarioApiClient _api;
   final TextEditingController _search = TextEditingController();
-  final NumberFormat _number = NumberFormat.decimalPattern('pt_BR');
 
   bool _loading = false;
   String? _erro;
@@ -36,16 +37,20 @@ class _ColaboradoresUsuarioListPageState
   String _filter = '';
 
   List<ColaboradorUsuarioResumo> get _items {
-    final String term = _filter
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final String term = _filter.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
     if (term.isEmpty) return _colaboradores;
-    return _colaboradores.where((ColaboradorUsuarioResumo c) {
-      final String source = '${c.nome} ${c.nomeDeGuerra} ${c.email} ${c.celularDeAcesso}'
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9]'), '');
-      return source.contains(term);
-    }).toList(growable: false);
+    return _colaboradores
+        .where((ColaboradorUsuarioResumo c) {
+          final String source =
+              '${c.nome} ${c.nomeDeGuerra} ${c.email} ${c.celularDeAcesso}'
+                  .toLowerCase()
+                  .replaceAll(RegExp(r'[^a-z0-9]'), '');
+          return source.contains(term);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -85,7 +90,10 @@ class _ColaboradoresUsuarioListPageState
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _erro = 'Não foi possível carregar a lista de colaboradores.';
+        _erro = _t(
+          'colaboradores.loadListError',
+          'Não foi possível carregar a lista de colaboradores.',
+        );
       });
     }
   }
@@ -93,14 +101,49 @@ class _ColaboradoresUsuarioListPageState
   String _message(int code) {
     switch (code) {
       case 400:
-        return 'Dados inválidos ou empresa não informada.';
+        return _t(
+          'colaboradores.invalidCompanyData',
+          'Dados inválidos ou empresa não informada.',
+        );
       case 401:
-        return 'Sessão expirada. Faça login novamente.';
+        return _t(
+          'auth.sessionExpiredLoginAgain',
+          'Sessão expirada. Faça login novamente.',
+        );
       case 403:
-        return 'Usuário sem vínculo com a empresa.';
+        return _t(
+          'colaboradores.userWithoutCompanyLink',
+          'Usuário sem vínculo com a empresa.',
+        );
       default:
-        return 'Erro ao carregar colaboradores (HTTP $code).';
+        return _t(
+          'colaboradores.loadHttpError',
+          'Erro ao carregar colaboradores (HTTP $code).',
+        );
     }
+  }
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
+
+  String _formatCount(num value) {
+    final String separator =
+        context.read<LocaleSettingsProvider>().thousandSeparator;
+    final int rounded = value.round();
+    final String digits = rounded.abs().toString();
+    if (separator.isEmpty || digits.length <= 3) {
+      return '${rounded < 0 ? '-' : ''}$digits';
+    }
+
+    final StringBuffer buffer = StringBuffer();
+    for (int index = 0; index < digits.length; index += 1) {
+      final int remaining = digits.length - index;
+      buffer.write(digits[index]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(separator);
+      }
+    }
+
+    return '${rounded < 0 ? '-' : ''}$buffer';
   }
 
   Future<void> _openNovoColaborador() async {
@@ -111,9 +154,14 @@ class _ColaboradoresUsuarioListPageState
         final Size size = MediaQuery.of(dialogContext).size;
         return _EscCloseScope(
           child: Dialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 24,
+            ),
             clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
             child: SizedBox(
               width: size.width * 0.78,
               height: size.height * 0.84,
@@ -131,22 +179,24 @@ class _ColaboradoresUsuarioListPageState
 
   Future<void> _openEditar(ColaboradorUsuarioResumo resumo) async {
     try {
-      final ColaboradorUsuarioDetalhe detalhe =
-          await _api.buscarColaborador(resumo.idUnicoPessoal);
+      final ColaboradorUsuarioDetalhe detalhe = await _api.buscarColaborador(
+        resumo.idUnicoPessoal,
+      );
       if (!mounted) return;
 
-      final Map<String, dynamic>? payload = await showDialog<Map<String, dynamic>>(
-        context: context,
-        barrierDismissible: true,
-        builder: (BuildContext dialogContext) {
-          return _EscCloseScope(
-            child: _EditarColaboradorDialog(
-              resumo: resumo,
-              detalhe: detalhe,
-            ),
+      final Map<String, dynamic>? payload =
+          await showDialog<Map<String, dynamic>>(
+            context: context,
+            barrierDismissible: true,
+            builder: (BuildContext dialogContext) {
+              return _EscCloseScope(
+                child: _EditarColaboradorDialog(
+                  resumo: resumo,
+                  detalhe: detalhe,
+                ),
+              );
+            },
           );
-        },
-      );
 
       if (payload == null) {
         return;
@@ -155,8 +205,13 @@ class _ColaboradoresUsuarioListPageState
       await _api.editarColaborador(payload);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Colaborador atualizado com sucesso.'),
+        SnackBar(
+          content: Text(
+            _t(
+              'colaboradores.updatedSuccessfully',
+              'Colaborador atualizado com sucesso.',
+            ),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -182,15 +237,15 @@ class _ColaboradoresUsuarioListPageState
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleSettingsProvider>();
+
     final Widget content = Column(
-      children: <Widget>[
-        _header(),
-        Expanded(child: _body()),
-      ],
+      children: <Widget>[_header(), Expanded(child: _body())],
     );
-    final Widget closeAwareContent = widget.onBack == null
-        ? content
-        : _EscCloseScope(onEscape: widget.onBack, child: content);
+    final Widget closeAwareContent =
+        widget.onBack == null
+            ? content
+            : _EscCloseScope(onEscape: widget.onBack, child: content);
 
     if (widget.embedded) {
       return Material(
@@ -208,20 +263,22 @@ class _ColaboradoresUsuarioListPageState
   Widget _header() {
     return SixWebDashboardHeader(
       icon: Icons.badge_outlined,
-      title: 'Colaboradores',
-      subtitle:
-          'Gestão de colaboradores, convites, contatos e permissões de acesso por comércio.',
+      title: _t('colaboradores.title', 'Colaboradores'),
+      subtitle: _t(
+        'colaboradores.webSubtitle',
+        'Gestão de colaboradores, convites, contatos e permissões de acesso por comércio.',
+      ),
       onBack: widget.onBack,
       actions: <Widget>[
         OutlinedButton.icon(
           onPressed: _loading ? null : _reload,
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Atualizar'),
+          label: Text(_t('common.refresh', 'Atualizar')),
         ),
         FilledButton.icon(
           onPressed: _loading ? null : _openNovoColaborador,
           icon: const Icon(Icons.group_add_outlined),
-          label: const Text('Novo colaborador'),
+          label: Text(_t('colaboradores.newCollaborator', 'Novo colaborador')),
         ),
       ],
     );
@@ -262,14 +319,16 @@ class _ColaboradoresUsuarioListPageState
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      'Colaboradores encontrados',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w900),
+                      _t(
+                        'colaboradores.foundCollaborators',
+                        'Colaboradores encontrados',
+                      ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                  Chip(label: Text('${_items.length}')),
+                  Chip(label: Text(_formatCount(_items.length))),
                 ],
               ),
               const SizedBox(height: 12),
@@ -282,15 +341,47 @@ class _ColaboradoresUsuarioListPageState
   }
 
   Widget _kpis(bool compact) {
-    final int comEmail = _colaboradores.where((ColaboradorUsuarioResumo c) => c.email.trim().isNotEmpty).length;
-    final int comCelular = _colaboradores.where((ColaboradorUsuarioResumo c) => c.celularDeAcesso.trim().isNotEmpty).length;
-    final int semNome = _colaboradores.where((ColaboradorUsuarioResumo c) => c.nome.trim().isEmpty).length;
+    final int comEmail =
+        _colaboradores
+            .where((ColaboradorUsuarioResumo c) => c.email.trim().isNotEmpty)
+            .length;
+    final int comCelular =
+        _colaboradores
+            .where(
+              (ColaboradorUsuarioResumo c) =>
+                  c.celularDeAcesso.trim().isNotEmpty,
+            )
+            .length;
+    final int semNome =
+        _colaboradores
+            .where((ColaboradorUsuarioResumo c) => c.nome.trim().isEmpty)
+            .length;
 
     final List<_Metric> metrics = <_Metric>[
-      _Metric(Icons.groups_2_outlined, 'Colaboradores cadastrados', _colaboradores.length.toDouble()),
-      _Metric(Icons.alternate_email_rounded, 'Com e-mail', comEmail.toDouble()),
-      _Metric(Icons.phone_iphone_rounded, 'Com celular', comCelular.toDouble()),
-      _Metric(Icons.manage_accounts_outlined, 'Cadastro incompleto', semNome.toDouble(), semNome > 0),
+      _Metric(
+        Icons.groups_2_outlined,
+        _t(
+          'colaboradores.registeredCollaborators',
+          'Colaboradores cadastrados',
+        ),
+        _colaboradores.length.toDouble(),
+      ),
+      _Metric(
+        Icons.alternate_email_rounded,
+        _t('colaboradores.withEmail', 'Com e-mail'),
+        comEmail.toDouble(),
+      ),
+      _Metric(
+        Icons.phone_iphone_rounded,
+        _t('colaboradores.withPhone', 'Com celular'),
+        comCelular.toDouble(),
+      ),
+      _Metric(
+        Icons.manage_accounts_outlined,
+        _t('colaboradores.incompleteRegistration', 'Cadastro incompleto'),
+        semNome.toDouble(),
+        semNome > 0,
+      ),
     ];
 
     return GridView.builder(
@@ -309,7 +400,7 @@ class _ColaboradoresUsuarioListPageState
           icon: metric.icon,
           label: metric.label,
           value: metric.value,
-          formatter: (double value) => _number.format(value.round()),
+          formatter: (double value) => _formatCount(value.round()),
           highlight: metric.highlight,
         );
       },
@@ -318,24 +409,32 @@ class _ColaboradoresUsuarioListPageState
 
   Widget _searchSection() {
     return SixWebSectionCard(
-      title: 'Busca e filtros',
-      subtitle: 'Encontre rapidamente por nome, e-mail, celular ou apelido.',
+      title: _t('colaboradores.searchAndFilters', 'Busca e filtros'),
+      subtitle: _t(
+        'colaboradores.searchAndFiltersSubtitle',
+        'Encontre rapidamente por nome, e-mail, celular ou apelido.',
+      ),
       icon: Icons.search_rounded,
       child: TextField(
         controller: _search,
         onChanged: (String value) => setState(() => _filter = value),
         decoration: InputDecoration(
-          hintText: 'Buscar nome, e-mail, celular ou apelido...',
+          hintText: _t(
+            'colaboradores.searchNameEmailPhoneNickname',
+            'Buscar nome, e-mail, celular ou apelido...',
+          ),
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: _search.text.isEmpty
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    _search.clear();
-                    setState(() => _filter = '');
-                  },
-                ),
+          suffixIcon:
+              _search.text.isEmpty
+                  ? null
+                  : IconButton(
+                    tooltip: _t('common.clear', 'Limpar'),
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      _search.clear();
+                      setState(() => _filter = '');
+                    },
+                  ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
@@ -357,7 +456,9 @@ class _ColaboradoresUsuarioListPageState
                 children: <Widget>[
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: theme.colorScheme.primary.withOpacity(0.10),
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.10,
+                    ),
                     child: Text(
                       _initials(colaborador.nome),
                       style: TextStyle(
@@ -375,30 +476,60 @@ class _ColaboradoresUsuarioListPageState
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                colaborador.nome.isEmpty ? 'Colaborador sem nome' : colaborador.nome,
+                                colaborador.nome.isEmpty
+                                    ? _t(
+                                      'colaboradores.unnamedCollaborator',
+                                      'Colaborador sem nome',
+                                    )
+                                    : colaborador.nome,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
                             ),
-                            _status('Ativo', Colors.green.shade700),
+                            _status(
+                              _t('common.active', 'Ativo'),
+                              Colors.green.shade700,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          colaborador.nomeDeGuerra.isEmpty ? 'Sem nome de guerra' : colaborador.nomeDeGuerra,
+                          colaborador.nomeDeGuerra.isEmpty
+                              ? _t(
+                                'colaboradores.noNickname',
+                                'Sem nome de guerra',
+                              )
+                              : colaborador.nomeDeGuerra,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: <Widget>[
-                            _info(Icons.mail_outline, colaborador.email.isEmpty ? 'Sem e-mail' : colaborador.email),
-                            _info(Icons.phone_outlined, colaborador.celularDeAcesso.isEmpty ? 'Sem celular' : colaborador.celularDeAcesso),
-                            _info(Icons.badge_outlined, colaborador.idUnicoPessoal),
+                            _info(
+                              Icons.mail_outline,
+                              colaborador.email.isEmpty
+                                  ? _t('colaboradores.noEmail', 'Sem e-mail')
+                                  : colaborador.email,
+                            ),
+                            _info(
+                              Icons.phone_outlined,
+                              colaborador.celularDeAcesso.isEmpty
+                                  ? _t('colaboradores.noPhone', 'Sem celular')
+                                  : colaborador.celularDeAcesso,
+                            ),
+                            _info(
+                              Icons.badge_outlined,
+                              colaborador.idUnicoPessoal,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -409,33 +540,40 @@ class _ColaboradoresUsuarioListPageState
                 ],
               );
 
-              final Widget buttons = compact
-                  ? Row(
-                      children: <Widget>[
-                        Expanded(child: _detailButton(colaborador)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _editButton(colaborador)),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        _detailButton(colaborador),
-                        const SizedBox(height: 10),
-                        _editButton(colaborador),
-                      ],
-                    );
+              final Widget buttons =
+                  compact
+                      ? Row(
+                        children: <Widget>[
+                          Expanded(child: _detailButton(colaborador)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _editButton(colaborador)),
+                        ],
+                      )
+                      : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          _detailButton(colaborador),
+                          const SizedBox(height: 10),
+                          _editButton(colaborador),
+                        ],
+                      );
 
               return compact
-                  ? Column(children: <Widget>[data, const SizedBox(height: 14), buttons])
+                  ? Column(
+                    children: <Widget>[
+                      data,
+                      const SizedBox(height: 14),
+                      buttons,
+                    ],
+                  )
                   : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(child: data),
-                        const SizedBox(width: 16),
-                        SizedBox(width: 210, child: buttons),
-                      ],
-                    );
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: data),
+                      const SizedBox(width: 16),
+                      SizedBox(width: 210, child: buttons),
+                    ],
+                  );
             },
           ),
         ),
@@ -447,7 +585,7 @@ class _ColaboradoresUsuarioListPageState
     return OutlinedButton.icon(
       onPressed: () => _showDetails(colaborador),
       icon: const Icon(Icons.info_outline_rounded, size: 18),
-      label: const Text('Resumo'),
+      label: Text(_t('colaboradores.summary', 'Resumo')),
     );
   }
 
@@ -455,7 +593,7 @@ class _ColaboradoresUsuarioListPageState
     return FilledButton.icon(
       onPressed: () => _openEditar(colaborador),
       icon: const Icon(Icons.edit_outlined, size: 18),
-      label: const Text('Editar'),
+      label: Text(_t('common.edit', 'Editar')),
     );
   }
 
@@ -465,22 +603,36 @@ class _ColaboradoresUsuarioListPageState
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.14)),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.14),
+        ),
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.admin_panel_settings_outlined, color: theme.colorScheme.primary, size: 20),
+          Icon(
+            Icons.admin_panel_settings_outlined,
+            color: theme.colorScheme.primary,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               colaborador.email.isEmpty
-                  ? 'Informe um e-mail para permitir vínculo de acesso ao sistema.'
-                  : 'Acesso controlado por convite e permissões da empresa ativa.',
+                  ? _t(
+                    'colaboradores.emailRequiredForSystemAccess',
+                    'Informe um e-mail para permitir vínculo de acesso ao sistema.',
+                  )
+                  : _t(
+                    'colaboradores.accessControlledByActiveCompany',
+                    'Acesso controlado por convite e permissões da empresa ativa.',
+                  ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -492,12 +644,16 @@ class _ColaboradoresUsuarioListPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -512,13 +668,19 @@ class _ColaboradoresUsuarioListPageState
 
   Widget _empty() {
     return SixWebSectionCard(
-      title: 'Nenhum colaborador cadastrado',
-      subtitle: 'Convide colaboradores para operar vendas, atendimento técnico e rotinas do comércio com permissões controladas.',
+      title: _t(
+        'colaboradores.noCollaboratorRegistered',
+        'Nenhum colaborador cadastrado',
+      ),
+      subtitle: _t(
+        'colaboradores.noCollaboratorRegisteredSubtitle',
+        'Convide colaboradores para operar vendas, atendimento técnico e rotinas do comércio com permissões controladas.',
+      ),
       icon: Icons.group_add_outlined,
       child: FilledButton.icon(
         onPressed: _openNovoColaborador,
         icon: const Icon(Icons.group_add_outlined),
-        label: const Text('Novo colaborador'),
+        label: Text(_t('colaboradores.newCollaborator', 'Novo colaborador')),
       ),
     );
   }
@@ -533,14 +695,18 @@ class _ColaboradoresUsuarioListPageState
             const Icon(Icons.cloud_off_rounded, size: 44),
             const SizedBox(height: 12),
             Text(
-              _erro ?? 'Não foi possível carregar os colaboradores.',
+              _erro ??
+                  _t(
+                    'colaboradores.unableToLoadCollaborators',
+                    'Não foi possível carregar os colaboradores.',
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: _reload,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Tentar novamente'),
+              label: Text(_t('common.tryAgain', 'Tentar novamente')),
             ),
           ],
         ),
@@ -554,7 +720,9 @@ class _ColaboradoresUsuarioListPageState
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.35),
+        color: Theme.of(
+          context,
+        ).colorScheme.errorContainer.withValues(alpha: 0.35),
       ),
       child: Text(message),
     );
@@ -564,27 +732,38 @@ class _ColaboradoresUsuarioListPageState
     showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => _EscCloseScope(
-        child: AlertDialog(
-          title: Text(colaborador.nome.isEmpty ? 'Colaborador' : colaborador.nome),
-          content: Text(
-            'Nome de guerra: ${colaborador.nomeDeGuerra.isEmpty ? '-' : colaborador.nomeDeGuerra}\n'
-            'Celular: ${colaborador.celularDeAcesso.isEmpty ? '-' : colaborador.celularDeAcesso}\n'
-            'E-mail: ${colaborador.email.isEmpty ? '-' : colaborador.email}\n'
-            'Identificador: ${colaborador.idUnicoPessoal}',
+      builder:
+          (_) => _EscCloseScope(
+            child: AlertDialog(
+              title: Text(
+                colaborador.nome.isEmpty
+                    ? _t('colaboradores.collaborator', 'Colaborador')
+                    : colaborador.nome,
+              ),
+              content: Text(
+                '${_t('colaboradores.nickname', 'Nome de guerra')}: ${colaborador.nomeDeGuerra.isEmpty ? '-' : colaborador.nomeDeGuerra}\n'
+                '${_t('colaboradores.phone', 'Celular')}: ${colaborador.celularDeAcesso.isEmpty ? '-' : colaborador.celularDeAcesso}\n'
+                '${_t('colaboradores.email', 'E-mail')}: ${colaborador.email.isEmpty ? '-' : colaborador.email}\n'
+                '${_t('colaboradores.identifier', 'Identificador')}: ${colaborador.idUnicoPessoal}',
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(_t('common.close', 'Fechar')),
+                ),
+              ],
+            ),
           ),
-          actions: <Widget>[
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Fechar')),
-          ],
-        ),
-      ),
     );
   }
 
   String _initials(String name) {
-    final List<String> parts = name.trim().split(' ').where((String item) => item.isNotEmpty).toList();
+    final List<String> parts =
+        name.trim().split(' ').where((String item) => item.isNotEmpty).toList();
     if (parts.isEmpty) return 'CO';
-    return parts.length == 1 ? parts.first[0].toUpperCase() : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    return parts.length == 1
+        ? parts.first[0].toUpperCase()
+        : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 }
 
@@ -594,7 +773,8 @@ class _HoverableColaboradorCard extends StatefulWidget {
   final Widget child;
 
   @override
-  State<_HoverableColaboradorCard> createState() => _HoverableColaboradorCardState();
+  State<_HoverableColaboradorCard> createState() =>
+      _HoverableColaboradorCardState();
 }
 
 class _HoverableColaboradorCardState extends State<_HoverableColaboradorCard> {
@@ -613,24 +793,27 @@ class _HoverableColaboradorCardState extends State<_HoverableColaboradorCard> {
         transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _hovered
-              ? theme.colorScheme.primary.withOpacity(0.025)
-              : theme.colorScheme.surface,
+          color:
+              _hovered
+                  ? theme.colorScheme.primary.withValues(alpha: 0.025)
+                  : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: _hovered
-                ? theme.colorScheme.primary.withOpacity(0.30)
-                : theme.colorScheme.outlineVariant,
+            color:
+                _hovered
+                    ? theme.colorScheme.primary.withValues(alpha: 0.30)
+                    : theme.colorScheme.outlineVariant,
           ),
-          boxShadow: _hovered
-              ? <BoxShadow>[
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withOpacity(0.10),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : const <BoxShadow>[],
+          boxShadow:
+              _hovered
+                  ? <BoxShadow>[
+                    BoxShadow(
+                      color: theme.colorScheme.shadow.withValues(alpha: 0.10),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                  : const <BoxShadow>[],
         ),
         child: widget.child,
       ),
@@ -675,16 +858,14 @@ class _EscCloseScope extends StatelessWidget {
 }
 
 class _EditarColaboradorDialog extends StatefulWidget {
-  const _EditarColaboradorDialog({
-    required this.resumo,
-    required this.detalhe,
-  });
+  const _EditarColaboradorDialog({required this.resumo, required this.detalhe});
 
   final ColaboradorUsuarioResumo resumo;
   final ColaboradorUsuarioDetalhe detalhe;
 
   @override
-  State<_EditarColaboradorDialog> createState() => _EditarColaboradorDialogState();
+  State<_EditarColaboradorDialog> createState() =>
+      _EditarColaboradorDialogState();
 }
 
 class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
@@ -703,19 +884,53 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
   @override
   void initState() {
     super.initState();
-    _nome = TextEditingController(text: widget.detalhe.nome.isNotEmpty ? widget.detalhe.nome : widget.resumo.nome);
-    _nomeDeGuerra = TextEditingController(text: widget.detalhe.nomeDeGuerra.isNotEmpty ? widget.detalhe.nomeDeGuerra : widget.resumo.nomeDeGuerra);
-    _email = TextEditingController(text: widget.detalhe.email.isNotEmpty ? widget.detalhe.email : widget.resumo.email);
-    _celular = TextEditingController(text: widget.detalhe.celularDeAcesso.isNotEmpty ? widget.detalhe.celularDeAcesso : widget.resumo.celularDeAcesso);
+    _nome = TextEditingController(
+      text:
+          widget.detalhe.nome.isNotEmpty
+              ? widget.detalhe.nome
+              : widget.resumo.nome,
+    );
+    _nomeDeGuerra = TextEditingController(
+      text:
+          widget.detalhe.nomeDeGuerra.isNotEmpty
+              ? widget.detalhe.nomeDeGuerra
+              : widget.resumo.nomeDeGuerra,
+    );
+    _email = TextEditingController(
+      text:
+          widget.detalhe.email.isNotEmpty
+              ? widget.detalhe.email
+              : widget.resumo.email,
+    );
+    _celular = TextEditingController(
+      text:
+          widget.detalhe.celularDeAcesso.isNotEmpty
+              ? widget.detalhe.celularDeAcesso
+              : widget.resumo.celularDeAcesso,
+    );
 
     final Map<String, dynamic> json = widget.detalhe.toJson();
-    final Map<String, dynamic> autorizacoes = _ensureMap(json['objAutorizacoes']);
+    final Map<String, dynamic> autorizacoes = _ensureMap(
+      json['objAutorizacoes'],
+    );
     _podeVender = _ensureMap(autorizacoes['objVendasPode'])['fazVenda'] == true;
-    _podeServico = _ensureMap(autorizacoes['objAssistenciaTecnicaPode'])['lancaServico'] == true;
-    _podeEditarCliente = _ensureMap(autorizacoes['objClientesPode'])['podeEditarCliente'] == true;
-    _podeRelatorio = _ensureMap(autorizacoes['objRelatoriosPode'])['geraRelatorioDeVendas'] == true;
-    final Map<String, dynamic> financeiro = _ensureMap(autorizacoes['objLancamentosFinanceirosPode']);
-    _podeFinanceiro = financeiro['podeReceberNoCaixa'] == true || financeiro['podeVerQuantoVendeu'] == true;
+    _podeServico =
+        _ensureMap(autorizacoes['objAssistenciaTecnicaPode'])['lancaServico'] ==
+        true;
+    _podeEditarCliente =
+        _ensureMap(autorizacoes['objClientesPode'])['podeEditarCliente'] ==
+        true;
+    _podeRelatorio =
+        _ensureMap(
+          autorizacoes['objRelatoriosPode'],
+        )['geraRelatorioDeVendas'] ==
+        true;
+    final Map<String, dynamic> financeiro = _ensureMap(
+      autorizacoes['objLancamentosFinanceirosPode'],
+    );
+    _podeFinanceiro =
+        financeiro['podeReceberNoCaixa'] == true ||
+        financeiro['podeVerQuantoVendeu'] == true;
   }
 
   @override
@@ -729,7 +944,9 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
 
   Map<String, dynamic> _payload() {
     final Map<String, dynamic> json = widget.detalhe.toJson();
-    final Map<String, dynamic> info = _ensureMap(json['objInformacoesDoCadastro']);
+    final Map<String, dynamic> info = _ensureMap(
+      json['objInformacoesDoCadastro'],
+    );
     info['idUnicoDoUsuario'] = widget.resumo.idUnicoPessoal;
     json['objInformacoesDoCadastro'] = info;
     json['celularDeAcesso'] = _celular.text.trim();
@@ -743,9 +960,13 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     pessoa['senha'] = null;
     json['objPessoa'] = pessoa;
 
-    final Map<String, dynamic> autorizacoes = _ensureMap(json['objAutorizacoes']);
-    autorizacoes['podeCadastrarProduto'] = autorizacoes['podeCadastrarProduto'] ?? false;
-    autorizacoes['podeFazerDevolucao'] = autorizacoes['podeFazerDevolucao'] ?? false;
+    final Map<String, dynamic> autorizacoes = _ensureMap(
+      json['objAutorizacoes'],
+    );
+    autorizacoes['podeCadastrarProduto'] =
+        autorizacoes['podeCadastrarProduto'] ?? false;
+    autorizacoes['podeFazerDevolucao'] =
+        autorizacoes['podeFazerDevolucao'] ?? false;
     autorizacoes['objVendasPode'] = <String, dynamic>{
       ..._ensureMap(autorizacoes['objVendasPode']),
       'fazVenda': _podeVender,
@@ -771,11 +992,13 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     return json;
   }
 
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return AlertDialog(
-      title: const Text('Editar colaborador'),
+      title: Text(_t('colaboradores.editCollaborator', 'Editar colaborador')),
       content: SizedBox(
         width: 680,
         child: Form(
@@ -793,22 +1016,38 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
                       width: 310,
                       child: TextFormField(
                         controller: _nome,
-                        decoration: _input('Nome', Icons.person_outline),
-                        validator: (String? value) => value == null || value.trim().isEmpty ? 'Informe o nome.' : null,
+                        decoration: _input(
+                          _t('colaboradores.name', 'Nome'),
+                          Icons.person_outline,
+                        ),
+                        validator:
+                            (String? value) =>
+                                value == null || value.trim().isEmpty
+                                    ? _t(
+                                      'colaboradores.nameRequired',
+                                      'Informe o nome.',
+                                    )
+                                    : null,
                       ),
                     ),
                     SizedBox(
                       width: 310,
                       child: TextFormField(
                         controller: _nomeDeGuerra,
-                        decoration: _input('Nome de guerra', Icons.badge_outlined),
+                        decoration: _input(
+                          _t('colaboradores.nickname', 'Nome de guerra'),
+                          Icons.badge_outlined,
+                        ),
                       ),
                     ),
                     SizedBox(
                       width: 310,
                       child: TextFormField(
                         controller: _email,
-                        decoration: _input('E-mail', Icons.email_outlined),
+                        decoration: _input(
+                          _t('colaboradores.email', 'E-mail'),
+                          Icons.email_outlined,
+                        ),
                         keyboardType: TextInputType.emailAddress,
                       ),
                     ),
@@ -816,33 +1055,90 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
                       width: 310,
                       child: TextFormField(
                         controller: _celular,
-                        decoration: _input('Celular', Icons.phone_outlined),
+                        decoration: _input(
+                          _t('colaboradores.phone', 'Celular'),
+                          Icons.phone_outlined,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 18),
-                Text('Permissões operacionais', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                Text(
+                  _t(
+                    'colaboradores.operationalPermissions',
+                    'Permissões operacionais',
+                  ),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 const SizedBox(height: 10),
-                _switchTile('Vendas', 'Pode realizar vendas no comércio.', _podeVender, (bool value) => setState(() => _podeVender = value)),
-                _switchTile('Assistência técnica', 'Pode lançar serviços técnicos.', _podeServico, (bool value) => setState(() => _podeServico = value)),
-                _switchTile('Clientes', 'Pode editar dados de clientes.', _podeEditarCliente, (bool value) => setState(() => _podeEditarCliente = value)),
-                _switchTile('Relatórios', 'Pode gerar relatórios de vendas.', _podeRelatorio, (bool value) => setState(() => _podeRelatorio = value)),
-                _switchTile('Financeiro', 'Pode acessar recebimentos e valores vendidos.', _podeFinanceiro, (bool value) => setState(() => _podeFinanceiro = value)),
+                _switchTile(
+                  _t('colaboradores.sales', 'Vendas'),
+                  _t(
+                    'colaboradores.canMakeSalesInBusiness',
+                    'Pode realizar vendas no comércio.',
+                  ),
+                  _podeVender,
+                  (bool value) => setState(() => _podeVender = value),
+                ),
+                _switchTile(
+                  _t(
+                    'colaboradores.technicalAssistance',
+                    'Assistência técnica',
+                  ),
+                  _t(
+                    'colaboradores.canCreateTechnicalWork',
+                    'Pode lançar serviços técnicos.',
+                  ),
+                  _podeServico,
+                  (bool value) => setState(() => _podeServico = value),
+                ),
+                _switchTile(
+                  _t('colaboradores.customers', 'Clientes'),
+                  _t(
+                    'colaboradores.canEditCustomerData',
+                    'Pode editar dados de clientes.',
+                  ),
+                  _podeEditarCliente,
+                  (bool value) => setState(() => _podeEditarCliente = value),
+                ),
+                _switchTile(
+                  _t('colaboradores.reports', 'Relatórios'),
+                  _t(
+                    'colaboradores.canGenerateSalesReports',
+                    'Pode gerar relatórios de vendas.',
+                  ),
+                  _podeRelatorio,
+                  (bool value) => setState(() => _podeRelatorio = value),
+                ),
+                _switchTile(
+                  _t('colaboradores.finance', 'Financeiro'),
+                  _t(
+                    'colaboradores.canAccessReceivablesAndSalesAmounts',
+                    'Pode acessar recebimentos e valores vendidos.',
+                  ),
+                  _podeFinanceiro,
+                  (bool value) => setState(() => _podeFinanceiro = value),
+                ),
               ],
             ),
           ),
         ),
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(_t('common.cancel', 'Cancelar')),
+        ),
         FilledButton.icon(
           onPressed: () {
             if (!_formKey.currentState!.validate()) return;
             Navigator.of(context).pop(_payload());
           },
           icon: const Icon(Icons.save_outlined),
-          label: const Text('Salvar alterações'),
+          label: Text(_t('common.saveChanges', 'Salvar alterações')),
         ),
       ],
     );
@@ -856,7 +1152,12 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     );
   }
 
-  Widget _switchTile(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+  Widget _switchTile(
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
       value: value,
