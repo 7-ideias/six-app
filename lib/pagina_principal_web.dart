@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:sixpos/presentation/components/dashboard_colaborador_web.dart';
-import 'package:sixpos/presentation/components/dashboard_gestao_web.dart';
+import 'package:sixpos/presentation/components/dashboard_inicio_web.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
@@ -27,7 +26,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
 import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
@@ -123,7 +122,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _carregandoSessaoCaixaPdv = false;
   bool _erroSessaoCaixaPdv = false;
   CaixaSessao? _sessaoCaixaPdv;
-  int _dashboardInicioSelecionado = 0;
   ClienteUsuario? _clienteIdentificado;
 
   final TextEditingController _codigoBarrasController = TextEditingController();
@@ -2547,7 +2545,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     return Expanded(
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final ThemeData theme = Theme.of(context);
           final bool compact = constraints.maxWidth < 860;
           final EdgeInsets padding = EdgeInsets.fromLTRB(
             compact ? 12 : 24,
@@ -2558,82 +2555,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
           return Padding(
             padding: padding,
-            child: Container(
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(compact ? 18 : 22),
-                border: Border.all(color: theme.colorScheme.outlineVariant),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.035),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: <Widget>[
-                  SixWebDashboardHeader(
-                    icon: Icons.dashboard_customize_outlined,
-                    title: context.t(
-                      'paginaPrincipalWeb.homeTitle',
-                      fallback: 'Início',
-                    ),
-                    subtitle: context.t(
-                      'paginaPrincipalWeb.homeSubtitle',
-                      fallback:
-                          'Acompanhe indicadores e acesse rapidamente os principais fluxos do comércio.',
-                    ),
-                    actions: <Widget>[
-                      _buildInicioDashboardTabs(compact: compact),
-                      FilledButton.icon(
-                        onPressed: _iniciarVenda,
-                        icon: const Icon(Icons.point_of_sale_rounded),
-                        label: Text(
-                          context.t(
-                            'paginaPrincipalWeb.openPdvAction',
-                            fallback: 'Frente de caixa',
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
-                          });
-                        },
-                        icon: const Icon(Icons.handyman_outlined),
-                        label: Text(
-                          context.t(
-                            'paginaPrincipalWeb.openServiceAction',
-                            fallback: 'Atendimento técnico',
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      child: SizedBox.expand(
-                        key: ValueKey<int>(_dashboardInicioSelecionado),
-                        child: SixWebEntry(
-                          order: 1,
-                          child:
-                              _dashboardInicioSelecionado == 0
-                                  ? const DashboardGestaoWeb()
-                                  : const DashboardColaboradorWeb(),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: DashboardInicioWeb(
+              compact: compact,
+              onIniciarVenda: _iniciarVenda,
+              onAbrirAtendimentoTecnico: () {
+                setState(() {
+                  _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
+                });
+              },
             ),
           );
         },
@@ -2642,96 +2571,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   String labelAgendaFinanceira() => 'Agenda Financeira';
-
-  Widget _buildInicioDashboardTabs({required bool compact}) {
-    final ThemeData theme = Theme.of(context);
-
-    return Container(
-      constraints: BoxConstraints(maxWidth: compact ? 320 : 360),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          _buildInicioDashboardTab(
-            label: context.t(
-              'paginaPrincipalWeb.managementTab',
-              fallback: 'Gestão',
-            ),
-            icon: Icons.insights_rounded,
-            selected: _dashboardInicioSelecionado == 0,
-            onTap: () => setState(() => _dashboardInicioSelecionado = 0),
-          ),
-          _buildInicioDashboardTab(
-            label: context.t('paginaPrincipalWeb.teamTab', fallback: 'Equipe'),
-            icon: Icons.groups_2_outlined,
-            selected: _dashboardInicioSelecionado == 1,
-            onTap: () => setState(() => _dashboardInicioSelecionado = 1),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInicioDashboardTab({
-    required String label,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final ThemeData theme = Theme.of(context);
-    final Color foreground =
-        selected
-            ? theme.colorScheme.onPrimary
-            : theme.colorScheme.onSurfaceVariant;
-
-    return Flexible(
-      child: Tooltip(
-        message: label,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: selected ? null : onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color:
-                    selected ? theme.colorScheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Icon(icon, size: 16, color: foreground),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: foreground,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

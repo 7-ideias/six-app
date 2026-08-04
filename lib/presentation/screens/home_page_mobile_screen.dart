@@ -1,29 +1,23 @@
 import 'dart:io';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
-import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
-import 'package:sixpos/data/models/operational_procedure_models.dart';
-import 'package:sixpos/data/models/tela_inicial_models.dart';
-import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
+import 'package:sixpos/data/models/dashboard_inicio_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
-import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
-import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
+import 'package:sixpos/providers/dashboard_inicio_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
-import 'catalogo_disponivel_mobile_screen.dart';
-import 'catalogo_nao_disponivel_mobile_screen.dart';
 
 class HomePageMobile extends StatefulWidget {
   const HomePageMobile({super.key, required this.title});
@@ -43,32 +37,34 @@ class _HomePageMobileState extends State<HomePageMobile> {
   static const Color _mutedTextColor = SixMobilePalette.mutedText;
   static const Color _titleTextColor = SixMobilePalette.titleText;
 
+  // Formatters
+  final NumberFormat _compactFmt = NumberFormat.compactCurrency(
+    locale: 'pt_BR',
+    symbol: 'R\$',
+    decimalDigits: 1,
+  );
+  final DateFormat _dateFmt = DateFormat('dd/MM', 'pt_BR');
+
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
-  final OperationalProcedureFlowCoordinator _procedureCoordinator =
-      OperationalProcedureFlowCoordinator();
-  final TelaInicialWebApiClient _telaInicialApiClient =
-      HttpResumoDaEmpresaApiClient(canal: 'mobile');
-
-  TelaInicialModel? _resumoTelaInicial;
-  bool _carregandoResumo = true;
-  String? _erroResumo;
-  bool _openingNewSale = false;
+  final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider();
 
   @override
   void initState() {
     super.initState();
     _notificacaoService.addListener(_onNotificacoesChanged);
+    _dashboardProvider.addListener(_onDashboardChanged);
     if (!kIsWeb) {
       _configurarWebSocketMobile();
-      _carregarResumoInicio();
     }
   }
 
   @override
   void dispose() {
     _notificacaoService.removeListener(_onNotificacoesChanged);
+    _dashboardProvider.removeListener(_onDashboardChanged);
+    _dashboardProvider.dispose();
     if (!kIsWeb) {
       onMensagemRecebida = null;
       onStompConectado = null;
@@ -80,6 +76,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   void _onNotificacoesChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _onDashboardChanged() {
     if (!mounted) return;
     setState(() {});
   }
@@ -103,29 +104,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
     connectStomp();
   }
 
-  Future<void> _carregarResumoInicio() async {
-    if (mounted) {
-      setState(() {
-        _carregandoResumo = true;
-        _erroResumo = null;
-      });
-    }
-
-    try {
-      final TelaInicialModel resumo = await _telaInicialApiClient.getResumo();
-      if (!mounted) return;
-      setState(() {
-        _resumoTelaInicial = resumo;
-        _carregandoResumo = false;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _erroResumo = error.toString();
-        _carregandoResumo = false;
-      });
-      debugPrint('[HomePageMobile] Erro ao buscar resumo: $error');
-    }
+  Future<void> _onRefresh() async {
+    _dashboardProvider.reload();
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -134,14 +114,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
       setState(() => _image = File(selected.path));
     }
   }
-
-  String get _totalVendasAReceber =>
-      (_resumoTelaInicial?.totalVendasAbertas ?? 0).toString();
-
-  String get _subtituloVendasAReceber =>
-      _erroResumo == null
-          ? 'Vendas não liquidadas'
-          : 'Não foi possível atualizar agora';
 
   @override
   Widget build(BuildContext context) {
@@ -183,46 +155,56 @@ class _HomePageMobileState extends State<HomePageMobile> {
     ScrollController scrollController,
     double topInset,
   ) {
+    final DashboardInicioModel data = _dashboardProvider.data;
+    final bool loading = _dashboardProvider.isLoading;
+
     return SafeArea(
       top: false,
       child: RefreshIndicator(
-        onRefresh: _carregarResumoInicio,
+        onRefresh: _onRefresh,
         child: ListView(
           controller: scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
           children: [
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 60),
-              child: _buildExecutiveSummary(),
+              delay: const Duration(milliseconds: 80),
+              child: _buildPeriodFilter(),
             ),
             const SizedBox(height: 16),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 120),
-              child: _buildNotificationsOverviewCard(context),
+              delay: const Duration(milliseconds: 130),
+              child: _buildKpiGrid(data, loading),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 180),
-              child: _buildSectionTitle('Ações rápidas'),
+              delay: const Duration(milliseconds: 190),
+              child: _buildDashboardChart(data),
             ),
-            const SizedBox(height: 12),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 230),
-              child: _buildQuickActions(context),
-            ),
-            const SizedBox(height: 24),
+            if (data.alerts.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 240),
+                child: _buildAlertasSection(data, context),
+              ),
+            ],
+            const SizedBox(height: 16),
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 290),
-              child: _buildSectionTitle('Pendências'),
+              child: _buildUpcomingSection(data),
             ),
-            const SizedBox(height: 12),
-            ..._buildMetricTiles(context),
+            const SizedBox(height: 16),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 340),
+              child: _buildOperationsSection(data),
+            ),
           ],
         ),
       ),
     );
   }
+
+  // ─── NOTIFICATION ICON ─────────────────────────────────────────────────────
 
   Widget _buildNotificationIcon() {
     final int naoLidas = _notificacaoService.naoLidas;
@@ -266,21 +248,242 @@ class _HomePageMobileState extends State<HomePageMobile> {
     );
   }
 
-  Widget _buildExecutiveSummary() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  // ─── PERIOD FILTER ─────────────────────────────────────────────────────────
+
+  Widget _buildPeriodFilter() {
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children:
+            DashboardPeriod.values.map((DashboardPeriod period) {
+              final bool selected = _dashboardProvider.period == period;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => _dashboardProvider.setPeriod(period),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected ? _accentColor : _surfaceColor,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color:
+                            selected ? _accentColor : SixMobilePalette.border,
+                      ),
+                    ),
+                    child: Text(
+                      _periodLabel(period),
+                      style: TextStyle(
+                        color:
+                            selected
+                                ? SixMobilePalette.onPrimary
+                                : _titleTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+      ),
+    );
+  }
+
+  // ─── KPI GRID ──────────────────────────────────────────────────────────────
+
+  Widget _buildKpiGrid(DashboardInicioModel data, bool loading) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildKpiCard(
+                kpi: data.vendasRealizadas,
+                label: 'Vendas',
+                loading: loading,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildKpiCard(
+                kpi: data.valorRecebido,
+                label: 'Recebido',
+                loading: loading,
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _buildKpiCard(
+                kpi: data.valorAReceber,
+                label: 'A receber',
+                loading: loading,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildKpiCard(
+                kpi: data.resultado,
+                label: 'Resultado',
+                loading: loading,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKpiCard({
+    required DashboardKpi kpi,
+    required String label,
+    required bool loading,
+  }) {
+    final Color borderColor =
+        kpi.highlight
+            ? SixMobilePalette.highlightedBorder
+            : SixMobilePalette.border;
+    final Color iconBg =
+        kpi.highlight
+            ? const Color(0xFFEFF6FF)
+            : SixMobilePalette.softNeutralSurface;
+
+    return AnimatedOpacity(
+      opacity: loading ? 0.55 : 1.0,
+      duration: const Duration(milliseconds: 250),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _surfaceColor,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: borderColor,
+            width: kpi.highlight ? 1.5 : 1.0,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A000000),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(kpi.icon, size: 17, color: _accentColor),
+                ),
+                const Spacer(),
+                _buildDeltaBadge(kpi),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TweenAnimationBuilder<double>(
+              key: ValueKey<String>('kpi-$label-${kpi.value}'),
+              tween: Tween<double>(begin: 0, end: kpi.value),
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeOutCubic,
+              builder: (BuildContext ctx, double v, Widget? _) {
+                return Text(
+                  _compactFmt.format(v),
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: const TextStyle(
+                color: _mutedTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeltaBadge(DashboardKpi kpi) {
+    final double? delta = kpi.deltaPercent;
+    final bool? positive = kpi.isPositive;
+    if (delta == null || positive == null) return const SizedBox.shrink();
+
+    final Color color =
+        positive ? const Color(0xFF16A34A) : SixMobilePalette.error;
+    final IconData arrow =
+        positive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(arrow, size: 11, color: color),
+        const SizedBox(width: 2),
+        Text(
+          '${delta.abs().toStringAsFixed(1)}%',
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── CHART ─────────────────────────────────────────────────────────────────
+
+  Widget _buildDashboardChart(DashboardInicioModel data) {
+    if (data.chartData.isEmpty) return const SizedBox.shrink();
+
+    final List<FlSpot> vendaSpots =
+        data.chartData
+            .asMap()
+            .entries
+            .map((e) => FlSpot(e.key.toDouble(), e.value.vendas))
+            .toList();
+    final List<FlSpot> recebSpots =
+        data.chartData
+            .asMap()
+            .entries
+            .map((e) => FlSpot(e.key.toDouble(), e.value.recebimentos))
+            .toList();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 10, 10),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: SixMobilePalette.border),
         boxShadow: const [
           BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 22,
-            offset: Offset(0, 12),
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -289,44 +492,491 @@ class _HomePageMobileState extends State<HomePageMobile> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.insights_rounded,
-                color: SixMobilePalette.onPrimary,
+              const Text(
+                'Evolução no período',
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
               ),
+              const Spacer(),
+              _chartLegend(_accentColor, 'Vendas', dashed: false),
               const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Hoje no Six',
-                  style: TextStyle(
-                    color: SixMobilePalette.onPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+              _chartLegend(const Color(0xFF16A34A), 'Recebido', dashed: true),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 160,
+            child: LineChart(
+              LineChartData(
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipBgColor: _surfaceColor,
+                    getTooltipItems: (List<LineBarSpot> spots) {
+                      return spots.map((LineBarSpot spot) {
+                        return LineTooltipItem(
+                          _compactFmt.format(spot.y),
+                          TextStyle(
+                            color: spot.bar.color ?? _accentColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList();
+                    },
                   ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine:
+                      (double v) => FlLine(
+                        color: SixMobilePalette.border.withValues(alpha: 0.5),
+                        strokeWidth: 1,
+                      ),
+                ),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      getTitlesWidget: (double v, TitleMeta meta) {
+                        final int idx = v.round();
+                        if (idx < 0 || idx >= data.chartData.length) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            data.chartData[idx].label,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: _mutedTextColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                lineBarsData: <LineChartBarData>[
+                  LineChartBarData(
+                    spots: vendaSpots,
+                    color: _accentColor,
+                    barWidth: 2.5,
+                    isCurved: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: _accentColor.withValues(alpha: 0.07),
+                    ),
+                  ),
+                  LineChartBarData(
+                    spots: recebSpots,
+                    color: const Color(0xFF16A34A),
+                    barWidth: 2,
+                    isCurved: true,
+                    dashArray: <int>[5, 3],
+                    dotData: const FlDotData(show: false),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chartLegend(Color color, String label, {required bool dashed}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (dashed)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 5, height: 2, color: color),
+              const SizedBox(width: 3, height: 2),
+              Container(width: 5, height: 2, color: color),
+            ],
+          )
+        else
+          Container(width: 16, height: 2.5, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: _mutedTextColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── ALERTS ────────────────────────────────────────────────────────────────
+
+  Widget _buildAlertasSection(DashboardInicioModel data, BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: SixMobilePalette.errorBorder.withValues(alpha: 0.5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  color: SixMobilePalette.error,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Atenção necessária',
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${data.alerts.length}',
+                    style: TextStyle(
+                      color: SixMobilePalette.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ...data.alerts.asMap().entries.map((entry) {
+            final int idx = entry.key;
+            final DashboardAlertItem alert = entry.value;
+            return Column(
+              children: [
+                _buildAlertRow(alert, context),
+                if (idx < data.alerts.length - 1)
+                  const Divider(height: 1, indent: 56, endIndent: 16),
+              ],
+            );
+          }),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertRow(DashboardAlertItem alert, BuildContext context) {
+    final Color color;
+    switch (alert.severity) {
+      case DashboardAlertSeverity.critical:
+        color = SixMobilePalette.error;
+      case DashboardAlertSeverity.warning:
+        color = const Color(0xFFF59E0B);
+      case DashboardAlertSeverity.info:
+        color = _accentColor;
+    }
+
+    return InkWell(
+      onTap: alert.routeHint != null ? _showFeatureInProgress : null,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 4,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    alert.titulo,
+                    style: const TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    alert.descricao,
+                    style: const TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (alert.valor != null && alert.valor! > 0) ...[
+              const SizedBox(width: 8),
+              Text(
+                _compactFmt.format(alert.valor),
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── UPCOMING ──────────────────────────────────────────────────────────────
+
+  Widget _buildUpcomingSection(DashboardInicioModel data) {
+    if (data.upcoming.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: SixMobilePalette.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Icon(Icons.upcoming_outlined, size: 18, color: _accentColor),
+                SizedBox(width: 8),
+                Text(
+                  'Próximos 7 dias',
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ...data.upcoming.asMap().entries.map((entry) {
+            final int idx = entry.key;
+            final DashboardUpcomingItem item = entry.value;
+            return Column(
+              children: [
+                _buildUpcomingRow(item),
+                if (idx < data.upcoming.length - 1)
+                  const Divider(height: 1, indent: 56, endIndent: 16),
+              ],
+            );
+          }),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingRow(DashboardUpcomingItem item) {
+    final Color color;
+    final IconData icon;
+    switch (item.tipo) {
+      case 'receber':
+        color = const Color(0xFF16A34A);
+        icon = Icons.arrow_downward_rounded;
+      case 'pagar':
+        color = SixMobilePalette.error;
+        icon = Icons.arrow_upward_rounded;
+      default:
+        color = _accentColor;
+        icon = Icons.build_circle_outlined;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.descricao,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _dateFmt.format(item.dataPrevista),
+                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          if (item.valor > 0) ...[
+            const SizedBox(width: 8),
+            Text(
+              _compactFmt.format(item.valor),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ─── OPERATIONS ────────────────────────────────────────────────────────────
+
+  Widget _buildOperationsSection(DashboardInicioModel data) {
+    final DashboardOperationSummary ops = data.operations;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: SixMobilePalette.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.business_center_outlined,
+                size: 18,
+                color: _accentColor,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Operação atual',
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildOpChip(
+                  icon: Icons.build_circle_outlined,
+                  label: 'Em andamento',
+                  count: ops.atendimentosEmAndamento,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildOpChip(
+                  icon: Icons.description_outlined,
+                  label: 'Orçamentos',
+                  count: ops.orcamentosAguardando,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Acompanhe as prioridades do atendimento sem sair do mobile.',
-            style: TextStyle(
-              color: SixMobilePalette.heroSupportingText,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
-                child: _buildSummaryPill(label: 'Período', value: 'Hoje'),
+                child: _buildOpChip(
+                  icon: Icons.inventory_2_outlined,
+                  label: 'Para retirada',
+                  count: ops.equipamentosParaRetirada,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: _buildSummaryPill(
-                  label: 'Vendas a receber',
-                  value: _totalVendasAReceber,
-                  isLoading: _carregandoResumo,
-                  hasError: _erroResumo != null,
+                child: _buildOpChip(
+                  icon: Icons.point_of_sale_outlined,
+                  label: 'Caixas abertos',
+                  count: ops.caixasAbertos,
                 ),
               ),
             ],
@@ -336,444 +986,63 @@ class _HomePageMobileState extends State<HomePageMobile> {
     );
   }
 
-  Widget _buildSummaryPill({
+  Widget _buildOpChip({
+    required IconData icon,
     required String label,
-    required String value,
-    bool isLoading = false,
-    bool hasError = false,
+    required int count,
   }) {
-    final TextStyle valueStyle = const TextStyle(
-      color: SixMobilePalette.onPrimary,
-      fontWeight: FontWeight.w800,
-    );
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0x1AFFFFFF),
-        borderRadius: BorderRadius.circular(16),
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: hasError ? const Color(0x66FCA5A5) : const Color(0x33FFFFFF),
+          color: SixMobilePalette.border.withValues(alpha: 0.7),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.heroLabelText,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          Icon(icon, size: 17, color: _accentColor),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _mutedTextColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 4),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child:
-                isLoading
-                    ? Container(
-                      key: const ValueKey<String>('summary-loading'),
-                      width: 34,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: const Color(0x33FFFFFF),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    )
-                    : int.tryParse(value) == null
-                    ? Text(
-                      value,
-                      key: ValueKey<String>('summary-text-$label-$value'),
-                      overflow: TextOverflow.ellipsis,
-                      style: valueStyle,
-                    )
-                    : SixAnimatedNumberText(
-                      key: ValueKey<String>('summary-number-$label-$value'),
-                      value: value,
-                      style: valueStyle,
-                    ),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: const TextStyle(
+              color: _titleTextColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNotificationsOverviewCard(BuildContext context) {
-    final SixNotificationEvent? ultimaNotificacao =
-        _notificacaoService.ultimaNotificacao;
-    final int naoLidas = _notificacaoService.naoLidas;
-    final bool temNaoLidas = naoLidas > 0;
-    final String resumo =
-        ultimaNotificacao?.description ??
-        'Aguardando mensagens do backend para esta empresa';
+  // ─── HELPERS ───────────────────────────────────────────────────────────────
 
-    return Material(
-      color: _surfaceColor,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => _openNotifications(context),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: SixMobilePalette.border),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0F000000),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: SixMobilePalette.softAccentSurface,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      temNaoLidas
-                          ? Icons.notifications_active_outlined
-                          : Icons.notifications_none_rounded,
-                      color: _accentColor,
-                    ),
-                  ),
-                  if (temNaoLidas)
-                    Positioned(
-                      right: -2,
-                      top: -2,
-                      child: SixPulsingBadge(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: SixMobilePalette.notificationBadge,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: SixMobilePalette.onPrimary,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Text(
-                            _badgeText(naoLidas),
-                            style: const TextStyle(
-                              color: SixMobilePalette.onPrimary,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Notificações recentes',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      resumo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context) {
-    final List<_QuickAction> actions = [
-      _QuickAction(
-        label: 'Nova venda',
-        icon: Icons.point_of_sale_rounded,
-        onTap: _startNewSale,
-      ),
-      _QuickAction(
-        label: 'Clientes',
-        icon: Icons.people_alt_rounded,
-        onTap: () => _navigateTo(context, const ClientesUsuarioListPage()),
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = (constraints.maxWidth - 12) / 2;
-
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children:
-              actions.asMap().entries.map((entry) {
-                return SizedBox(
-                  width: width,
-                  child: SixStaggeredEntry(
-                    delay: Duration(milliseconds: 270 + (entry.key * 45)),
-                    child: _buildQuickActionCard(entry.value),
-                  ),
-                );
-              }).toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildQuickActionCard(_QuickAction action) {
-    return Material(
-      color: _surfaceColor,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: action.onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: SixMobilePalette.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: SixMobilePalette.softAccentSurface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(action.icon, color: _accentColor, size: 22),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                action.label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _titleTextColor,
-                  fontWeight: FontWeight.w800,
-                  height: 1.15,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildMetricTiles(BuildContext context) {
-    final List<_DashboardMetric> metrics = [
-      _DashboardMetric(
-        title: 'Vendas a receber',
-        subtitle: _subtituloVendasAReceber,
-        count: _totalVendasAReceber,
-        icon: Icons.point_of_sale_outlined,
-        onTap:
-            () => _navigateTo(context, const VendasNaoLiquidadasMobileScreen()),
-        isLoading: _carregandoResumo,
-        hasError: _erroResumo != null,
-      ),
-      _DashboardMetric(
-        title: 'Assistências em revisão',
-        subtitle: 'Aguardando análise técnica',
-        count: '33',
-        icon: Icons.fact_check_outlined,
-        onTap: _showFeatureInProgress,
-      ),
-      _DashboardMetric(
-        title: 'Assistências em andamento',
-        subtitle: 'Serviços em execução',
-        count: '27',
-        icon: Icons.build_circle_outlined,
-        onTap: _showFeatureInProgress,
-      ),
-      _DashboardMetric(
-        title: 'Produtos ativos',
-        subtitle: 'Disponíveis no catálogo',
-        count: '10',
-        icon: Icons.inventory_2_outlined,
-        onTap:
-            () => _navigateTo(context, const CatalogoDisponivelMobileScreen()),
-      ),
-      _DashboardMetric(
-        title: 'Produtos inativos',
-        subtitle: 'Fora do catálogo ativo',
-        count: '0',
-        icon: Icons.inventory_2_rounded,
-        onTap: () => _navigateTo(context, const MeuCatalogoMobileScreen()),
-      ),
-    ];
-
-    return metrics
-        .asMap()
-        .entries
-        .map(
-          (entry) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SixStaggeredEntry(
-              delay: Duration(milliseconds: 340 + (entry.key * 55)),
-              child: _buildMetricTile(entry.value),
-            ),
-          ),
-        )
-        .toList();
-  }
-
-  Widget _buildMetricTile(_DashboardMetric metric) {
-    return Material(
-      color: _surfaceColor,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: metric.onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color:
-                  metric.hasError
-                      ? SixMobilePalette.errorBorder
-                      : SixMobilePalette.border,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0F000000),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: SixMobilePalette.softNeutralSurface,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(metric.icon, color: _primaryColor, size: 23),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      metric.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      metric.subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color:
-                            metric.hasError
-                                ? SixMobilePalette.error
-                                : _mutedTextColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _buildMetricCount(metric),
-                  const SizedBox(height: 2),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: _mutedTextColor,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricCount(_DashboardMetric metric) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      child:
-          metric.isLoading
-              ? Container(
-                key: const ValueKey<String>('metric-loading'),
-                width: 34,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: SixMobilePalette.border,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              )
-              : SixAnimatedNumberText(
-                key: ValueKey<String>('metric-${metric.title}-${metric.count}'),
-                value: metric.count,
-                style: const TextStyle(
-                  color: _titleTextColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: _titleTextColor,
-        fontSize: 16,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 0.1,
-      ),
-    );
+  String _periodLabel(DashboardPeriod period) {
+    switch (period) {
+      case DashboardPeriod.today:
+        return 'Hoje';
+      case DashboardPeriod.last7Days:
+        return '7 dias';
+      case DashboardPeriod.last30Days:
+        return '30 dias';
+      case DashboardPeriod.currentMonth:
+        return 'Mês atual';
+    }
   }
 
   String _badgeText(int count) {
@@ -784,23 +1053,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
   void _openNotifications(BuildContext context) {
     _navigateTo(context, const NotificacoesMobileScreen());
   }
-
-  Future<void> _startNewSale() async {
-    if (_openingNewSale) return;
-    _openingNewSale = true;
-    try {
-      final ProcedureFlowResult result = await _procedureCoordinator.execute(
-        context: context,
-        operationPoint: ProcedureOperationPoint.saleStartBefore,
-      );
-      if (!mounted) return;
-      if (result.shouldContinue) _openNewSale();
-    } finally {
-      _openingNewSale = false;
-    }
-  }
-
-  void _openNewSale() => _navigateTo(context, const PdvMobileScreen());
 
   void _navigateTo(BuildContext context, Widget page) {
     Navigator.push(
@@ -819,36 +1071,4 @@ class _HomePageMobileState extends State<HomePageMobile> {
       ),
     );
   }
-}
-
-class _QuickAction {
-  const _QuickAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-}
-
-class _DashboardMetric {
-  const _DashboardMetric({
-    required this.title,
-    required this.subtitle,
-    required this.count,
-    required this.icon,
-    required this.onTap,
-    this.isLoading = false,
-    this.hasError = false,
-  });
-
-  final String title;
-  final String subtitle;
-  final String count;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isLoading;
-  final bool hasError;
 }
