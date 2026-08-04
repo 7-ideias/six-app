@@ -278,8 +278,14 @@ class HttpCaixaApiClient implements CaixaApiClient {
       );
     }
 
-    final List list = jsonDecode(response.body);
-    return list.map((item) => MovimentoCaixa.fromJson(item)).toList();
+    final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
+    return list
+        .map(
+          (item) => MovimentoCaixa.fromJson(
+            Map<String, dynamic>.from(item as Map<dynamic, dynamic>),
+          ),
+        )
+        .toList();
   }
 
   @override

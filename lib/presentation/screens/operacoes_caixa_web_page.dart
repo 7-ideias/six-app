@@ -44,7 +44,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   bool _isLoading = false;
   bool _vincularVenda = false;
   bool _mostrarPainelFechamento = false;
-  bool _mostrarApenasHoje = true;
+  bool _mostrarApenasHoje = false;
 
   CaixaSessao? _sessaoAtual;
   CaixaOuGuiche? _caixaSelecionado;
@@ -160,18 +160,33 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Future<void> _carregarMovimentosEResumo(String idCaixaSessao) async {
     try {
       final movimentos = await _caixaService.listarMovimentacoes(idCaixaSessao);
-      final movimentosComSomatorio = await _caixaService
-          .buscarResumoDeMovimentosComSomatorio(idCaixaSessao);
-      final resumo = await _caixaService.buscarResumo(idCaixaSessao);
-
       if (!mounted) return;
-      setState(() {
-        _movimentos = movimentos;
-        _movimentosComSomatorio = movimentosComSomatorio;
-        _resumo = resumo;
-      });
+      setState(() => _movimentos = movimentos);
     } catch (e) {
       _mostrarErro('Erro ao carregar movimentações: $e');
+    }
+
+    try {
+      final movimentosComSomatorio = await _caixaService
+          .buscarResumoDeMovimentosComSomatorio(idCaixaSessao);
+      if (!mounted) return;
+      setState(() {
+        _movimentosComSomatorio = movimentosComSomatorio;
+        if (_movimentos.isEmpty &&
+            movimentosComSomatorio.movimento.isNotEmpty) {
+          _movimentos = movimentosComSomatorio.movimento;
+        }
+      });
+    } catch (e) {
+      _mostrarErro('Erro ao carregar resumo de movimentações: $e');
+    }
+
+    try {
+      final resumo = await _caixaService.buscarResumo(idCaixaSessao);
+      if (!mounted) return;
+      setState(() => _resumo = resumo);
+    } catch (e) {
+      _mostrarErro('Erro ao carregar resumo do caixa: $e');
     }
   }
 
@@ -423,7 +438,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               theme,
               width: width,
               label: 'Saldo esperado',
-              value: _formatCurrency(resumo?.saldoEsperado ?? 0),
+              value: _animatedCurrencyText(
+                theme,
+                animationKey: 'saldo-esperado',
+                value: resumo?.saldoEsperado ?? 0,
+                highlight: true,
+              ),
               helper:
                   _temCaixaAberto ? 'Caixa em operação' : 'Aguardando abertura',
               icon: Icons.account_balance_wallet_outlined,
@@ -433,7 +453,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               theme,
               width: width,
               label: 'Entradas',
-              value: _formatCurrency(resumo?.totalEntradas ?? 0),
+              value: _animatedCurrencyText(
+                theme,
+                animationKey: 'total-entradas',
+                value: resumo?.totalEntradas ?? 0,
+              ),
               helper: 'Recebimentos e suprimentos',
               icon: Icons.south_west_rounded,
             ),
@@ -441,7 +465,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               theme,
               width: width,
               label: 'Saídas',
-              value: _formatCurrency(resumo?.totalSaidas ?? 0),
+              value: _animatedCurrencyText(
+                theme,
+                animationKey: 'total-saidas',
+                value: resumo?.totalSaidas ?? 0,
+              ),
               helper: 'Sangrias e despesas',
               icon: Icons.north_east_rounded,
             ),
@@ -449,7 +477,16 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               theme,
               width: width,
               label: 'Movimentos',
-              value: '${resumo?.quantidadeMovimentos ?? _movimentos.length}',
+              value: Text(
+                '${resumo?.quantidadeMovimentos ?? _movimentos.length}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               helper:
                   _mostrarApenasHoje
                       ? 'Filtro de hoje ativo'
@@ -466,7 +503,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     ThemeData theme, {
     required double width,
     required String label,
-    required String value,
+    required Widget value,
     required String helper,
     required IconData icon,
     bool highlight = false,
@@ -530,16 +567,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: highlight ? Colors.white : colorScheme.onSurface,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  value,
                   const SizedBox(height: 2),
                   Text(
                     helper,
@@ -559,6 +587,39 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _animatedCurrencyText(
+    ThemeData theme, {
+    required String animationKey,
+    required double value,
+    bool highlight = false,
+    double fontSize = 20,
+    TextAlign textAlign = TextAlign.end,
+  }) {
+    final regionalizacao = context.watch<LocaleSettingsProvider>();
+    final color = highlight ? Colors.white : theme.colorScheme.onSurface;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>(
+        '$animationKey:${regionalizacao.currencyCode}:${value.toStringAsFixed(4)}',
+      ),
+      tween: Tween<double>(begin: 0, end: value),
+      duration: const Duration(milliseconds: 720),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, child) {
+        return Text(
+          regionalizacao.formatCurrency(animatedValue),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: textAlign,
+          style: TextStyle(
+            color: color,
+            fontSize: fontSize,
+            fontWeight: FontWeight.w900,
+          ),
+        );
+      },
     );
   }
 
@@ -604,7 +665,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   theme,
                   controller: _trocoInicialController,
                   hint: '0,00',
-                  prefix: 'R\$ ',
+                  prefix: _currencyInputPrefix(),
                 ),
               ),
               _buildFieldBox(
@@ -659,7 +720,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           _miniMetric(
             theme,
             title: 'Troco inicial',
-            value: _formatCurrency(_sessaoAtual?.valorAbertura ?? 0),
+            valueWidget: _animatedCurrencyText(
+              theme,
+              animationKey: 'contexto-troco-inicial',
+              value: _sessaoAtual?.valorAbertura ?? 0,
+              fontSize: 14.5,
+              textAlign: TextAlign.start,
+            ),
             icon: Icons.account_balance_wallet_outlined,
           ),
           _miniMetric(
@@ -676,7 +743,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Widget _miniMetric(
     ThemeData theme, {
     required String title,
-    required String value,
+    String? value,
+    Widget? valueWidget,
     required IconData icon,
   }) {
     return Container(
@@ -702,15 +770,16 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14.5,
-                  ),
-                ),
+                valueWidget ??
+                    Text(
+                      value ?? '--',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14.5,
+                      ),
+                    ),
               ],
             ),
           ),
@@ -950,7 +1019,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   theme,
                   controller: _valorController,
                   hint: '0,00',
-                  prefix: 'R\$ ',
+                  prefix: _currencyInputPrefix(),
                 ),
               ),
               _buildFieldBox(
@@ -1286,8 +1355,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               const SizedBox(height: 14),
               ..._linhasResumoPorTipoRecebimento().map(
                 (linha) => _buildResumoSecundario(
-                  linha.label,
-                  _formatCurrency(linha.valor),
+                  theme,
+                  label: linha.label,
+                  value: linha.valor,
                 ),
               ),
             ],
@@ -1369,7 +1439,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   theme,
                   controller: _fechamentoDinheiroController,
                   hint: _formatCurrency(resumo.totalDinheiro),
-                  prefix: 'R\$ ',
+                  prefix: _currencyInputPrefix(),
                 ),
               ),
               _buildFieldBox(
@@ -1381,7 +1451,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   theme,
                   controller: _fechamentoPixController,
                   hint: _formatCurrency(resumo.totalPix),
-                  prefix: 'R\$ ',
+                  prefix: _currencyInputPrefix(),
                 ),
               ),
               _buildFieldBox(
@@ -1394,7 +1464,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   hint: _formatCurrency(
                     resumo.totalCartaoCredito + resumo.totalCartaoDebito,
                   ),
-                  prefix: 'R\$ ',
+                  prefix: _currencyInputPrefix(),
                 ),
               ),
               SizedBox(
@@ -1413,12 +1483,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        _formatCurrency(resumo.saldoEsperado),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      _animatedCurrencyText(
+                        theme,
+                        animationKey: 'fechamento-saldo-esperado',
+                        value: resumo.saldoEsperado,
+                        fontSize: 22,
                       ),
                     ],
                   ),
@@ -1511,7 +1580,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildResumoSecundario(String label, String value) {
+  Widget _buildResumoSecundario(
+    ThemeData theme, {
+    required String label,
+    required double value,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -1524,7 +1597,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
+          Flexible(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _animatedCurrencyText(
+                theme,
+                animationKey: 'resumo-tipo-$label',
+                value: value,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -2304,14 +2387,22 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         buffer.write(integer[i]);
         if (position > 1 && position % 3 == 1) buffer.write('.');
       }
-      return '${negative ? '-' : ''}R\$ ${buffer.toString()},$decimal';
+      return '${negative ? '-' : ''}${buffer.toString()},$decimal';
+    }
+  }
+
+  String _currencyInputPrefix() {
+    try {
+      return '${context.read<LocaleSettingsProvider>().currencyCode} ';
+    } catch (_) {
+      return '';
     }
   }
 
   double _parseCurrency(String text) {
     final cleaned =
         text
-            .replaceAll('R\$', '')
+            .replaceAll(RegExp(r'[^0-9,.\-]'), '')
             .replaceAll('.', '')
             .replaceAll(' ', '')
             .replaceAll(',', '.')
