@@ -11,11 +11,11 @@ import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
-import '../screens/meu_perfil_mobile_screen.dart';
-import '../screens/preferencias_mobile_screen.dart';
+import 'meu_perfil_mobile_screen.dart';
+import 'preferencias_mobile_screen.dart';
 
-class CoresDoMobile extends StatelessWidget {
-  const CoresDoMobile({
+class LoginSettingsMobile extends StatelessWidget {
+  const LoginSettingsMobile({
     super.key,
     required this.image,
     required this.onPickImage,
@@ -88,44 +88,71 @@ class CoresDoMobile extends StatelessWidget {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
                       children: <Widget>[
+                        // ── Conta ──
                         _buildSectionLabel(context, 'Conta'),
-                        _buildItem(
+                        _buildGroupedCard(
                           context,
-                          icon: Icons.person_outline_rounded,
-                          title: 'Meu perfil',
-                          subtitle: 'Dados pessoais e acesso',
-                          semanticsLabel: 'Abrir meu perfil',
-                          onTap:
-                              () => _openScreen(
-                                context,
-                                const MeuPerfilMobileScreen(),
-                              ),
+                          items: <_GroupedItemData>[
+                            _GroupedItemData(
+                              icon: Icons.person_outline_rounded,
+                              title: 'Meu perfil',
+                              subtitle: 'Dados pessoais e acesso',
+                              semanticsLabel: 'Abrir meu perfil',
+                              onTap:
+                                  () => _openScreen(
+                                    context,
+                                    const MeuPerfilMobileScreen(),
+                                  ),
+                            ),
+                            _GroupedItemData(
+                              icon: Icons.tune_rounded,
+                              title: 'Preferências',
+                              subtitle: 'Ajustes individuais do app',
+                              semanticsLabel: 'Abrir preferências',
+                              onTap:
+                                  () => _openScreen(
+                                    context,
+                                    PreferencesMobileScreen(),
+                                  ),
+                            ),
+                            _GroupedItemData(
+                              icon: Icons.privacy_tip_outlined,
+                              title: 'Gerenciar meus dados',
+                              subtitle: 'Dados e privacidade',
+                              semanticsLabel:
+                                  'Abrir gerenciamento dos meus dados',
+                              onTap:
+                                  () => _openScreen(
+                                    context,
+                                    PreferencesMobileScreen(),
+                                  ),
+                            ),
+                          ],
                         ),
-                        _buildItem(
+
+                        const SizedBox(height: 20),
+
+                        // ── Sobre ──
+                        _buildSectionLabel(context, 'Sobre'),
+                        _buildGroupedCard(
                           context,
-                          icon: Icons.tune_rounded,
-                          title: 'Preferências',
-                          subtitle: 'Ajustes individuais do app',
-                          semanticsLabel: 'Abrir preferências',
-                          onTap:
-                              () => _openScreen(
-                                context,
-                                PreferencesMobileScreen(),
-                              ),
+                          items: <_GroupedItemData>[
+                            _GroupedItemData(
+                              icon: Icons.help_outline_rounded,
+                              title: 'Ajuda e suporte',
+                              subtitle: 'Dúvidas e contato',
+                              semanticsLabel: 'Abrir ajuda e suporte',
+                            ),
+                            _GroupedItemData(
+                              icon: Icons.description_outlined,
+                              title: 'Termos e políticas',
+                              subtitle: 'Uso, privacidade e licenças',
+                              semanticsLabel: 'Abrir termos e políticas',
+                            ),
+                          ],
                         ),
-                        _buildItem(
-                          context,
-                          icon: Icons.privacy_tip_outlined,
-                          title: 'Gerenciar meus dados',
-                          subtitle: 'Dados e privacidade',
-                          semanticsLabel: 'Abrir gerenciamento dos meus dados',
-                          onTap:
-                              () => _openScreen(
-                                context,
-                                PreferencesMobileScreen(),
-                              ),
-                        ),
-                        const SizedBox(height: 10),
+
+                        const SizedBox(height: 20),
                         _buildLogoutItem(context),
                       ],
                     ),
@@ -302,7 +329,7 @@ class CoresDoMobile extends StatelessWidget {
 
   Widget _buildSectionLabel(BuildContext context, String label) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
       child: Text(
         label.toUpperCase(),
         style: const TextStyle(
@@ -315,100 +342,121 @@ class CoresDoMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildItem(
+  Widget _buildGroupedCard(
     BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String semanticsLabel,
-    required VoidCallback onTap,
+    required List<_GroupedItemData> items,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: SixMobilePalette.onPrimary.withValues(alpha: 0.62),
+          width: 0.8,
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: SixMobilePalette.navigationShadow.withValues(alpha: 0.45),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children:
+            items.asMap().entries.map((MapEntry<int, _GroupedItemData> entry) {
+              final int index = entry.key;
+              final _GroupedItemData item = entry.value;
+              return _buildGroupedTile(
+                context,
+                item: item,
+                isFirst: index == 0,
+                isLast: index == items.length - 1,
+              );
+            }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildGroupedTile(
+    BuildContext context, {
+    required _GroupedItemData item,
+    required bool isFirst,
+    required bool isLast,
   }) {
     return Semantics(
       button: true,
-      label: semanticsLabel,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Material(
-          color: _surface.withValues(alpha: 0.78),
-          borderRadius: BorderRadius.circular(18),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            hoverColor: SixMobilePalette.accent.withValues(alpha: 0.06),
-            focusColor: SixMobilePalette.accent.withValues(alpha: 0.08),
-            splashColor: SixMobilePalette.accent.withValues(alpha: 0.08),
-            onTap: onTap,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 64),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: SixMobilePalette.onPrimary.withValues(alpha: 0.62),
-                  width: 0.8,
-                ),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: SixMobilePalette.navigationShadow.withValues(
-                      alpha: 0.45,
-                    ),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: SixMobilePalette.softAccentSurface,
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(
-                        color: SixMobilePalette.highlightedBorder.withValues(
-                          alpha: 0.42,
+      label: item.semanticsLabel,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(isFirst ? 20 : 0),
+            bottom: Radius.circular(isLast ? 20 : 0),
+          ),
+          hoverColor: SixMobilePalette.accent.withValues(alpha: 0.06),
+          splashColor: SixMobilePalette.accent.withValues(alpha: 0.08),
+          onTap: item.onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              border:
+                  isLast
+                      ? null
+                      : Border(
+                        bottom: BorderSide(
+                          color: _border.withValues(alpha: 0.5),
+                          width: 0.5,
                         ),
-                        width: 0.8,
                       ),
-                    ),
-                    child: Icon(icon, color: _accent, size: 21),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _softSurface,
+                    borderRadius: BorderRadius.circular(13),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _title,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                          ),
+                  child: Icon(item.icon, color: _accent, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _title,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _muted,
-                            fontSize: 12,
-                            height: 1.18,
-                          ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _muted,
+                          fontSize: 12,
+                          height: 1.35,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: _muted.withValues(alpha: 0.82),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: _muted.withValues(alpha: 0.7),
+                  size: 22,
+                ),
+              ],
             ),
           ),
         ),
@@ -421,54 +469,28 @@ class CoresDoMobile extends StatelessWidget {
       button: true,
       label: 'Sair da conta',
       child: Material(
-        color: SixMobilePalette.error.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           hoverColor: SixMobilePalette.error.withValues(alpha: 0.06),
-          focusColor: SixMobilePalette.error.withValues(alpha: 0.08),
           splashColor: SixMobilePalette.error.withValues(alpha: 0.08),
           onTap: () => _logout(context),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 64),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: SixMobilePalette.errorBorder.withValues(alpha: 0.62),
-                width: 0.8,
-              ),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
             child: Row(
               children: <Widget>[
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: SixMobilePalette.errorBorder.withValues(
-                        alpha: 0.16,
-                      ),
-                      borderRadius: const BorderRadius.all(Radius.circular(13)),
-                    ),
-                    child: const Icon(
-                      Icons.logout_rounded,
-                      color: SixMobilePalette.error,
-                      size: 21,
-                    ),
-                  ),
+                Icon(
+                  Icons.logout_rounded,
+                  color: SixMobilePalette.error.withValues(alpha: 0.8),
+                  size: 20,
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Sair da conta',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: SixMobilePalette.error,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
+                const SizedBox(width: 10),
+                Text(
+                  'Sair da conta',
+                  style: TextStyle(
+                    color: SixMobilePalette.error.withValues(alpha: 0.8),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -483,7 +505,7 @@ class CoresDoMobile extends StatelessWidget {
     final String version = AppConfig.appVersion.trim();
     final String buildNumber = AppConfig.appBuildNumber.trim();
     final String versionLabel =
-        version.isEmpty ? 'versão não informada' : 'versão $version';
+        version.isEmpty ? 'versão não informada' : 'v$version';
     final String tooltip =
         buildNumber.isEmpty
             ? 'Versão atual: ${version.isEmpty ? '-' : version}'
@@ -493,16 +515,39 @@ class CoresDoMobile extends StatelessWidget {
       top: false,
       left: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
         child: Tooltip(
           message: tooltip,
-          child: Text(
-            versionLabel,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _muted.withValues(alpha: 0.82),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _softSurface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _border.withValues(alpha: 0.4),
+                  width: 0.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 13,
+                    color: _muted.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    versionLabel,
+                    style: TextStyle(
+                      color: _muted.withValues(alpha: 0.7),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -638,4 +683,20 @@ class CoresDoMobile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _GroupedItemData {
+  const _GroupedItemData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.semanticsLabel,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String semanticsLabel;
+  final VoidCallback? onTap;
 }

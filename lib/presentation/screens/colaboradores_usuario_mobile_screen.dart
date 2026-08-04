@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/colaborador_convite_web_service.dart';
 import 'package:sixpos/data/models/colaborador_convite_model.dart';
 import 'package:sixpos/data/models/colaborador_usuario_model.dart';
 import 'package:sixpos/data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 
 class ColaboradoresUsuarioMobileScreen extends StatefulWidget {
   const ColaboradoresUsuarioMobileScreen({super.key, this.apiClient});
@@ -19,17 +24,18 @@ class ColaboradoresUsuarioMobileScreen extends StatefulWidget {
 
 class _ColaboradoresUsuarioMobileScreenState
     extends State<ColaboradoresUsuarioMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _primaryColor = SixMobilePalette.primary;
+  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _softSurfaceColor = SixMobilePalette.softNeutralSurface;
+  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.border;
 
   late final ColaboradorUsuarioApiClient _api;
   final TextEditingController _search = TextEditingController();
-  final NumberFormat _number = NumberFormat.decimalPattern('pt_BR');
-  final DateFormat _date = DateFormat('dd/MM/yyyy', 'pt_BR');
 
   bool _loading = false;
   String? _erro;
@@ -37,21 +43,24 @@ class _ColaboradoresUsuarioMobileScreenState
   List<ColaboradorUsuarioResumo> _colaboradores = <ColaboradorUsuarioResumo>[];
 
   List<ColaboradorUsuarioResumo> get _items {
-    final String term = _filter
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final String term = _filter.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
 
     if (term.isEmpty) {
       return _colaboradores;
     }
 
-    return _colaboradores.where((ColaboradorUsuarioResumo colaborador) {
-      final String source =
-          '${colaborador.nome} ${colaborador.nomeDeGuerra} ${colaborador.email} ${colaborador.celularDeAcesso}'
-              .toLowerCase()
-              .replaceAll(RegExp(r'[^a-z0-9]'), '');
-      return source.contains(term);
-    }).toList(growable: false);
+    return _colaboradores
+        .where((ColaboradorUsuarioResumo colaborador) {
+          final String source =
+              '${colaborador.nome} ${colaborador.nomeDeGuerra} ${colaborador.email} ${colaborador.celularDeAcesso}'
+                  .toLowerCase()
+                  .replaceAll(RegExp(r'[^a-z0-9]'), '');
+          return source.contains(term);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -97,7 +106,10 @@ class _ColaboradoresUsuarioMobileScreenState
       }
       setState(() {
         _loading = false;
-        _erro = 'Não foi possível carregar a lista de colaboradores.';
+        _erro = _t(
+          'colaboradores.loadListError',
+          'Não foi possível carregar a lista de colaboradores.',
+        );
       });
     }
   }
@@ -105,21 +117,60 @@ class _ColaboradoresUsuarioMobileScreenState
   String _message(int code) {
     switch (code) {
       case 400:
-        return 'Dados inválidos ou empresa não informada.';
+        return _t(
+          'colaboradores.invalidCompanyData',
+          'Dados inválidos ou empresa não informada.',
+        );
       case 401:
-        return 'Sessão expirada. Faça login novamente.';
+        return _t(
+          'auth.sessionExpiredLoginAgain',
+          'Sessão expirada. Faça login novamente.',
+        );
       case 403:
-        return 'Usuário sem vínculo com a empresa.';
+        return _t(
+          'colaboradores.userWithoutCompanyLink',
+          'Usuário sem vínculo com a empresa.',
+        );
       default:
-        return 'Erro ao carregar colaboradores (HTTP $code).';
+        return _t(
+          'colaboradores.loadHttpError',
+          'Erro ao carregar colaboradores (HTTP $code).',
+        );
     }
   }
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
+
+  String _formatCount(num value) {
+    final String separator =
+        context.read<LocaleSettingsProvider>().thousandSeparator;
+    final int rounded = value.round();
+    final String digits = rounded.abs().toString();
+    if (separator.isEmpty || digits.length <= 3) {
+      return '${rounded < 0 ? '-' : ''}$digits';
+    }
+
+    final StringBuffer buffer = StringBuffer();
+    for (int index = 0; index < digits.length; index += 1) {
+      final int remaining = digits.length - index;
+      buffer.write(digits[index]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(separator);
+      }
+    }
+
+    return '${rounded < 0 ? '-' : ''}$buffer';
+  }
+
+  String _formatDate(DateTime value) =>
+      context.read<LocaleSettingsProvider>().formatDate(value);
 
   Future<void> _openNovoColaborador() async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      barrierColor: Colors.black.withValues(alpha: 0.36),
       backgroundColor: Colors.transparent,
       builder: (BuildContext bottomSheetContext) {
         return Padding(
@@ -138,30 +189,32 @@ class _ColaboradoresUsuarioMobileScreenState
 
   Future<void> _openEditar(ColaboradorUsuarioResumo resumo) async {
     try {
-      final ColaboradorUsuarioDetalhe detalhe =
-          await _api.buscarColaborador(resumo.idUnicoPessoal);
+      final ColaboradorUsuarioDetalhe detalhe = await _api.buscarColaborador(
+        resumo.idUnicoPessoal,
+      );
       if (!mounted) {
         return;
       }
 
       final Map<String, dynamic>? payload =
           await showModalBottomSheet<Map<String, dynamic>>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
-        builder: (BuildContext bottomSheetContext) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.viewInsetsOf(bottomSheetContext).bottom,
-            ),
-            child: _EditarColaboradorMobileSheet(
-              resumo: resumo,
-              detalhe: detalhe,
-            ),
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            barrierColor: Colors.black.withValues(alpha: 0.36),
+            backgroundColor: Colors.transparent,
+            builder: (BuildContext bottomSheetContext) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(bottomSheetContext).bottom,
+                ),
+                child: _EditarColaboradorMobileSheet(
+                  resumo: resumo,
+                  detalhe: detalhe,
+                ),
+              );
+            },
           );
-        },
-      );
 
       if (payload == null) {
         return;
@@ -173,8 +226,13 @@ class _ColaboradoresUsuarioMobileScreenState
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Colaborador atualizado com sucesso.'),
+        SnackBar(
+          content: Text(
+            _t(
+              'colaboradores.updatedSuccessfully',
+              'Colaborador atualizado com sucesso.',
+            ),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -204,36 +262,42 @@ class _ColaboradoresUsuarioMobileScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    context.watch<LocaleSettingsProvider>();
+
+    return SixMobilePageShell(
+      title: _t('colaboradores.title', 'Colaboradores'),
       backgroundColor: _backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Colaboradores',
-          style: TextStyle(fontWeight: FontWeight.w800),
+      primaryColor: _primaryColor,
+      secondaryColor: _secondaryColor,
+      accentColor: _accentColor,
+      enableAnimatedBackground: false,
+      toolbarHeight: 48,
+      initialContentSpacing: 4,
+      actions: <Widget>[
+        IconButton(
+          tooltip: _t('common.refresh', 'Atualizar'),
+          onPressed: _loading ? null : _reload,
+          icon: const Icon(Icons.refresh_rounded),
         ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Atualizar',
-            onPressed: _loading ? null : _reload,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
-      ),
-      body: SafeArea(child: _body()),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _loading ? null : _openNovoColaborador,
-        icon: const Icon(Icons.group_add_outlined),
-        label: const Text('Novo colaborador'),
-      ),
+        IconButton(
+          tooltip: _t('colaboradores.newCollaborator', 'Novo colaborador'),
+          onPressed: _loading ? null : _openNovoColaborador,
+          icon: const Icon(Icons.group_add_outlined),
+        ),
+      ],
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(top: false, child: _body(scrollController, topInset));
+      },
     );
   }
 
-  Widget _body() {
+  Widget _body(ScrollController scrollController, double topInset) {
     if (_loading && _colaboradores.isEmpty) {
-      return const _MobileColaboradoresLoading();
+      return _MobileColaboradoresLoading(topInset: topInset);
     }
 
     if (_erro != null && _colaboradores.isEmpty) {
@@ -243,14 +307,15 @@ class _ColaboradoresUsuarioMobileScreenState
     return RefreshIndicator(
       onRefresh: _reload,
       child: ListView(
+        controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
         children: <Widget>[
-          _headerCard(),
+          _entry(order: 0, child: _headerCard()),
           const SizedBox(height: 14),
-          _summaryRow(),
+          _entry(order: 1, child: _summaryRow()),
           const SizedBox(height: 14),
-          _searchBox(),
+          _entry(order: 2, child: _searchBox()),
           if (_erro != null) ...<Widget>[
             const SizedBox(height: 12),
             _inlineError(_erro!),
@@ -260,23 +325,27 @@ class _ColaboradoresUsuarioMobileScreenState
             children: <Widget>[
               Expanded(
                 child: Text(
-                  'Colaboradores encontrados',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                  _t(
+                    'colaboradores.foundCollaborators',
+                    'Colaboradores encontrados',
+                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: _borderColor),
                 ),
                 child: Text(
-                  _number.format(_items.length),
+                  _formatCount(_items.length),
                   style: const TextStyle(
                     color: _primaryColor,
                     fontWeight: FontWeight.w900,
@@ -286,9 +355,29 @@ class _ColaboradoresUsuarioMobileScreenState
             ],
           ),
           const SizedBox(height: 12),
-          if (_items.isEmpty) _emptyState() else ..._items.map(_colaboradorCard),
+          if (_items.isEmpty)
+            _emptyState()
+          else
+            ..._items.toList().asMap().entries.map(
+              (MapEntry<int, ColaboradorUsuarioResumo> entry) => _entry(
+                order: entry.key + 3,
+                child: _colaboradorCard(entry.value),
+              ),
+            ),
         ],
       ),
+    );
+  }
+
+  Widget _entry({required int order, required Widget child}) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    if (reduceMotion) return child;
+    return SixStaggeredEntry(
+      delay: Duration(milliseconds: 45 * order.clamp(0, 8)),
+      beginOffset: const Offset(0, 0.035),
+      child: child,
     );
   }
 
@@ -305,7 +394,7 @@ class _ColaboradoresUsuarioMobileScreenState
         borderRadius: BorderRadius.circular(24),
         boxShadow: const <BoxShadow>[
           BoxShadow(
-            color: Color(0x220B1F3A),
+            color: SixMobilePalette.heroShadow,
             blurRadius: 18,
             offset: Offset(0, 10),
           ),
@@ -317,9 +406,9 @@ class _ColaboradoresUsuarioMobileScreenState
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.14),
+              color: Colors.white.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.16)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
             ),
             child: const Icon(Icons.badge_outlined, color: Colors.white),
           ),
@@ -328,9 +417,9 @@ class _ColaboradoresUsuarioMobileScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text(
-                  'Equipe do comércio',
-                  style: TextStyle(
+                Text(
+                  _t('colaboradores.businessTeam', 'Equipe do comércio'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
@@ -338,10 +427,26 @@ class _ColaboradoresUsuarioMobileScreenState
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  'Convide, acompanhe e ajuste permissões dos colaboradores.',
+                  _t(
+                    'colaboradores.businessTeamSubtitle',
+                    'Convide, acompanhe e ajuste permissões dos colaboradores.',
+                  ),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.82),
+                    color: Colors.white.withValues(alpha: 0.82),
                     height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  onPressed: _loading ? null : _openNovoColaborador,
+                  icon: const Icon(Icons.group_add_outlined, size: 18),
+                  label: Text(
+                    _t('colaboradores.newCollaborator', 'Novo colaborador'),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _accentColor,
+                    foregroundColor: SixMobilePalette.onPrimary,
+                    visualDensity: VisualDensity.compact,
                   ),
                 ),
               ],
@@ -353,18 +458,23 @@ class _ColaboradoresUsuarioMobileScreenState
   }
 
   Widget _summaryRow() {
-    final int comEmail = _colaboradores
-        .where((ColaboradorUsuarioResumo item) => item.email.trim().isNotEmpty)
-        .length;
-    final int comCelular = _colaboradores
-        .where(
-          (ColaboradorUsuarioResumo item) =>
-              item.celularDeAcesso.trim().isNotEmpty,
-        )
-        .length;
-    final int incompletos = _colaboradores
-        .where((ColaboradorUsuarioResumo item) => item.nome.trim().isEmpty)
-        .length;
+    final int comEmail =
+        _colaboradores
+            .where(
+              (ColaboradorUsuarioResumo item) => item.email.trim().isNotEmpty,
+            )
+            .length;
+    final int comCelular =
+        _colaboradores
+            .where(
+              (ColaboradorUsuarioResumo item) =>
+                  item.celularDeAcesso.trim().isNotEmpty,
+            )
+            .length;
+    final int incompletos =
+        _colaboradores
+            .where((ColaboradorUsuarioResumo item) => item.nome.trim().isEmpty)
+            .length;
 
     return Column(
       children: <Widget>[
@@ -373,16 +483,16 @@ class _ColaboradoresUsuarioMobileScreenState
             Expanded(
               child: _summaryCard(
                 Icons.groups_2_outlined,
-                'Equipe',
-                _number.format(_colaboradores.length),
+                _t('colaboradores.team', 'Equipe'),
+                _formatCount(_colaboradores.length),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _summaryCard(
                 Icons.alternate_email_rounded,
-                'Com e-mail',
-                _number.format(comEmail),
+                _t('colaboradores.withEmail', 'Com e-mail'),
+                _formatCount(comEmail),
               ),
             ),
           ],
@@ -393,16 +503,16 @@ class _ColaboradoresUsuarioMobileScreenState
             Expanded(
               child: _summaryCard(
                 Icons.phone_iphone_rounded,
-                'Com celular',
-                _number.format(comCelular),
+                _t('colaboradores.withPhone', 'Com celular'),
+                _formatCount(comCelular),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _summaryCard(
                 Icons.manage_accounts_outlined,
-                'Incompleto',
-                _number.format(incompletos),
+                _t('colaboradores.incomplete', 'Incompleto'),
+                _formatCount(incompletos),
                 highlight: incompletos > 0,
               ),
             ),
@@ -419,7 +529,8 @@ class _ColaboradoresUsuarioMobileScreenState
     bool highlight = false,
   }) {
     final Color iconColor = highlight ? Colors.orange.shade800 : _primaryColor;
-    final Color bgColor = highlight ? const Color(0xFFFFF7ED) : const Color(0xFFEFF6FF);
+    final Color bgColor =
+        highlight ? const Color(0xFFFFF7ED) : _softAccentColor;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -479,23 +590,28 @@ class _ColaboradoresUsuarioMobileScreenState
         controller: _search,
         onChanged: (String value) => setState(() => _filter = value),
         decoration: InputDecoration(
-          hintText: 'Buscar colaborador...',
+          hintText: _t(
+            'colaboradores.searchCollaborator',
+            'Buscar colaborador...',
+          ),
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: _search.text.isEmpty
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    _search.clear();
-                    setState(() => _filter = '');
-                  },
-                ),
+          suffixIcon:
+              _search.text.isEmpty
+                  ? null
+                  : IconButton(
+                    tooltip: _t('common.clear', 'Limpar'),
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      _search.clear();
+                      setState(() => _filter = '');
+                    },
+                  ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: const Color(0xFFF8FAFC),
+          fillColor: _softSurfaceColor,
         ),
       ),
     );
@@ -518,7 +634,7 @@ class _ColaboradoresUsuarioMobileScreenState
             children: <Widget>[
               CircleAvatar(
                 radius: 23,
-                backgroundColor: const Color(0xFFEFF6FF),
+                backgroundColor: _softAccentColor,
                 child: Text(
                   _initials(colaborador.nome),
                   style: const TextStyle(
@@ -534,7 +650,10 @@ class _ColaboradoresUsuarioMobileScreenState
                   children: <Widget>[
                     Text(
                       colaborador.nome.isEmpty
-                          ? 'Colaborador sem nome'
+                          ? _t(
+                            'colaboradores.unnamedCollaborator',
+                            'Colaborador sem nome',
+                          )
                           : colaborador.nome,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -547,7 +666,7 @@ class _ColaboradoresUsuarioMobileScreenState
                     const SizedBox(height: 4),
                     Text(
                       colaborador.nomeDeGuerra.isEmpty
-                          ? 'Sem nome de guerra'
+                          ? _t('colaboradores.noNickname', 'Sem nome de guerra')
                           : colaborador.nomeDeGuerra,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -559,7 +678,7 @@ class _ColaboradoresUsuarioMobileScreenState
                   ],
                 ),
               ),
-              _status('Ativo'),
+              _status(_t('common.active', 'Ativo')),
             ],
           ),
           const SizedBox(height: 12),
@@ -569,12 +688,14 @@ class _ColaboradoresUsuarioMobileScreenState
             children: <Widget>[
               _chip(
                 Icons.mail_outline,
-                colaborador.email.isEmpty ? 'Sem e-mail' : colaborador.email,
+                colaborador.email.isEmpty
+                    ? _t('colaboradores.noEmail', 'Sem e-mail')
+                    : colaborador.email,
               ),
               _chip(
                 Icons.phone_outlined,
                 colaborador.celularDeAcesso.isEmpty
-                    ? 'Sem celular'
+                    ? _t('colaboradores.noPhone', 'Sem celular')
                     : colaborador.celularDeAcesso,
               ),
               _chip(Icons.badge_outlined, colaborador.idUnicoPessoal),
@@ -589,7 +710,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 child: OutlinedButton.icon(
                   onPressed: () => _showDetails(colaborador),
                   icon: const Icon(Icons.info_outline_rounded, size: 18),
-                  label: const Text('Resumo'),
+                  label: Text(_t('colaboradores.summary', 'Resumo')),
                 ),
               ),
               const SizedBox(width: 10),
@@ -597,7 +718,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 child: FilledButton.icon(
                   onPressed: () => _openEditar(colaborador),
                   icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Editar'),
+                  label: Text(_t('common.edit', 'Editar')),
                 ),
               ),
             ],
@@ -643,7 +764,7 @@ class _ColaboradoresUsuarioMobileScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -682,8 +803,14 @@ class _ColaboradoresUsuarioMobileScreenState
           Expanded(
             child: Text(
               semEmail
-                  ? 'Informe um e-mail para liberar vínculo de acesso.'
-                  : 'Acesso controlado por convite e permissões.',
+                  ? _t(
+                    'colaboradores.emailRequiredForAccess',
+                    'Informe um e-mail para liberar vínculo de acesso.',
+                  )
+                  : _t(
+                    'colaboradores.accessControlledByInvite',
+                    'Acesso controlado por convite e permissões.',
+                  ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
@@ -715,24 +842,32 @@ class _ColaboradoresUsuarioMobileScreenState
             child: const Icon(Icons.group_add_outlined, color: _primaryColor),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Nenhum colaborador encontrado',
-            style: TextStyle(
+          Text(
+            _t(
+              'colaboradores.noCollaboratorFound',
+              'Nenhum colaborador encontrado',
+            ),
+            style: const TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 5),
-          const Text(
-            'Convide colaboradores para vendas, atendimento e gestão diária.',
+          Text(
+            _t(
+              'colaboradores.emptySubtitle',
+              'Convide colaboradores para vendas, atendimento e gestão diária.',
+            ),
             textAlign: TextAlign.center,
-            style: TextStyle(color: _mutedTextColor),
+            style: const TextStyle(color: _mutedTextColor),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
             onPressed: _openNovoColaborador,
             icon: const Icon(Icons.group_add_outlined),
-            label: const Text('Novo colaborador'),
+            label: Text(
+              _t('colaboradores.newCollaborator', 'Novo colaborador'),
+            ),
           ),
         ],
       ),
@@ -749,14 +884,18 @@ class _ColaboradoresUsuarioMobileScreenState
             const Icon(Icons.cloud_off_rounded, size: 44, color: _primaryColor),
             const SizedBox(height: 12),
             Text(
-              _erro ?? 'Não foi possível carregar os colaboradores.',
+              _erro ??
+                  _t(
+                    'colaboradores.unableToLoadCollaborators',
+                    'Não foi possível carregar os colaboradores.',
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: _reload,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Tentar novamente'),
+              label: Text(_t('common.tryAgain', 'Tentar novamente')),
             ),
           ],
         ),
@@ -770,7 +909,9 @@ class _ColaboradoresUsuarioMobileScreenState
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.35),
+        color: Theme.of(
+          context,
+        ).colorScheme.errorContainer.withValues(alpha: 0.35),
       ),
       child: Text(message),
     );
@@ -789,37 +930,46 @@ class _ColaboradoresUsuarioMobileScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                colaborador.nome.isEmpty ? 'Colaborador' : colaborador.nome,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                colaborador.nome.isEmpty
+                    ? _t('colaboradores.collaborator', 'Colaborador')
+                    : colaborador.nome,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 14),
               _detailRow(
-                'Nome guerra',
-                colaborador.nomeDeGuerra.isEmpty ? '-' : colaborador.nomeDeGuerra,
+                _t('colaboradores.nickname', 'Nome de guerra'),
+                colaborador.nomeDeGuerra.isEmpty
+                    ? '-'
+                    : colaborador.nomeDeGuerra,
               ),
               _detailRow(
-                'Celular',
+                _t('colaboradores.phone', 'Celular'),
                 colaborador.celularDeAcesso.isEmpty
                     ? '-'
                     : colaborador.celularDeAcesso,
               ),
-              _detailRow('E-mail', colaborador.email.isEmpty ? '-' : colaborador.email),
               _detailRow(
-                'Cadastro',
+                _t('colaboradores.email', 'E-mail'),
+                colaborador.email.isEmpty ? '-' : colaborador.email,
+              ),
+              _detailRow(
+                _t('colaboradores.createdAt', 'Cadastro'),
                 colaborador.dataCadastro == null
                     ? '-'
-                    : _date.format(colaborador.dataCadastro!),
+                    : _formatDate(colaborador.dataCadastro!),
               ),
-              _detailRow('Identificador', colaborador.idUnicoPessoal),
+              _detailRow(
+                _t('colaboradores.identifier', 'Identificador'),
+                colaborador.idUnicoPessoal,
+              ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                  child: const Text('Fechar'),
+                  child: Text(_t('common.close', 'Fechar')),
                 ),
               ),
             ],
@@ -880,11 +1030,13 @@ class _ColaboradorConviteMobileSheet extends StatefulWidget {
 
 class _ColaboradorConviteMobileSheetState
     extends State<_ColaboradorConviteMobileSheet> {
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.border;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ColaboradorConviteWebService _service = ColaboradorConviteWebService();
@@ -935,8 +1087,13 @@ class _ColaboradorConviteMobileSheetState
 
       setState(() => _convite = response);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Convite de colaborador criado com sucesso.'),
+        SnackBar(
+          content: Text(
+            _t(
+              'colaboradores.inviteCreatedSuccessfully',
+              'Convite de colaborador criado com sucesso.',
+            ),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -970,9 +1127,10 @@ class _ColaboradorConviteMobileSheetState
 
   String _linkConvite(ColaboradorConviteResponse convite) {
     final Uri publicUrl = Uri.parse(AppConfig.autoCustomerBaseUrl);
-    final String origin = publicUrl.hasScheme && publicUrl.host.isNotEmpty
-        ? publicUrl.origin
-        : Uri.base.origin;
+    final String origin =
+        publicUrl.hasScheme && publicUrl.host.isNotEmpty
+            ? publicUrl.origin
+            : Uri.base.origin;
     return '$origin/colaborador/convites/${convite.codigo}';
   }
 
@@ -988,12 +1146,16 @@ class _ColaboradorConviteMobileSheetState
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Link do convite copiado.'),
+      SnackBar(
+        content: Text(
+          _t('colaboradores.inviteLinkCopied', 'Link do convite copiado.'),
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
   @override
   Widget build(BuildContext context) {
@@ -1032,33 +1194,46 @@ class _ColaboradorConviteMobileSheetState
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: _softAccentColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.group_add_outlined, color: _primaryColor),
+                    child: const Icon(
+                      Icons.group_add_outlined,
+                      color: _accentColor,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          'Novo colaborador',
-                          style: TextStyle(
+                          _t(
+                            'colaboradores.newCollaborator',
+                            'Novo colaborador',
+                          ),
+                          style: const TextStyle(
                             color: _titleTextColor,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        SizedBox(height: 3),
+                        const SizedBox(height: 3),
                         Text(
-                          'Gere um convite com permissões iniciais.',
-                          style: TextStyle(color: _mutedTextColor, height: 1.25),
+                          _t(
+                            'colaboradores.createInviteSubtitle',
+                            'Gere um convite com permissões iniciais.',
+                          ),
+                          style: const TextStyle(
+                            color: _mutedTextColor,
+                            height: 1.25,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
+                    tooltip: _t('common.close', 'Fechar'),
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -1067,67 +1242,98 @@ class _ColaboradorConviteMobileSheetState
               const SizedBox(height: 18),
               TextFormField(
                 controller: _nome,
-                decoration: _input('Nome do colaborador', Icons.person_outline),
-                validator: (String? value) =>
-                    value == null || value.trim().isEmpty ? 'Informe o nome.' : null,
+                decoration: _input(
+                  _t('colaboradores.collaboratorName', 'Nome do colaborador'),
+                  Icons.person_outline,
+                ),
+                validator:
+                    (String? value) =>
+                        value == null || value.trim().isEmpty
+                            ? _t(
+                              'colaboradores.nameRequired',
+                              'Informe o nome.',
+                            )
+                            : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _email,
-                decoration: _input('E-mail de login', Icons.email_outlined),
+                decoration: _input(
+                  _t('colaboradores.loginEmail', 'E-mail de login'),
+                  Icons.email_outlined,
+                ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (String? value) => value == null || value.trim().isEmpty
-                    ? 'Informe o e-mail.'
-                    : null,
+                validator:
+                    (String? value) =>
+                        value == null || value.trim().isEmpty
+                            ? _t(
+                              'colaboradores.emailRequired',
+                              'Informe o e-mail.',
+                            )
+                            : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _celular,
-                decoration: _input('Celular', Icons.phone_outlined),
+                decoration: _input(
+                  _t('colaboradores.phone', 'Celular'),
+                  Icons.phone_outlined,
+                ),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 18),
               Text(
-                'Permissões iniciais',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                _t('colaboradores.initialPermissions', 'Permissões iniciais'),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 10),
               _switchCard(
-                'Vendas',
-                'Pode criar vendas.',
+                _t('colaboradores.sales', 'Vendas'),
+                _t('colaboradores.canCreateSales', 'Pode criar vendas.'),
                 _fazVenda,
                 (bool value) => setState(() => _fazVenda = value),
               ),
               _switchCard(
-                'Assistência técnica',
-                'Pode lançar atendimentos técnicos.',
+                _t('colaboradores.technicalAssistance', 'Assistência técnica'),
+                _t(
+                  'colaboradores.canCreateTechnicalServices',
+                  'Pode lançar atendimentos técnicos.',
+                ),
                 _lancaServico,
                 (bool value) => setState(() => _lancaServico = value),
               ),
               _switchCard(
-                'Clientes',
-                'Pode editar clientes.',
+                _t('colaboradores.customers', 'Clientes'),
+                _t('colaboradores.canEditCustomers', 'Pode editar clientes.'),
                 _editaCliente,
                 (bool value) => setState(() => _editaCliente = value),
               ),
               _switchCard(
-                'Financeiro',
-                'Pode acessar financeiro.',
+                _t('colaboradores.finance', 'Financeiro'),
+                _t(
+                  'colaboradores.canAccessFinance',
+                  'Pode acessar financeiro.',
+                ),
                 _acessaFinanceiro,
                 (bool value) => setState(() => _acessaFinanceiro = value),
               ),
               _switchCard(
-                'Relatórios',
-                'Pode gerar relatórios.',
+                _t('colaboradores.reports', 'Relatórios'),
+                _t(
+                  'colaboradores.canGenerateReports',
+                  'Pode gerar relatórios.',
+                ),
                 _geraRelatorio,
                 (bool value) => setState(() => _geraRelatorio = value),
               ),
               _switchCard(
-                'Permissões',
-                'Pode gerenciar permissões.',
+                _t('colaboradores.permissions', 'Permissões'),
+                _t(
+                  'colaboradores.canManagePermissions',
+                  'Pode gerenciar permissões.',
+                ),
                 _gerenciaPermissoes,
                 (bool value) => setState(() => _gerenciaPermissoes = value),
               ),
@@ -1136,14 +1342,22 @@ class _ColaboradorConviteMobileSheetState
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: _loading ? null : _criarConvite,
-                  icon: _loading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                  icon:
+                      _loading
+                          ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.send_outlined),
+                  label: Text(
+                    _loading
+                        ? _t(
+                          'colaboradores.generatingInvite',
+                          'Gerando convite...',
                         )
-                      : const Icon(Icons.send_outlined),
-                  label: Text(_loading ? 'Gerando convite...' : 'Gerar convite'),
+                        : _t('colaboradores.generateInvite', 'Gerar convite'),
+                  ),
                 ),
               ),
               if (convite != null) ...<Widget>[
@@ -1152,16 +1366,18 @@ class _ColaboradorConviteMobileSheetState
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: _softAccentColor,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                    border: Border.all(
+                      color: SixMobilePalette.highlightedBorder,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      const Text(
-                        'Convite criado',
-                        style: TextStyle(fontWeight: FontWeight.w900),
+                      Text(
+                        _t('colaboradores.inviteCreated', 'Convite criado'),
+                        style: const TextStyle(fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 8),
                       SelectableText(
@@ -1174,7 +1390,7 @@ class _ColaboradorConviteMobileSheetState
                         child: OutlinedButton.icon(
                           onPressed: _copiarLink,
                           icon: const Icon(Icons.copy_outlined),
-                          label: const Text('Copiar link'),
+                          label: Text(_t('common.copy', 'Copiar')),
                         ),
                       ),
                     ],
@@ -1194,7 +1410,7 @@ class _ColaboradorConviteMobileSheetState
       prefixIcon: Icon(icon),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: _surfaceColor,
     );
   }
 
@@ -1218,7 +1434,10 @@ class _ColaboradorConviteMobileSheetState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
@@ -1250,11 +1469,13 @@ class _EditarColaboradorMobileSheet extends StatefulWidget {
 
 class _EditarColaboradorMobileSheetState
     extends State<_EditarColaboradorMobileSheet> {
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static const Color _accentColor = SixMobilePalette.accent;
+  static const Color _backgroundColor = SixMobilePalette.background;
+  static const Color _surfaceColor = SixMobilePalette.surface;
+  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
+  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const Color _borderColor = SixMobilePalette.border;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nome;
@@ -1272,40 +1493,51 @@ class _EditarColaboradorMobileSheetState
   void initState() {
     super.initState();
     _nome = TextEditingController(
-      text: widget.detalhe.nome.isNotEmpty
-          ? widget.detalhe.nome
-          : widget.resumo.nome,
+      text:
+          widget.detalhe.nome.isNotEmpty
+              ? widget.detalhe.nome
+              : widget.resumo.nome,
     );
     _nomeDeGuerra = TextEditingController(
-      text: widget.detalhe.nomeDeGuerra.isNotEmpty
-          ? widget.detalhe.nomeDeGuerra
-          : widget.resumo.nomeDeGuerra,
+      text:
+          widget.detalhe.nomeDeGuerra.isNotEmpty
+              ? widget.detalhe.nomeDeGuerra
+              : widget.resumo.nomeDeGuerra,
     );
     _email = TextEditingController(
-      text: widget.detalhe.email.isNotEmpty
-          ? widget.detalhe.email
-          : widget.resumo.email,
+      text:
+          widget.detalhe.email.isNotEmpty
+              ? widget.detalhe.email
+              : widget.resumo.email,
     );
     _celular = TextEditingController(
-      text: widget.detalhe.celularDeAcesso.isNotEmpty
-          ? widget.detalhe.celularDeAcesso
-          : widget.resumo.celularDeAcesso,
+      text:
+          widget.detalhe.celularDeAcesso.isNotEmpty
+              ? widget.detalhe.celularDeAcesso
+              : widget.resumo.celularDeAcesso,
     );
 
     final Map<String, dynamic> json = widget.detalhe.toJson();
-    final Map<String, dynamic> autorizacoes = _ensureMap(json['objAutorizacoes']);
+    final Map<String, dynamic> autorizacoes = _ensureMap(
+      json['objAutorizacoes'],
+    );
     _podeVender = _ensureMap(autorizacoes['objVendasPode'])['fazVenda'] == true;
     _podeServico =
         _ensureMap(autorizacoes['objAssistenciaTecnicaPode'])['lancaServico'] ==
-            true;
+        true;
     _podeEditarCliente =
-        _ensureMap(autorizacoes['objClientesPode'])['podeEditarCliente'] == true;
+        _ensureMap(autorizacoes['objClientesPode'])['podeEditarCliente'] ==
+        true;
     _podeRelatorio =
-        _ensureMap(autorizacoes['objRelatoriosPode'])['geraRelatorioDeVendas'] ==
-            true;
-    final Map<String, dynamic> financeiro =
-        _ensureMap(autorizacoes['objLancamentosFinanceirosPode']);
-    _podeFinanceiro = financeiro['podeReceberNoCaixa'] == true ||
+        _ensureMap(
+          autorizacoes['objRelatoriosPode'],
+        )['geraRelatorioDeVendas'] ==
+        true;
+    final Map<String, dynamic> financeiro = _ensureMap(
+      autorizacoes['objLancamentosFinanceirosPode'],
+    );
+    _podeFinanceiro =
+        financeiro['podeReceberNoCaixa'] == true ||
         financeiro['podeVerQuantoVendeu'] == true;
   }
 
@@ -1320,7 +1552,9 @@ class _EditarColaboradorMobileSheetState
 
   Map<String, dynamic> _payload() {
     final Map<String, dynamic> json = widget.detalhe.toJson();
-    final Map<String, dynamic> info = _ensureMap(json['objInformacoesDoCadastro']);
+    final Map<String, dynamic> info = _ensureMap(
+      json['objInformacoesDoCadastro'],
+    );
     info['idUnicoDoUsuario'] = widget.resumo.idUnicoPessoal;
     json['objInformacoesDoCadastro'] = info;
     json['celularDeAcesso'] = _celular.text.trim();
@@ -1334,7 +1568,9 @@ class _EditarColaboradorMobileSheetState
     pessoa['senha'] = null;
     json['objPessoa'] = pessoa;
 
-    final Map<String, dynamic> autorizacoes = _ensureMap(json['objAutorizacoes']);
+    final Map<String, dynamic> autorizacoes = _ensureMap(
+      json['objAutorizacoes'],
+    );
     autorizacoes['podeCadastrarProduto'] =
         autorizacoes['podeCadastrarProduto'] ?? false;
     autorizacoes['podeFazerDevolucao'] =
@@ -1363,6 +1599,8 @@ class _EditarColaboradorMobileSheetState
     json['objAutorizacoes'] = autorizacoes;
     return json;
   }
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
   @override
   Widget build(BuildContext context) {
@@ -1399,33 +1637,43 @@ class _EditarColaboradorMobileSheetState
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: _softAccentColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.edit_outlined, color: _primaryColor),
+                    child: const Icon(Icons.edit_outlined, color: _accentColor),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          'Editar colaborador',
-                          style: TextStyle(
+                          _t(
+                            'colaboradores.editCollaborator',
+                            'Editar colaborador',
+                          ),
+                          style: const TextStyle(
                             color: _titleTextColor,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        SizedBox(height: 3),
+                        const SizedBox(height: 3),
                         Text(
-                          'Atualize dados de acesso e permissões.',
-                          style: TextStyle(color: _mutedTextColor, height: 1.25),
+                          _t(
+                            'colaboradores.editCollaboratorSubtitle',
+                            'Atualize dados de acesso e permissões.',
+                          ),
+                          style: const TextStyle(
+                            color: _mutedTextColor,
+                            height: 1.25,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
+                    tooltip: _t('common.close', 'Fechar'),
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -1434,63 +1682,98 @@ class _EditarColaboradorMobileSheetState
               const SizedBox(height: 18),
               TextFormField(
                 controller: _nome,
-                decoration: _input('Nome', Icons.person_outline),
-                validator: (String? value) =>
-                    value == null || value.trim().isEmpty ? 'Informe o nome.' : null,
+                decoration: _input(
+                  _t('colaboradores.name', 'Nome'),
+                  Icons.person_outline,
+                ),
+                validator:
+                    (String? value) =>
+                        value == null || value.trim().isEmpty
+                            ? _t(
+                              'colaboradores.nameRequired',
+                              'Informe o nome.',
+                            )
+                            : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _nomeDeGuerra,
-                decoration: _input('Nome de guerra', Icons.badge_outlined),
+                decoration: _input(
+                  _t('colaboradores.nickname', 'Nome de guerra'),
+                  Icons.badge_outlined,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _email,
-                decoration: _input('E-mail', Icons.email_outlined),
+                decoration: _input(
+                  _t('colaboradores.email', 'E-mail'),
+                  Icons.email_outlined,
+                ),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _celular,
-                decoration: _input('Celular', Icons.phone_outlined),
+                decoration: _input(
+                  _t('colaboradores.phone', 'Celular'),
+                  Icons.phone_outlined,
+                ),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 18),
               Text(
-                'Permissões operacionais',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                _t(
+                  'colaboradores.operationalPermissions',
+                  'Permissões operacionais',
+                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 10),
               _switchCard(
-                'Vendas',
-                'Pode realizar vendas no comércio.',
+                _t('colaboradores.sales', 'Vendas'),
+                _t(
+                  'colaboradores.canMakeSalesInBusiness',
+                  'Pode realizar vendas no comércio.',
+                ),
                 _podeVender,
                 (bool value) => setState(() => _podeVender = value),
               ),
               _switchCard(
-                'Assistência técnica',
-                'Pode lançar serviços técnicos.',
+                _t('colaboradores.technicalAssistance', 'Assistência técnica'),
+                _t(
+                  'colaboradores.canCreateTechnicalWork',
+                  'Pode lançar serviços técnicos.',
+                ),
                 _podeServico,
                 (bool value) => setState(() => _podeServico = value),
               ),
               _switchCard(
-                'Clientes',
-                'Pode editar dados de clientes.',
+                _t('colaboradores.customers', 'Clientes'),
+                _t(
+                  'colaboradores.canEditCustomerData',
+                  'Pode editar dados de clientes.',
+                ),
                 _podeEditarCliente,
                 (bool value) => setState(() => _podeEditarCliente = value),
               ),
               _switchCard(
-                'Relatórios',
-                'Pode gerar relatórios de vendas.',
+                _t('colaboradores.reports', 'Relatórios'),
+                _t(
+                  'colaboradores.canGenerateSalesReports',
+                  'Pode gerar relatórios de vendas.',
+                ),
                 _podeRelatorio,
                 (bool value) => setState(() => _podeRelatorio = value),
               ),
               _switchCard(
-                'Financeiro',
-                'Pode acessar recebimentos e valores vendidos.',
+                _t('colaboradores.finance', 'Financeiro'),
+                _t(
+                  'colaboradores.canAccessReceivablesAndSalesAmounts',
+                  'Pode acessar recebimentos e valores vendidos.',
+                ),
                 _podeFinanceiro,
                 (bool value) => setState(() => _podeFinanceiro = value),
               ),
@@ -1500,7 +1783,7 @@ class _EditarColaboradorMobileSheetState
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
+                      child: Text(_t('common.cancel', 'Cancelar')),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1513,7 +1796,7 @@ class _EditarColaboradorMobileSheetState
                         Navigator.of(context).pop(_payload());
                       },
                       icon: const Icon(Icons.save_outlined, size: 18),
-                      label: const Text('Salvar'),
+                      label: Text(_t('common.save', 'Salvar')),
                     ),
                   ),
                 ],
@@ -1531,7 +1814,7 @@ class _EditarColaboradorMobileSheetState
       prefixIcon: Icon(icon),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: _surfaceColor,
     );
   }
 
@@ -1555,7 +1838,10 @@ class _EditarColaboradorMobileSheetState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
@@ -1579,37 +1865,44 @@ class _EditarColaboradorMobileSheetState
 }
 
 class _MobileColaboradoresLoading extends StatelessWidget {
-  const _MobileColaboradoresLoading();
+  const _MobileColaboradoresLoading({required this.topInset});
+
+  final double topInset;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      children: const <Widget>[
-        _LoadingBlock(height: 96),
-        SizedBox(height: 14),
-        Row(
-          children: <Widget>[
-            Expanded(child: _LoadingBlock(height: 104)),
-            SizedBox(width: 10),
-            Expanded(child: _LoadingBlock(height: 104)),
-          ],
-        ),
-        SizedBox(height: 10),
-        Row(
-          children: <Widget>[
-            Expanded(child: _LoadingBlock(height: 104)),
-            SizedBox(width: 10),
-            Expanded(child: _LoadingBlock(height: 104)),
-          ],
-        ),
-        SizedBox(height: 14),
-        _LoadingBlock(height: 76),
-        SizedBox(height: 16),
-        _LoadingBlock(height: 190),
-        SizedBox(height: 12),
-        _LoadingBlock(height: 190),
-      ],
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: context.t('common.loading', fallback: 'Carregando...'),
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
+        children: const <Widget>[
+          _LoadingBlock(height: 130),
+          SizedBox(height: 14),
+          Row(
+            children: <Widget>[
+              Expanded(child: _LoadingBlock(height: 104)),
+              SizedBox(width: 10),
+              Expanded(child: _LoadingBlock(height: 104)),
+            ],
+          ),
+          SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(child: _LoadingBlock(height: 104)),
+              SizedBox(width: 10),
+              Expanded(child: _LoadingBlock(height: 104)),
+            ],
+          ),
+          SizedBox(height: 14),
+          _LoadingBlock(height: 76),
+          SizedBox(height: 16),
+          _LoadingBlock(height: 190),
+          SizedBox(height: 12),
+          _LoadingBlock(height: 190),
+        ],
+      ),
     );
   }
 }
@@ -1624,9 +1917,9 @@ class _LoadingBlock extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: SixMobilePalette.border),
       ),
     );
   }

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/presentation/components/app_modal_side_sheet.dart';
-import 'package:sixpos/presentation/components/cores_do_mobile.dart';
+import 'package:sixpos/presentation/screens/login_settings_mobile.dart';
 
 class SixMobileAccountPanelAction extends StatelessWidget {
   const SixMobileAccountPanelAction({
@@ -23,7 +23,7 @@ class SixMobileAccountPanelAction extends StatelessWidget {
     return showAppModalSideSheet<void>(
       context: context,
       barrierLabel: 'Fechar configurações',
-      child: CoresDoMobile(image: image, onPickImage: onPickImage),
+      child: LoginSettingsMobile(image: image, onPickImage: onPickImage),
     );
   }
 

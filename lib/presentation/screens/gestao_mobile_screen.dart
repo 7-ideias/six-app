@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -9,8 +8,10 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/mobile/management/management_parallax_card_data.dart';
-import 'package:sixpos/presentation/components/mobile/management/management_parallax_carousel.dart';
+import 'package:sixpos/presentation/components/mobile/management/management_admin_header.dart';
+import 'package:sixpos/presentation/components/mobile/management/management_section_selector.dart';
+import 'package:sixpos/presentation/components/mobile/management/management_settings_group.dart';
+import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
@@ -19,13 +20,15 @@ import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/configuracoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/regionalizacao_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
+import 'empresa_configuracao_mobile.dart';
 
 class GestaoMobileScreen extends StatefulWidget {
   const GestaoMobileScreen({super.key});
@@ -35,47 +38,21 @@ class GestaoMobileScreen extends StatefulWidget {
 }
 
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
-  static const double _sectionHorizontalPadding = 16;
-  static const double _sectionCarouselViewportFraction = 0.94;
-  static const double _sectionCarouselMinHeight = 320;
-  static const double _sectionCarouselMaxHeight = 420;
-  static const double _sectionCarouselHeightFactor = 0.48;
-  static const double _sectionCarouselParallaxIntensity = 0.26;
-  static const double _sectionCarouselImageOverflowFraction = 0.52;
-  static const double _sectionCarouselSideCardScale = 1;
-  static const double _sectionCarouselPageSpacing = 0;
+  static const double _horizontalPadding = 16;
   static const double _sectionContentBottomPadding = 24;
-  static const double _sectionSpacingAfterCarousel = 12;
-  static const double _sectionSpacingAfterIndicators = 20;
-  static const Duration _sectionDetailsTransitionDuration = Duration(
-    milliseconds: 420,
-  );
   static const Duration _sectionTransitionDuration = Duration(
-    milliseconds: 360,
+    milliseconds: 380,
   );
-  static const String _managementParallaxAssetBasePath =
-      'assets/images/management/parallax/';
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
-  late final PageController _sectionCarouselController;
   int _totalNotificacoesConhecidas = 0;
   int _selectedSectionIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _sectionCarouselController = PageController(
-      viewportFraction: _sectionCarouselViewportFraction,
-    );
     _totalNotificacoesConhecidas = _notificacaoService.total;
     _notificacaoService.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -83,7 +60,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   @override
   void dispose() {
-    _sectionCarouselController.dispose();
     _notificacaoService.removeListener(_onNotificacoesChanged);
     super.dispose();
   }
@@ -132,16 +108,19 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title: 'Gestão',
-      backgroundColor: _backgroundColor,
-      primaryColor: _primaryColor,
-      secondaryColor: _secondaryColor,
-      accentColor: _accentColor,
+      title: context.t('gestao.title', fallback: 'Gestão'),
+      backgroundColor: SixMobilePalette.background,
+      primaryColor: SixMobilePalette.primary,
+      secondaryColor: SixMobilePalette.secondary,
+      accentColor: SixMobilePalette.accent,
       automaticallyImplyLeading: false,
       actions: <Widget>[
         SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
         IconButton(
-          tooltip: 'Notificações',
+          tooltip: context.t(
+            'gestao.settings.item.notifications.title',
+            fallback: 'Notificações',
+          ),
           icon: _buildNotificationIcon(),
           onPressed: () => _openNotifications(context),
         ),
@@ -199,8 +178,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     double topInset,
   ) {
     final List<_ManagementSection> sections = _managementSections(context);
-    final bool reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final int selectedIndex =
         _selectedSectionIndex >= sections.length
             ? sections.length - 1
@@ -211,387 +188,114 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       top: false,
       left: false,
       right: false,
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double viewportHeight =
-              constraints.maxHeight.isFinite
-                  ? constraints.maxHeight
-                  : MediaQuery.sizeOf(context).height;
-          final double availableHeight =
-              (viewportHeight - topInset)
-                  .clamp(0.0, double.infinity)
-                  .toDouble();
-          final double carouselHeight =
-              (availableHeight * _sectionCarouselHeightFactor)
-                  .clamp(_sectionCarouselMinHeight, _sectionCarouselMaxHeight)
-                  .toDouble();
-
-          return ListView(
-            controller: scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-              0,
-              topInset,
-              0,
-              _sectionContentBottomPadding,
+      child: ListView(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          0,
+          topInset,
+          0,
+          _sectionContentBottomPadding,
+        ),
+        children: <Widget>[
+          // Compact section selector
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 80),
+            child: ManagementSectionSelector(
+              sections: sections
+                  .map(
+                    (s) => ManagementSectionTab(title: s.title, icon: s.icon),
+                  )
+                  .toList(growable: false),
+              selectedIndex: selectedIndex,
+              onSectionSelected: (int index) {
+                if (!mounted) return;
+                setState(() => _selectedSectionIndex = index);
+              },
             ),
-            children: <Widget>[
-              SixStaggeredEntry(
-                delay: const Duration(milliseconds: 130),
-                child: _buildSectionCarousel(
-                  sections,
-                  reduceMotion: reduceMotion,
-                  height: carouselHeight,
-                ),
+          ),
+          const SizedBox(height: 20),
+
+          // Section content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+            child: SixStaggeredEntry(
+              delay: const Duration(milliseconds: 180),
+              child: _buildSmoothSectionTransition(
+                transitionKey: 'section-${selectedSection.title}',
+                child:
+                    selectedSection.isSettingsCentral
+                        ? _buildSettingsCentral(context, selectedSection)
+                        : _buildStandardSectionDetails(selectedSection),
               ),
-              const SizedBox(height: _sectionSpacingAfterCarousel),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: _sectionHorizontalPadding,
-                ),
-                child: _buildCarouselIndicators(sections),
-              ),
-              const SizedBox(height: _sectionSpacingAfterIndicators),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: _sectionHorizontalPadding,
-                ),
-                child: SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 250),
-                  child: _buildSmoothSectionTransition(
-                    transitionKey: 'details-${selectedSection.title}',
-                    horizontalOffset: 0,
-                    verticalOffset: 0.035,
-                    duration: _sectionDetailsTransitionDuration,
-                    child: _buildSelectedSectionDetails(selectedSection),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  List<_ManagementSection> _managementSections(BuildContext context) {
-    final bool podeAcessarCatalogo =
-        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+  // ─── Settings Central (Configurações) ───────────────────────────
 
-    return <_ManagementSection>[
-      _ManagementSection(
-        title: 'Catálogo',
-        subtitle: 'Produtos, categorias e estoque sempre à mão.',
-        icon: Icons.inventory_2_outlined,
-        items: <_ManagementItem>[
-          if (podeAcessarCatalogo)
-            _ManagementItem(
-              title: 'Produtos e Serviços',
-              subtitle: 'Saúde, cadastro e revisão do catálogo',
-              icon: Icons.shopping_bag_outlined,
-              onTap:
-                  () => _navigateTo(context, const CatalogHealthMobileScreen()),
-            ),
-          _ManagementItem(
-            title: 'Categorias',
-            subtitle: 'Organização do catálogo',
-            icon: Icons.category_outlined,
-            onTap:
-                () => _navigateTo(
-                  context,
-                  const CategoriasProdutosServicosMobileScreen(),
-                ),
-          ),
-          _ManagementItem(
-            title: 'Estoque',
-            subtitle: 'Saldos, entradas e ajustes',
-            icon: Icons.warehouse_outlined,
-            onTap: () => _navigateTo(context, const EstoqueMobileScreen()),
-          ),
-        ],
-      ),
-      _ManagementSection(
-        title: 'Pessoas',
-        subtitle: 'Clientes, equipe e parceiros do comércio.',
-        icon: Icons.groups_2_outlined,
-        items: <_ManagementItem>[
-          _ManagementItem(
-            title: 'Clientes',
-            subtitle: 'Base de atendimento e relacionamento',
-            icon: Icons.people_alt_outlined,
-            onTap:
-                () => _navigateTo(context, const ClientesUsuarioMobileScreen()),
-          ),
-          _ManagementItem(
-            title: 'Colaboradores',
-            subtitle: 'Equipe, acessos e responsabilidades',
-            icon: Icons.badge_outlined,
-            onTap:
-                () => _navigateTo(
-                  context,
-                  const ColaboradoresUsuarioMobileScreen(),
-                ),
-          ),
-          _ManagementItem(
-            title: 'Fornecedores',
-            subtitle: 'Parceiros e compras do comércio',
-            icon: Icons.local_shipping_outlined,
-            onTap: _showFeatureInProgress,
-          ),
-        ],
-      ),
-      _ManagementSection(
-        title: 'Financeiro',
-        subtitle: 'Contas, agenda e formas de recebimento.',
-        icon: Icons.account_balance_wallet_outlined,
-        items: <_ManagementItem>[
-          _ManagementItem(
-            title: 'Contas a receber',
-            subtitle: 'Recebíveis e cobranças em aberto',
-            icon: Icons.south_west_rounded,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: 'Contas a pagar',
-            subtitle: 'Despesas e compromissos',
-            icon: Icons.north_east_rounded,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: 'Agenda financeira',
-            subtitle: 'Previsões, fiado e crediário',
-            icon: Icons.event_note_outlined,
-            onTap:
-                () =>
-                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
-          ),
-          _ManagementItem(
-            title: 'Formas de recebimento',
-            subtitle: 'Dinheiro, cartão, Pix e outros meios',
-            icon: Icons.payments_outlined,
-            onTap: _showFeatureInProgress,
-          ),
-        ],
-      ),
-      _ManagementSection(
-        title: 'Configurações',
-        subtitle: 'Empresa, idioma, notificações e integrações.',
-        icon: Icons.settings_outlined,
-        items: <_ManagementItem>[
-          _ManagementItem(
-            title: 'Empresa',
-            subtitle: 'Dados do comércio e identidade',
-            icon: Icons.storefront_outlined,
-            onTap:
-                () => _navigateTo(context, const ConfiguracoesMobileScreen()),
-          ),
-          _ManagementItem(
-            title: 'Usuários e permissões',
-            subtitle: 'Acessos por perfil e colaborador',
-            icon: Icons.admin_panel_settings_outlined,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: context.t('procedimentos.title', fallback: 'Procedimentos'),
-            subtitle: context.t(
-              'procedimentos.subtitle',
-              fallback: 'Guias para vendas, atendimentos e entregas',
-            ),
-            icon: Icons.fact_check_outlined,
-            onTap:
-                () => _navigateTo(
-                  context,
-                  const OperationalProceduresMobileScreen(),
-                ),
-          ),
-          _ManagementItem(
-            title: 'Regionalização',
-            subtitle: 'Idioma, moeda e formato local',
-            icon: Icons.language_outlined,
-            onTap:
-                () => _navigateTo(context, const RegionalizacaoMobileScreen()),
-          ),
-          _ManagementItem(
-            title: 'Notificações',
-            subtitle: 'Eventos do backend, webhooks e canais',
-            icon: Icons.notifications_active_outlined,
-            onTap: () => _openNotifications(context),
-          ),
-          _ManagementItem(
-            title: 'Modelos de PDF',
-            subtitle: 'Comprovantes, relatórios e OS',
-            icon: Icons.picture_as_pdf_outlined,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: 'Integrações',
-            subtitle: 'Serviços externos e automações',
-            icon: Icons.hub_outlined,
-            onTap: _showFeatureInProgress,
-          ),
-        ],
-      ),
-    ];
-  }
-
-  Widget _buildSectionCarousel(
-    List<_ManagementSection> sections, {
-    required bool reduceMotion,
-    required double height,
-  }) {
-    return ManagementParallaxCarousel(
-      controller: _sectionCarouselController,
-      cards: _managementCarouselCards(sections),
-      selectedIndex: _selectedSectionIndex,
-      height: height,
-      viewportFraction: _sectionCarouselViewportFraction,
-      sideCardScale: _sectionCarouselSideCardScale,
-      parallaxIntensity: _sectionCarouselParallaxIntensity,
-      imageOverflowFraction: _sectionCarouselImageOverflowFraction,
-      pageSpacing: _sectionCarouselPageSpacing,
-      padEnds: false,
-      clipBehavior: Clip.none,
-      reduceMotion: reduceMotion,
-      onPageChanged: (int index) {
-        if (!mounted) return;
-        setState(() => _selectedSectionIndex = index);
-      },
-    );
-  }
-
-  Widget _buildCarouselIndicators(List<_ManagementSection> sections) {
-    return AnimatedBuilder(
-      animation: _sectionCarouselController,
-      builder: (BuildContext context, Widget? child) {
-        double currentPage = _selectedSectionIndex.toDouble();
-
-        if (_sectionCarouselController.hasClients &&
-            _sectionCarouselController.position.haveDimensions) {
-          currentPage =
-              _sectionCarouselController.page ??
-              _selectedSectionIndex.toDouble();
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children:
-              sections.asMap().entries.map((
-                MapEntry<int, _ManagementSection> entry,
-              ) {
-                final double distance =
-                    (currentPage - entry.key).abs().clamp(0.0, 1.0).toDouble();
-                final double activeStrength =
-                    1 - Curves.easeOutCubic.transform(distance);
-                final double width = lerpDouble(7, 18, activeStrength)!;
-                final Color color =
-                    Color.lerp(
-                      const Color(0xFFCBD5E1),
-                      _accentColor,
-                      activeStrength,
-                    )!;
-
-                return GestureDetector(
-                  onTap: () {
-                    _sectionCarouselController.animateToPage(
-                      entry.key,
-                      duration: const Duration(milliseconds: 260),
-                      curve: Curves.easeOutCubic,
-                    );
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: width,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                );
-              }).toList(),
-        );
-      },
-    );
-  }
-
-  List<ManagementParallaxCardData> _managementCarouselCards(
-    List<_ManagementSection> sections,
+  Widget _buildSettingsCentral(
+    BuildContext context,
+    _ManagementSection section,
   ) {
-    return sections
-        .map((section) {
-          final String id = _carouselCardId(section.title);
-          return ManagementParallaxCardData(
-            id: id,
-            title: section.title,
-            subtitle: section.subtitle,
-            icon: section.icon,
-            imageAssetPath: _carouselImagePathForCard(id),
-            fallbackGradient: _carouselFallbackGradientForCard(id),
+    final String? companyName = _resolveCompanyName(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        // Admin header
+        SixStaggeredEntry(
+          delay: const Duration(milliseconds: 60),
+          child: ManagementAdminHeader(
+            title: context.t(
+              'gestao.settings.adminHeader.title',
+              fallback: 'Configurações da empresa',
+            ),
+            companyName: companyName,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Settings groups
+        ...section.settingsGroups!.asMap().entries.map((
+          MapEntry<int, ManagementSettingsGroupData> entry,
+        ) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: entry.key < section.settingsGroups!.length - 1 ? 20 : 0,
+            ),
+            child: SixStaggeredEntry(
+              delay: Duration(milliseconds: 120 + entry.key * 60),
+              child: ManagementSettingsGroup(group: entry.value),
+            ),
           );
-        })
-        .toList(growable: false);
+        }),
+      ],
+    );
   }
 
-  String _carouselCardId(String title) {
-    switch (title) {
-      case 'Catálogo':
-        return 'catalog';
-      case 'Pessoas':
-        return 'people';
-      case 'Financeiro':
-        return 'finance';
-      case 'Configurações':
-        return 'settings';
-      default:
-        return title.toLowerCase().replaceAll(' ', '_');
+  String? _resolveCompanyName(BuildContext context) {
+    try {
+      final empresaProvider = context.watch<EmpresaProvider>();
+      final empresa = empresaProvider.empresa;
+      if (empresa == null) return null;
+      final String nome =
+          empresa.nomeFantasia.isNotEmpty
+              ? empresa.nomeFantasia
+              : empresa.nomeEmpresa;
+      if (nome.trim().isEmpty) return null;
+      return nome.trim();
+    } catch (_) {
+      return null;
     }
   }
 
-  String _carouselImagePathForCard(String id) {
-    switch (id) {
-      case 'catalog':
-        return '${_managementParallaxAssetBasePath}management_catalog.webp';
-      case 'people':
-        return '${_managementParallaxAssetBasePath}management_people.webp';
-      case 'finance':
-        return '${_managementParallaxAssetBasePath}management_finance.webp';
-      case 'settings':
-      default:
-        return '${_managementParallaxAssetBasePath}management_settings.webp';
-    }
-  }
+  // ─── Standard section details (Catálogo, Pessoas, Financeiro) ───
 
-  Gradient _carouselFallbackGradientForCard(String id) {
-    switch (id) {
-      case 'catalog':
-        return const LinearGradient(
-          colors: <Color>[Color(0xFF0E7490), Color(0xFF1D4ED8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'people':
-        return const LinearGradient(
-          colors: <Color>[Color(0xFF0F766E), Color(0xFF2563EB)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'finance':
-        return const LinearGradient(
-          colors: <Color>[Color(0xFF166534), Color(0xFF0C4A6E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'settings':
-      default:
-        return const LinearGradient(
-          colors: <Color>[Color(0xFF1E293B), Color(0xFF334155)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-    }
-  }
-
-  Widget _buildSelectedSectionDetails(_ManagementSection section) {
+  Widget _buildStandardSectionDetails(_ManagementSection section) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -604,7 +308,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 color: SixMobilePalette.softAccentSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(section.icon, color: _accentColor, size: 18),
+              child: Icon(
+                section.icon,
+                color: SixMobilePalette.accent,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -613,7 +321,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: _titleTextColor,
+                  color: SixMobilePalette.titleText,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.1,
@@ -625,14 +333,14 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: _surfaceColor,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: SixMobilePalette.border),
+            color: SixMobilePalette.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: SixMobilePalette.border, width: 0.5),
             boxShadow: const <BoxShadow>[
               BoxShadow(
-                color: Color(0x0F000000),
-                blurRadius: 14,
-                offset: Offset(0, 6),
+                color: Color(0x0A000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
               ),
             ],
           ),
@@ -654,20 +362,111 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
+  Widget _buildManagementTile(
+    _ManagementItem item, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    final bool isDisabled =
+        item.maturity == ManagementSettingsMaturity.comingSoon;
+    final double opacity = isDisabled ? 0.52 : 1.0;
+
+    return Opacity(
+      opacity: opacity,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(isFirst ? 20 : 0),
+            bottom: Radius.circular(isLast ? 20 : 0),
+          ),
+          onTap: isDisabled ? null : item.onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              border:
+                  isLast
+                      ? null
+                      : const Border(
+                        bottom: BorderSide(
+                          color: SixMobilePalette.border,
+                          width: 0.5,
+                        ),
+                      ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.softNeutralSurface,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    item.icon,
+                    color: SixMobilePalette.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.mutedText,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  isDisabled
+                      ? Icons.lock_outline_rounded
+                      : Icons.chevron_right_rounded,
+                  color: SixMobilePalette.mutedText,
+                  size: isDisabled ? 16 : 22,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Transitions ────────────────────────────────────────────────
+
   Widget _buildSmoothSectionTransition({
     required String transitionKey,
     required Widget child,
-    double horizontalOffset = 0.03,
-    double verticalOffset = 0.025,
-    Duration duration = _sectionTransitionDuration,
   }) {
     return AnimatedSwitcher(
-      duration: duration,
+      duration: _sectionTransitionDuration,
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
       transitionBuilder: (Widget transitionChild, Animation<double> animation) {
         final Animation<Offset> slideAnimation = Tween<Offset>(
-          begin: Offset(horizontalOffset, verticalOffset),
+          begin: const Offset(0, 0.03),
           end: Offset.zero,
         ).animate(
           CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
@@ -685,76 +484,318 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
-  Widget _buildManagementTile(
-    _ManagementItem item, {
-    required bool isFirst,
-    required bool isLast,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(isFirst ? 22 : 0),
-          bottom: Radius.circular(isLast ? 22 : 0),
-        ),
-        onTap: item.onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            border:
-                isLast
-                    ? null
-                    : const Border(
-                      bottom: BorderSide(color: SixMobilePalette.border),
-                    ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: SixMobilePalette.softNeutralSurface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(item.icon, color: _primaryColor, size: 21),
+  // ─── Section definitions ────────────────────────────────────────
+
+  List<_ManagementSection> _managementSections(BuildContext context) {
+    final bool podeAcessarCatalogo =
+        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+
+    return <_ManagementSection>[
+      _ManagementSection(
+        title: context.t('gestao.catalog.title', fallback: 'Catálogo'),
+        icon: Icons.inventory_2_outlined,
+        items: <_ManagementItem>[
+          if (podeAcessarCatalogo)
+            _ManagementItem(
+              title: context.t(
+                'gestao.catalog.productsServices',
+                fallback: 'Produtos e Serviços',
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
+              subtitle: context.t(
+                'gestao.catalog.productsServicesDesc',
+                fallback: 'Saúde, cadastro e revisão do catálogo',
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
-            ],
+              icon: Icons.shopping_bag_outlined,
+              onTap:
+                  () => _navigateTo(context, const CatalogHealthMobileScreen()),
+            ),
+          _ManagementItem(
+            title: context.t(
+              'gestao.catalog.categories',
+              fallback: 'Categorias',
+            ),
+            subtitle: context.t(
+              'gestao.catalog.categoriesDesc',
+              fallback: 'Organização do catálogo',
+            ),
+            icon: Icons.category_outlined,
+            onTap:
+                () => _navigateTo(
+                  context,
+                  const CategoriasProdutosServicosMobileScreen(),
+                ),
           ),
-        ),
+          _ManagementItem(
+            title: context.t('gestao.catalog.inventory', fallback: 'Estoque'),
+            subtitle: context.t(
+              'gestao.catalog.inventoryDesc',
+              fallback: 'Saldos, entradas e ajustes',
+            ),
+            icon: Icons.warehouse_outlined,
+            onTap: () => _navigateTo(context, const EstoqueMobileScreen()),
+          ),
+        ],
       ),
-    );
+      _ManagementSection(
+        title: context.t('gestao.people.title', fallback: 'Pessoas'),
+        icon: Icons.groups_2_outlined,
+        items: <_ManagementItem>[
+          _ManagementItem(
+            title: context.t('gestao.people.clients', fallback: 'Clientes'),
+            subtitle: context.t(
+              'gestao.people.clientsDesc',
+              fallback: 'Base de atendimento e relacionamento',
+            ),
+            icon: Icons.people_alt_outlined,
+            onTap:
+                () => _navigateTo(context, const ClientesUsuarioMobileScreen()),
+          ),
+          _ManagementItem(
+            title: context.t(
+              'gestao.people.collaborators',
+              fallback: 'Colaboradores',
+            ),
+            subtitle: context.t(
+              'gestao.people.collaboratorsDesc',
+              fallback: 'Equipe, acessos e responsabilidades',
+            ),
+            icon: Icons.badge_outlined,
+            onTap:
+                () => _navigateTo(
+                  context,
+                  const ColaboradoresUsuarioMobileScreen(),
+                ),
+          ),
+          _ManagementItem(
+            title: context.t(
+              'gestao.people.suppliers',
+              fallback: 'Fornecedores',
+            ),
+            subtitle: context.t(
+              'gestao.people.suppliersDesc',
+              fallback: 'Parceiros e compras do comércio',
+            ),
+            icon: Icons.local_shipping_outlined,
+            maturity: ManagementSettingsMaturity.comingSoon,
+            onTap: _showFeatureInProgress,
+          ),
+        ],
+      ),
+      _ManagementSection(
+        title: context.t('gestao.finance.title', fallback: 'Financeiro'),
+        icon: Icons.account_balance_wallet_outlined,
+        items: <_ManagementItem>[
+          _ManagementItem(
+            title: context.t(
+              'gestao.finance.receivable',
+              fallback: 'Contas a receber',
+            ),
+            subtitle: context.t(
+              'gestao.finance.receivableDesc',
+              fallback: 'Recebíveis e cobranças em aberto',
+            ),
+            icon: Icons.south_west_rounded,
+            maturity: ManagementSettingsMaturity.comingSoon,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: context.t(
+              'gestao.finance.payable',
+              fallback: 'Contas a pagar',
+            ),
+            subtitle: context.t(
+              'gestao.finance.payableDesc',
+              fallback: 'Despesas e compromissos',
+            ),
+            icon: Icons.north_east_rounded,
+            maturity: ManagementSettingsMaturity.comingSoon,
+            onTap: _showFeatureInProgress,
+          ),
+          _ManagementItem(
+            title: context.t(
+              'gestao.finance.schedule',
+              fallback: 'Agenda financeira',
+            ),
+            subtitle: context.t(
+              'gestao.finance.scheduleDesc',
+              fallback: 'Previsões, fiado e crediário',
+            ),
+            icon: Icons.event_note_outlined,
+            onTap:
+                () =>
+                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+          ),
+          _ManagementItem(
+            title: context.t(
+              'gestao.finance.paymentMethods',
+              fallback: 'Formas de recebimento',
+            ),
+            subtitle: context.t(
+              'gestao.finance.paymentMethodsDesc',
+              fallback: 'Dinheiro, cartão, Pix e outros meios',
+            ),
+            icon: Icons.payments_outlined,
+            maturity: ManagementSettingsMaturity.comingSoon,
+            onTap: _showFeatureInProgress,
+          ),
+        ],
+      ),
+      _ManagementSection(
+        title: context.t('gestao.settings.title', fallback: 'Configurações'),
+        icon: Icons.settings_outlined,
+        isSettingsCentral: true,
+        settingsGroups: _settingsGroups(context),
+        items: const <_ManagementItem>[],
+      ),
+    ];
   }
+
+  List<ManagementSettingsGroupData> _settingsGroups(BuildContext context) {
+    return <ManagementSettingsGroupData>[
+      // Empresa
+      ManagementSettingsGroupData(
+        title: context.t('gestao.settings.group.company', fallback: 'Empresa'),
+        items: <ManagementSettingsItemData>[
+          ManagementSettingsItemData(
+            title: context.t(
+              'gestao.settings.item.company.title',
+              fallback: 'Empresa',
+            ),
+            subtitle: context.t(
+              'gestao.settings.item.company.subtitle',
+              fallback: 'Dados cadastrais e identidade do comércio',
+            ),
+            icon: Icons.storefront_outlined,
+            maturity: ManagementSettingsMaturity.functional,
+            onTap:
+                () => _navigateTo(context, const EmpresaConfiguracaoMobile()),
+          ),
+          ManagementSettingsItemData(
+            title: context.t(
+              'gestao.settings.item.regionalization.title',
+              fallback: 'Regionalização',
+            ),
+            subtitle: context.t(
+              'gestao.settings.item.regionalization.subtitle',
+              fallback: 'Idioma, moeda, país e formatos locais',
+            ),
+            icon: Icons.language_outlined,
+            maturity: ManagementSettingsMaturity.functional,
+            onTap:
+                () => _navigateTo(context, const RegionalizacaoMobileScreen()),
+          ),
+        ],
+      ),
+
+      // Equipe e acesso
+      ManagementSettingsGroupData(
+        title: context.t(
+          'gestao.settings.group.teamAccess',
+          fallback: 'Equipe e acesso',
+        ),
+        items: <ManagementSettingsItemData>[
+          ManagementSettingsItemData(
+            title: context.t(
+              'gestao.settings.item.users.title',
+              fallback: 'Usuários e permissões',
+            ),
+            subtitle: context.t(
+              'gestao.settings.item.users.subtitle',
+              fallback: 'Acessos, perfis e segurança da equipe',
+            ),
+            icon: Icons.admin_panel_settings_outlined,
+            maturity: ManagementSettingsMaturity.comingSoon,
+          ),
+        ],
+      ),
+
+      // Operação
+      ManagementSettingsGroupData(
+        title: context.t(
+          'gestao.settings.group.operation',
+          fallback: 'Operação',
+        ),
+        items: <ManagementSettingsItemData>[
+          ManagementSettingsItemData(
+            title: context.t(
+              'gestao.settings.item.procedures.title',
+              fallback: 'Procedimentos',
+            ),
+            subtitle: context.t(
+              'gestao.settings.item.procedures.subtitle',
+              fallback: 'Guias para vendas, atendimentos e entregas',
+            ),
+            icon: Icons.fact_check_outlined,
+            maturity: ManagementSettingsMaturity.experimental,
+            onTap:
+                () => _navigateTo(
+                  context,
+                  const OperationalProceduresMobileScreen(),
+                ),
+          ),
+        ],
+      ),
+
+      // Comunicação
+      ManagementSettingsGroupData(
+        title: context.t(
+          'gestao.settings.group.communication',
+          fallback: 'Comunicação',
+        ),
+        items: <ManagementSettingsItemData>[
+          ManagementSettingsItemData(
+            title: context.t(
+              'gestao.settings.item.notifications.title',
+              fallback: 'Notificações',
+            ),
+            subtitle: context.t(
+              'gestao.settings.item.notifications.subtitle',
+              fallback: 'Eventos recebidos e alertas do sistema',
+            ),
+            icon: Icons.notifications_active_outlined,
+            maturity: ManagementSettingsMaturity.functional,
+            onTap: () => _openNotifications(context),
+          ),
+        ],
+      ),
+
+      // Documentos e integrações
+      ManagementSettingsGroupData(
+        title: context.t(
+          'gestao.settings.group.docsIntegrations',
+          fallback: 'Documentos e integrações',
+        ),
+        items: <ManagementSettingsItemData>[
+          ManagementSettingsItemData(
+            title: context.t(
+              'gestao.settings.item.pdfTemplates.title',
+              fallback: 'Modelos de PDF',
+            ),
+            subtitle: context.t(
+              'gestao.settings.item.pdfTemplates.subtitle',
+              fallback: 'Orçamentos, OS, recibos e documentos',
+            ),
+            icon: Icons.picture_as_pdf_outlined,
+            maturity: ManagementSettingsMaturity.comingSoon,
+          ),
+          ManagementSettingsItemData(
+            title: context.t(
+              'gestao.settings.item.integrations.title',
+              fallback: 'Integrações',
+            ),
+            subtitle: context.t(
+              'gestao.settings.item.integrations.subtitle',
+              fallback: 'Serviços externos e automações',
+            ),
+            icon: Icons.hub_outlined,
+            maturity: ManagementSettingsMaturity.comingSoon,
+          ),
+        ],
+      ),
+    ];
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────
 
   String _badgeText(int count) => count > 9 ? '+9' : count.toString();
 
@@ -772,26 +813,35 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   void _showFeatureInProgress() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fluxo mobile em evolução.'),
+      SnackBar(
+        content: Text(
+          context.t(
+            'gestao.featureInProgress',
+            fallback: 'Fluxo mobile em evolução.',
+          ),
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 }
 
+// ─── Data classes ─────────────────────────────────────────────────
+
 class _ManagementSection {
   const _ManagementSection({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.items,
+    this.isSettingsCentral = false,
+    this.settingsGroups,
   });
 
   final String title;
-  final String subtitle;
   final IconData icon;
   final List<_ManagementItem> items;
+  final bool isSettingsCentral;
+  final List<ManagementSettingsGroupData>? settingsGroups;
 }
 
 class _ManagementItem {
@@ -800,10 +850,12 @@ class _ManagementItem {
     required this.subtitle,
     required this.icon,
     required this.onTap,
+    this.maturity = ManagementSettingsMaturity.functional,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
+  final ManagementSettingsMaturity maturity;
 }

@@ -9,6 +9,10 @@ Use esta Skill para manter a experiência Flutter Web do SixApp consistente com 
 
 Quando a alteração Web também envolver textos, moeda, datas, números, percentuais ou configurações do comércio, use também `sixapp-regionalization`. Quando envolver endpoint, contrato, parsing, autenticação, tenant, service ou ApiClient compartilhado, use também `sixapp-shared-backend-integration`.
 
+Regra arquitetural obrigatória: telas Web não devem ser implementadas reaproveitando tela/conteúdo principal Mobile, e telas Mobile não devem nascer de wrappers sobre conteúdo Web. Compartilhe integração, domínio, models, services, mappers, providers sem responsabilidade visual e helpers; mantenha arquivos e composição de UI próprios por plataforma.
+
+Antes de qualquer ajuste, implementação ou refactor Web, valide explicitamente se a mudança criaria ou manteria reaproveitamento indevido de UI entre Web e Mobile. Se encontrar tela/conteúdo principal compartilhado, wrapper, parâmetro `embedded`/`compact`/`platform`/`isMobile`/`isWeb` ou import cruzado de tela, trate como risco arquitetural e proponha composição Web própria antes de editar.
+
 ## Leituras Mínimas
 
 Para tarefa visual Web, leia:
@@ -28,28 +32,31 @@ Leia `sixapp-regionalization/references/frontend-localization.md` e `sixapp-regi
 
 1. Identifique se o escopo é Web, Mobile ou compartilhado.
 2. Leia o arquivo citado pelo usuário e localize componentes, controllers/providers e services relacionados.
-3. Inspecione implementações semelhantes antes de criar componente, layout ou padrão novo.
-4. Verifique padrões visuais existentes de cores, tipografia, espaçamento, elevação, bordas, ícones, estados e motion.
-5. Mapeie textos e dados regionalizáveis afetados.
-6. Verifique endpoint, contrato, DTO/modelo, service e persistência quando o conteúdo vier do backend ou precisar ser configurável.
-7. Classifique conteúdos com `sixapp-regionalization`: texto estático, texto configurável por tenant, texto/mensagem dinâmica de domínio ou dado regionalizável.
-8. Defina impacto em Web, Mobile, código compartilhado, backend, persistência, traduções e testes.
-9. Apresente plano curto antes da implementação quando houver impacto relevante em mais de uma camada.
-10. Implemente a mudança completa dentro do escopo, sem transformar ajuste visual em refatoração ampla.
-11. Valide formatação, análise estática, testes aplicáveis e diff.
-12. Informe claramente o que foi alterado em cada camada.
+3. Antes de editar, valide se os arquivos-alvo importam, renderizam ou embrulham tela/conteúdo principal Mobile; se sim, separe a composição Web em arquivo próprio e mantenha apenas integração/domínio compartilhados.
+4. Inspecione implementações Web semelhantes antes de criar componente, layout ou padrão novo.
+5. Verifique padrões visuais existentes de cores, tipografia, espaçamento, elevação, bordas, ícones, estados e motion.
+6. Mapeie textos e dados regionalizáveis afetados.
+7. Verifique endpoint, contrato, DTO/modelo, service e persistência quando o conteúdo vier do backend ou precisar ser configurável.
+8. Classifique conteúdos com `sixapp-regionalization`: texto estático, texto configurável por tenant, texto/mensagem dinâmica de domínio ou dado regionalizável.
+9. Defina impacto em Web, Mobile, código compartilhado, backend, persistência, traduções e testes.
+10. Apresente plano curto antes da implementação quando houver impacto relevante em mais de uma camada.
+11. Implemente a mudança completa dentro do escopo, sem transformar ajuste visual em refatoração ampla.
+12. Valide formatação, análise estática, testes aplicáveis, ausência de wrapper UI Web/Mobile e diff.
+13. Informe claramente o que foi alterado em cada camada.
 
 ## Escopo Web
 
 Para pedidos somente Web:
 
 - preserve arquivos `*_mobile_screen.dart` e `lib/presentation/components/mobile/`;
+- não importe nem renderize telas/conteúdos Mobile dentro de telas Web;
+- não crie conteúdo visual principal compartilhado entre Web e Mobile com parâmetro `embedded`, `compact`, `platform`, `isMobile` ou similar;
 - não altere `SixMobilePalette`, `SixMobilePageShell`, `SixMobileTypography`, `NavBarMobile` ou `mobile_motion.dart`;
 - não copie literalmente padrões mobile para desktop;
 - não altere tema global, `main.dart` ou providers compartilhados sem necessidade técnica comprovada;
 - quando código compartilhado ou backend forem indispensáveis, explique o impacto antes de editar.
 
-Para pedidos compartilhados, telas Web e Mobile podem ter composições diferentes, mas devem reutilizar a mesma regra de negócio, client, DTO/modelo, mapper, service e interpretação de resposta sempre que consumirem o mesmo recurso.
+Para pedidos compartilhados, telas Web e Mobile devem ter composições próprias e arquivos de tela próprios, reutilizando a mesma regra de negócio, client, DTO/modelo, mapper, service e interpretação de resposta sempre que consumirem o mesmo recurso. Não use `embedded`, `isMobile`, `isWeb`, wrappers ou condicionais de plataforma para transformar a mesma árvore visual em duas experiências.
 
 ## Design System Web
 

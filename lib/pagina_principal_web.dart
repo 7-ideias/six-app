@@ -4,7 +4,7 @@ import 'package:sixpos/presentation/components/dashboard_inicio_web.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
-import 'package:sixpos/presentation/screens/colaboradores_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:sixpos/presentation/screens/meu_perfil_web_screen.dart';

@@ -120,7 +120,9 @@ Dentro de "Mais":
 - Equipe
 - Configurações
 
-Web e mobile devem ter aderência funcional, mas não precisam ter layout idêntico.
+Web e mobile devem ter aderência funcional, mas não devem compartilhar telas ou conteúdo visual principal.
+
+O compartilhamento correto é na camada de integração e domínio: endpoint, ApiClient, requests, responses, models, mappers, services, regras semânticas e providers/controladores sem responsabilidade visual. A composição da UI deve ser própria por plataforma. Não implementar uma versão Web ou Mobile apenas embrulhando a mesma tela/conteúdo com `embedded`, `isMobile`, `isWeb`, `LayoutBuilder` ou flags equivalentes.
 
 ## Rotas e estrutura existente
 
@@ -403,6 +405,8 @@ Preferir:
 - cards padronizados
 - campos de formulário padronizados
 - estados de loading, empty e error padronizados
+
+Componentes compartilhados devem ser tokens, átomos, controles pequenos ou padrões neutros do design system. Não considerar como componente compartilhado uma tela inteira, dashboard, formulário grande, modal de configuração ou conteúdo principal de jornada. Esses fluxos precisam de arquivos e composições próprios para Web e Mobile.
 
 Não criar visual inconsistente entre módulos.
 
