@@ -27,7 +27,6 @@ abstract class CaixaApiClient {
   Future<ResumoCaixa> getResumo(String idSessaoCaixa);
   Future<void> cancelarMovimento(String id);
   Future<void> fecharCaixa(FecharCaixaRequest request);
-  Future<void> encerrarSessao();
 }
 
 class HttpCaixaApiClient implements CaixaApiClient {
@@ -344,22 +343,9 @@ class HttpCaixaApiClient implements CaixaApiClient {
       body: jsonEncode(request.toJson()),
     );
 
-    if (response.statusCode != 200) {
-      throw CaixaApiException(
-        statusCode: response.statusCode,
-        body: response.body,
-      );
-    }
-  }
-
-  @override
-  Future<void> encerrarSessao() async {
-    final uri = Uri.parse(
-      '${AppConfig.baseUrl}/private/api/caixa/encerrar-sessao',
-    );
-    final response = await _httpClient.post(uri, headers: await _getHeaders());
-
-    if (response.statusCode != 200 && response.statusCode != 404) {
+    if (response.statusCode != 200 &&
+        response.statusCode != 201 &&
+        response.statusCode != 204) {
       throw CaixaApiException(
         statusCode: response.statusCode,
         body: response.body,

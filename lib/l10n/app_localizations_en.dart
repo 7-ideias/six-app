@@ -61,6 +61,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdvWebSessionActive => 'Session active';
 
   @override
+  String get pdvCashSessionChecking => 'Checking cash session';
+
+  @override
+  String get pdvCashSessionUnavailable => 'Session unavailable';
+
+  @override
+  String get pdvCashSessionNotOpen => 'No open session';
+
+  @override
+  String get pdvCashSessionClosed => 'Session closed';
+
+  @override
   String get pdvWebStatusInProgress => 'In progress';
 
   @override

@@ -2188,6 +2188,15 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
                       ),
                     ),
                     _shortcutChip(
+                      'Próximos 7 dias',
+                      () => _setPeriodo(now, now.add(const Duration(days: 6))),
+                    ),
+                    _shortcutChip(
+                      'Vencidos',
+                      () =>
+                          _setPeriodoAte(now.subtract(const Duration(days: 1))),
+                    ),
+                    _shortcutChip(
                       'Últimos 30 dias',
                       () => _setPeriodo(
                         now.subtract(const Duration(days: 29)),
@@ -2320,6 +2329,14 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
     setState(() {
       _inicio = DateTime(inicio.year, inicio.month, inicio.day);
       _fim = DateTime(fim.year, fim.month, fim.day);
+    });
+  }
+
+  void _setPeriodoAte(DateTime fim) {
+    setState(() {
+      _inicio = null;
+      _fim = DateTime(fim.year, fim.month, fim.day);
+      _editandoInicio = false;
     });
   }
 }

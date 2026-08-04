@@ -200,6 +200,7 @@ class AgendaFinanceiraLiquidacaoRequest {
     this.observacoes,
     this.referenciaExterna,
     this.anexarComprovante = false,
+    this.idSessaoCaixa,
   });
 
   final String tipoLiquidacao;
@@ -209,6 +210,7 @@ class AgendaFinanceiraLiquidacaoRequest {
   final String? observacoes;
   final String? referenciaExterna;
   final bool anexarComprovante;
+  final String? idSessaoCaixa;
 
   Map<String, dynamic> toJson() {
     return {
@@ -219,6 +221,7 @@ class AgendaFinanceiraLiquidacaoRequest {
       'observacoes': observacoes,
       'referenciaExterna': referenciaExterna,
       'anexarComprovante': anexarComprovante,
+      'idSessaoCaixa': idSessaoCaixa,
     };
   }
 }
@@ -230,6 +233,7 @@ class AgendaFinanceiraParcialRequest {
     required this.valorLiquidado,
     required this.formaPagamentoRealizada,
     this.observacoes,
+    this.idSessaoCaixa,
   });
 
   final String tipoLiquidacao;
@@ -237,6 +241,7 @@ class AgendaFinanceiraParcialRequest {
   final double valorLiquidado;
   final String formaPagamentoRealizada;
   final String? observacoes;
+  final String? idSessaoCaixa;
 
   Map<String, dynamic> toJson() {
     return {
@@ -245,6 +250,7 @@ class AgendaFinanceiraParcialRequest {
       'valorLiquidado': valorLiquidado,
       'formaPagamentoRealizada': formaPagamentoRealizada,
       'observacoes': observacoes,
+      'idSessaoCaixa': idSessaoCaixa,
     };
   }
 }

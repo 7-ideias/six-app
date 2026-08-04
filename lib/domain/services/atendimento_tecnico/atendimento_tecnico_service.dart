@@ -59,6 +59,10 @@ class AtendimentoTecnicoService {
     required DominioOpcaoModel status,
     String? observacao,
   }) {
+    if (_statusDeCancelamento(status.codigo)) {
+      return cancelar(id: id, observacao: observacao);
+    }
+
     return _apiClient.alterarStatus(
       id: id,
       statusId: status.id,
@@ -66,6 +70,13 @@ class AtendimentoTecnicoService {
       statusI18nKey: status.i18nKey,
       observacao: observacao,
     );
+  }
+
+  Future<AtendimentoTecnicoModel> cancelar({
+    required String id,
+    String? observacao,
+  }) {
+    return _apiClient.cancelar(id: id, observacao: observacao);
   }
 
   Future<Map<String, dynamic>> gerarLinkAssinatura({
@@ -131,5 +142,10 @@ class AtendimentoTecnicoService {
       assinaturaDataUrl: assinaturaDataUrl,
       observacao: observacao,
     );
+  }
+
+  bool _statusDeCancelamento(String statusCodigo) {
+    final String codigo = statusCodigo.trim().toUpperCase();
+    return <String>{'CANCELED', 'CANCELADO', 'CANCELADA'}.contains(codigo);
   }
 }

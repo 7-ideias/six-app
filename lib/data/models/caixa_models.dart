@@ -1,7 +1,5 @@
 import 'package:sixpos/data/models/regionalizacao_models.dart';
 
-import '../../presentation/screens/operacoes_caixa_web_page.dart';
-
 class InformacoesBasicasCaixaResponse {
   final bool possuiSessaoAberta;
   final List<TiposRecebimento> tiposRecebimento;
@@ -396,6 +394,41 @@ class ResumoCaixa {
   }
 }
 
+enum OperacaoCaixaTipo {
+  aberturaCaixa,
+  fechamentoCaixa,
+  suprimento,
+  sangria,
+  retiradaDespesa,
+  ajuste,
+  estorno,
+  recebimentoAvulso,
+  pagamentoAvulso;
+
+  String get codigoApi {
+    switch (this) {
+      case OperacaoCaixaTipo.aberturaCaixa:
+        return 'ABERTURA_CAIXA';
+      case OperacaoCaixaTipo.fechamentoCaixa:
+        return 'FECHAMENTO_CAIXA';
+      case OperacaoCaixaTipo.suprimento:
+        return 'SUPRIMENTO';
+      case OperacaoCaixaTipo.sangria:
+        return 'SANGRIA';
+      case OperacaoCaixaTipo.retiradaDespesa:
+        return 'RETIRADA_DESPESA';
+      case OperacaoCaixaTipo.ajuste:
+        return 'AJUSTE';
+      case OperacaoCaixaTipo.estorno:
+        return 'ESTORNO';
+      case OperacaoCaixaTipo.recebimentoAvulso:
+        return 'RECEBIMENTO_AVULSO';
+      case OperacaoCaixaTipo.pagamentoAvulso:
+        return 'PAGAMENTO_AVULSO';
+    }
+  }
+}
+
 class AbrirCaixaRequest {
   final String idCaixaOuGuiche;
   final String nomeCaixa;
@@ -438,7 +471,7 @@ class RegistrarMovimentoRequest {
   Map<String, dynamic> toJson() {
     return {
       'idSessaoCaixa': idSessaoCaixa,
-      'tipoMovimento': tipoMovimento.OperacaoCaixaTipoEnum,
+      'tipoMovimento': tipoMovimento.codigoApi,
       'codigoTipoRecebimento': codigoTipoRecebimento,
       'valor': valor,
       'observacao': observacao,

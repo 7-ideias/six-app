@@ -81,6 +81,8 @@ Trate carregamento, vazio, erro, sucesso, bloqueio e falta de permissão. Em tel
 
 Use motion funcional e curto: entrada progressiva com `fade + leve deslocamento`, `AnimatedSwitcher`, `TweenAnimationBuilder`, `AnimatedContainer`, `FadeTransition` ou `SlideTransition`. Dashboards e gráficos podem animar entrada e atualização; evite animação contínua decorativa.
 
+Em KPIs, cards de resumo, totalizadores e dashboards Web, valores numéricos importantes devem animar na entrada e quando o valor mudar, especialmente valores monetários, saldos, totais, quantidades e percentuais. Para valores monetários, mantenha o valor bruto como `num`/`double` durante a animação e aplique `LocaleSettingsProvider.formatCurrency` ou helper regionalizado equivalente apenas no render do `TweenAnimationBuilder<double>`, usando chave estável baseada no identificador do indicador e no valor final. Não passe moeda já formatada como string para componentes que precisam animar, recalcular ou reagir a filtros.
+
 ## Formulários, Tabelas E Filtros
 
 Formulários Web devem preservar leitura, validação clara, labels/placeholder via i18n quando forem texto do app, botões proporcionais e layout que degrade bem em largura compacta.

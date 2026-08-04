@@ -72,8 +72,4 @@ class CaixaService {
   Future<void> fecharCaixa(FecharCaixaRequest request) {
     return _apiClient.fecharCaixa(request);
   }
-
-  Future<void> encerrarSessao() {
-    return _apiClient.encerrarSessao();
-  }
 }

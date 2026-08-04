@@ -616,6 +616,7 @@ class _AgendaFinanceiraMobileScreenState
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
     await _executarComLoading(() async {
+      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
       await _acoesService.executarAbatimento(
         idLancamento: item['id'].toString(),
         request: AgendaFinanceiraParcialRequest(
@@ -627,6 +628,7 @@ class _AgendaFinanceiraMobileScreenState
               resultado.observacao.trim().isEmpty
                   ? 'Lançamento parcial registrado pela agenda financeira.'
                   : resultado.observacao.trim(),
+          idSessaoCaixa: idSessaoCaixa,
         ),
       );
       await _consultar();
@@ -659,6 +661,7 @@ class _AgendaFinanceiraMobileScreenState
     );
     if (confirmado != true) return;
     await _executarComLoading(() async {
+      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
       await _acoesService.executarTotal(
         idLancamento: item['id'].toString(),
         request: AgendaFinanceiraLiquidacaoRequest(
@@ -671,6 +674,7 @@ class _AgendaFinanceiraMobileScreenState
               'tipo2',
           observacoes: 'Liquidação realizada pela agenda financeira.',
           referenciaExterna: item['id']?.toString(),
+          idSessaoCaixa: idSessaoCaixa,
         ),
       );
       await _consultar();
@@ -679,6 +683,14 @@ class _AgendaFinanceiraMobileScreenState
         const SnackBar(content: Text('Lançamento liquidado com sucesso.')),
       );
     });
+  }
+
+  Future<String?> _buscarIdSessaoCaixaAberta() async {
+    final CaixaSessao? sessao = await _caixaApiClient.getSessaoAtual();
+    final String? idSessaoCaixa = sessao?.idSessaoCaixa.trim();
+    return idSessaoCaixa == null || idSessaoCaixa.isEmpty
+        ? null
+        : idSessaoCaixa;
   }
 
   Future<void> _executarComLoading(Future<void> Function() action) async {

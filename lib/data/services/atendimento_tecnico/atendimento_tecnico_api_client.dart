@@ -191,6 +191,26 @@ class AtendimentoTecnicoApiClient {
     );
   }
 
+  Future<AtendimentoTecnicoModel> cancelar({
+    required String id,
+    String? observacao,
+  }) async {
+    final response = await _httpClient.post(
+      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id/cancelar'),
+      headers: await _headers(),
+      body: jsonEncode(<String, dynamic>{'observacao': observacao}),
+    );
+    if (response.statusCode != 200) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+    return AtendimentoTecnicoModel.fromJson(
+      jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
+    );
+  }
+
   Future<Map<String, dynamic>> gerarLinkAssinatura({
     required String id,
     required String baseUrl,

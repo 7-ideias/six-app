@@ -979,6 +979,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       return;
     }
     await _executarComLoading(() async {
+      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
       await _acoesService.executarAbatimento(
         idLancamento: item['id'].toString(),
         request: AgendaFinanceiraParcialRequest(
@@ -990,6 +991,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               observacao.isEmpty
                   ? 'Lançamento parcial registrado pela agenda financeira.'
                   : observacao,
+          idSessaoCaixa: idSessaoCaixa,
         ),
       );
       await _consultar();
@@ -1099,6 +1101,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       return;
     }
     await _executarComLoading(() async {
+      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
       await _acoesService.executarTotal(
         idLancamento: item['id'].toString(),
         request: AgendaFinanceiraLiquidacaoRequest(
@@ -1108,6 +1111,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           formaPagamentoRealizada: codigoTipoRecebimento,
           observacoes: 'Liquidação realizada pela agenda financeira.',
           referenciaExterna: item['id']?.toString(),
+          idSessaoCaixa: idSessaoCaixa,
         ),
       );
       await _consultar();
@@ -1117,6 +1121,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         );
       }
     });
+  }
+
+  Future<String?> _buscarIdSessaoCaixaAberta() async {
+    final CaixaSessao? sessao = await _caixaApiClient.getSessaoAtual();
+    final String? idSessaoCaixa = sessao?.idSessaoCaixa.trim();
+    return idSessaoCaixa == null || idSessaoCaixa.isEmpty
+        ? null
+        : idSessaoCaixa;
   }
 
   List<String> _formasPagamentoDisponiveisParaLiquidacao() {
