@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 
 import '../../data/models/usuario_model.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -45,6 +46,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   static const Curve _entryCurve = Curves.easeOutCubic;
 
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  final UsuarioService _usuarioService = UsuarioService();
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _sobrenomeController = TextEditingController();
@@ -53,7 +55,8 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   final TextEditingController _nomeDeGuerraController = TextEditingController();
   final TextEditingController _celularController = TextEditingController();
   final TextEditingController _rgController = TextEditingController();
-  final TextEditingController _dataNascimentoController = TextEditingController();
+  final TextEditingController _dataNascimentoController =
+      TextEditingController();
   final TextEditingController _emailController = TextEditingController();
 
   final TextEditingController _cepController = TextEditingController();
@@ -74,15 +77,19 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   Future<void> _buscarDados() async {
     _usuarioProvider.setLoading(true);
     try {
-      if (_usuarioProvider.usuario == null) {
-        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
-      }
+      await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
       _preencherControllers(_usuarioProvider.usuario);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Não foi possível carregar seus dados. Tente novamente.'),
+          SnackBar(
+            content: Text(
+              context.t(
+                'perfil.web.loadError',
+                fallback:
+                    'Não foi possível carregar seus dados. Tente novamente.',
+              ),
+            ),
           ),
         );
       }
@@ -156,7 +163,9 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.24)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.24),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -164,7 +173,9 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error.withOpacity(0.70)),
+        borderSide: BorderSide(
+          color: colorScheme.error.withValues(alpha: 0.70),
+        ),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -208,10 +219,12 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.86)),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.86),
+          ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.035),
+              color: Colors.black.withValues(alpha: 0.035),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
@@ -227,7 +240,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.10),
+                    color: colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: colorScheme.primary, size: 23),
@@ -277,25 +290,30 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth;
-        final int columns = maxWidth >= 820
-            ? desktopColumns
-            : maxWidth >= 560
+        final int columns =
+            maxWidth >= 820
+                ? desktopColumns
+                : maxWidth >= 560
                 ? math.min(2, desktopColumns)
                 : 1;
-        final double columnWidth = (maxWidth - (spacing * (columns - 1))) / columns;
+        final double columnWidth =
+            (maxWidth - (spacing * (columns - 1))) / columns;
 
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: items.map((_ProfileFormItem item) {
-            final int safeSpan = item.span < 1
-                ? 1
-                : item.span > columns
-                    ? columns
-                    : item.span;
-            final double width = (columnWidth * safeSpan) + (spacing * (safeSpan - 1));
-            return SizedBox(width: width, child: item.child);
-          }).toList(),
+          children:
+              items.map((_ProfileFormItem item) {
+                final int safeSpan =
+                    item.span < 1
+                        ? 1
+                        : item.span > columns
+                        ? columns
+                        : item.span;
+                final double width =
+                    (columnWidth * safeSpan) + (spacing * (safeSpan - 1));
+                return SizedBox(width: width, child: item.child);
+              }).toList(),
         );
       },
     );
@@ -305,7 +323,9 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     final UsuarioModel? usuarioAtual = _usuarioProvider.usuario;
     if (usuarioAtual == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Usuário não encontrado para atualização.')),
+        const SnackBar(
+          content: Text('Usuário não encontrado para atualização.'),
+        ),
       );
       return;
     }
@@ -334,17 +354,30 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
 
     _usuarioProvider.setLoading(true);
     try {
-      await UsuarioService().atualizarDadosDoUsuario(atualizado);
+      await _usuarioService.atualizarDadosDoUsuario(atualizado);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil atualizado com sucesso!')),
+          SnackBar(
+            content: Text(
+              context.t(
+                'perfil.web.saveSuccess',
+                fallback: 'Perfil atualizado com sucesso!',
+              ),
+            ),
+          ),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Não foi possível atualizar seu perfil. Tente novamente.'),
+          SnackBar(
+            content: Text(
+              context.t(
+                'perfil.web.saveError',
+                fallback:
+                    'Não foi possível atualizar seu perfil. Tente novamente.',
+              ),
+            ),
           ),
         );
       }
@@ -362,15 +395,16 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       child: ListenableBuilder(
         listenable: _usuarioProvider,
         builder: (BuildContext context, _) {
-          final Widget body = _usuarioProvider.isLoading
-              ? const KeyedSubtree(
-                  key: ValueKey<String>('meu-perfil-loading'),
-                  child: _MeuPerfilLoading(),
-                )
-              : KeyedSubtree(
-                  key: const ValueKey<String>('meu-perfil-form'),
-                  child: _buildFormContent(context),
-                );
+          final Widget body =
+              _usuarioProvider.isLoading
+                  ? const KeyedSubtree(
+                    key: ValueKey<String>('meu-perfil-loading'),
+                    child: _MeuPerfilLoading(),
+                  )
+                  : KeyedSubtree(
+                    key: const ValueKey<String>('meu-perfil-form'),
+                    child: _buildFormContent(context),
+                  );
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -399,7 +433,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 18, 18),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.06),
+        color: colorScheme.primary.withValues(alpha: 0.06),
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Row(
@@ -408,10 +442,14 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.12),
+              color: colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(Icons.account_circle_outlined, color: colorScheme.primary, size: 28),
+            child: Icon(
+              Icons.account_circle_outlined,
+              color: colorScheme.primary,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -422,7 +460,9 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                   'Meu Perfil',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -439,8 +479,21 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           ),
           const SizedBox(width: 12),
           IconButton.filledTonal(
+            onPressed: _usuarioProvider.isLoading ? null : _buscarDados,
+            tooltip: context.t('common.refresh', fallback: 'Atualizar'),
+            icon:
+                _usuarioProvider.isLoading
+                    ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.refresh_rounded),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
             onPressed: () => Navigator.of(context).pop(),
-            tooltip: 'Fechar',
+            tooltip: context.t('common.close', fallback: 'Fechar'),
             icon: const Icon(Icons.close_rounded),
           ),
         ],
@@ -456,7 +509,8 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           _buildSectionCard(
             context: context,
             title: 'Dados pessoais',
-            subtitle: 'Atualize os dados principais usados em cadastros, vendas e atendimento.',
+            subtitle:
+                'Atualize os dados principais usados em cadastros, vendas e atendimento.',
             icon: Icons.person_outline_rounded,
             order: 0,
             child: _buildFieldGrid(
@@ -553,7 +607,8 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           _buildSectionCard(
             context: context,
             title: 'Endereço',
-            subtitle: 'Dados de localização para contato, cadastro e documentos gerados pelo sistema.',
+            subtitle:
+                'Dados de localização para contato, cadastro e documentos gerados pelo sistema.',
             icon: Icons.location_on_outlined,
             order: 1,
             child: _buildFieldGrid(
@@ -631,7 +686,9 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+          border: Border(
+            top: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
         ),
         child: Row(
           children: <Widget>[
@@ -648,7 +705,10 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
             ),
             const SizedBox(width: 12),
             OutlinedButton(
-              onPressed: _usuarioProvider.isLoading ? null : () => Navigator.of(context).pop(),
+              onPressed:
+                  _usuarioProvider.isLoading
+                      ? null
+                      : () => Navigator.of(context).pop(),
               child: const Text('Cancelar'),
             ),
             const SizedBox(width: 12),
@@ -728,7 +788,9 @@ class _MeuPerfilSkeletonSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.86)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.86),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,9 +817,13 @@ class _MeuPerfilSkeletonSection extends StatelessWidget {
               padding: EdgeInsets.only(bottom: index == rows - 1 ? 0 : 12),
               child: Row(
                 children: <Widget>[
-                  Expanded(child: _skeletonBox(context, height: 52, radius: 16)),
+                  Expanded(
+                    child: _skeletonBox(context, height: 52, radius: 16),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: _skeletonBox(context, height: 52, radius: 16)),
+                  Expanded(
+                    child: _skeletonBox(context, height: 52, radius: 16),
+                  ),
                 ],
               ),
             );
@@ -778,7 +844,9 @@ class _MeuPerfilSkeletonSection extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.55),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.55,
+        ),
         borderRadius: BorderRadius.circular(radius),
       ),
     );

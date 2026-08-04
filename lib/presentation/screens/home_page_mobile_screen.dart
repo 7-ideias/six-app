@@ -9,6 +9,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/dashboard_inicio_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
@@ -50,7 +51,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
-  final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider();
+  final UsuarioService _usuarioService = UsuarioService();
+  final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider(
+    initialPeriod: DashboardPeriod.last30Days,
+  );
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   @override
@@ -115,7 +119,20 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   Future<void> _onRefresh() async {
-    _dashboardProvider.reload();
+    await Future.wait([
+      _dashboardProvider.reload(),
+      _atualizarDadosPessoaisNoRefresh(),
+    ]);
+  }
+
+  Future<void> _atualizarDadosPessoaisNoRefresh() async {
+    try {
+      await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+    } catch (error) {
+      debugPrint(
+        '[HomePageMobile] Falha ao atualizar dados pessoais no refresh: $error',
+      );
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -145,17 +162,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
         secondaryColor: _secondaryColor,
         accentColor: _accentColor,
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          tooltip: context.t(
-            'gestao.settings.item.notifications.title',
-            fallback: 'Notificações',
-          ),
-          icon: _buildNotificationIcon(),
-          onPressed: () => _openNotifications(context),
-        ),
         actions: [
-          SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
-          _buildTopOptionsButton(context),
+          IconButton(
+            tooltip: context.t(
+              'gestao.settings.item.notifications.title',
+              fallback: 'Notificações',
+            ),
+            icon: _buildNotificationIcon(),
+            onPressed: () => _openNotifications(context),
+          ),
           const SizedBox(width: 6),
         ],
         bodyBuilder: _buildHomeContent,
@@ -226,66 +241,63 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   // ─── NOTIFICATION ICON ─────────────────────────────────────────────────────
 
-  Widget _buildTopOptionsButton(BuildContext context) {
-    return Tooltip(
-      message: context.t('common.moreOptions', fallback: 'Mais opções'),
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () {},
-          child: Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
-              ),
-              color: SixMobilePalette.onPrimary.withValues(alpha: 0.08),
-            ),
-            child: const Icon(Icons.tune_rounded, size: 20),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildGreetingHeader(BuildContext context) {
     final String nome = _resolveGreetingName();
 
     return Semantics(
       header: true,
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context
-                .t('dashboardInicio.mobileGreeting', fallback: 'Olá, {nome}!')
-                .replaceAll('{nome}', nome),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.onPrimary,
-              fontSize: 28,
-              height: 1.08,
-              fontWeight: FontWeight.w900,
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: SixMobileAccountPanelAction(
+              image: _image,
+              onPickImage: _pickImage,
+              size: 44,
+              borderColor: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
+              backgroundColor: SixMobilePalette.onPrimary.withValues(
+                alpha: 0.10,
+              ),
+              iconColor: SixMobilePalette.onPrimary,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            context.t(
-              'dashboardInicio.mobileGreetingSubtitle',
-              fallback: 'Veja os principais movimentos do comércio hoje.',
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: SixMobilePalette.heroSupportingText,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context
+                      .t(
+                        'dashboardInicio.mobileGreeting',
+                        fallback: 'Olá, {nome}!',
+                      )
+                      .replaceAll('{nome}', nome),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SixMobilePalette.onPrimary,
+                    fontSize: 28,
+                    height: 1.08,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  context.t(
+                    'dashboardInicio.mobileGreetingSubtitle',
+                    fallback: 'Veja os principais movimentos do comércio hoje.',
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: SixMobilePalette.heroSupportingText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
