@@ -13,7 +13,7 @@ class ManagementSectionTab {
 ///
 /// Replaces the large parallax carousel with a dense, operational selector
 /// suited for daily-use management apps.
-class ManagementSectionSelector extends StatelessWidget {
+class ManagementSectionSelector extends StatefulWidget {
   const ManagementSectionSelector({
     super.key,
     required this.sections,
@@ -26,22 +26,123 @@ class ManagementSectionSelector extends StatelessWidget {
   final ValueChanged<int> onSectionSelected;
 
   @override
+  State<ManagementSectionSelector> createState() =>
+      _ManagementSectionSelectorState();
+}
+
+class _ManagementSectionSelectorState extends State<ManagementSectionSelector> {
+  final ScrollController _scrollController = ScrollController();
+  List<GlobalKey> _itemKeys = const <GlobalKey>[];
+  bool _hintPlayed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncItemKeys();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureSelectedVisible();
+      _playScrollHint();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ManagementSectionSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sections.length != widget.sections.length) {
+      _syncItemKeys();
+    }
+    if (oldWidget.selectedIndex != widget.selectedIndex ||
+        oldWidget.sections.length != widget.sections.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _ensureSelectedVisible();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _syncItemKeys() {
+    _itemKeys = List<GlobalKey>.generate(
+      widget.sections.length,
+      (int index) => GlobalKey(),
+      growable: false,
+    );
+  }
+
+  void _ensureSelectedVisible() {
+    if (!mounted || widget.selectedIndex >= _itemKeys.length) return;
+    final BuildContext? selectedContext =
+        _itemKeys[widget.selectedIndex].currentContext;
+    if (selectedContext == null) return;
+
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    Scrollable.ensureVisible(
+      selectedContext,
+      alignment: 0.5,
+      duration:
+          reduceMotion ? Duration.zero : const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _playScrollHint() async {
+    if (_hintPlayed || !mounted) return;
+    _hintPlayed = true;
+
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    if (reduceMotion || !_scrollController.hasClients) return;
+
+    final double maxScroll = _scrollController.position.maxScrollExtent;
+    if (maxScroll <= 0 || widget.selectedIndex != 0) return;
+
+    final double hintOffset = maxScroll < 26 ? maxScroll : 26;
+    try {
+      await _scrollController.animateTo(
+        hintOffset,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+      if (!mounted || !_scrollController.hasClients) return;
+      await _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 44,
       child: ListView.separated(
+        controller: _scrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: sections.length,
+        itemCount: widget.sections.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (BuildContext context, int index) {
-          final ManagementSectionTab tab = sections[index];
-          final bool isSelected = index == selectedIndex;
+          final ManagementSectionTab tab = widget.sections[index];
+          final bool isSelected = index == widget.selectedIndex;
 
-          return _SectionChip(
-            tab: tab,
-            isSelected: isSelected,
-            onTap: () => onSectionSelected(index),
+          return KeyedSubtree(
+            key: _itemKeys[index],
+            child: _SectionChip(
+              key: ValueKey<String>('management-section-tab-$index'),
+              tab: tab,
+              isSelected: isSelected,
+              onTap: () => widget.onSectionSelected(index),
+            ),
           );
         },
       ),
@@ -51,6 +152,7 @@ class ManagementSectionSelector extends StatelessWidget {
 
 class _SectionChip extends StatelessWidget {
   const _SectionChip({
+    super.key,
     required this.tab,
     required this.isSelected,
     required this.onTap,
@@ -113,6 +215,8 @@ class _SectionChip extends StatelessWidget {
                 const SizedBox(width: 7),
                 Text(
                   tab.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color:
                         isSelected

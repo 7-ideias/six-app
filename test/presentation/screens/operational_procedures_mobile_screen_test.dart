@@ -240,8 +240,9 @@ void main() {
           'lib/presentation/screens/gestao_mobile_screen.dart',
         ).readAsStringSync();
 
-    expect(source, contains("'procedimentos.title'"));
-    expect(source, contains("'procedimentos.subtitle'"));
+    expect(source, contains("'gestao.settings.item.procedures.title'"));
+    expect(source, contains("'gestao.settings.item.procedures.subtitle'"));
+    expect(source, contains('ManagementSettingsMaturity.experimental'));
     expect(source, contains('const OperationalProceduresMobileScreen()'));
   });
 }

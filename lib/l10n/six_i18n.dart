@@ -650,10 +650,62 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.settings.item.integrations.subtitle':
         'Serviços externos e automações',
 
+    // Gestão — visão contextual mobile
+    'gestao.overview.selectedArea': 'Área selecionada',
+    'gestao.overview.valueUnavailable': '--',
+    'gestao.overview.mainActions': 'Ações principais',
+    'gestao.overview.errorMessage':
+        'As ações continuam disponíveis. Tente atualizar os dados em instantes.',
+    'gestao.catalog.metric.productsServices': 'Produtos e serviços',
+    'gestao.catalog.metric.categories': 'Categorias',
+    'gestao.catalog.metric.lowStock': 'Estoque baixo',
+    'gestao.catalog.loadError':
+        'Não foi possível carregar o resumo do catálogo.',
+    'gestao.catalog.emptyTitle': 'Catálogo sem dados para exibir',
+    'gestao.catalog.emptyMessage':
+        'Cadastre produtos, serviços ou categorias para preencher os indicadores.',
+    'gestao.catalog.permissionRestrictedTitle':
+        'Catálogo restrito para este usuário',
+    'gestao.catalog.permissionRestrictedMessage':
+        'A ação de produtos e serviços respeita as permissões atuais.',
+    'gestao.catalog.lowStockTitle': 'Estoque precisa de atenção',
+    'gestao.catalog.lowStockMessage':
+        '{count} item(ns) abaixo do limite configurado no catálogo.',
+    'gestao.catalog.lowStockAction': 'Ver itens',
+    'gestao.people.metric.clients': 'Clientes',
+    'gestao.people.metric.collaborators': 'Colaboradores',
+    'gestao.people.metric.suppliers': 'Fornecedores',
+    'gestao.people.suppliersUnavailableSemantic': 'Recurso em breve',
+    'gestao.people.loadError': 'Não foi possível carregar o resumo de pessoas.',
+    'gestao.people.emptyTitle': 'Nenhum contato carregado',
+    'gestao.people.emptyMessage':
+        'Clientes e colaboradores aparecerão aqui quando estiverem cadastrados.',
+    'gestao.people.suppliersBlockedTitle': 'Fornecedores ainda não disponível',
+    'gestao.people.suppliersBlockedMessage':
+        'O recurso segue marcado como Em breve e não possui navegação mobile ativa.',
+    'gestao.finance.actionGroup': 'Agenda e recursos',
+    'gestao.finance.metric.events': 'Próximos eventos',
+    'gestao.finance.metric.receivableEvents': 'A receber',
+    'gestao.finance.metric.payableEvents': 'A pagar',
+    'gestao.finance.loadError':
+        'Não foi possível carregar a agenda financeira.',
+    'gestao.finance.emptyTitle': 'Agenda sem lançamentos próximos',
+    'gestao.finance.emptyMessage':
+        'Abra a agenda financeira para criar previsões e acompanhar vencimentos.',
+    'gestao.finance.openSchedule': 'Abrir agenda',
+    'gestao.finance.attentionTitle': 'Agenda com vencimentos próximos',
+    'gestao.finance.attentionMessage':
+        '{count} evento(s) vencido(s) ou vencendo hoje na agenda.',
+    'gestao.finance.blockedResourcesTitle': 'Recursos financeiros em evolução',
+    'gestao.finance.blockedResourcesMessage':
+        'Contas a receber, contas a pagar e formas de recebimento continuam bloqueadas no mobile.',
+
     // Gestão — badges e cabeçalho admin
     'gestao.settings.badge.experimental': 'Experimental',
     'gestao.settings.badge.comingSoon': 'Em breve',
     'gestao.settings.adminHeader.title': 'Configurações da empresa',
+    'gestao.settings.adminHeader.subtitle':
+        'Organize empresa, equipe, operação e comunicação.',
     'gestao.featureInProgress': 'Fluxo mobile em evolução.',
   },
   'en': {
@@ -1207,10 +1259,60 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.settings.item.integrations.subtitle':
         'External services and automations',
 
+    // Management — contextual mobile overview
+    'gestao.overview.selectedArea': 'Selected area',
+    'gestao.overview.valueUnavailable': '--',
+    'gestao.overview.mainActions': 'Main actions',
+    'gestao.overview.errorMessage':
+        'Actions are still available. Try refreshing the data in a moment.',
+    'gestao.catalog.metric.productsServices': 'Products and services',
+    'gestao.catalog.metric.categories': 'Categories',
+    'gestao.catalog.metric.lowStock': 'Low stock',
+    'gestao.catalog.loadError': 'Could not load the catalog summary.',
+    'gestao.catalog.emptyTitle': 'No catalog data to show',
+    'gestao.catalog.emptyMessage':
+        'Add products, services or categories to fill the indicators.',
+    'gestao.catalog.permissionRestrictedTitle':
+        'Catalog restricted for this user',
+    'gestao.catalog.permissionRestrictedMessage':
+        'The Products & Services action respects current permissions.',
+    'gestao.catalog.lowStockTitle': 'Inventory needs attention',
+    'gestao.catalog.lowStockMessage':
+        '{count} item(s) below the configured catalog threshold.',
+    'gestao.catalog.lowStockAction': 'View items',
+    'gestao.people.metric.clients': 'Customers',
+    'gestao.people.metric.collaborators': 'Collaborators',
+    'gestao.people.metric.suppliers': 'Suppliers',
+    'gestao.people.suppliersUnavailableSemantic': 'Coming soon resource',
+    'gestao.people.loadError': 'Could not load the people summary.',
+    'gestao.people.emptyTitle': 'No contacts loaded',
+    'gestao.people.emptyMessage':
+        'Customers and collaborators will appear here when registered.',
+    'gestao.people.suppliersBlockedTitle': 'Suppliers not available yet',
+    'gestao.people.suppliersBlockedMessage':
+        'The resource remains marked as Coming soon and has no active mobile navigation.',
+    'gestao.finance.actionGroup': 'Schedule and resources',
+    'gestao.finance.metric.events': 'Upcoming events',
+    'gestao.finance.metric.receivableEvents': 'Receivable',
+    'gestao.finance.metric.payableEvents': 'Payable',
+    'gestao.finance.loadError': 'Could not load the financial schedule.',
+    'gestao.finance.emptyTitle': 'No upcoming schedule entries',
+    'gestao.finance.emptyMessage':
+        'Open the financial schedule to create forecasts and track due dates.',
+    'gestao.finance.openSchedule': 'Open schedule',
+    'gestao.finance.attentionTitle': 'Schedule with upcoming due dates',
+    'gestao.finance.attentionMessage':
+        '{count} overdue or due-today event(s) in the schedule.',
+    'gestao.finance.blockedResourcesTitle': 'Financial resources in progress',
+    'gestao.finance.blockedResourcesMessage':
+        'Accounts receivable, accounts payable and payment methods remain locked on mobile.',
+
     // Management — badges and admin header
     'gestao.settings.badge.experimental': 'Experimental',
     'gestao.settings.badge.comingSoon': 'Coming soon',
     'gestao.settings.adminHeader.title': 'Company settings',
+    'gestao.settings.adminHeader.subtitle':
+        'Organize company, team, operation and communication.',
     'gestao.featureInProgress': 'Mobile flow in progress.',
   },
   'es': {
@@ -1785,10 +1887,61 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.settings.item.integrations.subtitle':
         'Servicios externos y automatizaciones',
 
+    // Gestión — visión contextual móvil
+    'gestao.overview.selectedArea': 'Área seleccionada',
+    'gestao.overview.valueUnavailable': '--',
+    'gestao.overview.mainActions': 'Acciones principales',
+    'gestao.overview.errorMessage':
+        'Las acciones siguen disponibles. Intenta actualizar los datos en unos instantes.',
+    'gestao.catalog.metric.productsServices': 'Productos y servicios',
+    'gestao.catalog.metric.categories': 'Categorías',
+    'gestao.catalog.metric.lowStock': 'Stock bajo',
+    'gestao.catalog.loadError':
+        'No fue posible cargar el resumen del catálogo.',
+    'gestao.catalog.emptyTitle': 'Catálogo sin datos para mostrar',
+    'gestao.catalog.emptyMessage':
+        'Registra productos, servicios o categorías para completar los indicadores.',
+    'gestao.catalog.permissionRestrictedTitle':
+        'Catálogo restringido para este usuario',
+    'gestao.catalog.permissionRestrictedMessage':
+        'La acción de Productos y Servicios respeta los permisos actuales.',
+    'gestao.catalog.lowStockTitle': 'El inventario necesita atención',
+    'gestao.catalog.lowStockMessage':
+        '{count} elemento(s) por debajo del límite configurado en el catálogo.',
+    'gestao.catalog.lowStockAction': 'Ver elementos',
+    'gestao.people.metric.clients': 'Clientes',
+    'gestao.people.metric.collaborators': 'Colaboradores',
+    'gestao.people.metric.suppliers': 'Proveedores',
+    'gestao.people.suppliersUnavailableSemantic': 'Recurso próximamente',
+    'gestao.people.loadError': 'No fue posible cargar el resumen de personas.',
+    'gestao.people.emptyTitle': 'Ningún contacto cargado',
+    'gestao.people.emptyMessage':
+        'Clientes y colaboradores aparecerán aquí cuando estén registrados.',
+    'gestao.people.suppliersBlockedTitle': 'Proveedores aún no está disponible',
+    'gestao.people.suppliersBlockedMessage':
+        'El recurso sigue marcado como Próximamente y no tiene navegación móvil activa.',
+    'gestao.finance.actionGroup': 'Agenda y recursos',
+    'gestao.finance.metric.events': 'Próximos eventos',
+    'gestao.finance.metric.receivableEvents': 'Por cobrar',
+    'gestao.finance.metric.payableEvents': 'Por pagar',
+    'gestao.finance.loadError': 'No fue posible cargar la agenda financiera.',
+    'gestao.finance.emptyTitle': 'Agenda sin lanzamientos próximos',
+    'gestao.finance.emptyMessage':
+        'Abre la agenda financiera para crear previsiones y seguir vencimientos.',
+    'gestao.finance.openSchedule': 'Abrir agenda',
+    'gestao.finance.attentionTitle': 'Agenda con vencimientos próximos',
+    'gestao.finance.attentionMessage':
+        '{count} evento(s) vencido(s) o con vencimiento hoy en la agenda.',
+    'gestao.finance.blockedResourcesTitle': 'Recursos financieros en evolución',
+    'gestao.finance.blockedResourcesMessage':
+        'Cuentas por cobrar, cuentas por pagar y formas de cobro continúan bloqueadas en mobile.',
+
     // Gestión — badges y encabezado admin
     'gestao.settings.badge.experimental': 'Experimental',
     'gestao.settings.badge.comingSoon': 'Próximamente',
     'gestao.settings.adminHeader.title': 'Configuración de la empresa',
+    'gestao.settings.adminHeader.subtitle':
+        'Organiza empresa, equipo, operación y comunicación.',
     'gestao.featureInProgress': 'Flujo móvil en evolución.',
   },
 };

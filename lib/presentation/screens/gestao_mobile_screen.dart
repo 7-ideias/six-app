@@ -1,10 +1,11 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/management/management_area_components.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_admin_header.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_section_selector.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_group.dart';
@@ -22,12 +23,27 @@ import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen
 import 'package:sixpos/presentation/screens/regionalizacao_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
+import 'package:sixpos/providers/management_overview_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
 import 'empresa_configuracao_mobile.dart';
 
+typedef ManagementMobileNavigate =
+    void Function(BuildContext context, Widget page);
+
 class GestaoMobileScreen extends StatefulWidget {
-  const GestaoMobileScreen({super.key});
+  const GestaoMobileScreen({
+    super.key,
+    this.overviewProvider,
+    this.onNavigate,
+    @visibleForTesting this.initialSectionIndex = 0,
+    @visibleForTesting this.showBottomNavigationBar = true,
+  });
+
+  final ManagementOverviewProvider? overviewProvider;
+  final ManagementMobileNavigate? onNavigate;
+  final int initialSectionIndex;
+  final bool showBottomNavigationBar;
 
   @override
   State<GestaoMobileScreen> createState() => _GestaoMobileScreenState();
@@ -39,6 +55,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   static const Duration _sectionTransitionDuration = Duration(
     milliseconds: 380,
   );
+  static const Color _catalogAccent = SixMobilePalette.accent;
+  static const Color _peopleAccent = Color(0xFF059669);
+  static const Color _financeAccent = Color(0xFF0891B2);
+  static const Color _attentionAccent = Color(0xFFD97706);
+  static const Color _lockedAccent = Color(0xFF64748B);
 
   final NotificacaoService _notificacaoService = NotificacaoService();
   int _totalNotificacoesConhecidas = 0;
@@ -47,6 +68,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedSectionIndex = widget.initialSectionIndex;
     _totalNotificacoesConhecidas = _notificacaoService.total;
     _notificacaoService.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -94,7 +116,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SixMobilePageShell(
+    final Widget shell = SixMobilePageShell(
       title: context.t('gestao.title', fallback: 'Gestão'),
       backgroundColor: SixMobilePalette.background,
       primaryColor: SixMobilePalette.primary,
@@ -112,7 +134,24 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
       ],
       bodyBuilder: _buildContent,
-      bottomNavigationBar: kIsWeb ? null : const NavBarMobile(initialIndex: 0),
+      bottomNavigationBar:
+          kIsWeb || !widget.showBottomNavigationBar
+              ? null
+              : const NavBarMobile(initialIndex: 0),
+    );
+
+    final ManagementOverviewProvider? injectedProvider =
+        widget.overviewProvider;
+    if (injectedProvider != null) {
+      return ChangeNotifierProvider<ManagementOverviewProvider>.value(
+        value: injectedProvider,
+        child: shell,
+      );
+    }
+
+    return ChangeNotifierProvider<ManagementOverviewProvider>(
+      create: (_) => ManagementOverviewProvider()..load(),
+      child: shell,
     );
   }
 
@@ -208,11 +247,15 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             child: SixStaggeredEntry(
               delay: const Duration(milliseconds: 180),
               child: _buildSmoothSectionTransition(
+                context,
                 transitionKey: 'section-${selectedSection.title}',
                 child:
                     selectedSection.isSettingsCentral
                         ? _buildSettingsCentral(context, selectedSection)
-                        : _buildStandardSectionDetails(selectedSection),
+                        : _buildStandardSectionDetails(
+                          context,
+                          selectedSection,
+                        ),
               ),
             ),
           ),
@@ -229,37 +272,44 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   ) {
     final String? companyName = _resolveCompanyName(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        // Admin header
-        SixStaggeredEntry(
-          delay: const Duration(milliseconds: 60),
-          child: ManagementAdminHeader(
-            title: context.t(
-              'gestao.settings.adminHeader.title',
-              fallback: 'Configurações da empresa',
+    return KeyedSubtree(
+      key: const ValueKey<String>('management-area-settings'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          // Admin header
+          SixStaggeredEntry(
+            delay: const Duration(milliseconds: 60),
+            child: ManagementAdminHeader(
+              title: context.t(
+                'gestao.settings.adminHeader.title',
+                fallback: 'Configurações da empresa',
+              ),
+              subtitle: context.t(
+                'gestao.settings.adminHeader.subtitle',
+                fallback: 'Organize empresa, equipe, operação e comunicação.',
+              ),
+              companyName: companyName,
             ),
-            companyName: companyName,
           ),
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-        // Settings groups
-        ...section.settingsGroups!.asMap().entries.map((
-          MapEntry<int, ManagementSettingsGroupData> entry,
-        ) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: entry.key < section.settingsGroups!.length - 1 ? 20 : 0,
-            ),
-            child: SixStaggeredEntry(
-              delay: Duration(milliseconds: 120 + entry.key * 60),
-              child: ManagementSettingsGroup(group: entry.value),
-            ),
-          );
-        }),
-      ],
+          // Settings groups
+          ...section.settingsGroups!.asMap().entries.map((
+            MapEntry<int, ManagementSettingsGroupData> entry,
+          ) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: entry.key < section.settingsGroups!.length - 1 ? 20 : 0,
+              ),
+              child: SixStaggeredEntry(
+                delay: Duration(milliseconds: 120 + entry.key * 60),
+                child: ManagementSettingsGroup(group: entry.value),
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -281,171 +331,453 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   // ─── Standard section details (Catálogo, Pessoas, Financeiro) ───
 
-  Widget _buildStandardSectionDetails(_ManagementSection section) {
+  Widget _buildStandardSectionDetails(
+    BuildContext context,
+    _ManagementSection section,
+  ) {
+    final ManagementOverviewSnapshot snapshot =
+        context.watch<ManagementOverviewProvider>().snapshot;
+    final bool podeAcessarCatalogo =
+        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+    final List<ManagementMetricData> metrics = _metricsForSection(
+      context,
+      section,
+      snapshot,
+      podeAcessarCatalogo: podeAcessarCatalogo,
+    );
+    final Widget? stateMessage = _stateMessageForSection(
+      context,
+      section,
+      snapshot,
+    );
+    final Widget? contextualBlock = _contextualBlockForSection(
+      context,
+      section,
+      snapshot,
+      podeAcessarCatalogo: podeAcessarCatalogo,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: SixMobilePalette.softAccentSurface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                section.icon,
-                color: SixMobilePalette.accent,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                section.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: SixMobilePalette.titleText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.1,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: SixMobilePalette.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: SixMobilePalette.border, width: 0.5),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
+        ManagementAreaHeader(
+          key: ValueKey<String>('management-area-${section.type.name}'),
+          title: section.title,
+          subtitle: section.subtitle,
+          selectedLabel: context.t(
+            'gestao.overview.selectedArea',
+            fallback: 'Área selecionada',
           ),
-          child: Column(
-            children:
-                section.items.asMap().entries.map((
-                  MapEntry<int, _ManagementItem> entry,
-                ) {
-                  final int index = entry.key;
-                  return _buildManagementTile(
-                    entry.value,
-                    isFirst: index == 0,
-                    isLast: index == section.items.length - 1,
-                  );
-                }).toList(),
+          icon: section.icon,
+          accentColor: section.accentColor,
+        ),
+        const SizedBox(height: 12),
+        ManagementMetricStrip(
+          metrics: metrics,
+          unavailableLabel: context.t(
+            'gestao.overview.valueUnavailable',
+            fallback: '--',
           ),
         ),
+        if (stateMessage != null) ...<Widget>[
+          const SizedBox(height: 12),
+          stateMessage,
+        ],
+        const SizedBox(height: 18),
+        ManagementActionGroup(
+          title: section.actionGroupTitle,
+          items: _actionDataForSection(context, section),
+        ),
+        if (contextualBlock != null) ...<Widget>[
+          const SizedBox(height: 14),
+          contextualBlock,
+        ],
       ],
     );
   }
 
-  Widget _buildManagementTile(
-    _ManagementItem item, {
-    required bool isFirst,
-    required bool isLast,
+  List<ManagementMetricData> _metricsForSection(
+    BuildContext context,
+    _ManagementSection section,
+    ManagementOverviewSnapshot snapshot, {
+    required bool podeAcessarCatalogo,
   }) {
-    final bool isDisabled =
-        item.maturity == ManagementSettingsMaturity.comingSoon;
-    final double opacity = isDisabled ? 0.52 : 1.0;
+    switch (section.type) {
+      case _ManagementSectionType.catalog:
+        final ManagementSectionLoadState<ManagementCatalogOverview> state =
+            snapshot.catalog;
+        final ManagementCatalogOverview? data = state.data;
+        return <ManagementMetricData>[
+          if (podeAcessarCatalogo)
+            ManagementMetricData(
+              label: context.t(
+                'gestao.catalog.metric.productsServices',
+                fallback: 'Produtos e serviços',
+              ),
+              icon: Icons.shopping_bag_outlined,
+              accentColor: _catalogAccent,
+              value: data?.productServiceCount,
+              loading: state.isLoading,
+            ),
+          ManagementMetricData(
+            label: context.t(
+              'gestao.catalog.metric.categories',
+              fallback: 'Categorias',
+            ),
+            icon: Icons.category_outlined,
+            accentColor: _peopleAccent,
+            value: data?.categoryCount,
+            loading: state.isLoading,
+          ),
+          ManagementMetricData(
+            label: context.t(
+              'gestao.catalog.metric.lowStock',
+              fallback: 'Estoque baixo',
+            ),
+            icon: Icons.warning_amber_rounded,
+            accentColor: _attentionAccent,
+            value: data?.lowStockItems,
+            loading: state.isLoading,
+          ),
+        ];
+      case _ManagementSectionType.people:
+        final ManagementSectionLoadState<ManagementPeopleOverview> state =
+            snapshot.people;
+        final ManagementPeopleOverview? data = state.data;
+        return <ManagementMetricData>[
+          ManagementMetricData(
+            label: context.t(
+              'gestao.people.metric.clients',
+              fallback: 'Clientes',
+            ),
+            icon: Icons.people_alt_outlined,
+            accentColor: _catalogAccent,
+            value: data?.clientCount,
+            loading: state.isLoading,
+          ),
+          ManagementMetricData(
+            label: context.t(
+              'gestao.people.metric.collaborators',
+              fallback: 'Colaboradores',
+            ),
+            icon: Icons.badge_outlined,
+            accentColor: _peopleAccent,
+            value: data?.collaboratorCount,
+            loading: state.isLoading,
+          ),
+          ManagementMetricData(
+            label: context.t(
+              'gestao.people.metric.suppliers',
+              fallback: 'Fornecedores',
+            ),
+            icon: Icons.local_shipping_outlined,
+            accentColor: _lockedAccent,
+            valueText: _maturityLabel(
+              context,
+              ManagementSettingsMaturity.comingSoon,
+            ),
+            semanticValue: context.t(
+              'gestao.people.suppliersUnavailableSemantic',
+              fallback: 'Recurso em breve',
+            ),
+          ),
+        ];
+      case _ManagementSectionType.finance:
+        final ManagementSectionLoadState<ManagementFinanceOverview> state =
+            snapshot.finance;
+        final ManagementFinanceOverview? data = state.data;
+        return <ManagementMetricData>[
+          ManagementMetricData(
+            label: context.t(
+              'gestao.finance.metric.events',
+              fallback: 'Próximos eventos',
+            ),
+            icon: Icons.event_note_outlined,
+            accentColor: _financeAccent,
+            value: data?.totalEvents,
+            loading: state.isLoading,
+          ),
+          ManagementMetricData(
+            label: context.t(
+              'gestao.finance.metric.receivableEvents',
+              fallback: 'A receber',
+            ),
+            icon: Icons.south_west_rounded,
+            accentColor: _peopleAccent,
+            value: data?.receivableEvents,
+            loading: state.isLoading,
+          ),
+          ManagementMetricData(
+            label: context.t(
+              'gestao.finance.metric.payableEvents',
+              fallback: 'A pagar',
+            ),
+            icon: Icons.north_east_rounded,
+            accentColor: _attentionAccent,
+            value: data?.payableEvents,
+            loading: state.isLoading,
+          ),
+        ];
+      case _ManagementSectionType.settings:
+        return const <ManagementMetricData>[];
+    }
+  }
 
-    return Opacity(
-      opacity: opacity,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(isFirst ? 20 : 0),
-            bottom: Radius.circular(isLast ? 20 : 0),
+  Widget? _stateMessageForSection(
+    BuildContext context,
+    _ManagementSection section,
+    ManagementOverviewSnapshot snapshot,
+  ) {
+    switch (section.type) {
+      case _ManagementSectionType.catalog:
+        return _stateMessage(
+          context,
+          snapshot.catalog,
+          emptyTitleKey: 'gestao.catalog.emptyTitle',
+          emptyTitleFallback: 'Catálogo sem dados para exibir',
+          emptyMessageKey: 'gestao.catalog.emptyMessage',
+          emptyMessageFallback:
+              'Cadastre produtos, serviços ou categorias para preencher os indicadores.',
+        );
+      case _ManagementSectionType.people:
+        return _stateMessage(
+          context,
+          snapshot.people,
+          emptyTitleKey: 'gestao.people.emptyTitle',
+          emptyTitleFallback: 'Nenhum contato carregado',
+          emptyMessageKey: 'gestao.people.emptyMessage',
+          emptyMessageFallback:
+              'Clientes e colaboradores aparecerão aqui quando estiverem cadastrados.',
+        );
+      case _ManagementSectionType.finance:
+        return _stateMessage(
+          context,
+          snapshot.finance,
+          emptyTitleKey: 'gestao.finance.emptyTitle',
+          emptyTitleFallback: 'Agenda sem lançamentos próximos',
+          emptyMessageKey: 'gestao.finance.emptyMessage',
+          emptyMessageFallback:
+              'Abra a agenda financeira para criar previsões e acompanhar vencimentos.',
+          actionLabel: context.t(
+            'gestao.finance.openSchedule',
+            fallback: 'Abrir agenda',
           ),
-          onTap: isDisabled ? null : item.onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            decoration: BoxDecoration(
-              border:
-                  isLast
-                      ? null
-                      : const Border(
-                        bottom: BorderSide(
-                          color: SixMobilePalette.border,
-                          width: 0.5,
-                        ),
-                      ),
-            ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: SixMobilePalette.softNeutralSurface,
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Icon(
-                    item.icon,
-                    color: SixMobilePalette.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SixMobilePalette.titleText,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SixMobilePalette.mutedText,
-                          fontSize: 12,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Icon(
-                  isDisabled
-                      ? Icons.lock_outline_rounded
-                      : Icons.chevron_right_rounded,
-                  color: SixMobilePalette.mutedText,
-                  size: isDisabled ? 16 : 22,
-                ),
-              ],
-            ),
-          ),
+          onAction:
+              () => _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+        );
+      case _ManagementSectionType.settings:
+        return null;
+    }
+  }
+
+  Widget? _stateMessage<T>(
+    BuildContext context,
+    ManagementSectionLoadState<T> state, {
+    required String emptyTitleKey,
+    required String emptyTitleFallback,
+    required String emptyMessageKey,
+    required String emptyMessageFallback,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    if (state.isLoading || state.hasData) return null;
+
+    if (state.hasError) {
+      return ManagementOverviewStatusMessage(
+        title: context.t(
+          state.errorKey!,
+          fallback: 'Não foi possível carregar os indicadores.',
         ),
+        message: context.t(
+          'gestao.overview.errorMessage',
+          fallback:
+              'As ações continuam disponíveis. Tente atualizar os dados em instantes.',
+        ),
+        icon: Icons.cloud_off_outlined,
+        toneColor: SixMobilePalette.error,
+        actionLabel: context.t('common.refresh', fallback: 'Atualizar'),
+        onAction: () => context.read<ManagementOverviewProvider>().reload(),
+      );
+    }
+
+    if (state.isEmpty) {
+      return ManagementOverviewStatusMessage(
+        title: context.t(emptyTitleKey, fallback: emptyTitleFallback),
+        message: context.t(emptyMessageKey, fallback: emptyMessageFallback),
+        icon: Icons.info_outline_rounded,
+        toneColor: _lockedAccent,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      );
+    }
+
+    return null;
+  }
+
+  Widget? _contextualBlockForSection(
+    BuildContext context,
+    _ManagementSection section,
+    ManagementOverviewSnapshot snapshot, {
+    required bool podeAcessarCatalogo,
+  }) {
+    switch (section.type) {
+      case _ManagementSectionType.catalog:
+        if (!podeAcessarCatalogo) {
+          return ManagementAttentionBlock(
+            title: context.t(
+              'gestao.catalog.permissionRestrictedTitle',
+              fallback: 'Catálogo restrito para este usuário',
+            ),
+            message: context.t(
+              'gestao.catalog.permissionRestrictedMessage',
+              fallback:
+                  'A ação de produtos e serviços respeita as permissões atuais.',
+            ),
+            icon: Icons.lock_outline_rounded,
+            toneColor: _lockedAccent,
+          );
+        }
+
+        final int lowStockItems = snapshot.catalog.data?.lowStockItems ?? 0;
+        if (lowStockItems <= 0) return null;
+
+        return ManagementAttentionBlock(
+          title: context.t(
+            'gestao.catalog.lowStockTitle',
+            fallback: 'Estoque precisa de atenção',
+          ),
+          message: context
+              .t(
+                'gestao.catalog.lowStockMessage',
+                fallback:
+                    '{count} item(ns) abaixo do limite configurado no catálogo.',
+              )
+              .replaceAll('{count}', lowStockItems.toString()),
+          icon: Icons.warning_amber_rounded,
+          toneColor: _attentionAccent,
+          actionLabel: context.t(
+            'gestao.catalog.lowStockAction',
+            fallback: 'Ver itens',
+          ),
+          onAction: () => _navigateTo(context, const EstoqueMobileScreen()),
+        );
+      case _ManagementSectionType.people:
+        return ManagementAttentionBlock(
+          title: context.t(
+            'gestao.people.suppliersBlockedTitle',
+            fallback: 'Fornecedores ainda não disponível',
+          ),
+          message: context.t(
+            'gestao.people.suppliersBlockedMessage',
+            fallback:
+                'O recurso segue marcado como Em breve e não possui navegação mobile ativa.',
+          ),
+          icon: Icons.lock_outline_rounded,
+          toneColor: _lockedAccent,
+        );
+      case _ManagementSectionType.finance:
+        final int attentionEvents = snapshot.finance.data?.attentionEvents ?? 0;
+        if (attentionEvents > 0) {
+          return ManagementAttentionBlock(
+            title: context.t(
+              'gestao.finance.attentionTitle',
+              fallback: 'Agenda com vencimentos próximos',
+            ),
+            message: context
+                .t(
+                  'gestao.finance.attentionMessage',
+                  fallback:
+                      '{count} evento(s) vencido(s) ou vencendo hoje na agenda.',
+                )
+                .replaceAll('{count}', attentionEvents.toString()),
+            icon: Icons.event_busy_outlined,
+            toneColor: _attentionAccent,
+            actionLabel: context.t(
+              'gestao.finance.openSchedule',
+              fallback: 'Abrir agenda',
+            ),
+            onAction:
+                () =>
+                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+          );
+        }
+
+        return ManagementAttentionBlock(
+          title: context.t(
+            'gestao.finance.blockedResourcesTitle',
+            fallback: 'Recursos financeiros em evolução',
+          ),
+          message: context.t(
+            'gestao.finance.blockedResourcesMessage',
+            fallback:
+                'Contas a receber, contas a pagar e formas de recebimento continuam bloqueadas no mobile.',
+          ),
+          icon: Icons.lock_outline_rounded,
+          toneColor: _lockedAccent,
+        );
+      case _ManagementSectionType.settings:
+        return null;
+    }
+  }
+
+  List<ManagementActionItemData> _actionDataForSection(
+    BuildContext context,
+    _ManagementSection section,
+  ) {
+    return section.items
+        .map((_ManagementItem item) {
+          final String? statusLabel =
+              item.maturity == ManagementSettingsMaturity.functional
+                  ? null
+                  : _maturityLabel(context, item.maturity);
+
+          return ManagementActionItemData(
+            title: item.title,
+            subtitle: item.subtitle,
+            icon: item.icon,
+            accentColor: item.accentColor ?? section.accentColor,
+            maturity: item.maturity,
+            emphasis: item.emphasis,
+            onTap: item.onTap,
+            statusLabel: statusLabel,
+            disabledHint:
+                item.maturity == ManagementSettingsMaturity.comingSoon
+                    ? statusLabel
+                    : null,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  String _maturityLabel(
+    BuildContext context,
+    ManagementSettingsMaturity maturity,
+  ) {
+    return switch (maturity) {
+      ManagementSettingsMaturity.experimental => context.t(
+        'gestao.settings.badge.experimental',
+        fallback: 'Experimental',
       ),
-    );
+      ManagementSettingsMaturity.comingSoon => context.t(
+        'gestao.settings.badge.comingSoon',
+        fallback: 'Em breve',
+      ),
+      ManagementSettingsMaturity.functional => '',
+    };
   }
 
   // ─── Transitions ────────────────────────────────────────────────
 
-  Widget _buildSmoothSectionTransition({
+  Widget _buildSmoothSectionTransition(
+    BuildContext context, {
     required String transitionKey,
     required Widget child,
   }) {
+    if (MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context)) {
+      return KeyedSubtree(key: ValueKey<String>(transitionKey), child: child);
+    }
+
     return AnimatedSwitcher(
       duration: _sectionTransitionDuration,
       switchInCurve: Curves.easeOutCubic,
@@ -478,8 +810,18 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
     return <_ManagementSection>[
       _ManagementSection(
+        type: _ManagementSectionType.catalog,
         title: context.t('gestao.catalog.title', fallback: 'Catálogo'),
+        subtitle: context.t(
+          'gestao.catalog.subtitle',
+          fallback: 'Produtos, categorias e estoque',
+        ),
         icon: Icons.inventory_2_outlined,
+        accentColor: _catalogAccent,
+        actionGroupTitle:
+            context
+                .t('gestao.overview.mainActions', fallback: 'Ações principais')
+                .toUpperCase(),
         items: <_ManagementItem>[
           if (podeAcessarCatalogo)
             _ManagementItem(
@@ -492,6 +834,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 fallback: 'Saúde, cadastro e revisão do catálogo',
               ),
               icon: Icons.shopping_bag_outlined,
+              accentColor: _catalogAccent,
+              emphasis: ManagementActionEmphasis.primary,
               onTap:
                   () => _navigateTo(context, const CatalogHealthMobileScreen()),
             ),
@@ -505,6 +849,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Organização do catálogo',
             ),
             icon: Icons.category_outlined,
+            accentColor: _peopleAccent,
+            emphasis: ManagementActionEmphasis.secondary,
             onTap:
                 () => _navigateTo(
                   context,
@@ -518,13 +864,25 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Saldos, entradas e ajustes',
             ),
             icon: Icons.warehouse_outlined,
+            accentColor: _attentionAccent,
+            emphasis: ManagementActionEmphasis.operational,
             onTap: () => _navigateTo(context, const EstoqueMobileScreen()),
           ),
         ],
       ),
       _ManagementSection(
+        type: _ManagementSectionType.people,
         title: context.t('gestao.people.title', fallback: 'Pessoas'),
+        subtitle: context.t(
+          'gestao.people.subtitle',
+          fallback: 'Clientes, equipe e parceiros',
+        ),
         icon: Icons.groups_2_outlined,
+        accentColor: _peopleAccent,
+        actionGroupTitle:
+            context
+                .t('gestao.overview.mainActions', fallback: 'Ações principais')
+                .toUpperCase(),
         items: <_ManagementItem>[
           _ManagementItem(
             title: context.t('gestao.people.clients', fallback: 'Clientes'),
@@ -533,6 +891,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Base de atendimento e relacionamento',
             ),
             icon: Icons.people_alt_outlined,
+            accentColor: _catalogAccent,
+            emphasis: ManagementActionEmphasis.primary,
             onTap:
                 () => _navigateTo(context, const ClientesUsuarioMobileScreen()),
           ),
@@ -546,6 +906,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Equipe, acessos e responsabilidades',
             ),
             icon: Icons.badge_outlined,
+            accentColor: _peopleAccent,
+            emphasis: ManagementActionEmphasis.secondary,
             onTap:
                 () => _navigateTo(
                   context,
@@ -562,15 +924,42 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Parceiros e compras do comércio',
             ),
             icon: Icons.local_shipping_outlined,
+            accentColor: _lockedAccent,
+            emphasis: ManagementActionEmphasis.operational,
             maturity: ManagementSettingsMaturity.comingSoon,
-            onTap: _showFeatureInProgress,
           ),
         ],
       ),
       _ManagementSection(
+        type: _ManagementSectionType.finance,
         title: context.t('gestao.finance.title', fallback: 'Financeiro'),
+        subtitle: context.t(
+          'gestao.finance.subtitle',
+          fallback: 'Contas, agenda e recebimentos',
+        ),
         icon: Icons.account_balance_wallet_outlined,
+        accentColor: _financeAccent,
+        actionGroupTitle:
+            context
+                .t('gestao.finance.actionGroup', fallback: 'Agenda e recursos')
+                .toUpperCase(),
         items: <_ManagementItem>[
+          _ManagementItem(
+            title: context.t(
+              'gestao.finance.schedule',
+              fallback: 'Agenda financeira',
+            ),
+            subtitle: context.t(
+              'gestao.finance.scheduleDesc',
+              fallback: 'Previsões, fiado e crediário',
+            ),
+            icon: Icons.event_note_outlined,
+            accentColor: _financeAccent,
+            emphasis: ManagementActionEmphasis.primary,
+            onTap:
+                () =>
+                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+          ),
           _ManagementItem(
             title: context.t(
               'gestao.finance.receivable',
@@ -581,8 +970,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Recebíveis e cobranças em aberto',
             ),
             icon: Icons.south_west_rounded,
+            accentColor: _peopleAccent,
+            emphasis: ManagementActionEmphasis.secondary,
             maturity: ManagementSettingsMaturity.comingSoon,
-            onTap: _showFeatureInProgress,
           ),
           _ManagementItem(
             title: context.t(
@@ -594,22 +984,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Despesas e compromissos',
             ),
             icon: Icons.north_east_rounded,
+            accentColor: _attentionAccent,
+            emphasis: ManagementActionEmphasis.secondary,
             maturity: ManagementSettingsMaturity.comingSoon,
-            onTap: _showFeatureInProgress,
-          ),
-          _ManagementItem(
-            title: context.t(
-              'gestao.finance.schedule',
-              fallback: 'Agenda financeira',
-            ),
-            subtitle: context.t(
-              'gestao.finance.scheduleDesc',
-              fallback: 'Previsões, fiado e crediário',
-            ),
-            icon: Icons.event_note_outlined,
-            onTap:
-                () =>
-                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
           ),
           _ManagementItem(
             title: context.t(
@@ -621,14 +998,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Dinheiro, cartão, Pix e outros meios',
             ),
             icon: Icons.payments_outlined,
+            accentColor: _lockedAccent,
+            emphasis: ManagementActionEmphasis.operational,
             maturity: ManagementSettingsMaturity.comingSoon,
-            onTap: _showFeatureInProgress,
           ),
         ],
       ),
       _ManagementSection(
+        type: _ManagementSectionType.settings,
         title: context.t('gestao.settings.title', fallback: 'Configurações'),
+        subtitle: context.t(
+          'gestao.settings.subtitle',
+          fallback: 'Empresa, idioma e integrações',
+        ),
         icon: Icons.settings_outlined,
+        accentColor: SixMobilePalette.primary,
+        actionGroupTitle: '',
         isSettingsCentral: true,
         settingsGroups: _settingsGroups(context),
         items: const <_ManagementItem>[],
@@ -790,41 +1175,42 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   }
 
   void _navigateTo(BuildContext context, Widget page) {
+    final ManagementMobileNavigate? customNavigate = widget.onNavigate;
+    if (customNavigate != null) {
+      customNavigate(context, page);
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute<void>(builder: (BuildContext context) => page),
-    );
-  }
-
-  void _showFeatureInProgress() {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          context.t(
-            'gestao.featureInProgress',
-            fallback: 'Fluxo mobile em evolução.',
-          ),
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
     );
   }
 }
 
 // ─── Data classes ─────────────────────────────────────────────────
 
+enum _ManagementSectionType { catalog, people, finance, settings }
+
 class _ManagementSection {
   const _ManagementSection({
+    required this.type,
     required this.title,
+    required this.subtitle,
     required this.icon,
+    required this.accentColor,
+    required this.actionGroupTitle,
     required this.items,
     this.isSettingsCentral = false,
     this.settingsGroups,
   });
 
+  final _ManagementSectionType type;
   final String title;
+  final String subtitle;
   final IconData icon;
+  final Color accentColor;
+  final String actionGroupTitle;
   final List<_ManagementItem> items;
   final bool isSettingsCentral;
   final List<ManagementSettingsGroupData>? settingsGroups;
@@ -835,13 +1221,17 @@ class _ManagementItem {
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.onTap,
+    this.onTap,
+    this.accentColor,
+    this.emphasis = ManagementActionEmphasis.secondary,
     this.maturity = ManagementSettingsMaturity.functional,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final Color? accentColor;
+  final ManagementActionEmphasis emphasis;
   final ManagementSettingsMaturity maturity;
 }

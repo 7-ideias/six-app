@@ -47,8 +47,8 @@ class ManagementSettingsTile extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.vertical(
-              top: Radius.circular(isFirst ? 20 : 0),
-              bottom: Radius.circular(isLast ? 20 : 0),
+              top: Radius.circular(isFirst ? 18 : 0),
+              bottom: Radius.circular(isLast ? 18 : 0),
             ),
             onTap: _isEnabled ? item.onTap : null,
             child: Container(
@@ -59,7 +59,7 @@ class ManagementSettingsTile extends StatelessWidget {
                         ? null
                         : const Border(
                           bottom: BorderSide(
-                            color: SixMobilePalette.border,
+                            color: SixMobilePalette.activeBorder,
                             width: 0.5,
                           ),
                         ),
