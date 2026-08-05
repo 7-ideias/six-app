@@ -6,6 +6,7 @@ import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 
 import '../../core/services/nova_empresa_service.dart';
 import 'conta_criada_mobile.dart';
+import 'login_mobile.dart';
 
 class CreateAccountMobile extends StatefulWidget {
   const CreateAccountMobile({super.key});
@@ -60,7 +61,9 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
 
     if (password != confirmPassword) {
       setState(() => _passwordMismatchError = 'As senhas não coincidem.');
-      _showSnack('As senhas informadas não são iguais. Verifique e tente novamente.');
+      _showSnack(
+        'As senhas informadas não são iguais. Verifique e tente novamente.',
+      );
       return;
     }
 
@@ -79,7 +82,13 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     }
   }
 
-  void _goToLogin() => Navigator.pop(context);
+  void _goBack() => Navigator.pop(context);
+
+  void _goToLogin() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => const LoginPageMobile()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +106,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
             color: SixAuthTokens.colorTextPrimary,
             size: 20,
           ),
-          onPressed: _goToLogin,
+          onPressed: _goBack,
         ),
       ),
       body: SafeArea(
@@ -132,9 +141,8 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                   color: SixAuthTokens.colorDividerText,
                   size: 20,
                 ),
-                onPressed: () => setState(
-                  () => _obscurePassword = !_obscurePassword,
-                ),
+                onPressed:
+                    () => setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
             const SizedBox(height: 14),
@@ -153,9 +161,10 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                   color: SixAuthTokens.colorDividerText,
                   size: 20,
                 ),
-                onPressed: () => setState(
-                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                ),
+                onPressed:
+                    () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
               ),
             ),
             if (_passwordMismatchError != null) ...[
@@ -184,9 +193,8 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                       height: 22,
                       child: Checkbox(
                         value: _agreeTerms,
-                        onChanged: (v) => setState(
-                          () => _agreeTerms = v ?? false,
-                        ),
+                        onChanged:
+                            (v) => setState(() => _agreeTerms = v ?? false),
                         activeColor: primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
@@ -222,10 +230,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                 onPressed: _goToLogin,
                 child: Text(
                   'Já tem uma conta? Entrar',
-                  style: TextStyle(
-                    color: primary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(color: primary, fontWeight: FontWeight.w700),
                 ),
               ),
             ),

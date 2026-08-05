@@ -155,6 +155,33 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.termsPrefix':
         'Ao clicar em "Continuar", declaro ter lido e concordo com os ',
     'auth.terms': 'Termos de Uso e Política de Privacidade',
+    'auth.entry.title': 'Bem-vindo ao Six',
+    'auth.entry.subtitle':
+        'Antes de continuar, diga como deseja acessar o app.',
+    'auth.entry.hasAccountTitle': 'Já tenho uma conta',
+    'auth.entry.hasAccountSubtitle':
+        'Entre com seu e-mail e senha para acessar sua empresa.',
+    'auth.entry.loginAction': 'Entrar',
+    'auth.entry.newAccountTitle': 'Sou novo por aqui',
+    'auth.entry.newAccountSubtitle':
+        'Veja um resumo rápido e crie sua conta para começar.',
+    'auth.entry.newAccountAction': 'Conhecer o Six',
+    'auth.onboarding.title': 'Comece pelo essencial',
+    'auth.onboarding.subtitle':
+        'Veja três pontos rápidos antes de criar sua conta.',
+    'auth.onboarding.step1Title': 'Atendimento organizado',
+    'auth.onboarding.step1Subtitle':
+        'Registre vendas, orçamentos e assistências em um fluxo simples.',
+    'auth.onboarding.step2Title': 'Catálogo e estoque no bolso',
+    'auth.onboarding.step2Subtitle':
+        'Mantenha produtos, serviços e informações essenciais sempre à mão.',
+    'auth.onboarding.step3Title': 'Gestão para crescer',
+    'auth.onboarding.step3Subtitle':
+        'Acompanhe indicadores e prepare sua operação para evoluir com o Six.',
+    'auth.onboarding.skip': 'Pular',
+    'auth.onboarding.next': 'Avançar',
+    'auth.onboarding.createAccountAction': 'Criar minha conta',
+    'auth.onboarding.loginAction': 'Já tenho uma conta',
     'configuracoes.regionalizationTitle': 'Regionalização',
     'configuracoes.descRegionalization':
         'Idioma, país, moeda, fuso horário, formatos de data e padronização financeira da empresa.',
@@ -1130,6 +1157,33 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.termsPrefix':
         'By clicking "Continue", I confirm that I have read and agree with the ',
     'auth.terms': 'Terms of Use and Privacy Policy',
+    'auth.entry.title': 'Welcome to Six',
+    'auth.entry.subtitle':
+        'Before continuing, choose how you want to access the app.',
+    'auth.entry.hasAccountTitle': 'I already have an account',
+    'auth.entry.hasAccountSubtitle':
+        'Sign in with your email and password to access your company.',
+    'auth.entry.loginAction': 'Sign in',
+    'auth.entry.newAccountTitle': 'I am new here',
+    'auth.entry.newAccountSubtitle':
+        'See a quick overview and create your account to get started.',
+    'auth.entry.newAccountAction': 'Explore Six',
+    'auth.onboarding.title': 'Start with the essentials',
+    'auth.onboarding.subtitle':
+        'See three quick points before creating your account.',
+    'auth.onboarding.step1Title': 'Organized service',
+    'auth.onboarding.step1Subtitle':
+        'Register sales, quotes and service orders in a simple flow.',
+    'auth.onboarding.step2Title': 'Catalog and stock in your pocket',
+    'auth.onboarding.step2Subtitle':
+        'Keep products, services and key information always at hand.',
+    'auth.onboarding.step3Title': 'Management to grow',
+    'auth.onboarding.step3Subtitle':
+        'Track indicators and prepare your operation to evolve with Six.',
+    'auth.onboarding.skip': 'Skip',
+    'auth.onboarding.next': 'Next',
+    'auth.onboarding.createAccountAction': 'Create my account',
+    'auth.onboarding.loginAction': 'I already have an account',
     'configuracoes.recebimento.contextTitle': 'Configurable payment methods',
     'configuracoes.recebimento.contextDescription':
         'Customize how your company receives payments. Internal codes stay fixed by the system, while names and behavior can be adjusted.',
@@ -1436,6 +1490,33 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.termsPrefix':
         'Al hacer clic en "Continuar", declaro que leí y acepto los ',
     'auth.terms': 'Términos de Uso y Política de Privacidad',
+    'auth.entry.title': 'Bienvenido a Six',
+    'auth.entry.subtitle':
+        'Antes de continuar, elige cómo quieres acceder a la app.',
+    'auth.entry.hasAccountTitle': 'Ya tengo una cuenta',
+    'auth.entry.hasAccountSubtitle':
+        'Entra con tu correo y contraseña para acceder a tu empresa.',
+    'auth.entry.loginAction': 'Entrar',
+    'auth.entry.newAccountTitle': 'Soy nuevo aquí',
+    'auth.entry.newAccountSubtitle':
+        'Mira un resumen rápido y crea tu cuenta para comenzar.',
+    'auth.entry.newAccountAction': 'Conocer Six',
+    'auth.onboarding.title': 'Empieza por lo esencial',
+    'auth.onboarding.subtitle':
+        'Mira tres puntos rápidos antes de crear tu cuenta.',
+    'auth.onboarding.step1Title': 'Atención organizada',
+    'auth.onboarding.step1Subtitle':
+        'Registra ventas, presupuestos y asistencias en un flujo simple.',
+    'auth.onboarding.step2Title': 'Catálogo y stock en el bolsillo',
+    'auth.onboarding.step2Subtitle':
+        'Mantén productos, servicios e información esencial siempre a mano.',
+    'auth.onboarding.step3Title': 'Gestión para crecer',
+    'auth.onboarding.step3Subtitle':
+        'Acompaña indicadores y prepara tu operación para evolucionar con Six.',
+    'auth.onboarding.skip': 'Saltar',
+    'auth.onboarding.next': 'Avanzar',
+    'auth.onboarding.createAccountAction': 'Crear mi cuenta',
+    'auth.onboarding.loginAction': 'Ya tengo una cuenta',
     'configuracoes.recebimento.contextTitle': 'Formas de cobro configurables',
     'configuracoes.recebimento.contextDescription':
         'Personaliza cómo tu empresa recibe pagos. Los códigos internos se mantienen fijos por el sistema, pero el nombre y el comportamiento se pueden ajustar.',

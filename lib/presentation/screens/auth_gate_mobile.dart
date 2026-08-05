@@ -5,7 +5,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/empresa_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
-import 'login_mobile.dart';
+import 'auth_entry_mobile.dart';
 import 'mobile_main_shell.dart';
 
 class AuthGateMobile extends StatefulWidget {
@@ -73,7 +73,7 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
 
   void _goToLogin() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const LoginPageMobile()),
+      MaterialPageRoute<void>(builder: (_) => const AuthEntryMobile()),
     );
   }
 
@@ -102,10 +102,7 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
                 Text(
                   'Validando sua sessão com segurança...',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _mutedTextColor,
-                    height: 1.35,
-                  ),
+                  style: TextStyle(color: _mutedTextColor, height: 1.35),
                 ),
                 SizedBox(height: 28),
                 SizedBox(
@@ -143,11 +140,7 @@ class _AuthGateLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.lock_open_rounded,
-        color: _accentColor,
-        size: 34,
-      ),
+      child: const Icon(Icons.lock_open_rounded, color: _accentColor, size: 34),
     );
   }
 }
