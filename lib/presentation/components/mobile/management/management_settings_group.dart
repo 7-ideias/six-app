@@ -15,27 +15,47 @@ class ManagementSettingsGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            group.title.toUpperCase(),
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-            ),
+          padding: const EdgeInsets.only(left: 4, bottom: 9),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 3,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: SixMobilePalette.accent.withValues(alpha: 0.62),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  group.title.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SixMobilePalette.mutedText,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.75,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Container(
           decoration: BoxDecoration(
             color: SixMobilePalette.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: SixMobilePalette.border, width: 0.5),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: SixMobilePalette.activeBorder,
+              width: 0.7,
+            ),
             boxShadow: const <BoxShadow>[
               BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
+                color: SixMobilePalette.navigationShadow,
+                blurRadius: 14,
+                offset: Offset(0, 6),
               ),
             ],
           ),

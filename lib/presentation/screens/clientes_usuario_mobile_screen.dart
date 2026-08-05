@@ -246,11 +246,6 @@ class _ClientesUsuarioMobileScreenState
           onPressed: _loading ? null : _openAutoCadastro,
           icon: const Icon(Icons.link_outlined),
         ),
-        IconButton(
-          tooltip: 'Atualizar',
-          onPressed: _loading ? null : _reload,
-          icon: const Icon(Icons.refresh_rounded),
-        ),
       ],
       bodyBuilder: (
         BuildContext context,
@@ -307,7 +302,7 @@ class _ClientesUsuarioMobileScreenState
           const SizedBox(height: 14),
           SixStaggeredEntry(
             delay: const Duration(milliseconds: 60),
-            child: _summaryRow(),
+            child: _summaryBar(),
           ),
           const SizedBox(height: 14),
           SixStaggeredEntry(
@@ -432,107 +427,72 @@ class _ClientesUsuarioMobileScreenState
     );
   }
 
-  Widget _summaryRow() {
-    final int ativos =
-        _clientes.where((ClienteUsuario cliente) => cliente.ativo).length;
-    final int fiado =
-        _clientes
-            .where((ClienteUsuario cliente) => cliente.permiteCompraFiado)
-            .length;
+  Widget _summaryBar() {
     final double saldo = _clientes.fold<double>(
       0,
       (double total, ClienteUsuario cliente) => total + cliente.saldoFiado,
     );
 
-    return Column(
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _summaryCard(
-                Icons.groups_outlined,
-                'Clientes',
-                _formatInt(_clientes.length),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _summaryCard(
-                Icons.verified_user_outlined,
-                'Ativos',
-                _formatInt(ativos),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _summaryCard(
-                Icons.request_quote_outlined,
-                'Fiado',
-                _formatInt(fiado),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _summaryCard(
-                Icons.receipt_long_outlined,
-                'Aberto',
-                _formatMoney(saldo),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _summaryCard(IconData icon, String label, String value) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: <Widget>[
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: _softAccentColor,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(icon, color: _accentColor, size: 19),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: _mutedTextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: _summaryMetric(
+              label: 'Clientes',
+              value: _formatInt(_clientes.length),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: _titleTextColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
+          Container(width: 1, height: 34, color: _borderColor),
+          Expanded(
+            child: _summaryMetric(
+              label: 'Em aberto',
+              value: _formatMoney(saldo),
+              alignEnd: true,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _summaryMetric({
+    required String label,
+    required String value,
+    bool alignEnd = false,
+  }) {
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: _mutedTextColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+          style: const TextStyle(
+            color: _titleTextColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 

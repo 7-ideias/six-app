@@ -9,10 +9,7 @@ class ManagementSectionTab {
   final IconData icon;
 }
 
-/// Compact horizontal selector for the main management sections.
-///
-/// Replaces the large parallax carousel with a dense, operational selector
-/// suited for daily-use management apps.
+/// Compact segmented selector for the main management sections.
 class ManagementSectionSelector extends StatelessWidget {
   const ManagementSectionSelector({
     super.key,
@@ -27,30 +24,48 @@ class ManagementSectionSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: sections.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (BuildContext context, int index) {
-          final ManagementSectionTab tab = sections[index];
-          final bool isSelected = index == selectedIndex;
-
-          return _SectionChip(
-            tab: tab,
-            isSelected: isSelected,
-            onTap: () => onSectionSelected(index),
-          );
-        },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Semantics(
+        container: true,
+        child: Container(
+          key: const ValueKey<String>('management-section-selector-surface'),
+          height: 52,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: SixMobilePalette.surface.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: SixMobilePalette.activeBorder, width: 1),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: SixMobilePalette.navigationShadow,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: <Widget>[
+              for (int index = 0; index < sections.length; index += 1)
+                Expanded(
+                  child: _SectionSegment(
+                    key: ValueKey<String>('management-section-tab-$index'),
+                    tab: sections[index],
+                    isSelected: index == selectedIndex,
+                    onTap: () => onSectionSelected(index),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _SectionChip extends StatelessWidget {
-  const _SectionChip({
+class _SectionSegment extends StatelessWidget {
+  const _SectionSegment({
+    super.key,
     required this.tab,
     required this.isSelected,
     required this.onTap,
@@ -62,6 +77,12 @@ class _SectionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    final Color foregroundColor =
+        isSelected ? SixMobilePalette.accent : SixMobilePalette.secondary;
+
     return Semantics(
       button: true,
       selected: isSelected,
@@ -69,61 +90,45 @@ class _SectionChip extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           onTap: onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
+            duration:
+                reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            height: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
             decoration: BoxDecoration(
               color:
                   isSelected
-                      ? SixMobilePalette.primary
-                      : SixMobilePalette.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color:
-                    isSelected
-                        ? SixMobilePalette.primary
-                        : SixMobilePalette.border,
-                width: isSelected ? 1.5 : 1,
-              ),
-              boxShadow:
-                  isSelected
-                      ? const <BoxShadow>[
-                        BoxShadow(
-                          color: Color(0x1A000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ]
-                      : null,
+                      ? SixMobilePalette.accent.withValues(alpha: 0.10)
+                      : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  tab.icon,
-                  size: 17,
-                  color:
-                      isSelected
-                          ? SixMobilePalette.onPrimary
-                          : SixMobilePalette.secondary,
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(tab.icon, size: 17, color: foregroundColor),
+                    const SizedBox(width: 5),
+                    Text(
+                      tab.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: foregroundColor,
+                        fontSize: 12.5,
+                        fontWeight:
+                            isSelected ? FontWeight.w800 : FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 7),
-                Text(
-                  tab.title,
-                  style: TextStyle(
-                    color:
-                        isSelected
-                            ? SixMobilePalette.onPrimary
-                            : SixMobilePalette.titleText,
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

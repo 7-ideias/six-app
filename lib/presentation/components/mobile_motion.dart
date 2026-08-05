@@ -38,10 +38,7 @@ class _SixStaggeredEntryState extends State<SixStaggeredEntry>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     final CurvedAnimation curve = CurvedAnimation(
       parent: _controller,
@@ -74,12 +71,16 @@ class _SixStaggeredEntryState extends State<SixStaggeredEntry>
 
   @override
   Widget build(BuildContext context) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    if (reduceMotion) {
+      return widget.child;
+    }
+
     return FadeTransition(
       opacity: _opacityAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
   }
 }
@@ -140,17 +141,12 @@ class _SixPulsingBadgeState extends State<SixPulsingBadge>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween<double>(begin: 1, end: 1.14), weight: 45),
       TweenSequenceItem(tween: Tween<double>(begin: 1.14, end: 1), weight: 55),
-    ]).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     if (widget.enabled) {
       _controller.repeat();
@@ -183,9 +179,6 @@ class _SixPulsingBadgeState extends State<SixPulsingBadge>
       return widget.child;
     }
 
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: widget.child,
-    );
+    return ScaleTransition(scale: _scaleAnimation, child: widget.child);
   }
 }
