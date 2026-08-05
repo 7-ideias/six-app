@@ -11,12 +11,14 @@ class CatalogHealthProvider extends ChangeNotifier {
   CatalogHealthSummary? _summary;
   bool _isLoading = false;
   String? _errorMessage;
+  int _loadRevision = 0;
 
   CatalogHealthSummary? get summary => _summary;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
   bool get isEmpty => !_isLoading && !hasError && (_summary?.isEmpty ?? true);
+  int get loadRevision => _loadRevision;
 
   Future<void> load() async {
     _isLoading = true;
@@ -25,6 +27,7 @@ class CatalogHealthProvider extends ChangeNotifier {
 
     try {
       _summary = await _apiClient.buscarSaudeCatalogo();
+      _loadRevision += 1;
     } catch (_) {
       _summary = null;
       _errorMessage = 'Não foi possível carregar a saúde do catálogo.';
