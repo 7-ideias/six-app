@@ -7,12 +7,15 @@ import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/operacoes_caixa_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
 
@@ -117,6 +120,7 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       secondaryColor: _secondary,
       accentColor: _accent,
       automaticallyImplyLeading: false,
+      leading: const SixMobileAppBarProfileAction(),
       actions: <Widget>[
         IconButton(
           tooltip: 'Notificações',
@@ -145,6 +149,31 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                   subtitle: 'Abrir atendimento no caixa',
                   icon: Icons.point_of_sale_rounded,
                   onTap: _startNewSale,
+                ),
+                const SizedBox(height: 12),
+                _lockedAction(
+                  title: context.t(
+                    'operacao.mobile.returnTitle',
+                    fallback: 'Devolução',
+                  ),
+                  subtitle: context.t(
+                    'operacao.mobile.returnUnavailable',
+                    fallback: 'em breve',
+                  ),
+                  icon: Icons.assignment_return_outlined,
+                ),
+                const SizedBox(height: 12),
+                _primaryAction(
+                  title: context.t(
+                    'pdv.openCashOperations',
+                    fallback: 'Operações de caixa',
+                  ),
+                  subtitle: context.t(
+                    'caixa.operacoes.mobile.quickAccessSubtitle',
+                    fallback: 'Abrir, movimentar e fechar caixa',
+                  ),
+                  icon: Icons.account_balance_wallet_rounded,
+                  onTap: () => _go(const OperacoesCaixaMobileScreen()),
                 ),
                 const SizedBox(height: 12),
                 _primaryAction(
@@ -264,6 +293,68 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
           Expanded(child: _texts(title, subtitle, titleSize: 16)),
           const Icon(Icons.chevron_right_rounded, color: _muted),
         ],
+      ),
+    );
+  }
+
+  Widget _lockedAction({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    return Semantics(
+      container: true,
+      enabled: false,
+      label: '$title. $subtitle',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: SixMobilePalette.border),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 14,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: <Widget>[
+            _iconBox(icon, bg: SixMobilePalette.softNeutralSurface, fg: _muted),
+            const SizedBox(width: 14),
+            Expanded(child: _texts(title, subtitle, titleSize: 16)),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              decoration: BoxDecoration(
+                color: _muted.withAlpha(18),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: _muted.withAlpha(36)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Icon(
+                    Icons.lock_outline_rounded,
+                    size: 12,
+                    color: _muted,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    context.t('common.soon', fallback: 'Em breve'),
+                    style: const TextStyle(
+                      color: _muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

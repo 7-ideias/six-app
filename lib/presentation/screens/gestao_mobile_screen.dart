@@ -11,6 +11,7 @@ import 'package:sixpos/presentation/components/mobile/management/management_sect
 import 'package:sixpos/presentation/components/mobile/management/management_settings_group.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
@@ -123,6 +124,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       secondaryColor: SixMobilePalette.secondary,
       accentColor: SixMobilePalette.accent,
       automaticallyImplyLeading: false,
+      leading: const SixMobileAppBarProfileAction(),
       actions: <Widget>[
         IconButton(
           tooltip: context.t(
