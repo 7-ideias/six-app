@@ -1,606 +1,193 @@
-# AGENTS.md — Flutter
+# AGENTS.md - SixApp Flutter
 
-## Contexto do projeto
+Este arquivo deve orientar respostas rápidas e eficientes no frontend Flutter do SixApp. Os detalhes vivos ficam nas skills locais em `.agents/skills`; este arquivo serve como roteador e checklist curto.
 
-Este repositório contém o frontend Flutter do Six, um app SaaS/CRM Freemium para comércios que prestam serviço técnico, como assistências de celular, eletrônicos, informática e lojas que também vendem produtos e serviços.
+## Contexto
 
-O app deve funcionar em:
+SixApp e o frontend Flutter do Six, usado em Web, Android e iOS. O backend principal fica no projeto `sixBack` e usa Java/Spring Boot.
 
-- Web
-- Android
-- iOS
+O app atende comercios de assistencia tecnica, vendas, orcamentos, estoque, financeiro, atendimento, configuracoes e relatorios. O frontend melhora a experiencia, mas o backend continua sendo a fonte de verdade para regras sensiveis, permissoes, tenant, status, financeiro, autenticacao e contratos.
 
-O app funciona apenas com internet.
+## Skills obrigatorias
 
-O backend é responsável pelas regras de negócio, autenticação, autorização, permissões, dados financeiros, relatórios, notificações e operações sensíveis.
+Leia a skill certa antes de implementar. Nao copie todo o conteudo para ca; use a skill como fonte de verdade.
 
-## Stack atual
+- Mobile visual: `.agents/skills/sixapp-mobile-ui/SKILL.md`
+- Web visual: `.agents/skills/sixapp-web-ui/SKILL.md`
+- Backend compartilhado Flutter: `.agents/skills/sixapp-shared-backend-integration/SKILL.md`
+- Textos, idioma, moeda, datas e numeros: `.agents/skills/sixapp-regionalization/SKILL.md`
 
-- Flutter
-- Dart SDK conforme `pubspec.yaml`
-- Provider como gerenciamento de estado já utilizado no projeto
-- `http` e `http_interceptor` para comunicação HTTP
-- `shared_preferences` para preferências locais simples
-- `flutter_localizations` e `intl` para internacionalização
-- `fl_chart` para gráficos
-- `stomp_dart_client` para comunicação WebSocket/STOMP quando aplicável
-- `flutter_local_notifications` para notificações locais
-- `signature` para captura de assinatura
+Use combinacoes quando o pedido tocar mais de uma area:
 
-Não adicionar pacotes novos sem justificar a necessidade, compatibilidade com Web/Android/iOS e impacto no projeto.
+- Tela mobile com endpoint, service, DTO, provider ou chamada HTTP: `sixapp-mobile-ui` + `sixapp-shared-backend-integration`.
+- Tela web com endpoint, service, DTO, provider ou chamada HTTP: `sixapp-web-ui` + `sixapp-shared-backend-integration`.
+- Qualquer UI com textos, mensagens, status, moeda, data, hora, numero, percentual ou configuracao de comercio: adicione `sixapp-regionalization`.
+- Pedido com arquivo mobile e arquivo web: use as skills de Web e Mobile, mas compartilhe somente backend, dominio, models, mappers, services e providers sem responsabilidade visual.
 
-## Objetivo do frontend
+## Regra principal
 
-O Flutter deve entregar uma experiência simples, moderna e produtiva para:
+Web e Mobile podem compartilhar integracao, dominio e estado nao visual. Nao podem compartilhar tela, dashboard, formulario grande, modal, side sheet, bottom sheet, conteudo principal de jornada ou arvore visual por wrapper.
 
-- ADMIN
-- colaboradores
-- técnicos
-- atendentes
-- usuários de loja
+Permitido compartilhar:
 
-O app deve facilitar a rotina diária do comércio:
+- endpoint e parametros tecnicos;
+- ApiClient, request, response, `fromJson`, `toJson`;
+- model, mapper, service e interpretacao semantica;
+- provider/controller sem responsabilidade visual, quando fizer sentido;
+- helpers de formatacao e utilitarios neutros.
 
-- abrir atendimento
-- criar ordem de serviço
-- consultar cliente
-- registrar equipamento
-- gerar orçamento
-- acompanhar execução do serviço
-- vender produto ou serviço
-- receber pagamento
-- gerar comprovante
-- compartilhar PDF
-- acompanhar financeiro
-- visualizar indicadores
-- configurar loja e permissões
+Nao permitido:
 
-## Princípio principal
+- tela Web dentro de Mobile, ou Mobile dentro de Web;
+- `embedded`, `isMobile`, `isWeb`, `platform`, `compact` ou condicionais equivalentes para transformar a mesma UI principal em duas experiencias;
+- HTTP, token, headers ou parsing JSON dentro de widgets;
+- payload adaptado diretamente na tela;
+- contrato duplicado por plataforma para o mesmo endpoint.
 
-O frontend melhora a experiência do usuário, mas não é a fonte de verdade de regras sensíveis.
+## Fluxo de trabalho
 
-Não duplicar no Flutter regras críticas que pertencem ao backend.
+1. Identifique o escopo real: Web, Mobile, compartilhado, backend, visual, funcional ou regionalizacao.
+2. Leia o arquivo citado pelo usuario e busque implementacoes proximas com `rg`.
+3. Trace o fluxo atual antes de editar: `UI -> estado/provider -> service -> ApiClient -> endpoint -> response`.
+4. Verifique se ja existe endpoint, DTO, model, mapper, service ou provider reutilizavel.
+5. Se houver UI Web e Mobile, mantenha composicoes proprias e compartilhe apenas a camada correta.
+6. Faca a menor alteracao completa possivel. Nao misture refatoracao grande com feature ou correcao pontual.
+7. Preserve contratos, rotas, autenticacao, tenant, permissoes e regras de negocio, salvo pedido explicito.
+8. Formate, valide e revise o diff antes de responder.
 
-O Flutter pode validar campos, melhorar usabilidade e evitar erros simples, mas o backend sempre deve validar:
+Quando houver impacto em mais de uma camada, apresente plano curto antes de editar. Para ajustes pequenos e claros, implemente direto.
 
-- permissões
-- vínculo com comércio
-- preço final
-- desconto
-- status
-- transição de ordem de serviço
-- dados financeiros
-- geração de relatório
-- cancelamentos
-- ações administrativas
+## Padrao de integracao
 
-## Navegação web
+Para chamadas ao backend, prefira a arquitetura real existente no projeto. O caminho comum e:
 
-A versão web deve usar navegação adequada para desktop, preferencialmente com menu lateral nas áreas autenticadas.
-
-Menu principal recomendado:
-
-- Dashboard
-- Atendimentos
-- Vendas
-- Clientes
-- Catálogo
-- Financeiro
-- Relatórios
-- Equipe
-- Configurações
-
-A loja/comércio atual deve aparecer como seletor global, preferencialmente no topo da tela.
-
-Exemplo:
-
-- Loja atual: Assistência Centro
-
-O usuário precisa saber claramente em qual comércio está operando.
-
-## Navegação mobile
-
-A versão mobile não deve copiar o menu lateral completo da web.
-
-Usar navegação inferior com poucos itens principais.
-
-Sugestão:
-
-- Início
-- Atendimentos
-- Vendas
-- Clientes
-- Mais
-
-Dentro de "Mais":
-
-- Catálogo
-- Financeiro
-- Relatórios
-- Equipe
-- Configurações
-
-Web e mobile devem ter aderência funcional, mas não devem compartilhar telas ou conteúdo visual principal.
-
-O compartilhamento correto é na camada de integração e domínio: endpoint, ApiClient, requests, responses, models, mappers, services, regras semânticas e providers/controladores sem responsabilidade visual. A composição da UI deve ser própria por plataforma. Não implementar uma versão Web ou Mobile apenas embrulhando a mesma tela/conteúdo com `embedded`, `isMobile`, `isWeb`, `LayoutBuilder` ou flags equivalentes.
-
-## Rotas e estrutura existente
-
-O projeto já possui rotas web tratadas no `main.dart`, incluindo fluxos como login, registro, onboarding, checkout, app autenticado e rotas públicas de ordem de serviço e auto cadastro de cliente.
-
-Antes de alterar rotas:
-
-- verificar o fluxo atual em `main.dart`
-- evitar quebrar deep links existentes
-- manter compatibilidade com web usando path URL strategy
-- testar acesso direto por URL quando alterar rota web
-- evitar criar rotas duplicadas para o mesmo conceito
-
-## Responsividade
-
-Construir telas considerando:
-
-- desktop
-- tablet
-- smartphone
-
-Evitar telas que dependam de largura fixa.
-
-Preferir componentes adaptáveis:
-
-- menu lateral no web
-- bottom navigation no mobile
-- cards responsivos
-- tabelas com alternativa mobile
-- formulários quebrados em seções
-- ações principais sempre visíveis
-
-Tabelas grandes no mobile devem virar cards, listas resumidas ou telas de detalhe.
-
-## Estrutura recomendada
-
-Seguir a estrutura existente do projeto.
-
-Quando não houver padrão definido, preferir separação por feature.
-
-Exemplo conceitual:
-
-- `features/dashboard`
-- `features/attendance`
-- `features/sales`
-- `features/customers`
-- `features/catalog`
-- `features/financial`
-- `features/reports`
-- `features/team`
-- `features/settings`
-- `core`
-- `shared`
-
-Dentro de cada feature, separar responsabilidades:
-
-- pages/screens
-- widgets
-- controllers/viewmodels/providers
-- services
-- models/dtos
-- repositories
-- routes
-
-Não colocar regra de negócio complexa diretamente em widgets.
-
-## Estado da aplicação
-
-Usar o padrão de gerenciamento de estado já definido no projeto.
-
-O projeto já utiliza `provider`, então não introduzir Riverpod, Bloc, GetX, MobX ou outro gerenciador sem autorização explícita.
-
-Separar:
-
-- estado de tela
-- estado de sessão
-- estado de autenticação
-- estado do comércio selecionado
-- dados carregados da API
-- filtros e paginação
-
-## Autenticação
-
-A autenticação deve seguir a arquitetura definida para o projeto.
-
-O Flutter deve:
-
-- permitir login
-- manter sessão conforme estratégia definida
-- tratar expiração de token
-- fazer logout seguro
-- não expor tokens em logs
-- não salvar segredos no código
-- não guardar credenciais fixas
-- não simular usuário autenticado em código de produção
-
-Qualquer token ou informação sensível deve ser tratado com cuidado.
-
-## Comércio selecionado
-
-Como um ADMIN pode ter mais de um comércio, o app deve manter o contexto da loja atual.
-
-O comércio selecionado influencia:
-
-- dashboard
-- clientes
-- produtos
-- serviços
-- estoque
-- vendas
-- ordens de serviço
-- financeiro
-- relatórios
-- colaboradores
-- configurações
-
-A troca de comércio deve recarregar os dados do contexto atual.
-
-Nunca presumir que dados de uma loja valem para outra.
-
-## Permissões no frontend
-
-O frontend pode esconder botões e menus conforme permissões do usuário, mas isso é apenas melhoria de experiência.
-
-O backend continua sendo responsável por autorizar a operação.
-
-Exemplos de ações que podem ser ocultadas no frontend:
-
-- cancelar venda
-- excluir ordem de serviço
-- acessar financeiro
-- alterar permissões
-- gerar relatório financeiro
-- configurar loja
-- alterar plano
-- aplicar desconto
-- alterar preço
-
-Não criar regra de permissão apenas no Flutter.
-
-## Módulos do app
-
-### Dashboard
-
-Mostrar visão geral da loja:
-
-- vendas do dia
-- ordens de serviço abertas
-- orçamentos pendentes
-- contas a receber
-- contas a pagar
-- serviços atrasados
-- faturamento mensal
-- indicadores principais
-
-### Atendimentos
-
-Fluxo principal da assistência técnica:
-
-- nova ordem de serviço
-- ordens de serviço
-- orçamentos
-- serviços em andamento
-- aguardando aprovação
-- aguardando peças
-- finalizados
-- garantias/retornos
-
-### Vendas
-
-Fluxo de venda direta:
-
-- nova venda
-- vendas realizadas
-- orçamentos de venda
-- devoluções/cancelamentos
-
-### Clientes
-
-Cadastro e visão do cliente:
-
-- lista de clientes
-- dados do cliente
-- equipamentos
-- histórico
-- ordens de serviço
-- vendas
-- comprovantes
-- comunicações
-
-### Catálogo
-
-Produtos e serviços:
-
-- produtos
-- serviços
-- categorias
-- tabela de preços
-- estoque
-
-### Financeiro
-
-Área com permissão sensível:
-
-- caixa
-- contas a receber
-- contas a pagar
-- recebimentos
-- despesas
-- fluxo de caixa
-
-### Relatórios
-
-Relatórios e exportações:
-
-- vendas
-- serviços
-- financeiro
-- estoque
-- clientes
-- comprovantes
-
-### Equipe
-
-Gestão de pessoas internas e fornecedores:
-
-- colaboradores
-- técnicos
-- fornecedores
-- permissões
-- convites
-
-### Configurações
-
-Configurações gerais:
-
-- dados da loja
-- usuários
-- perfis de acesso
-- idioma
-- moeda
-- fuso horário
-- status personalizados
-- numeração de ordem de serviço
-- PDFs e comprovantes
-- modelos de mensagem
-- integrações
-- plano e assinatura
-- auditoria
-
-## Internacionalização
-
-O app deve ser preparado para múltiplos idiomas.
-
-Não hardcodar textos exibidos ao usuário quando a tela for parte do produto final.
-
-Textos de tela, botões, mensagens de erro, labels e menus devem ser preparados para i18n.
-
-Considerar que o app pode operar em países diferentes, com:
-
-- idioma diferente
-- moeda diferente
-- formato de data diferente
-- fuso horário diferente
-- formato de telefone diferente
-- documentos diferentes
-
-## Design system
-
-Evitar componentes visuais soltos e repetidos.
-
-Preferir:
-
-- tema centralizado
-- cores centralizadas
-- tipografia centralizada
-- espaçamentos reutilizáveis
-- componentes compartilhados
-- botões padronizados
-- cards padronizados
-- campos de formulário padronizados
-- estados de loading, empty e error padronizados
-
-Componentes compartilhados devem ser tokens, átomos, controles pequenos ou padrões neutros do design system. Não considerar como componente compartilhado uma tela inteira, dashboard, formulário grande, modal de configuração ou conteúdo principal de jornada. Esses fluxos precisam de arquivos e composições próprios para Web e Mobile.
-
-Não criar visual inconsistente entre módulos.
-
-## Experiência do usuário
-
-A aplicação deve ser simples para usuário de loja.
-
-Priorizar:
-
-- ações claras
-- botões objetivos
-- fluxo rápido de atendimento
-- baixa fricção
-- telas limpas
-- busca fácil
-- filtros úteis
-- confirmação para ações destrutivas
-- feedback visual após salvar, cancelar, enviar ou concluir
-
-Evitar telas técnicas demais para usuário final.
-
-## Estados de tela
-
-Toda tela que carrega dados deve tratar:
-
-- loading
-- sucesso
-- vazio
-- erro
-- sem permissão
-- sem internet
-- sessão expirada
-
-Como o app é online-only, queda de internet deve gerar mensagem clara.
-
-Não deixar tela quebrada ou carregando indefinidamente.
-
-## Formulários
-
-Formulários devem:
-
-- validar campos obrigatórios
-- mostrar mensagens claras
-- evitar perda acidental de dados
-- permitir cancelar
-- mostrar confirmação em ações críticas
-- usar máscaras quando fizer sentido
-- respeitar idioma/região
-- não enviar dados incompletos quando houver validação local possível
-
-Validação local não substitui validação do backend.
-
-## Integração com API
-
-Centralizar chamadas HTTP.
-
-Evitar chamadas diretas espalhadas dentro de widgets.
-
-Tratar:
-
-- token expirado
-- erro 400
-- erro 401
-- erro 403
-- erro 404
-- erro 409
-- erro 500
-- timeout
-- sem conexão
-
-DTOs do frontend devem refletir contratos da API.
-
-Não inventar campos sem alinhar com backend.
-
-## PDF e compartilhamento
-
-O app pode permitir:
-
-- gerar PDF
-- visualizar PDF
-- baixar PDF
-- compartilhar por WhatsApp
-- enviar por e-mail
-- compartilhar por outros canais disponíveis
-
-Os dados do PDF devem vir do backend ou de endpoint próprio validado.
-
-Não gerar comprovante sensível apenas com dados manipuláveis do frontend, salvo se a arquitetura do projeto definir isso explicitamente.
-
-## Notificações
-
-O app deve permitir configurar ou visualizar notificações relacionadas às etapas da assistência técnica.
-
-Eventos possíveis:
-
-- orçamento criado
-- orçamento aprovado
-- serviço iniciado
-- aguardando peça
-- serviço finalizado
-- equipamento pronto para retirada
-- pagamento pendente
-
-O envio real deve ser controlado pelo backend.
-
-## Segurança no frontend
-
-Não fazer:
-
-- logar token
-- logar dados sensíveis
-- salvar senha
-- expor segredo em arquivo Dart
-- deixar endpoint interno hardcoded sem configuração
-- criar bypass de login
-- esconder regra sensível apenas no frontend
-- confiar em permissões manipuláveis localmente
-- deixar tela administrativa acessível sem validação de sessão/permissão
-
-## Testes
-
-Adicionar ou ajustar testes quando alterar:
-
-- navegação
-- regras de exibição por permissão
-- componentes compartilhados
-- formatação de dados
-- validações de formulário
-- integração com camada de API
-- estado de loading/erro/vazio
-- fluxo de login/logout
-- seleção de comércio
-
-Usar os padrões de teste já existentes no projeto.
-
-## Comandos úteis
-
-Antes de finalizar alterações relevantes, considerar executar:
-
-```bash
-flutter pub get
-flutter gen-l10n
-flutter test
-flutter analyze
+```text
+Tela Web --------\
+                  -> provider/controller de apresentacao -> service compartilhado -> ApiClient -> DTO/model compartilhado
+Tela Mobile -----/
 ```
 
-Para build web, conforme README atual:
+Referencias boas para consultar quando aplicavel:
 
-```bash
-flutter build web
+- `lib/domain/services/atendimento_tecnico/atendimento_tecnico_service.dart`
+- `lib/data/services/atendimento_tecnico/atendimento_tecnico_api_client.dart`
+- `lib/data/models/atendimento_tecnico_models.dart`
+- `lib/domain/services/regionalizacao/regionalizacao_service.dart`
+- `lib/providers/locale_settings_provider.dart`
+- `lib/core/services/auth_service.dart`
+- `lib/core/services/http_client_factory.dart`
+
+Convencao recomendada para integracoes novas, quando o modulo justificar:
+
+```text
+lib/data/models/<dominio>_models.dart
+lib/data/services/<dominio>/<dominio>_api_client.dart
+lib/domain/models/<dominio>_models.dart
+lib/mappers/<dominio>_mapper.dart
+lib/domain/services/<dominio>/<dominio>_service.dart
+lib/core/di/<dominio>_module.dart
 ```
 
-## O que não fazer
+Nao introduza Repository, DI nova, gerenciador de estado novo ou pacote novo sem necessidade real e autorizacao.
 
-Não fazer:
+## UI Web
 
-- regra de negócio crítica em widget
-- duplicação de regra do backend
-- hardcode de textos, cores e endpoints
-- layout fixo apenas para desktop
-- tela web impossível de usar no mobile
-- tela mobile sem aderência funcional com web
-- chamadas HTTP espalhadas em widgets
-- código de autenticação temporário em produção
-- dependência nova sem necessidade
-- componente visual duplicado sem motivo
-- alteração grande sem plano
+Para telas, modais, subpaineis, dashboards, listas, filtros e formularios Web, siga `sixapp-web-ui`.
 
-## Fluxo de trabalho para o agente
+Direcao pratica:
 
-Antes de implementar uma tarefa relevante:
+- use componentes e padroes Web existentes antes de criar estilo local;
+- consulte a tela de Produtos e `web_dashboard_widgets` como referencia de hierarquia;
+- prefira cabecalho unico, area de contexto, filtros organizados, cards compactos e acoes proporcionais;
+- evite `ListTile` cru, tabela improvisada, card grande generico e sombra pesada em subpainel importante;
+- use `LayoutBuilder`, `Wrap`, `Expanded`, `Flexible`, `ConstrainedBox`, scroll e `TextOverflow.ellipsis`;
+- trate loading, vazio, erro, sucesso, bloqueio e sem permissao;
+- use `SixBackendLoading` quando backend ainda estiver carregando mensagens, eventos ou configuracoes;
+- use motion curta e funcional: fade, leve deslocamento, `AnimatedSwitcher`, `TweenAnimationBuilder`, `AnimatedContainer`;
+- em KPIs, dashboards e totalizadores, anime numeros importantes mantendo valor bruto numerico ate o render.
 
-1. Ler este arquivo.
-2. Identificar se a alteração afeta web, mobile ou ambos.
-3. Verificar impacto na navegação.
-4. Verificar impacto em i18n.
-5. Verificar impacto em permissões.
-6. Criar plano breve.
-7. Implementar somente o escopo pedido.
-8. Reutilizar componentes existentes.
-9. Adicionar ou ajustar testes quando necessário.
-10. Resumir arquivos alterados, decisões e pendências.
+Pedido somente Web nao deve alterar telas `*_mobile_screen.dart`, componentes mobile, `SixMobilePalette`, `SixMobilePageShell`, `NavBarMobile` ou tema global sem motivo tecnico claro.
 
-## Definição de pronto
+## UI Mobile
 
-Uma tarefa só está pronta quando:
+Para telas `*_mobile_screen.dart`, AppBar, cards, FAB, bottom sheets, seletores, estados vazios, loading, Lottie, motion e acessibilidade mobile, siga `sixapp-mobile-ui`.
 
-- funciona em web e mobile, quando aplicável
-- respeita a navegação definida
-- não duplica regra sensível do backend
-- trata loading, erro e estado vazio
-- respeita permissões na experiência visual
-- não expõe dados sensíveis
-- não introduz textos hardcoded desnecessários
-- segue o padrão visual do projeto
-- mantém aderência entre web e mobile
-- testes foram adicionados ou ajustados quando necessário
+Direcao pratica:
+
+- use `SixMobilePalette`, `SixMobilePageShell`, `NavBarMobile` e componentes em `lib/presentation/components/mobile/`;
+- preserve uma experiencia mobile-first para uso rapido em atendimento, balcao e acompanhamento;
+- nao copie navegacao, cabecalho, modal ou formulario Web;
+- prefira bottom sheets customizados para seletores de cliente, produto, servico, tecnico, forma de pagamento, status, filtros e datas;
+- evite `DropdownButtonFormField`, `DropdownMenu`, `showDatePicker` e dialogs genericos quando destoarem do padrao mobile;
+- mantenha estrutura conhecida durante loading sempre que possivel, com skeleton nos dados dinamicos;
+- use `SafeArea`, toque confortavel, contraste, `Semantics`, labels em icones e suporte a texto grande;
+- use motion funcional curta e respeite `MediaQuery.disableAnimations` e `accessibleNavigation`.
+
+Pedido somente Mobile nao deve alterar Web, `PaginaPrincipalWeb`, arquivos `*_web.dart`, tema global ou contratos de API sem necessidade comprovada.
+
+## Regionalizacao e i18n
+
+Use `sixapp-regionalization` sempre que houver texto visivel, status, mensagem, moeda, valor, data, hora, numero, percentual, medida, idioma, pais, timezone ou configuracao do comercio.
+
+Classifique o conteudo antes de implementar:
+
+- A: texto estatico da interface, como labels, botoes, placeholders, tooltips e validacoes.
+- B: texto configuravel pelo comercio ou tenant.
+- C: texto de dominio ou mensagem dinamica do backend, como status, motivos e codigos de erro.
+- D: dado regionalizavel, como moeda, data, hora, numero, percentual, medida e timezone.
+
+Regras:
+
+- nao hardcode `R$`, `BRL`, `pt_BR`, `dd/MM/yyyy`, separador decimal, timezone ou labels traduzidos no payload;
+- use `context.t('chave', fallback: 'Texto em pt-BR')` ou o mecanismo de i18n ja usado pela tela;
+- use `LocaleSettingsProvider` via `context.watch`, `context.read` ou `context.select`;
+- nao instancie `LocaleSettingsProvider()` manualmente;
+- mantenha dinheiro, numeros e datas como valores estruturados e formate apenas na apresentacao;
+- envie ao backend codigos tecnicos, nunca labels traduzidos;
+- conteudo cadastrado pelo usuario ou texto livre retornado pelo backend deve ser exibido como veio.
+
+## Permissoes, tenant e seguranca
+
+Toda operacao deve respeitar a empresa atual (`idUnicoDaEmpresa`) e as permissoes disponiveis. O frontend pode esconder acoes para melhorar UX, mas o backend precisa autorizar.
+
+Nao faca:
+
+- regra sensivel apenas no widget;
+- bypass de login ou permissao;
+- log de token, senha, cookie, headers sensiveis ou body sensivel;
+- endpoint, segredo ou credencial hardcoded;
+- alteracao financeira, cancelamento, exclusao, permissao, estoque ou relatorio sensivel sem considerar perfil e tenant.
+
+## Textos e UX
+
+O usuario final e de comercio. Use linguagem objetiva e operacional.
+
+Prefira termos claros:
+
+- `Assistencia` ou `Ordem de servico`, nao `OT` quando o contexto for usuario final;
+- `Atendimento`, nao `Operacao` quando o contexto for venda, orcamento ou assistencia.
+
+Todas as telas relevantes devem tratar loading, vazio, erro, sucesso, bloqueio/sem permissao e sessao expirada quando aplicavel. Como o app e online-only, falha de conexao precisa ter mensagem clara.
+
+## Validacao antes de finalizar
+
+Sempre que editar Dart:
+
+```bash
+dart format <arquivos alterados>
+git diff --check
+git diff -- <arquivos alterados>
+```
+
+Execute `flutter analyze` para alteracoes relevantes. Execute testes somente quando forem pertinentes ao risco ou quando o usuario pedir; nao crie testes unitarios automaticamente para correcao pontual.
+
+Antes da resposta final, confirme:
+
+- arquivos alterados;
+- skills usadas;
+- caminho compartilhado de backend, quando houver;
+- se Web e Mobile continuam com UI propria;
+- se textos e dados regionalizaveis foram tratados;
+- comandos executados e qualquer validacao nao executada.
+
+Nao faca commit, branch, build completo, troca de dependencia ou mudanca em backend sem pedido explicito.
