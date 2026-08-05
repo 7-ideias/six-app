@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -8,6 +7,7 @@ import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
@@ -17,12 +17,15 @@ import 'preferencias_mobile_screen.dart';
 class LoginSettingsMobile extends StatelessWidget {
   const LoginSettingsMobile({
     super.key,
-    required this.image,
+    required this.profileImage,
     required this.onPickImage,
+    required this.isUpdatingImage,
   });
 
-  final File? image;
-  final void Function(ImageSource source) onPickImage;
+  final String? profileImage;
+  final Future<void> Function(ImageSource source) onPickImage;
+  final bool isUpdatingImage;
+  static Future<void>? _profileLoadFuture;
 
   static const Color _surface = SixMobilePalette.surface;
   static const Color _border = SixMobilePalette.border;
@@ -171,7 +174,7 @@ class LoginSettingsMobile extends StatelessWidget {
     final UsuarioProvider usuarioProvider = UsuarioProvider();
 
     return FutureBuilder<void>(
-      future: _loadUserIfNeeded(usuarioProvider),
+      future: _loadUser(),
       builder: (BuildContext context, AsyncSnapshot<void> _) {
         return ListenableBuilder(
           listenable: usuarioProvider,
@@ -200,7 +203,7 @@ class LoginSettingsMobile extends StatelessWidget {
               ),
               child: Row(
                 children: <Widget>[
-                  _buildAvatar(context),
+                  _buildAvatar(context, usuario?.foto ?? profileImage),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -242,7 +245,7 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(BuildContext context) {
+  Widget _buildAvatar(BuildContext context, String? currentProfileImage) {
     return Semantics(
       button: true,
       label: 'Alterar foto do perfil',
@@ -280,15 +283,30 @@ class LoginSettingsMobile extends StatelessWidget {
               child: CircleAvatar(
                 radius: 30,
                 backgroundColor: _softSurface,
-                backgroundImage: image != null ? FileImage(image!) : null,
                 child:
-                    image == null
+                    isUpdatingImage
+                        ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: _accent,
+                          ),
+                        )
+                        : (currentProfileImage?.trim().isEmpty ?? true)
                         ? const Icon(
                           Icons.person_outline_rounded,
                           size: 30,
                           color: _accent,
                         )
-                        : null,
+                        : UserProfileAvatarImage(
+                          imageValue: currentProfileImage,
+                          fallbackIcon: Icons.person_outline_rounded,
+                          fallbackColor: _accent,
+                          size: 64,
+                          fallbackIconSize: 30,
+                          circle: true,
+                        ),
               ),
             ),
             Positioned(
@@ -555,9 +573,11 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
-  Future<void> _loadUserIfNeeded(UsuarioProvider provider) async {
-    if (provider.usuario != null) return;
+  Future<void> _loadUser() {
+    return _profileLoadFuture ??= _reloadUser();
+  }
 
+  Future<void> _reloadUser() async {
     try {
       await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
     } catch (_) {
@@ -599,6 +619,8 @@ class LoginSettingsMobile extends StatelessWidget {
   }
 
   void _showImagePickerOptions(BuildContext context) {
+    final String? currentProfileImage = UsuarioProvider().usuario?.foto.trim();
+
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -622,6 +644,8 @@ class LoginSettingsMobile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _buildPhotoPreview(currentProfileImage),
+                const SizedBox(height: 14),
                 _buildImageOption(
                   bottomSheetContext,
                   icon: Icons.photo_camera_outlined,
@@ -643,6 +667,43 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
+  Widget _buildPhotoPreview(String? currentProfileImage) {
+    final String imageValue = currentProfileImage ?? profileImage ?? '';
+
+    return Center(
+      child: Container(
+        width: 82,
+        height: 82,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _surface,
+          border: Border.all(color: SixMobilePalette.highlightedBorder),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: SixMobilePalette.navigationShadow.withValues(alpha: 0.45),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: ColoredBox(
+            color: _softSurface,
+            child: UserProfileAvatarImage(
+              imageValue: imageValue,
+              fallbackIcon: Icons.person_outline_rounded,
+              fallbackColor: _accent,
+              size: 76,
+              fallbackIconSize: 34,
+              circle: true,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildImageOption(
     BuildContext context, {
     required IconData icon,
@@ -654,9 +715,9 @@ class LoginSettingsMobile extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () {
+        onTap: () async {
           Navigator.of(context).pop();
-          onPickImage(source);
+          await onPickImage(source);
         },
         child: Container(
           padding: const EdgeInsets.all(14),

@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
@@ -13,7 +10,6 @@ import 'package:sixpos/presentation/components/mobile/management/management_sect
 import 'package:sixpos/presentation/components/mobile/management/management_settings_group.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
@@ -44,8 +40,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     milliseconds: 380,
   );
 
-  File? _image;
-  final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
   int _totalNotificacoesConhecidas = 0;
   int _selectedSectionIndex = 0;
@@ -98,13 +92,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     });
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final XFile? selected = await _picker.pickImage(source: source);
-    if (selected != null) {
-      setState(() => _image = File(selected.path));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
@@ -115,7 +102,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       accentColor: SixMobilePalette.accent,
       automaticallyImplyLeading: false,
       actions: <Widget>[
-        SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
         IconButton(
           tooltip: context.t(
             'gestao.settings.item.notifications.title',

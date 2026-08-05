@@ -206,6 +206,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       cpf: usuarioAtual.cpf,
       registroProfissional: usuarioAtual.registroProfissional,
       email: usuarioAtual.email,
+      foto: usuarioAtual.foto,
       nomeDeGuerra: usuarioAtual.nomeDeGuerra,
       celular: usuarioAtual.celular,
       senha: usuarioAtual.senha,

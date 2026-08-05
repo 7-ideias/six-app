@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sixpos/data/datasources/catalog_health_mock_data_source.dart';
+import 'package:sixpos/core/di/catalog_health_module.dart';
 import 'package:sixpos/data/models/catalog_health_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
@@ -9,6 +9,7 @@ import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:sixpos/providers/catalog_health_provider.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:syncfusion_flutter_gauges/gauges.dart';
 
 class CatalogHealthMobileScreen extends StatelessWidget {
   const CatalogHealthMobileScreen({super.key});
@@ -18,7 +19,7 @@ class CatalogHealthMobileScreen extends StatelessWidget {
     return ChangeNotifierProvider<CatalogHealthProvider>(
       create:
           (_) => CatalogHealthProvider(
-            dataSource: const CatalogHealthMockDataSource(),
+            apiClient: CatalogHealthModule.catalogHealthApiClient,
           )..load(),
       child: const _CatalogHealthMobileView(),
     );
@@ -136,7 +137,9 @@ class _CatalogHealthMobileView extends StatelessWidget {
       onOpenServices: () => _openServices(context),
       onNewProduct: () => _openCreate(context, 'PRODUTO'),
       onNewService: () => _openCreate(context, 'SERVICO'),
-      onDemoMetric: () => _showDemoFilterMessage(context),
+      onPendingMetric:
+          (CatalogHealthMetric metric) =>
+              _showPendingFilterMessage(context, metric),
     );
   }
 
@@ -164,11 +167,14 @@ class _CatalogHealthMobileView extends StatelessWidget {
     );
   }
 
-  void _showDemoFilterMessage(BuildContext context) {
+  void _showPendingFilterMessage(
+    BuildContext context,
+    CatalogHealthMetric metric,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          'Este indicador ainda utiliza dados demonstrativos. O filtro será integrado em uma próxima etapa.',
+          'A lista filtrada de ${metric.title.toLowerCase()} será integrada em uma próxima etapa.',
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -187,7 +193,7 @@ class _CatalogSuccessState extends StatelessWidget {
     required this.onOpenServices,
     required this.onNewProduct,
     required this.onNewService,
-    required this.onDemoMetric,
+    required this.onPendingMetric,
   });
 
   final CatalogHealthSummary summary;
@@ -198,29 +204,41 @@ class _CatalogSuccessState extends StatelessWidget {
   final VoidCallback onOpenServices;
   final VoidCallback onNewProduct;
   final VoidCallback onNewService;
-  final VoidCallback onDemoMetric;
+  final ValueChanged<CatalogHealthMetric> onPendingMetric;
 
   @override
   Widget build(BuildContext context) {
     final CatalogHealthMetric products =
-        summary.metric(CatalogHealthMetricType.products)!;
+        summary.metric(CatalogHealthMetricType.products) ??
+        summary.overview.products.toMetric(
+          type: CatalogHealthMetricType.products,
+          code: 'PRODUTOS',
+        );
     final CatalogHealthMetric services =
-        summary.metric(CatalogHealthMetricType.services)!;
-    final List<CatalogHealthMetric> pendingMetrics = summary.metrics
-        .where((CatalogHealthMetric metric) => metric.countsAsAttention)
+        summary.metric(CatalogHealthMetricType.services) ??
+        summary.overview.services.toMetric(
+          type: CatalogHealthMetricType.services,
+          code: 'SERVICOS',
+        );
+    final List<CatalogHealthMetric> pendingMetrics = summary
+        .pendingSection
+        .items
         .where(
           (CatalogHealthMetric metric) =>
               canViewStock || !metric.requiresStockPermission,
         )
         .toList(growable: false);
+    final CatalogHealthAction? newProductAction = summary.action(
+      'NOVO_PRODUTO',
+    );
+    final CatalogHealthAction? newServiceAction = summary.action(
+      'NOVO_SERVICO',
+    );
 
     final List<Widget> children = <Widget>[
-      _entry(reduceMotion: reduceMotion, child: const _CatalogIntro()),
-      const SizedBox(height: 14),
       _entry(
         reduceMotion: reduceMotion,
-        delay: const Duration(milliseconds: 70),
-        child: _CatalogAttentionHero(total: summary.attentionItems),
+        child: _CatalogHealthHero(summary: summary, reduceMotion: reduceMotion),
       ),
       const SizedBox(height: 16),
       _entry(
@@ -257,16 +275,16 @@ class _CatalogSuccessState extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: _CatalogActionButton(
-                  label: 'Novo produto',
-                  icon: Icons.add_rounded,
+                  label: newProductAction?.title ?? 'Novo produto',
+                  icon: _catalogIcon(newProductAction?.iconCode ?? 'ADICIONAR'),
                   onTap: onNewProduct,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _CatalogActionButton(
-                  label: 'Novo serviço',
-                  icon: Icons.design_services_outlined,
+                  label: newServiceAction?.title ?? 'Novo serviço',
+                  icon: _catalogIcon(newServiceAction?.iconCode ?? 'SERVICO'),
                   onTap: onNewService,
                 ),
               ),
@@ -279,8 +297,8 @@ class _CatalogSuccessState extends StatelessWidget {
         reduceMotion: reduceMotion,
         delay: const Duration(milliseconds: 220),
         child: _SectionTitle(
-          title: 'Pendências',
-          subtitle: 'Tarefas de revisão para manter o catálogo pronto.',
+          title: summary.pendingSection.title,
+          subtitle: summary.pendingSection.description,
         ),
       ),
       const SizedBox(height: 10),
@@ -294,7 +312,7 @@ class _CatalogSuccessState extends StatelessWidget {
             delay: Duration(milliseconds: 260 + (entry.key * 40)),
             child: _CatalogPendingCard(
               metric: entry.value,
-              onTap: onDemoMetric,
+              onTap: () => onPendingMetric(entry.value),
             ),
           ),
         );
@@ -325,67 +343,23 @@ class _CatalogSuccessState extends StatelessWidget {
   }
 }
 
-class _CatalogIntro extends StatelessWidget {
-  const _CatalogIntro();
+class _CatalogHealthHero extends StatelessWidget {
+  const _CatalogHealthHero({required this.summary, required this.reduceMotion});
+
+  final CatalogHealthSummary summary;
+  final bool reduceMotion;
 
   @override
   Widget build(BuildContext context) {
+    final CatalogHealthScore health = summary.health;
+
     return Semantics(
       container: true,
       label:
-          'Saúde do catálogo. Revise produtos e serviços que precisam de atenção. Dados demonstrativos.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          const Text(
-            'Revise produtos e serviços que precisam de atenção.',
-            style: TextStyle(
-              color: SixMobilePalette.heroSupportingText,
-              height: 1.35,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ExcludeSemantics(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: SixMobilePalette.surface.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: SixMobilePalette.surface.withValues(alpha: 0.22),
-                ),
-              ),
-              child: const Text(
-                'Dados demonstrativos',
-                style: TextStyle(
-                  color: SixMobilePalette.heroLabelText,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CatalogAttentionHero extends StatelessWidget {
-  const _CatalogAttentionHero({required this.total});
-
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      container: true,
-      label:
-          '$total itens precisam de atenção. Corrija pendências para manter o catálogo pronto para vendas.',
+          '${health.title}. ${health.description}. ${summary.attentionItems} itens precisam de atenção.',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(22),
@@ -398,63 +372,44 @@ class _CatalogAttentionHero extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
+        child: Column(
           children: <Widget>[
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: SixMobilePalette.softAccentSurface,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.task_alt_rounded,
-                color: SixMobilePalette.accent,
+            SizedBox(
+              height: 180,
+              child: _CatalogSyncfusionGauge(
+                thermometer: summary.thermometer,
+                reduceMotion: reduceMotion,
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: SixMobilePalette.softAccentSurface,
+                borderRadius: BorderRadius.circular(999),
+                border:
+                    Border.all(color: SixMobilePalette.highlightedBorder),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: <Widget>[
-                      SixAnimatedNumberText(
-                        value: total.toString(),
-                        style: const TextStyle(
-                          color: SixMobilePalette.titleText,
-                          fontSize: 26,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Expanded(
-                        child: Text(
-                          'itens precisam de atenção',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: SixMobilePalette.titleText,
-                            fontSize: 13,
-                            height: 1.15,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
+                  const Icon(
+                    Icons.task_alt_rounded,
+                    color: SixMobilePalette.accent,
+                    size: 16,
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Corrija pendências para manter o catálogo pronto para vendas.',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: SixMobilePalette.mutedText,
-                      height: 1.3,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      '${summary.attentionItems} itens precisam de atenção',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: SixMobilePalette.titleText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ],
@@ -464,6 +419,157 @@ class _CatalogAttentionHero extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CatalogSyncfusionGauge extends StatelessWidget {
+  const _CatalogSyncfusionGauge({
+    required this.thermometer,
+    required this.reduceMotion,
+  });
+
+  final CatalogHealthThermometer thermometer;
+  final bool reduceMotion;
+
+  @override
+  Widget build(BuildContext context) {
+    final double value = thermometer.value.toDouble();
+    final double min = thermometer.min.toDouble();
+    final double max = thermometer.max.toDouble();
+    final double animDuration = reduceMotion ? 0 : 900;
+
+    final List<CatalogHealthThermometerSegment> activeSegments =
+        thermometer.segments.isEmpty
+            ? const <CatalogHealthThermometerSegment>[
+              CatalogHealthThermometerSegment(
+                start: 0,
+                end: 100,
+                code: 'SAUDE',
+                title: 'Saúde',
+                semanticColor: 'VERDE',
+              ),
+            ]
+            : thermometer.segments;
+
+    return SfRadialGauge(
+      axes: <RadialAxis>[
+        RadialAxis(
+          minimum: min,
+          maximum: max,
+          startAngle: 180,
+          endAngle: 0,
+          showLabels: false,
+          showTicks: false,
+          radiusFactor: 0.92,
+          canScaleToFit: true,
+          axisLineStyle: const AxisLineStyle(
+            thickness: 0.18,
+            thicknessUnit: GaugeSizeUnit.factor,
+            color: Color(0xFFE5E7EB),
+            cornerStyle: CornerStyle.bothCurve,
+          ),
+          ranges: <GaugeRange>[
+            for (final CatalogHealthThermometerSegment segment
+                in activeSegments)
+              GaugeRange(
+                startValue: segment.start.toDouble(),
+                endValue: segment.end.toDouble(),
+                color: _catalogSemanticColor(segment.semanticColor),
+                startWidth: 0.18,
+                endWidth: 0.18,
+                sizeUnit: GaugeSizeUnit.factor,
+              ),
+          ],
+          pointers: <GaugePointer>[
+            NeedlePointer(
+              value: value,
+              needleLength: 0.6,
+              needleStartWidth: 1.2,
+              needleEndWidth: 3.5,
+              needleColor: SixMobilePalette.primary,
+              knobStyle: const KnobStyle(
+                knobRadius: 0.07,
+                color: SixMobilePalette.primary,
+                borderColor: Colors.white,
+                borderWidth: 0.03,
+              ),
+              tailStyle: const TailStyle(
+                length: 0.12,
+                width: 3,
+                color: SixMobilePalette.primary,
+              ),
+              enableAnimation: !reduceMotion,
+              animationDuration: animDuration,
+              animationType: AnimationType.easeOutBack,
+            ),
+          ],
+          annotations: <GaugeAnnotation>[
+            GaugeAnnotation(
+              angle: 90,
+              positionFactor: 0.0,
+              widget: Text(
+                '${thermometer.value}%',
+                style: const TextStyle(
+                  color: SixMobilePalette.titleText,
+                  fontSize: 32,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            GaugeAnnotation(
+              angle: 90,
+              positionFactor: 0.45,
+              widget: Text(
+                'de saúde',
+                style: TextStyle(
+                  color: SixMobilePalette.mutedText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+IconData _catalogIcon(String code) {
+  switch (code) {
+    case 'ADICIONAR':
+      return Icons.add_rounded;
+    case 'SERVICO':
+      return Icons.design_services_outlined;
+    case 'IMAGEM':
+      return Icons.photo_library_outlined;
+    case 'ESTOQUE_ZERADO':
+      return Icons.remove_shopping_cart_outlined;
+    case 'CARRINHO_ALERTA':
+      return Icons.production_quantity_limits_outlined;
+    case 'CADASTRO':
+      return Icons.fact_check_outlined;
+    case 'CATEGORIA':
+      return Icons.category_outlined;
+    case 'PRODUTO':
+    default:
+      return Icons.inventory_2_outlined;
+  }
+}
+
+Color _catalogSemanticColor(String code) {
+  switch (code) {
+    case 'VERMELHO':
+      return SixMobilePalette.error;
+    case 'AMARELO':
+      return const Color(0xFFFBBF24);
+    case 'VERDE':
+      return const Color(0xFF14B8A6);
+    case 'AZUL':
+      return SixMobilePalette.accent;
+    default:
+      return SixMobilePalette.primary;
   }
 }
 
@@ -509,7 +615,7 @@ class _CatalogEntryCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        metric.icon,
+                        _catalogIcon(metric.iconCode),
                         color: SixMobilePalette.primary,
                         size: 20,
                       ),
@@ -628,17 +734,23 @@ class _CatalogPendingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent =
-        metric.severity == CatalogHealthMetricSeverity.restricted
-            ? SixMobilePalette.error
-            : SixMobilePalette.accent;
+        metric.semanticColor.isNotEmpty
+            ? _catalogSemanticColor(metric.semanticColor)
+            : switch (metric.severity) {
+              CatalogHealthMetricSeverity.critical => SixMobilePalette.error,
+              CatalogHealthMetricSeverity.warning => SixMobilePalette.error,
+              CatalogHealthMetricSeverity.informative =>
+                SixMobilePalette.accent,
+              CatalogHealthMetricSeverity.neutral => SixMobilePalette.primary,
+            };
     final String stateText = metric.isPositive ? 'Em dia' : '${metric.value}';
 
     return Semantics(
       button: true,
       label:
           metric.isPositive
-              ? '${metric.title}, nenhum item pendente, indicador demonstrativo.'
-              : '${metric.value} ${metric.title.toLowerCase()}, indicador demonstrativo.',
+              ? '${metric.title}, nenhum item pendente.'
+              : '${metric.value} itens em ${metric.title.toLowerCase()}.',
       child: Material(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
@@ -661,7 +773,11 @@ class _CatalogPendingCard extends StatelessWidget {
                     color: SixMobilePalette.softNeutralSurface,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(metric.icon, color: accent, size: 21),
+                  child: Icon(
+                    _catalogIcon(metric.iconCode),
+                    color: accent,
+                    size: 21,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -767,7 +883,7 @@ class _CatalogLoadingState extends StatelessWidget {
     return Semantics(
       container: true,
       liveRegion: true,
-      label: 'Carregando dados demonstrativos da saúde do catálogo.',
+      label: 'Carregando saúde do catálogo.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -775,7 +891,7 @@ class _CatalogLoadingState extends StatelessWidget {
           const SizedBox(height: 10),
           const _SkeletonLine(width: 132),
           const SizedBox(height: 16),
-          const _SkeletonCard(height: 104),
+          const _SkeletonCard(height: 132),
           const SizedBox(height: 14),
           Row(
             children: const <Widget>[
@@ -847,7 +963,7 @@ class _CatalogErrorState extends StatelessWidget {
     return _StateCard(
       icon: Icons.cloud_off_outlined,
       title: 'Não foi possível carregar',
-      subtitle: 'Tente novamente para ver os dados demonstrativos do catálogo.',
+      subtitle: 'Tente novamente para ver a saúde do catálogo.',
       actions: <Widget>[
         OutlinedButton.icon(
           onPressed: onRetry,

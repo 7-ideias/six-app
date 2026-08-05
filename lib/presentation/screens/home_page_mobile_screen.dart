@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -9,6 +7,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/dashboard_inicio_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
@@ -16,6 +15,7 @@ import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.da
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
+import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
@@ -47,11 +47,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
   );
   final DateFormat _dateFmt = DateFormat('dd/MM', 'pt_BR');
 
-  File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
-  final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider();
+  final UsuarioService _usuarioService = UsuarioService();
+  final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider(
+    initialPeriod: DashboardPeriod.last30Days,
+  );
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  bool _salvandoFotoPerfil = false;
+  bool _sincronizandoPerfilInicial = false;
+  String? _fotoPerfilSincronizada;
 
   @override
   void initState() {
@@ -61,6 +66,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _usuarioProvider.addListener(_onUsuarioChanged);
     if (!kIsWeb) {
       _configurarWebSocketMobile();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sincronizarPerfilInicial();
+      });
     }
   }
 
@@ -92,7 +100,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   void _onUsuarioChanged() {
     if (!mounted) return;
-    setState(() {});
+    final String foto = _usuarioProvider.usuario?.foto.trim() ?? '';
+    if (foto.isEmpty) {
+      return;
+    }
+
+    setState(() => _fotoPerfilSincronizada = foto);
   }
 
   void _configurarWebSocketMobile() {
@@ -115,13 +128,110 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   Future<void> _onRefresh() async {
-    _dashboardProvider.reload();
+    await Future.wait([
+      _dashboardProvider.reload(),
+      _atualizarDadosPessoaisNoRefresh(),
+    ]);
+  }
+
+  Future<void> _atualizarDadosPessoaisNoRefresh() async {
+    try {
+      await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      final String foto = _usuarioProvider.usuario?.foto.trim() ?? '';
+      if (mounted) {
+        setState(() {
+          if (foto.isNotEmpty) {
+            _fotoPerfilSincronizada = foto;
+          }
+        });
+      }
+    } catch (error) {
+      debugPrint(
+        '[HomePageMobile] Falha ao atualizar dados pessoais no refresh: $error',
+      );
+    }
+  }
+
+  Future<void> _sincronizarPerfilInicial() async {
+    if (_sincronizandoPerfilInicial) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _sincronizandoPerfilInicial = true);
+    } else {
+      _sincronizandoPerfilInicial = true;
+    }
+    try {
+      await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      final String foto = _usuarioProvider.usuario?.foto.trim() ?? '';
+      if (mounted) {
+        setState(() {
+          if (foto.isNotEmpty) {
+            _fotoPerfilSincronizada = foto;
+          }
+        });
+      } else {
+        if (foto.isNotEmpty) {
+          _fotoPerfilSincronizada = foto;
+        }
+      }
+    } catch (error) {
+      debugPrint(
+        '[HomePageMobile] Falha ao sincronizar perfil inicial: $error',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _sincronizandoPerfilInicial = false);
+      } else {
+        _sincronizandoPerfilInicial = false;
+      }
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? selected = await _picker.pickImage(source: source);
-    if (selected != null) {
-      setState(() => _image = File(selected.path));
+    if (_salvandoFotoPerfil) {
+      return;
+    }
+
+    final XFile? selected = await _picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 82,
+    );
+    if (selected == null) {
+      return;
+    }
+
+    setState(() => _salvandoFotoPerfil = true);
+    try {
+      final String imageDataUrl = await buildProfileImageDataUrl(selected);
+      await _usuarioService.atualizarFotoDoUsuario(imageDataUrl);
+      if (mounted) {
+        setState(() => _fotoPerfilSincronizada = imageDataUrl);
+      } else {
+        _fotoPerfilSincronizada = imageDataUrl;
+      }
+    } catch (error) {
+      debugPrint('[HomePageMobile] Falha ao atualizar foto do perfil: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'perfil.mobile.photoSaveError',
+              fallback:
+                  'Não foi possível atualizar a foto do perfil. Tente novamente.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _salvandoFotoPerfil = false);
+      }
     }
   }
 
@@ -145,17 +255,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
         secondaryColor: _secondaryColor,
         accentColor: _accentColor,
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          tooltip: context.t(
-            'gestao.settings.item.notifications.title',
-            fallback: 'Notificações',
-          ),
-          icon: _buildNotificationIcon(),
-          onPressed: () => _openNotifications(context),
-        ),
         actions: [
-          SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
-          _buildTopOptionsButton(context),
+          IconButton(
+            tooltip: context.t(
+              'gestao.settings.item.notifications.title',
+              fallback: 'Notificações',
+            ),
+            icon: _buildNotificationIcon(),
+            onPressed: () => _openNotifications(context),
+          ),
           const SizedBox(width: 6),
         ],
         bodyBuilder: _buildHomeContent,
@@ -226,66 +334,67 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   // ─── NOTIFICATION ICON ─────────────────────────────────────────────────────
 
-  Widget _buildTopOptionsButton(BuildContext context) {
-    return Tooltip(
-      message: context.t('common.moreOptions', fallback: 'Mais opções'),
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () {},
-          child: Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
-              ),
-              color: SixMobilePalette.onPrimary.withValues(alpha: 0.08),
-            ),
-            child: const Icon(Icons.tune_rounded, size: 20),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildGreetingHeader(BuildContext context) {
     final String nome = _resolveGreetingName();
+    final String? profileImage =
+        _fotoPerfilSincronizada ?? _usuarioProvider.usuario?.foto;
 
     return Semantics(
       header: true,
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context
-                .t('dashboardInicio.mobileGreeting', fallback: 'Olá, {nome}!')
-                .replaceAll('{nome}', nome),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.onPrimary,
-              fontSize: 28,
-              height: 1.08,
-              fontWeight: FontWeight.w900,
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: SixMobileAccountPanelAction(
+              profileImage: profileImage,
+              onPickImage: _pickImage,
+              isUpdatingImage:
+                  _salvandoFotoPerfil || _sincronizandoPerfilInicial,
+              size: 44,
+              borderColor: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
+              backgroundColor: SixMobilePalette.onPrimary.withValues(
+                alpha: 0.10,
+              ),
+              iconColor: SixMobilePalette.onPrimary,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            context.t(
-              'dashboardInicio.mobileGreetingSubtitle',
-              fallback: 'Veja os principais movimentos do comércio hoje.',
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: SixMobilePalette.heroSupportingText,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context
+                      .t(
+                        'dashboardInicio.mobileGreeting',
+                        fallback: 'Olá, {nome}!',
+                      )
+                      .replaceAll('{nome}', nome),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SixMobilePalette.onPrimary,
+                    fontSize: 28,
+                    height: 1.08,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  context.t(
+                    'dashboardInicio.mobileGreetingSubtitle',
+                    fallback: 'Veja os principais movimentos do comércio hoje.',
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: SixMobilePalette.heroSupportingText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

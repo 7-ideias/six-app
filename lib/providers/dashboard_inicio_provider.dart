@@ -12,11 +12,13 @@ import 'package:sixpos/data/models/dashboard_inicio_model.dart';
 /// por uma chamada a um repository real. Os widgets consumidores
 /// não precisarão mudar.
 class DashboardInicioProvider extends ChangeNotifier {
-  DashboardInicioProvider() {
+  DashboardInicioProvider({
+    DashboardPeriod initialPeriod = DashboardPeriod.currentMonth,
+  }) : _period = initialPeriod {
     _data = DashboardInicioMock.forPeriod(_period);
   }
 
-  DashboardPeriod _period = DashboardPeriod.currentMonth;
+  DashboardPeriod _period;
   late DashboardInicioModel _data;
   bool _isLoading = false;
   String? _error;
@@ -34,20 +36,20 @@ class DashboardInicioProvider extends ChangeNotifier {
   }
 
   /// Força recarga dos dados (simula ação de atualizar).
-  void reload() => _reload();
+  Future<void> reload() => _reload();
 
-  void _reload() {
+  Future<void> _reload() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     final DashboardPeriod capturedPeriod = _period;
-    Future<void>.delayed(const Duration(milliseconds: 380), () {
-      // Descarta resultado se o período mudou durante o delay.
-      if (_period != capturedPeriod) return;
-      _data = DashboardInicioMock.forPeriod(_period);
-      _isLoading = false;
-      notifyListeners();
-    });
+    await Future<void>.delayed(const Duration(milliseconds: 380));
+
+    // Descarta resultado se o período mudou durante o delay.
+    if (_period != capturedPeriod) return;
+    _data = DashboardInicioMock.forPeriod(_period);
+    _isLoading = false;
+    notifyListeners();
   }
 }

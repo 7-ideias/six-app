@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
@@ -11,7 +8,6 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
-import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
@@ -41,12 +37,10 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     canal: 'mobile',
   );
   final NotificacaoService _notificacoes = NotificacaoService();
-  final ImagePicker _picker = ImagePicker();
   final OperationalProcedureFlowCoordinator _procedureCoordinator =
       OperationalProcedureFlowCoordinator();
 
   TelaInicialModel? _resumo;
-  File? _image;
   bool _loading = true;
   String? _erro;
   int _totalNotificacoesConhecidas = 0;
@@ -114,12 +108,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final XFile? selected = await _picker.pickImage(source: source);
-    if (selected == null) return;
-    setState(() => _image = File(selected.path));
-  }
-
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
@@ -130,7 +118,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       accentColor: _accent,
       automaticallyImplyLeading: false,
       actions: <Widget>[
-        SixMobileAccountPanelAction(image: _image, onPickImage: _pickImage),
         IconButton(
           tooltip: 'Notificações',
           icon: _notificationIcon(),
