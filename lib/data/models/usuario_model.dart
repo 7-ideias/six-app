@@ -12,6 +12,7 @@ class UsuarioModel {
   final String salt;
   final String rg;
   final String dataNascimento;
+  final String foto;
   final EnderecoModel? objEndereco;
   final PreferenciasIndividuaisDoUsuarioModel preferenciasIndividuaisDoUsuario;
   final bool enviarPreferenciasIndividuaisDoUsuario;
@@ -28,14 +29,16 @@ class UsuarioModel {
     this.salt = '',
     this.rg = '',
     this.dataNascimento = '',
+    this.foto = '',
     this.objEndereco,
     PreferenciasIndividuaisDoUsuarioModel? preferenciasIndividuaisDoUsuario,
     bool? enviarPreferenciasIndividuaisDoUsuario,
-  })  : preferenciasIndividuaisDoUsuario = preferenciasIndividuaisDoUsuario ??
-            PreferenciasIndividuaisDoUsuarioModel.padrao(),
-        enviarPreferenciasIndividuaisDoUsuario =
-            enviarPreferenciasIndividuaisDoUsuario ??
-                (preferenciasIndividuaisDoUsuario != null);
+  }) : preferenciasIndividuaisDoUsuario =
+           preferenciasIndividuaisDoUsuario ??
+           PreferenciasIndividuaisDoUsuarioModel.padrao(),
+       enviarPreferenciasIndividuaisDoUsuario =
+           enviarPreferenciasIndividuaisDoUsuario ??
+           (preferenciasIndividuaisDoUsuario != null);
 
   factory UsuarioModel.fromJson(Map<String, dynamic> json) {
     return UsuarioModel(
@@ -50,13 +53,21 @@ class UsuarioModel {
       salt: json['salt'] ?? '',
       rg: json['rg'] ?? '',
       dataNascimento: json['dataNascimento'] ?? '',
-      objEndereco: json['objEndereco'] != null
-          ? EnderecoModel.fromJson(json['objEndereco'])
-          : null,
+      foto: _stringFromJson(
+        json['foto'] ??
+            json['fotoDePerfil'] ??
+            json['urlFoto'] ??
+            json['imagemPerfil'] ??
+            json['imagemDoUsuario'],
+      ),
+      objEndereco:
+          json['objEndereco'] != null
+              ? EnderecoModel.fromJson(json['objEndereco'])
+              : null,
       preferenciasIndividuaisDoUsuario:
           PreferenciasIndividuaisDoUsuarioModel.fromJson(
-        json['preferenciasIndividuaisDoUsuario'],
-      ),
+            json['preferenciasIndividuaisDoUsuario'],
+          ),
       enviarPreferenciasIndividuaisDoUsuario: true,
     );
   }
@@ -74,6 +85,7 @@ class UsuarioModel {
       'salt': salt,
       'rg': rg,
       'dataNascimento': dataNascimento,
+      'foto': foto,
       'objEndereco': objEndereco?.toJson(),
     };
 
@@ -83,6 +95,50 @@ class UsuarioModel {
     }
 
     return json;
+  }
+
+  UsuarioModel copyWith({
+    String? nome,
+    String? sobrenome,
+    String? cpf,
+    String? registroProfissional,
+    String? email,
+    String? nomeDeGuerra,
+    String? celular,
+    String? senha,
+    String? salt,
+    String? rg,
+    String? dataNascimento,
+    String? foto,
+    EnderecoModel? objEndereco,
+    PreferenciasIndividuaisDoUsuarioModel? preferenciasIndividuaisDoUsuario,
+    bool? enviarPreferenciasIndividuaisDoUsuario,
+  }) {
+    return UsuarioModel(
+      nome: nome ?? this.nome,
+      sobrenome: sobrenome ?? this.sobrenome,
+      cpf: cpf ?? this.cpf,
+      registroProfissional: registroProfissional ?? this.registroProfissional,
+      email: email ?? this.email,
+      nomeDeGuerra: nomeDeGuerra ?? this.nomeDeGuerra,
+      celular: celular ?? this.celular,
+      senha: senha ?? this.senha,
+      salt: salt ?? this.salt,
+      rg: rg ?? this.rg,
+      dataNascimento: dataNascimento ?? this.dataNascimento,
+      foto: foto ?? this.foto,
+      objEndereco: objEndereco ?? this.objEndereco,
+      preferenciasIndividuaisDoUsuario:
+          preferenciasIndividuaisDoUsuario ??
+          this.preferenciasIndividuaisDoUsuario,
+      enviarPreferenciasIndividuaisDoUsuario:
+          enviarPreferenciasIndividuaisDoUsuario ??
+          this.enviarPreferenciasIndividuaisDoUsuario,
+    );
+  }
+
+  static String _stringFromJson(dynamic value) {
+    return value?.toString() ?? '';
   }
 }
 
@@ -126,12 +182,7 @@ class EnderecoModel {
   }
 }
 
-enum ModoDeExibicaoUsuario {
-  horizontal,
-  vertical,
-  grade,
-  lista,
-}
+enum ModoDeExibicaoUsuario { horizontal, vertical, grade, lista }
 
 extension ModoDeExibicaoUsuarioApi on ModoDeExibicaoUsuario {
   String get codigo {
@@ -172,6 +223,7 @@ extension ModoDeExibicaoUsuarioApi on ModoDeExibicaoUsuario {
 }
 
 class PreferenciasIndividuaisDoUsuarioModel {
+  final String idiomaDePreferencia;
   final ModoDeExibicaoUsuario modoDeExibicaoProdutosWeb;
   final ModoDeExibicaoUsuario modoDeExibicaoProdutosMobile;
   final ModoDeExibicaoUsuario modoDeExibicaoServicosWeb;
@@ -179,6 +231,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final bool ocultarValoresFinanceirosWeb;
 
   PreferenciasIndividuaisDoUsuarioModel({
+    this.idiomaDePreferencia = '',
     ModoDeExibicaoUsuario? modoDeExibicaoProdutos,
     ModoDeExibicaoUsuario? modoDeExibicaoServicos,
     ModoDeExibicaoUsuario? modoDeExibicaoProdutosWeb,
@@ -186,18 +239,22 @@ class PreferenciasIndividuaisDoUsuarioModel {
     ModoDeExibicaoUsuario? modoDeExibicaoServicosWeb,
     ModoDeExibicaoUsuario? modoDeExibicaoServicosMobile,
     required this.ocultarValoresFinanceirosWeb,
-  })  : modoDeExibicaoProdutosWeb = modoDeExibicaoProdutosWeb ??
-            modoDeExibicaoProdutos ??
-            ModoDeExibicaoUsuario.vertical,
-        modoDeExibicaoProdutosMobile = modoDeExibicaoProdutosMobile ??
-            modoDeExibicaoProdutos ??
-            ModoDeExibicaoUsuario.vertical,
-        modoDeExibicaoServicosWeb = modoDeExibicaoServicosWeb ??
-            modoDeExibicaoServicos ??
-            ModoDeExibicaoUsuario.grade,
-        modoDeExibicaoServicosMobile = modoDeExibicaoServicosMobile ??
-            modoDeExibicaoServicos ??
-            ModoDeExibicaoUsuario.vertical;
+  }) : modoDeExibicaoProdutosWeb =
+           modoDeExibicaoProdutosWeb ??
+           modoDeExibicaoProdutos ??
+           ModoDeExibicaoUsuario.vertical,
+       modoDeExibicaoProdutosMobile =
+           modoDeExibicaoProdutosMobile ??
+           modoDeExibicaoProdutos ??
+           ModoDeExibicaoUsuario.vertical,
+       modoDeExibicaoServicosWeb =
+           modoDeExibicaoServicosWeb ??
+           modoDeExibicaoServicos ??
+           ModoDeExibicaoUsuario.grade,
+       modoDeExibicaoServicosMobile =
+           modoDeExibicaoServicosMobile ??
+           modoDeExibicaoServicos ??
+           ModoDeExibicaoUsuario.vertical;
 
   ModoDeExibicaoUsuario get modoDeExibicaoProdutos =>
       kIsWeb ? modoDeExibicaoProdutosWeb : modoDeExibicaoProdutosMobile;
@@ -207,6 +264,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
 
   factory PreferenciasIndividuaisDoUsuarioModel.padrao() {
     return PreferenciasIndividuaisDoUsuarioModel(
+      idiomaDePreferencia: '',
       modoDeExibicaoProdutosWeb: ModoDeExibicaoUsuario.vertical,
       modoDeExibicaoProdutosMobile: ModoDeExibicaoUsuario.vertical,
       modoDeExibicaoServicosWeb: ModoDeExibicaoUsuario.grade,
@@ -224,39 +282,36 @@ class PreferenciasIndividuaisDoUsuarioModel {
     }
 
     final ModoDeExibicaoUsuario? modoProdutosLegado =
-        ModoDeExibicaoUsuarioApi.tryFromCodigo(
-      json['modoDeExibicaoProdutos'],
-    );
+        ModoDeExibicaoUsuarioApi.tryFromCodigo(json['modoDeExibicaoProdutos']);
     final ModoDeExibicaoUsuario? modoServicosLegado =
-        ModoDeExibicaoUsuarioApi.tryFromCodigo(
-      json['modoDeExibicaoServicos'],
-    );
+        ModoDeExibicaoUsuarioApi.tryFromCodigo(json['modoDeExibicaoServicos']);
 
     return PreferenciasIndividuaisDoUsuarioModel(
+      idiomaDePreferencia: json['idiomaDePreferencia']?.toString() ?? '',
       modoDeExibicaoProdutosWeb:
           ModoDeExibicaoUsuarioApi.tryFromCodigo(
-                json['modoDeExibicaoProdutosWeb'],
-              ) ??
-              modoProdutosLegado ??
-              padrao.modoDeExibicaoProdutosWeb,
+            json['modoDeExibicaoProdutosWeb'],
+          ) ??
+          modoProdutosLegado ??
+          padrao.modoDeExibicaoProdutosWeb,
       modoDeExibicaoProdutosMobile:
           ModoDeExibicaoUsuarioApi.tryFromCodigo(
-                json['modoDeExibicaoProdutosMobile'],
-              ) ??
-              modoProdutosLegado ??
-              padrao.modoDeExibicaoProdutosMobile,
+            json['modoDeExibicaoProdutosMobile'],
+          ) ??
+          modoProdutosLegado ??
+          padrao.modoDeExibicaoProdutosMobile,
       modoDeExibicaoServicosWeb:
           ModoDeExibicaoUsuarioApi.tryFromCodigo(
-                json['modoDeExibicaoServicosWeb'],
-              ) ??
-              modoServicosLegado ??
-              padrao.modoDeExibicaoServicosWeb,
+            json['modoDeExibicaoServicosWeb'],
+          ) ??
+          modoServicosLegado ??
+          padrao.modoDeExibicaoServicosWeb,
       modoDeExibicaoServicosMobile:
           ModoDeExibicaoUsuarioApi.tryFromCodigo(
-                json['modoDeExibicaoServicosMobile'],
-              ) ??
-              modoServicosLegado ??
-              padrao.modoDeExibicaoServicosMobile,
+            json['modoDeExibicaoServicosMobile'],
+          ) ??
+          modoServicosLegado ??
+          padrao.modoDeExibicaoServicosMobile,
       ocultarValoresFinanceirosWeb:
           json['ocultarValoresFinanceirosWeb'] == true,
     );
@@ -264,6 +319,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
 
   Map<String, dynamic> toJson() {
     return {
+      if (idiomaDePreferencia.trim().isNotEmpty)
+        'idiomaDePreferencia': idiomaDePreferencia,
       'modoDeExibicaoProdutos': modoDeExibicaoProdutos.codigo,
       'modoDeExibicaoServicos': modoDeExibicaoServicos.codigo,
       'modoDeExibicaoProdutosWeb': modoDeExibicaoProdutosWeb.codigo,
@@ -275,6 +332,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
   }
 
   PreferenciasIndividuaisDoUsuarioModel copyWith({
+    String? idiomaDePreferencia,
     ModoDeExibicaoUsuario? modoDeExibicaoProdutos,
     ModoDeExibicaoUsuario? modoDeExibicaoServicos,
     ModoDeExibicaoUsuario? modoDeExibicaoProdutosWeb,
@@ -284,19 +342,24 @@ class PreferenciasIndividuaisDoUsuarioModel {
     bool? ocultarValoresFinanceirosWeb,
   }) {
     return PreferenciasIndividuaisDoUsuarioModel(
-      modoDeExibicaoProdutosWeb: modoDeExibicaoProdutosWeb ??
+      idiomaDePreferencia: idiomaDePreferencia ?? this.idiomaDePreferencia,
+      modoDeExibicaoProdutosWeb:
+          modoDeExibicaoProdutosWeb ??
           (modoDeExibicaoProdutos != null && kIsWeb
               ? modoDeExibicaoProdutos
               : this.modoDeExibicaoProdutosWeb),
-      modoDeExibicaoProdutosMobile: modoDeExibicaoProdutosMobile ??
+      modoDeExibicaoProdutosMobile:
+          modoDeExibicaoProdutosMobile ??
           (modoDeExibicaoProdutos != null && !kIsWeb
               ? modoDeExibicaoProdutos
               : this.modoDeExibicaoProdutosMobile),
-      modoDeExibicaoServicosWeb: modoDeExibicaoServicosWeb ??
+      modoDeExibicaoServicosWeb:
+          modoDeExibicaoServicosWeb ??
           (modoDeExibicaoServicos != null && kIsWeb
               ? modoDeExibicaoServicos
               : this.modoDeExibicaoServicosWeb),
-      modoDeExibicaoServicosMobile: modoDeExibicaoServicosMobile ??
+      modoDeExibicaoServicosMobile:
+          modoDeExibicaoServicosMobile ??
           (modoDeExibicaoServicos != null && !kIsWeb
               ? modoDeExibicaoServicos
               : this.modoDeExibicaoServicosMobile),

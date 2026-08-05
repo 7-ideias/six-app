@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -17,6 +15,7 @@ import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.da
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
+import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
@@ -48,7 +47,6 @@ class _HomePageMobileState extends State<HomePageMobile> {
   );
   final DateFormat _dateFmt = DateFormat('dd/MM', 'pt_BR');
 
-  File? _image;
   final ImagePicker _picker = ImagePicker();
   final NotificacaoService _notificacaoService = NotificacaoService();
   final UsuarioService _usuarioService = UsuarioService();
@@ -56,6 +54,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
     initialPeriod: DashboardPeriod.last30Days,
   );
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  bool _salvandoFotoPerfil = false;
+  bool _sincronizandoPerfilInicial = false;
+  String? _fotoPerfilSincronizada;
 
   @override
   void initState() {
@@ -65,6 +66,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _usuarioProvider.addListener(_onUsuarioChanged);
     if (!kIsWeb) {
       _configurarWebSocketMobile();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sincronizarPerfilInicial();
+      });
     }
   }
 
@@ -96,7 +100,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   void _onUsuarioChanged() {
     if (!mounted) return;
-    setState(() {});
+    final String foto = _usuarioProvider.usuario?.foto.trim() ?? '';
+    if (foto.isEmpty) {
+      return;
+    }
+
+    setState(() => _fotoPerfilSincronizada = foto);
   }
 
   void _configurarWebSocketMobile() {
@@ -128,6 +137,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
   Future<void> _atualizarDadosPessoaisNoRefresh() async {
     try {
       await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      final String foto = _usuarioProvider.usuario?.foto.trim() ?? '';
+      if (mounted) {
+        setState(() {
+          if (foto.isNotEmpty) {
+            _fotoPerfilSincronizada = foto;
+          }
+        });
+      }
     } catch (error) {
       debugPrint(
         '[HomePageMobile] Falha ao atualizar dados pessoais no refresh: $error',
@@ -135,10 +152,86 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
   }
 
+  Future<void> _sincronizarPerfilInicial() async {
+    if (_sincronizandoPerfilInicial) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _sincronizandoPerfilInicial = true);
+    } else {
+      _sincronizandoPerfilInicial = true;
+    }
+    try {
+      await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      final String foto = _usuarioProvider.usuario?.foto.trim() ?? '';
+      if (mounted) {
+        setState(() {
+          if (foto.isNotEmpty) {
+            _fotoPerfilSincronizada = foto;
+          }
+        });
+      } else {
+        if (foto.isNotEmpty) {
+          _fotoPerfilSincronizada = foto;
+        }
+      }
+    } catch (error) {
+      debugPrint(
+        '[HomePageMobile] Falha ao sincronizar perfil inicial: $error',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _sincronizandoPerfilInicial = false);
+      } else {
+        _sincronizandoPerfilInicial = false;
+      }
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? selected = await _picker.pickImage(source: source);
-    if (selected != null) {
-      setState(() => _image = File(selected.path));
+    if (_salvandoFotoPerfil) {
+      return;
+    }
+
+    final XFile? selected = await _picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 82,
+    );
+    if (selected == null) {
+      return;
+    }
+
+    setState(() => _salvandoFotoPerfil = true);
+    try {
+      final String imageDataUrl = await buildProfileImageDataUrl(selected);
+      await _usuarioService.atualizarFotoDoUsuario(imageDataUrl);
+      if (mounted) {
+        setState(() => _fotoPerfilSincronizada = imageDataUrl);
+      } else {
+        _fotoPerfilSincronizada = imageDataUrl;
+      }
+    } catch (error) {
+      debugPrint('[HomePageMobile] Falha ao atualizar foto do perfil: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'perfil.mobile.photoSaveError',
+              fallback:
+                  'Não foi possível atualizar a foto do perfil. Tente novamente.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _salvandoFotoPerfil = false);
+      }
     }
   }
 
@@ -243,6 +336,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   Widget _buildGreetingHeader(BuildContext context) {
     final String nome = _resolveGreetingName();
+    final String? profileImage =
+        _fotoPerfilSincronizada ?? _usuarioProvider.usuario?.foto;
 
     return Semantics(
       header: true,
@@ -252,8 +347,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
           Padding(
             padding: const EdgeInsets.only(top: 1),
             child: SixMobileAccountPanelAction(
-              image: _image,
+              profileImage: profileImage,
               onPickImage: _pickImage,
+              isUpdatingImage:
+                  _salvandoFotoPerfil || _sincronizandoPerfilInicial,
               size: 44,
               borderColor: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
               backgroundColor: SixMobilePalette.onPrimary.withValues(

@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
-import 'package:sixpos/data/datasources/catalog_health_mock_data_source.dart';
 import 'package:sixpos/data/models/catalog_health_model.dart';
+import 'package:sixpos/data/services/catalog_health/catalog_health_api_client.dart';
 
 class CatalogHealthProvider extends ChangeNotifier {
-  CatalogHealthProvider({required CatalogHealthMockDataSource dataSource})
-    : _dataSource = dataSource;
+  CatalogHealthProvider({required CatalogHealthApiClient apiClient})
+    : _apiClient = apiClient;
 
-  final CatalogHealthMockDataSource _dataSource;
+  final CatalogHealthApiClient _apiClient;
 
   CatalogHealthSummary? _summary;
   bool _isLoading = false;
@@ -24,7 +24,7 @@ class CatalogHealthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _summary = await _dataSource.fetchSummary();
+      _summary = await _apiClient.buscarSaudeCatalogo();
     } catch (_) {
       _summary = null;
       _errorMessage = 'Não foi possível carregar a saúde do catálogo.';

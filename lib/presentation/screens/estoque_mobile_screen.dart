@@ -25,18 +25,26 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
 
   final ProdutoService _produtoService = ProdutoService();
   late Future<EstoqueDashboardModel> _dashboardFuture;
+  DateTime? _ultimaAtualizacaoEm;
 
   @override
   void initState() {
     super.initState();
-    _dashboardFuture = _produtoService.buscarDashboardEstoque();
+    _dashboardFuture = _buscarDashboard();
   }
 
   Future<void> _reload() async {
+    final future = _buscarDashboard();
     setState(() {
-      _dashboardFuture = _produtoService.buscarDashboardEstoque();
+      _dashboardFuture = future;
     });
     await _dashboardFuture;
+  }
+
+  Future<EstoqueDashboardModel> _buscarDashboard() async {
+    final dashboard = await _produtoService.buscarDashboardEstoque();
+    _ultimaAtualizacaoEm = DateTime.now();
+    return dashboard;
   }
 
   @override
@@ -105,14 +113,9 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                     delay: const Duration(milliseconds: 70),
                     child: _buildActions(),
                   ),
-                  const SizedBox(height: 18),
-                  SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 120),
-                    child: _buildKpis(dashboard),
-                  ),
                   const SizedBox(height: 22),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 170),
+                    delay: const Duration(milliseconds: 120),
                     child: _buildProgressSection(
                       title: _t(
                         'estoque.mobile.stockSituation',
@@ -133,7 +136,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 220),
+                    delay: const Duration(milliseconds: 170),
                     child: _buildProgressSection(
                       title: _t(
                         'estoque.mobile.valueByCategory',
@@ -154,12 +157,12 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 270),
+                    delay: const Duration(milliseconds: 220),
                     child: _buildAlerts(dashboard.alertas),
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 320),
+                    delay: const Duration(milliseconds: 270),
                     child: _buildProductSection(
                       title: _t(
                         'estoque.mobile.productsForRestock',
@@ -180,7 +183,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 370),
+                    delay: const Duration(milliseconds: 320),
                     child: _buildProductSection(
                       title: _t(
                         'estoque.mobile.errorsAndExcess',
@@ -201,7 +204,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 420),
+                    delay: const Duration(milliseconds: 370),
                     child: _buildProductSection(
                       title: _t(
                         'estoque.mobile.highestIdleValue',
@@ -222,7 +225,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                   ),
                   const SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 470),
+                    delay: const Duration(milliseconds: 420),
                     child: _buildMovements(dashboard.movimentacoesRecentes),
                   ),
                 ],
@@ -301,10 +304,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  _t(
-                    'estoque.mobile.inventoryControlSubtitle',
-                    'Saldos, reposição, rupturas e movimentações do comércio.',
-                  ),
+                  _lastUpdatedLabel(),
                   style: const TextStyle(
                     color: Color(0xFFD7E3F5),
                     height: 1.35,
@@ -316,6 +316,18 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
         ],
       ),
     );
+  }
+
+  String _lastUpdatedLabel() {
+    final updatedAt = _ultimaAtualizacaoEm;
+    if (updatedAt == null) {
+      return _t(
+        'estoque.mobile.inventoryControlSubtitle',
+        'Saldos, reposição, rupturas e movimentações do comércio.',
+      );
+    }
+
+    return '${_t('common.lastUpdatedAt', 'Última atualização às')} ${context.read<LocaleSettingsProvider>().formatTime(updatedAt)}';
   }
 
   Widget _buildActions() {
@@ -351,66 +363,6 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildKpis(EstoqueDashboardModel dashboard) {
-    final items = [
-      _Kpi(
-        Icons.payments_outlined,
-        _t('estoque.mobile.stockValue', 'Valor em estoque'),
-        _money(dashboard.valorTotalEstoque),
-        true,
-      ),
-      _Kpi(
-        Icons.inventory_2_outlined,
-        _t('estoque.mobile.totalQuantity', 'Quantidade total'),
-        _qty(dashboard.quantidadeTotalEstoque),
-      ),
-      _Kpi(
-        Icons.production_quantity_limits_outlined,
-        _t('estoque.mobile.belowMinimum', 'Abaixo do mínimo'),
-        _integer(dashboard.produtosAbaixoMinimo),
-      ),
-      _Kpi(
-        Icons.remove_shopping_cart_outlined,
-        _t('estoque.mobile.outOfStock', 'Sem estoque'),
-        _integer(dashboard.produtosSemEstoque),
-      ),
-      _Kpi(
-        Icons.report_problem_outlined,
-        _t('estoque.mobile.negativeStock', 'Estoque negativo'),
-        _integer(dashboard.produtosEstoqueNegativo),
-      ),
-      _Kpi(
-        Icons.unarchive_outlined,
-        _t('estoque.mobile.aboveMaximum', 'Acima do máximo'),
-        _integer(dashboard.produtosAcimaMaximo),
-      ),
-      _Kpi(
-        Icons.history_toggle_off_outlined,
-        _t('estoque.mobile.noMovement', 'Sem movimentação'),
-        _integer(dashboard.produtosSemMovimentacao),
-      ),
-      _Kpi(
-        Icons.swap_vert_rounded,
-        _t('estoque.mobile.entriesAndExits', 'Entradas/Saídas'),
-        '${_integer(dashboard.entradasRecentes)} / ${_integer(dashboard.saidasRecentes)}',
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = (constraints.maxWidth - 10) / 2;
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children:
-              items.map((item) {
-                return SizedBox(width: width, child: _KpiCard(item: item));
-              }).toList(),
-        );
-      },
     );
   }
 
@@ -754,93 +706,6 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
 }
 
 enum _ProductValueMode { reposition, value }
-
-class _Kpi {
-  const _Kpi(this.icon, this.label, this.value, [this.highlight = false]);
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool highlight;
-}
-
-class _KpiCard extends StatelessWidget {
-  const _KpiCard({required this.item});
-
-  final _Kpi item;
-
-  @override
-  Widget build(BuildContext context) {
-    final background = item.highlight ? const Color(0xFF0B1F3A) : Colors.white;
-    final foreground = item.highlight ? Colors.white : const Color(0xFF0F172A);
-    final muted =
-        item.highlight ? const Color(0xFFD7E3F5) : const Color(0xFF64748B);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color:
-              item.highlight
-                  ? const Color(0xFF0B1F3A)
-                  : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color:
-                  item.highlight
-                      ? const Color(0x1AFFFFFF)
-                      : const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              item.icon,
-              color: item.highlight ? Colors.white : const Color(0xFF2563EB),
-              size: 21,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            item.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            item.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: foreground,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({

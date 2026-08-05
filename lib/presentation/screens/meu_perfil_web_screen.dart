@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
+import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 
 import '../../data/models/usuario_model.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -47,6 +50,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
 
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final UsuarioService _usuarioService = UsuarioService();
+  final ImagePicker _imagePicker = ImagePicker();
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _sobrenomeController = TextEditingController();
@@ -65,6 +69,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   final TextEditingController _bairroController = TextEditingController();
   final TextEditingController _localidadeController = TextEditingController();
   final TextEditingController _ufController = TextEditingController();
+  bool _salvandoFoto = false;
 
   @override
   void initState() {
@@ -336,6 +341,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       cpf: _cpfController.text,
       registroProfissional: _registroController.text,
       email: _emailController.text,
+      foto: usuarioAtual.foto,
       nomeDeGuerra: _nomeDeGuerraController.text,
       celular: _celularController.text,
       senha: usuarioAtual.senha,
@@ -350,6 +356,8 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         localidade: _localidadeController.text,
         uf: _ufController.text,
       ),
+      preferenciasIndividuaisDoUsuario:
+          usuarioAtual.preferenciasIndividuaisDoUsuario,
     );
 
     _usuarioProvider.setLoading(true);
@@ -383,6 +391,57 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       }
     } finally {
       _usuarioProvider.setLoading(false);
+    }
+  }
+
+  Future<void> _selecionarFotoPerfil() async {
+    if (_salvandoFoto || _usuarioProvider.isLoading) {
+      return;
+    }
+
+    final XFile? selected = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 82,
+    );
+    if (selected == null) {
+      return;
+    }
+
+    setState(() => _salvandoFoto = true);
+    try {
+      final String imageDataUrl = await buildProfileImageDataUrl(selected);
+      await _usuarioService.atualizarFotoDoUsuario(imageDataUrl);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'perfil.web.photoSaveSuccess',
+              fallback: 'Foto do perfil atualizada com sucesso.',
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'perfil.web.photoSaveError',
+              fallback:
+                  'Não foi possível atualizar a foto do perfil. Tente novamente.',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _salvandoFoto = false);
+      }
     }
   }
 
@@ -438,19 +497,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       ),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              Icons.account_circle_outlined,
-              color: colorScheme.primary,
-              size: 28,
-            ),
-          ),
+          _buildHeaderAvatar(context),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -479,6 +526,25 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           ),
           const SizedBox(width: 12),
           IconButton.filledTonal(
+            onPressed:
+                _usuarioProvider.isLoading || _salvandoFoto
+                    ? null
+                    : _selecionarFotoPerfil,
+            tooltip: context.t(
+              'perfil.web.changePhoto',
+              fallback: 'Alterar foto',
+            ),
+            icon:
+                _salvandoFoto
+                    ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.photo_camera_outlined),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
             onPressed: _usuarioProvider.isLoading ? null : _buscarDados,
             tooltip: context.t('common.refresh', fallback: 'Atualizar'),
             icon:
@@ -497,6 +563,51 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
             icon: const Icon(Icons.close_rounded),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderAvatar(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final String imageValue = _usuarioProvider.usuario?.foto ?? '';
+
+    return Semantics(
+      button: true,
+      label: context.t('perfil.web.changePhoto', fallback: 'Alterar foto'),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap:
+            _usuarioProvider.isLoading || _salvandoFoto
+                ? null
+                : _selecionarFotoPerfil,
+        child: Container(
+          width: 52,
+          height: 52,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.18),
+            ),
+          ),
+          child:
+              _salvandoFoto
+                  ? const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                  : UserProfileAvatarImage(
+                    imageValue: imageValue,
+                    fallbackIcon: Icons.account_circle_outlined,
+                    fallbackColor: colorScheme.primary,
+                    size: 52,
+                    fallbackIconSize: 28,
+                  ),
+        ),
       ),
     );
   }

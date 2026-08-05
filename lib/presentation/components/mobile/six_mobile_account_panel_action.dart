@@ -1,33 +1,35 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/app_modal_side_sheet.dart';
+import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/screens/login_settings_mobile.dart';
 
 class SixMobileAccountPanelAction extends StatelessWidget {
   const SixMobileAccountPanelAction({
     super.key,
-    required this.image,
+    required this.profileImage,
     required this.onPickImage,
     this.size = 40,
     this.borderColor,
     this.backgroundColor,
     this.iconColor,
+    this.isUpdatingImage = false,
   });
 
-  final File? image;
-  final void Function(ImageSource source) onPickImage;
+  final String? profileImage;
+  final Future<void> Function(ImageSource source) onPickImage;
   final double size;
   final Color? borderColor;
   final Color? backgroundColor;
   final Color? iconColor;
+  final bool isUpdatingImage;
 
   static Future<void> open(
     BuildContext context, {
-    required File? image,
-    required void Function(ImageSource source) onPickImage,
+    required String? profileImage,
+    required Future<void> Function(ImageSource source) onPickImage,
+    required bool isUpdatingImage,
   }) {
     return showAppModalSideSheet<void>(
       context: context,
@@ -35,7 +37,11 @@ class SixMobileAccountPanelAction extends StatelessWidget {
         'account.settings.close',
         fallback: 'Fechar configurações',
       ),
-      child: LoginSettingsMobile(image: image, onPickImage: onPickImage),
+      child: LoginSettingsMobile(
+        profileImage: profileImage,
+        onPickImage: onPickImage,
+        isUpdatingImage: isUpdatingImage,
+      ),
     );
   }
 
@@ -57,7 +63,13 @@ class SixMobileAccountPanelAction extends StatelessWidget {
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
-            onTap: () => open(context, image: image, onPickImage: onPickImage),
+            onTap:
+                () => open(
+                  context,
+                  profileImage: profileImage,
+                  onPickImage: onPickImage,
+                  isUpdatingImage: isUpdatingImage,
+                ),
             child: Container(
               width: size,
               height: size,
@@ -74,17 +86,22 @@ class SixMobileAccountPanelAction extends StatelessWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child:
-                  image == null
-                      ? Icon(
-                        Icons.person_rounded,
-                        size: size * 0.54,
-                        color: iconColor ?? theme.colorScheme.onSurface,
+                  isUpdatingImage
+                      ? SizedBox(
+                        width: size * 0.42,
+                        height: size * 0.42,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: iconColor ?? theme.colorScheme.onSurface,
+                        ),
                       )
-                      : Image.file(
-                        image!,
-                        fit: BoxFit.cover,
-                        width: size,
-                        height: size,
+                      : UserProfileAvatarImage(
+                        imageValue: profileImage,
+                        fallbackIcon: Icons.person_rounded,
+                        fallbackColor: iconColor ?? theme.colorScheme.onSurface,
+                        size: size,
+                        fallbackIconSize: size * 0.54,
+                        circle: true,
                       ),
             ),
           ),

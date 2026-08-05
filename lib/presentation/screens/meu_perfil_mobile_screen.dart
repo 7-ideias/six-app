@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
+import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
+import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 
 import '../../data/models/usuario_model.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -20,6 +23,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final UsuarioService _usuarioService = UsuarioService();
+  final ImagePicker _imagePicker = ImagePicker();
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _sobrenomeController = TextEditingController();
@@ -41,6 +45,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
 
   bool _carregandoInicial = true;
   bool _salvando = false;
+  bool _salvandoFoto = false;
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
@@ -161,6 +166,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
       cpf: _cpfController.text.trim(),
       registroProfissional: _registroController.text.trim(),
       email: _emailController.text.trim(),
+      foto: usuarioAtual.foto,
       nomeDeGuerra: _nomeDeGuerraController.text.trim(),
       celular: _celularController.text.trim(),
       senha: usuarioAtual.senha,
@@ -210,6 +216,141 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         setState(() => _salvando = false);
       }
     }
+  }
+
+  Future<void> _selecionarFotoPerfil(ImageSource source) async {
+    if (_salvandoFoto || _salvando) {
+      return;
+    }
+
+    final XFile? selected = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 82,
+    );
+    if (selected == null) {
+      return;
+    }
+
+    setState(() => _salvandoFoto = true);
+    try {
+      final String imageDataUrl = await buildProfileImageDataUrl(selected);
+      await _usuarioService.atualizarFotoDoUsuario(imageDataUrl);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              'perfil.mobile.photoSaveSuccess',
+              'Foto do perfil atualizada com sucesso.',
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              'perfil.mobile.photoSaveError',
+              'Não foi possível atualizar a foto do perfil. Tente novamente.',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _salvandoFoto = false);
+      }
+    }
+  }
+
+  void _mostrarOpcoesFotoPerfil() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: SixMobilePalette.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (BuildContext bottomSheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _t('perfil.mobile.photoTitle', 'Foto do perfil'),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: SixMobilePalette.titleText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildFotoOption(
+                  bottomSheetContext,
+                  icon: Icons.photo_camera_outlined,
+                  title: _t('perfil.mobile.takePhoto', 'Tirar foto'),
+                  source: ImageSource.camera,
+                ),
+                const SizedBox(height: 8),
+                _buildFotoOption(
+                  bottomSheetContext,
+                  icon: Icons.photo_library_outlined,
+                  title: _t('perfil.mobile.choosePhoto', 'Escolher da galeria'),
+                  source: ImageSource.gallery,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFotoOption(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required ImageSource source,
+  }) {
+    return Material(
+      color: SixMobilePalette.softNeutralSurface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Navigator.of(context).pop();
+          _selecionarFotoPerfil(source);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: SixMobilePalette.border),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, color: SixMobilePalette.accent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: SixMobilePalette.titleText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   InputDecoration _inputDecoration(
@@ -359,6 +500,77 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     return Padding(padding: const EdgeInsets.only(bottom: 12), child: child);
   }
 
+  Widget _buildProfilePhotoButton() {
+    final String imageValue = _usuarioProvider.usuario?.foto ?? '';
+
+    return Semantics(
+      button: true,
+      label: _t('perfil.mobile.changePhoto', 'Alterar foto do perfil'),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: _salvandoFoto ? null : _mostrarOpcoesFotoPerfil,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            Container(
+              width: 56,
+              height: 56,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: SixMobilePalette.onPrimary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: SixMobilePalette.onPrimary.withValues(alpha: 0.22),
+                ),
+              ),
+              child:
+                  _salvandoFoto
+                      ? const Center(
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: SixMobilePalette.onPrimary,
+                          ),
+                        ),
+                      )
+                      : UserProfileAvatarImage(
+                        imageValue: imageValue,
+                        fallbackIcon: Icons.account_circle_outlined,
+                        fallbackColor: SixMobilePalette.onPrimary,
+                        size: 56,
+                        fallbackIconSize: 30,
+                        circle: true,
+                      ),
+            ),
+            Positioned(
+              right: -4,
+              bottom: -4,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: SixMobilePalette.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: SixMobilePalette.highlightedBorder,
+                    width: 1.2,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.photo_camera_outlined,
+                  size: 13,
+                  color: SixMobilePalette.accent,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildProfileSummary(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String name =
@@ -385,19 +597,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         ),
         child: Row(
           children: <Widget>[
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: SixMobilePalette.onPrimary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Icon(
-                Icons.account_circle_outlined,
-                color: SixMobilePalette.onPrimary,
-                size: 30,
-              ),
-            ),
+            _buildProfilePhotoButton(),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
