@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
 import 'package:sixpos/presentation/components/six_web_splash_scene.dart';
-import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/presentation/screens/auth_entry_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 
 // Splash em duas fases — fade-in do logo + brand reveal — antes de
@@ -33,14 +33,17 @@ class _SplashScreenState extends State<SplashScreen>
     )..forward();
 
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.92, end: 1.0)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _scale = Tween<double>(
+      begin: 0.92,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
 
     _navTimer = Timer(const Duration(milliseconds: 2200), () {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => kIsWeb ? const LoginPageWeb() : const LoginPageMobile(),
+          builder:
+              (_) => kIsWeb ? const LoginPageWeb() : const AuthEntryMobile(),
         ),
       );
     });
@@ -57,9 +60,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     if (kIsWeb) {
       return const Scaffold(
-        body: SixWebSplashScene(
-          subtitle: 'Preparando sua experiência web...',
-        ),
+        body: SixWebSplashScene(subtitle: 'Preparando sua experiência web...'),
       );
     }
 

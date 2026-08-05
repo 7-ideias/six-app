@@ -6,9 +6,9 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
 import '../../l10n/six_i18n.dart';
-import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
 import 'post_login_splash_mobile_page.dart';
+import 'signup_onboarding_mobile.dart';
 
 class LoginPageMobile extends StatefulWidget {
   const LoginPageMobile({super.key});
@@ -96,7 +96,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   void _createAccount() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CreateAccountMobile()),
+      MaterialPageRoute(builder: (_) => const SignupOnboardingMobile()),
     );
   }
 
