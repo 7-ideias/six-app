@@ -9,11 +9,8 @@ class ManagementSectionTab {
   final IconData icon;
 }
 
-/// Compact horizontal selector for the main management sections.
-///
-/// Replaces the large parallax carousel with a dense, operational selector
-/// suited for daily-use management apps.
-class ManagementSectionSelector extends StatefulWidget {
+/// Compact segmented selector for the main management sections.
+class ManagementSectionSelector extends StatelessWidget {
   const ManagementSectionSelector({
     super.key,
     required this.sections,
@@ -26,132 +23,48 @@ class ManagementSectionSelector extends StatefulWidget {
   final ValueChanged<int> onSectionSelected;
 
   @override
-  State<ManagementSectionSelector> createState() =>
-      _ManagementSectionSelectorState();
-}
-
-class _ManagementSectionSelectorState extends State<ManagementSectionSelector> {
-  final ScrollController _scrollController = ScrollController();
-  List<GlobalKey> _itemKeys = const <GlobalKey>[];
-  bool _hintPlayed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _syncItemKeys();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _ensureSelectedVisible();
-      _playScrollHint();
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant ManagementSectionSelector oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.sections.length != widget.sections.length) {
-      _syncItemKeys();
-    }
-    if (oldWidget.selectedIndex != widget.selectedIndex ||
-        oldWidget.sections.length != widget.sections.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _ensureSelectedVisible();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _syncItemKeys() {
-    _itemKeys = List<GlobalKey>.generate(
-      widget.sections.length,
-      (int index) => GlobalKey(),
-      growable: false,
-    );
-  }
-
-  void _ensureSelectedVisible() {
-    if (!mounted || widget.selectedIndex >= _itemKeys.length) return;
-    final BuildContext? selectedContext =
-        _itemKeys[widget.selectedIndex].currentContext;
-    if (selectedContext == null) return;
-
-    final bool reduceMotion =
-        MediaQuery.disableAnimationsOf(context) ||
-        MediaQuery.accessibleNavigationOf(context);
-
-    Scrollable.ensureVisible(
-      selectedContext,
-      alignment: 0.5,
-      duration:
-          reduceMotion ? Duration.zero : const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  Future<void> _playScrollHint() async {
-    if (_hintPlayed || !mounted) return;
-    _hintPlayed = true;
-
-    final bool reduceMotion =
-        MediaQuery.disableAnimationsOf(context) ||
-        MediaQuery.accessibleNavigationOf(context);
-    if (reduceMotion || !_scrollController.hasClients) return;
-
-    final double maxScroll = _scrollController.position.maxScrollExtent;
-    if (maxScroll <= 0 || widget.selectedIndex != 0) return;
-
-    final double hintOffset = maxScroll < 26 ? maxScroll : 26;
-    try {
-      await _scrollController.animateTo(
-        hintOffset,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 90));
-      if (!mounted || !_scrollController.hasClients) return;
-      await _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeOutCubic,
-      );
-    } catch (_) {}
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: widget.sections.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (BuildContext context, int index) {
-          final ManagementSectionTab tab = widget.sections[index];
-          final bool isSelected = index == widget.selectedIndex;
-
-          return KeyedSubtree(
-            key: _itemKeys[index],
-            child: _SectionChip(
-              key: ValueKey<String>('management-section-tab-$index'),
-              tab: tab,
-              isSelected: isSelected,
-              onTap: () => widget.onSectionSelected(index),
-            ),
-          );
-        },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Semantics(
+        container: true,
+        child: Container(
+          key: const ValueKey<String>('management-section-selector-surface'),
+          height: 52,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: SixMobilePalette.surface.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: SixMobilePalette.activeBorder, width: 1),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: SixMobilePalette.navigationShadow,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: <Widget>[
+              for (int index = 0; index < sections.length; index += 1)
+                Expanded(
+                  child: _SectionSegment(
+                    key: ValueKey<String>('management-section-tab-$index'),
+                    tab: sections[index],
+                    isSelected: index == selectedIndex,
+                    onTap: () => onSectionSelected(index),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _SectionChip extends StatelessWidget {
-  const _SectionChip({
+class _SectionSegment extends StatelessWidget {
+  const _SectionSegment({
     super.key,
     required this.tab,
     required this.isSelected,
@@ -164,6 +77,12 @@ class _SectionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    final Color foregroundColor =
+        isSelected ? SixMobilePalette.accent : SixMobilePalette.secondary;
+
     return Semantics(
       button: true,
       selected: isSelected,
@@ -171,63 +90,45 @@ class _SectionChip extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           onTap: onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
+            duration:
+                reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            height: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
             decoration: BoxDecoration(
               color:
                   isSelected
-                      ? SixMobilePalette.primary
-                      : SixMobilePalette.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color:
-                    isSelected
-                        ? SixMobilePalette.primary
-                        : SixMobilePalette.border,
-                width: isSelected ? 1.5 : 1,
-              ),
-              boxShadow:
-                  isSelected
-                      ? const <BoxShadow>[
-                        BoxShadow(
-                          color: Color(0x1A000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ]
-                      : null,
+                      ? SixMobilePalette.accent.withValues(alpha: 0.10)
+                      : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  tab.icon,
-                  size: 17,
-                  color:
-                      isSelected
-                          ? SixMobilePalette.onPrimary
-                          : SixMobilePalette.secondary,
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(tab.icon, size: 17, color: foregroundColor),
+                    const SizedBox(width: 5),
+                    Text(
+                      tab.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: foregroundColor,
+                        fontSize: 12.5,
+                        fontWeight:
+                            isSelected ? FontWeight.w800 : FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 7),
-                Text(
-                  tab.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color:
-                        isSelected
-                            ? SixMobilePalette.onPrimary
-                            : SixMobilePalette.titleText,
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

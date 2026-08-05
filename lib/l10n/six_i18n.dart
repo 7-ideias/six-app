@@ -591,6 +591,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.title': 'Financeiro',
     'gestao.finance.subtitle': 'Contas, agenda e recebimentos',
     'gestao.settings.title': 'Configurações',
+    'gestao.settings.selectorTitle': 'Geral',
     'gestao.settings.subtitle': 'Empresa, idioma e integrações',
 
     // Gestão — itens de Catálogo
@@ -652,13 +653,18 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Gestão — visão contextual mobile
     'gestao.overview.selectedArea': 'Área selecionada',
+    'gestao.overview.generalTitle': 'Visão geral',
     'gestao.overview.valueUnavailable': '--',
     'gestao.overview.mainActions': 'Ações principais',
     'gestao.overview.errorMessage':
         'As ações continuam disponíveis. Tente atualizar os dados em instantes.',
+    'gestao.catalog.summaryTitle': 'Resumo do catálogo',
+    'gestao.catalog.metric.products': 'Produtos',
     'gestao.catalog.metric.productsServices': 'Produtos e serviços',
     'gestao.catalog.metric.categories': 'Categorias',
     'gestao.catalog.metric.lowStock': 'Estoque baixo',
+    'gestao.catalog.lowStockAlertSemantic':
+        'Indicador de atenção para estoque baixo',
     'gestao.catalog.loadError':
         'Não foi possível carregar o resumo do catálogo.',
     'gestao.catalog.emptyTitle': 'Catálogo sem dados para exibir',
@@ -672,6 +678,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.catalog.lowStockMessage':
         '{count} item(ns) abaixo do limite configurado no catálogo.',
     'gestao.catalog.lowStockAction': 'Ver itens',
+    'gestao.people.summaryTitle': 'Resumo de pessoas',
     'gestao.people.metric.clients': 'Clientes',
     'gestao.people.metric.collaborators': 'Colaboradores',
     'gestao.people.metric.suppliers': 'Fornecedores',
@@ -684,6 +691,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.suppliersBlockedMessage':
         'O recurso segue marcado como Em breve e não possui navegação mobile ativa.',
     'gestao.finance.actionGroup': 'Agenda e recursos',
+    'gestao.finance.summaryTitle': 'Resumo financeiro',
     'gestao.finance.metric.events': 'Próximos eventos',
     'gestao.finance.metric.receivableEvents': 'A receber',
     'gestao.finance.metric.payableEvents': 'A pagar',
@@ -1202,6 +1210,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.title': 'Finance',
     'gestao.finance.subtitle': 'Accounts, schedule and receipts',
     'gestao.settings.title': 'Settings',
+    'gestao.settings.selectorTitle': 'General',
     'gestao.settings.subtitle': 'Company, language and integrations',
 
     // Management — Catalog items
@@ -1261,13 +1270,17 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Management — contextual mobile overview
     'gestao.overview.selectedArea': 'Selected area',
+    'gestao.overview.generalTitle': 'Overview',
     'gestao.overview.valueUnavailable': '--',
     'gestao.overview.mainActions': 'Main actions',
     'gestao.overview.errorMessage':
         'Actions are still available. Try refreshing the data in a moment.',
+    'gestao.catalog.summaryTitle': 'Catalog summary',
+    'gestao.catalog.metric.products': 'Products',
     'gestao.catalog.metric.productsServices': 'Products and services',
     'gestao.catalog.metric.categories': 'Categories',
     'gestao.catalog.metric.lowStock': 'Low stock',
+    'gestao.catalog.lowStockAlertSemantic': 'Attention indicator for low stock',
     'gestao.catalog.loadError': 'Could not load the catalog summary.',
     'gestao.catalog.emptyTitle': 'No catalog data to show',
     'gestao.catalog.emptyMessage':
@@ -1280,6 +1293,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.catalog.lowStockMessage':
         '{count} item(s) below the configured catalog threshold.',
     'gestao.catalog.lowStockAction': 'View items',
+    'gestao.people.summaryTitle': 'People summary',
     'gestao.people.metric.clients': 'Customers',
     'gestao.people.metric.collaborators': 'Collaborators',
     'gestao.people.metric.suppliers': 'Suppliers',
@@ -1292,6 +1306,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.suppliersBlockedMessage':
         'The resource remains marked as Coming soon and has no active mobile navigation.',
     'gestao.finance.actionGroup': 'Schedule and resources',
+    'gestao.finance.summaryTitle': 'Financial summary',
     'gestao.finance.metric.events': 'Upcoming events',
     'gestao.finance.metric.receivableEvents': 'Receivable',
     'gestao.finance.metric.payableEvents': 'Payable',
@@ -1827,6 +1842,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.title': 'Financiero',
     'gestao.finance.subtitle': 'Cuentas, agenda y recibos',
     'gestao.settings.title': 'Configuración',
+    'gestao.settings.selectorTitle': 'General',
     'gestao.settings.subtitle': 'Empresa, idioma e integraciones',
 
     // Gestión — ítems de Catálogo
@@ -1889,13 +1905,18 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Gestión — visión contextual móvil
     'gestao.overview.selectedArea': 'Área seleccionada',
+    'gestao.overview.generalTitle': 'Vista general',
     'gestao.overview.valueUnavailable': '--',
     'gestao.overview.mainActions': 'Acciones principales',
     'gestao.overview.errorMessage':
         'Las acciones siguen disponibles. Intenta actualizar los datos en unos instantes.',
+    'gestao.catalog.summaryTitle': 'Resumen del catálogo',
+    'gestao.catalog.metric.products': 'Productos',
     'gestao.catalog.metric.productsServices': 'Productos y servicios',
     'gestao.catalog.metric.categories': 'Categorías',
     'gestao.catalog.metric.lowStock': 'Stock bajo',
+    'gestao.catalog.lowStockAlertSemantic':
+        'Indicador de atención para stock bajo',
     'gestao.catalog.loadError':
         'No fue posible cargar el resumen del catálogo.',
     'gestao.catalog.emptyTitle': 'Catálogo sin datos para mostrar',
@@ -1909,6 +1930,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.catalog.lowStockMessage':
         '{count} elemento(s) por debajo del límite configurado en el catálogo.',
     'gestao.catalog.lowStockAction': 'Ver elementos',
+    'gestao.people.summaryTitle': 'Resumen de personas',
     'gestao.people.metric.clients': 'Clientes',
     'gestao.people.metric.collaborators': 'Colaboradores',
     'gestao.people.metric.suppliers': 'Proveedores',
@@ -1921,6 +1943,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.suppliersBlockedMessage':
         'El recurso sigue marcado como Próximamente y no tiene navegación móvil activa.',
     'gestao.finance.actionGroup': 'Agenda y recursos',
+    'gestao.finance.summaryTitle': 'Resumen financiero',
     'gestao.finance.metric.events': 'Próximos eventos',
     'gestao.finance.metric.receivableEvents': 'Por cobrar',
     'gestao.finance.metric.payableEvents': 'Por pagar',

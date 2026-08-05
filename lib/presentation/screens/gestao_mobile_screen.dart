@@ -229,7 +229,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             child: ManagementSectionSelector(
               sections: sections
                   .map(
-                    (s) => ManagementSectionTab(title: s.title, icon: s.icon),
+                    (s) => ManagementSectionTab(
+                      title: s.selectorTitle,
+                      icon: s.icon,
+                    ),
                   )
                   .toList(growable: false),
               selectedIndex: selectedIndex,
@@ -360,24 +363,28 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        ManagementAreaHeader(
-          key: ValueKey<String>('management-area-${section.type.name}'),
-          title: section.title,
-          subtitle: section.subtitle,
-          selectedLabel: context.t(
-            'gestao.overview.selectedArea',
-            fallback: 'Área selecionada',
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 12),
+          child: Text(
+            context.t('gestao.overview.generalTitle', fallback: 'Visão geral'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: SixMobilePalette.titleText,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-          icon: section.icon,
-          accentColor: section.accentColor,
         ),
-        const SizedBox(height: 12),
-        ManagementMetricStrip(
+        ManagementSummaryCard(
+          key: ValueKey<String>('management-area-${section.type.name}'),
+          title: _summaryTitleForSection(context, section),
           metrics: metrics,
           unavailableLabel: context.t(
             'gestao.overview.valueUnavailable',
             fallback: '--',
           ),
+          variant: _summaryVariantForSection(section),
         ),
         if (stateMessage != null) ...<Widget>[
           const SizedBox(height: 12),
@@ -396,6 +403,38 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
+  String _summaryTitleForSection(
+    BuildContext context,
+    _ManagementSection section,
+  ) {
+    return switch (section.type) {
+      _ManagementSectionType.catalog => context.t(
+        'gestao.catalog.summaryTitle',
+        fallback: 'Resumo do catálogo',
+      ),
+      _ManagementSectionType.people => context.t(
+        'gestao.people.summaryTitle',
+        fallback: 'Resumo de pessoas',
+      ),
+      _ManagementSectionType.finance => context.t(
+        'gestao.finance.summaryTitle',
+        fallback: 'Resumo financeiro',
+      ),
+      _ManagementSectionType.settings => section.title,
+    };
+  }
+
+  ManagementSummaryCardVariant _summaryVariantForSection(
+    _ManagementSection section,
+  ) {
+    return switch (section.type) {
+      _ManagementSectionType.catalog => ManagementSummaryCardVariant.catalog,
+      _ManagementSectionType.people => ManagementSummaryCardVariant.people,
+      _ManagementSectionType.finance => ManagementSummaryCardVariant.finance,
+      _ManagementSectionType.settings => ManagementSummaryCardVariant.catalog,
+    };
+  }
+
   List<ManagementMetricData> _metricsForSection(
     BuildContext context,
     _ManagementSection section,
@@ -410,9 +449,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         return <ManagementMetricData>[
           if (podeAcessarCatalogo)
             ManagementMetricData(
+              id: 'catalog-products',
               label: context.t(
-                'gestao.catalog.metric.productsServices',
-                fallback: 'Produtos e serviços',
+                'gestao.catalog.metric.products',
+                fallback: 'Produtos',
               ),
               icon: Icons.shopping_bag_outlined,
               accentColor: _catalogAccent,
@@ -420,6 +460,23 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               loading: state.isLoading,
             ),
           ManagementMetricData(
+            label: context.t(
+              'gestao.catalog.metric.lowStock',
+              fallback: 'Estoque baixo',
+            ),
+            id: 'catalog-low-stock',
+            icon: Icons.warning_amber_rounded,
+            accentColor: _attentionAccent,
+            value: data?.lowStockItems,
+            loading: state.isLoading,
+            showAttentionDot: (data?.lowStockItems ?? 0) > 0,
+            attentionSemanticLabel: context.t(
+              'gestao.catalog.lowStockAlertSemantic',
+              fallback: 'Indicador de atenção para estoque baixo',
+            ),
+          ),
+          ManagementMetricData(
+            id: 'catalog-categories',
             label: context.t(
               'gestao.catalog.metric.categories',
               fallback: 'Categorias',
@@ -429,16 +486,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             value: data?.categoryCount,
             loading: state.isLoading,
           ),
-          ManagementMetricData(
-            label: context.t(
-              'gestao.catalog.metric.lowStock',
-              fallback: 'Estoque baixo',
-            ),
-            icon: Icons.warning_amber_rounded,
-            accentColor: _attentionAccent,
-            value: data?.lowStockItems,
-            loading: state.isLoading,
-          ),
         ];
       case _ManagementSectionType.people:
         final ManagementSectionLoadState<ManagementPeopleOverview> state =
@@ -446,6 +493,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         final ManagementPeopleOverview? data = state.data;
         return <ManagementMetricData>[
           ManagementMetricData(
+            id: 'people-clients',
             label: context.t(
               'gestao.people.metric.clients',
               fallback: 'Clientes',
@@ -456,6 +504,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             loading: state.isLoading,
           ),
           ManagementMetricData(
+            id: 'people-collaborators',
             label: context.t(
               'gestao.people.metric.collaborators',
               fallback: 'Colaboradores',
@@ -466,6 +515,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             loading: state.isLoading,
           ),
           ManagementMetricData(
+            id: 'people-suppliers',
             label: context.t(
               'gestao.people.metric.suppliers',
               fallback: 'Fornecedores',
@@ -488,6 +538,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         final ManagementFinanceOverview? data = state.data;
         return <ManagementMetricData>[
           ManagementMetricData(
+            id: 'finance-events',
             label: context.t(
               'gestao.finance.metric.events',
               fallback: 'Próximos eventos',
@@ -498,6 +549,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             loading: state.isLoading,
           ),
           ManagementMetricData(
+            id: 'finance-receivable',
             label: context.t(
               'gestao.finance.metric.receivableEvents',
               fallback: 'A receber',
@@ -508,6 +560,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             loading: state.isLoading,
           ),
           ManagementMetricData(
+            id: 'finance-payable',
             label: context.t(
               'gestao.finance.metric.payableEvents',
               fallback: 'A pagar',
@@ -812,6 +865,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       _ManagementSection(
         type: _ManagementSectionType.catalog,
         title: context.t('gestao.catalog.title', fallback: 'Catálogo'),
+        selectorTitle: context.t('gestao.catalog.title', fallback: 'Catálogo'),
         subtitle: context.t(
           'gestao.catalog.subtitle',
           fallback: 'Produtos, categorias e estoque',
@@ -873,6 +927,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       _ManagementSection(
         type: _ManagementSectionType.people,
         title: context.t('gestao.people.title', fallback: 'Pessoas'),
+        selectorTitle: context.t('gestao.people.title', fallback: 'Pessoas'),
         subtitle: context.t(
           'gestao.people.subtitle',
           fallback: 'Clientes, equipe e parceiros',
@@ -933,6 +988,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       _ManagementSection(
         type: _ManagementSectionType.finance,
         title: context.t('gestao.finance.title', fallback: 'Financeiro'),
+        selectorTitle: context.t(
+          'gestao.finance.title',
+          fallback: 'Financeiro',
+        ),
         subtitle: context.t(
           'gestao.finance.subtitle',
           fallback: 'Contas, agenda e recebimentos',
@@ -1007,6 +1066,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       _ManagementSection(
         type: _ManagementSectionType.settings,
         title: context.t('gestao.settings.title', fallback: 'Configurações'),
+        selectorTitle: context.t(
+          'gestao.settings.selectorTitle',
+          fallback: 'Geral',
+        ),
         subtitle: context.t(
           'gestao.settings.subtitle',
           fallback: 'Empresa, idioma e integrações',
@@ -1196,6 +1259,7 @@ class _ManagementSection {
   const _ManagementSection({
     required this.type,
     required this.title,
+    required this.selectorTitle,
     required this.subtitle,
     required this.icon,
     required this.accentColor,
@@ -1207,6 +1271,7 @@ class _ManagementSection {
 
   final _ManagementSectionType type;
   final String title;
+  final String selectorTitle;
   final String subtitle;
   final IconData icon;
   final Color accentColor;

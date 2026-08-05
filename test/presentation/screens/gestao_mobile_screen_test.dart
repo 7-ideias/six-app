@@ -17,6 +17,12 @@ void main() {
       find.byKey(const ValueKey<String>('management-area-catalog')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey<String>('management-section-selector-surface')),
+      findsOneWidget,
+    );
+    expect(find.text('Visão geral'), findsOneWidget);
+    expect(find.text('Resumo do catálogo'), findsOneWidget);
     expect(find.text('Produtos e Serviços'), findsOneWidget);
 
     await _selectSection(tester, 'Pessoas');
@@ -84,8 +90,34 @@ void main() {
     expect(find.text('24'), findsOneWidget);
     expect(find.text('5'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
+    expect(find.text('Produtos'), findsOneWidget);
+    expect(
+      find.byKey(
+        const ValueKey<String>(
+          'management-summary-catalog-low-stock-attention-dot',
+        ),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Estoque precisa de atenção'), findsOneWidget);
     expect(find.text('Ver itens'), findsOneWidget);
+  });
+
+  testWidgets('não exibe bolinha de atenção quando estoque baixo é zero', (
+    WidgetTester tester,
+  ) async {
+    await _pumpGestao(tester, snapshot: _zeroLowStockSnapshot);
+
+    expect(find.text('0'), findsOneWidget);
+    expect(
+      find.byKey(
+        const ValueKey<String>(
+          'management-summary-catalog-low-stock-attention-dot',
+        ),
+      ),
+      findsNothing,
+    );
+    expect(find.text('Estoque precisa de atenção'), findsNothing);
   });
 
   testWidgets(
@@ -259,3 +291,33 @@ const ManagementOverviewSnapshot _emptySnapshot = ManagementOverviewSnapshot(
   people: ManagementSectionLoadState<ManagementPeopleOverview>.empty(),
   finance: ManagementSectionLoadState<ManagementFinanceOverview>.empty(),
 );
+
+const ManagementOverviewSnapshot _zeroLowStockSnapshot =
+    ManagementOverviewSnapshot(
+      catalog: ManagementSectionLoadState<ManagementCatalogOverview>.data(
+        ManagementCatalogOverview(
+          productCount: 18,
+          serviceCount: 6,
+          categoryCount: 5,
+          lowStockItems: 0,
+          attentionItems: 1,
+          isDemonstrationData: false,
+        ),
+      ),
+      people: ManagementSectionLoadState<ManagementPeopleOverview>.data(
+        ManagementPeopleOverview(
+          clientCount: 42,
+          collaboratorCount: 7,
+          activeCollaboratorCount: 6,
+          supplierCount: null,
+        ),
+      ),
+      finance: ManagementSectionLoadState<ManagementFinanceOverview>.data(
+        ManagementFinanceOverview(
+          totalEvents: 9,
+          receivableEvents: 6,
+          payableEvents: 3,
+          attentionEvents: 2,
+        ),
+      ),
+    );
