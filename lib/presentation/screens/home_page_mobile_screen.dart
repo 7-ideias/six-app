@@ -38,6 +38,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
   static const Color _surfaceColor = SixMobilePalette.surface;
   static const Color _mutedTextColor = SixMobilePalette.mutedText;
   static const Color _titleTextColor = SixMobilePalette.titleText;
+  static const double _profileAvatarFadeDistance = 96;
+  static const double _profileAvatarFadeStart = 0.10;
+  static const Duration _profileAvatarFadeDuration = Duration(
+    milliseconds: 180,
+  );
 
   // Formatters
   final NumberFormat _compactFmt = NumberFormat.compactCurrency(
@@ -54,6 +59,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
     initialPeriod: DashboardPeriod.last30Days,
   );
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  final ScrollController _homeScrollController = ScrollController();
+  final ValueNotifier<double> _profileAvatarScrollProgress =
+      ValueNotifier<double>(0);
   bool _salvandoFotoPerfil = false;
   bool _sincronizandoPerfilInicial = false;
   String? _fotoPerfilSincronizada;
@@ -64,6 +72,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _notificacaoService.addListener(_onNotificacoesChanged);
     _dashboardProvider.addListener(_onDashboardChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
+    _homeScrollController.addListener(_onHomeScrollChanged);
     if (!kIsWeb) {
       _configurarWebSocketMobile();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,6 +86,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _notificacaoService.removeListener(_onNotificacoesChanged);
     _dashboardProvider.removeListener(_onDashboardChanged);
     _usuarioProvider.removeListener(_onUsuarioChanged);
+    _homeScrollController.removeListener(_onHomeScrollChanged);
+    _homeScrollController.dispose();
+    _profileAvatarScrollProgress.dispose();
     _dashboardProvider.dispose();
     if (!kIsWeb) {
       onMensagemRecebida = null;
@@ -86,6 +98,26 @@ class _HomePageMobileState extends State<HomePageMobile> {
       disconnectStomp();
     }
     super.dispose();
+  }
+
+  void _onHomeScrollChanged() {
+    final double scrollOffset =
+        _homeScrollController.hasClients ? _homeScrollController.offset : 0;
+    final double rawProgress =
+        (scrollOffset / _profileAvatarFadeDistance).clamp(0.0, 1.0).toDouble();
+    final double progress =
+        ((rawProgress - _profileAvatarFadeStart) /
+                (1 - _profileAvatarFadeStart))
+            .clamp(0.0, 1.0)
+            .toDouble();
+
+    if ((_profileAvatarScrollProgress.value - progress).abs() < 0.02 &&
+        progress != 0 &&
+        progress != 1) {
+      return;
+    }
+
+    _profileAvatarScrollProgress.value = progress;
   }
 
   void _onNotificacoesChanged() {
@@ -255,6 +287,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
         secondaryColor: _secondaryColor,
         accentColor: _accentColor,
         automaticallyImplyLeading: false,
+        scrollController: _homeScrollController,
+        leading: _buildAppBarProfileAction(context),
         actions: [
           IconButton(
             tooltip: context.t(
@@ -346,17 +380,20 @@ class _HomePageMobileState extends State<HomePageMobile> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 1),
-            child: SixMobileAccountPanelAction(
-              profileImage: profileImage,
-              onPickImage: _pickImage,
-              isUpdatingImage:
-                  _salvandoFotoPerfil || _sincronizandoPerfilInicial,
-              size: 44,
-              borderColor: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
-              backgroundColor: SixMobilePalette.onPrimary.withValues(
-                alpha: 0.10,
+            child: _buildProfileAvatarScrollFade(
+              showInAppBar: false,
+              child: SixMobileAccountPanelAction(
+                profileImage: profileImage,
+                onPickImage: _pickImage,
+                isUpdatingImage:
+                    _salvandoFotoPerfil || _sincronizandoPerfilInicial,
+                size: 44,
+                borderColor: SixMobilePalette.onPrimary.withValues(alpha: 0.36),
+                backgroundColor: SixMobilePalette.onPrimary.withValues(
+                  alpha: 0.10,
+                ),
+                iconColor: SixMobilePalette.onPrimary,
               ),
-              iconColor: SixMobilePalette.onPrimary,
             ),
           ),
           const SizedBox(width: 10),
@@ -399,6 +436,99 @@ class _HomePageMobileState extends State<HomePageMobile> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAppBarProfileAction(BuildContext context) {
+    final String? profileImage =
+        _fotoPerfilSincronizada ?? _usuarioProvider.usuario?.foto;
+
+    return ValueListenableBuilder<double>(
+      valueListenable: _profileAvatarScrollProgress,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 10, right: 6),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SixMobileAccountPanelAction(
+            profileImage: profileImage,
+            onPickImage: _pickImage,
+            isUpdatingImage: _salvandoFotoPerfil || _sincronizandoPerfilInicial,
+            size: 34,
+            borderColor: SixMobilePalette.border.withValues(alpha: 0.85),
+            backgroundColor: _surfaceColor.withValues(alpha: 0.96),
+            iconColor: _titleTextColor,
+          ),
+        ),
+      ),
+      builder: (BuildContext context, double progress, Widget? child) {
+        final double clampedProgress = progress.clamp(0.0, 1.0).toDouble();
+
+        return _applyProfileAvatarScrollFade(
+          context: context,
+          progress: clampedProgress,
+          showInAppBar: true,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileAvatarScrollFade({
+    required bool showInAppBar,
+    required Widget child,
+  }) {
+    return ValueListenableBuilder<double>(
+      valueListenable: _profileAvatarScrollProgress,
+      child: child,
+      builder: (BuildContext context, double progress, Widget? child) {
+        return _applyProfileAvatarScrollFade(
+          context: context,
+          progress: progress,
+          showInAppBar: showInAppBar,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+
+  Widget _applyProfileAvatarScrollFade({
+    required BuildContext context,
+    required double progress,
+    required bool showInAppBar,
+    required Widget child,
+  }) {
+    final double clampedProgress = progress.clamp(0.0, 1.0).toDouble();
+    final double easedProgress = Curves.easeInOutCubic.transform(
+      clampedProgress,
+    );
+    final double opacity = showInAppBar ? easedProgress : 1 - easedProgress;
+    final bool enabled =
+        showInAppBar ? clampedProgress >= 0.5 : clampedProgress < 0.5;
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    Widget buildFadedAvatar(double animatedOpacity) {
+      return ExcludeSemantics(
+        excluding: !enabled,
+        child: IgnorePointer(
+          ignoring: !enabled,
+          child: Opacity(opacity: animatedOpacity, child: child),
+        ),
+      );
+    }
+
+    if (reduceMotion) {
+      return buildFadedAvatar(opacity);
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: opacity),
+      duration: _profileAvatarFadeDuration,
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double animatedOpacity, Widget? _) {
+        return buildFadedAvatar(animatedOpacity);
+      },
     );
   }
 

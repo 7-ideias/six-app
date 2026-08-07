@@ -11,6 +11,7 @@ import 'package:sixpos/presentation/components/mobile/management/management_sect
 import 'package:sixpos/presentation/components/mobile/management/management_settings_group.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
@@ -123,6 +124,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       secondaryColor: SixMobilePalette.secondary,
       accentColor: SixMobilePalette.accent,
       automaticallyImplyLeading: false,
+      leading: const SixMobileAppBarProfileAction(),
       actions: <Widget>[
         IconButton(
           tooltip: context.t(
@@ -754,20 +756,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                     _navigateTo(context, const AgendaFinanceiraMobileScreen()),
           );
         }
-
-        return ManagementAttentionBlock(
-          title: context.t(
-            'gestao.finance.blockedResourcesTitle',
-            fallback: 'Recursos financeiros em evolução',
-          ),
-          message: context.t(
-            'gestao.finance.blockedResourcesMessage',
-            fallback:
-                'Contas a receber, contas a pagar e formas de recebimento continuam bloqueadas no mobile.',
-          ),
-          icon: Icons.lock_outline_rounded,
-          toneColor: _lockedAccent,
-        );
+        return null;
       case _ManagementSectionType.settings:
         return null;
     }
@@ -793,6 +782,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             emphasis: item.emphasis,
             onTap: item.onTap,
             statusLabel: statusLabel,
+            visualGroupId: item.visualGroupId,
             disabledHint:
                 item.maturity == ManagementSettingsMaturity.comingSoon
                     ? statusLabel
@@ -1032,6 +1022,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             accentColor: _peopleAccent,
             emphasis: ManagementActionEmphasis.secondary,
             maturity: ManagementSettingsMaturity.comingSoon,
+            visualGroupId: 'finance-receivable-payable',
           ),
           _ManagementItem(
             title: context.t(
@@ -1046,6 +1037,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             accentColor: _attentionAccent,
             emphasis: ManagementActionEmphasis.secondary,
             maturity: ManagementSettingsMaturity.comingSoon,
+            visualGroupId: 'finance-receivable-payable',
           ),
           _ManagementItem(
             title: context.t(
@@ -1290,6 +1282,7 @@ class _ManagementItem {
     this.accentColor,
     this.emphasis = ManagementActionEmphasis.secondary,
     this.maturity = ManagementSettingsMaturity.functional,
+    this.visualGroupId,
   });
 
   final String title;
@@ -1299,4 +1292,5 @@ class _ManagementItem {
   final Color? accentColor;
   final ManagementActionEmphasis emphasis;
   final ManagementSettingsMaturity maturity;
+  final String? visualGroupId;
 }

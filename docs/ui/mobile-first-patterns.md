@@ -75,6 +75,14 @@ Bottom Sheets mobile devem seguir este padrão:
 - `DraggableScrollableSheet` quando houver lista ou calendário;
 - nada deve deslocar ou quebrar a tela de fundo.
 
+Evitar bottom sheets excessivamente baixos em fluxos de negócio, configuração,
+seleção ou formulário, pois deixam uma grande área escurecida e vazia da tela
+base acima do modal. Nesses casos, definir uma altura mínima proporcional ao
+viewport, preferencialmente com `DraggableScrollableSheet` ou constraints
+responsivas, mantendo o conteúdo alinhado ao topo e rolável quando necessário.
+Também evitar o extremo oposto: não criar sheet alto com grande vazio interno
+abaixo do conteúdo; a altura deve parecer intencional e ocupada.
+
 ## Estados vazios
 
 Sempre que uma busca ou lista não tiver resultado, exibir estado vazio com:

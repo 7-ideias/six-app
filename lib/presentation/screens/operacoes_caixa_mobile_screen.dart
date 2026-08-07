@@ -30,6 +30,10 @@ class _OperacoesCaixaMobileScreenState
   static const Color _accentColor = SixMobilePalette.accent;
   static const Color _successColor = Color(0xFF047857);
   static const Color _warningColor = Color(0xFF92400E);
+  static const Color _summaryGradientStart = Color(0xFF173DFF);
+  static const Color _summaryGradientMiddle = Color(0xFF3D00D8);
+  static const Color _summaryGradientEnd = Color(0xFF2700A8);
+  static const Color _summaryTraceColor = Color(0xFF38BDF8);
   static const Duration _transitionDuration = Duration(milliseconds: 240);
 
   final CaixaService _caixaService = CaixaModule.caixaService;
@@ -47,10 +51,14 @@ class _OperacoesCaixaMobileScreenState
       TextEditingController();
 
   bool _loading = true;
+  bool _loadingMovimentos = false;
+  bool _loadingSomatorio = false;
+  bool _loadingResumo = false;
   bool _busy = false;
   bool _vincularVenda = false;
-  bool _mostrarPainelFechamento = false;
   bool _mostrarApenasHoje = false;
+  bool _registrarDiferencaComoDespesa = false;
+  bool _pedirConfirmacaoDiferencaGestor = false;
   String? _erro;
 
   CaixaSessao? _sessaoAtual;
@@ -92,6 +100,13 @@ class _OperacoesCaixaMobileScreenState
     return sessao != null && _sessaoCaixaAberta(sessao);
   }
 
+  bool get _temPendenciaConferencia {
+    return _movimentos.any(
+      (MovimentoCaixa item) =>
+          item.status.toLowerCase() == 'pendenteconferencia',
+    );
+  }
+
   bool _sessaoCaixaAberta(CaixaSessao sessao) {
     final String status = sessao.status.trim().toLowerCase();
     return status == 'aberta' ||
@@ -106,6 +121,11 @@ class _OperacoesCaixaMobileScreenState
       setState(() {
         _loading = true;
         _erro = null;
+        if (_sessaoAtual == null) {
+          _loadingMovimentos = false;
+          _loadingSomatorio = false;
+          _loadingResumo = false;
+        }
       });
     }
 
@@ -141,6 +161,7 @@ class _OperacoesCaixaMobileScreenState
 
       final String? idPreferencial =
           idCaixaPreferencial ?? _caixaSelecionado?.id;
+      final String? idSessaoAnterior = _sessaoAtual?.idSessaoCaixa;
       CaixaOuGuiche? caixaPreferencial;
       if (idPreferencial != null) {
         for (final CaixaOuGuiche caixa in caixas) {
@@ -163,6 +184,8 @@ class _OperacoesCaixaMobileScreenState
       }
 
       if (!mounted) return;
+      final bool mudouSessao =
+          sessao != null && sessao.idSessaoCaixa != idSessaoAnterior;
       setState(() {
         _caixasDisponiveis = caixas;
         _tiposRecebimento = informacoesBasicas.tiposRecebimento;
@@ -173,9 +196,25 @@ class _OperacoesCaixaMobileScreenState
             tipoPreferencial ??
             (tiposAtivos.isNotEmpty ? tiposAtivos.first : null);
         _sessaoAtual = sessao;
-        _movimentos = <MovimentoCaixa>[];
-        _movimentosComSomatorio = null;
-        _resumo = null;
+        if (sessao == null) {
+          _movimentos = <MovimentoCaixa>[];
+          _movimentosComSomatorio = null;
+          _resumo = null;
+          _loadingMovimentos = false;
+          _loadingSomatorio = false;
+          _loadingResumo = false;
+        } else if (mudouSessao) {
+          _movimentos = <MovimentoCaixa>[];
+          _movimentosComSomatorio = null;
+          _resumo = null;
+          _loadingMovimentos = true;
+          _loadingSomatorio = true;
+          _loadingResumo = true;
+        } else if (_resumo == null) {
+          _loadingMovimentos = true;
+          _loadingSomatorio = true;
+          _loadingResumo = true;
+        }
       });
 
       if (sessao != null) {
@@ -198,6 +237,22 @@ class _OperacoesCaixaMobileScreenState
   }
 
   Future<void> _carregarMovimentosEResumo(String idSessaoCaixa) async {
+    if (mounted) {
+      setState(() {
+        _loadingMovimentos = true;
+        _loadingSomatorio = true;
+        _loadingResumo = true;
+      });
+    }
+
+    await Future.wait<void>(<Future<void>>[
+      _carregarMovimentos(idSessaoCaixa),
+      _carregarSomatorioMovimentos(idSessaoCaixa),
+      _carregarResumoCaixa(idSessaoCaixa),
+    ]);
+  }
+
+  Future<void> _carregarMovimentos(String idSessaoCaixa) async {
     try {
       final List<MovimentoCaixa> movimentos = await _caixaService
           .listarMovimentacoes(idSessaoCaixa);
@@ -205,8 +260,12 @@ class _OperacoesCaixaMobileScreenState
       setState(() => _movimentos = movimentos);
     } catch (error) {
       if (mounted) _snack(_mensagemErro(error));
+    } finally {
+      if (mounted) setState(() => _loadingMovimentos = false);
     }
+  }
 
+  Future<void> _carregarSomatorioMovimentos(String idSessaoCaixa) async {
     try {
       final InformacoesCaixaComSomatorioResponse movimentosComSomatorio =
           await _caixaService.buscarResumoDeMovimentosComSomatorio(
@@ -222,8 +281,12 @@ class _OperacoesCaixaMobileScreenState
       });
     } catch (error) {
       if (mounted) _snack(_mensagemErro(error));
+    } finally {
+      if (mounted) setState(() => _loadingSomatorio = false);
     }
+  }
 
+  Future<void> _carregarResumoCaixa(String idSessaoCaixa) async {
     try {
       final ResumoCaixa resumo = await _caixaService.buscarResumo(
         idSessaoCaixa,
@@ -232,6 +295,8 @@ class _OperacoesCaixaMobileScreenState
       setState(() => _resumo = resumo);
     } catch (error) {
       if (mounted) _snack(_mensagemErro(error));
+    } finally {
+      if (mounted) setState(() => _loadingResumo = false);
     }
   }
 
@@ -262,9 +327,20 @@ class _OperacoesCaixaMobileScreenState
       ),
       actions: <Widget>[
         IconButton(
-          tooltip: _txt('common.refresh', 'Atualizar'),
-          onPressed: _loading || _busy ? null : () => _carregarDadosIniciais(),
-          icon: const Icon(Icons.refresh_rounded),
+          tooltip: _txt(
+            'caixa.operacoes.mobile.newMovement',
+            'Nova movimentação',
+          ),
+          onPressed: _busy ? null : _abrirFormularioMovimentoSheet,
+          icon: const Icon(Icons.add_circle_outline_rounded),
+        ),
+        IconButton(
+          tooltip: _txt(
+            'caixa.operacoes.mobile.closingSettings',
+            'Configurações de fechamento',
+          ),
+          onPressed: _abrirConfiguracoesFechamento,
+          icon: const Icon(Icons.settings_outlined),
         ),
       ],
       bodyBuilder: _buildContent,
@@ -307,13 +383,7 @@ class _OperacoesCaixaMobileScreenState
   }
 
   Widget _buildState({required bool reduceMotion}) {
-    if (_loading && _sessaoAtual == null && _resumo == null) {
-      return _loadingState(
-        key: const ValueKey<String>('operacoes-caixa-loading'),
-      );
-    }
-
-    if (_erro != null && _sessaoAtual == null) {
+    if (_erro != null && !_loading && _sessaoAtual == null) {
       return _stateMessage(
         key: const ValueKey<String>('operacoes-caixa-error'),
         icon: Icons.error_outline_rounded,
@@ -329,69 +399,55 @@ class _OperacoesCaixaMobileScreenState
 
     return _successState(
       key: ValueKey<String>(
-        'operacoes-caixa-${_sessaoAtual?.idSessaoCaixa ?? 'sem-sessao'}'
-        '-${_resumo?.saldoEsperado.toStringAsFixed(2) ?? '0'}'
-        '-${_movimentos.length}',
+        _sessaoAtual == null
+            ? 'operacoes-caixa-sem-sessao'
+            : 'operacoes-caixa-${_sessaoAtual!.idSessaoCaixa}',
       ),
       reduceMotion: reduceMotion,
     );
   }
 
   Widget _successState({Key? key, required bool reduceMotion}) {
+    final bool aguardandoDadosIniciais =
+        _loading && _sessaoAtual == null && _caixasDisponiveis.isEmpty;
+
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        _entry(_buildHeaderCard(), reduceMotion: reduceMotion),
-        const SizedBox(height: 12),
         _entry(
-          _buildKpis(),
-          delay: const Duration(milliseconds: 60),
+          _buildHeaderCard(loading: aguardandoDadosIniciais),
           reduceMotion: reduceMotion,
         ),
         const SizedBox(height: 12),
-        if (!_temCaixaAberto)
+        if (aguardandoDadosIniciais)
+          _entry(
+            _buildInitialLoadingPanel(),
+            delay: const Duration(milliseconds: 70),
+            reduceMotion: reduceMotion,
+          )
+        else if (!_temCaixaAberto)
           _entry(
             _buildPainelAbertura(),
-            delay: const Duration(milliseconds: 110),
+            delay: const Duration(milliseconds: 70),
             reduceMotion: reduceMotion,
           )
         else ...<Widget>[
           _entry(
-            _buildContextoSessao(),
+            _buildResumoOperacional(),
             delay: const Duration(milliseconds: 110),
             reduceMotion: reduceMotion,
           ),
           const SizedBox(height: 12),
           _entry(
-            _buildAtalhosOperacao(),
+            _buildPrepararFechamentoCard(),
             delay: const Duration(milliseconds: 150),
             reduceMotion: reduceMotion,
           ),
           const SizedBox(height: 12),
           _entry(
-            _buildFormularioMovimento(),
-            delay: const Duration(milliseconds: 190),
-            reduceMotion: reduceMotion,
-          ),
-          if (_mostrarPainelFechamento) ...<Widget>[
-            const SizedBox(height: 12),
-            _entry(
-              _buildPainelFechamento(),
-              delay: const Duration(milliseconds: 220),
-              reduceMotion: reduceMotion,
-            ),
-          ],
-          const SizedBox(height: 12),
-          _entry(
-            _buildResumoOperacional(),
-            delay: const Duration(milliseconds: 240),
-            reduceMotion: reduceMotion,
-          ),
-          const SizedBox(height: 12),
-          _entry(
             _buildHistorico(),
-            delay: const Duration(milliseconds: 280),
+            delay: const Duration(milliseconds: 190),
             reduceMotion: reduceMotion,
           ),
         ],
@@ -413,21 +469,28 @@ class _OperacoesCaixaMobileScreenState
     );
   }
 
-  Widget _loadingState({Key? key}) {
-    return Column(
-      key: key,
-      children: <Widget>[
-        _buildHeaderCard(loading: true),
-        const SizedBox(height: 12),
-        const SixBackendLoading(
-          title: 'Carregando operações de caixa',
-          subtitle: 'Sincronizando sessão, resumo e movimentações.',
-          animation: SixBackendLoadingAnimation.skeletonPulse,
-          leadingIcon: Icons.point_of_sale_rounded,
-          backgroundColor: SixMobilePalette.surface,
-          borderColor: SixMobilePalette.border,
+  Widget _buildInitialLoadingPanel() {
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: _txt(
+        'caixa.operacoes.mobile.loadingState',
+        'Carregando operações de caixa.',
+      ),
+      child: SixBackendLoading(
+        title: _txt(
+          'caixa.operacoes.mobile.loadingTitle',
+          'Carregando operações de caixa',
         ),
-      ],
+        subtitle: _txt(
+          'caixa.operacoes.mobile.loadingSubtitle',
+          'Sincronizando sessão, resumo e movimentações.',
+        ),
+        animation: SixBackendLoadingAnimation.skeletonPulse,
+        leadingIcon: Icons.point_of_sale_rounded,
+        backgroundColor: SixMobilePalette.surface,
+        borderColor: SixMobilePalette.border,
+      ),
     );
   }
 
@@ -485,264 +548,349 @@ class _OperacoesCaixaMobileScreenState
   }
 
   Widget _buildHeaderCard({bool loading = false}) {
-    final int movimentos = _resumo?.quantidadeMovimentos ?? _movimentos.length;
+    final ResumoCaixa? resumo = _resumo;
+    final CaixaSessao? sessao = _sessaoAtual;
+    final bool loadingResumo = loading || (_loadingResumo && resumo == null);
     final String status =
         loading
             ? _txt('common.loading', 'Carregando...')
             : _temCaixaAberto
             ? _txt('caixa.operacoes.mobile.cashOpen', 'Caixa aberto')
             : _txt('caixa.operacoes.mobile.waitingOpen', 'Aguardando abertura');
+    final String statusLabel =
+        sessao != null && _temCaixaAberto && sessao.nomeCaixa.trim().isNotEmpty
+            ? '$status • ${sessao.nomeCaixa.trim()}'
+            : status;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 15),
       decoration: BoxDecoration(
-        color: SixMobilePalette.primary,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            _summaryGradientStart,
+            _summaryGradientMiddle,
+            _summaryGradientEnd,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: SixMobilePalette.heroShadow,
+            color: _withAlpha(_summaryGradientMiddle, 0.26),
             blurRadius: 20,
-            offset: Offset(0, 10),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              _iconBox(
-                Icons.point_of_sale_rounded,
-                bg: _withAlpha(SixMobilePalette.onPrimary, 0.12),
-                fg: SixMobilePalette.onPrimary,
+          Positioned(
+            right: -22,
+            bottom: -36,
+            child: IgnorePointer(
+              child: Container(
+                width: 152,
+                height: 96,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: <Color>[
+                      _withAlpha(SixMobilePalette.onPrimary, 0.10),
+                      _withAlpha(SixMobilePalette.onPrimary, 0),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  _iconBox(
+                    Icons.point_of_sale_rounded,
+                    bg: _withAlpha(SixMobilePalette.onPrimary, 0.14),
+                    fg: SixMobilePalette.onPrimary,
+                    size: 44,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          _txt(
+                            'caixa.operacoes.mobile.headerTitle',
+                            'Operações de caixa',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: SixMobilePalette.onPrimary,
+                            fontSize: 20,
+                            height: 1.1,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 178),
+                    child: _statusChip(
+                      label: statusLabel,
+                      icon:
+                          _temCaixaAberto
+                              ? Icons.lock_open_rounded
+                              : Icons.lock_outline_rounded,
+                      foreground: SixMobilePalette.onPrimary,
+                      background: _withAlpha(SixMobilePalette.onPrimary, 0.12),
+                      border: _withAlpha(SixMobilePalette.onPrimary, 0.20),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: 30,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: _summaryTraceColor,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Semantics(
+                container: true,
+                label: _txt(
+                  'caixa.operacoes.mobile.summaryMetrics',
+                  'Resumo financeiro do caixa',
+                ),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      _txt(
-                        'caixa.operacoes.mobile.headerTitle',
-                        'Operações de caixa',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SixMobilePalette.onPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                    Expanded(
+                      child: _heroMetricItem(
+                        label: _txt(
+                          'caixa.operacoes.mobile.expectedBalance',
+                          'Saldo esperado',
+                        ),
+                        value: resumo?.saldoEsperado ?? 0,
+                        icon: Icons.account_balance_wallet_outlined,
+                        loading: loadingResumo,
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '$movimentos movimento(s) • $status',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SixMobilePalette.heroSupportingText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                    _heroMetricDivider(),
+                    Expanded(
+                      child: _heroMetricItem(
+                        label: _txt(
+                          'caixa.operacoes.mobile.inflows',
+                          'Entradas',
+                        ),
+                        value: resumo?.totalEntradas ?? 0,
+                        icon: Icons.south_west_rounded,
+                        accent: _successColor,
+                        loading: loadingResumo,
+                      ),
+                    ),
+                    _heroMetricDivider(),
+                    Expanded(
+                      child: _heroMetricItem(
+                        label: _txt(
+                          'caixa.operacoes.mobile.outflows',
+                          'Saídas',
+                        ),
+                        value: resumo?.totalSaidas ?? 0,
+                        icon: Icons.north_east_rounded,
+                        accent: SixMobilePalette.error,
+                        loading: loadingResumo,
                       ),
                     ),
                   ],
                 ),
               ),
+              if (sessao != null && _temCaixaAberto) ...<Widget>[
+                const SizedBox(height: 10),
+                _CaixaHeroCarousel(
+                  semanticLabel: _txt(
+                    'caixa.operacoes.mobile.sessionContext',
+                    'Sessão atual',
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      _heroInfoChip(
+                        label: _txt(
+                          'caixa.operacoes.mobile.openedAt',
+                          'Abertura',
+                        ),
+                        value: _formatarDataHora(sessao.dataHoraAbertura),
+                        icon: Icons.schedule_rounded,
+                        accent: _summaryTraceColor,
+                        wide: true,
+                      ),
+                      _heroInfoChip(
+                        label: _txt(
+                          'caixa.operacoes.mobile.initialChange',
+                          'Troco inicial',
+                        ),
+                        value: _formatarValor(sessao.valorAbertura),
+                        icon: Icons.account_balance_wallet_outlined,
+                        accent: SixMobilePalette.onPrimary,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ),
-          const SizedBox(height: 14),
-          _statusChip(
-            label: status,
-            icon:
-                _temCaixaAberto
-                    ? Icons.lock_open_rounded
-                    : Icons.lock_outline_rounded,
-            foreground:
-                _temCaixaAberto
-                    ? SixMobilePalette.onPrimary
-                    : SixMobilePalette.heroSupportingText,
-            background: _withAlpha(SixMobilePalette.onPrimary, 0.10),
-            border: _withAlpha(SixMobilePalette.onPrimary, 0.16),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildKpis() {
-    final ResumoCaixa? resumo = _resumo;
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 360;
-        final double width =
-            compact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: <Widget>[
-            _metricCard(
-              width: width,
-              label: _txt(
-                'caixa.operacoes.mobile.expectedBalance',
-                'Saldo esperado',
-              ),
-              value: resumo?.saldoEsperado ?? 0,
-              icon: Icons.account_balance_wallet_outlined,
-              highlight: true,
-            ),
-            _metricCard(
-              width: width,
-              label: _txt('caixa.operacoes.mobile.inflows', 'Entradas'),
-              value: resumo?.totalEntradas ?? 0,
-              icon: Icons.south_west_rounded,
-            ),
-            _metricCard(
-              width: width,
-              label: _txt('caixa.operacoes.mobile.outflows', 'Saídas'),
-              value: resumo?.totalSaidas ?? 0,
-              icon: Icons.north_east_rounded,
-            ),
-            _countCard(
-              width: width,
-              label: _txt('caixa.operacoes.mobile.movements', 'Movimentos'),
-              value: resumo?.quantidadeMovimentos ?? _movimentos.length,
-              icon: Icons.receipt_long_outlined,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _metricCard({
-    required double width,
+  Widget _heroMetricItem({
     required String label,
     required double value,
     required IconData icon,
-    bool highlight = false,
+    Color accent = _summaryTraceColor,
+    bool loading = false,
   }) {
-    return SizedBox(
-      width: width,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color:
-              highlight ? SixMobilePalette.primary : SixMobilePalette.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color:
-                highlight ? SixMobilePalette.primary : SixMobilePalette.border,
-          ),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: SixMobilePalette.navigationShadow,
-              blurRadius: 12,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: <Widget>[
-            _iconBox(
-              icon,
-              bg:
-                  highlight
-                      ? _withAlpha(SixMobilePalette.onPrimary, 0.12)
-                      : SixMobilePalette.softAccentSurface,
-              fg:
-                  highlight
-                      ? SixMobilePalette.onPrimary
-                      : SixMobilePalette.accent,
-              size: 40,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Semantics(
+      container: true,
+      label:
+          loading
+              ? '$label: ${_txt('common.loading', 'Carregando...')}'
+              : '$label: ${_formatarValor(value)}',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
                 children: <Widget>[
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color:
-                          highlight
-                              ? SixMobilePalette.heroLabelText
-                              : SixMobilePalette.mutedText,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  _animatedCurrencyText(
-                    value,
-                    style: TextStyle(
-                      color:
-                          highlight
-                              ? SixMobilePalette.onPrimary
-                              : SixMobilePalette.titleText,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
+                  Icon(icon, color: accent, size: 16),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _withAlpha(SixMobilePalette.onPrimary, 0.74),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              AnimatedSwitcher(
+                duration: _transitionDuration,
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child:
+                    loading
+                        ? _skeletonLine(
+                          key: ValueKey<String>('hero-$label-loading'),
+                          width: 74,
+                          height: 15,
+                          colorOnDark: true,
+                        )
+                        : _animatedCurrencyText(
+                          value,
+                          style: const TextStyle(
+                            color: SixMobilePalette.onPrimary,
+                            fontSize: 13.5,
+                            height: 1.05,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _countCard({
-    required double width,
+  Widget _heroMetricDivider() {
+    return Container(
+      width: 1,
+      height: 38,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: _withAlpha(SixMobilePalette.onPrimary, 0.18),
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+
+  Widget _heroInfoChip({
     required String label,
-    required int value,
+    required String value,
     required IconData icon,
+    required Color accent,
+    bool wide = false,
   }) {
-    return SizedBox(
-      width: width,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: _cardDecoration(radius: 20),
-        child: Row(
-          children: <Widget>[
-            _iconBox(
-              icon,
-              bg: SixMobilePalette.softNeutralSurface,
-              fg: SixMobilePalette.primary,
-              size: 40,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SixMobilePalette.mutedText,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  SixAnimatedNumberText(
-                    key: ValueKey<String>('caixa-movimentos-$value'),
-                    value: value.toString(),
-                    style: const TextStyle(
-                      color: SixMobilePalette.titleText,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Semantics(
+        container: true,
+        label: '$label: $value',
+        child: ExcludeSemantics(
+          child: Container(
+            width: wide ? 172 : 132,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: _withAlpha(SixMobilePalette.onPrimary, 0.09),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: _withAlpha(SixMobilePalette.onPrimary, 0.16),
               ),
             ),
-          ],
+            child: Row(
+              children: <Widget>[
+                Icon(icon, color: accent, size: 16),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _withAlpha(SixMobilePalette.onPrimary, 0.66),
+                          fontSize: 10,
+                          height: 1,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.onPrimary,
+                          fontSize: 12,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -803,139 +951,416 @@ class _OperacoesCaixaMobileScreenState
     );
   }
 
-  Widget _buildContextoSessao() {
-    final CaixaSessao? sessao = _sessaoAtual;
-    return _sectionCard(
-      icon: Icons.verified_outlined,
-      title: _txt('caixa.operacoes.mobile.sessionContext', 'Sessão atual'),
-      subtitle: _txt(
-        'caixa.operacoes.mobile.sessionContextSubtitle',
-        'Dados principais da operação em andamento.',
-      ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: <Widget>[
-          _infoTile(
-            title: _txt('caixa.operacoes.mobile.session', 'Sessão'),
-            value: sessao?.idSessaoCaixa ?? '--',
-            icon: Icons.badge_outlined,
-          ),
-          _infoTile(
-            title: _txt('caixa.operacoes.mobile.cashDeskShort', 'Caixa'),
-            value: sessao?.nomeCaixa ?? '--',
-            icon: Icons.store_mall_directory_outlined,
-          ),
-          _infoTile(
-            title: _txt('caixa.operacoes.mobile.openedAt', 'Abertura'),
-            value: _formatarDataHora(sessao?.dataHoraAbertura),
-            icon: Icons.schedule_rounded,
-          ),
-          _infoTile(
-            title: _txt(
-              'caixa.operacoes.mobile.initialChange',
-              'Troco inicial',
-            ),
-            value: _formatarValor(sessao?.valorAbertura ?? 0),
-            icon: Icons.account_balance_wallet_outlined,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildPrepararFechamentoCard() {
+    final bool loadingSomatorio =
+        _loadingSomatorio && _movimentosComSomatorio == null;
 
-  Widget _buildAtalhosOperacao() {
-    final List<_OperacaoCaixaMobileData> atalhos = _atalhosOperacao();
-    return _sectionCard(
-      icon: Icons.bolt_outlined,
-      title: _txt('caixa.operacoes.mobile.quickActions', 'Ações rápidas'),
-      subtitle: _txt(
-        'caixa.operacoes.mobile.quickActionsSubtitle',
-        'Toque em uma operação para orientar o lançamento.',
+    return Semantics(
+      button: true,
+      label: _txt(
+        'caixa.operacoes.mobile.prepareClosing',
+        'Preparar fechamento',
       ),
-      child: Column(
-        children: <Widget>[
-          ...atalhos.map(
-            (_OperacaoCaixaMobileData item) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _operationCard(item),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: _busy ? null : _abrirPrepararFechamentoSheet,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 92),
+            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+            decoration: BoxDecoration(
+              color: SixMobilePalette.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: SixMobilePalette.activeBorder),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: SixMobilePalette.navigationShadow,
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed:
-                      _busy
-                          ? null
-                          : () => setState(() {
-                            _mostrarPainelFechamento =
-                                !_mostrarPainelFechamento;
-                            _tipoSelecionado = null;
-                          }),
-                  icon: const Icon(Icons.rule_folder_outlined),
-                  label: Text(
-                    _mostrarPainelFechamento
-                        ? _txt('caixa.operacoes.mobile.hideClosing', 'Ocultar')
-                        : _txt(
+            child: Row(
+              children: <Widget>[
+                _iconBox(
+                  Icons.rule_folder_outlined,
+                  bg: SixMobilePalette.softNeutralSurface,
+                  fg: SixMobilePalette.accent,
+                  size: 52,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        _txt(
                           'caixa.operacoes.mobile.prepareClosing',
                           'Preparar fechamento',
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontSize: 17,
+                          height: 1.12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      AnimatedSwitcher(
+                        duration: _transitionDuration,
+                        child:
+                            loadingSomatorio
+                                ? _skeletonLine(
+                                  key: const ValueKey<String>(
+                                    'prepare-closing-loading',
+                                  ),
+                                  width: 180,
+                                  height: 12,
+                                )
+                                : Text(
+                                  _txt(
+                                    'caixa.operacoes.mobile.prepareClosingSubtitle',
+                                    'Confira os valores por forma e informe a apuração final.',
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: SixMobilePalette.mutedText,
+                                    fontSize: 13,
+                                    height: 1.25,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _busy ? null : _confirmarEncerramentoSessao,
-                  icon: const Icon(Icons.power_settings_new_rounded),
-                  label: Text(
-                    _txt('caixa.operacoes.mobile.closeSession', 'Encerrar'),
-                  ),
+                const SizedBox(width: 12),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: SixMobilePalette.mutedText,
+                  size: 26,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _operationCard(_OperacaoCaixaMobileData item) {
-    final bool selected = _tipoSelecionado == item.tipo;
-    return Material(
-      color: selected ? _withAlpha(item.color, 0.08) : SixMobilePalette.surface,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap:
-            _busy
-                ? null
-                : () => setState(() {
-                  _tipoSelecionado = item.tipo;
-                  _mostrarPainelFechamento = false;
-                }),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color:
-                  selected
-                      ? _withAlpha(item.color, 0.55)
-                      : SixMobilePalette.border,
-              width: selected ? 1.4 : 1,
+  Widget _buildFormularioMovimentoContent({
+    VoidCallback? refreshSheet,
+    VoidCallback? onSaved,
+  }) {
+    return Column(
+      children: <Widget>[
+        _selectorField(
+          label: _txt(
+            'caixa.operacoes.mobile.operationType',
+            'Tipo da operação',
+          ),
+          value:
+              _tipoSelecionado == null
+                  ? _txt('caixa.operacoes.mobile.select', 'Selecione')
+                  : _labelTipo(_tipoSelecionado!),
+          icon: Icons.category_outlined,
+          onTap: () async {
+            await _selecionarTipoOperacao();
+            refreshSheet?.call();
+          },
+        ),
+        const SizedBox(height: 12),
+        _textField(
+          label: _txt('caixa.operacoes.mobile.amount', 'Valor'),
+          controller: _valorController,
+          hint: _formatarDecimalDigitavel(0),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          prefixText: '${context.read<LocaleSettingsProvider>().currencyCode} ',
+        ),
+        const SizedBox(height: 12),
+        _selectorField(
+          label: _txt(
+            'caixa.operacoes.mobile.relatedMethod',
+            'Forma relacionada',
+          ),
+          value:
+              _tipoRecebimentoSelecionado == null
+                  ? _txt('caixa.operacoes.mobile.select', 'Selecione')
+                  : _descricaoTipoRecebimentoConfigurado(
+                    _tipoRecebimentoSelecionado!,
+                  ),
+          icon: Icons.payments_outlined,
+          onTap: () async {
+            await _selecionarFormaRelacionada();
+            refreshSheet?.call();
+          },
+        ),
+        const SizedBox(height: 12),
+        _textField(
+          label: _txt(
+            'caixa.operacoes.mobile.reference',
+            'Referência / comprovante',
+          ),
+          controller: _referenciaController,
+          hint: 'MOV-001',
+          keyboardType: TextInputType.text,
+        ),
+        const SizedBox(height: 12),
+        _textField(
+          label: _txt('caixa.operacoes.mobile.note', 'Observação'),
+          controller: _observacaoController,
+          hint: _txt(
+            'caixa.operacoes.mobile.noteHint',
+            'Descreva o motivo da movimentação.',
+          ),
+          keyboardType: TextInputType.multiline,
+          maxLines: 3,
+        ),
+        const SizedBox(height: 10),
+        CheckboxListTile(
+          value: _vincularVenda,
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            _txt(
+              'caixa.operacoes.mobile.hasSaleLink',
+              'Possui vínculo com venda',
+            ),
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            _txt(
+              'caixa.operacoes.mobile.hasSaleLinkSubtitle',
+              'Use em estornos ou situações relacionadas a atendimento anterior.',
             ),
           ),
-          child: Row(
+          onChanged:
+              _busy
+                  ? null
+                  : (bool? value) {
+                    setState(() => _vincularVenda = value ?? false);
+                    refreshSheet?.call();
+                  },
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed:
+              _busy
+                  ? null
+                  : () async {
+                    final Future<bool> save = _salvarMovimento();
+                    refreshSheet?.call();
+                    final bool saved = await save;
+                    if (saved) {
+                      onSaved?.call();
+                    } else {
+                      refreshSheet?.call();
+                    }
+                  },
+          icon: const Icon(Icons.save_outlined),
+          label: Text(
+            _txt(
+              'caixa.operacoes.mobile.saveMovement',
+              'Registrar movimentação',
+            ),
+          ),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            backgroundColor: SixMobilePalette.accent,
+            foregroundColor: SixMobilePalette.onPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed:
+              _busy
+                  ? null
+                  : () {
+                    _limparFormularioMovimento();
+                    refreshSheet?.call();
+                  },
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text(
+            _txt('caixa.operacoes.mobile.clearForm', 'Limpar formulário'),
+          ),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(46),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResumoOperacional() {
+    final bool loadingSomatorio =
+        _loadingSomatorio && _movimentosComSomatorio == null;
+
+    return Semantics(
+      button: true,
+      label: _txt(
+        'caixa.operacoes.mobile.methodSummary',
+        'Conferência por forma',
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: _abrirConferenciaPorFormaSheet,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 90),
+            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+            decoration: BoxDecoration(
+              color: SixMobilePalette.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: SixMobilePalette.activeBorder),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: SixMobilePalette.navigationShadow,
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: <Widget>[
+                _iconBox(
+                  Icons.fact_check_outlined,
+                  bg: SixMobilePalette.softNeutralSurface,
+                  fg: SixMobilePalette.accent,
+                  size: 52,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        _txt(
+                          'caixa.operacoes.mobile.methodSummary',
+                          'Conferência por forma',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontSize: 17,
+                          height: 1.12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      AnimatedSwitcher(
+                        duration: _transitionDuration,
+                        child:
+                            loadingSomatorio
+                                ? _skeletonLine(
+                                  key: const ValueKey<String>(
+                                    'method-summary-loading',
+                                  ),
+                                  width: 190,
+                                  height: 12,
+                                )
+                                : Text(
+                                  _txt(
+                                    'caixa.operacoes.mobile.methodSummarySubtitle',
+                                    'Resumo pelos tipos configurados no caixa.',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: SixMobilePalette.mutedText,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: SixMobilePalette.mutedText,
+                  size: 26,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResumoOperacionalDetalhado() {
+    return Column(
+      children: <Widget>[
+        ..._linhasResumoPorTipoRecebimento().map(
+          (_ResumoTipoRecebimentoData linha) =>
+              _summaryLine(linha.label, _formatarValor(linha.valor)),
+        ),
+        const Divider(height: 22),
+        _checkItem(
+          checked: _temCaixaAberto,
+          title: _txt('caixa.operacoes.mobile.cashOpen', 'Caixa aberto'),
+        ),
+        _checkItem(
+          checked: _movimentos.isNotEmpty,
+          title: _txt(
+            'caixa.operacoes.mobile.hasMovements',
+            'Movimentações registradas',
+          ),
+        ),
+        _checkItem(
+          checked: _temPendenciaConferencia,
+          title: _txt(
+            'caixa.operacoes.mobile.hasPending',
+            'Há pendências para conferência',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGuiaFechamentoPorForma() {
+    final bool loadingSomatorio =
+        _loadingSomatorio && _movimentosComSomatorio == null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: SixMobilePalette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _iconBox(
-                item.icon,
-                bg: _withAlpha(item.color, 0.10),
-                fg: item.color,
-                size: 42,
+                Icons.fact_check_outlined,
+                bg: SixMobilePalette.softAccentSurface,
+                fg: SixMobilePalette.accent,
+                size: 40,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -943,18 +1368,24 @@ class _OperacoesCaixaMobileScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      item.title,
+                      _txt(
+                        'caixa.operacoes.mobile.closingGuideTitle',
+                        'Guia por forma',
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: SixMobilePalette.titleText,
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      item.subtitle,
+                      _txt(
+                        'caixa.operacoes.mobile.closingGuideSubtitle',
+                        'Mesmos valores exibidos em Conferência por forma.',
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -967,303 +1398,235 @@ class _OperacoesCaixaMobileScreenState
                   ],
                 ),
               ),
-              Icon(
-                selected
-                    ? Icons.check_circle_rounded
-                    : Icons.chevron_right_rounded,
-                color: selected ? item.color : SixMobilePalette.mutedText,
-              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFormularioMovimento() {
-    return _sectionCard(
-      icon: Icons.edit_note_rounded,
-      title: _txt(
-        'caixa.operacoes.mobile.entryTitle',
-        'Lançamento operacional',
-      ),
-      subtitle:
-          _tipoSelecionado == null
-              ? _txt(
-                'caixa.operacoes.mobile.entrySubtitleEmpty',
-                'Escolha uma ação rápida ou selecione o tipo da operação.',
-              )
-              : '${_txt('caixa.operacoes.mobile.entrySubtitleFilled', 'Preencha os dados da operação')} ${_labelTipo(_tipoSelecionado!)}.',
-      child: Column(
-        children: <Widget>[
-          _selectorField(
-            label: _txt(
-              'caixa.operacoes.mobile.operationType',
-              'Tipo da operação',
+          const SizedBox(height: 14),
+          if (loadingSomatorio)
+            _guiaFechamentoSkeleton()
+          else ...<Widget>[
+            ..._linhasResumoPorTipoRecebimento().map(
+              (_ResumoTipoRecebimentoData linha) =>
+                  _summaryLine(linha.label, _formatarValor(linha.valor)),
             ),
-            value:
-                _tipoSelecionado == null
-                    ? _txt('caixa.operacoes.mobile.select', 'Selecione')
-                    : _labelTipo(_tipoSelecionado!),
-            icon: Icons.category_outlined,
-            onTap: _selecionarTipoOperacao,
-          ),
-          const SizedBox(height: 12),
-          _textField(
-            label: _txt('caixa.operacoes.mobile.amount', 'Valor'),
-            controller: _valorController,
-            hint: _formatarDecimalDigitavel(0),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            prefixText:
-                '${context.read<LocaleSettingsProvider>().currencyCode} ',
-          ),
-          const SizedBox(height: 12),
-          _selectorField(
-            label: _txt(
-              'caixa.operacoes.mobile.relatedMethod',
-              'Forma relacionada',
+            const Divider(height: 22),
+            _summaryLine(
+              _txt('caixa.operacoes.mobile.expectedBalance', 'Saldo esperado'),
+              _formatarValor(_resumo?.saldoEsperado ?? 0),
             ),
-            value:
-                _tipoRecebimentoSelecionado == null
-                    ? _txt('caixa.operacoes.mobile.select', 'Selecione')
-                    : _descricaoTipoRecebimentoConfigurado(
-                      _tipoRecebimentoSelecionado!,
-                    ),
-            icon: Icons.payments_outlined,
-            onTap: _selecionarFormaRelacionada,
-          ),
-          const SizedBox(height: 12),
-          _textField(
-            label: _txt(
-              'caixa.operacoes.mobile.reference',
-              'Referência / comprovante',
-            ),
-            controller: _referenciaController,
-            hint: 'MOV-001',
-            keyboardType: TextInputType.text,
-          ),
-          const SizedBox(height: 12),
-          _textField(
-            label: _txt('caixa.operacoes.mobile.note', 'Observação'),
-            controller: _observacaoController,
-            hint: _txt(
-              'caixa.operacoes.mobile.noteHint',
-              'Descreva o motivo da movimentação.',
-            ),
-            keyboardType: TextInputType.multiline,
-            maxLines: 3,
-          ),
-          const SizedBox(height: 10),
-          CheckboxListTile(
-            value: _vincularVenda,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              _txt(
-                'caixa.operacoes.mobile.hasSaleLink',
-                'Possui vínculo com venda',
-              ),
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: Text(
-              _txt(
-                'caixa.operacoes.mobile.hasSaleLinkSubtitle',
-                'Use em estornos ou situações relacionadas a atendimento anterior.',
-              ),
-            ),
-            onChanged:
-                _busy
-                    ? null
-                    : (bool? value) =>
-                        setState(() => _vincularVenda = value ?? false),
-            controlAffinity: ListTileControlAffinity.leading,
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _busy ? null : _salvarMovimento,
-            icon: const Icon(Icons.save_outlined),
-            label: Text(
-              _txt(
-                'caixa.operacoes.mobile.saveMovement',
-                'Registrar movimentação',
-              ),
-            ),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              backgroundColor: SixMobilePalette.accent,
-              foregroundColor: SixMobilePalette.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: _busy ? null : _limparFormularioMovimento,
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(
-              _txt('caixa.operacoes.mobile.clearForm', 'Limpar formulário'),
-            ),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(46),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildResumoOperacional() {
-    return _sectionCard(
-      icon: Icons.fact_check_outlined,
-      title: _txt(
-        'caixa.operacoes.mobile.methodSummary',
-        'Conferência por forma',
-      ),
-      subtitle: _txt(
-        'caixa.operacoes.mobile.methodSummarySubtitle',
-        'Resumo pelos tipos configurados no caixa.',
-      ),
-      child: Column(
-        children: <Widget>[
-          ..._linhasResumoPorTipoRecebimento().map(
-            (_ResumoTipoRecebimentoData linha) =>
-                _summaryLine(linha.label, _formatarValor(linha.valor)),
-          ),
-          const Divider(height: 22),
-          _checkItem(
-            checked: _temCaixaAberto,
-            title: _txt('caixa.operacoes.mobile.cashOpen', 'Caixa aberto'),
-          ),
-          _checkItem(
-            checked: _movimentos.isNotEmpty,
-            title: _txt(
-              'caixa.operacoes.mobile.hasMovements',
-              'Movimentações registradas',
-            ),
-          ),
-          _checkItem(
-            checked: _movimentos.any(
-              (MovimentoCaixa item) =>
-                  item.status.toLowerCase() == 'pendenteconferencia',
-            ),
-            title: _txt(
-              'caixa.operacoes.mobile.hasPending',
-              'Há pendências para conferência',
-            ),
-          ),
-        ],
-      ),
+  Widget _guiaFechamentoSkeleton() {
+    return Column(
+      children: <Widget>[
+        _skeletonLine(width: double.infinity, height: 13),
+        const SizedBox(height: 10),
+        _skeletonLine(width: 210, height: 13),
+        const SizedBox(height: 10),
+        _skeletonLine(width: 180, height: 13),
+      ],
     );
   }
 
-  Widget _buildPainelFechamento() {
+  Widget _buildFechamentoConferenciaContent({
+    VoidCallback? refreshSheet,
+    VoidCallback? onClosed,
+  }) {
     final ResumoCaixa? resumo = _resumo;
-    if (resumo == null) return const SizedBox.shrink();
+    final double dinheiroPrevisto = _valorDinheiroEsperadoFechamento();
+    final double pixPrevisto = _valorPixEsperadoFechamento();
+    final double cartaoPrevisto = _valorCartaoEsperadoFechamento();
+    final bool temDinheiroPrevisto = _temValorPrevisto(dinheiroPrevisto);
+    final bool temPixPrevisto = _temValorPrevisto(pixPrevisto);
+    final bool temCartaoPrevisto = _temValorPrevisto(cartaoPrevisto);
+    final bool temValorPrevisto =
+        temDinheiroPrevisto || temPixPrevisto || temCartaoPrevisto;
 
-    return _sectionCard(
-      icon: Icons.task_alt_rounded,
-      title: _txt('caixa.operacoes.mobile.closingTitle', 'Fechamento de caixa'),
-      subtitle: _txt(
-        'caixa.operacoes.mobile.closingSubtitle',
-        'Informe os valores apurados para comparar com o saldo esperado.',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          _txt(
+            'caixa.operacoes.mobile.closingCheckTitle',
+            'Conferência dos valores',
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: SixMobilePalette.titleText,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _txt(
+            'caixa.operacoes.mobile.closingCheckSubtitle',
+            'Informe os valores apurados no caixa físico ou nos meios digitais.',
+          ),
+          style: const TextStyle(
+            color: SixMobilePalette.mutedText,
+            height: 1.32,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (!temValorPrevisto)
+          _emptyClosingValues()
+        else ...<Widget>[
+          if (temDinheiroPrevisto) ...<Widget>[
+            _closingAmountField(
+              label: _labelValorApurado(
+                _labelTipoRecebimentoPorCodigo('tipo1', 'Dinheiro'),
+              ),
+              controller: _fechamentoDinheiroController,
+              expectedValue: dinheiroPrevisto,
+            ),
+            if (temPixPrevisto || temCartaoPrevisto) const SizedBox(height: 12),
+          ],
+          if (temPixPrevisto) ...<Widget>[
+            _closingAmountField(
+              label: _labelValorApurado(
+                _labelTipoRecebimentoPorCodigo('tipo2', 'Pix'),
+              ),
+              controller: _fechamentoPixController,
+              expectedValue: pixPrevisto,
+            ),
+            if (temCartaoPrevisto) const SizedBox(height: 12),
+          ],
+          if (temCartaoPrevisto) ...<Widget>[
+            _closingAmountField(
+              label: _txt(
+                'caixa.operacoes.mobile.cardsAmount',
+                'Cartões apurados',
+              ),
+              controller: _fechamentoCartaoController,
+              expectedValue: cartaoPrevisto,
+            ),
+          ],
+        ],
+        const SizedBox(height: 12),
+        _readOnlyInfo(
+          label: _txt(
+            'caixa.operacoes.mobile.expectedBalance',
+            'Saldo esperado',
+          ),
+          value: _formatarValor(resumo?.saldoEsperado ?? 0),
+          icon: Icons.account_balance_wallet_outlined,
+        ),
+        const SizedBox(height: 12),
+        _textField(
+          label: _txt(
+            'caixa.operacoes.mobile.closingNote',
+            'Observação do fechamento',
+          ),
+          controller: _fechamentoObservacaoController,
+          hint: _txt(
+            'caixa.operacoes.mobile.closingNoteHint',
+            'Detalhe divergências, conferências e observações finais.',
+          ),
+          keyboardType: TextInputType.multiline,
+          maxLines: 3,
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed:
+              _busy
+                  ? null
+                  : () async {
+                    final Future<bool> close = _fecharCaixa();
+                    refreshSheet?.call();
+                    final bool closed = await close;
+                    if (closed) {
+                      onClosed?.call();
+                    } else {
+                      refreshSheet?.call();
+                    }
+                  },
+          icon: const Icon(Icons.task_alt_rounded),
+          label: Text(
+            _txt('caixa.operacoes.mobile.finishClosing', 'Concluir fechamento'),
+          ),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            backgroundColor: SixMobilePalette.accent,
+            foregroundColor: SixMobilePalette.onPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed:
+              _busy
+                  ? null
+                  : () {
+                    _fechamentoDinheiroController.clear();
+                    _fechamentoPixController.clear();
+                    _fechamentoCartaoController.clear();
+                    _fechamentoObservacaoController.clear();
+                    refreshSheet?.call();
+                  },
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text(
+            _txt('caixa.operacoes.mobile.clearClosing', 'Limpar conferência'),
+          ),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(46),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _closingAmountField({
+    required String label,
+    required TextEditingController controller,
+    required double expectedValue,
+  }) {
+    return _textField(
+      label: label,
+      controller: controller,
+      hint: _formatarDecimalDigitavel(expectedValue),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      prefixText: '${context.read<LocaleSettingsProvider>().currencyCode} ',
+    );
+  }
+
+  Widget _emptyClosingValues() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: SixMobilePalette.border),
       ),
-      child: Column(
+      child: Row(
         children: <Widget>[
-          _textField(
-            label:
-                '${_labelTipoRecebimentoPorCodigo('tipo1', 'Dinheiro')} apurado',
-            controller: _fechamentoDinheiroController,
-            hint: _formatarValor(resumo.totalDinheiro),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            prefixText:
-                '${context.read<LocaleSettingsProvider>().currencyCode} ',
+          const Icon(
+            Icons.info_outline_rounded,
+            color: SixMobilePalette.mutedText,
+            size: 20,
           ),
-          const SizedBox(height: 12),
-          _textField(
-            label: '${_labelTipoRecebimentoPorCodigo('tipo2', 'Pix')} apurado',
-            controller: _fechamentoPixController,
-            hint: _formatarValor(resumo.totalPix),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            prefixText:
-                '${context.read<LocaleSettingsProvider>().currencyCode} ',
-          ),
-          const SizedBox(height: 12),
-          _textField(
-            label: _txt(
-              'caixa.operacoes.mobile.cardsAmount',
-              'Cartões apurados',
-            ),
-            controller: _fechamentoCartaoController,
-            hint: _formatarValor(
-              resumo.totalCartaoCredito + resumo.totalCartaoDebito,
-            ),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            prefixText:
-                '${context.read<LocaleSettingsProvider>().currencyCode} ',
-          ),
-          const SizedBox(height: 12),
-          _readOnlyInfo(
-            label: _txt(
-              'caixa.operacoes.mobile.expectedBalance',
-              'Saldo esperado',
-            ),
-            value: _formatarValor(resumo.saldoEsperado),
-            icon: Icons.account_balance_wallet_outlined,
-          ),
-          const SizedBox(height: 12),
-          _textField(
-            label: _txt(
-              'caixa.operacoes.mobile.closingNote',
-              'Observação do fechamento',
-            ),
-            controller: _fechamentoObservacaoController,
-            hint: _txt(
-              'caixa.operacoes.mobile.closingNoteHint',
-              'Detalhe divergências, conferências e observações finais.',
-            ),
-            keyboardType: TextInputType.multiline,
-            maxLines: 3,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _busy ? null : _fecharCaixa,
-            icon: const Icon(Icons.task_alt_rounded),
-            label: Text(
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
               _txt(
-                'caixa.operacoes.mobile.finishClosing',
-                'Concluir fechamento',
+                'caixa.operacoes.mobile.noExpectedClosingValues',
+                'Nenhuma forma possui valor previsto para conferência.',
               ),
-            ),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              backgroundColor: SixMobilePalette.accent,
-              foregroundColor: SixMobilePalette.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed:
-                _busy
-                    ? null
-                    : () => setState(() => _mostrarPainelFechamento = false),
-            icon: const Icon(Icons.close_rounded),
-            label: Text(
-              _txt(
-                'caixa.operacoes.mobile.cancelClosing',
-                'Cancelar fechamento',
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(46),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+              style: const TextStyle(
+                color: SixMobilePalette.mutedText,
+                height: 1.3,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -1287,7 +1650,12 @@ class _OperacoesCaixaMobileScreenState
       icon: Icons.history_rounded,
       title: _txt('caixa.operacoes.mobile.history', 'Histórico'),
       subtitle:
-          '${movimentosVisiveis.length} ${_txt('caixa.operacoes.mobile.visibleRecords', 'registro(s) visível(is).')}',
+          _loadingMovimentos && movimentosVisiveis.isEmpty
+              ? _txt(
+                'caixa.operacoes.mobile.loadingMovements',
+                'Carregando movimentações.',
+              )
+              : '${movimentosVisiveis.length} ${_txt('caixa.operacoes.mobile.visibleRecords', 'registro(s) visível(is).')}',
       trailing: FilterChip(
         label: Text(_txt('caixa.operacoes.mobile.onlyToday', 'Hoje')),
         selected: _mostrarApenasHoje,
@@ -1297,7 +1665,9 @@ class _OperacoesCaixaMobileScreenState
                 : (bool value) => setState(() => _mostrarApenasHoje = value),
       ),
       child:
-          movimentosVisiveis.isEmpty
+          _loadingMovimentos && movimentosVisiveis.isEmpty
+              ? _historicoSkeleton()
+              : movimentosVisiveis.isEmpty
               ? _stateMessage(
                 icon: Icons.receipt_long_outlined,
                 title: _txt(
@@ -1322,11 +1692,25 @@ class _OperacoesCaixaMobileScreenState
     );
   }
 
-  Widget _movimentoCard(MovimentoCaixa movimento) {
-    final Color color = _corPorNatureza(movimento.natureza);
-    final String forma = _descricaoTipoRecebimentoMovimento(movimento);
-    final bool cancelada = movimento.status.toLowerCase() == 'cancelada';
+  Widget _historicoSkeleton() {
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: _txt(
+        'caixa.operacoes.mobile.loadingMovements',
+        'Carregando movimentações.',
+      ),
+      child: Column(
+        children: <Widget>[
+          _movimentoSkeletonCard(),
+          const SizedBox(height: 10),
+          _movimentoSkeletonCard(),
+        ],
+      ),
+    );
+  }
 
+  Widget _movimentoSkeletonCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -1335,38 +1719,245 @@ class _OperacoesCaixaMobileScreenState
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: SixMobilePalette.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _iconBox(
-                movimento.natureza.toLowerCase() == 'entrada'
-                    ? Icons.south_west_rounded
-                    : Icons.north_east_rounded,
-                bg: _withAlpha(color, 0.10),
-                fg: color,
-                size: 42,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          _skeletonLine(width: 42, height: 42, radius: 14),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _skeletonLine(width: 160, height: 14),
+                const SizedBox(height: 8),
+                _skeletonLine(width: 110, height: 12),
+                const SizedBox(height: 10),
+                _skeletonLine(width: double.infinity, height: 11),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _movimentoCard(MovimentoCaixa movimento) {
+    final Color color = _corPorNatureza(movimento.natureza);
+    final String forma = _descricaoTipoRecebimentoMovimento(movimento);
+
+    return Semantics(
+      button: true,
+      label:
+          '${_labelTipo(movimento.tipoMovimento)}: ${_formatarValor(movimento.valor)}',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _abrirDetalhesMovimentoSheet(movimento),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+            decoration: BoxDecoration(
+              color: SixMobilePalette.softNeutralSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: SixMobilePalette.border),
+            ),
+            child: Row(
+              children: <Widget>[
+                _iconBox(
+                  movimento.natureza.toLowerCase() == 'entrada'
+                      ? Icons.south_west_rounded
+                      : Icons.north_east_rounded,
+                  bg: _withAlpha(color, 0.10),
+                  fg: color,
+                  size: 38,
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              _labelTipo(movimento.tipoMovimento),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: SixMobilePalette.titleText,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 116),
+                            child: Text(
+                              _formatarValor(movimento.valor),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 7),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: <Widget>[
+                          _inlineInfo(
+                            Icons.circle,
+                            _labelStatusMovimento(movimento.status),
+                          ),
+                          _inlineInfo(Icons.payments_outlined, forma),
+                          _inlineInfo(
+                            Icons.schedule_rounded,
+                            _formatarDataHora(movimento.dataHoraMovimento),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: SixMobilePalette.mutedText,
+                  size: 24,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirDetalhesMovimentoSheet(MovimentoCaixa movimento) async {
+    final Color color = _corPorNatureza(movimento.natureza);
+    final String forma = _descricaoTipoRecebimentoMovimento(movimento);
+    final bool cancelada = movimento.status.toLowerCase() == 'cancelada';
+    final String referencia =
+        movimento.referencia.isEmpty
+            ? _txt('caixa.operacoes.mobile.noReference', 'Sem referência')
+            : movimento.referencia;
+    final String observacao =
+        movimento.observacao.isEmpty
+            ? _txt('caixa.operacoes.mobile.noNote', 'Sem observação informada.')
+            : movimento.observacao;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: _withAlpha(Colors.black, 0.42),
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          top: false,
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.62,
+            minChildSize: 0.42,
+            maxChildSize: 0.88,
+            expand: false,
+            builder: (
+              BuildContext sheetContext,
+              ScrollController scrollController,
+            ) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: SixMobilePalette.surface,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
                   children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 46,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: SixMobilePalette.border,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _iconBox(
+                          movimento.natureza.toLowerCase() == 'entrada'
+                              ? Icons.south_west_rounded
+                              : Icons.north_east_rounded,
+                          bg: _withAlpha(color, 0.10),
+                          fg: color,
+                          size: 44,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                _txt(
+                                  'caixa.operacoes.mobile.movementDetails',
+                                  'Detalhes do lançamento',
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: SixMobilePalette.titleText,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _labelTipo(movimento.tipoMovimento),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: SixMobilePalette.mutedText,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: _txt('common.close', 'Fechar'),
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                          color: SixMobilePalette.mutedText,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     Text(
-                      _labelTipo(movimento.tipoMovimento),
+                      _formatarValor(movimento.valor),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SixMobilePalette.titleText,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
                     Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: <Widget>[
                         _statusChip(
                           label: _labelStatusMovimento(movimento.status),
@@ -1390,76 +1981,131 @@ class _OperacoesCaixaMobileScreenState
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    _movementDetailTile(
+                      icon: Icons.payments_outlined,
+                      label: _txt(
+                        'caixa.operacoes.mobile.relatedMethod',
+                        'Forma relacionada',
+                      ),
+                      value: forma,
+                    ),
+                    const SizedBox(height: 10),
+                    _movementDetailTile(
+                      icon: Icons.person_outline_rounded,
+                      label: _txt(
+                        'caixa.operacoes.mobile.responsible',
+                        'Responsável',
+                      ),
+                      value: movimento.nomeColaborador,
+                    ),
+                    const SizedBox(height: 10),
+                    _movementDetailTile(
+                      icon: Icons.schedule_rounded,
+                      label: _txt(
+                        'caixa.operacoes.mobile.dateTime',
+                        'Data e hora',
+                      ),
+                      value: _formatarDataHora(movimento.dataHoraMovimento),
+                    ),
+                    const SizedBox(height: 10),
+                    _movementDetailTile(
+                      icon: Icons.receipt_long_outlined,
+                      label: _txt(
+                        'caixa.operacoes.mobile.reference',
+                        'Referência / comprovante',
+                      ),
+                      value: referencia,
+                    ),
+                    const SizedBox(height: 10),
+                    _movementDetailTile(
+                      icon: Icons.notes_rounded,
+                      label: _txt('caixa.operacoes.mobile.note', 'Observação'),
+                      value: observacao,
+                      multiline: true,
+                    ),
+                    if (!cancelada) ...<Widget>[
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed:
+                            _busy
+                                ? null
+                                : () async {
+                                  Navigator.of(sheetContext).pop();
+                                  await _cancelarMovimento(movimento);
+                                },
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: Text(_txt('common.cancel', 'Cancelar')),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: SixMobilePalette.error,
+                          minimumSize: const Size.fromHeight(48),
+                          side: const BorderSide(
+                            color: SixMobilePalette.errorBorder,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _formatarValor(movimento.valor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
+              );
+            },
           ),
-          const SizedBox(height: 10),
-          Text(
-            movimento.observacao.isEmpty
-                ? _txt(
-                  'caixa.operacoes.mobile.noNote',
-                  'Sem observação informada.',
-                )
-                : movimento.observacao,
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
+        );
+      },
+    );
+  }
+
+  Widget _movementDetailTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool multiline = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: SixMobilePalette.border),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: <Widget>[
+          Icon(icon, color: SixMobilePalette.accent, size: 19),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SixMobilePalette.mutedText,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  maxLines: multiline ? 5 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SixMobilePalette.titleText,
+                    height: 1.3,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: <Widget>[
-              _inlineInfo(
-                Icons.person_outline_rounded,
-                movimento.nomeColaborador,
-              ),
-              _inlineInfo(Icons.payments_outlined, forma),
-              _inlineInfo(
-                Icons.schedule_rounded,
-                _formatarDataHora(movimento.dataHoraMovimento),
-              ),
-              _inlineInfo(
-                Icons.receipt_long_outlined,
-                movimento.referencia.isEmpty
-                    ? _txt(
-                      'caixa.operacoes.mobile.noReference',
-                      'Sem referência',
-                    )
-                    : movimento.referencia,
-              ),
-            ],
-          ),
-          if (!cancelada) ...<Widget>[
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _busy ? null : () => _cancelarMovimento(movimento),
-                icon: const Icon(Icons.cancel_outlined),
-                label: Text(_txt('common.cancel', 'Cancelar')),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: SixMobilePalette.error,
-                  side: const BorderSide(color: SixMobilePalette.errorBorder),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -1772,6 +2418,27 @@ class _OperacoesCaixaMobileScreenState
     );
   }
 
+  Widget _skeletonLine({
+    Key? key,
+    required double width,
+    required double height,
+    double radius = 999,
+    bool colorOnDark = false,
+  }) {
+    return Container(
+      key: key,
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color:
+            colorOnDark
+                ? _withAlpha(SixMobilePalette.onPrimary, 0.20)
+                : _withAlpha(SixMobilePalette.border, 0.62),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+
   Widget _statusChip({
     required String label,
     required IconData icon,
@@ -1997,6 +2664,292 @@ class _OperacoesCaixaMobileScreenState
     setState(() => _tipoRecebimentoSelecionado = selected);
   }
 
+  Future<void> _abrirConferenciaPorFormaSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: _withAlpha(Colors.black, 0.42),
+      builder: (BuildContext bottomSheetContext) {
+        return SafeArea(
+          top: false,
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.66,
+            minChildSize: 0.42,
+            maxChildSize: 0.88,
+            expand: false,
+            builder: (
+              BuildContext bottomSheetContext,
+              ScrollController scrollController,
+            ) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: SixMobilePalette.surface,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+                  children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 46,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: SixMobilePalette.border,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _iconBox(
+                          Icons.fact_check_outlined,
+                          bg: SixMobilePalette.softAccentSurface,
+                          fg: SixMobilePalette.accent,
+                          size: 44,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                _txt(
+                                  'caixa.operacoes.mobile.methodSummary',
+                                  'Conferência por forma',
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: SixMobilePalette.titleText,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _txt(
+                                  'caixa.operacoes.mobile.methodSummarySubtitle',
+                                  'Resumo pelos tipos configurados no caixa.',
+                                ),
+                                style: const TextStyle(
+                                  color: SixMobilePalette.mutedText,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _buildResumoOperacionalDetalhado(),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _abrirConfiguracoesFechamento() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: _withAlpha(Colors.black, 0.42),
+      builder: (BuildContext bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (
+            BuildContext bottomSheetContext,
+            StateSetter setBottomSheetState,
+          ) {
+            void updateOption(VoidCallback update) {
+              setState(update);
+              setBottomSheetState(() {});
+            }
+
+            return SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+                decoration: const BoxDecoration(
+                  color: SixMobilePalette.surface,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 46,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: SixMobilePalette.border,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _iconBox(
+                          Icons.settings_outlined,
+                          bg: SixMobilePalette.softAccentSurface,
+                          fg: SixMobilePalette.accent,
+                          size: 44,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                _txt(
+                                  'caixa.operacoes.mobile.closingSettings',
+                                  'Configurações de fechamento',
+                                ),
+                                style: const TextStyle(
+                                  color: SixMobilePalette.titleText,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _txt(
+                                  'caixa.operacoes.mobile.closingSettingsSubtitle',
+                                  'Preferências locais para orientar a conferência do caixa.',
+                                ),
+                                style: const TextStyle(
+                                  color: SixMobilePalette.mutedText,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _settingsSwitchTile(
+                      title: _txt(
+                        'caixa.operacoes.mobile.registerDifferenceAsExpense',
+                        'Registrar diferença de caixa como despesa',
+                      ),
+                      subtitle: _txt(
+                        'caixa.operacoes.mobile.registerDifferenceAsExpenseSubtitle',
+                        'A opção fica salva apenas nesta tela por enquanto.',
+                      ),
+                      icon: Icons.receipt_long_outlined,
+                      value: _registrarDiferencaComoDespesa,
+                      onChanged:
+                          (bool value) => updateOption(
+                            () => _registrarDiferencaComoDespesa = value,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    _settingsSwitchTile(
+                      title: _txt(
+                        'caixa.operacoes.mobile.requestManagerDifferenceApproval',
+                        'Pedir confirmação de diferença de caixa ao gestor',
+                      ),
+                      subtitle: _txt(
+                        'caixa.operacoes.mobile.requestManagerDifferenceApprovalSubtitle',
+                        'Sem integração com backend nesta versão.',
+                      ),
+                      icon: Icons.admin_panel_settings_outlined,
+                      value: _pedirConfirmacaoDiferencaGestor,
+                      onChanged:
+                          (bool value) => updateOption(
+                            () => _pedirConfirmacaoDiferencaGestor = value,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _settingsSwitchTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Semantics(
+      container: true,
+      toggled: value,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.softNeutralSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: SixMobilePalette.border),
+        ),
+        child: Row(
+          children: <Widget>[
+            _iconBox(
+              icon,
+              bg: SixMobilePalette.softAccentSurface,
+              fg: SixMobilePalette.accent,
+              size: 40,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: SixMobilePalette.titleText,
+                      fontSize: 13,
+                      height: 1.18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: SixMobilePalette.mutedText,
+                      fontSize: 11.5,
+                      height: 1.25,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Switch.adaptive(value: value, onChanged: onChanged),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<T?> _showSelector<T>({
     required String title,
     required String subtitle,
@@ -2018,6 +2971,287 @@ class _OperacoesCaixaMobileScreenState
             options: options,
             selected: selected,
           ),
+    );
+  }
+
+  Future<void> _abrirFormularioMovimentoSheet() async {
+    if (!_temCaixaAberto) {
+      _snack(
+        _txt(
+          'caixa.operacoes.mobile.cashRequired',
+          'Antes de lançar operações, faça a abertura do caixa.',
+        ),
+      );
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: _withAlpha(Colors.black, 0.42),
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder: (BuildContext sheetContext, StateSetter setSheetState) {
+            void refreshSheet() {
+              if (sheetContext.mounted) {
+                setSheetState(() {});
+              }
+            }
+
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+                ),
+                child: DraggableScrollableSheet(
+                  initialChildSize: 0.82,
+                  minChildSize: 0.52,
+                  maxChildSize: 0.94,
+                  expand: false,
+                  builder: (
+                    BuildContext sheetContext,
+                    ScrollController scrollController,
+                  ) {
+                    final String subtitle =
+                        _tipoSelecionado == null
+                            ? _txt(
+                              'caixa.operacoes.mobile.entrySubtitleEmpty',
+                              'Escolha uma ação rápida ou selecione o tipo da operação.',
+                            )
+                            : '${_txt('caixa.operacoes.mobile.entrySubtitleFilled', 'Preencha os dados da operação')} ${_labelTipo(_tipoSelecionado!)}.';
+
+                    return Container(
+                      decoration: const BoxDecoration(
+                        color: SixMobilePalette.surface,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
+                      ),
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+                        children: <Widget>[
+                          Center(
+                            child: Container(
+                              width: 46,
+                              height: 5,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: SixMobilePalette.border,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              _iconBox(
+                                Icons.edit_note_rounded,
+                                bg: SixMobilePalette.softAccentSurface,
+                                fg: SixMobilePalette.accent,
+                                size: 44,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      _txt(
+                                        'caixa.operacoes.mobile.entryTitle',
+                                        'Lançamento operacional',
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: SixMobilePalette.titleText,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      subtitle,
+                                      style: const TextStyle(
+                                        color: SixMobilePalette.mutedText,
+                                        height: 1.35,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                tooltip: _txt('common.close', 'Fechar'),
+                                onPressed:
+                                    () => Navigator.of(sheetContext).pop(),
+                                icon: const Icon(Icons.close_rounded),
+                                color: SixMobilePalette.mutedText,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _buildFormularioMovimentoContent(
+                            refreshSheet: refreshSheet,
+                            onSaved: () {
+                              if (sheetContext.mounted) {
+                                Navigator.of(sheetContext).pop();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _abrirPrepararFechamentoSheet() async {
+    if (!_temCaixaAberto) {
+      _snack(
+        _txt(
+          'caixa.operacoes.mobile.cashRequired',
+          'Antes de lançar operações, faça a abertura do caixa.',
+        ),
+      );
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: _withAlpha(Colors.black, 0.42),
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder: (BuildContext sheetContext, StateSetter setSheetState) {
+            void refreshSheet() {
+              if (sheetContext.mounted) {
+                setSheetState(() {});
+              }
+            }
+
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+                ),
+                child: DraggableScrollableSheet(
+                  initialChildSize: 0.88,
+                  minChildSize: 0.56,
+                  maxChildSize: 0.95,
+                  expand: false,
+                  builder: (
+                    BuildContext sheetContext,
+                    ScrollController scrollController,
+                  ) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                        color: SixMobilePalette.surface,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
+                      ),
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+                        children: <Widget>[
+                          Center(
+                            child: Container(
+                              width: 46,
+                              height: 5,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: SixMobilePalette.border,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              _iconBox(
+                                Icons.rule_folder_outlined,
+                                bg: SixMobilePalette.softAccentSurface,
+                                fg: SixMobilePalette.accent,
+                                size: 44,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      _txt(
+                                        'caixa.operacoes.mobile.prepareClosing',
+                                        'Preparar fechamento',
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: SixMobilePalette.titleText,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _txt(
+                                        'caixa.operacoes.mobile.prepareClosingSheetSubtitle',
+                                        'Use o guia por forma para conferir os valores antes de encerrar.',
+                                      ),
+                                      style: const TextStyle(
+                                        color: SixMobilePalette.mutedText,
+                                        height: 1.35,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                tooltip: _txt('common.close', 'Fechar'),
+                                onPressed:
+                                    () => Navigator.of(sheetContext).pop(),
+                                icon: const Icon(Icons.close_rounded),
+                                color: SixMobilePalette.mutedText,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _buildGuiaFechamentoPorForma(),
+                          const SizedBox(height: 14),
+                          _buildFechamentoConferenciaContent(
+                            refreshSheet: refreshSheet,
+                            onClosed: () {
+                              if (sheetContext.mounted) {
+                                Navigator.of(sheetContext).pop();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -2053,7 +3287,7 @@ class _OperacoesCaixaMobileScreenState
     }
   }
 
-  Future<void> _salvarMovimento() async {
+  Future<bool> _salvarMovimento() async {
     if (!_temCaixaAberto) {
       _snack(
         _txt(
@@ -2061,7 +3295,7 @@ class _OperacoesCaixaMobileScreenState
           'Antes de lançar operações, faça a abertura do caixa.',
         ),
       );
-      return;
+      return false;
     }
     if (_tipoSelecionado == null) {
       _snack(
@@ -2070,7 +3304,7 @@ class _OperacoesCaixaMobileScreenState
           'Selecione o tipo da operação.',
         ),
       );
-      return;
+      return false;
     }
     if (_tipoRecebimentoSelecionado == null) {
       _snack(
@@ -2079,7 +3313,7 @@ class _OperacoesCaixaMobileScreenState
           'Selecione a forma relacionada.',
         ),
       );
-      return;
+      return false;
     }
 
     final double valor = _parseCurrency(_valorController.text);
@@ -2090,7 +3324,7 @@ class _OperacoesCaixaMobileScreenState
           'Informe um valor válido.',
         ),
       );
-      return;
+      return false;
     }
 
     setState(() => _busy = true);
@@ -2116,8 +3350,10 @@ class _OperacoesCaixaMobileScreenState
           ),
         );
       }
+      return true;
     } catch (error) {
       if (mounted) _snack(_mensagemErro(error));
+      return false;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -2135,7 +3371,7 @@ class _OperacoesCaixaMobileScreenState
     });
   }
 
-  Future<void> _fecharCaixa() async {
+  Future<bool> _fecharCaixa() async {
     if (!_temCaixaAberto) {
       _snack(
         _txt(
@@ -2143,16 +3379,15 @@ class _OperacoesCaixaMobileScreenState
           'Antes de lançar operações, faça a abertura do caixa.',
         ),
       );
-      return;
+      return false;
     }
 
     setState(() => _busy = true);
     try {
       await _caixaService.fecharCaixa(_montarRequestFechamentoCaixa());
       await _carregarDadosIniciais();
-      if (!mounted) return;
+      if (!mounted) return true;
       setState(() {
-        _mostrarPainelFechamento = false;
         _fechamentoDinheiroController.clear();
         _fechamentoPixController.clear();
         _fechamentoCartaoController.clear();
@@ -2164,27 +3399,36 @@ class _OperacoesCaixaMobileScreenState
           'Caixa fechado com sucesso.',
         ),
       );
+      return true;
     } catch (error) {
       if (mounted) _snack(_mensagemErro(error));
+      return false;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   FecharCaixaRequest _montarRequestFechamentoCaixa() {
-    final ResumoCaixa? resumo = _resumo;
+    final double dinheiroPrevisto = _valorDinheiroEsperadoFechamento();
+    final double pixPrevisto = _valorPixEsperadoFechamento();
+    final double cartaoPrevisto = _valorCartaoEsperadoFechamento();
     final double dinheiro =
-        _fechamentoDinheiroController.text.trim().isEmpty
-            ? (resumo?.totalDinheiro ?? 0)
+        !_temValorPrevisto(dinheiroPrevisto)
+            ? 0
+            : _fechamentoDinheiroController.text.trim().isEmpty
+            ? dinheiroPrevisto
             : _parseCurrency(_fechamentoDinheiroController.text);
     final double pix =
-        _fechamentoPixController.text.trim().isEmpty
-            ? (resumo?.totalPix ?? 0)
+        !_temValorPrevisto(pixPrevisto)
+            ? 0
+            : _fechamentoPixController.text.trim().isEmpty
+            ? pixPrevisto
             : _parseCurrency(_fechamentoPixController.text);
     final double cartao =
-        _fechamentoCartaoController.text.trim().isEmpty
-            ? ((resumo?.totalCartaoCredito ?? 0) +
-                (resumo?.totalCartaoDebito ?? 0))
+        !_temValorPrevisto(cartaoPrevisto)
+            ? 0
+            : _fechamentoCartaoController.text.trim().isEmpty
+            ? cartaoPrevisto
             : _parseCurrency(_fechamentoCartaoController.text);
 
     return FecharCaixaRequest(
@@ -2194,45 +3438,6 @@ class _OperacoesCaixaMobileScreenState
       valorCartaoApurado: cartao,
       observacaoFechamento: _fechamentoObservacaoController.text.trim(),
     );
-  }
-
-  Future<void> _confirmarEncerramentoSessao() async {
-    if (!_temCaixaAberto) {
-      _snack(
-        _txt(
-          'caixa.operacoes.mobile.cashRequired',
-          'Antes de lançar operações, faça a abertura do caixa.',
-        ),
-      );
-      return;
-    }
-
-    final bool confirmou = await _confirmarAcao(
-      title: _txt(
-        'caixa.operacoes.mobile.closeSessionConfirm',
-        'Encerrar sessão?',
-      ),
-      message: _txt(
-        'caixa.operacoes.mobile.closeSessionConfirmMessage',
-        'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
-      ),
-      confirmLabel: _txt('caixa.operacoes.mobile.closeSession', 'Encerrar'),
-      icon: Icons.power_settings_new_rounded,
-    );
-    if (!confirmou) return;
-
-    setState(() => _busy = true);
-    try {
-      await _caixaService.fecharCaixa(_montarRequestFechamentoCaixa());
-      await _carregarDadosIniciais();
-      if (!mounted) return;
-      setState(() => _mostrarPainelFechamento = false);
-      _snack(_txt('caixa.operacoes.mobile.sessionClosed', 'Sessão encerrada.'));
-    } catch (error) {
-      if (mounted) _snack(_mensagemErro(error));
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
   }
 
   Future<void> _cancelarMovimento(MovimentoCaixa movimento) async {
@@ -2480,72 +3685,36 @@ class _OperacoesCaixaMobileScreenState
     }
   }
 
-  List<_OperacaoCaixaMobileData> _atalhosOperacao() {
-    return <_OperacaoCaixaMobileData>[
-      _OperacaoCaixaMobileData(
-        tipo: OperacaoCaixaTipo.suprimento,
-        title: _txt('caixa.operacoes.mobile.supply', 'Suprimento'),
-        subtitle: _txt(
-          'caixa.operacoes.mobile.supplySubtitle',
-          'Adicionar valores ao caixa.',
-        ),
-        icon: Icons.add_card_rounded,
-        color: _successColor,
-      ),
-      _OperacaoCaixaMobileData(
-        tipo: OperacaoCaixaTipo.sangria,
-        title: _txt('caixa.operacoes.mobile.cashOut', 'Sangria'),
-        subtitle: _txt(
-          'caixa.operacoes.mobile.cashOutSubtitle',
-          'Retirar excesso de numerário.',
-        ),
-        icon: Icons.outbox_rounded,
-        color: _warningColor,
-      ),
-      _OperacaoCaixaMobileData(
-        tipo: OperacaoCaixaTipo.retiradaDespesa,
-        title: _txt('caixa.operacoes.mobile.expense', 'Despesa'),
-        subtitle: _txt(
-          'caixa.operacoes.mobile.expenseSubtitle',
-          'Registrar saída operacional.',
-        ),
-        icon: Icons.receipt_long_rounded,
-        color: SixMobilePalette.error,
-      ),
-      _OperacaoCaixaMobileData(
-        tipo: OperacaoCaixaTipo.ajuste,
-        title: _txt('caixa.operacoes.mobile.adjustment', 'Ajuste'),
-        subtitle: _txt(
-          'caixa.operacoes.mobile.adjustmentSubtitle',
-          'Corrigir diferenças operacionais.',
-        ),
-        icon: Icons.tune_rounded,
-        color: SixMobilePalette.accent,
-      ),
-      _OperacaoCaixaMobileData(
-        tipo: OperacaoCaixaTipo.recebimentoAvulso,
-        title: _txt(
-          'caixa.operacoes.mobile.singleReceipt',
-          'Recebimento avulso',
-        ),
-        subtitle: _txt(
-          'caixa.operacoes.mobile.singleReceiptSubtitle',
-          'Entrada sem vínculo direto com venda.',
-        ),
-        icon: Icons.arrow_downward_rounded,
-        color: _successColor,
-      ),
-      _OperacaoCaixaMobileData(
-        tipo: OperacaoCaixaTipo.pagamentoAvulso,
-        title: _txt('caixa.operacoes.mobile.singlePayment', 'Pagamento avulso'),
-        subtitle: _txt(
-          'caixa.operacoes.mobile.singlePaymentSubtitle',
-          'Saída operacional pontual.',
-        ),
-        icon: Icons.arrow_upward_rounded,
-        color: SixMobilePalette.error,
-      ),
-    ];
+  double _valorEsperadoFechamentoPorCodigo(String codigoTipo, double fallback) {
+    if (_movimentosComSomatorio == null) return fallback;
+    return _valorResumoPorCodigoTipo(codigoTipo);
+  }
+
+  double _valorDinheiroEsperadoFechamento() {
+    return _valorEsperadoFechamentoPorCodigo(
+      'tipo1',
+      _resumo?.totalDinheiro ?? 0,
+    );
+  }
+
+  double _valorPixEsperadoFechamento() {
+    return _valorEsperadoFechamentoPorCodigo('tipo2', _resumo?.totalPix ?? 0);
+  }
+
+  double _valorCartaoEsperadoFechamento() {
+    final double fallback =
+        (_resumo?.totalCartaoCredito ?? 0) + (_resumo?.totalCartaoDebito ?? 0);
+    if (_movimentosComSomatorio == null) return fallback;
+    return _valorResumoPorCodigoTipo('tipo3') +
+        _valorResumoPorCodigoTipo('tipo4');
+  }
+
+  bool _temValorPrevisto(num valor) {
+    return valor > 0;
+  }
+
+  String _labelValorApurado(String label) {
+    return '$label ${_txt('caixa.operacoes.mobile.checkedAmountSuffix', 'apurado')}';
   }
 
   IconData _iconeTipo(OperacaoCaixaTipo tipo) {
@@ -2776,20 +3945,74 @@ class _OperacoesCaixaMobileScreenState
       context.t(key, fallback: fallback);
 }
 
-class _OperacaoCaixaMobileData {
-  const _OperacaoCaixaMobileData({
-    required this.tipo,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-  });
+class _CaixaHeroCarousel extends StatefulWidget {
+  const _CaixaHeroCarousel({required this.semanticLabel, required this.child});
 
-  final OperacaoCaixaTipo tipo;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
+  final String semanticLabel;
+  final Widget child;
+
+  @override
+  State<_CaixaHeroCarousel> createState() => _CaixaHeroCarouselState();
+}
+
+class _CaixaHeroCarouselState extends State<_CaixaHeroCarousel> {
+  final ScrollController _controller = ScrollController();
+  bool _hintPlayed = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _scheduleScrollHint(bool reduceMotion) {
+    if (_hintPlayed || reduceMotion) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _hintPlayed || !_controller.hasClients) return;
+
+      final ScrollPosition position = _controller.position;
+      if (position.maxScrollExtent <= 8) return;
+
+      _hintPlayed = true;
+      final double hintOffset = position.maxScrollExtent.clamp(0.0, 24.0);
+      try {
+        await _controller.animateTo(
+          hintOffset,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+        if (!mounted || !_controller.hasClients) return;
+        await _controller.animateTo(
+          0,
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeInOutCubic,
+        );
+      } catch (_) {
+        // A tela pode ser desmontada enquanto os dados do backend chegam.
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    _scheduleScrollHint(reduceMotion);
+
+    return Semantics(
+      container: true,
+      label: widget.semanticLabel,
+      child: SingleChildScrollView(
+        controller: _controller,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        clipBehavior: Clip.none,
+        child: widget.child,
+      ),
+    );
+  }
 }
 
 class _ResumoTipoRecebimentoData {

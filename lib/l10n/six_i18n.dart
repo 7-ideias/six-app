@@ -735,6 +735,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.blockedResourcesMessage':
         'Contas a receber, contas a pagar e formas de recebimento continuam bloqueadas no mobile.',
 
+    // Vendas não liquidadas mobile
+    'vendasNaoLiquidadas.recebimentos': 'Recebimentos',
+    'vendasNaoLiquidadas.semRecebimentos': 'Nenhum recebimento lançado.',
+    'vendasNaoLiquidadas.referencia': 'Referência',
+    'vendasNaoLiquidadas.recebimento': 'Recebimento',
+    'vendasNaoLiquidadas.recebimentoTotal': 'Total',
+    'vendasNaoLiquidadas.recebimentoParcial': 'Parcial',
+
     // Gestão — badges e cabeçalho admin
     'gestao.settings.badge.experimental': 'Experimental',
     'gestao.settings.badge.comingSoon': 'Em breve',
@@ -1375,6 +1383,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.blockedResourcesTitle': 'Financial resources in progress',
     'gestao.finance.blockedResourcesMessage':
         'Accounts receivable, accounts payable and payment methods remain locked on mobile.',
+
+    // Open sales mobile
+    'vendasNaoLiquidadas.recebimentos': 'Receipts',
+    'vendasNaoLiquidadas.semRecebimentos': 'No receipt recorded.',
+    'vendasNaoLiquidadas.referencia': 'Reference',
+    'vendasNaoLiquidadas.recebimento': 'Receipt',
+    'vendasNaoLiquidadas.recebimentoTotal': 'Full',
+    'vendasNaoLiquidadas.recebimentoParcial': 'Partial',
 
     // Management — badges and admin header
     'gestao.settings.badge.experimental': 'Experimental',
@@ -2039,6 +2055,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.blockedResourcesTitle': 'Recursos financieros en evolución',
     'gestao.finance.blockedResourcesMessage':
         'Cuentas por cobrar, cuentas por pagar y formas de cobro continúan bloqueadas en mobile.',
+
+    // Ventas no liquidadas mobile
+    'vendasNaoLiquidadas.recebimentos': 'Cobros',
+    'vendasNaoLiquidadas.semRecebimentos': 'Ningún cobro registrado.',
+    'vendasNaoLiquidadas.referencia': 'Referencia',
+    'vendasNaoLiquidadas.recebimento': 'Cobro',
+    'vendasNaoLiquidadas.recebimentoTotal': 'Total',
+    'vendasNaoLiquidadas.recebimentoParcial': 'Parcial',
 
     // Gestión — badges y encabezado admin
     'gestao.settings.badge.experimental': 'Experimental',

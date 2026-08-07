@@ -401,14 +401,6 @@ class _RegionalizacaoMobileScreenState
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
-      actions: <Widget>[
-        IconButton(
-          tooltip: context.t('common.refresh', fallback: 'Atualizar'),
-          icon: const Icon(Icons.refresh_rounded),
-          onPressed:
-              provider.regionalizacaoSaving ? null : _carregarRegionalizacao,
-        ),
-      ],
       bodyBuilder: (
         BuildContext context,
         ScrollController scrollController,
@@ -418,11 +410,6 @@ class _RegionalizacaoMobileScreenState
           controller: scrollController,
           padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 24),
           children: <Widget>[
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 70),
-              child: _buildHero(context),
-            ),
-            const SizedBox(height: 14),
             if (_carregando || provider.regionalizacaoLoading)
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 130),
@@ -443,7 +430,7 @@ class _RegionalizacaoMobileScreenState
             else ...<Widget>[
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 120),
-                child: _buildPreviewCard(context, provider),
+                child: _buildDisplayOverviewCard(context),
               ),
               if (_erro != null && _erro!.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 12),
@@ -473,119 +460,179 @@ class _RegionalizacaoMobileScreenState
     );
   }
 
-  Widget _buildHero(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: SixMobilePalette.primary,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          _IconBox(
-            icon: Icons.public_rounded,
-            backgroundColor: Colors.white.withValues(alpha: 0.12),
-            iconColor: SixMobilePalette.onPrimary,
-            borderColor: Colors.white.withValues(alpha: 0.18),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  context.t(
-                    'configuracoes.regionalizationTitle',
-                    fallback: 'Regionalização',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SixMobilePalette.onPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  context.t(
-                    'configuracoes.descRegionalization',
-                    fallback:
-                        'Idioma, país, moeda, fuso horário, formatos de data e padronização financeira da empresa.',
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SixMobilePalette.heroSupportingText,
-                    fontSize: 13,
-                    height: 1.28,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreviewCard(
-    BuildContext context,
-    LocaleSettingsProvider provider,
-  ) {
+  Widget _buildDisplayOverviewCard(BuildContext context) {
     final ConfiguracaoRegionalizacaoSistema draft =
         _montarConfiguracaoAtualizada();
     final _RegionalizacaoPreviewFormatter formatter =
         _RegionalizacaoPreviewFormatter(draft);
     final DateTime sampleDate = DateTime(2026, 12, 31, 18, 30);
+    final String localeValue =
+        '${_idiomaSelecionado.locale.languageCode}-${_paisSelecionado.value}';
 
-    return _MobileSectionCard(
-      icon: Icons.visibility_rounded,
-      title: context.t(
-        'configuracoes.regionalizationPreview',
-        fallback: 'Prévia aplicada ao app',
+    return Container(
+      constraints: const BoxConstraints(minHeight: 196),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Color(0xFF173DFF),
+            Color(0xFF3D00D8),
+            Color(0xFF2700A8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x3D3D00D8),
+            blurRadius: 20,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
-      subtitle: context.t(
-        'configuracoes.regionalizationPreviewDescription',
-        fallback: 'Confira como moeda, datas e horários serão exibidos no app.',
-      ),
-      trailing: _StatusChip(
-        icon: Icons.hub_rounded,
-        label: provider.currencyCode,
-      ),
-      child: Column(
+      child: Stack(
         children: <Widget>[
-          _PreviewTile(
-            icon: Icons.payments_rounded,
-            label: context.t(
-              'configuracoes.currencyPreview',
-              fallback: 'Moeda',
+          Positioned(
+            right: -6,
+            bottom: -34,
+            child: IgnorePointer(
+              child: Container(
+                width: 150,
+                height: 96,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: <Color>[
+                      SixMobilePalette.onPrimary.withValues(alpha: 0.10),
+                      SixMobilePalette.onPrimary.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            value: formatter.formatCurrency(1234.5),
           ),
-          _PreviewTile(
-            icon: Icons.calendar_month_rounded,
-            label: context.t('configuracoes.datePreview', fallback: 'Data'),
-            value: formatter.formatDate(sampleDate),
+          const Positioned(
+            top: -2,
+            right: -2,
+            child: ExcludeSemantics(
+              child: _RegionalizacaoSummaryIllustration(),
+            ),
           ),
-          _PreviewTile(
-            icon: Icons.access_time_rounded,
-            label: context.t('configuracoes.timePreview', fallback: 'Hora'),
-            value: formatter.formatTime(sampleDate),
-          ),
-          _PreviewTile(
-            icon: Icons.language_rounded,
-            label: context.t('configuracoes.activeLocale', fallback: 'Locale'),
-            value:
-                '${_idiomaSelecionado.locale.languageCode}-${_paisSelecionado.value}',
-            isLast: true,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.only(right: 78),
+                child: Text(
+                  context.t(
+                    'configuracoes.displayLanguageRegionCurrency',
+                    fallback: 'Idioma, região e moeda',
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SixMobilePalette.onPrimary,
+                    fontSize: 16,
+                    height: 1.18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(right: 72),
+                child: Text(
+                  context.t(
+                    'configuracoes.regionalizationPreviewDescription',
+                    fallback:
+                        'Confira como moeda, datas e horários serão exibidos no app.',
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SixMobilePalette.heroSupportingText,
+                    fontSize: 12.5,
+                    height: 1.24,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: 30,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF38BDF8),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 34),
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final List<Widget> metrics = <Widget>[
+                    _RegionalizacaoSummaryMetric(
+                      icon: Icons.payments_rounded,
+                      value: formatter.formatCurrency(1234.5),
+                      label: context.t(
+                        'configuracoes.currencyPreview',
+                        fallback: 'Moeda',
+                      ),
+                    ),
+                    _RegionalizacaoSummaryMetric(
+                      icon: Icons.calendar_month_rounded,
+                      value: formatter.formatDate(sampleDate),
+                      label: context.t(
+                        'configuracoes.datePreview',
+                        fallback: 'Data',
+                      ),
+                    ),
+                    _RegionalizacaoSummaryMetric(
+                      icon: Icons.access_time_rounded,
+                      value: formatter.formatTime(sampleDate),
+                      label: context.t(
+                        'configuracoes.timePreview',
+                        fallback: 'Hora',
+                      ),
+                    ),
+                  ];
+                  final bool compact =
+                      constraints.maxWidth < 340 ||
+                      MediaQuery.textScalerOf(context).scale(1) >= 1.25;
+
+                  if (compact) {
+                    final double itemWidth = (constraints.maxWidth - 12) / 2;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 16,
+                      alignment: WrapAlignment.center,
+                      children: metrics
+                          .map(
+                            (Widget metric) =>
+                                SizedBox(width: itemWidth, child: metric),
+                          )
+                          .toList(growable: false),
+                    );
+                  }
+
+                  return Row(
+                    children: metrics
+                        .map((Widget metric) => Expanded(child: metric))
+                        .toList(growable: false),
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.center,
+                child: _RegionalizacaoLocaleBadge(
+                  label: context.t(
+                    'configuracoes.activeLocale',
+                    fallback: 'Locale',
+                  ),
+                  value: localeValue,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -755,8 +802,16 @@ class _RegionalizacaoMobileScreenState
                   ),
                   selected: _decimalSeparatorSelecionado,
                   onSelected:
-                      (value) =>
-                          setState(() => _decimalSeparatorSelecionado = value),
+                      (value) => setState(() {
+                        _decimalSeparatorSelecionado = value;
+                        if (_thousandSeparatorSelecionado.value ==
+                            value.value) {
+                          _thousandSeparatorSelecionado =
+                              _thousandSeparatorOptions.firstWhere(
+                                (item) => item.value != value.value,
+                              );
+                        }
+                      }),
                 ),
           ),
           const SizedBox(height: 10),
@@ -781,8 +836,15 @@ class _RegionalizacaoMobileScreenState
                   ),
                   selected: _thousandSeparatorSelecionado,
                   onSelected:
-                      (value) =>
-                          setState(() => _thousandSeparatorSelecionado = value),
+                      (value) => setState(() {
+                        _thousandSeparatorSelecionado = value;
+                        if (_decimalSeparatorSelecionado.value == value.value) {
+                          _decimalSeparatorSelecionado =
+                              _decimalSeparatorOptions.firstWhere(
+                                (item) => item.value != value.value,
+                              );
+                        }
+                      }),
                 ),
           ),
           const SizedBox(height: 10),
@@ -980,6 +1042,7 @@ class _RegionalizacaoMobileScreenState
                 'configuracoes.systemLanguage',
                 fallback: 'Idioma do sistema',
               ),
+              cancelLabel: context.t('common.cancel', fallback: 'Cancelar'),
               options: _idiomas,
               selected: _idiomaSelecionado,
             );
@@ -1013,6 +1076,16 @@ class _RegionalizacaoMobileScreenState
           builder: (BuildContext sheetContext) {
             return _OptionPickerSheet(
               title: title,
+              searchHint: context.t('common.search', fallback: 'Buscar'),
+              emptyTitle: context.t(
+                'common.noResults',
+                fallback: 'Nenhum resultado',
+              ),
+              emptySubtitle: context.t(
+                'configuracoes.adjustSearch',
+                fallback: 'Revise o termo buscado e tente novamente.',
+              ),
+              cancelLabel: context.t('common.cancel', fallback: 'Cancelar'),
               options: options,
               selected: selected,
             );
@@ -1040,20 +1113,224 @@ class _RegionalizacaoMobileScreenState
   }
 }
 
+class _RegionalizacaoSummaryIllustration extends StatelessWidget {
+  const _RegionalizacaoSummaryIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 74,
+      height: 66,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          Positioned(
+            right: 18,
+            top: 8,
+            child: Transform.rotate(
+              angle: -0.10,
+              child: const _RegionalizacaoSummaryLayer(
+                width: 33,
+                height: 43,
+                colors: <Color>[Color(0xFF253DFF), Color(0xFF7C3AED)],
+                opacity: 0.44,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 10,
+            top: 4,
+            child: Transform.rotate(
+              angle: -0.04,
+              child: const _RegionalizacaoSummaryLayer(
+                width: 36,
+                height: 48,
+                colors: <Color>[Color(0xFF0EA5E9), Color(0xFF4338CA)],
+                opacity: 0.70,
+              ),
+            ),
+          ),
+          const Positioned(
+            right: 0,
+            top: 0,
+            child: _RegionalizacaoSummaryLayer(
+              width: 39,
+              height: 52,
+              colors: <Color>[Color(0xFF38BDF8), Color(0xFF4F46E5)],
+              opacity: 1,
+              child: Icon(
+                Icons.language_rounded,
+                size: 18,
+                color: SixMobilePalette.onPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegionalizacaoSummaryLayer extends StatelessWidget {
+  const _RegionalizacaoSummaryLayer({
+    required this.width,
+    required this.height,
+    required this.colors,
+    required this.opacity,
+    this.child,
+  });
+
+  final double width;
+  final double height;
+  final List<Color> colors;
+  final double opacity;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: opacity,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: SixMobilePalette.onPrimary.withValues(alpha: 0.22),
+            width: 0.8,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: SixMobilePalette.primary.withValues(alpha: 0.24),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: child == null ? null : Center(child: child),
+      ),
+    );
+  }
+}
+
+class _RegionalizacaoSummaryMetric extends StatelessWidget {
+  const _RegionalizacaoSummaryMetric({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label: $value',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            icon,
+            color: SixMobilePalette.onPrimary.withValues(alpha: 0.86),
+            size: 16,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: SixMobilePalette.onPrimary,
+              fontSize: 17,
+              height: 1,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: SixMobilePalette.heroSupportingText,
+              fontSize: 12,
+              height: 1.12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegionalizacaoLocaleBadge extends StatelessWidget {
+  const _RegionalizacaoLocaleBadge({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label: $value',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.onPrimary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: SixMobilePalette.onPrimary.withValues(alpha: 0.20),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(
+              Icons.public_rounded,
+              color: SixMobilePalette.onPrimary,
+              size: 14,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$label $value',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: SixMobilePalette.onPrimary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MobileSectionCard extends StatelessWidget {
   const _MobileSectionCard({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.child,
-    this.trailing,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final Widget child;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -1107,10 +1384,6 @@ class _MobileSectionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) ...<Widget>[
-                const SizedBox(width: 8),
-                trailing!,
-              ],
             ],
           ),
           const SizedBox(height: 14),
@@ -1122,17 +1395,9 @@ class _MobileSectionCard extends StatelessWidget {
 }
 
 class _IconBox extends StatelessWidget {
-  const _IconBox({
-    required this.icon,
-    this.backgroundColor = SixMobilePalette.softAccentSurface,
-    this.iconColor = SixMobilePalette.accent,
-    this.borderColor = SixMobilePalette.highlightedBorder,
-  });
+  const _IconBox({required this.icon});
 
   final IconData icon;
-  final Color backgroundColor;
-  final Color iconColor;
-  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1140,116 +1405,13 @@ class _IconBox extends StatelessWidget {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor.withValues(alpha: 0.45)),
-      ),
-      child: Icon(icon, color: iconColor, size: 21),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
         color: SixMobilePalette.softAccentSurface,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: SixMobilePalette.highlightedBorder.withValues(alpha: 0.5),
+          color: SixMobilePalette.highlightedBorder.withValues(alpha: 0.45),
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: SixMobilePalette.accent),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: SixMobilePalette.accent,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PreviewTile extends StatelessWidget {
-  const _PreviewTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.isLast = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
-      decoration: BoxDecoration(
-        border:
-            isLast
-                ? null
-                : const Border(
-                  bottom: BorderSide(color: SixMobilePalette.border),
-                ),
-      ),
-      child: Row(
-        children: <Widget>[
-          _IconBox(
-            icon: icon,
-            backgroundColor: SixMobilePalette.softNeutralSurface,
-            iconColor: SixMobilePalette.primary,
-            borderColor: SixMobilePalette.border,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SixMobilePalette.mutedText,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SixMobilePalette.titleText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: Icon(icon, color: SixMobilePalette.accent, size: 21),
     );
   }
 }
@@ -1505,38 +1667,101 @@ class _SwitchTile extends StatelessWidget {
   }
 }
 
-class _OptionPickerSheet extends StatelessWidget {
+class _OptionPickerSheet extends StatefulWidget {
   const _OptionPickerSheet({
     required this.title,
+    required this.searchHint,
+    required this.emptyTitle,
+    required this.emptySubtitle,
+    required this.cancelLabel,
     required this.options,
     required this.selected,
   });
 
   final String title;
+  final String searchHint;
+  final String emptyTitle;
+  final String emptySubtitle;
+  final String cancelLabel;
   final List<_RegionalizacaoOption> options;
   final _RegionalizacaoOption selected;
 
   @override
+  State<_OptionPickerSheet> createState() => _OptionPickerSheetState();
+}
+
+class _OptionPickerSheetState extends State<_OptionPickerSheet> {
+  String _query = '';
+
+  List<_RegionalizacaoOption> _filteredOptions(BuildContext context) {
+    final String normalizedQuery = _normalize(_query);
+    if (normalizedQuery.isEmpty) return widget.options;
+
+    return widget.options.where((_RegionalizacaoOption option) {
+      final String searchable = _normalize(
+        '${option.label(context)} ${option.subtitle(context)} ${option.value}',
+      );
+      return searchable.contains(normalizedQuery);
+    }).toList();
+  }
+
+  String _normalize(String value) {
+    return value.trim().toLowerCase();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final List<_RegionalizacaoOption> filteredOptions = _filteredOptions(
+      context,
+    );
+    final bool showSearch = widget.options.length >= 4;
+
     return _PickerShell(
-      title: title,
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (BuildContext context, int index) {
-          final _RegionalizacaoOption option = options[index];
-          final bool isSelected = option.value == selected.value;
-          return _PickerOptionTile(
-            title: option.label(context),
-            subtitle: option.subtitle(context),
-            badge: option.value,
-            selected: isSelected,
-            onTap: () => Navigator.of(context).pop(option),
-          );
-        },
-      ),
+      title: widget.title,
+      itemCount: widget.options.length,
+      cancelLabel: widget.cancelLabel,
+      builder: (BuildContext context, ScrollController scrollController) {
+        return Column(
+          children: <Widget>[
+            if (showSearch) ...<Widget>[
+              _SheetSearchField(
+                hint: widget.searchHint,
+                onChanged: (String value) => setState(() => _query = value),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Expanded(
+              child:
+                  filteredOptions.isEmpty
+                      ? _PickerEmptyState(
+                        title: widget.emptyTitle,
+                        subtitle: widget.emptySubtitle,
+                      )
+                      : ListView.separated(
+                        controller: scrollController,
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.paddingOf(context).bottom + 8,
+                        ),
+                        itemCount: filteredOptions.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (BuildContext context, int index) {
+                          final _RegionalizacaoOption option =
+                              filteredOptions[index];
+                          final bool isSelected =
+                              option.value == widget.selected.value;
+                          return _PickerOptionTile(
+                            title: option.label(context),
+                            subtitle: option.subtitle(context),
+                            badge: option.value,
+                            selected: isSelected,
+                            onTap: () => Navigator.of(context).pop(option),
+                          );
+                        },
+                      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -1544,11 +1769,13 @@ class _OptionPickerSheet extends StatelessWidget {
 class _LanguagePickerSheet extends StatelessWidget {
   const _LanguagePickerSheet({
     required this.title,
+    required this.cancelLabel,
     required this.options,
     required this.selected,
   });
 
   final String title;
+  final String cancelLabel;
   final List<_LanguageOption> options;
   final _LanguageOption selected;
 
@@ -1556,49 +1783,83 @@ class _LanguagePickerSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PickerShell(
       title: title,
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (BuildContext context, int index) {
-          final _LanguageOption option = options[index];
-          final bool isSelected = option == selected;
-          return _PickerOptionTile(
-            title: option.label(context),
-            subtitle: option.description(context),
-            badge: option.badge,
-            selected: isSelected,
-            onTap: () => Navigator.of(context).pop(option),
-          );
-        },
-      ),
+      itemCount: options.length,
+      cancelLabel: cancelLabel,
+      builder: (BuildContext context, ScrollController scrollController) {
+        return ListView.separated(
+          controller: scrollController,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.paddingOf(context).bottom + 8,
+          ),
+          itemCount: options.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (BuildContext context, int index) {
+            final _LanguageOption option = options[index];
+            final bool isSelected = option == selected;
+            return _PickerOptionTile(
+              title: option.label(context),
+              subtitle: option.description(context),
+              badge: option.badge,
+              selected: isSelected,
+              onTap: () => Navigator.of(context).pop(option),
+            );
+          },
+        );
+      },
     );
   }
 }
 
+typedef _PickerContentBuilder =
+    Widget Function(BuildContext context, ScrollController scrollController);
+
 class _PickerShell extends StatelessWidget {
-  const _PickerShell({required this.title, required this.child});
+  const _PickerShell({
+    required this.title,
+    required this.itemCount,
+    required this.cancelLabel,
+    required this.builder,
+  });
 
   final String title;
-  final Widget child;
+  final int itemCount;
+  final String cancelLabel;
+  final _PickerContentBuilder builder;
+
+  double _initialChildSize(BuildContext context) {
+    final double textScale = MediaQuery.textScalerOf(context).scale(1);
+    final double base =
+        itemCount <= 2
+            ? 0.44
+            : itemCount <= 3
+            ? 0.52
+            : itemCount <= 5
+            ? 0.68
+            : 0.78;
+
+    if (textScale > 1.2) return (base + 0.08).clamp(0.52, 0.88);
+    return base;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final double initialSize = _initialChildSize(context);
+    final double minSize = (initialSize - 0.12).clamp(0.36, initialSize);
+
     return DraggableScrollableSheet(
-      initialChildSize: 0.62,
-      minChildSize: 0.36,
-      maxChildSize: 0.88,
+      initialChildSize: initialSize,
+      minChildSize: minSize,
+      maxChildSize: 0.90,
       expand: false,
       builder: (BuildContext context, ScrollController scrollController) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-          decoration: const BoxDecoration(
-            color: SixMobilePalette.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
+        return SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            decoration: const BoxDecoration(
+              color: SixMobilePalette.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -1634,8 +1895,16 @@ class _PickerShell extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                child,
+                const SizedBox(height: 4),
+                Semantics(
+                  button: true,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(cancelLabel),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(child: builder(context, scrollController)),
               ],
             ),
           ),
@@ -1662,86 +1931,207 @@ class _PickerOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color:
-          selected
-              ? SixMobilePalette.accent.withValues(alpha: 0.08)
-              : SixMobilePalette.softNeutralSurface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: selected ? '$title, selecionado' : title,
+      child: Material(
+        color:
+            selected
+                ? SixMobilePalette.accent.withValues(alpha: 0.08)
+                : SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color:
-                  selected
-                      ? SixMobilePalette.highlightedBorder
-                      : SixMobilePalette.border,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 66),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color:
+                    selected
+                        ? SixMobilePalette.highlightedBorder
+                        : SixMobilePalette.border,
+                width: selected ? 1.4 : 1,
+              ),
             ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color:
-                      selected
-                          ? SixMobilePalette.accent.withValues(alpha: 0.12)
-                          : SixMobilePalette.surface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  badge,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SixMobilePalette.accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color:
+                        selected
+                            ? SixMobilePalette.accent.withValues(alpha: 0.12)
+                            : SixMobilePalette.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color:
+                          selected
+                              ? SixMobilePalette.highlightedBorder
+                              : SixMobilePalette.border,
+                    ),
+                  ),
+                  child: Text(
+                    badge.trim().isEmpty ? '-' : badge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color:
+                          selected
+                              ? SixMobilePalette.accent
+                              : SixMobilePalette.primary,
+                      fontSize: badge.length > 4 ? 10.5 : 12,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SixMobilePalette.titleText,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SixMobilePalette.mutedText,
-                        fontSize: 12,
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SixMobilePalette.mutedText,
+                          fontSize: 12,
+                          height: 1.2,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              if (selected)
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: SixMobilePalette.accent,
+                const SizedBox(width: 8),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 160),
+                  child:
+                      selected
+                          ? const Icon(
+                            Icons.check_circle_rounded,
+                            key: ValueKey<String>('selected'),
+                            color: SixMobilePalette.accent,
+                          )
+                          : const Icon(
+                            Icons.radio_button_unchecked_rounded,
+                            key: ValueKey<String>('unselected'),
+                            color: SixMobilePalette.mutedText,
+                          ),
                 ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetSearchField extends StatelessWidget {
+  const _SheetSearchField({required this.hint, required this.onChanged});
+
+  final String hint;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: const Icon(Icons.search_rounded),
+        filled: true,
+        fillColor: SixMobilePalette.softNeutralSurface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: SixMobilePalette.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: SixMobilePalette.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(
+            color: SixMobilePalette.highlightedBorder,
+            width: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PickerEmptyState extends StatelessWidget {
+  const _PickerEmptyState({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: SixMobilePalette.softNeutralSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: SixMobilePalette.border),
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                color: SixMobilePalette.mutedText,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: SixMobilePalette.titleText,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: SixMobilePalette.mutedText,
+                fontSize: 12,
+                height: 1.25,
+              ),
+            ),
+          ],
         ),
       ),
     );

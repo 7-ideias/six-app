@@ -1,3 +1,5 @@
+import 'recebimento_forma_input.dart';
+
 class AtendimentoTecnicoEquipamentoModel {
   const AtendimentoTecnicoEquipamentoModel({
     this.tipo,
@@ -786,17 +788,23 @@ class AtendimentoTecnicoRecebimentoInput {
     required this.nomeFormaRecebimento,
     required this.valor,
     this.observacao,
+    this.recebimentos,
   });
 
   final String codigoFormaRecebimento;
   final String nomeFormaRecebimento;
   final double valor;
   final String? observacao;
+  final List<RecebimentoFormaInput>? recebimentos;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'codigoFormaRecebimento': codigoFormaRecebimento,
     'nomeFormaRecebimento': nomeFormaRecebimento,
     'valor': valor,
     'observacao': observacao,
+    if (recebimentos != null && recebimentos!.isNotEmpty)
+      'recebimentos': recebimentos!
+          .map((item) => item.toJson())
+          .toList(growable: false),
   };
 }

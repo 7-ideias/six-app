@@ -1,3 +1,5 @@
+import 'recebimento_forma_input.dart';
+
 class LancamentoAgendaFinanceiraRequest {
   LancamentoAgendaFinanceiraRequest({
     required this.uuidOperacaoApp,
@@ -201,6 +203,7 @@ class AgendaFinanceiraLiquidacaoRequest {
     this.referenciaExterna,
     this.anexarComprovante = false,
     this.idSessaoCaixa,
+    this.recebimentos,
   });
 
   final String tipoLiquidacao;
@@ -211,6 +214,7 @@ class AgendaFinanceiraLiquidacaoRequest {
   final String? referenciaExterna;
   final bool anexarComprovante;
   final String? idSessaoCaixa;
+  final List<RecebimentoFormaInput>? recebimentos;
 
   Map<String, dynamic> toJson() {
     return {
@@ -222,6 +226,10 @@ class AgendaFinanceiraLiquidacaoRequest {
       'referenciaExterna': referenciaExterna,
       'anexarComprovante': anexarComprovante,
       'idSessaoCaixa': idSessaoCaixa,
+      if (recebimentos != null && recebimentos!.isNotEmpty)
+        'recebimentos': recebimentos!
+            .map((item) => item.toJson())
+            .toList(growable: false),
     };
   }
 }
@@ -234,6 +242,7 @@ class AgendaFinanceiraParcialRequest {
     required this.formaPagamentoRealizada,
     this.observacoes,
     this.idSessaoCaixa,
+    this.recebimentos,
   });
 
   final String tipoLiquidacao;
@@ -242,6 +251,7 @@ class AgendaFinanceiraParcialRequest {
   final String formaPagamentoRealizada;
   final String? observacoes;
   final String? idSessaoCaixa;
+  final List<RecebimentoFormaInput>? recebimentos;
 
   Map<String, dynamic> toJson() {
     return {
@@ -251,6 +261,10 @@ class AgendaFinanceiraParcialRequest {
       'formaPagamentoRealizada': formaPagamentoRealizada,
       'observacoes': observacoes,
       'idSessaoCaixa': idSessaoCaixa,
+      if (recebimentos != null && recebimentos!.isNotEmpty)
+        'recebimentos': recebimentos!
+            .map((item) => item.toJson())
+            .toList(growable: false),
     };
   }
 }

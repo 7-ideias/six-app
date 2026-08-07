@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../navigation/mobile_navigation_controller.dart';
 import 'gestao_mobile_screen.dart';
 import 'home_page_mobile_screen.dart';
-import 'operacao_mobile_screen.dart';
+import 'atendimento_mobile_screen.dart';
 
 class MobileMainShell extends StatefulWidget {
   const MobileMainShell({super.key, this.initialIndex = 1})
@@ -85,7 +85,7 @@ class _MobileMainShellState extends State<MobileMainShell>
       case 1:
         return const HomePageMobile(title: 'Início');
       case 2:
-        return const OperacaoMobileScreen();
+        return const AtendimentoMobileScreen();
       default:
         throw ArgumentError.value(
           index,

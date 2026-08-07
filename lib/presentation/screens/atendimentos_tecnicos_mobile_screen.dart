@@ -135,6 +135,13 @@ class _AtendimentosTecnicosMobileScreenState
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
+      actions: <Widget>[
+        IconButton(
+          tooltip: _t('atendimentoTecnico.mobile.newFab', 'Novo atendimento'),
+          icon: const Icon(Icons.add_rounded),
+          onPressed: _novoAtendimento,
+        ),
+      ],
       bodyBuilder: (
         BuildContext context,
         ScrollController scrollController,
@@ -142,31 +149,7 @@ class _AtendimentosTecnicosMobileScreenState
       ) {
         return SafeArea(
           top: false,
-          child: Stack(
-            children: <Widget>[
-              _buildBody(scrollController, topInset),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: SafeArea(
-                  minimum: const EdgeInsets.only(bottom: 8),
-                  child: FloatingActionButton.extended(
-                    backgroundColor: _accentColor,
-                    foregroundColor: SixMobilePalette.onPrimary,
-                    elevation: 5,
-                    onPressed: _novoAtendimento,
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(
-                      _t(
-                        'atendimentoTecnico.mobile.newFab',
-                        'Novo atendimento',
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: _buildBody(scrollController, topInset),
         );
       },
     );
@@ -197,7 +180,7 @@ class _AtendimentosTecnicosMobileScreenState
           child: ListView(
             controller: scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 104),
+            padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
             children: <Widget>[
               SixStaggeredEntry(
                 delay: const Duration(milliseconds: 60),
@@ -266,7 +249,7 @@ class _AtendimentosTecnicosMobileScreenState
     return ListView(
       controller: scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 104),
+      padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
       children: <Widget>[
         _loadingBlock(height: 128),
         const SizedBox(height: 16),
@@ -323,7 +306,7 @@ class _AtendimentosTecnicosMobileScreenState
       child: ListView(
         controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 104),
+        padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
         children: <Widget>[
           _card(
             child: Column(
@@ -941,25 +924,210 @@ class _AtendimentosTecnicosMobileScreenState
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(22),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _borderColor),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x0F000000),
-              blurRadius: 14,
-              offset: Offset(0, 6),
-            ),
-          ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => _abrirDetalhesAtendimento(atendimento, statusDisponiveis),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final Widget content = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    equipamento,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${atendimento.numero} • $cliente',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: <Widget>[
+                      _chip(status, Icons.flag_outlined),
+                      _chip(
+                        pendente ? 'Financeiro aberto' : 'Financeiro liquidado',
+                        pendente
+                            ? Icons.account_balance_wallet_outlined
+                            : Icons.price_check_rounded,
+                      ),
+                      if (entregaAtrasada)
+                        _alertChip(
+                          'Entrega atrasada',
+                          Icons.warning_amber_rounded,
+                        ),
+                      if (atendimento.assinaturaAprovada)
+                        _chip('Assinado', Icons.verified_rounded),
+                    ],
+                  ),
+                ],
+              );
+              final Widget detailsButton = _cardDetailsButton(
+                atendimento,
+                statusDisponiveis,
+              );
+
+              if (constraints.maxWidth < 290) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        _iconBox(Icons.devices_other_outlined, size: 44),
+                        const Spacer(),
+                        detailsButton,
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    content,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _iconBox(Icons.devices_other_outlined, size: 44),
+                  const SizedBox(width: 12),
+                  Expanded(child: content),
+                  const SizedBox(width: 10),
+                  detailsButton,
+                ],
+              );
+            },
+          ),
         ),
-        child: Column(
+      ),
+    );
+  }
+
+  Widget _cardDetailsButton(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) {
+    return Semantics(
+      button: true,
+      label: _t(
+        'atendimentoTecnico.mobile.showDetails',
+        'Ver detalhes do atendimento',
+      ),
+      child: IconButton.filled(
+        style: IconButton.styleFrom(
+          backgroundColor: SixMobilePalette.softAccentSurface,
+          foregroundColor: _accentColor,
+          fixedSize: const Size(40, 40),
+          minimumSize: const Size(40, 40),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        tooltip: _t(
+          'atendimentoTecnico.mobile.showDetails',
+          'Ver detalhes do atendimento',
+        ),
+        onPressed:
+            () => _abrirDetalhesAtendimento(atendimento, statusDisponiveis),
+        icon: const Icon(Icons.add_rounded, size: 22),
+      ),
+    );
+  }
+
+  Future<void> _abrirDetalhesAtendimento(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (BuildContext sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.88,
+          minChildSize: 0.54,
+          maxChildSize: 0.96,
+          expand: false,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return _atendimentoDetalhesSheet(
+              sheetContext: sheetContext,
+              scrollController: scrollController,
+              atendimento: atendimento,
+              statusDisponiveis: statusDisponiveis,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _atendimentoDetalhesSheet({
+    required BuildContext sheetContext,
+    required ScrollController scrollController,
+    required AtendimentoTecnicoModel atendimento,
+    required List<DominioOpcaoModel> statusDisponiveis,
+  }) {
+    final String equipamento = _equipamentoTitulo(atendimento);
+    final String cliente = _clienteLabel(atendimento);
+    final String status = _statusLabel(atendimento);
+    final bool podeReceber =
+        !atendimento.operacaoLiquidada &&
+        atendimento.valorEmAberto > 0 &&
+        !_processandoAcao;
+    final bool podeAlterarStatus =
+        statusDisponiveis.isNotEmpty && !_processandoAcao;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: _backgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
           children: <Widget>[
+            Center(
+              child: Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _iconBox(Icons.devices_other_outlined, size: 46),
+                _iconBox(Icons.devices_other_outlined, size: 42),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -967,143 +1135,265 @@ class _AtendimentosTecnicosMobileScreenState
                     children: <Widget>[
                       Text(
                         equipamento,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: _titleTextColor,
-                          fontSize: 15,
+                          fontSize: 18,
                           fontWeight: FontWeight.w900,
+                          height: 1.15,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${atendimento.numero} • $cliente',
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: _mutedTextColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
+                          height: 1.25,
                         ),
                       ),
-                      if ((atendimento.defeitoRelatado ?? '')
-                          .trim()
-                          .isNotEmpty) ...<Widget>[
-                        const SizedBox(height: 8),
-                        Text(
-                          atendimento.defeitoRelatado!.trim(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _mutedTextColor,
-                            height: 1.25,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        children: <Widget>[
-                          _chip(
-                            pendente
-                                ? 'Financeiro aberto'
-                                : 'Financeiro liquidado',
-                            pendente
-                                ? Icons.account_balance_wallet_outlined
-                                : Icons.price_check_rounded,
-                          ),
-                          _chip(status, Icons.flag_outlined),
-                          if (entregaAtrasada)
-                            _alertChip(
-                              'Entrega atrasada',
-                              Icons.warning_amber_rounded,
-                            ),
-                          _chip(
-                            '${atendimento.itens.length} item(ns)',
-                            Icons.inventory_2_outlined,
-                          ),
-                          _chip(
-                            _tecnicoLabelAtendimento(atendimento),
-                            Icons.engineering_outlined,
-                          ),
-                          if (atendimento.dataEntregaPrevista != null)
-                            _chip(
-                              'Entrega ${_formatarData(atendimento.dataEntregaPrevista)}',
-                              Icons.assignment_turned_in_outlined,
-                            ),
-                          _chip(
-                            'Atualizado ${_formatarData(atendimento.dataAtualizacao)}',
-                            Icons.update_rounded,
-                          ),
-                          if (atendimento.assinaturaAprovada)
-                            _chip('Assinado', Icons.verified_rounded),
-                        ],
-                      ),
-                      const SizedBox(height: 11),
-                      _statusProgressBar(atendimento, statusDisponiveis),
                     ],
                   ),
                 ),
+                IconButton(
+                  tooltip: _t('common.close', 'Fechar'),
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: <Widget>[
-                _cardActionButton(
-                  label: 'Receber',
-                  icon: Icons.payments_outlined,
-                  filled: true,
-                  onPressed:
-                      atendimento.operacaoLiquidada || _processandoAcao
-                          ? null
-                          : () => _abrirRecebimento(atendimento),
+                _chip(status, Icons.flag_outlined),
+                atendimento.operacaoLiquidada
+                    ? _chip('Financeiro liquidado', Icons.price_check_rounded)
+                    : _chip(
+                      'Financeiro aberto',
+                      Icons.account_balance_wallet_outlined,
+                    ),
+                if (atendimento.assinaturaAprovada)
+                  _chip('Assinado', Icons.verified_rounded),
+                if (atendimento.requerNovaAssinatura)
+                  _alertChip('Assinatura pendente', Icons.draw_outlined),
+                if (_entregaAtrasada(atendimento))
+                  _alertChip('Entrega atrasada', Icons.warning_amber_rounded),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _detailActions(
+              sheetContext: sheetContext,
+              atendimento: atendimento,
+              statusDisponiveis: statusDisponiveis,
+              podeReceber: podeReceber,
+              podeAlterarStatus: podeAlterarStatus,
+            ),
+            const SizedBox(height: 18),
+            _detailSection(
+              title: 'Resumo da ordem de serviço',
+              icon: Icons.assignment_outlined,
+              children: <Widget>[
+                _detailLine('Cliente', cliente),
+                _detailLine('Técnico', _tecnicoLabelAtendimento(atendimento)),
+                _detailLine('Status', status),
+                _detailLine(
+                  'Versão do orçamento',
+                  'v${atendimento.versaoOrcamento}',
                 ),
-                _cardActionButton(
-                  label: 'Editar',
-                  icon: Icons.edit_note_rounded,
-                  onPressed:
-                      _processandoAcao
-                          ? null
-                          : () => _editarAtendimento(atendimento),
+                _detailLine(
+                  'Atualização',
+                  _formatarDataHora(atendimento.dataAtualizacao),
                 ),
-                _cardActionButton(
-                  label:
-                      _gerandoLinkStatus
-                          ? _t('common.generating', 'Gerando...')
-                          : _t(
-                            'atendimentoTecnico.publicStatus.actionShort',
-                            'Status',
-                          ),
-                  icon: Icons.ios_share_rounded,
-                  onPressed:
-                      _processandoAcao || _gerandoLinkStatus
-                          ? null
-                          : () => _compartilharStatusPublico(atendimento),
+                _detailLine(
+                  'Entrega prevista',
+                  _formatarData(atendimento.dataEntregaPrevista),
                 ),
-                _cardActionButton(
-                  label: 'Mudar status',
-                  icon: Icons.swap_horiz_rounded,
-                  onPressed:
-                      statusDisponiveis.isEmpty || _processandoAcao
-                          ? null
-                          : () => _abrirAlterarStatus(
-                            atendimento,
-                            statusDisponiveis,
-                          ),
+                _detailLine(
+                  'Validade do orçamento',
+                  _formatarData(atendimento.validadeOrcamentoEm),
+                ),
+                _detailLine(
+                  'Vencimento',
+                  _formatarData(atendimento.dataVencimentoEm),
+                ),
+                if (atendimento.assinaturaAprovada)
+                  _detailLine('Assinatura', _assinaturaResumo(atendimento)),
+                if (atendimento.requerNovaAssinatura)
+                  _detailLine(
+                    'Assinatura',
+                    'Pendente para a versão atual do orçamento',
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _detailSection(
+              title: 'Equipamento e diagnóstico',
+              icon: Icons.devices_other_outlined,
+              children: <Widget>[
+                _detailLine('Tipo', atendimento.equipamento?.tipo),
+                _detailLine('Marca', atendimento.equipamento?.marca),
+                _detailLine('Modelo', atendimento.equipamento?.modelo),
+                _detailLine(
+                  'Número de série',
+                  atendimento.equipamento?.numeroSerie,
+                ),
+                _detailLine('IMEI', atendimento.equipamento?.imei),
+                _detailLine('Acessórios', atendimento.equipamento?.acessorios),
+                _detailLine(
+                  'Observações de entrada',
+                  atendimento.equipamento?.observacoesEntrada,
+                ),
+                _detailLine('Defeito relatado', atendimento.defeitoRelatado),
+                _detailLine(
+                  'Diagnóstico técnico',
+                  atendimento.diagnosticoTecnico,
                 ),
               ],
             ),
+            const SizedBox(height: 14),
+            _detailSection(
+              title: 'Valores',
+              icon: Icons.payments_outlined,
+              children: <Widget>[
+                _detailLine(
+                  'Produtos',
+                  _formatarMoeda(atendimento.valorTotalProdutos),
+                ),
+                _detailLine(
+                  'Serviços',
+                  _formatarMoeda(atendimento.valorTotalServicos),
+                ),
+                _detailLine(
+                  'Total',
+                  _formatarMoeda(atendimento.valorTotalAtendimento),
+                ),
+                _detailLine(
+                  'Recebido',
+                  _formatarMoeda(atendimento.valorRecebido),
+                ),
+                _detailLine(
+                  'Em aberto',
+                  _formatarMoeda(atendimento.valorEmAberto),
+                  valueColor:
+                      atendimento.valorEmAberto > 0
+                          ? _accentColor
+                          : _titleTextColor,
+                ),
+                _detailLine(
+                  'Liquidação',
+                  atendimento.operacaoLiquidada ? 'Liquidada' : 'Não liquidada',
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _itemsSection(atendimento),
+            const SizedBox(height: 14),
+            _recebimentosSection(atendimento),
+            const SizedBox(height: 14),
+            _historicoStatusSection(atendimento, statusDisponiveis),
+            const SizedBox(height: 14),
+            _auditoriaSection(atendimento),
           ],
         ),
       ),
     );
   }
 
-  Widget _cardActionButton({
+  Widget _detailActions({
+    required BuildContext sheetContext,
+    required AtendimentoTecnicoModel atendimento,
+    required List<DominioOpcaoModel> statusDisponiveis,
+    required bool podeReceber,
+    required bool podeAlterarStatus,
+  }) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 360;
+        final double itemWidth =
+            compact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: <Widget>[
+            SizedBox(
+              width: itemWidth,
+              child: _sheetActionButton(
+                label: 'Receber',
+                icon: Icons.payments_outlined,
+                filled: true,
+                onPressed:
+                    podeReceber
+                        ? () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _abrirRecebimento(atendimento),
+                        )
+                        : null,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _sheetActionButton(
+                label: 'Editar',
+                icon: Icons.edit_note_rounded,
+                onPressed:
+                    _processandoAcao
+                        ? null
+                        : () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _editarAtendimento(atendimento),
+                        ),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _sheetActionButton(
+                label:
+                    _gerandoLinkStatus
+                        ? _t('common.generating', 'Gerando...')
+                        : _t(
+                          'atendimentoTecnico.publicStatus.actionShort',
+                          'Status',
+                        ),
+                icon: Icons.ios_share_rounded,
+                onPressed:
+                    _processandoAcao || _gerandoLinkStatus
+                        ? null
+                        : () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _compartilharStatusPublico(atendimento),
+                        ),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _sheetActionButton(
+                label: 'Mudar status',
+                icon: Icons.swap_horiz_rounded,
+                onPressed:
+                    podeAlterarStatus
+                        ? () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _abrirAlterarStatus(
+                            atendimento,
+                            statusDisponiveis,
+                          ),
+                        )
+                        : null,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _sheetActionButton({
     required String label,
     required IconData icon,
     required VoidCallback? onPressed,
@@ -1114,28 +1404,307 @@ class _AtendimentosTecnicosMobileScreenState
             ? FilledButton.styleFrom(
               backgroundColor: _accentColor,
               foregroundColor: SixMobilePalette.onPrimary,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             )
             : OutlinedButton.styleFrom(
               foregroundColor: _primaryColor,
               side: const BorderSide(color: _borderColor),
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             );
-
     final Widget child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(icon, size: 17),
-        const SizedBox(width: 6),
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(width: 7),
+        Flexible(
+          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
       ],
     );
 
     return filled
         ? FilledButton(onPressed: onPressed, style: style, child: child)
         : OutlinedButton(onPressed: onPressed, style: style, child: child);
+  }
+
+  void _runAfterClosingSheet(BuildContext sheetContext, VoidCallback action) {
+    Navigator.of(sheetContext).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) action();
+    });
+  }
+
+  Widget _detailSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              _iconBox(icon, size: 38),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _detailLine(String label, String? value, {Color? valueColor}) {
+    final String display = _blankAsDash(value);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 112,
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _mutedTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              display,
+              style: TextStyle(
+                color: valueColor ?? _titleTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemsSection(AtendimentoTecnicoModel atendimento) {
+    return _detailSection(
+      title: 'Itens',
+      icon: Icons.inventory_2_outlined,
+      children: <Widget>[
+        if (atendimento.itens.isEmpty)
+          const Text(
+            'Nenhum item vinculado.',
+            style: TextStyle(color: _mutedTextColor),
+          )
+        else
+          ...atendimento.itens.map((AtendimentoTecnicoItemModel item) {
+            final String tipo =
+                item.tipoItemCodigo.toUpperCase() == 'SERVICE'
+                    ? 'Serviço'
+                    : 'Produto';
+            return _detailListTile(
+              icon:
+                  item.tipoItemCodigo.toUpperCase() == 'SERVICE'
+                      ? Icons.handyman_outlined
+                      : Icons.inventory_2_outlined,
+              title: item.descricaoSnapshot,
+              subtitle:
+                  '$tipo • ${_formatarQuantidade(item.quantidade)} x ${_formatarMoeda(item.valorUnitario)}',
+              trailing: _formatarMoeda(item.valorTotal),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _recebimentosSection(AtendimentoTecnicoModel atendimento) {
+    return _detailSection(
+      title: 'Recebimentos',
+      icon: Icons.receipt_long_outlined,
+      children: <Widget>[
+        if (atendimento.recebimentos.isEmpty)
+          const Text(
+            'Nenhum recebimento lançado.',
+            style: TextStyle(color: _mutedTextColor),
+          )
+        else
+          ...atendimento.recebimentos.reversed.map((
+            AtendimentoTecnicoRecebimentoModel item,
+          ) {
+            final String observacao = item.observacao?.trim() ?? '';
+            return _detailListTile(
+              icon: Icons.payments_outlined,
+              title: _blankAsDash(item.nomeFormaRecebimento),
+              subtitle: <String>[
+                _formatarDataHora(item.dataHora),
+                if (observacao.isNotEmpty) observacao,
+              ].join(' • '),
+              trailing: _formatarMoeda(item.valor),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _historicoStatusSection(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) {
+    return _detailSection(
+      title: 'Histórico de status',
+      icon: Icons.manage_history_rounded,
+      children: <Widget>[
+        if (atendimento.historicoStatus.isEmpty)
+          const Text(
+            'Nenhuma mudança registrada.',
+            style: TextStyle(color: _mutedTextColor),
+          )
+        else
+          ...atendimento.historicoStatus.reversed.map((
+            AtendimentoTecnicoHistoricoStatusModel item,
+          ) {
+            final String anterior =
+                item.statusAnteriorNomePtBr ??
+                _statusLabelPorCodigo(
+                  item.statusAnteriorCodigo,
+                  statusDisponiveis,
+                );
+            final String novo =
+                item.statusNomePtBr ??
+                _statusLabelPorCodigo(item.statusCodigo, statusDisponiveis);
+            final String observacao = item.observacao?.trim() ?? '';
+            return _detailListTile(
+              icon: Icons.flag_outlined,
+              title: '$anterior → $novo',
+              subtitle: <String>[
+                _formatarDataHora(item.dataHora),
+                if (observacao.isNotEmpty) observacao,
+              ].join(' • '),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _auditoriaSection(AtendimentoTecnicoModel atendimento) {
+    return _detailSection(
+      title: 'Histórico de auditoria',
+      icon: Icons.fact_check_outlined,
+      children: <Widget>[
+        if (atendimento.historicoAuditoria.isEmpty)
+          const Text(
+            'Nenhuma auditoria registrada.',
+            style: TextStyle(color: _mutedTextColor),
+          )
+        else
+          ...atendimento.historicoAuditoria.reversed.map((
+            AtendimentoTecnicoAuditoriaModel item,
+          ) {
+            final String observacao = item.observacao?.trim() ?? '';
+            return _detailListTile(
+              icon: Icons.fact_check_outlined,
+              title: 'v${item.versaoOrcamento} • ${_blankAsDash(item.tipo)}',
+              subtitle: <String>[
+                _formatarDataHora(item.dataHora),
+                if (observacao.isNotEmpty) observacao,
+              ].join(' • '),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _detailListTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.softNeutralSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _borderColor),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _iconBox(icon, size: 34),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    _blankAsDash(title),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _blankAsDash(subtitle),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (trailing != null) ...<Widget>[
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 96),
+                child: Text(
+                  trailing,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _editarAtendimento(AtendimentoTecnicoModel atendimento) async {
@@ -1191,6 +1760,7 @@ class _AtendimentosTecnicosMobileScreenState
           codigoFormaRecebimento: resultado.codigoTipoRecebimento,
           nomeFormaRecebimento: resultado.descricaoTipoRecebimento,
           valor: resultado.valor,
+          recebimentos: resultado.recebimentos,
           observacao:
               resultado.observacao ?? _observacaoRecebimentoPadrao(resultado),
         ),
@@ -1393,6 +1963,7 @@ class _AtendimentosTecnicosMobileScreenState
 
   Widget _chip(String label, IconData icon) {
     return Container(
+      constraints: const BoxConstraints(maxWidth: 180),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
@@ -1424,6 +1995,7 @@ class _AtendimentosTecnicosMobileScreenState
   Widget _alertChip(String label, IconData icon) {
     const Color color = Color(0xFFDC2626);
     return Container(
+      constraints: const BoxConstraints(maxWidth: 180),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFFFEBEE),
@@ -1732,6 +2304,18 @@ class _AtendimentosTecnicosMobileScreenState
     return codigo.isEmpty ? 'Sem status' : codigo;
   }
 
+  String _statusLabelPorCodigo(String? codigo, List<DominioOpcaoModel> status) {
+    final String normalized = (codigo ?? '').trim().toUpperCase();
+    if (normalized.isEmpty) return '-';
+    for (final DominioOpcaoModel item in status) {
+      if (item.codigo.trim().toUpperCase() == normalized) {
+        final String label = item.nomePadraoPtBr.trim();
+        return label.isEmpty ? item.codigo : label;
+      }
+    }
+    return codigo!.trim();
+  }
+
   DominioOpcaoModel? _statusAtual(
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
@@ -1744,224 +2328,6 @@ class _AtendimentosTecnicosMobileScreenState
       if (opcao.codigo.trim().toUpperCase() == codigoAtual) return opcao;
     }
     return null;
-  }
-
-  DominioOpcaoModel? _statusEtapaAtual(
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    final String codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
-    for (final DominioOpcaoModel opcao in status) {
-      if (opcao.id == atendimento.statusId ||
-          opcao.codigo.trim().toUpperCase() == codigoAtual) {
-        return opcao;
-      }
-    }
-    return null;
-  }
-
-  List<DominioOpcaoModel> _statusFlowSteps(
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    final List<DominioOpcaoModel> steps = status.toList(growable: false)
-      ..sort((DominioOpcaoModel a, DominioOpcaoModel b) {
-        return a.ordem.compareTo(b.ordem);
-      });
-    final DominioOpcaoModel? current = _statusEtapaAtual(atendimento, steps);
-    final String codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
-    final List<DominioOpcaoModel> filtered = steps
-        .where(
-          (DominioOpcaoModel step) =>
-              !step.finalizador ||
-              step.id == current?.id ||
-              step.codigo.trim().toUpperCase() == codigoAtual,
-        )
-        .toList(growable: false);
-    return filtered.isEmpty ? steps : filtered;
-  }
-
-  double _statusProgressValue(
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    final List<DominioOpcaoModel> steps = _statusFlowSteps(atendimento, status);
-    if (steps.isEmpty) return 0;
-    final DominioOpcaoModel? current = _statusEtapaAtual(atendimento, steps);
-    if (current == null) return 0;
-    final int currentIndex = steps.indexWhere(
-      (DominioOpcaoModel step) => step.id == current.id,
-    );
-    if (currentIndex < 0) return 0;
-    return ((currentIndex + 1) / steps.length).clamp(0, 1).toDouble();
-  }
-
-  Color _statusProgressColor(
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    final DominioOpcaoModel? current = _statusEtapaAtual(atendimento, status);
-    return _colorFromHex(current?.cor, _accentColor);
-  }
-
-  Color _colorFromHex(String? value, Color fallback) {
-    final String hex = (value ?? '').replaceAll('#', '').trim();
-    if (hex.length != 6 && hex.length != 8) return fallback;
-    try {
-      final String normalized = hex.length == 6 ? 'FF$hex' : hex;
-      return Color(int.parse(normalized, radix: 16));
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  Widget _statusProgressBar(
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
-    if (status.isEmpty) return const SizedBox.shrink();
-    final double progress = _statusProgressValue(atendimento, status);
-    final Color color = _statusProgressColor(atendimento, status);
-    final List<DominioOpcaoModel> steps = _statusFlowSteps(atendimento, status);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          _t(
-            'atendimentoTecnico.publicStatus.progressShort',
-            'Progresso do serviço',
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: _mutedTextColor,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 7),
-        _statusBulletProgressBar(
-          progress: progress,
-          steps: steps.length,
-          color: color,
-          valueKey:
-              'mobile-status-progress-${atendimento.id}-${atendimento.statusCodigo}',
-        ),
-      ],
-    );
-  }
-
-  Widget _statusBulletProgressBar({
-    required double progress,
-    required int steps,
-    required Color color,
-    required String valueKey,
-  }) {
-    const double height = 22;
-    const double trackHeight = 6;
-    const double bulletSize = 13;
-    final int safeSteps = steps <= 0 ? 1 : steps;
-    final double safeProgress = progress.clamp(0, 1).toDouble();
-    final double completedSteps = safeProgress * safeSteps;
-    final int currentStep = completedSteps.ceil().clamp(0, safeSteps).toInt();
-    final double lineProgress =
-        safeSteps <= 1
-            ? safeProgress
-            : ((completedSteps - 1) / (safeSteps - 1)).clamp(0, 1).toDouble();
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = constraints.maxWidth;
-        if (!width.isFinite || width <= 0) return const SizedBox.shrink();
-        return SizedBox(
-          height: height,
-          child: Stack(
-            alignment: Alignment.centerLeft,
-            children: <Widget>[
-              Positioned(
-                left: bulletSize / 2,
-                right: bulletSize / 2,
-                top: (height - trackHeight) / 2,
-                child: Container(
-                  height: trackHeight,
-                  decoration: BoxDecoration(
-                    color: SixMobilePalette.softNeutralSurface,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: bulletSize / 2,
-                top: (height - trackHeight) / 2,
-                child: TweenAnimationBuilder<double>(
-                  key: ValueKey<String>(valueKey),
-                  tween: Tween<double>(begin: 0, end: lineProgress),
-                  duration: const Duration(milliseconds: 980),
-                  curve: Curves.easeOutCubic,
-                  builder: (BuildContext context, double value, Widget? child) {
-                    return Container(
-                      width: (width - bulletSize) * value,
-                      height: trackHeight,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              for (int index = 0; index < safeSteps; index++)
-                _statusProgressBullet(
-                  width: width,
-                  height: height,
-                  bulletSize: bulletSize,
-                  index: index,
-                  steps: safeSteps,
-                  currentStep: currentStep,
-                  color: color,
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _statusProgressBullet({
-    required double width,
-    required double height,
-    required double bulletSize,
-    required int index,
-    required int steps,
-    required int currentStep,
-    required Color color,
-  }) {
-    final double position = steps == 1 ? 0 : index / (steps - 1);
-    final bool reached = index < currentStep;
-    return Positioned(
-      left: (width - bulletSize) * position,
-      top: (height - bulletSize) / 2,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 240),
-        width: bulletSize,
-        height: bulletSize,
-        decoration: BoxDecoration(
-          color: reached ? color : _surfaceColor,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: reached ? color : SixMobilePalette.activeBorder,
-            width: reached ? 2 : 1.2,
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: (reached ? color : Colors.black).withValues(alpha: 0.10),
-              blurRadius: reached ? 8 : 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   String _equipamentoTitulo(AtendimentoTecnicoModel atendimento) {
@@ -1982,6 +2348,30 @@ class _AtendimentosTecnicosMobileScreenState
   String _formatarData(DateTime? value) {
     if (value == null) return '-';
     return context.read<LocaleSettingsProvider>().formatDate(value);
+  }
+
+  String _formatarDataHora(DateTime? value) {
+    if (value == null) return '-';
+    final LocaleSettingsProvider localeSettings =
+        context.read<LocaleSettingsProvider>();
+    return '${localeSettings.formatDate(value)} ${localeSettings.formatTime(value)}';
+  }
+
+  String _formatarQuantidade(double value) {
+    return context.read<LocaleSettingsProvider>().formatDecimal(value);
+  }
+
+  String _blankAsDash(String? value) {
+    final String text = value?.trim() ?? '';
+    return text.isEmpty ? '-' : text;
+  }
+
+  String _assinaturaResumo(AtendimentoTecnicoModel atendimento) {
+    final String nome = atendimento.assinaturaNomeAssinante?.trim() ?? '';
+    final String data = _formatarDataHora(atendimento.assinaturaDataHora);
+    if (nome.isEmpty && data == '-') return 'Aprovada';
+    if (nome.isEmpty) return 'Aprovada em $data';
+    return '$nome • $data';
   }
 
   String? _codigoTipoRecebimentoInicial(AtendimentoTecnicoModel atendimento) {

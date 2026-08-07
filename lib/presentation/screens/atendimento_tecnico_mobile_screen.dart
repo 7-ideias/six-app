@@ -13,6 +13,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import 'cliente_usuario_cadastro_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
 class AtendimentoTecnicoMobileScreen extends StatefulWidget {
@@ -122,8 +123,6 @@ class _AtendimentoTecnicoMobileScreenState
         _clientes =
             response.clientes.where((cliente) => cliente.ativo).toList();
         _responsaveis = responsaveis;
-        _responsavelSelecionado ??=
-            responsaveis.isEmpty ? null : responsaveis.first;
         _carregando = false;
       });
     } catch (error) {
@@ -245,12 +244,7 @@ class _AtendimentoTecnicoMobileScreenState
   }
 
   Future<void> _abrirSelecaoCliente() async {
-    if (_clientes.isEmpty) {
-      _mostrarMensagem('Nenhum cliente disponível para seleção.');
-      return;
-    }
-
-    final cliente = await showModalBottomSheet<ClienteUsuario>(
+    final Object? result = await showModalBottomSheet<Object>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -264,8 +258,39 @@ class _AtendimentoTecnicoMobileScreenState
       },
     );
 
+    if (result == null || !mounted) return;
+    if (result is _CadastrarClienteAtendimentoAction) {
+      await _cadastrarClientePeloAtendimento();
+      return;
+    }
+    if (result is ClienteUsuario) {
+      setState(() => _clienteSelecionado = result);
+    }
+  }
+
+  Future<void> _cadastrarClientePeloAtendimento() async {
+    final ClienteUsuario? cliente = await Navigator.of(
+      context,
+    ).push<ClienteUsuario>(
+      MaterialPageRoute<ClienteUsuario>(
+        builder:
+            (_) => ClienteUsuarioCadastroMobileScreen(
+              apiClient: _clienteApiClient,
+              returnSavedCliente: true,
+            ),
+      ),
+    );
+
     if (cliente == null || !mounted) return;
-    setState(() => _clienteSelecionado = cliente);
+    setState(() {
+      final List<ClienteUsuario> clientes =
+          _clientes
+              .where((ClienteUsuario item) => item.id != cliente.id)
+              .toList();
+      clientes.insert(0, cliente);
+      _clientes = clientes;
+      _clienteSelecionado = cliente;
+    });
   }
 
   Future<void> _abrirSelecaoResponsavel() async {
@@ -453,8 +478,7 @@ class _AtendimentoTecnicoMobileScreenState
   void _limparFormulario() {
     setState(() {
       _clienteSelecionado = null;
-      _responsavelSelecionado =
-          _responsaveis.isEmpty ? null : _responsaveis.first;
+      _responsavelSelecionado = null;
       _descricaoController.clear();
       _tipoEquipamentoController.text = 'SMARTPHONE';
       _marcaController.clear();
@@ -1019,7 +1043,7 @@ class _AtendimentoTecnicoMobileScreenState
         borderRadius: BorderRadius.circular(16),
         onTap: _abrirSelecaoCliente,
         child: InputDecorator(
-          isEmpty: !hasSelection,
+          isEmpty: false,
           decoration: _inputDecoration(
             label: 'Cliente',
             icon: Icons.person_search_outlined,
@@ -1050,7 +1074,7 @@ class _AtendimentoTecnicoMobileScreenState
         borderRadius: BorderRadius.circular(16),
         onTap: _abrirSelecaoResponsavel,
         child: InputDecorator(
-          isEmpty: !hasSelection,
+          isEmpty: false,
           decoration: _inputDecoration(
             label: 'Responsável técnico',
             icon: Icons.engineering_outlined,
@@ -1610,6 +1634,10 @@ class AtendimentoTecnicoClienteSelectorMobile extends StatefulWidget {
       _AtendimentoTecnicoClienteSelectorMobileState();
 }
 
+class _CadastrarClienteAtendimentoAction {
+  const _CadastrarClienteAtendimentoAction();
+}
+
 class _AtendimentoTecnicoClienteSelectorMobileState
     extends State<AtendimentoTecnicoClienteSelectorMobile> {
   static const Color _backgroundColor = SixMobilePalette.background;
@@ -1725,6 +1753,27 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                 const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton.icon(
+                      onPressed:
+                          () => Navigator.of(
+                            context,
+                          ).pop(const _CadastrarClienteAtendimentoAction()),
+                      icon: const Icon(Icons.person_add_alt_1_rounded),
+                      label: Text(
+                        context.t(
+                          'atendimentoTecnico.client.create',
+                          fallback: 'Cadastrar cliente',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
                     onChanged:
@@ -1762,7 +1811,6 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
                 Expanded(
                   child:
                       clientes.isEmpty
