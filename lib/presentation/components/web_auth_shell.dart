@@ -34,20 +34,41 @@ class WebAuthShell extends StatelessWidget {
       settings: name == null ? null : RouteSettings(name: name),
       transitionDuration: const Duration(milliseconds: 620),
       reverseTransitionDuration: const Duration(milliseconds: 420),
-      pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+      pageBuilder: (
+        BuildContext context,
+        Animation<double> animation,
+        Animation<double> secondaryAnimation,
+      ) {
         return builder(context);
       },
-      transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-        final Animation<double> curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-        final Animation<double> secondary = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeInOutCubic);
+      transitionsBuilder: (
+        BuildContext context,
+        Animation<double> animation,
+        Animation<double> secondaryAnimation,
+        Widget child,
+      ) {
+        final Animation<double> curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        final Animation<double> secondary = CurvedAnimation(
+          parent: secondaryAnimation,
+          curve: Curves.easeInOutCubic,
+        );
         return FadeTransition(
           opacity: curved,
           child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0.018, 0.018), end: Offset.zero).animate(curved),
+            position: Tween<Offset>(
+              begin: const Offset(0.018, 0.018),
+              end: Offset.zero,
+            ).animate(curved),
             child: ScaleTransition(
               scale: Tween<double>(begin: 0.985, end: 1).animate(curved),
               child: SlideTransition(
-                position: Tween<Offset>(begin: Offset.zero, end: const Offset(-0.018, -0.008)).animate(secondary),
+                position: Tween<Offset>(
+                  begin: Offset.zero,
+                  end: const Offset(-0.018, -0.008),
+                ).animate(secondary),
                 child: child,
               ),
             ),
@@ -76,8 +97,15 @@ class WebAuthShell extends StatelessWidget {
                 ),
                 Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 78),
-                    child: _FormPane(showBack: showBack, onBack: onBack, child: child),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 78,
+                    ),
+                    child: _FormPane(
+                      showBack: showBack,
+                      onBack: onBack,
+                      child: child,
+                    ),
                   ),
                 ),
               ],
@@ -103,27 +131,31 @@ class _BrandSlide {
 
 const List<_BrandSlide> _brandSlides = <_BrandSlide>[
   _BrandSlide(
-    image: 'assets/images/onboading/1-bem-vindo.JPG',
+    image: 'assets/images/onboading/1-bem-vindo.webp',
     title: 'Bem-vindo ao Six.',
-    description: 'PDV, financeiro e CRM em um só app — pronto pra começar hoje.',
+    description:
+        'PDV, financeiro e CRM em um só app — pronto pra começar hoje.',
   ),
   _BrandSlide(
-    image: 'assets/images/onboading/2-cadastro-rapido.jpg',
+    image: 'assets/images/onboading/2-cadastro-rapido.webp',
     title: 'Cadastro rápido com IA.',
-    description: 'Tire foto do produto e a IA cadastra preço, categoria e estoque.',
+    description:
+        'Tire foto do produto e a IA cadastra preço, categoria e estoque.',
   ),
   _BrandSlide(
-    image: 'assets/images/onboading/3-gestao-tecnica.jpg',
+    image: 'assets/images/onboading/3-gestao-tecnica.webp',
     title: 'Gestão técnica sem planilha.',
-    description: 'Controle ordens de serviço, fila, SLA e comunicação com o cliente.',
+    description:
+        'Controle ordens de serviço, fila, SLA e comunicação com o cliente.',
   ),
   _BrandSlide(
-    image: 'assets/images/onboading/4-controle-financeiro.jpg',
+    image: 'assets/images/onboading/4-controle-financeiro.webp',
     title: 'Financeiro preditivo.',
-    description: 'Previsão de caixa, alertas de risco e painel executivo com IA.',
+    description:
+        'Previsão de caixa, alertas de risco e painel executivo com IA.',
   ),
   _BrandSlide(
-    image: 'assets/images/unsplash-1.jpg',
+    image: 'assets/images/unsplash-1.webp',
     title: 'Suporte humano de verdade.',
     description: 'Atendimento na hora — sem bot, sem FAQ enlatado.',
   ),
@@ -191,12 +223,18 @@ class _BrandBackdropState extends State<_BrandBackdrop> {
         Positioned(
           left: -120,
           top: -90,
-          child: _Blob(color: const Color(0xFF2563EB).withOpacity(0.22), size: 360),
+          child: _Blob(
+            color: const Color(0xFF2563EB).withOpacity(0.22),
+            size: 360,
+          ),
         ),
         Positioned(
           right: -160,
           bottom: -140,
-          child: _Blob(color: const Color(0xFF0B1F3A).withOpacity(0.24), size: 440),
+          child: _Blob(
+            color: const Color(0xFF0B1F3A).withOpacity(0.24),
+            size: 440,
+          ),
         ),
         Positioned(
           left: 52,
@@ -249,7 +287,10 @@ class _AmbientBrandCopy extends StatelessWidget {
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(animation),
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.08),
+                end: Offset.zero,
+              ).animate(animation),
               child: child,
             ),
           );
@@ -330,7 +371,10 @@ class _FormPane extends StatelessWidget {
           opacity: value,
           child: Transform.translate(
             offset: Offset(0, 26 * (1 - value)),
-            child: Transform.scale(scale: 0.982 + (0.018 * value), child: child),
+            child: Transform.scale(
+              scale: 0.982 + (0.018 * value),
+              child: child,
+            ),
           ),
         );
       },
@@ -344,7 +388,10 @@ class _FormPane extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.90),
                 borderRadius: BorderRadius.circular(compacto ? 28 : 34),
-                border: Border.all(color: Colors.white.withOpacity(0.62), width: 1.1),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.62),
+                  width: 1.1,
+                ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: const Color(0xFF03111F).withOpacity(0.22),
@@ -359,7 +406,12 @@ class _FormPane extends StatelessWidget {
                 ],
               ),
               child: Padding(
-                padding: EdgeInsets.fromLTRB(compacto ? 22 : 34, compacto ? 24 : 34, compacto ? 22 : 34, compacto ? 26 : 36),
+                padding: EdgeInsets.fromLTRB(
+                  compacto ? 22 : 34,
+                  compacto ? 24 : 34,
+                  compacto ? 22 : 34,
+                  compacto ? 26 : 36,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
@@ -368,14 +420,25 @@ class _FormPane extends StatelessWidget {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton.icon(
-                          onPressed: onBack ?? () => Navigator.maybePop(context),
-                          icon: const Icon(Icons.arrow_back_rounded, size: 18, color: SixAuthTokens.colorTextPrimary),
+                          onPressed:
+                              onBack ?? () => Navigator.maybePop(context),
+                          icon: const Icon(
+                            Icons.arrow_back_rounded,
+                            size: 18,
+                            color: SixAuthTokens.colorTextPrimary,
+                          ),
                           label: Text(
                             l10n.authBack,
-                            style: const TextStyle(color: SixAuthTokens.colorTextPrimary, fontWeight: FontWeight.w700),
+                            style: const TextStyle(
+                              color: SixAuthTokens.colorTextPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
                           ),
                         ),
                       ),
@@ -409,7 +472,8 @@ class WebAuthStaggeredColumn extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: List<Widget>.generate(
         children.length,
-        (int index) => _WebAuthStaggeredEntry(order: index, child: children[index]),
+        (int index) =>
+            _WebAuthStaggeredEntry(order: index, child: children[index]),
       ),
     );
   }
@@ -518,7 +582,11 @@ class WebAuthPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SixAuthPrimaryButton(label: label, onPressed: onPressed, isLoading: isLoading);
+    return SixAuthPrimaryButton(
+      label: label,
+      onPressed: onPressed,
+      isLoading: isLoading,
+    );
   }
 }
 
@@ -545,12 +613,19 @@ class WebAuthSecondaryButton extends StatelessWidget {
           foregroundColor: SixAuthTokens.colorTextPrimary,
           elevation: 0,
           side: const BorderSide(color: SixAuthTokens.colorButtonGoogleBorder),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SixAuthTokens.radiusButtonGoogle)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              SixAuthTokens.radiusButtonGoogle,
+            ),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            if (leading != null) ...<Widget>[leading!, const SizedBox(width: 10)],
+            if (leading != null) ...<Widget>[
+              leading!,
+              const SizedBox(width: 10),
+            ],
             Text(
               label,
               style: const TextStyle(
@@ -596,7 +671,12 @@ class WebAuthGoogleGlyph extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Text(
       'G',
-      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF4285F4), height: 1),
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w900,
+        color: Color(0xFF4285F4),
+        height: 1,
+      ),
     );
   }
 }

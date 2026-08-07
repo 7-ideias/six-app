@@ -45,14 +45,31 @@ flutter:
   generate: true
   uses-material-design: true
   assets:
-    - assets/animations/
-    - "assets/animations/splash screen/"
-    - "assets/animations/tela login/"
+    - assets/animations/processando_backend.json
+    - assets/animations/product_boxes_loading.json
+    - "assets/animations/splash screen/1.webp"
+    - "assets/animations/splash screen/2.webp"
+    - "assets/animations/splash screen/3.webp"
+    - "assets/animations/splash screen/4.webp"
+    - "assets/animations/splash screen/5.webp"
+    - "assets/animations/tela login/1.webp"
+    - "assets/animations/tela login/2.webp"
+    - "assets/animations/tela login/3.webp"
+    - "assets/animations/tela login/4.webp"
+    - "assets/animations/tela login/5.webp"
+    - "assets/animations/tela login/6.webp"
+    - "assets/animations/tela login/7.webp"
+    - "assets/animations/tela login/8.webp"
+    - "assets/animations/tela login/9.webp"
+    - "assets/animations/tela login/10.webp"
     - assets/images/placeholder.png
-    - assets/images/moca-tela-login.png
-    - assets/images/six-logo-flecha.png
-    - "assets/images/atendimento mobile/"
-    - assets/images/web/
-    - assets/images/stores/
-    - assets/images/onboading/
-    - assets/images/unsplash-1.jpg
+    - assets/images/six-logo-flecha.webp
+    - "assets/images/atendimento mobile/atendimento-hero.webp"
+    - "assets/images/atendimento mobile/acao-nova-venda.webp"
+    - "assets/images/atendimento mobile/acao-novo-servico.webp"
+    - "assets/images/atendimento mobile/acao-receber.webp"
+    - assets/images/onboading/1-bem-vindo.webp
+    - assets/images/onboading/2-cadastro-rapido.webp
+    - assets/images/onboading/3-gestao-tecnica.webp
+    - assets/images/onboading/4-controle-financeiro.webp
+    - assets/images/unsplash-1.webp

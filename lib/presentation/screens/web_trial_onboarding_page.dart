@@ -83,8 +83,8 @@ class _WebTrialOnboardingPageState extends State<WebTrialOnboardingPage> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/web/atendente_login_web.png',
+            child: Image.network(
+              'images/atendente_login_web.webp',
               fit: BoxFit.cover,
             ),
           ),

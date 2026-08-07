@@ -55,13 +55,13 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   static const Color _lockedAccent = Color(0xFF64748B);
 
   static const String _heroAsset =
-      'assets/images/atendimento mobile/atendimento-hero.png';
+      'assets/images/atendimento mobile/atendimento-hero.webp';
   static const String _saleAsset =
-      'assets/images/atendimento mobile/acao-nova-venda.png';
+      'assets/images/atendimento mobile/acao-nova-venda.webp';
   static const String _serviceAsset =
-      'assets/images/atendimento mobile/acao-novo-servico.png';
+      'assets/images/atendimento mobile/acao-novo-servico.webp';
   static const String _receiveAsset =
-      'assets/images/atendimento mobile/acao-receber.png';
+      'assets/images/atendimento mobile/acao-receber.webp';
 
   late final TelaInicialWebApiClient _api;
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;

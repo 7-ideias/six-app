@@ -13,7 +13,12 @@ class MobileFooter extends StatelessWidget {
 
   static const _cols = <_Col>[
     _Col('Produto', ['Recursos', 'Planos', 'Cockpit', 'IA cadastro']),
-    _Col('Segmentos', ['Pet shop', 'Assistência técnica', 'Loja de roupas', 'Papelaria']),
+    _Col('Segmentos', [
+      'Pet shop',
+      'Assistência técnica',
+      'Loja de roupas',
+      'Papelaria',
+    ]),
     _Col('Empresa', ['Sobre', 'Carreiras', 'Contato']),
     _Col('Suporte', ['Central de ajuda', 'Termos', 'Privacidade']),
   ];
@@ -38,13 +43,29 @@ class MobileFooter extends StatelessWidget {
             height: 48,
             child: ColorFiltered(
               colorFilter: const ColorFilter.matrix(<double>[
-                -1.5,  0,   0,   0, 255,
-                 0,  -1.5,  0,   0, 255,
-                 0,   0,  -1.5,  0, 255,
-                 0,   0,   0,   1,   0,
+                -1.5,
+                0,
+                0,
+                0,
+                255,
+                0,
+                -1.5,
+                0,
+                0,
+                255,
+                0,
+                0,
+                -1.5,
+                0,
+                255,
+                0,
+                0,
+                0,
+                1,
+                0,
               ]),
               child: Image.asset(
-                'assets/images/six-logo-flecha.png',
+                'assets/images/six-logo-flecha.webp',
                 height: 80,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
@@ -103,29 +124,31 @@ class MobileFooter extends StatelessWidget {
       children: [
         Text(c.title.toUpperCase(), style: WebRootTokens.footerColHeader),
         const SizedBox(height: 10),
-        ...c.items.map((it) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                it,
-                style: const TextStyle(
-                  color: Color(0xB8FFFFFF),
-                  fontFamily: WebRootTokens.fontFamily,
-                  fontFamilyFallback: WebRootTokens.fontFamilyFallback,
-                  fontSize: 13,
-                ),
+        ...c.items.map(
+          (it) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              it,
+              style: const TextStyle(
+                color: Color(0xB8FFFFFF),
+                fontFamily: WebRootTokens.fontFamily,
+                fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+                fontSize: 13,
               ),
-            )),
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Widget _legal(String text) => Text(
-        text,
-        style: const TextStyle(
-          color: Color(0x73FFFFFF),
-          fontFamily: WebRootTokens.fontFamily,
-          fontFamilyFallback: WebRootTokens.fontFamilyFallback,
-          fontSize: 11,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      color: Color(0x73FFFFFF),
+      fontFamily: WebRootTokens.fontFamily,
+      fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+      fontSize: 11,
+    ),
+  );
 }

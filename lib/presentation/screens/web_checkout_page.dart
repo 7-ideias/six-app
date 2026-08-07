@@ -10,15 +10,16 @@ import '../components/web_root/web_language_switcher.dart';
 
 /// Plano vindo do backend (`WebRootL10n.plans`). Mesmo formato usado na
 /// `PricingSection` — fonte única de preços.
-typedef _Plan = ({
-  String name,
-  String price,
-  String cadence,
-  String pitch,
-  List<String> features,
-  String cta,
-  bool featured,
-});
+typedef _Plan =
+    ({
+      String name,
+      String price,
+      String cadence,
+      String pitch,
+      List<String> features,
+      String cta,
+      bool featured,
+    });
 
 /// Método de pagamento selecionado no segmented control.
 enum _PayMethod { card, pix, boleto }
@@ -27,7 +28,9 @@ enum _PayMethod { card, pix, boleto }
 // Cores/raios presentes no design (Claude Design / Six Design System) que ainda
 // não têm constante em [WebRootTokens]. Mantidos aqui, comentados, para não
 // hardcodar valores soltos no meio do layout.
-const Color _kLineStrong = Color(0xFFBCBCBC); // outline forte (--six-line-strong)
+const Color _kLineStrong = Color(
+  0xFFBCBCBC,
+); // outline forte (--six-line-strong)
 const Color _kFgDim = Color(0xFF696969); // fine print (--six-fg-dim)
 
 const double _kRadiusXs = 6; // badge "economize"
@@ -189,7 +192,7 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
                 ),
               ),
               Image.asset(
-                'assets/images/six-logo-flecha.png',
+                'assets/images/six-logo-flecha.webp',
                 height: 30,
                 fit: BoxFit.contain,
               ),
@@ -214,34 +217,35 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
 
   Widget _cancelButton(BuildContext context, WebRootL10n l10n) {
     return _HoverButton(
-      onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(
-        '/',
-        (route) => false,
-      ),
-      builder: (hovered) => Container(
-        height: 42,
-        padding: const EdgeInsets.fromLTRB(14, 0, 18, 0),
-        decoration: BoxDecoration(
-          color: hovered ? WebRootTokens.field : WebRootTokens.surface,
-          borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
-          border: Border.all(color: _kLineStrong),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.close, size: 19, color: WebRootTokens.fg),
-            const SizedBox(width: 8),
-            Text(
-              l10n.checkoutCancel,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: WebRootTokens.fg,
-              ),
+      onTap:
+          () => Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/', (route) => false),
+      builder:
+          (hovered) => Container(
+            height: 42,
+            padding: const EdgeInsets.fromLTRB(14, 0, 18, 0),
+            decoration: BoxDecoration(
+              color: hovered ? WebRootTokens.field : WebRootTokens.surface,
+              borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
+              border: Border.all(color: _kLineStrong),
             ),
-          ],
-        ),
-      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.close, size: 19, color: WebRootTokens.fg),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.checkoutCancel,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: WebRootTokens.fg,
+                  ),
+                ),
+              ],
+            ),
+          ),
     );
   }
 
@@ -257,16 +261,18 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
         ),
         _HoverButton(
           onTap: () {},
-          builder: (hovered) => Text(
-            l10n.checkoutHelpLink,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: hovered ? WebRootTokens.ink : WebRootTokens.fg,
-              decoration: TextDecoration.underline,
-              decorationColor: hovered ? WebRootTokens.ink : WebRootTokens.fg,
-            ),
-          ),
+          builder:
+              (hovered) => Text(
+                l10n.checkoutHelpLink,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: hovered ? WebRootTokens.ink : WebRootTokens.fg,
+                  decoration: TextDecoration.underline,
+                  decorationColor:
+                      hovered ? WebRootTokens.ink : WebRootTokens.fg,
+                ),
+              ),
         ),
       ],
     );
@@ -300,14 +306,14 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
   }
 
   Widget _colTitle(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 26,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.4,
-          color: WebRootTokens.fg,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.4,
+      color: WebRootTokens.fg,
+    ),
+  );
 
   // ── Grupo de planos ─────────────────────────────────────────────────────────
   Widget _planGroup(WebRootL10n l10n, List<_Plan> plans, _Plan? selected) {
@@ -327,8 +333,7 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
               selected: selected?.name == plans[i].name,
               showTopBorder: i != 0,
               popularLabel: l10n.checkoutPopularBadge,
-              onTap: () =>
-                  setState(() => _selectedPlanName = plans[i].name),
+              onTap: () => setState(() => _selectedPlanName = plans[i].name),
             ),
         ],
       ),
@@ -418,8 +423,11 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
               keyboardType: TextInputType.number,
               trailing: const Padding(
                 padding: EdgeInsets.only(right: 4),
-                child: Icon(Icons.badge_outlined,
-                    size: 20, color: WebRootTokens.fgMuted),
+                child: Icon(
+                  Icons.badge_outlined,
+                  size: 20,
+                  color: WebRootTokens.fgMuted,
+                ),
               ),
             );
             if (constraints.maxWidth < 420) {
@@ -521,14 +529,16 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
     final parts = l10n.checkoutLegal.split('{terms}');
     final spans = <InlineSpan>[TextSpan(text: parts.first)];
     if (parts.length > 1) {
-      spans.add(TextSpan(
-        text: l10n.checkoutTermsLink,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: WebRootTokens.fg,
-          decoration: TextDecoration.underline,
+      spans.add(
+        TextSpan(
+          text: l10n.checkoutTermsLink,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: WebRootTokens.fg,
+            decoration: TextDecoration.underline,
+          ),
         ),
-      ));
+      );
       spans.add(TextSpan(text: parts.sublist(1).join('{terms}')));
     }
     return Text.rich(TextSpan(style: style, children: spans));
@@ -537,32 +547,33 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
   Widget _ctaButton(BuildContext context, WebRootL10n l10n, _Plan? selected) {
     return _HoverButton(
       onTap: () => _finishCheckout(l10n, selected),
-      builder: (hovered) => Opacity(
-        opacity: hovered ? 0.92 : 1,
-        child: Container(
-          height: 56,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: WebRootTokens.ink,
-            borderRadius: BorderRadius.circular(_kRadiusField),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.lock_outline, size: 20, color: Colors.white),
-              const SizedBox(width: 10),
-              Text(
-                l10n.checkoutSubmit,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+      builder:
+          (hovered) => Opacity(
+            opacity: hovered ? 0.92 : 1,
+            child: Container(
+              height: 56,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: WebRootTokens.ink,
+                borderRadius: BorderRadius.circular(_kRadiusField),
               ),
-            ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_outline, size: 20, color: Colors.white),
+                  const SizedBox(width: 10),
+                  Text(
+                    l10n.checkoutSubmit,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -603,7 +614,7 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
                   borderRadius: BorderRadius.circular(_kRadiusField),
                 ),
                 child: Image.asset(
-                  'assets/images/six-logo-flecha.png',
+                  'assets/images/six-logo-flecha.webp',
                   fit: BoxFit.contain,
                 ),
               ),
@@ -654,8 +665,11 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
           const SizedBox(height: 22),
           Row(
             children: [
-              const Icon(Icons.verified_user,
-                  size: 17, color: WebRootTokens.success),
+              const Icon(
+                Icons.verified_user,
+                size: 17,
+                color: WebRootTokens.success,
+              ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
@@ -728,15 +742,54 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
   // ── Data de renovação ────────────────────────────────────────────────────────
   String _renewDateLabel(String langCode, String cadence) {
     final now = DateTime.now();
-    final renew = DateTime(now.year, now.month + _monthsForCadence(cadence),
-        now.day);
+    final renew = DateTime(
+      now.year,
+      now.month + _monthsForCadence(cadence),
+      now.day,
+    );
     const monthsByLang = <String, List<String>>{
-      'pt': ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set',
-        'out', 'nov', 'dez'],
-      'en': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-        'Oct', 'Nov', 'Dec'],
-      'es': ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep',
-        'oct', 'nov', 'dic'],
+      'pt': [
+        'jan',
+        'fev',
+        'mar',
+        'abr',
+        'mai',
+        'jun',
+        'jul',
+        'ago',
+        'set',
+        'out',
+        'nov',
+        'dez',
+      ],
+      'en': [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ],
+      'es': [
+        'ene',
+        'feb',
+        'mar',
+        'abr',
+        'may',
+        'jun',
+        'jul',
+        'ago',
+        'sep',
+        'oct',
+        'nov',
+        'dic',
+      ],
     };
     final abbr = monthsByLang[langCode] ?? monthsByLang['pt']!;
     return '${renew.day} ${abbr[renew.month - 1]} ${renew.year}';
@@ -762,9 +815,9 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
             _cardExpiryController.text.trim().isEmpty ||
             _cardCvvController.text.trim().isEmpty ||
             _cardNameController.text.trim().isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.checkoutRequired)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.checkoutRequired)));
       return;
     }
 
@@ -852,83 +905,89 @@ class _PlanRow extends StatelessWidget {
 
     return _HoverButton(
       onTap: onTap,
-      builder: (hovered) => AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: selected
-              ? WebRootTokens.field
-              : (hovered ? WebRootTokens.surfaceAlt : WebRootTokens.surface),
-          borderRadius:
-              selected ? BorderRadius.circular(_kRadiusField) : null,
-          border: Border(
-            top: BorderSide(
-              color: (showTopBorder && !selected)
-                  ? WebRootTokens.line
-                  : Colors.transparent,
+      builder:
+          (hovered) => AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            decoration: BoxDecoration(
+              color:
+                  selected
+                      ? WebRootTokens.field
+                      : (hovered
+                          ? WebRootTokens.surfaceAlt
+                          : WebRootTokens.surface),
+              borderRadius:
+                  selected ? BorderRadius.circular(_kRadiusField) : null,
+              border: Border(
+                top: BorderSide(
+                  color:
+                      (showTopBorder && !selected)
+                          ? WebRootTokens.line
+                          : Colors.transparent,
+                ),
+              ),
             ),
-          ),
-        ),
-        foregroundDecoration: selected
-            ? BoxDecoration(
-                borderRadius: BorderRadius.circular(_kRadiusField),
-                border: Border.all(color: WebRootTokens.ink, width: 1.6),
-              )
-            : null,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    plan.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.1,
-                      color: WebRootTokens.fg,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text.rich(
-                    TextSpan(
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: WebRootTokens.fgSoft,
+            foregroundDecoration:
+                selected
+                    ? BoxDecoration(
+                      borderRadius: BorderRadius.circular(_kRadiusField),
+                      border: Border.all(color: WebRootTokens.ink, width: 1.6),
+                    )
+                    : null,
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plan.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.1,
+                          color: WebRootTokens.fg,
+                        ),
                       ),
-                      children: priceSpans,
+                      const SizedBox(height: 3),
+                      Text.rich(
+                        TextSpan(
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: WebRootTokens.fgSoft,
+                          ),
+                          children: priceSpans,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (plan.featured) ...[
+                  const SizedBox(width: 12),
+                  Container(
+                    height: 26,
+                    padding: const EdgeInsets.symmetric(horizontal: 11),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: WebRootTokens.accent,
+                      borderRadius: BorderRadius.circular(_kRadiusXs),
+                    ),
+                    child: Text(
+                      popularLabel,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.1,
+                        color: WebRootTokens.ink,
+                      ),
                     ),
                   ),
                 ],
-              ),
+                const SizedBox(width: 16),
+                _Radio(selected: selected),
+              ],
             ),
-            if (plan.featured) ...[
-              const SizedBox(width: 12),
-              Container(
-                height: 26,
-                padding: const EdgeInsets.symmetric(horizontal: 11),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: WebRootTokens.accent,
-                  borderRadius: BorderRadius.circular(_kRadiusXs),
-                ),
-                child: Text(
-                  popularLabel,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.1,
-                    color: WebRootTokens.ink,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(width: 16),
-            _Radio(selected: selected),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }
@@ -985,39 +1044,41 @@ class _SegButton extends StatelessWidget {
     return Expanded(
       child: _HoverButton(
         onTap: onTap,
-        builder: (hovered) => AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? WebRootTokens.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
-            boxShadow: selected ? WebRootTokens.cardShadow : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: selected ? WebRootTokens.ink : WebRootTokens.fgSoft,
+        builder:
+            (hovered) => AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? WebRootTokens.surface : Colors.transparent,
+                borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
+                boxShadow: selected ? WebRootTokens.cardShadow : null,
               ),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
                     color: selected ? WebRootTokens.ink : WebRootTokens.fgSoft,
                   ),
-                ),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            selected ? WebRootTokens.ink : WebRootTokens.fgSoft,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
       ),
     );
   }
@@ -1068,16 +1129,23 @@ class _FilledField extends StatelessWidget {
               fontSize: 15,
               color: WebRootTokens.fgMuted,
             ),
-            prefixIcon: leadingIcon == null
-                ? null
-                : Icon(leadingIcon, size: 20, color: WebRootTokens.ink),
-            prefixIconConstraints:
-                const BoxConstraints(minWidth: 44, minHeight: 44),
+            prefixIcon:
+                leadingIcon == null
+                    ? null
+                    : Icon(leadingIcon, size: 20, color: WebRootTokens.ink),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 44,
+              minHeight: 44,
+            ),
             suffixIcon: trailing,
-            suffixIconConstraints:
-                const BoxConstraints(minWidth: 0, minHeight: 0),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 17),
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 17,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(_kRadiusField),
               borderSide: BorderSide.none,
@@ -1136,8 +1204,11 @@ class _SelectField extends StatelessWidget {
                   style: const TextStyle(fontSize: 15, color: WebRootTokens.fg),
                 ),
               ),
-              const Icon(Icons.expand_more,
-                  size: 20, color: WebRootTokens.fgMuted),
+              const Icon(
+                Icons.expand_more,
+                size: 20,
+                color: WebRootTokens.fgMuted,
+              ),
             ],
           ),
         ),
@@ -1199,7 +1270,10 @@ class _CardBrandChips extends StatelessWidget {
                 ),
                 children: [
                   TextSpan(text: 'e'),
-                  TextSpan(text: 'l', style: TextStyle(color: Color(0xFFF24200))),
+                  TextSpan(
+                    text: 'l',
+                    style: TextStyle(color: Color(0xFFF24200)),
+                  ),
                   TextSpan(text: 'o'),
                 ],
               ),

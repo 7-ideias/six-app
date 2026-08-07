@@ -26,22 +26,19 @@ class DesktopFooter extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 14, child: _brandCol(l10n)),
-                ...cols.expand((c) => [
-                      const SizedBox(width: 32),
-                      Expanded(
-                        flex: 10,
-                        child: _col(title: c.$1, items: c.$2),
-                      ),
-                    ]),
+                ...cols.expand(
+                  (c) => [
+                    const SizedBox(width: 32),
+                    Expanded(flex: 10, child: _col(title: c.$1, items: c.$2)),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 48),
             Container(
               padding: const EdgeInsets.only(top: 24),
               decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0x1AFFFFFF)),
-                ),
+                border: Border(top: BorderSide(color: Color(0x1AFFFFFF))),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -65,13 +62,29 @@ class DesktopFooter extends StatelessWidget {
           height: 56,
           child: ColorFiltered(
             colorFilter: const ColorFilter.matrix(<double>[
-              -1.5,  0,    0,   0, 255,
-               0,   -1.5,  0,   0, 255,
-               0,    0,   -1.5, 0, 255,
-               0,    0,    0,   1,   0,
+              -1.5,
+              0,
+              0,
+              0,
+              255,
+              0,
+              -1.5,
+              0,
+              0,
+              255,
+              0,
+              0,
+              -1.5,
+              0,
+              255,
+              0,
+              0,
+              0,
+              1,
+              0,
             ]),
             child: Image.asset(
-              'assets/images/six-logo-flecha.png',
+              'assets/images/six-logo-flecha.webp',
               height: 96,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
@@ -114,14 +127,14 @@ class DesktopFooter extends StatelessWidget {
   }
 
   Widget _legalText(String text) => Text(
-        text,
-        style: const TextStyle(
-          color: Color(0x80FFFFFF),
-          fontFamily: WebRootTokens.fontFamily,
-          fontFamilyFallback: WebRootTokens.fontFamilyFallback,
-          fontSize: 12,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      color: Color(0x80FFFFFF),
+      fontFamily: WebRootTokens.fontFamily,
+      fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+      fontSize: 12,
+    ),
+  );
 }
 
 class _FooterLink extends StatefulWidget {
