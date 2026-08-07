@@ -1095,6 +1095,10 @@ class _AtendimentosTecnicosMobileScreenState
     final String equipamento = _equipamentoTitulo(atendimento);
     final String cliente = _clienteLabel(atendimento);
     final String status = _statusLabel(atendimento);
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(sheetContext) ||
+        MediaQuery.accessibleNavigationOf(sheetContext);
+    final double valorJaRecebido = _valorRecebidoAtendimento(atendimento);
     final bool podeReceber =
         !atendimento.operacaoLiquidada &&
         atendimento.valorEmAberto > 0 &&
@@ -1261,25 +1265,44 @@ class _AtendimentosTecnicosMobileScreenState
               title: 'Valores',
               icon: Icons.payments_outlined,
               children: <Widget>[
-                _detailLine(
+                _detailMoneyLine(
                   'Produtos',
-                  _formatarMoeda(atendimento.valorTotalProdutos),
+                  atendimento.valorTotalProdutos,
+                  reduceMotion: reduceMotion,
                 ),
-                _detailLine(
+                _detailMoneyLine(
                   'Serviços',
-                  _formatarMoeda(atendimento.valorTotalServicos),
+                  atendimento.valorTotalServicos,
+                  reduceMotion: reduceMotion,
                 ),
-                _detailLine(
-                  'Total',
-                  _formatarMoeda(atendimento.valorTotalAtendimento),
+                _detailMoneyLine(
+                  _t(
+                    'atendimentoTecnico.mobile.valorOriginal',
+                    'Valor original',
+                  ),
+                  atendimento.valorTotalAtendimento,
+                  reduceMotion: reduceMotion,
+                  valueColor: _titleTextColor,
                 ),
-                _detailLine(
-                  'Recebido',
-                  _formatarMoeda(atendimento.valorRecebido),
+                _detailMoneyLine(
+                  _t(
+                    'atendimentoTecnico.mobile.valorJaRecebido',
+                    'Valor já recebido',
+                  ),
+                  -valorJaRecebido,
+                  reduceMotion: reduceMotion,
+                  valueColor:
+                      valorJaRecebido > 0
+                          ? SixMobilePalette.error
+                          : _mutedTextColor,
                 ),
-                _detailLine(
-                  'Em aberto',
-                  _formatarMoeda(atendimento.valorEmAberto),
+                _detailMoneyLine(
+                  _t(
+                    'atendimentoTecnico.mobile.valorEmAberto',
+                    'Valor em aberto',
+                  ),
+                  atendimento.valorEmAberto,
+                  reduceMotion: reduceMotion,
                   valueColor:
                       atendimento.valorEmAberto > 0
                           ? _accentColor
@@ -1503,6 +1526,68 @@ class _AtendimentosTecnicosMobileScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _detailMoneyLine(
+    String label,
+    double value, {
+    required bool reduceMotion,
+    Color? valueColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 112,
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _mutedTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child:
+                reduceMotion
+                    ? _detailMoneyText(value, valueColor)
+                    : TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: value),
+                      duration: const Duration(milliseconds: 620),
+                      curve: Curves.easeOutCubic,
+                      builder: (
+                        BuildContext context,
+                        double animatedValue,
+                        Widget? child,
+                      ) {
+                        return _detailMoneyText(animatedValue, valueColor);
+                      },
+                    ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailMoneyText(double value, Color? valueColor) {
+    return Text(
+      _formatarMoeda(value),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: valueColor ?? _titleTextColor,
+        fontSize: 13,
+        fontWeight: FontWeight.w900,
+        height: 1.25,
       ),
     );
   }
@@ -1744,6 +1829,8 @@ class _AtendimentosTecnicosMobileScreenState
           titulo: 'Receber atendimento técnico',
           descricao: _equipamentoTitulo(atendimento),
           contato: _clienteLabel(atendimento),
+          valorOriginal: atendimento.valorTotalAtendimento,
+          valorJaRecebido: atendimento.valorRecebido,
           valorAberto: atendimento.valorEmAberto,
           codigoTipoInicial: _codigoTipoRecebimentoInicial(atendimento),
           permitirParcial: true,
@@ -2343,6 +2430,15 @@ class _AtendimentosTecnicosMobileScreenState
 
   String _formatarMoeda(double value) {
     return context.read<LocaleSettingsProvider>().formatCurrency(value);
+  }
+
+  double _valorRecebidoAtendimento(AtendimentoTecnicoModel atendimento) {
+    final double recebido = atendimento.valorRecebido;
+    if (recebido.isFinite && recebido > 0) return recebido;
+
+    final double calculado =
+        atendimento.valorTotalAtendimento - atendimento.valorEmAberto;
+    return calculado.isFinite && calculado > 0 ? calculado : 0;
   }
 
   String _formatarData(DateTime? value) {

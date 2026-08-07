@@ -85,6 +85,8 @@ class _VendasNaoLiquidadasMobileScreenState
               venda.nomeCliente.trim().isEmpty
                   ? null
                   : venda.nomeCliente.trim(),
+          valorOriginal: venda.valorOriginal,
+          valorJaRecebido: _valorJaRecebido(venda),
           valorAberto: venda.valorAberto,
           codigoTipoInicial: venda.codigoTipoRecebimento,
           permitirParcial: true,
@@ -316,6 +318,11 @@ class _VendasNaoLiquidadasMobileScreenState
 
   String _formatarValor(num valor) {
     return context.read<LocaleSettingsProvider>().formatCurrency(valor);
+  }
+
+  double _valorJaRecebido(VendaNaoLiquidadaModel venda) {
+    final double recebido = venda.valorOriginal - venda.valorAberto;
+    return recebido > 0 ? recebido : 0;
   }
 
   String _formatarData(DateTime? data, {bool incluirHora = true}) {
@@ -792,6 +799,10 @@ class _VendasNaoLiquidadasMobileScreenState
     required VendaNaoLiquidadaModel venda,
   }) {
     final int quantidadeItens = _quantidadeItensDaVenda(venda);
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(sheetContext) ||
+        MediaQuery.accessibleNavigationOf(sheetContext);
+    final double valorJaRecebido = _valorJaRecebido(venda);
     final String colaborador =
         venda.nomeColaboradorCriacao.trim().isEmpty
             ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
@@ -926,13 +937,27 @@ class _VendasNaoLiquidadasMobileScreenState
               title: _txt('vendasNaoLiquidadas.valores', 'Valores'),
               icon: Icons.payments_outlined,
               children: <Widget>[
-                _detailLine(
+                _detailMoneyLine(
                   _txt('vendasNaoLiquidadas.valorOriginal', 'Valor original'),
-                  _formatarValor(venda.valorOriginal),
+                  venda.valorOriginal,
+                  reduceMotion: reduceMotion,
                 ),
-                _detailLine(
+                _detailMoneyLine(
+                  _txt(
+                    'vendasNaoLiquidadas.valorJaRecebido',
+                    'Valor já recebido',
+                  ),
+                  -valorJaRecebido,
+                  reduceMotion: reduceMotion,
+                  valueColor:
+                      valorJaRecebido > 0
+                          ? SixMobilePalette.error
+                          : _mutedTextColor,
+                ),
+                _detailMoneyLine(
                   _txt('vendasNaoLiquidadas.valorAberto', 'Valor em aberto'),
-                  _formatarValor(venda.valorAberto),
+                  venda.valorAberto,
+                  reduceMotion: reduceMotion,
                   valueColor: venda.valorAberto > 0 ? _accentColor : null,
                 ),
                 _detailLine(
@@ -1123,6 +1148,50 @@ class _VendasNaoLiquidadasMobileScreenState
     );
   }
 
+  Widget _detailMoneyLine(
+    String label,
+    num value, {
+    required bool reduceMotion,
+    Color? valueColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 112,
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _mutedTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _AnimatedMetricValue(
+              value: value,
+              formatter: _formatarValor,
+              reduceMotion: reduceMotion,
+              style: TextStyle(
+                color: valueColor ?? _titleTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _recebimentosVendaSection(VendaNaoLiquidadaModel venda) {
     return _detailSection(
       title: _txt('vendasNaoLiquidadas.recebimentos', 'Recebimentos'),
@@ -1149,7 +1218,7 @@ class _VendasNaoLiquidadasMobileScreenState
               icon: Icons.payments_outlined,
               title: _descricaoRecebimento(item),
               subtitle: <String>[
-                _formatarData(item.dataLiquidacao ?? item.registradoEm),
+                _formatarDataRecebimento(item),
                 if (tipoLiquidacao != null) tipoLiquidacao,
                 if (referencia.isNotEmpty)
                   '${_txt('vendasNaoLiquidadas.referencia', 'Referência')}: '
@@ -1171,6 +1240,21 @@ class _VendasNaoLiquidadasMobileScreenState
     final String codigo = item.codigoTipoRecebimento.trim();
     if (codigo.isNotEmpty) return codigo;
     return _txt('vendasNaoLiquidadas.recebimento', 'Recebimento');
+  }
+
+  String _formatarDataRecebimento(VendaNaoLiquidadaRecebimentoModel item) {
+    if (item.registradoEm != null) return _formatarData(item.registradoEm);
+
+    final DateTime? dataLiquidacao = item.dataLiquidacao;
+    if (dataLiquidacao == null) return _formatarData(null);
+
+    final bool possuiHora =
+        dataLiquidacao.hour != 0 ||
+        dataLiquidacao.minute != 0 ||
+        dataLiquidacao.second != 0 ||
+        dataLiquidacao.millisecond != 0 ||
+        dataLiquidacao.microsecond != 0;
+    return _formatarData(dataLiquidacao, incluirHora: possuiHora);
   }
 
   String? _tipoLiquidacaoLabel(String tipoLiquidacao) {

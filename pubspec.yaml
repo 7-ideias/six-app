@@ -46,9 +46,12 @@ flutter:
   uses-material-design: true
   assets:
     - assets/animations/
+    - "assets/animations/splash screen/"
+    - "assets/animations/tela login/"
     - assets/images/placeholder.png
     - assets/images/moca-tela-login.png
     - assets/images/six-logo-flecha.png
+    - "assets/images/atendimento mobile/"
     - assets/images/web/
     - assets/images/stores/
     - assets/images/onboading/

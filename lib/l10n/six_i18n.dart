@@ -71,6 +71,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.offline': 'Offline',
     'common.required': 'Obrigatório',
     'common.optional': 'Opcional',
+    'common.soon': 'Em breve',
     'common.refresh': 'Atualizar',
     'common.copy': 'Copiar',
     'common.share': 'Compartilhar',
@@ -735,6 +736,31 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.blockedResourcesMessage':
         'Contas a receber, contas a pagar e formas de recebimento continuam bloqueadas no mobile.',
 
+    // Atendimento mobile
+    'atendimento.mobile.title': 'Atendimento',
+    'atendimento.mobile.heroTitle': 'O que você deseja fazer?',
+    'atendimento.mobile.heroSubtitle':
+        'Venda, serviço ou recebimento em poucos passos',
+    'atendimento.mobile.newSaleTitle': 'Nova venda',
+    'atendimento.mobile.newSaleSubtitle': 'Vender produtos',
+    'atendimento.mobile.newServiceTitle': 'Novo serviço',
+    'atendimento.mobile.newServiceSubtitle': 'Abrir atendimento técnico',
+    'atendimento.mobile.receiveTitle': 'Receber',
+    'atendimento.mobile.receiveSubtitle': 'Baixar vendas em aberto',
+    'atendimento.mobile.followToday': 'Acompanhe hoje',
+    'atendimento.mobile.salesToReceiveTitle': 'Vendas a receber',
+    'atendimento.mobile.salesToReceiveSubtitle': 'Vendas não liquidadas',
+    'atendimento.mobile.servicesInProgressTitle': 'Serviços em andamento',
+    'atendimento.mobile.servicesInProgressSubtitle':
+        'Atendimentos técnicos ativos',
+    'atendimento.mobile.moreOptions': 'Mais opções',
+    'atendimento.mobile.cashOperationsTitle': 'Operações de caixa',
+    'atendimento.mobile.cashOperationsSubtitle':
+        'Abrir, movimentar e fechar caixa',
+    'atendimento.mobile.counterLoadError': 'Não foi possível atualizar agora',
+    'operacao.mobile.returnTitle': 'Devolução',
+    'operacao.mobile.returnUnavailable': 'Em breve',
+
     // Vendas não liquidadas mobile
     'vendasNaoLiquidadas.recebimentos': 'Recebimentos',
     'vendasNaoLiquidadas.semRecebimentos': 'Nenhum recebimento lançado.',
@@ -777,6 +803,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.offline': 'Offline',
     'common.required': 'Required',
     'common.optional': 'Optional',
+    'common.soon': 'Coming soon',
     'common.refresh': 'Refresh',
     'common.copy': 'Copy',
     'common.share': 'Share',
@@ -1384,6 +1411,30 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.blockedResourcesMessage':
         'Accounts receivable, accounts payable and payment methods remain locked on mobile.',
 
+    // Service mobile
+    'atendimento.mobile.title': 'Service',
+    'atendimento.mobile.heroTitle': 'What do you want to do?',
+    'atendimento.mobile.heroSubtitle':
+        'Sale, service or receipt in a few steps',
+    'atendimento.mobile.newSaleTitle': 'New sale',
+    'atendimento.mobile.newSaleSubtitle': 'Sell products',
+    'atendimento.mobile.newServiceTitle': 'New service',
+    'atendimento.mobile.newServiceSubtitle': 'Open technical service',
+    'atendimento.mobile.receiveTitle': 'Receive',
+    'atendimento.mobile.receiveSubtitle': 'Settle open sales',
+    'atendimento.mobile.followToday': 'Track today',
+    'atendimento.mobile.salesToReceiveTitle': 'Sales to receive',
+    'atendimento.mobile.salesToReceiveSubtitle': 'Unsettled sales',
+    'atendimento.mobile.servicesInProgressTitle': 'Services in progress',
+    'atendimento.mobile.servicesInProgressSubtitle':
+        'Active technical services',
+    'atendimento.mobile.moreOptions': 'More options',
+    'atendimento.mobile.cashOperationsTitle': 'Cash operations',
+    'atendimento.mobile.cashOperationsSubtitle': 'Open, move and close cash',
+    'atendimento.mobile.counterLoadError': 'Could not update right now',
+    'operacao.mobile.returnTitle': 'Return',
+    'operacao.mobile.returnUnavailable': 'Coming soon',
+
     // Open sales mobile
     'vendasNaoLiquidadas.recebimentos': 'Receipts',
     'vendasNaoLiquidadas.semRecebimentos': 'No receipt recorded.',
@@ -1426,6 +1477,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.offline': 'Offline',
     'common.required': 'Obligatorio',
     'common.optional': 'Opcional',
+    'common.soon': 'Próximamente',
     'common.refresh': 'Actualizar',
     'common.copy': 'Copiar',
     'common.share': 'Compartir',
@@ -2055,6 +2107,29 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.finance.blockedResourcesTitle': 'Recursos financieros en evolución',
     'gestao.finance.blockedResourcesMessage':
         'Cuentas por cobrar, cuentas por pagar y formas de cobro continúan bloqueadas en mobile.',
+
+    // Atención mobile
+    'atendimento.mobile.title': 'Atención',
+    'atendimento.mobile.heroTitle': '¿Qué deseas hacer?',
+    'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
+    'atendimento.mobile.newSaleTitle': 'Nueva venta',
+    'atendimento.mobile.newSaleSubtitle': 'Vender productos',
+    'atendimento.mobile.newServiceTitle': 'Nuevo servicio',
+    'atendimento.mobile.newServiceSubtitle': 'Abrir atención técnica',
+    'atendimento.mobile.receiveTitle': 'Cobrar',
+    'atendimento.mobile.receiveSubtitle': 'Liquidar ventas abiertas',
+    'atendimento.mobile.followToday': 'Seguimiento de hoy',
+    'atendimento.mobile.salesToReceiveTitle': 'Ventas por cobrar',
+    'atendimento.mobile.salesToReceiveSubtitle': 'Ventas no liquidadas',
+    'atendimento.mobile.servicesInProgressTitle': 'Servicios en curso',
+    'atendimento.mobile.servicesInProgressSubtitle':
+        'Atenciones técnicas activas',
+    'atendimento.mobile.moreOptions': 'Más opciones',
+    'atendimento.mobile.cashOperationsTitle': 'Operaciones de caja',
+    'atendimento.mobile.cashOperationsSubtitle': 'Abrir, mover y cerrar caja',
+    'atendimento.mobile.counterLoadError': 'No fue posible actualizar ahora',
+    'operacao.mobile.returnTitle': 'Devolución',
+    'operacao.mobile.returnUnavailable': 'Próximamente',
 
     // Ventas no liquidadas mobile
     'vendasNaoLiquidadas.recebimentos': 'Cobros',

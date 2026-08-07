@@ -10,7 +10,8 @@ class AdminNovasIdeiasWebPage extends StatefulWidget {
   const AdminNovasIdeiasWebPage({super.key});
 
   @override
-  State<AdminNovasIdeiasWebPage> createState() => _AdminNovasIdeiasWebPageState();
+  State<AdminNovasIdeiasWebPage> createState() =>
+      _AdminNovasIdeiasWebPageState();
 }
 
 class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
@@ -68,7 +69,9 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
       if (!mounted) return;
       final String mensagem = e.toString().replaceAll('Exception: ', '');
       if (_erroDeSessao(mensagem)) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
         return;
       }
       setState(() {
@@ -85,39 +88,54 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
       await _authService.logout();
     } finally {
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil('/admin', (Route<dynamic> route) => false);
     }
   }
 
   bool _erroDeSessao(String mensagem) {
     final String normalized = mensagem.toLowerCase();
-    return normalized.contains('login') || normalized.contains('sessão') || normalized.contains('sessao');
+    return normalized.contains('login') ||
+        normalized.contains('sessão') ||
+        normalized.contains('sessao');
   }
 
   String? _nomeExibicaoPorEmail(String? email) {
     final String normalized = email?.trim() ?? '';
     if (normalized.isEmpty || !normalized.contains('@')) return null;
-    final String prefix = normalized.split('@').first.replaceAll('.', ' ').replaceAll('_', ' ').trim();
+    final String prefix =
+        normalized
+            .split('@')
+            .first
+            .replaceAll('.', ' ')
+            .replaceAll('_', ' ')
+            .trim();
     if (prefix.isEmpty) return null;
     return prefix
         .split(RegExp(r'\s+'))
         .where((String part) => part.isNotEmpty)
-        .map((String part) => '${part.characters.first.toUpperCase()}${part.characters.skip(1).join().toLowerCase()}')
+        .map(
+          (String part) =>
+              '${part.characters.first.toUpperCase()}${part.characters.skip(1).join().toLowerCase()}',
+        )
         .join(' ');
   }
 
   List<AdminIdeaModel> get _filtradas {
     final String filtro = _filtroController.text.trim().toLowerCase();
     if (filtro.isEmpty) return _ideias;
-    return _ideias.where((AdminIdeaModel idea) {
-      return idea.descricao.toLowerCase().contains(filtro) ||
-          idea.modulo.toLowerCase().contains(filtro) ||
-          idea.telaAtual.toLowerCase().contains(filtro) ||
-          idea.plataforma.toLowerCase().contains(filtro) ||
-          idea.idioma.toLowerCase().contains(filtro) ||
-          idea.status.toLowerCase().contains(filtro) ||
-          idea.empresaId.toLowerCase().contains(filtro);
-    }).toList(growable: false);
+    return _ideias
+        .where((AdminIdeaModel idea) {
+          return idea.descricao.toLowerCase().contains(filtro) ||
+              idea.modulo.toLowerCase().contains(filtro) ||
+              idea.telaAtual.toLowerCase().contains(filtro) ||
+              idea.plataforma.toLowerCase().contains(filtro) ||
+              idea.idioma.toLowerCase().contains(filtro) ||
+              idea.status.toLowerCase().contains(filtro) ||
+              idea.empresaId.toLowerCase().contains(filtro);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -127,7 +145,11 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
 
     return AdminNavigationShell(
       texts: portalTexts,
-      userInfo: AdminPortalUserInfo(name: _userName, email: _userEmail, profileType: _profileType),
+      userInfo: AdminPortalUserInfo(
+        name: _userName,
+        email: _userEmail,
+        profileType: _profileType,
+      ),
       currentRoute: '/admin/novas-ideias',
       pageTitle: texts.title,
       onLogout: _logout,
@@ -145,7 +167,10 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
 
   Widget _buildContent(_IdeasTexts texts) {
     if (_carregando) {
-      return _IdeasLoadingState(key: const ValueKey<String>('ideas-loading'), texts: texts);
+      return _IdeasLoadingState(
+        key: const ValueKey<String>('ideas-loading'),
+        texts: texts,
+      );
     }
 
     final String? erro = _erro;
@@ -163,7 +188,11 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
       key: ValueKey<String>('ideas-${ideas.length}-${_ideias.length}'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _IdeasHeader(texts: texts, total: _ideias.length, visible: ideas.length),
+        _IdeasHeader(
+          texts: texts,
+          total: _ideias.length,
+          visible: ideas.length,
+        ),
         const SizedBox(height: AdminSpacing.lg),
         _IdeasFilter(
           controller: _filtroController,
@@ -176,19 +205,28 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
         ),
         const SizedBox(height: AdminSpacing.lg),
         if (ideas.isEmpty)
-          _IdeasEmptyState(texts: texts, hasFilter: _filtroController.text.trim().isNotEmpty)
+          _IdeasEmptyState(
+            texts: texts,
+            hasFilter: _filtroController.text.trim().isNotEmpty,
+          )
         else
-          ...ideas.map((AdminIdeaModel idea) => Padding(
-                padding: const EdgeInsets.only(bottom: AdminSpacing.md),
-                child: _IdeaCard(idea: idea, texts: texts),
-              )),
+          ...ideas.map(
+            (AdminIdeaModel idea) => Padding(
+              padding: const EdgeInsets.only(bottom: AdminSpacing.md),
+              child: _IdeaCard(idea: idea, texts: texts),
+            ),
+          ),
       ],
     );
   }
 }
 
 class _IdeasHeader extends StatelessWidget {
-  const _IdeasHeader({required this.texts, required this.total, required this.visible});
+  const _IdeasHeader({
+    required this.texts,
+    required this.total,
+    required this.visible,
+  });
 
   final _IdeasTexts texts;
   final int total;
@@ -208,11 +246,20 @@ class _IdeasHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(Icons.lightbulb_rounded, size: 18, color: AdminPalette.dark),
+              const Icon(
+                Icons.lightbulb_rounded,
+                size: 18,
+                color: AdminPalette.dark,
+              ),
               const SizedBox(width: 8),
               Text(
-                visible == total ? '$total ${texts.records}' : '$visible ${texts.ofLabel} $total',
-                style: const TextStyle(fontWeight: FontWeight.w900, color: AdminPalette.dark),
+                visible == total
+                    ? '$total ${texts.records}'
+                    : '$visible ${texts.ofLabel} $total',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: AdminPalette.dark,
+                ),
               ),
             ],
           ),
@@ -232,10 +279,10 @@ class _IdeasHeader extends StatelessWidget {
             Text(
               texts.title,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: AdminPalette.dark,
-                    letterSpacing: -0.8,
-                  ),
+                fontWeight: FontWeight.w900,
+                color: AdminPalette.dark,
+                letterSpacing: -0.8,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -252,11 +299,7 @@ class _IdeasHeader extends StatelessWidget {
         if (compact) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              title,
-              const SizedBox(height: 16),
-              counter,
-            ],
+            children: <Widget>[title, const SizedBox(height: 16), counter],
           );
         }
 
@@ -301,13 +344,15 @@ class _IdeasFilter extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hint,
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: controller.text.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                  onPressed: onClear,
-                  icon: const Icon(Icons.close_rounded),
-                ),
+          suffixIcon:
+              controller.text.isEmpty
+                  ? null
+                  : IconButton(
+                    tooltip:
+                        MaterialLocalizations.of(context).deleteButtonTooltip,
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
           filled: true,
           fillColor: AdminPalette.softSurface,
           border: OutlineInputBorder(
@@ -339,7 +384,11 @@ class _IdeaCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AdminRadius.lg),
         border: Border.all(color: AdminPalette.border),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x09000000), blurRadius: 18, offset: Offset(0, 6)),
+          BoxShadow(
+            color: Color(0x09000000),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
@@ -356,17 +405,20 @@ class _IdeaCard extends StatelessWidget {
                   color: AdminPalette.activeGreen,
                   borderRadius: BorderRadius.circular(AdminRadius.md),
                 ),
-                child: const Icon(Icons.lightbulb_outline_rounded, color: AdminPalette.dark),
+                child: const Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: AdminPalette.dark,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   idea.descricao,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: AdminPalette.dark,
-                        height: 1.35,
-                      ),
+                    fontWeight: FontWeight.w900,
+                    color: AdminPalette.dark,
+                    height: 1.35,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -380,12 +432,36 @@ class _IdeaCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: <Widget>[
-              _InfoTag(icon: Icons.widgets_outlined, label: texts.module, value: idea.modulo),
-              _InfoTag(icon: Icons.web_asset_outlined, label: texts.screen, value: idea.telaAtual),
-              _InfoTag(icon: Icons.devices_rounded, label: texts.platform, value: idea.plataforma),
-              _InfoTag(icon: Icons.language_rounded, label: texts.language, value: idea.idioma),
-              _InfoTag(icon: Icons.business_outlined, label: texts.company, value: idea.empresaId),
-              _InfoTag(icon: Icons.schedule_rounded, label: texts.receivedAt, value: _formatDate(idea.criadaEm)),
+              _InfoTag(
+                icon: Icons.widgets_outlined,
+                label: texts.module,
+                value: idea.modulo,
+              ),
+              _InfoTag(
+                icon: Icons.web_asset_outlined,
+                label: texts.screen,
+                value: idea.telaAtual,
+              ),
+              _InfoTag(
+                icon: Icons.devices_rounded,
+                label: texts.platform,
+                value: idea.plataforma,
+              ),
+              _InfoTag(
+                icon: Icons.language_rounded,
+                label: texts.language,
+                value: idea.idioma,
+              ),
+              _InfoTag(
+                icon: Icons.business_outlined,
+                label: texts.company,
+                value: idea.empresaId,
+              ),
+              _InfoTag(
+                icon: Icons.schedule_rounded,
+                label: texts.receivedAt,
+                value: _formatDate(idea.criadaEm),
+              ),
             ],
           ),
         ],
@@ -395,9 +471,8 @@ class _IdeaCard extends StatelessWidget {
 
   String _formatDate(DateTime? value) {
     if (value == null) return '-';
-    final DateTime local = value.toLocal();
     String two(int number) => number.toString().padLeft(2, '0');
-    return '${two(local.day)}/${two(local.month)}/${local.year} ${two(local.hour)}:${two(local.minute)}';
+    return '${two(value.day)}/${two(value.month)}/${value.year} ${two(value.hour)}:${two(value.minute)}';
   }
 }
 
@@ -408,7 +483,8 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String normalized = status.trim().isEmpty ? 'RECEBIDA' : status.trim();
+    final String normalized =
+        status.trim().isEmpty ? 'RECEBIDA' : status.trim();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
@@ -429,7 +505,11 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _InfoTag extends StatelessWidget {
-  const _InfoTag({required this.icon, required this.label, required this.value});
+  const _InfoTag({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   final IconData icon;
   final String label;
@@ -486,7 +566,13 @@ class _IdeasLoadingState extends StatelessWidget {
         children: <Widget>[
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          Text(texts.loading, style: const TextStyle(color: AdminPalette.bodyText, fontWeight: FontWeight.w700)),
+          Text(
+            texts.loading,
+            style: const TextStyle(
+              color: AdminPalette.bodyText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -517,11 +603,23 @@ class _IdeasErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Icon(Icons.error_outline_rounded, size: 42, color: AdminPalette.mutedText),
+          const Icon(
+            Icons.error_outline_rounded,
+            size: 42,
+            color: AdminPalette.mutedText,
+          ),
           const SizedBox(height: 14),
-          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AdminPalette.bodyText)),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AdminPalette.bodyText),
+          ),
           const SizedBox(height: 16),
-          FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: Text(texts.tryAgain)),
+          FilledButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(texts.tryAgain),
+          ),
         ],
       ),
     );
@@ -554,19 +652,30 @@ class _IdeasEmptyState extends StatelessWidget {
               color: AdminPalette.activeGreen,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(hasFilter ? Icons.search_off_rounded : Icons.lightbulb_outline_rounded, color: AdminPalette.dark),
+            child: Icon(
+              hasFilter
+                  ? Icons.search_off_rounded
+                  : Icons.lightbulb_outline_rounded,
+              color: AdminPalette.dark,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             hasFilter ? texts.noResults : texts.empty,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: AdminPalette.dark),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: AdminPalette.dark,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             hasFilter ? texts.noResultsHint : texts.emptyHint,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AdminPalette.bodyText, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: AdminPalette.bodyText,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -621,7 +730,8 @@ class _IdeasTexts {
       return const _IdeasTexts(
         title: 'New ideas',
         eyebrow: 'Product feedback',
-        subtitle: 'Review suggestions submitted by customers through the Six AI assistant.',
+        subtitle:
+            'Review suggestions submitted by customers through the Six AI assistant.',
         search: 'Search by idea, module, screen, company, platform or language',
         records: 'ideas',
         ofLabel: 'of',
@@ -643,8 +753,10 @@ class _IdeasTexts {
       return const _IdeasTexts(
         title: 'Nuevas ideas',
         eyebrow: 'Comentarios de producto',
-        subtitle: 'Revisa las sugerencias enviadas por los clientes a través del asistente de IA de Six.',
-        search: 'Buscar por idea, módulo, pantalla, empresa, plataforma o idioma',
+        subtitle:
+            'Revisa las sugerencias enviadas por los clientes a través del asistente de IA de Six.',
+        search:
+            'Buscar por idea, módulo, pantalla, empresa, plataforma o idioma',
         records: 'ideas',
         ofLabel: 'de',
         empty: 'Todavía no hay ideas recibidas',
@@ -664,7 +776,8 @@ class _IdeasTexts {
     return const _IdeasTexts(
       title: 'Novas ideias',
       eyebrow: 'Feedback de produto',
-      subtitle: 'Acompanhe as sugestões enviadas pelos clientes através do assistente de IA do Six.',
+      subtitle:
+          'Acompanhe as sugestões enviadas pelos clientes através do assistente de IA do Six.',
       search: 'Busque por ideia, módulo, tela, empresa, plataforma ou idioma',
       records: 'ideias',
       ofLabel: 'de',

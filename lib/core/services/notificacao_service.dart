@@ -9,7 +9,8 @@ class NotificacaoService extends ChangeNotifier {
 
   final List<SixNotificationEvent> _notificacoes = <SixNotificationEvent>[];
 
-  List<SixNotificationEvent> get notificacoes => List.unmodifiable(_notificacoes);
+  List<SixNotificationEvent> get notificacoes =>
+      List.unmodifiable(_notificacoes);
 
   SixNotificationEvent? get ultimaNotificacao =>
       _notificacoes.isEmpty ? null : _notificacoes.first;
@@ -17,13 +18,17 @@ class NotificacaoService extends ChangeNotifier {
   int get total => _notificacoes.length;
 
   int get naoLidas =>
-      _notificacoes.where((SixNotificationEvent event) => event.isUnread).length;
+      _notificacoes
+          .where((SixNotificationEvent event) => event.isUnread)
+          .length;
 
   int get comErro =>
       _notificacoes.where((SixNotificationEvent event) => event.isError).length;
 
   void registrarPayload(Map<String, dynamic> payload) {
-    final SixNotificationEvent event = SixNotificationEvent.fromPayload(payload);
+    final SixNotificationEvent event = SixNotificationEvent.fromPayload(
+      payload,
+    );
     _notificacoes.insert(0, event);
     notifyListeners();
   }
@@ -75,7 +80,8 @@ class SixNotificationEvent {
   final bool isError;
 
   factory SixNotificationEvent.fromPayload(Map<String, dynamic> payload) {
-    final DateTime receivedAt = _parseDate(payload['recebidoEmIso']) ??
+    final DateTime receivedAt =
+        _parseDate(payload['recebidoEmIso']) ??
         _parseDate(payload['recebidoEm']) ??
         DateTime.now();
     final String eventType = _read(payload, 'tipoDeEvento') ?? 'EVENTO_BACKEND';
@@ -84,7 +90,8 @@ class SixNotificationEvent {
     final String channel = _read(payload, 'canal') ?? 'WEBSOCKET';
     final String status = _read(payload, 'status') ?? _statusFor(eventType);
     final String entity = _entityFor(payload, eventType);
-    final bool isError = status.toUpperCase().contains('ERRO') ||
+    final bool isError =
+        status.toUpperCase().contains('ERRO') ||
         eventType.toUpperCase().contains('ERRO');
 
     return SixNotificationEvent(
@@ -116,20 +123,18 @@ class SixNotificationEvent {
   }
 
   String get timeLabel {
-    final DateTime local = receivedAt.toLocal();
-    final String hour = local.hour.toString().padLeft(2, '0');
-    final String minute = local.minute.toString().padLeft(2, '0');
+    final String hour = receivedAt.hour.toString().padLeft(2, '0');
+    final String minute = receivedAt.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
 
   String get groupTitle {
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
-    final DateTime localReceivedAt = receivedAt.toLocal();
     final DateTime eventDay = DateTime(
-      localReceivedAt.year,
-      localReceivedAt.month,
-      localReceivedAt.day,
+      receivedAt.year,
+      receivedAt.month,
+      receivedAt.day,
     );
 
     if (eventDay == today) {
@@ -140,9 +145,9 @@ class SixNotificationEvent {
       return 'Ontem';
     }
 
-    final String day = localReceivedAt.day.toString().padLeft(2, '0');
-    final String month = localReceivedAt.month.toString().padLeft(2, '0');
-    final String year = localReceivedAt.year.toString();
+    final String day = receivedAt.day.toString().padLeft(2, '0');
+    final String month = receivedAt.month.toString().padLeft(2, '0');
+    final String year = receivedAt.year.toString();
     return '$day/$month/$year';
   }
 
@@ -161,11 +166,12 @@ class SixNotificationEvent {
       return null;
     }
 
-    return DateTime.tryParse(value.toString())?.toLocal();
+    return DateTime.tryParse(value.toString());
   }
 
   static String _idFor(Map<String, dynamic> payload, DateTime receivedAt) {
-    final String? id = _read(payload, 'idOperacao') ??
+    final String? id =
+        _read(payload, 'idOperacao') ??
         _read(payload, 'idProduto') ??
         _read(payload, 'idOperacaoApp') ??
         _read(payload, 'ordemId');
@@ -205,7 +211,8 @@ class SixNotificationEvent {
     final String? nomeProduto = _read(payload, 'nomeProduto');
     final String? idProduto = _read(payload, 'idProduto');
     final String? numeroOperacao = _read(payload, 'numeroOperacao');
-    final String? idOperacao = _read(payload, 'idOperacao') ??
+    final String? idOperacao =
+        _read(payload, 'idOperacao') ??
         _read(payload, 'idOperacaoApp') ??
         _read(payload, 'ordemId');
 

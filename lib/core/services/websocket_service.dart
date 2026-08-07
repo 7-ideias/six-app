@@ -26,7 +26,8 @@ Future<void> connectStomp({String? idUnicoDaEmpresa}) async {
   );
 
   if (empresaId == null) {
-    const String erro = 'idUnicoDaEmpresa não encontrado para assinar WebSocket.';
+    const String erro =
+        'idUnicoDaEmpresa não encontrado para assinar WebSocket.';
     debugPrint(erro);
     onStompErro?.call(erro);
     onStompDesconectado?.call();
@@ -88,7 +89,8 @@ void onConnectCallback(StompFrame frame) {
 
   final String? empresaId = _idUnicoDaEmpresaInscrita;
   if (empresaId == null || empresaId.isEmpty) {
-    const String erro = 'WebSocket conectado sem idUnicoDaEmpresa para inscrição.';
+    const String erro =
+        'WebSocket conectado sem idUnicoDaEmpresa para inscrição.';
     debugPrint(erro);
     onStompErro?.call(erro);
     return;
@@ -121,9 +123,10 @@ void _assinarDestino(String destination) {
 
       try {
         final dynamic decoded = jsonDecode(body);
-        final Map<String, dynamic> jsonBody = decoded is Map<String, dynamic>
-            ? decoded
-            : Map<String, dynamic>.from(decoded as Map);
+        final Map<String, dynamic> jsonBody =
+            decoded is Map<String, dynamic>
+                ? decoded
+                : Map<String, dynamic>.from(decoded as Map);
 
         final DateTime recebidoEm = DateTime.now();
         final Map<String, dynamic> payload = <String, dynamic>{
@@ -171,11 +174,10 @@ String? _normalizarEmpresaId(String? idUnicoDaEmpresa) {
 }
 
 String _formatarDataHoraLocal(DateTime value) {
-  final DateTime local = value.toLocal();
-  final String day = local.day.toString().padLeft(2, '0');
-  final String month = local.month.toString().padLeft(2, '0');
-  final String year = local.year.toString();
-  final String hour = local.hour.toString().padLeft(2, '0');
-  final String minute = local.minute.toString().padLeft(2, '0');
+  final String day = value.day.toString().padLeft(2, '0');
+  final String month = value.month.toString().padLeft(2, '0');
+  final String year = value.year.toString();
+  final String hour = value.hour.toString().padLeft(2, '0');
+  final String minute = value.minute.toString().padLeft(2, '0');
   return '$day/$month/$year $hour:$minute';
 }

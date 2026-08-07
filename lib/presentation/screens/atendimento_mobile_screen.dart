@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
@@ -21,8 +21,24 @@ import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.
 
 import '../components/nav_bar_mobile.dart';
 
+typedef AtendimentoMobileNavigate =
+    void Function(BuildContext context, Widget page);
+
 class AtendimentoMobileScreen extends StatefulWidget {
-  const AtendimentoMobileScreen({super.key});
+  const AtendimentoMobileScreen({
+    super.key,
+    @visibleForTesting this.apiClient,
+    @visibleForTesting this.procedureCoordinator,
+    @visibleForTesting this.onNavigate,
+    @visibleForTesting this.showBottomNavigationBar = true,
+    @visibleForTesting this.enableWebSocket = true,
+  });
+
+  final TelaInicialWebApiClient? apiClient;
+  final OperationalProcedureFlowCoordinator? procedureCoordinator;
+  final AtendimentoMobileNavigate? onNavigate;
+  final bool showBottomNavigationBar;
+  final bool enableWebSocket;
 
   @override
   State<AtendimentoMobileScreen> createState() =>
@@ -34,15 +50,22 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   static const Color _primary = SixMobilePalette.primary;
   static const Color _secondary = SixMobilePalette.secondary;
   static const Color _accent = SixMobilePalette.accent;
-  static const Color _muted = SixMobilePalette.mutedText;
-  static const Color _title = SixMobilePalette.titleText;
+  static const Color _serviceAccent = Color(0xFF7C3AED);
+  static const Color _receiveAccent = Color(0xFF16A34A);
+  static const Color _lockedAccent = Color(0xFF64748B);
 
-  final TelaInicialWebApiClient _api = HttpResumoDaEmpresaApiClient(
-    canal: 'mobile',
-  );
+  static const String _heroAsset =
+      'assets/images/atendimento mobile/atendimento-hero.png';
+  static const String _saleAsset =
+      'assets/images/atendimento mobile/acao-nova-venda.png';
+  static const String _serviceAsset =
+      'assets/images/atendimento mobile/acao-novo-servico.png';
+  static const String _receiveAsset =
+      'assets/images/atendimento mobile/acao-receber.png';
+
+  late final TelaInicialWebApiClient _api;
+  late final OperationalProcedureFlowCoordinator _procedureCoordinator;
   final NotificacaoService _notificacoes = NotificacaoService();
-  final OperationalProcedureFlowCoordinator _procedureCoordinator =
-      OperationalProcedureFlowCoordinator();
 
   TelaInicialModel? _resumo;
   bool _loading = true;
@@ -53,6 +76,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   @override
   void initState() {
     super.initState();
+    _api = widget.apiClient ?? HttpResumoDaEmpresaApiClient(canal: 'mobile');
+    _procedureCoordinator =
+        widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
     _totalNotificacoesConhecidas = _notificacoes.total;
     _notificacoes.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -64,6 +90,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     _notificacoes.removeListener(_onNotificacoesChanged);
     super.dispose();
   }
+
+  String _txt(String key, String fallback) =>
+      context.t(key, fallback: fallback);
 
   void _onNotificacoesChanged() {
     if (!mounted) return;
@@ -85,7 +114,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   }
 
   void _garantirWebSocketMobile() {
-    if (kIsWeb) return;
+    if (kIsWeb || !widget.enableWebSocket) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(milliseconds: 180), () {
         if (mounted) connectStomp();
@@ -106,7 +135,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _erro = error.toString());
-      debugPrint('[OperacaoMobileScreen] Erro ao buscar resumo: $error');
+      debugPrint('[AtendimentoMobileScreen] Erro ao buscar resumo: $error');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -115,7 +144,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title: 'Atendimento',
+      title: _txt('atendimento.mobile.title', 'Atendimento'),
       backgroundColor: _bg,
       primaryColor: _primary,
       secondaryColor: _secondary,
@@ -124,82 +153,87 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
       leading: const SixMobileAppBarProfileAction(),
       actions: <Widget>[
         IconButton(
-          tooltip: 'Notificações',
+          tooltip: _txt(
+            'gestao.settings.item.notifications.title',
+            'Notificações',
+          ),
           icon: _notificationIcon(),
           onPressed: () => _go(const NotificacoesMobileScreen()),
         ),
       ],
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: RefreshIndicator(
-            edgeOffset: topInset,
-            displacement: 18,
-            color: _accent,
-            backgroundColor: SixMobilePalette.surface,
-            onRefresh: _carregarResumo,
-            child: ListView(
-              controller: scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
-              children: <Widget>[
-                _section('Atendimento rápido'),
-                const SizedBox(height: 12),
-                _primaryActionGroup(
-                  actions: <_PrimaryActionData>[
-                    _PrimaryActionData(
-                      title: 'Nova venda',
-                      subtitle: 'Abrir atendimento no caixa',
-                      icon: Icons.point_of_sale_rounded,
-                      onTap: _startNewSale,
-                    ),
-                    _PrimaryActionData(
-                      title: 'Atendimento técnico',
-                      subtitle: 'Iniciar diagnóstico, orçamento e execução',
-                      icon: Icons.build_circle_rounded,
-                      onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
-                    ),
-                  ],
+      bodyBuilder: _buildContent,
+      bottomNavigationBar:
+          kIsWeb || !widget.showBottomNavigationBar
+              ? null
+              : const NavBarMobile(initialIndex: 2),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ScrollController scrollController,
+    double topInset,
+  ) {
+    return SafeArea(
+      top: false,
+      child: RefreshIndicator(
+        edgeOffset: topInset,
+        displacement: 18,
+        color: _accent,
+        backgroundColor: SixMobilePalette.surface,
+        onRefresh: _carregarResumo,
+        child: ListView(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+          children: <Widget>[
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 40),
+              child: _AtendimentoHeroCard(
+                title: _txt(
+                  'atendimento.mobile.heroTitle',
+                  'O que você deseja fazer?',
                 ),
-                const SizedBox(height: 12),
-                _lockedAction(
-                  title: context.t(
-                    'operacao.mobile.returnTitle',
-                    fallback: 'Devolução',
-                  ),
-                  subtitle: context.t(
-                    'operacao.mobile.returnUnavailable',
-                    fallback: 'em breve',
-                  ),
-                  icon: Icons.assignment_return_outlined,
+                subtitle: _txt(
+                  'atendimento.mobile.heroSubtitle',
+                  'Venda, serviço ou recebimento em poucos passos',
                 ),
-                const SizedBox(height: 12),
-                _primaryAction(
-                  title: context.t(
-                    'pdv.openCashOperations',
-                    fallback: 'Operações de caixa',
-                  ),
-                  subtitle: context.t(
-                    'caixa.operacoes.mobile.quickAccessSubtitle',
-                    fallback: 'Abrir, movimentar e fechar caixa',
-                  ),
-                  icon: Icons.account_balance_wallet_rounded,
-                  onTap: () => _go(const OperacoesCaixaMobileScreen()),
-                ),
-                const SizedBox(height: 24),
-                _section('Acompanhamento'),
-                const SizedBox(height: 12),
-                ..._trackingCards(),
-              ],
+                assetPath: _heroAsset,
+              ),
             ),
-          ),
-        );
-      },
-      bottomNavigationBar: kIsWeb ? null : const NavBarMobile(initialIndex: 2),
+            const SizedBox(height: 16),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 95),
+              child: _PrimaryActionsStrip(actions: _primaryActions()),
+            ),
+            const SizedBox(height: 24),
+            _SectionTitle(
+              title: _txt('atendimento.mobile.followToday', 'Acompanhe hoje'),
+            ),
+            const SizedBox(height: 12),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 160),
+              child: _AtendimentoActionListCard(
+                hasError: _erro != null,
+                rows: _followUpRows(),
+                loadingLabel: _txt('common.loading', 'Carregando...'),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _SectionTitle(
+              title: _txt('atendimento.mobile.moreOptions', 'Mais opções'),
+            ),
+            const SizedBox(height: 12),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 220),
+              child: _AtendimentoActionListCard(
+                rows: _secondaryRows(),
+                loadingLabel: _txt('common.loading', 'Carregando...'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -243,360 +277,122 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     );
   }
 
-  List<Widget> _trackingCards() {
-    final bool hasError = _erro != null;
-    final String subtitleErro = 'Não foi possível atualizar agora';
-    final List<_TrackingCardData> cards = <_TrackingCardData>[
-      _TrackingCardData(
-        title: 'Vendas a receber',
-        subtitle: hasError ? subtitleErro : 'Vendas não liquidadas',
-        value: (_resumo?.totalVendasAbertas ?? 0).toString(),
-        icon: Icons.point_of_sale_outlined,
+  List<_PrimaryActionData> _primaryActions() {
+    return <_PrimaryActionData>[
+      _PrimaryActionData(
+        id: 'new-sale',
+        title: _txt('atendimento.mobile.newSaleTitle', 'Nova venda'),
+        subtitle: _txt('atendimento.mobile.newSaleSubtitle', 'Vender produtos'),
+        assetPath: _saleAsset,
+        accentColor: _accent,
+        onTap: _startNewSale,
+      ),
+      _PrimaryActionData(
+        id: 'new-service',
+        title: _txt('atendimento.mobile.newServiceTitle', 'Novo serviço'),
+        subtitle: _txt(
+          'atendimento.mobile.newServiceSubtitle',
+          'Abrir atendimento técnico',
+        ),
+        assetPath: _serviceAsset,
+        accentColor: _serviceAccent,
+        onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
+      ),
+      _PrimaryActionData(
+        id: 'receive',
+        title: _txt('atendimento.mobile.receiveTitle', 'Receber'),
+        subtitle: _txt(
+          'atendimento.mobile.receiveSubtitle',
+          'Baixar vendas em aberto',
+        ),
+        assetPath: _receiveAsset,
+        accentColor: _receiveAccent,
         onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
       ),
-      _TrackingCardData(
-        title: 'Atendimentos Técnicos',
+    ];
+  }
+
+  List<_AtendimentoListRowData> _followUpRows() {
+    final bool hasError = _erro != null;
+    final String errorSubtitle = _txt(
+      'atendimento.mobile.counterLoadError',
+      'Não foi possível atualizar agora',
+    );
+
+    return <_AtendimentoListRowData>[
+      _AtendimentoListRowData(
+        id: 'sales',
+        title: _txt(
+          'atendimento.mobile.salesToReceiveTitle',
+          'Vendas a receber',
+        ),
         subtitle:
-            hasError ? subtitleErro : 'Dashboard executivo do fluxo técnico',
-        value: (_resumo?.totalAtendimentoTecnicosNaoEntregues ?? 0).toString(),
+            hasError
+                ? errorSubtitle
+                : _txt(
+                  'atendimento.mobile.salesToReceiveSubtitle',
+                  'Vendas não liquidadas',
+                ),
+        icon: Icons.point_of_sale_outlined,
+        accentColor: _accent,
+        showCounter: true,
+        value: _resumo?.totalVendasAbertas,
+        loading: _loading,
+        hasError: hasError,
+        onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
+      ),
+      _AtendimentoListRowData(
+        id: 'services',
+        title: _txt(
+          'atendimento.mobile.servicesInProgressTitle',
+          'Serviços em andamento',
+        ),
+        subtitle:
+            hasError
+                ? errorSubtitle
+                : _txt(
+                  'atendimento.mobile.servicesInProgressSubtitle',
+                  'Atendimentos técnicos ativos',
+                ),
         icon: Icons.fact_check_outlined,
+        accentColor: _serviceAccent,
+        showCounter: true,
+        value: _resumo?.totalAtendimentoTecnicoEmAndamento,
+        loading: _loading,
+        hasError: hasError,
         onTap: () => _go(const AtendimentosTecnicosMobileScreen()),
       ),
     ];
+  }
 
-    return <Widget>[
-      SixStaggeredEntry(
-        delay: const Duration(milliseconds: 230),
-        child: _trackingCardGroup(cards: cards, hasError: hasError),
+  List<_AtendimentoListRowData> _secondaryRows() {
+    final String soonLabel = _txt('common.soon', 'Em breve');
+
+    return <_AtendimentoListRowData>[
+      _AtendimentoListRowData(
+        id: 'cash',
+        title: _txt(
+          'atendimento.mobile.cashOperationsTitle',
+          'Operações de caixa',
+        ),
+        subtitle: _txt(
+          'atendimento.mobile.cashOperationsSubtitle',
+          'Abrir, movimentar e fechar caixa',
+        ),
+        icon: Icons.account_balance_wallet_rounded,
+        accentColor: _accent,
+        onTap: () => _go(const OperacoesCaixaMobileScreen()),
+      ),
+      _AtendimentoListRowData(
+        id: 'return',
+        title: _txt('operacao.mobile.returnTitle', 'Devolução'),
+        subtitle: _txt('operacao.mobile.returnUnavailable', 'Em breve'),
+        icon: Icons.assignment_return_outlined,
+        accentColor: _lockedAccent,
+        enabled: false,
+        statusLabel: soonLabel,
       ),
     ];
-  }
-
-  Widget _primaryActionGroup({required List<_PrimaryActionData> actions}) {
-    return Material(
-      color: SixMobilePalette.surface,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x0F000000),
-              blurRadius: 14,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: actions
-              .asMap()
-              .entries
-              .map((MapEntry<int, _PrimaryActionData> entry) {
-                final bool isLast = entry.key == actions.length - 1;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    _primaryActionTile(entry.value),
-                    if (!isLast)
-                      Container(
-                        width: double.infinity,
-                        height: 1,
-                        color: SixMobilePalette.border,
-                      ),
-                  ],
-                );
-              })
-              .toList(growable: false),
-        ),
-      ),
-    );
-  }
-
-  Widget _primaryActionTile(_PrimaryActionData action) {
-    return InkWell(
-      onTap: action.onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: <Widget>[
-            _iconBox(
-              action.icon,
-              bg: SixMobilePalette.softAccentSurface,
-              fg: _accent,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _texts(action.title, action.subtitle, titleSize: 16),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: _muted),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _primaryAction({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return _card(
-      onTap: onTap,
-      child: Row(
-        children: <Widget>[
-          _iconBox(icon, bg: SixMobilePalette.softAccentSurface, fg: _accent),
-          const SizedBox(width: 14),
-          Expanded(child: _texts(title, subtitle, titleSize: 16)),
-          const Icon(Icons.chevron_right_rounded, color: _muted),
-        ],
-      ),
-    );
-  }
-
-  Widget _lockedAction({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    return Semantics(
-      container: true,
-      enabled: false,
-      label: '$title. $subtitle',
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: SixMobilePalette.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x0F000000),
-              blurRadius: 14,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: <Widget>[
-            _iconBox(icon, bg: SixMobilePalette.softNeutralSurface, fg: _muted),
-            const SizedBox(width: 14),
-            Expanded(child: _texts(title, subtitle, titleSize: 16)),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-              decoration: BoxDecoration(
-                color: _muted.withAlpha(18),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: _muted.withAlpha(36)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Icon(
-                    Icons.lock_outline_rounded,
-                    size: 12,
-                    color: _muted,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    context.t('common.soon', fallback: 'Em breve'),
-                    style: const TextStyle(
-                      color: _muted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _trackingCardGroup({
-    required List<_TrackingCardData> cards,
-    required bool hasError,
-  }) {
-    final Color borderColor =
-        hasError ? SixMobilePalette.errorBorder : SixMobilePalette.border;
-
-    return Material(
-      color: SixMobilePalette.surface,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: borderColor),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x0F000000),
-              blurRadius: 14,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: cards
-              .asMap()
-              .entries
-              .map((MapEntry<int, _TrackingCardData> entry) {
-                final bool isLast = entry.key == cards.length - 1;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    _trackingCardTile(entry.value, hasError: hasError),
-                    if (!isLast)
-                      Container(
-                        width: double.infinity,
-                        height: 1,
-                        color: SixMobilePalette.border,
-                      ),
-                  ],
-                );
-              })
-              .toList(growable: false),
-        ),
-      ),
-    );
-  }
-
-  Widget _trackingCardTile(_TrackingCardData card, {required bool hasError}) {
-    return InkWell(
-      onTap: card.onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: <Widget>[
-            _iconBox(
-              card.icon,
-              bg: SixMobilePalette.softNeutralSurface,
-              fg: _primary,
-              size: 46,
-            ),
-            const SizedBox(width: 14),
-            Expanded(child: _texts(card.title, card.subtitle, error: hasError)),
-            const SizedBox(width: 12),
-            _loading
-                ? Container(
-                  width: 34,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: SixMobilePalette.border,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                )
-                : SixAnimatedNumberText(
-                  key: ValueKey<String>('inicio-${card.title}-${card.value}'),
-                  value: card.value,
-                  style: const TextStyle(
-                    color: _title,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-            const Icon(Icons.chevron_right_rounded, color: _muted),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _card({
-    required Widget child,
-    required VoidCallback onTap,
-    Color borderColor = SixMobilePalette.border,
-  }) {
-    return Material(
-      color: SixMobilePalette.surface,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: borderColor),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x0F000000),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  Widget _texts(
-    String title,
-    String subtitle, {
-    bool error = false,
-    double titleSize = 15,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: _title,
-            fontWeight: FontWeight.w900,
-            fontSize: titleSize,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: error ? SixMobilePalette.error : _muted,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _iconBox(
-    IconData icon, {
-    required Color bg,
-    required Color fg,
-    double size = 50,
-  }) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14),
-      ),
-      child: Icon(icon, color: fg, size: size >= 48 ? 24 : 22),
-    );
-  }
-
-  Widget _section(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: _title,
-        fontSize: 16,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 0.1,
-      ),
-    );
   }
 
   Future<void> _startNewSale() async {
@@ -617,36 +413,721 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   void _openNewSale() => _go(const PdvMobileScreen());
 
   void _go(Widget page) {
+    final AtendimentoMobileNavigate? navigate = widget.onNavigate;
+    if (navigate != null) {
+      navigate(context, page);
+      return;
+    }
+
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
 }
 
-class _TrackingCardData {
-  const _TrackingCardData({
+class _AtendimentoHeroCard extends StatelessWidget {
+  const _AtendimentoHeroCard({
     required this.title,
     required this.subtitle,
-    required this.value,
-    required this.icon,
-    required this.onTap,
+    required this.assetPath,
   });
 
   final String title;
   final String subtitle;
-  final String value;
+  final String assetPath;
+
+  static const Color _surface = Color(0xFFF7FAFF);
+
+  @override
+  Widget build(BuildContext context) {
+    final double textScale = MediaQuery.textScalerOf(context).scale(1);
+
+    return Semantics(
+      container: true,
+      header: true,
+      label: '$title. $subtitle',
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double width = constraints.maxWidth;
+          final bool compact = width < 350 || textScale >= 1.2;
+          final bool tightText = textScale >= 1.35;
+          final double illustrationWidth = (width * (compact ? 0.43 : 0.49))
+              .clamp(118.0, 184.0);
+          final double illustrationHeight = (compact
+                  ? illustrationWidth * 0.94
+                  : illustrationWidth * 0.98)
+              .clamp(104.0, 158.0);
+          final double illustrationRightOffset = compact ? -24 : -28;
+          final double illustrationBottomOffset = compact ? -22 : -26;
+          final double titleSize = tightText ? 18 : (compact ? 20 : 22);
+
+          return Container(
+            constraints: BoxConstraints(minHeight: compact ? 142 : 154),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 18,
+              compact ? 17 : 19,
+              compact ? 16 : 18,
+              compact ? 16 : 18,
+            ),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: SixMobilePalette.highlightedBorder.withAlpha(70),
+              ),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: SixMobilePalette.navigationShadow,
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: <Widget>[
+                Positioned(
+                  right: illustrationRightOffset,
+                  bottom: illustrationBottomOffset,
+                  width: illustrationWidth,
+                  height: illustrationHeight,
+                  child: ExcludeSemantics(
+                    child: Image.asset(
+                      assetPath,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.medium,
+                      errorBuilder: (
+                        BuildContext context,
+                        Object error,
+                        StackTrace? stackTrace,
+                      ) {
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: (illustrationWidth - (compact ? 24 : 34)).clamp(
+                      84.0,
+                      150.0,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: SixMobilePalette.titleText,
+                          fontSize: titleSize,
+                          height: 1.05,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: SixMobilePalette.mutedText,
+                          fontSize: 12.5,
+                          height: 1.28,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PrimaryActionsStrip extends StatelessWidget {
+  const _PrimaryActionsStrip({required this.actions});
+
+  final List<_PrimaryActionData> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double width = constraints.maxWidth;
+        final double textScale = MediaQuery.textScalerOf(context).scale(1);
+        final bool scrollable = width < 326 || textScale >= 1.22;
+        final double gap = scrollable ? 10 : 8;
+        final double cardWidth =
+            scrollable ? (width * 0.36).clamp(112.0, 136.0) : 0;
+        final double cardHeight = _resolveCardHeight(
+          availableWidth: width,
+          textScale: textScale,
+          scrollable: scrollable,
+        );
+
+        final List<Widget> cards = <Widget>[
+          for (int index = 0; index < actions.length; index += 1) ...<Widget>[
+            if (index > 0) SizedBox(width: gap),
+            if (scrollable)
+              SizedBox(
+                width: cardWidth,
+                child: _PrimaryActionCard(data: actions[index]),
+              )
+            else
+              Expanded(child: _PrimaryActionCard(data: actions[index])),
+          ],
+        ];
+
+        final Widget row = SizedBox(
+          height: cardHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: cards,
+          ),
+        );
+
+        if (!scrollable) return row;
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          child: row,
+        );
+      },
+    );
+  }
+
+  double _resolveCardHeight({
+    required double availableWidth,
+    required double textScale,
+    required bool scrollable,
+  }) {
+    final double estimatedCardWidth =
+        scrollable
+            ? (availableWidth * 0.36).clamp(112.0, 136.0).toDouble()
+            : (availableWidth - 16) / 3;
+    final bool tightThreeColumnCard = !scrollable && estimatedCardWidth < 112;
+    final double scaleExtra = (textScale - 1).clamp(0.0, 0.8).toDouble();
+    return 196 +
+        (tightThreeColumnCard ? 14 : 0) +
+        (scaleExtra * 160) +
+        (scrollable ? 8 : 0);
+  }
+}
+
+class _PrimaryActionCard extends StatelessWidget {
+  const _PrimaryActionCard({required this.data});
+
+  final _PrimaryActionData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      button: true,
+      label: '${data.title}. ${data.subtitle}',
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: SixMobilePalette.navigationShadow,
+              blurRadius: 14,
+              offset: Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Material(
+          color: SixMobilePalette.surface,
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: ValueKey<String>('atendimento-action-${data.id}'),
+            onTap: data.onTap,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 154),
+              padding: const EdgeInsets.fromLTRB(9, 10, 9, 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: SixMobilePalette.border),
+              ),
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool compact = constraints.maxWidth < 112;
+                  final double imageCircleSize = compact ? 65 : 72;
+                  final double imageSize = compact ? 53 : 60;
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Container(
+                        width: imageCircleSize,
+                        height: imageCircleSize,
+                        decoration: BoxDecoration(
+                          color: data.accentColor.withAlpha(22),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Image.asset(
+                            data.assetPath,
+                            width: imageSize,
+                            height: imageSize,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (
+                              BuildContext context,
+                              Object error,
+                              StackTrace? stackTrace,
+                            ) {
+                              return Icon(
+                                Icons.image_not_supported_outlined,
+                                color: data.accentColor,
+                                size: 22,
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                data.title,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: data.accentColor,
+                                  fontSize: compact ? 12 : 12.5,
+                                  height: 1.12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                data.subtitle,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: SixMobilePalette.mutedText,
+                                  fontSize: 10.5,
+                                  height: 1.16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      ExcludeSemantics(
+                        child: Container(
+                          width: compact ? 22 : 24,
+                          height: compact ? 22 : 24,
+                          decoration: BoxDecoration(
+                            color: data.accentColor.withAlpha(18),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: data.accentColor.withAlpha(48),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            color: data.accentColor,
+                            size: compact ? 12 : 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AtendimentoActionListCard extends StatelessWidget {
+  const _AtendimentoActionListCard({
+    required this.rows,
+    required this.loadingLabel,
+    this.hasError = false,
+  });
+
+  final List<_AtendimentoListRowData> rows;
+  final String loadingLabel;
+  final bool hasError;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color borderColor =
+        hasError ? SixMobilePalette.errorBorder : SixMobilePalette.border;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: SixMobilePalette.navigationShadow,
+            blurRadius: 14,
+            offset: Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Material(
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: borderColor),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (int index = 0; index < rows.length; index += 1) ...<Widget>[
+                _AtendimentoActionListRow(
+                  data: rows[index],
+                  loadingLabel: loadingLabel,
+                ),
+                if (index < rows.length - 1)
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: SixMobilePalette.border,
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AtendimentoActionListRow extends StatelessWidget {
+  const _AtendimentoActionListRow({
+    required this.data,
+    required this.loadingLabel,
+  });
+
+  final _AtendimentoListRowData data;
+  final String loadingLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final String trailingSemantic = _trailingSemantic;
+    final String semanticLabel =
+        trailingSemantic.isEmpty
+            ? '${data.title}. ${data.subtitle}'
+            : '${data.title}. ${data.subtitle}. $trailingSemantic';
+    final Widget content = Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+      child: Row(
+        children: <Widget>[
+          _ListIcon(
+            icon: data.icon,
+            accentColor: data.accentColor,
+            enabled: data.enabled,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _ListTexts(
+              title: data.title,
+              subtitle: data.subtitle,
+              enabled: data.enabled,
+              error: data.hasError,
+            ),
+          ),
+          const SizedBox(width: 10),
+          _buildTrailing(),
+          if (data.enabled)
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: SixMobilePalette.mutedText,
+              size: 24,
+            ),
+        ],
+      ),
+    );
+
+    if (!data.enabled) {
+      return Semantics(
+        container: true,
+        enabled: false,
+        label: semanticLabel,
+        child: content,
+      );
+    }
+
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: true,
+      label: semanticLabel,
+      child: InkWell(
+        key: ValueKey<String>('atendimento-row-${data.id}'),
+        onTap: data.onTap,
+        child: content,
+      ),
+    );
+  }
+
+  String get _trailingSemantic {
+    if (data.showCounter) {
+      if (data.loading) return loadingLabel;
+      return data.value?.toString() ?? '--';
+    }
+    return data.statusLabel ?? '';
+  }
+
+  Widget _buildTrailing() {
+    if (data.showCounter) {
+      if (data.loading) {
+        return Semantics(
+          liveRegion: true,
+          label: loadingLabel,
+          child: const _CounterSkeleton(),
+        );
+      }
+
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 34),
+        child: SixAnimatedNumberText(
+          key: ValueKey<String>(
+            'atendimento-counter-${data.id}-${data.value ?? 'empty'}',
+          ),
+          value: data.value?.toString() ?? '--',
+          style: TextStyle(
+            color:
+                data.enabled
+                    ? SixMobilePalette.titleText
+                    : SixMobilePalette.mutedText,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      );
+    }
+
+    final String? statusLabel = data.statusLabel;
+    if (statusLabel == null || statusLabel.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return _SoonChip(label: statusLabel);
+  }
+}
+
+class _ListIcon extends StatelessWidget {
+  const _ListIcon({
+    required this.icon,
+    required this.accentColor,
+    required this.enabled,
+  });
+
   final IconData icon;
-  final VoidCallback onTap;
+  final Color accentColor;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color foreground = enabled ? accentColor : SixMobilePalette.mutedText;
+    final Color background =
+        enabled
+            ? accentColor.withAlpha(20)
+            : SixMobilePalette.softNeutralSurface;
+
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Icon(icon, color: foreground, size: 22),
+    );
+  }
+}
+
+class _ListTexts extends StatelessWidget {
+  const _ListTexts({
+    required this.title,
+    required this.subtitle,
+    required this.enabled,
+    required this.error,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool enabled;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color:
+                enabled
+                    ? SixMobilePalette.titleText
+                    : SixMobilePalette.mutedText,
+            fontSize: 15,
+            height: 1.15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: error ? SixMobilePalette.error : SixMobilePalette.mutedText,
+            fontSize: 12,
+            height: 1.22,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SoonChip extends StatelessWidget {
+  const _SoonChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.mutedText.withAlpha(18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: SixMobilePalette.mutedText.withAlpha(35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Icon(
+            Icons.lock_outline_rounded,
+            size: 12,
+            color: SixMobilePalette.mutedText,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: SixMobilePalette.mutedText,
+              fontSize: 11,
+              height: 1,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CounterSkeleton extends StatelessWidget {
+  const _CounterSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 22,
+      decoration: BoxDecoration(
+        color: SixMobilePalette.border.withAlpha(170),
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      header: true,
+      child: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: SixMobilePalette.titleText,
+          fontSize: 16,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.1,
+        ),
+      ),
+    );
+  }
 }
 
 class _PrimaryActionData {
   const _PrimaryActionData({
+    required this.id,
     required this.title,
     required this.subtitle,
-    required this.icon,
+    required this.assetPath,
+    required this.accentColor,
     required this.onTap,
   });
 
+  final String id;
+  final String title;
+  final String subtitle;
+  final String assetPath;
+  final Color accentColor;
+  final VoidCallback onTap;
+}
+
+class _AtendimentoListRowData {
+  const _AtendimentoListRowData({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+    this.onTap,
+    this.enabled = true,
+    this.showCounter = false,
+    this.value,
+    this.loading = false,
+    this.hasError = false,
+    this.statusLabel,
+  });
+
+  final String id;
   final String title;
   final String subtitle;
   final IconData icon;
-  final VoidCallback onTap;
+  final Color accentColor;
+  final VoidCallback? onTap;
+  final bool enabled;
+  final bool showCounter;
+  final int? value;
+  final bool loading;
+  final bool hasError;
+  final String? statusLabel;
 }

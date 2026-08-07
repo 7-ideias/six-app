@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../../../data/models/caixa_models.dart';
 import '../../../data/models/recebimento_forma_input.dart';
 import '../../../data/services/caixa/caixa_api_client.dart';
+import '../../../design_system/themes/six_mobile_palette.dart';
 import '../../../l10n/six_i18n.dart';
 import '../../../providers/locale_settings_provider.dart';
+import '../mobile_motion.dart';
 
 enum SixMobileRecebimentoTipo { total, parcial }
 
@@ -52,6 +54,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     required this.titulo,
     required this.descricao,
     required this.valorAberto,
+    this.valorOriginal,
+    this.valorJaRecebido,
     this.contato,
     this.permitirParcial = true,
     this.observacaoInicial,
@@ -61,6 +65,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
   final String titulo;
   final String descricao;
   final double valorAberto;
+  final double? valorOriginal;
+  final double? valorJaRecebido;
   final String? contato;
   final bool permitirParcial;
   final String? observacaoInicial;
@@ -71,6 +77,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     required String titulo,
     required String descricao,
     required double valorAberto,
+    double? valorOriginal,
+    double? valorJaRecebido,
     String? contato,
     bool permitirParcial = true,
     String? observacaoInicial,
@@ -85,6 +93,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
             titulo: titulo,
             descricao: descricao,
             valorAberto: valorAberto,
+            valorOriginal: valorOriginal,
+            valorJaRecebido: valorJaRecebido,
             contato: contato,
             permitirParcial: permitirParcial,
             observacaoInicial: observacaoInicial,
@@ -103,6 +113,8 @@ class _SixMobileRecebimentoBottomSheetState
   static const Color _accent = Color(0xFF2563EB);
   static const Color _muted = Color(0xFF64748B);
   static const Color _title = Color(0xFF0F172A);
+  static const Color _received = SixMobilePalette.error;
+  static const Duration _numberMotionDuration = Duration(milliseconds: 680);
 
   final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
   final TextEditingController _observacaoController = TextEditingController();
@@ -499,6 +511,10 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   Widget _resumoValor() {
+    final double valorOriginal = _valorOriginalResumo;
+    final double valorRecebidoNegativo = _valorJaRecebidoNegativoResumo;
+    final double valorAberto = _valorSeguro(widget.valorAberto);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -506,24 +522,147 @@ class _SixMobileRecebimentoBottomSheetState
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _accent.withValues(alpha: 0.16)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const Expanded(
-            child: Text(
-              'Valor em aberto',
-              style: TextStyle(color: _title, fontWeight: FontWeight.w900),
-            ),
-          ),
           Text(
-            _formatarMoeda(widget.valorAberto),
-            style: const TextStyle(
-              color: _title,
-              fontWeight: FontWeight.w900,
-              fontSize: 18,
+            context.t(
+              'recebimento.valoresTitulo',
+              fallback: 'Valores do recebimento',
             ),
+            style: const TextStyle(color: _title, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 12),
+          _valorResumoItem(
+            label: context.t(
+              'recebimento.valorOriginal',
+              fallback: 'Valor original',
+            ),
+            value: valorOriginal,
+            color: _accent,
+            icon: Icons.receipt_long_outlined,
+            delay: Duration.zero,
+            animationKey: 'original',
+          ),
+          const SizedBox(height: 8),
+          _valorResumoItem(
+            label: context.t(
+              'recebimento.valorJaRecebido',
+              fallback: 'Valor já recebido',
+            ),
+            value: valorRecebidoNegativo,
+            color: _received,
+            icon: Icons.remove_circle_outline_rounded,
+            delay: const Duration(milliseconds: 70),
+            animationKey: 'recebido',
+          ),
+          const SizedBox(height: 8),
+          _valorResumoItem(
+            label: context.t(
+              'recebimento.valorEmAberto',
+              fallback: 'Valor em aberto',
+            ),
+            value: valorAberto,
+            color: _title,
+            icon: Icons.account_balance_wallet_outlined,
+            delay: const Duration(milliseconds: 140),
+            animationKey: 'aberto',
           ),
         ],
       ),
+    );
+  }
+
+  Widget _valorResumoItem({
+    required String label,
+    required double value,
+    required Color color,
+    required IconData icon,
+    required Duration delay,
+    required String animationKey,
+  }) {
+    return SixStaggeredEntry(
+      delay: delay,
+      duration: const Duration(milliseconds: 320),
+      beginOffset: const Offset(0, 0.05),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 54),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: _valorMonetarioAnimado(
+                  value: value,
+                  color: color,
+                  animationKey: animationKey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _valorMonetarioAnimado({
+    required double value,
+    required Color color,
+    required String animationKey,
+  }) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>('$animationKey-${value.toStringAsFixed(2)}'),
+      tween: Tween<double>(begin: 0, end: value),
+      duration: reduceMotion ? Duration.zero : _numberMotionDuration,
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double animatedValue, Widget? child) {
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Text(
+            _formatarMoeda(animatedValue),
+            maxLines: 1,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 17,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -826,6 +965,40 @@ class _SixMobileRecebimentoBottomSheetState
       _erroValor = null;
     });
   }
+
+  double get _valorOriginalResumo {
+    final double? informado = widget.valorOriginal;
+    if (informado != null && informado.isFinite && informado > 0) {
+      return informado;
+    }
+
+    final double recebido = _valorJaRecebidoResumo;
+    final double aberto = _valorSeguro(widget.valorAberto);
+    return aberto + recebido;
+  }
+
+  double get _valorJaRecebidoResumo {
+    final double? informado = widget.valorJaRecebido;
+    if (informado != null && informado.isFinite) {
+      return informado < 0 ? -informado : informado;
+    }
+
+    final double? originalInformado = widget.valorOriginal;
+    if (originalInformado == null || !originalInformado.isFinite) {
+      return 0;
+    }
+
+    final double recebido =
+        originalInformado - _valorSeguro(widget.valorAberto);
+    return recebido > 0 ? recebido : 0;
+  }
+
+  double get _valorJaRecebidoNegativoResumo {
+    final double recebido = _valorJaRecebidoResumo;
+    return recebido > 0 ? -recebido : 0;
+  }
+
+  double _valorSeguro(double valor) => valor.isFinite ? valor : 0;
 
   String _formatarMoeda(double valor) =>
       context.read<LocaleSettingsProvider>().formatCurrency(valor);
