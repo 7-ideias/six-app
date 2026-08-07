@@ -222,6 +222,13 @@ Para Lottie, reutilize `SixAnimationAssets` quando possível, registre novos JSO
 
 Siga `docs/ui/mobile-first-patterns.md`: seletores mobile devem preferir bottom sheets, busca quando necessário, i18n existente com fallback em pt-BR durante migração, `SafeArea`, fechamento previsível e componentes reutilizáveis.
 
+Bottom sheets de fluxo de negócio, configuração, seleção ou formulário não devem
+ficar excessivamente baixos, deixando grande área escurecida/vazia da tela base
+acima do modal. Use altura mínima proporcional ao viewport, `DraggableScrollableSheet`
+ou constraints responsivas quando fizer sentido, com conteúdo alinhado ao topo e
+rolável. Ao mesmo tempo, evite sheets altos com vazio interno grande abaixo do
+conteúdo; a superfície deve parecer intencional e ocupada.
+
 Avalie contraste, tamanho de toque, `Semantics`, labels de ícones, foco quando aplicável, ordem de leitura, conteúdo dinâmico, `liveRegion`, redução de movimento, escala de texto e overflow. Não dependa somente de cor para erro, sucesso ou seleção.
 
 ### Padrão obrigatório para seletores e dropdowns mobile

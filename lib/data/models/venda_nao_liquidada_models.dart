@@ -1,3 +1,5 @@
+import 'recebimento_forma_input.dart';
+
 class VendaNaoLiquidadaModel {
   VendaNaoLiquidadaModel({
     required this.idRecebimento,
@@ -15,6 +17,7 @@ class VendaNaoLiquidadaModel {
     required this.idColaboradorCriacao,
     required this.nomeColaboradorCriacao,
     required this.itens,
+    required this.recebimentos,
   });
 
   final String idRecebimento;
@@ -32,9 +35,12 @@ class VendaNaoLiquidadaModel {
   final String idColaboradorCriacao;
   final String nomeColaboradorCriacao;
   final List<VendaNaoLiquidadaItemModel> itens;
+  final List<VendaNaoLiquidadaRecebimentoModel> recebimentos;
 
   factory VendaNaoLiquidadaModel.fromJson(Map<String, dynamic> json) {
     final dynamic itensJson = json['itens'];
+    final dynamic recebimentosJson =
+        json['recebimentos'] ?? json['liquidacoes'];
     return VendaNaoLiquidadaModel(
       idRecebimento: (json['idRecebimento'] ?? '').toString(),
       idOperacaoFinanceira: (json['idOperacaoFinanceira'] ?? '').toString(),
@@ -57,7 +63,22 @@ class VendaNaoLiquidadaModel {
                   .map(VendaNaoLiquidadaItemModel.fromJson)
                   .toList(growable: false)
               : <VendaNaoLiquidadaItemModel>[],
+      recebimentos: _parseRecebimentos(recebimentosJson),
     );
+  }
+
+  static List<VendaNaoLiquidadaRecebimentoModel> _parseRecebimentos(
+    dynamic value,
+  ) {
+    if (value is! List) return <VendaNaoLiquidadaRecebimentoModel>[];
+    return value
+        .whereType<Map>()
+        .map(
+          (Map item) => VendaNaoLiquidadaRecebimentoModel.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .toList(growable: false);
   }
 
   static double _toDouble(dynamic value) {
@@ -70,6 +91,72 @@ class VendaNaoLiquidadaModel {
     final raw = value?.toString();
     if (raw == null || raw.isEmpty) return null;
     return DateTime.tryParse(raw);
+  }
+}
+
+class VendaNaoLiquidadaRecebimentoModel {
+  const VendaNaoLiquidadaRecebimentoModel({
+    required this.id,
+    required this.tipoLiquidacao,
+    required this.valorLiquidado,
+    required this.valorRestanteAntes,
+    required this.valorRestanteDepois,
+    required this.codigoTipoRecebimento,
+    required this.formaPagamentoRealizada,
+    required this.descricaoTipoRecebimento,
+    this.observacoes,
+    this.referencia,
+    this.dataLiquidacao,
+    this.registradoEm,
+  });
+
+  final String id;
+  final String tipoLiquidacao;
+  final double valorLiquidado;
+  final double valorRestanteAntes;
+  final double valorRestanteDepois;
+  final String codigoTipoRecebimento;
+  final String formaPagamentoRealizada;
+  final String descricaoTipoRecebimento;
+  final String? observacoes;
+  final String? referencia;
+  final DateTime? dataLiquidacao;
+  final DateTime? registradoEm;
+
+  factory VendaNaoLiquidadaRecebimentoModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return VendaNaoLiquidadaRecebimentoModel(
+      id: (json['id'] ?? '').toString(),
+      tipoLiquidacao: (json['tipoLiquidacao'] ?? json['tipo'] ?? '').toString(),
+      valorLiquidado: VendaNaoLiquidadaModel._toDouble(
+        json['valorLiquidado'] ?? json['valorRecebido'],
+      ),
+      valorRestanteAntes: VendaNaoLiquidadaModel._toDouble(
+        json['valorRestanteAntes'],
+      ),
+      valorRestanteDepois: VendaNaoLiquidadaModel._toDouble(
+        json['valorRestanteDepois'],
+      ),
+      codigoTipoRecebimento:
+          (json['codigoTipoRecebimento'] ??
+                  json['formaPagamentoRealizada'] ??
+                  '')
+              .toString(),
+      formaPagamentoRealizada:
+          (json['formaPagamentoRealizada'] ??
+                  json['codigoTipoRecebimento'] ??
+                  '')
+              .toString(),
+      descricaoTipoRecebimento:
+          (json['descricaoTipoRecebimento'] ?? '').toString(),
+      observacoes: (json['observacoes'] ?? json['observacao'])?.toString(),
+      referencia: (json['referencia'] ?? json['referenciaExterna'])?.toString(),
+      dataLiquidacao: VendaNaoLiquidadaModel._toDateTime(
+        json['dataLiquidacao'],
+      ),
+      registradoEm: VendaNaoLiquidadaModel._toDateTime(json['registradoEm']),
+    );
   }
 }
 
@@ -128,6 +215,7 @@ class LiquidarVendaNaoLiquidadaInput {
     this.observacao,
     this.referencia,
     this.idSessaoCaixa,
+    this.recebimentos,
   });
 
   final String codigoTipoRecebimento;
@@ -136,6 +224,7 @@ class LiquidarVendaNaoLiquidadaInput {
   final String? observacao;
   final String? referencia;
   final String? idSessaoCaixa;
+  final List<RecebimentoFormaInput>? recebimentos;
 
   Map<String, dynamic> toJson() {
     return {
@@ -145,6 +234,10 @@ class LiquidarVendaNaoLiquidadaInput {
       'observacao': observacao,
       'referencia': referencia,
       'idSessaoCaixa': idSessaoCaixa,
+      if (recebimentos != null && recebimentos!.isNotEmpty)
+        'recebimentos': recebimentos!
+            .map((item) => item.toJson())
+            .toList(growable: false),
     };
   }
 }

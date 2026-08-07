@@ -150,7 +150,7 @@ void main() {
     () {
       final String operationSource =
           File(
-            'lib/presentation/screens/operacao_mobile_screen.dart',
+            'lib/presentation/screens/atendimento_mobile_screen.dart',
           ).readAsStringSync();
       final String homeSource =
           File(

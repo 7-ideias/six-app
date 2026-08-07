@@ -962,6 +962,7 @@ class ManagementActionItemData {
     this.onTap,
     this.statusLabel,
     this.disabledHint,
+    this.visualGroupId,
   });
 
   final String title;
@@ -973,6 +974,7 @@ class ManagementActionItemData {
   final VoidCallback? onTap;
   final String? statusLabel;
   final String? disabledHint;
+  final String? visualGroupId;
 
   bool get isEnabled =>
       maturity != ManagementSettingsMaturity.comingSoon && onTap != null;
@@ -1008,24 +1010,62 @@ class ManagementActionGroup extends StatelessWidget {
           ),
         ),
         Column(
-          children: items
-              .map(
-                (ManagementActionItemData item) => Padding(
-                  padding: EdgeInsets.only(bottom: item == items.last ? 0 : 9),
-                  child: ManagementActionTile(item: item),
-                ),
-              )
-              .toList(growable: false),
+          children: List<Widget>.generate(items.length, (int index) {
+            final ManagementActionItemData item = items[index];
+            final String? groupId = item.visualGroupId;
+            final bool isGroupedWithPrevious =
+                index > 0 &&
+                groupId != null &&
+                items[index - 1].visualGroupId == groupId;
+            final bool isGroupedWithNext =
+                index < items.length - 1 &&
+                groupId != null &&
+                items[index + 1].visualGroupId == groupId;
+            final BorderRadius borderRadius = _tileBorderRadius(
+              isGroupedWithPrevious: isGroupedWithPrevious,
+              isGroupedWithNext: isGroupedWithNext,
+            );
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == items.length - 1 || isGroupedWithNext ? 0 : 9,
+              ),
+              child: ManagementActionTile(
+                item: item,
+                borderRadius: borderRadius,
+              ),
+            );
+          }),
         ),
       ],
+    );
+  }
+
+  BorderRadius _tileBorderRadius({
+    required bool isGroupedWithPrevious,
+    required bool isGroupedWithNext,
+  }) {
+    const Radius rounded = Radius.circular(17);
+    const Radius square = Radius.zero;
+
+    return BorderRadius.only(
+      topLeft: isGroupedWithPrevious ? square : rounded,
+      topRight: isGroupedWithPrevious ? square : rounded,
+      bottomLeft: isGroupedWithNext ? square : rounded,
+      bottomRight: isGroupedWithNext ? square : rounded,
     );
   }
 }
 
 class ManagementActionTile extends StatelessWidget {
-  const ManagementActionTile({super.key, required this.item});
+  const ManagementActionTile({
+    super.key,
+    required this.item,
+    this.borderRadius = const BorderRadius.all(Radius.circular(17)),
+  });
 
   final ManagementActionItemData item;
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -1053,7 +1093,7 @@ class ManagementActionTile extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: borderRadius,
             onTap: item.isEnabled ? item.onTap : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
@@ -1061,7 +1101,7 @@ class ManagementActionTile extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 12, 11, 12),
               decoration: BoxDecoration(
                 color: backgroundColor,
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: borderRadius,
                 border: Border.all(color: borderColor, width: 0.8),
                 boxShadow:
                     item.emphasis == ManagementActionEmphasis.primary &&

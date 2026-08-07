@@ -103,6 +103,7 @@ class _VendasNaoLiquidadasMobileScreenState
             codigoTipoRecebimento: resultado.codigoTipoRecebimento,
             valorRecebido: resultado.valor,
             itens: venda.itens,
+            recebimentos: resultado.recebimentos,
             observacao:
                 resultado.observacao ??
                 'Recebimento total realizado no PDV mobile.',
@@ -129,6 +130,7 @@ class _VendasNaoLiquidadasMobileScreenState
             dataLiquidacao: DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.formaPagamentoBackend,
+            recebimentos: resultado.recebimentos,
             observacoes:
                 resultado.observacao ??
                 'Recebimento parcial realizado no PDV mobile.',
@@ -343,6 +345,10 @@ class _VendasNaoLiquidadasMobileScreenState
             ? _txt('vendasNaoLiquidadas.itemSingular', 'item')
             : _txt('vendasNaoLiquidadas.itemPlural', 'itens');
     return '$quantidade $label';
+  }
+
+  int _quantidadeItensDaVenda(VendaNaoLiquidadaModel venda) {
+    return venda.itens.fold<int>(0, (soma, item) => soma + item.quantidade);
   }
 
   double get _totalAberto =>
@@ -600,21 +606,19 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   Widget _vendaCard(VendaNaoLiquidadaModel venda) {
-    final int quantidadeItens = venda.itens.fold<int>(
-      0,
-      (soma, item) => soma + item.quantidade,
-    );
+    final int quantidadeItens = _quantidadeItensDaVenda(venda);
     final String colaborador =
         venda.nomeColaboradorCriacao.trim().isEmpty
             ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
             : venda.nomeColaboradorCriacao.trim();
+    final Widget detailsButton = _cardDetailsButton(venda);
 
     return Material(
       color: _surfaceColor,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        onTap: _cancelando ? null : () => _receberVenda(venda),
+        onTap: _cancelando ? null : () => _abrirDetalhesVenda(venda),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -667,6 +671,8 @@ class _VendasNaoLiquidadasMobileScreenState
                       ],
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  detailsButton,
                 ],
               ),
               const SizedBox(height: 12),
@@ -716,54 +722,566 @@ class _VendasNaoLiquidadasMobileScreenState
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Flexible(
-                    child: FilledButton.icon(
-                      onPressed:
-                          _cancelando ? null : () => _receberVenda(venda),
-                      icon: const Icon(Icons.payments_outlined, size: 18),
-                      label: Text(
-                        _txt('vendasNaoLiquidadas.receber', 'Receber'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(96, 44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
+                  _pill(
+                    _txt('vendasNaoLiquidadas.verDetalhes', 'Ver detalhes'),
+                    fg: _accentColor,
+                    bg: SixMobilePalette.softAccentSurface,
                   ),
                 ],
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed:
-                      _cancelando
-                          ? null
-                          : () => _confirmarCancelamentoVenda(venda),
-                  icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                  label: Text(
-                    _txt('vendasNaoLiquidadas.cancelarVenda', 'Cancelar venda'),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: _mutedTextColor,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _cardDetailsButton(VendaNaoLiquidadaModel venda) {
+    return Semantics(
+      button: true,
+      label: _txt(
+        'vendasNaoLiquidadas.verDetalhesVenda',
+        'Ver detalhes da venda',
+      ),
+      child: IconButton.filled(
+        style: IconButton.styleFrom(
+          backgroundColor: SixMobilePalette.softAccentSurface,
+          foregroundColor: _accentColor,
+          fixedSize: const Size(40, 40),
+          minimumSize: const Size(40, 40),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        tooltip: _txt(
+          'vendasNaoLiquidadas.verDetalhesVenda',
+          'Ver detalhes da venda',
+        ),
+        onPressed: _cancelando ? null : () => _abrirDetalhesVenda(venda),
+        icon: const Icon(Icons.add_rounded, size: 22),
+      ),
+    );
+  }
+
+  Future<void> _abrirDetalhesVenda(VendaNaoLiquidadaModel venda) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
+      builder: (BuildContext sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.82,
+          minChildSize: 0.46,
+          maxChildSize: 0.94,
+          expand: false,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return _vendaDetalhesSheet(
+              sheetContext: sheetContext,
+              scrollController: scrollController,
+              venda: venda,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _vendaDetalhesSheet({
+    required BuildContext sheetContext,
+    required ScrollController scrollController,
+    required VendaNaoLiquidadaModel venda,
+  }) {
+    final int quantidadeItens = _quantidadeItensDaVenda(venda);
+    final String colaborador =
+        venda.nomeColaboradorCriacao.trim().isEmpty
+            ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
+            : venda.nomeColaboradorCriacao.trim();
+    final bool podeReceber = !_cancelando && venda.valorAberto > 0;
+    final bool podeCancelar = !_cancelando;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: _backgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+          children: <Widget>[
+            Center(
+              child: Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _icon(
+                  Icons.receipt_long_outlined,
+                  bg: SixMobilePalette.softAccentSurface,
+                  fg: _accentColor,
+                  size: 42,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        venda.descricao,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_txt('vendasNaoLiquidadas.criadaPor', 'Criada por')} $colaborador',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: _txt('common.close', 'Fechar'),
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                _pill(_formatarData(venda.dataCompetencia)),
+                _pill(_formatarQuantidadeItens(quantidadeItens)),
+                _pill(venda.status),
+                if (venda.dataVencimento != null)
+                  _pill(
+                    '${_txt('vendasNaoLiquidadas.venceEm', 'Vence em')} '
+                    '${_formatarData(venda.dataVencimento, incluirHora: false)}',
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _vendaDetailActions(
+              sheetContext: sheetContext,
+              venda: venda,
+              podeReceber: podeReceber,
+              podeCancelar: podeCancelar,
+            ),
+            const SizedBox(height: 18),
+            _detailSection(
+              title: _txt('vendasNaoLiquidadas.resumoVenda', 'Resumo da venda'),
+              icon: Icons.assignment_outlined,
+              children: <Widget>[
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.descricao', 'Descrição'),
+                  venda.descricao,
+                ),
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.cliente', 'Cliente'),
+                  venda.nomeCliente,
+                ),
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.colaborador', 'Colaborador'),
+                  colaborador,
+                ),
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.status', 'Status'),
+                  venda.status,
+                ),
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.criacao', 'Criação'),
+                  _formatarData(venda.dataCompetencia),
+                ),
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.vencimento', 'Vencimento'),
+                  _formatarData(venda.dataVencimento, incluirHora: false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _detailSection(
+              title: _txt('vendasNaoLiquidadas.valores', 'Valores'),
+              icon: Icons.payments_outlined,
+              children: <Widget>[
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.valorOriginal', 'Valor original'),
+                  _formatarValor(venda.valorOriginal),
+                ),
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.valorAberto', 'Valor em aberto'),
+                  _formatarValor(venda.valorAberto),
+                  valueColor: venda.valorAberto > 0 ? _accentColor : null,
+                ),
+                _detailLine(
+                  _txt('vendasNaoLiquidadas.itens', 'Itens'),
+                  _formatarQuantidadeItens(quantidadeItens),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _recebimentosVendaSection(venda),
+            const SizedBox(height: 14),
+            _itensVendaSection(venda),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _vendaDetailActions({
+    required BuildContext sheetContext,
+    required VendaNaoLiquidadaModel venda,
+    required bool podeReceber,
+    required bool podeCancelar,
+  }) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 360;
+        final double itemWidth =
+            compact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: <Widget>[
+            SizedBox(
+              width: itemWidth,
+              child: _sheetActionButton(
+                label: _txt('vendasNaoLiquidadas.receber', 'Receber'),
+                icon: Icons.payments_outlined,
+                filled: true,
+                onPressed:
+                    podeReceber
+                        ? () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _receberVenda(venda),
+                        )
+                        : null,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _sheetActionButton(
+                label: _txt(
+                  'vendasNaoLiquidadas.cancelarVenda',
+                  'Cancelar venda',
+                ),
+                icon: Icons.delete_outline_rounded,
+                onPressed:
+                    podeCancelar
+                        ? () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _confirmarCancelamentoVenda(venda),
+                        )
+                        : null,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _sheetActionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool filled = false,
+  }) {
+    final ButtonStyle style =
+        filled
+            ? FilledButton.styleFrom(
+              backgroundColor: _accentColor,
+              foregroundColor: SixMobilePalette.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            )
+            : OutlinedButton.styleFrom(
+              foregroundColor: _primaryColor,
+              side: const BorderSide(color: SixMobilePalette.border),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            );
+    final Widget child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 17),
+        const SizedBox(width: 7),
+        Flexible(
+          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ],
+    );
+
+    return filled
+        ? FilledButton(onPressed: onPressed, style: style, child: child)
+        : OutlinedButton(onPressed: onPressed, style: style, child: child);
+  }
+
+  void _runAfterClosingSheet(BuildContext sheetContext, VoidCallback action) {
+    Navigator.of(sheetContext).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) action();
+    });
+  }
+
+  Widget _detailSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return _baseCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              _icon(
+                icon,
+                bg: SixMobilePalette.softAccentSurface,
+                fg: _accentColor,
+                size: 38,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _detailLine(String label, String? value, {Color? valueColor}) {
+    final String display = _blankAsDash(value);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 112,
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _mutedTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              display,
+              style: TextStyle(
+                color: valueColor ?? _titleTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recebimentosVendaSection(VendaNaoLiquidadaModel venda) {
+    return _detailSection(
+      title: _txt('vendasNaoLiquidadas.recebimentos', 'Recebimentos'),
+      icon: Icons.receipt_long_outlined,
+      children: <Widget>[
+        if (venda.recebimentos.isEmpty)
+          Text(
+            _txt(
+              'vendasNaoLiquidadas.semRecebimentos',
+              'Nenhum recebimento lançado.',
+            ),
+            style: const TextStyle(color: _mutedTextColor),
+          )
+        else
+          ...venda.recebimentos.reversed.map((
+            VendaNaoLiquidadaRecebimentoModel item,
+          ) {
+            final String observacoes = item.observacoes?.trim() ?? '';
+            final String referencia = item.referencia?.trim() ?? '';
+            final String? tipoLiquidacao = _tipoLiquidacaoLabel(
+              item.tipoLiquidacao,
+            );
+            return _detailListTile(
+              icon: Icons.payments_outlined,
+              title: _descricaoRecebimento(item),
+              subtitle: <String>[
+                _formatarData(item.dataLiquidacao ?? item.registradoEm),
+                if (tipoLiquidacao != null) tipoLiquidacao,
+                if (referencia.isNotEmpty)
+                  '${_txt('vendasNaoLiquidadas.referencia', 'Referência')}: '
+                      '$referencia',
+                if (observacoes.isNotEmpty) observacoes,
+              ].join(' • '),
+              trailing: _formatarValor(item.valorLiquidado),
+            );
+          }),
+      ],
+    );
+  }
+
+  String _descricaoRecebimento(VendaNaoLiquidadaRecebimentoModel item) {
+    final String descricao = item.descricaoTipoRecebimento.trim();
+    if (descricao.isNotEmpty) return descricao;
+    final String forma = item.formaPagamentoRealizada.trim();
+    if (forma.isNotEmpty) return forma;
+    final String codigo = item.codigoTipoRecebimento.trim();
+    if (codigo.isNotEmpty) return codigo;
+    return _txt('vendasNaoLiquidadas.recebimento', 'Recebimento');
+  }
+
+  String? _tipoLiquidacaoLabel(String tipoLiquidacao) {
+    switch (tipoLiquidacao.trim().toUpperCase()) {
+      case 'TOTAL':
+        return _txt('vendasNaoLiquidadas.recebimentoTotal', 'Total');
+      case 'PARCIAL':
+        return _txt('vendasNaoLiquidadas.recebimentoParcial', 'Parcial');
+      default:
+        return null;
+    }
+  }
+
+  Widget _itensVendaSection(VendaNaoLiquidadaModel venda) {
+    return _detailSection(
+      title: _txt('vendasNaoLiquidadas.itensVenda', 'Itens da venda'),
+      icon: Icons.inventory_2_outlined,
+      children: <Widget>[
+        if (venda.itens.isEmpty)
+          Text(
+            _txt('vendasNaoLiquidadas.semItens', 'Nenhum item vinculado.'),
+            style: const TextStyle(color: _mutedTextColor),
+          )
+        else
+          ...venda.itens.map((VendaNaoLiquidadaItemModel item) {
+            final double total = item.quantidade * item.valorUnitario;
+            return _detailListTile(
+              icon:
+                  item.ehServico
+                      ? Icons.handyman_outlined
+                      : Icons.inventory_2_outlined,
+              title: item.nome,
+              subtitle:
+                  '${item.quantidade} x ${_formatarValor(item.valorUnitario)}',
+              trailing: _formatarValor(total),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _detailListTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _icon(
+            icon,
+            bg: SixMobilePalette.softNeutralSurface,
+            fg: _primaryColor,
+            size: 34,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  _blankAsDash(title),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _blankAsDash(subtitle),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _mutedTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) ...<Widget>[
+            const SizedBox(width: 10),
+            Text(
+              trailing,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: _titleTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _blankAsDash(String? value) {
+    final String text = value?.trim() ?? '';
+    return text.isEmpty ? '-' : text;
   }
 
   Widget _empty() {

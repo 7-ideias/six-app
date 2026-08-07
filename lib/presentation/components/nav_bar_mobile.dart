@@ -3,7 +3,7 @@ import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/operacao_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
 
 class NavBarMobile extends StatelessWidget {
   const NavBarMobile({super.key, this.initialIndex = 1});
@@ -84,7 +84,7 @@ class NavBarMobile extends StatelessWidget {
         page = const HomePageMobile(title: 'Início');
         break;
       case 2:
-        page = const OperacaoMobileScreen();
+        page = const AtendimentoMobileScreen();
         break;
       default:
         return;

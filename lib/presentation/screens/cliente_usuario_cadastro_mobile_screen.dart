@@ -15,10 +15,12 @@ class ClienteUsuarioCadastroMobileScreen extends StatefulWidget {
     super.key,
     this.cliente,
     this.apiClient,
+    this.returnSavedCliente = false,
   });
 
   final ClienteUsuario? cliente;
   final ClienteUsuarioApiClient? apiClient;
+  final bool returnSavedCliente;
 
   @override
   State<ClienteUsuarioCadastroMobileScreen> createState() =>
@@ -139,9 +141,6 @@ class _ClienteUsuarioCadastroMobileScreenState
     }
     return null;
   }
-
-  String? _requiredOnCreate(String? value) =>
-      _editing ? null : _required(value);
 
   String _formatEditableMoney(num value) {
     final LocaleSettingsProvider? regionalizacao = _regionalizacaoOrNull();
@@ -407,11 +406,10 @@ class _ClienteUsuarioCadastroMobileScreenState
             _permiteFiado ? int.tryParse(_prazo.text.trim()) ?? 0 : 0,
         bloqueadoFiado: _permiteFiado && _bloqueadoFiado,
       );
-      if (_editing) {
-        await _api.atualizarClienteUsuario(widget.cliente!.id, request);
-      } else {
-        await _api.cadastrarClienteUsuario(request);
-      }
+      final ClienteUsuario saved =
+          _editing
+              ? await _api.atualizarClienteUsuario(widget.cliente!.id, request)
+              : await _api.cadastrarClienteUsuario(request);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -421,7 +419,7 @@ class _ClienteUsuarioCadastroMobileScreenState
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(widget.returnSavedCliente ? saved : true);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -756,7 +754,6 @@ class _ClienteUsuarioCadastroMobileScreenState
             _telefone,
             _t('clientes.form.mainPhone', 'Telefone principal'),
             Icons.phone_outlined,
-            validator: _required,
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 14),
@@ -785,7 +782,6 @@ class _ClienteUsuarioCadastroMobileScreenState
             _cep,
             _t('clientes.form.zipCode', 'CEP'),
             Icons.pin_drop_outlined,
-            validator: _requiredOnCreate,
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 14),
@@ -793,7 +789,6 @@ class _ClienteUsuarioCadastroMobileScreenState
             _uf,
             _t('clientes.form.state', 'UF'),
             Icons.map_outlined,
-            validator: _requiredOnCreate,
             textCapitalization: TextCapitalization.characters,
             inputFormatters: <TextInputFormatter>[
               LengthLimitingTextInputFormatter(2),
@@ -805,7 +800,6 @@ class _ClienteUsuarioCadastroMobileScreenState
             _cidade,
             _t('clientes.form.city', 'Cidade'),
             Icons.location_city,
-            validator: _requiredOnCreate,
             textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: 14),
@@ -813,7 +807,6 @@ class _ClienteUsuarioCadastroMobileScreenState
             _logradouro,
             _t('clientes.form.street', 'Logradouro'),
             Icons.home_outlined,
-            validator: _requiredOnCreate,
             textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: 14),
@@ -821,14 +814,12 @@ class _ClienteUsuarioCadastroMobileScreenState
             _numero,
             _t('common.number', 'Número'),
             Icons.format_list_numbered,
-            validator: _requiredOnCreate,
           ),
           const SizedBox(height: 14),
           _field(
             _bairro,
             _t('clientes.form.neighborhood', 'Bairro'),
             Icons.location_city_outlined,
-            validator: _requiredOnCreate,
             textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: 14),

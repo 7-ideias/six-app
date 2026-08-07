@@ -21,14 +21,15 @@ import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.
 
 import '../components/nav_bar_mobile.dart';
 
-class OperacaoMobileScreen extends StatefulWidget {
-  const OperacaoMobileScreen({super.key});
+class AtendimentoMobileScreen extends StatefulWidget {
+  const AtendimentoMobileScreen({super.key});
 
   @override
-  State<OperacaoMobileScreen> createState() => _OperacaoMobileScreenState();
+  State<AtendimentoMobileScreen> createState() =>
+      _AtendimentoMobileScreenState();
 }
 
-class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
+class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   static const Color _bg = SixMobilePalette.background;
   static const Color _primary = SixMobilePalette.primary;
   static const Color _secondary = SixMobilePalette.secondary;
@@ -136,19 +137,33 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
         return SafeArea(
           top: false,
           child: RefreshIndicator(
+            edgeOffset: topInset,
+            displacement: 18,
+            color: _accent,
+            backgroundColor: SixMobilePalette.surface,
             onRefresh: _carregarResumo,
             child: ListView(
               controller: scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
+              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
               children: <Widget>[
                 _section('Atendimento rápido'),
                 const SizedBox(height: 12),
-                _primaryAction(
-                  title: 'Nova venda',
-                  subtitle: 'Abrir atendimento no caixa',
-                  icon: Icons.point_of_sale_rounded,
-                  onTap: _startNewSale,
+                _primaryActionGroup(
+                  actions: <_PrimaryActionData>[
+                    _PrimaryActionData(
+                      title: 'Nova venda',
+                      subtitle: 'Abrir atendimento no caixa',
+                      icon: Icons.point_of_sale_rounded,
+                      onTap: _startNewSale,
+                    ),
+                    _PrimaryActionData(
+                      title: 'Atendimento técnico',
+                      subtitle: 'Iniciar diagnóstico, orçamento e execução',
+                      icon: Icons.build_circle_rounded,
+                      onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 _lockedAction(
@@ -174,13 +189,6 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                   ),
                   icon: Icons.account_balance_wallet_rounded,
                   onTap: () => _go(const OperacoesCaixaMobileScreen()),
-                ),
-                const SizedBox(height: 12),
-                _primaryAction(
-                  title: 'Atendimento técnico',
-                  subtitle: 'Iniciar diagnóstico, orçamento e execução',
-                  icon: Icons.build_circle_rounded,
-                  onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
                 ),
                 const SizedBox(height: 24),
                 _section('Acompanhamento'),
@@ -256,26 +264,77 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
       ),
     ];
 
-    return cards
-        .asMap()
-        .entries
-        .map((MapEntry<int, _TrackingCardData> entry) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SixStaggeredEntry(
-              delay: Duration(milliseconds: 230 + entry.key * 45),
-              child: _trackingCard(
-                title: entry.value.title,
-                subtitle: entry.value.subtitle,
-                value: entry.value.value,
-                icon: entry.value.icon,
-                hasError: hasError,
-                onTap: entry.value.onTap,
-              ),
+    return <Widget>[
+      SixStaggeredEntry(
+        delay: const Duration(milliseconds: 230),
+        child: _trackingCardGroup(cards: cards, hasError: hasError),
+      ),
+    ];
+  }
+
+  Widget _primaryActionGroup({required List<_PrimaryActionData> actions}) {
+    return Material(
+      color: SixMobilePalette.surface,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: SixMobilePalette.border),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 14,
+              offset: Offset(0, 6),
             ),
-          );
-        })
-        .toList(growable: false);
+          ],
+        ),
+        child: Column(
+          children: actions
+              .asMap()
+              .entries
+              .map((MapEntry<int, _PrimaryActionData> entry) {
+                final bool isLast = entry.key == actions.length - 1;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    _primaryActionTile(entry.value),
+                    if (!isLast)
+                      Container(
+                        width: double.infinity,
+                        height: 1,
+                        color: SixMobilePalette.border,
+                      ),
+                  ],
+                );
+              })
+              .toList(growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _primaryActionTile(_PrimaryActionData action) {
+    return InkWell(
+      onTap: action.onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: <Widget>[
+            _iconBox(
+              action.icon,
+              bg: SixMobilePalette.softAccentSurface,
+              fg: _accent,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _texts(action.title, action.subtitle, titleSize: 16),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: _muted),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _primaryAction({
@@ -359,30 +418,70 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
     );
   }
 
-  Widget _trackingCard({
-    required String title,
-    required String subtitle,
-    required String? value,
-    required IconData icon,
-    required VoidCallback onTap,
-    bool hasError = false,
+  Widget _trackingCardGroup({
+    required List<_TrackingCardData> cards,
+    required bool hasError,
   }) {
-    return _card(
-      onTap: onTap,
-      borderColor:
-          hasError ? SixMobilePalette.errorBorder : SixMobilePalette.border,
-      child: Row(
-        children: <Widget>[
-          _iconBox(
-            icon,
-            bg: SixMobilePalette.softNeutralSurface,
-            fg: _primary,
-            size: 46,
-          ),
-          const SizedBox(width: 14),
-          Expanded(child: _texts(title, subtitle, error: hasError)),
-          const SizedBox(width: 12),
-          if (value != null)
+    final Color borderColor =
+        hasError ? SixMobilePalette.errorBorder : SixMobilePalette.border;
+
+    return Material(
+      color: SixMobilePalette.surface,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: borderColor),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 14,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: cards
+              .asMap()
+              .entries
+              .map((MapEntry<int, _TrackingCardData> entry) {
+                final bool isLast = entry.key == cards.length - 1;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    _trackingCardTile(entry.value, hasError: hasError),
+                    if (!isLast)
+                      Container(
+                        width: double.infinity,
+                        height: 1,
+                        color: SixMobilePalette.border,
+                      ),
+                  ],
+                );
+              })
+              .toList(growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _trackingCardTile(_TrackingCardData card, {required bool hasError}) {
+    return InkWell(
+      onTap: card.onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: <Widget>[
+            _iconBox(
+              card.icon,
+              bg: SixMobilePalette.softNeutralSurface,
+              fg: _primary,
+              size: 46,
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: _texts(card.title, card.subtitle, error: hasError)),
+            const SizedBox(width: 12),
             _loading
                 ? Container(
                   width: 34,
@@ -393,16 +492,17 @@ class _OperacaoMobileScreenState extends State<OperacaoMobileScreen> {
                   ),
                 )
                 : SixAnimatedNumberText(
-                  key: ValueKey<String>('inicio-$title-$value'),
-                  value: value,
+                  key: ValueKey<String>('inicio-${card.title}-${card.value}'),
+                  value: card.value,
                   style: const TextStyle(
                     color: _title,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-          const Icon(Icons.chevron_right_rounded, color: _muted),
-        ],
+            const Icon(Icons.chevron_right_rounded, color: _muted),
+          ],
+        ),
       ),
     );
   }
@@ -533,6 +633,20 @@ class _TrackingCardData {
   final String title;
   final String subtitle;
   final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class _PrimaryActionData {
+  const _PrimaryActionData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
 }
