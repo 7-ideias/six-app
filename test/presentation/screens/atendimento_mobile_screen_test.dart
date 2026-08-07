@@ -17,8 +17,10 @@ void main() {
     expect(find.text('Novo serviço'), findsOneWidget);
     expect(find.text('Receber'), findsOneWidget);
     expect(find.text('Acompanhe hoje'), findsOneWidget);
-    expect(find.text('Mais opções'), findsOneWidget);
-    expect(find.text('7'), findsOneWidget);
+    expect(find.text('Mais opções'), findsNothing);
+    expect(find.text('Operações de caixa'), findsOneWidget);
+    expect(find.text('Devoluções'), findsOneWidget);
+    expect(find.text('7'), findsWidgets);
     expect(find.text('3'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -28,7 +30,7 @@ void main() {
   ) async {
     for (final double width in <double>[320, 360, 390, 430]) {
       await _pumpAtendimento(tester, size: Size(width, 900));
-      _expectPrimaryActionCardsSameHeight(tester);
+      _expectActionCardHierarchy(tester);
       expect(tester.takeException(), isNull, reason: 'largura $width');
     }
   });
@@ -39,11 +41,11 @@ void main() {
     await _pumpAtendimento(tester, size: const Size(320, 940), textScale: 1.35);
 
     expect(find.text('Nova venda'), findsOneWidget);
-    _expectPrimaryActionCardsSameHeight(tester);
+    _expectActionCardHierarchy(tester);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('preserva as cinco navegações e mantém devolução bloqueada', (
+  testWidgets('preserva as navegações e mantém devoluções bloqueada', (
     WidgetTester tester,
   ) async {
     final List<String> navigations = await _pumpAtendimento(tester);
@@ -65,10 +67,12 @@ void main() {
     );
     await tester.pump();
     await tester.tap(
-      find.byKey(const ValueKey<String>('atendimento-row-cash')),
+      find.byKey(const ValueKey<String>('atendimento-action-cash')),
     );
     await tester.pump();
-    await tester.tap(find.text('Devolução'));
+    await tester.tap(
+      find.byKey(const ValueKey<String>('atendimento-action-return')),
+    );
     await tester.pump();
 
     expect(navigations, <String>[
@@ -101,7 +105,7 @@ void main() {
   });
 }
 
-void _expectPrimaryActionCardsSameHeight(WidgetTester tester) {
+void _expectActionCardHierarchy(WidgetTester tester) {
   final double saleHeight =
       tester
           .getSize(
@@ -111,6 +115,15 @@ void _expectPrimaryActionCardsSameHeight(WidgetTester tester) {
             ),
           )
           .height;
+  final double saleWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-new-sale'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
   final double serviceHeight =
       tester
           .getSize(
@@ -120,6 +133,15 @@ void _expectPrimaryActionCardsSameHeight(WidgetTester tester) {
             ),
           )
           .height;
+  final double serviceWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-new-service'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
   final double receiveHeight =
       tester
           .getSize(
@@ -129,9 +151,59 @@ void _expectPrimaryActionCardsSameHeight(WidgetTester tester) {
             ),
           )
           .height;
+  final double receiveWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-receive'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
+  final double cashHeight =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-cash'),
+              skipOffstage: false,
+            ),
+          )
+          .height;
+  final double cashWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-cash'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
+  final double returnHeight =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-return'),
+              skipOffstage: false,
+            ),
+          )
+          .height;
+  final double returnWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-return'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
 
   expect(serviceHeight, saleHeight, reason: 'novo serviço');
-  expect(receiveHeight, saleHeight, reason: 'receber');
+  expect(serviceWidth, saleWidth, reason: 'largura novo serviço');
+  expect(cashHeight, receiveHeight, reason: 'altura operações de caixa');
+  expect(returnHeight, receiveHeight, reason: 'altura devoluções');
+  expect(cashWidth, receiveWidth, reason: 'largura operações de caixa');
+  expect(returnWidth, receiveWidth, reason: 'largura devoluções');
+  expect(saleHeight, greaterThan(receiveHeight), reason: 'hierarquia visual');
 }
 
 Future<List<String>> _pumpAtendimento(

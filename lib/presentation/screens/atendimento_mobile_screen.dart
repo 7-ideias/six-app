@@ -52,16 +52,21 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   static const Color _accent = SixMobilePalette.accent;
   static const Color _serviceAccent = Color(0xFF7C3AED);
   static const Color _receiveAccent = Color(0xFF16A34A);
-  static const Color _lockedAccent = Color(0xFF64748B);
+  static const Color _cashAccent = Color(0xFF0F766E);
+  static const Color _returnAccent = Color(0xFFEF4444);
 
   static const String _heroAsset =
       'assets/images/atendimento mobile/atendimento-hero.webp';
   static const String _saleAsset =
-      'assets/images/atendimento mobile/acao-nova-venda.webp';
+      'assets/images/atendimento mobile/acao-nova-venda.png';
   static const String _serviceAsset =
-      'assets/images/atendimento mobile/acao-novo-servico.webp';
+      'assets/images/atendimento mobile/acao-novo-servico.png';
   static const String _receiveAsset =
-      'assets/images/atendimento mobile/acao-receber.webp';
+      'assets/images/atendimento mobile/acao-receber.png';
+  static const String _cashAsset =
+      'assets/images/atendimento mobile/acao-operacoes-caixa.png';
+  static const String _returnAsset =
+      'assets/images/atendimento mobile/acao-devolucoes.png';
 
   late final TelaInicialWebApiClient _api;
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;
@@ -204,7 +209,18 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             const SizedBox(height: 16),
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 95),
-              child: _PrimaryActionsStrip(actions: _primaryActions()),
+              child: _AtendimentoActionsRow(
+                actions: _primaryActions(),
+                prominence: _AtendimentoActionProminence.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 130),
+              child: _AtendimentoActionsRow(
+                actions: _secondaryActions(),
+                prominence: _AtendimentoActionProminence.compact,
+              ),
             ),
             const SizedBox(height: 24),
             _SectionTitle(
@@ -216,18 +232,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
               child: _AtendimentoActionListCard(
                 hasError: _erro != null,
                 rows: _followUpRows(),
-                loadingLabel: _txt('common.loading', 'Carregando...'),
-              ),
-            ),
-            const SizedBox(height: 24),
-            _SectionTitle(
-              title: _txt('atendimento.mobile.moreOptions', 'Mais opções'),
-            ),
-            const SizedBox(height: 12),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 220),
-              child: _AtendimentoActionListCard(
-                rows: _secondaryRows(),
                 loadingLabel: _txt('common.loading', 'Carregando...'),
               ),
             ),
@@ -298,16 +302,46 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         accentColor: _serviceAccent,
         onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
       ),
+    ];
+  }
+
+  List<_PrimaryActionData> _secondaryActions() {
+    return <_PrimaryActionData>[
       _PrimaryActionData(
         id: 'receive',
         title: _txt('atendimento.mobile.receiveTitle', 'Receber'),
         subtitle: _txt(
           'atendimento.mobile.receiveSubtitle',
-          'Baixar vendas em aberto',
+          'Vendas em aberto',
         ),
         assetPath: _receiveAsset,
         accentColor: _receiveAccent,
         onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
+        badgeValue: _resumo?.totalVendasAbertas,
+      ),
+      _PrimaryActionData(
+        id: 'cash',
+        title: _txt(
+          'atendimento.mobile.cashOperationsTitle',
+          'Operações de caixa',
+        ),
+        subtitle: _txt(
+          'atendimento.mobile.cashOperationsSubtitle',
+          'Abrir e movimentar',
+        ),
+        assetPath: _cashAsset,
+        accentColor: _cashAccent,
+        onTap: () => _go(const OperacoesCaixaMobileScreen()),
+      ),
+      _PrimaryActionData(
+        id: 'return',
+        title: _txt('operacao.mobile.returnTitle', 'Devoluções'),
+        subtitle: _txt('operacao.mobile.returnSubtitle', 'Registrar devolução'),
+        assetPath: _returnAsset,
+        accentColor: _returnAccent,
+        onTap: null,
+        enabled: false,
+        statusLabel: _txt('operacao.mobile.returnUnavailable', 'Em breve'),
       ),
     ];
   }
@@ -361,36 +395,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         loading: _loading,
         hasError: hasError,
         onTap: () => _go(const AtendimentosTecnicosMobileScreen()),
-      ),
-    ];
-  }
-
-  List<_AtendimentoListRowData> _secondaryRows() {
-    final String soonLabel = _txt('common.soon', 'Em breve');
-
-    return <_AtendimentoListRowData>[
-      _AtendimentoListRowData(
-        id: 'cash',
-        title: _txt(
-          'atendimento.mobile.cashOperationsTitle',
-          'Operações de caixa',
-        ),
-        subtitle: _txt(
-          'atendimento.mobile.cashOperationsSubtitle',
-          'Abrir, movimentar e fechar caixa',
-        ),
-        icon: Icons.account_balance_wallet_rounded,
-        accentColor: _accent,
-        onTap: () => _go(const OperacoesCaixaMobileScreen()),
-      ),
-      _AtendimentoListRowData(
-        id: 'return',
-        title: _txt('operacao.mobile.returnTitle', 'Devolução'),
-        subtitle: _txt('operacao.mobile.returnUnavailable', 'Em breve'),
-        icon: Icons.assignment_return_outlined,
-        accentColor: _lockedAccent,
-        enabled: false,
-        statusLabel: soonLabel,
       ),
     ];
   }
@@ -546,10 +550,16 @@ class _AtendimentoHeroCard extends StatelessWidget {
   }
 }
 
-class _PrimaryActionsStrip extends StatelessWidget {
-  const _PrimaryActionsStrip({required this.actions});
+enum _AtendimentoActionProminence { primary, compact }
+
+class _AtendimentoActionsRow extends StatelessWidget {
+  const _AtendimentoActionsRow({
+    required this.actions,
+    required this.prominence,
+  });
 
   final List<_PrimaryActionData> actions;
+  final _AtendimentoActionProminence prominence;
 
   @override
   Widget build(BuildContext context) {
@@ -557,194 +567,326 @@ class _PrimaryActionsStrip extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final double width = constraints.maxWidth;
         final double textScale = MediaQuery.textScalerOf(context).scale(1);
-        final bool scrollable = width < 326 || textScale >= 1.22;
-        final double gap = scrollable ? 10 : 8;
-        final double cardWidth =
-            scrollable ? (width * 0.36).clamp(112.0, 136.0) : 0;
-        final double cardHeight = _resolveCardHeight(
-          availableWidth: width,
-          textScale: textScale,
-          scrollable: scrollable,
-        );
+        final double gap =
+            prominence == _AtendimentoActionProminence.primary ? 12 : 8;
+        final double cardHeight = _resolveCardHeight(textScale: textScale);
 
-        final List<Widget> cards = <Widget>[
-          for (int index = 0; index < actions.length; index += 1) ...<Widget>[
-            if (index > 0) SizedBox(width: gap),
-            if (scrollable)
-              SizedBox(
-                width: cardWidth,
-                child: _PrimaryActionCard(data: actions[index]),
-              )
-            else
-              Expanded(child: _PrimaryActionCard(data: actions[index])),
-          ],
-        ];
-
-        final Widget row = SizedBox(
+        return SizedBox(
           height: cardHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: cards,
+            children: <Widget>[
+              for (int index = 0; index < actions.length; index += 1) ...[
+                if (index > 0) SizedBox(width: gap),
+                Expanded(
+                  child: _PrimaryActionCard(
+                    data: actions[index],
+                    prominence: prominence,
+                    availableRowWidth: width,
+                  ),
+                ),
+              ],
+            ],
           ),
-        );
-
-        if (!scrollable) return row;
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          child: row,
         );
       },
     );
   }
 
-  double _resolveCardHeight({
-    required double availableWidth,
-    required double textScale,
-    required bool scrollable,
-  }) {
-    final double estimatedCardWidth =
-        scrollable
-            ? (availableWidth * 0.36).clamp(112.0, 136.0).toDouble()
-            : (availableWidth - 16) / 3;
-    final bool tightThreeColumnCard = !scrollable && estimatedCardWidth < 112;
+  double _resolveCardHeight({required double textScale}) {
     final double scaleExtra = (textScale - 1).clamp(0.0, 0.8).toDouble();
-    return 196 +
-        (tightThreeColumnCard ? 14 : 0) +
-        (scaleExtra * 160) +
-        (scrollable ? 8 : 0);
+    if (prominence == _AtendimentoActionProminence.primary) {
+      return 190 + (scaleExtra * 82);
+    }
+    return 146 + (scaleExtra * 58);
   }
 }
 
 class _PrimaryActionCard extends StatelessWidget {
-  const _PrimaryActionCard({required this.data});
+  const _PrimaryActionCard({
+    required this.data,
+    required this.prominence,
+    required this.availableRowWidth,
+  });
 
   final _PrimaryActionData data;
+  final _AtendimentoActionProminence prominence;
+  final double availableRowWidth;
+
+  bool get _isPrimary => prominence == _AtendimentoActionProminence.primary;
 
   @override
   Widget build(BuildContext context) {
+    final bool enabled = data.enabled && data.onTap != null;
+    final String status = data.statusLabel ?? '';
+    final String badge =
+        data.badgeValue != null && data.badgeValue! > 0
+            ? data.badgeValue.toString()
+            : '';
+    final String semanticSuffix = <String>[
+      if (badge.isNotEmpty) badge,
+      if (status.isNotEmpty) status,
+    ].join('. ');
+    final String semanticLabel =
+        semanticSuffix.isEmpty
+            ? '${data.title}. ${data.subtitle}'
+            : '${data.title}. ${data.subtitle}. $semanticSuffix';
+    final double radius = _isPrimary ? 22 : 18;
+
     return Semantics(
       container: true,
-      button: true,
-      label: '${data.title}. ${data.subtitle}',
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: SixMobilePalette.navigationShadow,
-              blurRadius: 14,
-              offset: Offset(0, 7),
+      button: enabled,
+      enabled: enabled,
+      label: semanticLabel,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.72,
+        child: Container(
+          key: ValueKey<String>('atendimento-action-${data.id}'),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color:
+                    _isPrimary
+                        ? SixMobilePalette.navigationShadow
+                        : SixMobilePalette.navigationShadow.withAlpha(18),
+                blurRadius: _isPrimary ? 16 : 10,
+                offset: Offset(0, _isPrimary ? 8 : 5),
+              ),
+            ],
+          ),
+          child: Material(
+            color: SixMobilePalette.surface,
+            borderRadius: BorderRadius.circular(radius),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: enabled ? data.onTap : null,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  Positioned.fill(
+                    child: Container(
+                      padding:
+                          _isPrimary
+                              ? const EdgeInsets.fromLTRB(10, 11, 10, 10)
+                              : const EdgeInsets.fromLTRB(7, 8, 7, 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(radius),
+                        border: Border.all(
+                          color:
+                              enabled
+                                  ? data.accentColor.withAlpha(
+                                    _isPrimary ? 62 : 42,
+                                  )
+                                  : SixMobilePalette.border,
+                        ),
+                      ),
+                      child: LayoutBuilder(
+                        builder: (
+                          BuildContext context,
+                          BoxConstraints constraints,
+                        ) {
+                          return _ActionCardContent(
+                            data: data,
+                            enabled: enabled,
+                            prominence: prominence,
+                            constraints: constraints,
+                            rowWidth: availableRowWidth,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  if (badge.isNotEmpty)
+                    Positioned(
+                      top: _isPrimary ? 8 : 6,
+                      right: _isPrimary ? 8 : 6,
+                      child: _ActionCounterBadge(value: badge),
+                    ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
-        child: Material(
-          color: SixMobilePalette.surface,
-          borderRadius: BorderRadius.circular(20),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            key: ValueKey<String>('atendimento-action-${data.id}'),
-            onTap: data.onTap,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 154),
-              padding: const EdgeInsets.fromLTRB(9, 10, 9, 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: SixMobilePalette.border),
-              ),
-              child: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final bool compact = constraints.maxWidth < 112;
-                  final double imageCircleSize = compact ? 65 : 72;
-                  final double imageSize = compact ? 53 : 60;
+      ),
+    );
+  }
+}
 
-                  return Column(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        width: imageCircleSize,
-                        height: imageCircleSize,
-                        decoration: BoxDecoration(
-                          color: data.accentColor.withAlpha(22),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Image.asset(
-                            data.assetPath,
-                            width: imageSize,
-                            height: imageSize,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.medium,
-                            errorBuilder: (
-                              BuildContext context,
-                              Object error,
-                              StackTrace? stackTrace,
-                            ) {
-                              return Icon(
-                                Icons.image_not_supported_outlined,
-                                color: data.accentColor,
-                                size: 22,
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                data.title,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: data.accentColor,
-                                  fontSize: compact ? 12 : 12.5,
-                                  height: 1.12,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                data.subtitle,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: SixMobilePalette.mutedText,
-                                  fontSize: 10.5,
-                                  height: 1.16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      ExcludeSemantics(
-                        child: Container(
-                          width: compact ? 22 : 24,
-                          height: compact ? 22 : 24,
-                          decoration: BoxDecoration(
-                            color: data.accentColor.withAlpha(18),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: data.accentColor.withAlpha(48),
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            color: data.accentColor,
-                            size: compact ? 12 : 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+class _ActionCardContent extends StatelessWidget {
+  const _ActionCardContent({
+    required this.data,
+    required this.enabled,
+    required this.prominence,
+    required this.constraints,
+    required this.rowWidth,
+  });
+
+  final _PrimaryActionData data;
+  final bool enabled;
+  final _AtendimentoActionProminence prominence;
+  final BoxConstraints constraints;
+  final double rowWidth;
+
+  bool get _isPrimary => prominence == _AtendimentoActionProminence.primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final double textScale = MediaQuery.textScalerOf(context).scale(1);
+    final bool compactWidth =
+        constraints.maxWidth < (_isPrimary ? 150 : 102) || rowWidth < 340;
+    final bool compactText = textScale >= 1.22;
+    final bool compact = compactWidth || compactText;
+    final double imageCircleSize =
+        _isPrimary ? (compact ? 66 : 78) : (compact ? 42 : 50);
+    final double imageSize =
+        _isPrimary ? (compact ? 58 : 68) : (compact ? 38 : 45);
+    final double titleSize =
+        _isPrimary ? (compact ? 12.6 : 14.4) : (compact ? 9.8 : 10.8);
+    final double subtitleSize =
+        _isPrimary ? (compact ? 10.0 : 10.8) : (compact ? 8.5 : 9.2);
+
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        Container(
+          width: imageCircleSize,
+          height: imageCircleSize,
+          decoration: BoxDecoration(
+            color: data.accentColor.withAlpha(enabled ? 22 : 14),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Image.asset(
+              data.assetPath,
+              width: imageSize,
+              height: imageSize,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (
+                BuildContext context,
+                Object error,
+                StackTrace? stackTrace,
+              ) {
+                return Icon(
+                  Icons.image_not_supported_outlined,
+                  color:
+                      enabled ? data.accentColor : SixMobilePalette.mutedText,
+                  size: _isPrimary ? 22 : 18,
+                );
+              },
             ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: _isPrimary ? 4 : 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                data.title,
+                maxLines: _isPrimary ? 1 : 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color:
+                      enabled ? data.accentColor : SixMobilePalette.mutedText,
+                  fontSize: titleSize,
+                  height: 1.08,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: _isPrimary ? 5 : 4),
+              Text(
+                data.subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: SixMobilePalette.mutedText,
+                  fontSize: subtitleSize,
+                  height: 1.12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _ActionIndicator(
+          accentColor: data.accentColor,
+          enabled: enabled,
+          statusLabel: data.statusLabel,
+          compact: !_isPrimary,
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionIndicator extends StatelessWidget {
+  const _ActionIndicator({
+    required this.accentColor,
+    required this.enabled,
+    required this.statusLabel,
+    required this.compact,
+  });
+
+  final Color accentColor;
+  final bool enabled;
+  final String? statusLabel;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled && statusLabel != null && statusLabel!.isNotEmpty) {
+      return _SoonChip(label: statusLabel!, compact: compact);
+    }
+
+    return ExcludeSemantics(
+      child: Container(
+        width: compact ? 23 : 28,
+        height: compact ? 23 : 28,
+        decoration: BoxDecoration(
+          color: accentColor.withAlpha(enabled ? 22 : 12),
+          shape: BoxShape.circle,
+          border: Border.all(color: accentColor.withAlpha(enabled ? 58 : 28)),
+        ),
+        child: Icon(
+          enabled ? Icons.arrow_forward_rounded : Icons.lock_outline_rounded,
+          color: enabled ? accentColor : SixMobilePalette.mutedText,
+          size: compact ? 13 : 15,
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionCounterBadge extends StatelessWidget {
+  const _ActionCounterBadge({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.notificationBadge,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: SixMobilePalette.onPrimary, width: 1.2),
+        ),
+        child: Text(
+          value,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: SixMobilePalette.onPrimary,
+            fontSize: 10,
+            height: 1,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
@@ -834,37 +976,27 @@ class _AtendimentoActionListRow extends StatelessWidget {
           _ListIcon(
             icon: data.icon,
             accentColor: data.accentColor,
-            enabled: data.enabled,
+            enabled: true,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: _ListTexts(
               title: data.title,
               subtitle: data.subtitle,
-              enabled: data.enabled,
+              enabled: true,
               error: data.hasError,
             ),
           ),
           const SizedBox(width: 10),
           _buildTrailing(),
-          if (data.enabled)
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: SixMobilePalette.mutedText,
-              size: 24,
-            ),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: SixMobilePalette.mutedText,
+            size: 24,
+          ),
         ],
       ),
     );
-
-    if (!data.enabled) {
-      return Semantics(
-        container: true,
-        enabled: false,
-        label: semanticLabel,
-        child: content,
-      );
-    }
 
     return Semantics(
       container: true,
@@ -884,7 +1016,7 @@ class _AtendimentoActionListRow extends StatelessWidget {
       if (data.loading) return loadingLabel;
       return data.value?.toString() ?? '--';
     }
-    return data.statusLabel ?? '';
+    return '';
   }
 
   Widget _buildTrailing() {
@@ -904,11 +1036,8 @@ class _AtendimentoActionListRow extends StatelessWidget {
             'atendimento-counter-${data.id}-${data.value ?? 'empty'}',
           ),
           value: data.value?.toString() ?? '--',
-          style: TextStyle(
-            color:
-                data.enabled
-                    ? SixMobilePalette.titleText
-                    : SixMobilePalette.mutedText,
+          style: const TextStyle(
+            color: SixMobilePalette.titleText,
             fontSize: 22,
             fontWeight: FontWeight.w900,
           ),
@@ -916,12 +1045,7 @@ class _AtendimentoActionListRow extends StatelessWidget {
       );
     }
 
-    final String? statusLabel = data.statusLabel;
-    if (statusLabel == null || statusLabel.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return _SoonChip(label: statusLabel);
+    return const SizedBox.shrink();
   }
 }
 
@@ -1007,38 +1131,49 @@ class _ListTexts extends StatelessWidget {
 }
 
 class _SoonChip extends StatelessWidget {
-  const _SoonChip({required this.label});
+  const _SoonChip({required this.label, this.compact = false});
 
   final String label;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: SixMobilePalette.mutedText.withAlpha(18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: SixMobilePalette.mutedText.withAlpha(35)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const Icon(
-            Icons.lock_outline_rounded,
-            size: 12,
-            color: SixMobilePalette.mutedText,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: compact ? 70 : 118),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 6 : 8,
+          vertical: compact ? 5 : 6,
+        ),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.mutedText.withAlpha(18),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: SixMobilePalette.mutedText.withAlpha(35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.lock_outline_rounded,
+              size: compact ? 10 : 12,
               color: SixMobilePalette.mutedText,
-              fontSize: 11,
-              height: 1,
-              fontWeight: FontWeight.w900,
             ),
-          ),
-        ],
+            SizedBox(width: compact ? 3 : 5),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: SixMobilePalette.mutedText,
+                  fontSize: compact ? 9 : 11,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1092,6 +1227,9 @@ class _PrimaryActionData {
     required this.assetPath,
     required this.accentColor,
     required this.onTap,
+    this.enabled = true,
+    this.badgeValue,
+    this.statusLabel,
   });
 
   final String id;
@@ -1099,7 +1237,10 @@ class _PrimaryActionData {
   final String subtitle;
   final String assetPath;
   final Color accentColor;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
+  final int? badgeValue;
+  final String? statusLabel;
 }
 
 class _AtendimentoListRowData {
@@ -1110,12 +1251,10 @@ class _AtendimentoListRowData {
     required this.icon,
     required this.accentColor,
     this.onTap,
-    this.enabled = true,
     this.showCounter = false,
     this.value,
     this.loading = false,
     this.hasError = false,
-    this.statusLabel,
   });
 
   final String id;
@@ -1124,10 +1263,8 @@ class _AtendimentoListRowData {
   final IconData icon;
   final Color accentColor;
   final VoidCallback? onTap;
-  final bool enabled;
   final bool showCounter;
   final int? value;
   final bool loading;
   final bool hasError;
-  final String? statusLabel;
 }

@@ -746,7 +746,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.newServiceTitle': 'Novo serviço',
     'atendimento.mobile.newServiceSubtitle': 'Abrir atendimento técnico',
     'atendimento.mobile.receiveTitle': 'Receber',
-    'atendimento.mobile.receiveSubtitle': 'Baixar vendas em aberto',
+    'atendimento.mobile.receiveSubtitle': 'Vendas em aberto',
     'atendimento.mobile.followToday': 'Acompanhe hoje',
     'atendimento.mobile.salesToReceiveTitle': 'Vendas a receber',
     'atendimento.mobile.salesToReceiveSubtitle': 'Vendas não liquidadas',
@@ -755,10 +755,10 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Atendimentos técnicos ativos',
     'atendimento.mobile.moreOptions': 'Mais opções',
     'atendimento.mobile.cashOperationsTitle': 'Operações de caixa',
-    'atendimento.mobile.cashOperationsSubtitle':
-        'Abrir, movimentar e fechar caixa',
+    'atendimento.mobile.cashOperationsSubtitle': 'Abrir e movimentar',
     'atendimento.mobile.counterLoadError': 'Não foi possível atualizar agora',
-    'operacao.mobile.returnTitle': 'Devolução',
+    'operacao.mobile.returnTitle': 'Devoluções',
+    'operacao.mobile.returnSubtitle': 'Registrar devolução',
     'operacao.mobile.returnUnavailable': 'Em breve',
 
     // Vendas não liquidadas mobile
@@ -1421,7 +1421,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.newServiceTitle': 'New service',
     'atendimento.mobile.newServiceSubtitle': 'Open technical service',
     'atendimento.mobile.receiveTitle': 'Receive',
-    'atendimento.mobile.receiveSubtitle': 'Settle open sales',
+    'atendimento.mobile.receiveSubtitle': 'Open sales',
     'atendimento.mobile.followToday': 'Track today',
     'atendimento.mobile.salesToReceiveTitle': 'Sales to receive',
     'atendimento.mobile.salesToReceiveSubtitle': 'Unsettled sales',
@@ -1430,9 +1430,10 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Active technical services',
     'atendimento.mobile.moreOptions': 'More options',
     'atendimento.mobile.cashOperationsTitle': 'Cash operations',
-    'atendimento.mobile.cashOperationsSubtitle': 'Open, move and close cash',
+    'atendimento.mobile.cashOperationsSubtitle': 'Open and move',
     'atendimento.mobile.counterLoadError': 'Could not update right now',
-    'operacao.mobile.returnTitle': 'Return',
+    'operacao.mobile.returnTitle': 'Returns',
+    'operacao.mobile.returnSubtitle': 'Register return',
     'operacao.mobile.returnUnavailable': 'Coming soon',
 
     // Open sales mobile
@@ -2117,7 +2118,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.newServiceTitle': 'Nuevo servicio',
     'atendimento.mobile.newServiceSubtitle': 'Abrir atención técnica',
     'atendimento.mobile.receiveTitle': 'Cobrar',
-    'atendimento.mobile.receiveSubtitle': 'Liquidar ventas abiertas',
+    'atendimento.mobile.receiveSubtitle': 'Ventas abiertas',
     'atendimento.mobile.followToday': 'Seguimiento de hoy',
     'atendimento.mobile.salesToReceiveTitle': 'Ventas por cobrar',
     'atendimento.mobile.salesToReceiveSubtitle': 'Ventas no liquidadas',
@@ -2126,9 +2127,10 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Atenciones técnicas activas',
     'atendimento.mobile.moreOptions': 'Más opciones',
     'atendimento.mobile.cashOperationsTitle': 'Operaciones de caja',
-    'atendimento.mobile.cashOperationsSubtitle': 'Abrir, mover y cerrar caja',
+    'atendimento.mobile.cashOperationsSubtitle': 'Abrir y mover',
     'atendimento.mobile.counterLoadError': 'No fue posible actualizar ahora',
-    'operacao.mobile.returnTitle': 'Devolución',
+    'operacao.mobile.returnTitle': 'Devoluciones',
+    'operacao.mobile.returnSubtitle': 'Registrar devolución',
     'operacao.mobile.returnUnavailable': 'Próximamente',
 
     // Ventas no liquidadas mobile
