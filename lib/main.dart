@@ -6,11 +6,9 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/screens/admin_portal_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_novas_ideias_web_page.dart';
-import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:sixpos/presentation/screens/register_page_web.dart';
 import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
-import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_publico_page.dart';
 import 'package:sixpos/presentation/screens/colaborador_convite_publico_web_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_publica_page.dart';
@@ -27,6 +25,7 @@ import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:sixpos/providers/theme_provider.dart';
+import 'package:sixpos/splash_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
@@ -281,12 +280,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home:
-          kIsWeb
-              ? null
-              : (hasSeenOnboarding
-                  ? const AuthGateMobile()
-                  : OnboardingScreen()),
+      home: kIsWeb ? null : SplashScreen(hasSeenOnboarding: hasSeenOnboarding),
       initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
     );

@@ -24,9 +24,7 @@ class MobileHeader extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: scheme.headerBgMobile,
-        border: Border(
-          bottom: BorderSide(color: scheme.border),
-        ),
+        border: Border(bottom: BorderSide(color: scheme.border)),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: WebRootTokens.gutterMobile,
@@ -54,8 +52,7 @@ class MobileHeader extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: WebRootTokens.ink,
-                  borderRadius:
-                      BorderRadius.circular(WebRootTokens.radiusPill),
+                  borderRadius: BorderRadius.circular(WebRootTokens.radiusPill),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -96,7 +93,7 @@ class MobileHeader extends StatelessWidget {
         maxHeight: 100,
         alignment: Alignment.centerLeft,
         child: Image.asset(
-          'assets/images/six-logo-flecha.png',
+          'assets/images/six-logo-flecha.webp',
           height: 80,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.high,

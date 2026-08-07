@@ -43,8 +43,14 @@ class _TypewriterTextState extends State<_TypewriterText> {
   void _startTyping() {
     int index = 0;
     _charTimer = Timer.periodic(_charInterval, (t) {
-      if (!mounted) { t.cancel(); return; }
-      if (index >= widget.text.length) { t.cancel(); return; }
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      if (index >= widget.text.length) {
+        t.cancel();
+        return;
+      }
       setState(() => _displayed = widget.text.substring(0, ++index));
     });
   }
@@ -83,22 +89,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       'title': 'Bem-vindo ao Six!',
       'subtitle': 'Gerencie suas ordens de serviço com facilidade e agilidade.',
-      'image': 'assets/images/onboading/1-bem-vindo.jpg',
+      'image': 'assets/images/onboading/1-bem-vindo.webp',
     },
     {
       'title': 'Cadastro Rápido',
       'subtitle': 'Entre em segundos e comece a trabalhar imediatamente.',
-      'image': 'assets/images/onboading/2-cadastro-rapido.jpg',
+      'image': 'assets/images/onboading/2-cadastro-rapido.webp',
     },
     {
       'title': 'Gestão Técnica',
       'subtitle': 'Acompanhe seus serviços e notificações em tempo real.',
-      'image': 'assets/images/onboading/3-gestao-tecnica.jpg',
+      'image': 'assets/images/onboading/3-gestao-tecnica.webp',
     },
     {
       'title': 'Controle Financeiro',
       'subtitle': 'Gerencie suas contas a pagar e a receber com precisão.',
-      'image': 'assets/images/onboading/4-controle-financeiro.jpg',
+      'image': 'assets/images/onboading/4-controle-financeiro.webp',
     },
   ];
 
@@ -164,10 +170,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             // ── Imagem de fundo com crossfade suave ─────────────────────
             AnimatedSwitcher(
               duration: _fadeDuration,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: child,
-              ),
+              transitionBuilder:
+                  (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
               child: SizedBox.expand(
                 key: ValueKey(_currentPage),
                 child: Image.asset(page['image']!, fit: BoxFit.cover),
@@ -176,14 +181,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // ── Gradiente inferior ───────────────────────────────────────
             const Positioned(
-              bottom: 0, left: 0, right: 0, height: 380,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 380,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     stops: [0.0, 0.6, 1.0],
-                    colors: [Color(0xCC000000), Color(0x99000000), Colors.transparent],
+                    colors: [
+                      Color(0xCC000000),
+                      Color(0x99000000),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
@@ -191,7 +203,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // ── Gradiente superior ───────────────────────────────────────
             const Positioned(
-              top: 0, left: 0, right: 0, height: 120,
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 120,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -205,7 +220,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // ── Textos ───────────────────────────────────────────────────
             Positioned(
-              left: 0, right: 0, bottom: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: SafeArea(
                 top: false,
                 child: Padding(
@@ -217,19 +234,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       // Título: fade + slide (igual antes)
                       AnimatedSwitcher(
                         duration: _fadeDuration,
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.06),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOut,
-                            )),
-                            child: child,
-                          ),
-                        ),
+                        transitionBuilder:
+                            (child, animation) => FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.06),
+                                  end: Offset.zero,
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeOut,
+                                  ),
+                                ),
+                                child: child,
+                              ),
+                            ),
                         child: Align(
                           key: ValueKey(_currentPage),
                           alignment: Alignment.centerLeft,
@@ -265,7 +285,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // ── Indicador de páginas ─────────────────────────────────────
             Positioned(
-              bottom: 44, left: 0, right: 0,
+              bottom: 44,
+              left: 0,
+              right: 0,
               child: Center(
                 child: AnimatedSmoothIndicator(
                   activeIndex: _currentPage,
@@ -283,7 +305,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // ── Botão "Vamos lá" ─────────────────────────────────────────
             Positioned(
-              bottom: 28, right: 24,
+              bottom: 28,
+              right: 24,
               child: AnimatedOpacity(
                 opacity: _showVamosLa ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 400),
@@ -293,7 +316,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onPressed: _goToLogin,
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
                       overlayColor: Colors.white.withValues(alpha: 0.12),
                     ),
                     child: const Row(
@@ -309,7 +335,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
                         SizedBox(width: 6),
-                        Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                       ],
                     ),
                   ),

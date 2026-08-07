@@ -12,7 +12,8 @@ class OrdemServicoPublicaPage extends StatefulWidget {
   final Uri initialUri;
 
   @override
-  State<OrdemServicoPublicaPage> createState() => _OrdemServicoPublicaPageState();
+  State<OrdemServicoPublicaPage> createState() =>
+      _OrdemServicoPublicaPageState();
 }
 
 class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
@@ -85,7 +86,9 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Assinatura registrada com sucesso nesta sessão pública.'),
+        content: Text(
+          'Assinatura registrada com sucesso nesta sessão pública.',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -319,13 +322,14 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
           const SizedBox(height: 18),
           CheckboxListTile(
             value: _aceitouTermos,
-            onChanged: _assinaturaConcluida
-                ? null
-                : (value) {
-                    setState(() {
-                      _aceitouTermos = value ?? false;
-                    });
-                  },
+            onChanged:
+                _assinaturaConcluida
+                    ? null
+                    : (value) {
+                      setState(() {
+                        _aceitouTermos = value ?? false;
+                      });
+                    },
             contentPadding: EdgeInsets.zero,
             title: const Text(
               'Confirmo que li o resumo e autorizo o registro desta assinatura digital.',
@@ -359,12 +363,13 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
             runSpacing: 12,
             children: [
               OutlinedButton.icon(
-                onPressed: _assinaturaConcluida
-                    ? null
-                    : () {
-                        _signatureController.clear();
-                        setState(() {});
-                      },
+                onPressed:
+                    _assinaturaConcluida
+                        ? null
+                        : () {
+                          _signatureController.clear();
+                          setState(() {});
+                        },
                 icon: const Icon(Icons.layers_clear_outlined),
                 label: const Text('Limpar assinatura'),
               ),
@@ -397,7 +402,7 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Registro local efetuado em ${_assinadoEm!.toLocal()}',
+                    'Registro local efetuado em $_assinadoEm',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],

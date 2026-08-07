@@ -66,18 +66,22 @@ class _DesktopHeaderState extends State<DesktopHeader> {
             constraints: const BoxConstraints(maxWidth: 1280),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: scheme.isDark
-                    ? const Color(0xE60A1624)
-                    : Colors.white.withOpacity(0.88),
+                color:
+                    scheme.isDark
+                        ? const Color(0xE60A1624)
+                        : Colors.white.withOpacity(0.88),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: scheme.isDark
-                      ? Colors.white.withOpacity(0.08)
-                      : Colors.white.withOpacity(0.78),
+                  color:
+                      scheme.isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : Colors.white.withOpacity(0.78),
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: const Color(0xFF0B1F3A).withOpacity(scheme.isDark ? 0.22 : 0.08),
+                    color: const Color(
+                      0xFF0B1F3A,
+                    ).withOpacity(scheme.isDark ? 0.22 : 0.08),
                     blurRadius: 34,
                     offset: const Offset(0, 18),
                   ),
@@ -173,7 +177,7 @@ class _BrandMark extends StatelessWidget {
             ],
           ),
           child: Image.asset(
-            'assets/images/six-logo-flecha.png',
+            'assets/images/six-logo-flecha.webp',
             fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
             color: Colors.white,
@@ -235,14 +239,16 @@ class _FlowNavState extends State<_FlowNav> {
       child: Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-          color: widget.scheme.isDark
-              ? Colors.white.withOpacity(0.04)
-              : const Color(0xFFF1F5F9).withOpacity(0.86),
+          color:
+              widget.scheme.isDark
+                  ? Colors.white.withOpacity(0.04)
+                  : const Color(0xFFF1F5F9).withOpacity(0.86),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: widget.scheme.isDark
-                ? Colors.white.withOpacity(0.06)
-                : const Color(0xFFE2E8F0),
+            color:
+                widget.scheme.isDark
+                    ? Colors.white.withOpacity(0.06)
+                    : const Color(0xFFE2E8F0),
           ),
         ),
         child: Row(
@@ -289,9 +295,10 @@ class _FlowNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color foreground = active
-        ? Colors.white
-        : (hovering ? scheme.textPrimary : scheme.textMuted);
+    final Color foreground =
+        active
+            ? Colors.white
+            : (hovering ? scheme.textPrimary : scheme.textMuted);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => onEnter(),
@@ -312,23 +319,25 @@ class _FlowNavButton extends StatelessWidget {
               vertical: 10,
             ),
             decoration: BoxDecoration(
-              color: active
-                  ? const Color(0xFF0B1F3A)
-                  : (hovering
-                      ? (scheme.isDark
-                          ? Colors.white.withOpacity(0.06)
-                          : Colors.white.withOpacity(0.86))
-                      : Colors.transparent),
+              color:
+                  active
+                      ? const Color(0xFF0B1F3A)
+                      : (hovering
+                          ? (scheme.isDark
+                              ? Colors.white.withOpacity(0.06)
+                              : Colors.white.withOpacity(0.86))
+                          : Colors.transparent),
               borderRadius: BorderRadius.circular(999),
-              boxShadow: active
-                  ? <BoxShadow>[
-                      BoxShadow(
-                        color: const Color(0xFF0B1F3A).withOpacity(0.18),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : null,
+              boxShadow:
+                  active
+                      ? <BoxShadow>[
+                        BoxShadow(
+                          color: const Color(0xFF0B1F3A).withOpacity(0.18),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ]
+                      : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

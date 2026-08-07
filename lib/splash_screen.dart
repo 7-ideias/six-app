@@ -2,16 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:sixpos/design_system/tokens/web_root_tokens.dart';
+import 'package:flutter/services.dart';
+import 'package:sixpos/core/constants/six_animation_assets.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/six_web_splash_scene.dart';
-import 'package:sixpos/presentation/screens/auth_entry_mobile.dart';
+import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
+import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
 
-// Splash em duas fases — fade-in do logo + brand reveal — antes de
-// navegar pra próxima tela. Usa o asset oficial six-logo-flecha.png e a
-// paleta do design (ink + accent).
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({super.key, this.hasSeenOnboarding = true});
+
+  final bool hasSeenOnboarding;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -19,41 +21,77 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _fade;
-  late final Animation<double> _scale;
+  static const Duration _splashDuration = Duration(seconds: 3);
+  static const Duration _frameFadeDuration = Duration(milliseconds: 260);
+
+  late final AnimationController _frameController;
+  late final Animation<double> _sceneOpacity;
   Timer? _navTimer;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
+    _frameController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: _splashDuration,
     )..forward();
 
-    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _scale = Tween<double>(
-      begin: 0.92,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _sceneOpacity = TweenSequence<double>(<TweenSequenceItem<double>>[
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 0,
+          end: 1,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 16,
+      ),
+      TweenSequenceItem<double>(tween: ConstantTween<double>(1), weight: 72),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1,
+          end: 0.92,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 12,
+      ),
+    ]).animate(_frameController);
 
-    _navTimer = Timer(const Duration(milliseconds: 2200), () {
+    _navTimer = Timer(_splashDuration, () {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder:
-              (_) => kIsWeb ? const LoginPageWeb() : const AuthEntryMobile(),
-        ),
+        MaterialPageRoute<void>(builder: (_) => _resolveNextPage()),
       );
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    for (final asset in SixAnimationAssets.splashFrames) {
+      unawaited(precacheImage(AssetImage(asset), context));
+    }
+  }
+
+  @override
   void dispose() {
     _navTimer?.cancel();
-    _ctrl.dispose();
+    _frameController.dispose();
     super.dispose();
+  }
+
+  Widget _resolveNextPage() {
+    if (kIsWeb) {
+      return const LoginPageWeb();
+    }
+
+    return widget.hasSeenOnboarding
+        ? const AuthGateMobile()
+        : OnboardingScreen();
+  }
+
+  int _currentFrameIndex() {
+    final index =
+        (_frameController.value * SixAnimationAssets.splashFrames.length)
+            .floor();
+    return index.clamp(0, SixAnimationAssets.splashFrames.length - 1).toInt();
   }
 
   @override
@@ -64,33 +102,61 @@ class _SplashScreenState extends State<SplashScreen>
       );
     }
 
-    return Scaffold(
-      backgroundColor: WebRootTokens.surface,
-      body: Center(
-        child: FadeTransition(
-          opacity: _fade,
-          child: ScaleTransition(
-            scale: _scale,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Image.asset(
-                  'assets/images/six-logo-flecha.png',
-                  height: 180,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                ),
-                const SizedBox(height: 24),
-                const SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.4,
-                    valueColor: AlwaysStoppedAnimation(WebRootTokens.accent),
+    final mediaQuery = MediaQuery.of(context);
+    final reduceMotion =
+        mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: SixMobilePalette.surface,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: SixMobilePalette.surface,
+        body: Semantics(
+          container: true,
+          image: true,
+          label: 'SixApp',
+          child: AnimatedBuilder(
+            animation: _frameController,
+            builder: (context, _) {
+              final frameAsset =
+                  SixAnimationAssets.splashFrames[reduceMotion
+                      ? 0
+                      : _currentFrameIndex()];
+
+              return Opacity(
+                opacity: reduceMotion ? 1 : _sceneOpacity.value,
+                child: AnimatedSwitcher(
+                  duration: reduceMotion ? Duration.zero : _frameFadeDuration,
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: LayoutBuilder(
+                    key: ValueKey<String>(frameAsset),
+                    builder: (context, constraints) {
+                      final aspectRatio =
+                          constraints.maxHeight == 0
+                              ? 0.56
+                              : constraints.maxWidth / constraints.maxHeight;
+                      final fit =
+                          aspectRatio > 0.68 ? BoxFit.contain : BoxFit.cover;
+
+                      return Image.asset(
+                        frameAsset,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: fit,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.high,
+                      );
+                    },
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

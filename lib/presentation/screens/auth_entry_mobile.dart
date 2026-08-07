@@ -150,7 +150,7 @@ class _EntryHero extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: Image.asset(
-                'assets/images/six-logo-flecha.png',
+                'assets/images/six-logo-flecha.webp',
                 fit: BoxFit.contain,
               ),
             ),

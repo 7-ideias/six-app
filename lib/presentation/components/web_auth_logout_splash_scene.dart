@@ -7,7 +7,8 @@ class WebAuthLogoutSplashScene extends StatefulWidget {
   const WebAuthLogoutSplashScene({super.key});
 
   @override
-  State<WebAuthLogoutSplashScene> createState() => _WebAuthLogoutSplashSceneState();
+  State<WebAuthLogoutSplashScene> createState() =>
+      _WebAuthLogoutSplashSceneState();
 }
 
 class _WebAuthLogoutSplashSceneState extends State<WebAuthLogoutSplashScene>
@@ -35,14 +36,16 @@ class _WebAuthLogoutSplashSceneState extends State<WebAuthLogoutSplashScene>
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final bool isCompact = width < 640;
-        final double logoSize = (isCompact ? width * 0.42 : 210)
-            .clamp(118.0, isCompact ? 168.0 : 220.0)
-            .toDouble();
+        final double logoSize =
+            (isCompact ? width * 0.42 : 210)
+                .clamp(118.0, isCompact ? 168.0 : 220.0)
+                .toDouble();
         final double panelPadding = isCompact ? 28.0 : 44.0;
         final double panelMaxWidth = isCompact ? 400.0 : 520.0;
-        final double backgroundMarkSize = (isCompact ? width * 0.84 : width * 0.26)
-            .clamp(isCompact ? 210.0 : 260.0, isCompact ? 360.0 : 460.0)
-            .toDouble();
+        final double backgroundMarkSize =
+            (isCompact ? width * 0.84 : width * 0.26)
+                .clamp(isCompact ? 210.0 : 260.0, isCompact ? 360.0 : 460.0)
+                .toDouble();
 
         return AnimatedBuilder(
           animation: _backgroundController,
@@ -57,9 +60,21 @@ class _WebAuthLogoutSplashSceneState extends State<WebAuthLogoutSplashScene>
                   begin: Alignment(-1 + progress * 0.38, -1),
                   end: Alignment(1, 1 - progress * 0.28),
                   colors: <Color>[
-                    Color.lerp(_LogoutSplashPalette.navy950, _LogoutSplashPalette.navy900, progress)!,
-                    Color.lerp(_LogoutSplashPalette.navy900, _LogoutSplashPalette.blue900, progress)!,
-                    Color.lerp(_LogoutSplashPalette.blue800, _LogoutSplashPalette.navy950, progress)!,
+                    Color.lerp(
+                      _LogoutSplashPalette.navy950,
+                      _LogoutSplashPalette.navy900,
+                      progress,
+                    )!,
+                    Color.lerp(
+                      _LogoutSplashPalette.navy900,
+                      _LogoutSplashPalette.blue900,
+                      progress,
+                    )!,
+                    Color.lerp(
+                      _LogoutSplashPalette.blue800,
+                      _LogoutSplashPalette.navy950,
+                      progress,
+                    )!,
                   ],
                 ),
               ),
@@ -97,7 +112,9 @@ class _WebAuthLogoutSplashSceneState extends State<WebAuthLogoutSplashScene>
                       child: Text(
                         '6',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(isCompact ? 0.05 : 0.06),
+                          color: Colors.white.withOpacity(
+                            isCompact ? 0.05 : 0.06,
+                          ),
                           fontSize: isCompact ? 260 : 460,
                           fontWeight: FontWeight.w900,
                           height: 0.86,
@@ -116,36 +133,38 @@ class _WebAuthLogoutSplashSceneState extends State<WebAuthLogoutSplashScene>
                         child: ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: panelMaxWidth),
                           child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(isCompact ? 28 : 36),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.18),
-                                width: 1,
-                              ),
-                              boxShadow: const <BoxShadow>[
-                                BoxShadow(
-                                  color: Color(0x33000000),
-                                  blurRadius: 56,
-                                  offset: Offset(0, 28),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.all(panelPadding),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  _LogoutLogoConstellation(
-                                    size: logoSize,
-                                    progress: progress,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.10),
+                                  borderRadius: BorderRadius.circular(
+                                    isCompact ? 28 : 36,
                                   ),
-                                  SizedBox(height: isCompact ? 30 : 38),
-                                  _LogoutProgressDots(compact: isCompact),
-                                ],
-                              ),
-                            ),
-                          )
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.18),
+                                    width: 1,
+                                  ),
+                                  boxShadow: const <BoxShadow>[
+                                    BoxShadow(
+                                      color: Color(0x33000000),
+                                      blurRadius: 56,
+                                      offset: Offset(0, 28),
+                                    ),
+                                  ],
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.all(panelPadding),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      _LogoutLogoConstellation(
+                                        size: logoSize,
+                                        progress: progress,
+                                      ),
+                                      SizedBox(height: isCompact ? 30 : 38),
+                                      _LogoutProgressDots(compact: isCompact),
+                                    ],
+                                  ),
+                                ),
+                              )
                               .animate()
                               .fadeIn(duration: 520.ms, curve: Curves.easeOut)
                               .slideY(
@@ -197,10 +216,7 @@ class _LogoutBackgroundWatermark extends StatelessWidget {
 }
 
 class _LogoutLogoConstellation extends StatelessWidget {
-  const _LogoutLogoConstellation({
-    required this.size,
-    required this.progress,
-  });
+  const _LogoutLogoConstellation({required this.size, required this.progress});
 
   final double size;
   final double progress;
@@ -237,20 +253,22 @@ class _LogoutLogoConstellation extends StatelessWidget {
                 orbitRadius,
               ),
               child: Container(
-                width: dotSize,
-                height: dotSize,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(index.isEven ? 0.82 : 0.52),
-                  shape: BoxShape.circle,
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.34),
-                      blurRadius: 18,
-                      spreadRadius: 2,
+                    width: dotSize,
+                    height: dotSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(
+                        index.isEven ? 0.82 : 0.52,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.34),
+                          blurRadius: 18,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              )
+                  )
                   .animate(
                     onPlay: (controller) => controller.repeat(reverse: true),
                     delay: (index * 90).ms,
@@ -263,30 +281,30 @@ class _LogoutLogoConstellation extends StatelessWidget {
                   ),
             ),
           Container(
-            width: size,
-            height: size,
-            padding: EdgeInsets.all(size * 0.12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.94),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.84),
-                width: 1.2,
-              ),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x2E000000),
-                  blurRadius: 40,
-                  offset: Offset(0, 18),
+                width: size,
+                height: size,
+                padding: EdgeInsets.all(size * 0.12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.94),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.84),
+                    width: 1.2,
+                  ),
+                  boxShadow: const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x2E000000),
+                      blurRadius: 40,
+                      offset: Offset(0, 18),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Image.asset(
-              'assets/images/six-logo-flecha.png',
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-            ),
-          )
+                child: Image.asset(
+                  'assets/images/six-logo-flecha.webp',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              )
               .animate()
               .fadeIn(duration: 620.ms, curve: Curves.easeOut)
               .scale(
@@ -318,20 +336,20 @@ class _LogoutProgressDots extends StatelessWidget {
         runSpacing: 8,
         children: List.generate(6, (int index) {
           return Container(
-            width: dotSize,
-            height: dotSize,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.78),
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.26),
-                  blurRadius: 14,
-                  spreadRadius: 1,
+                width: dotSize,
+                height: dotSize,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.78),
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.26),
+                      blurRadius: 14,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )
+              )
               .animate(
                 onPlay: (controller) => controller.repeat(reverse: true),
                 delay: (index * 110).ms,
@@ -409,29 +427,35 @@ class _LogoutBackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = compact ? 0.8 : 1.1;
+    final Paint strokePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = compact ? 0.8 : 1.1;
 
     for (int index = 0; index < 6; index++) {
-      final double dx = size.width * (0.12 + index * 0.16) +
+      final double dx =
+          size.width * (0.12 + index * 0.16) +
           math.sin(progress * math.pi + index) * 12;
-      final double dy = size.height * (index.isEven ? 0.20 : 0.72) +
+      final double dy =
+          size.height * (index.isEven ? 0.20 : 0.72) +
           math.cos(progress * math.pi + index) * 18;
-      final double radius = (compact ? 36.0 : 58.0) + index * (compact ? 8 : 12);
+      final double radius =
+          (compact ? 36.0 : 58.0) + index * (compact ? 8 : 12);
       strokePaint.color = Colors.white.withOpacity(0.030 + index * 0.006);
       canvas.drawCircle(Offset(dx, dy), radius, strokePaint);
     }
 
-    final Paint wavePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = compact ? 1.1 : 1.4
-      ..color = Colors.white.withOpacity(0.07);
+    final Paint wavePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = compact ? 1.1 : 1.4
+          ..color = Colors.white.withOpacity(0.07);
 
     final Path wave = Path();
     final double baseY = size.height * (compact ? 0.66 : 0.58);
     for (double x = -20; x <= size.width + 20; x += 18) {
-      final double y = baseY +
+      final double y =
+          baseY +
           math.sin((x / 96) + progress * math.pi * 2) * (compact ? 10 : 16);
       if (x == -20) {
         wave.moveTo(x, y);

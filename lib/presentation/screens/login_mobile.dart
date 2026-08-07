@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sixpos/core/constants/six_animation_assets.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 
@@ -124,10 +127,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         SixStaggeredEntry(
-                          child: _MobileLoginHeader(
-                            title: context.t('auth.loginTitleMobile'),
-                            subtitle: context.t('auth.loginSubtitleMobile'),
-                          ),
+                          child: const _MobileLoginLoopAnimation(),
                         ),
                         const SizedBox(height: 18),
                         SixStaggeredEntry(
@@ -261,71 +261,114 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   }
 }
 
-class _MobileLoginHeader extends StatelessWidget {
-  const _MobileLoginHeader({required this.title, required this.subtitle});
+class _MobileLoginLoopAnimation extends StatefulWidget {
+  const _MobileLoginLoopAnimation();
 
-  final String title;
-  final String subtitle;
+  @override
+  State<_MobileLoginLoopAnimation> createState() =>
+      _MobileLoginLoopAnimationState();
+}
+
+class _MobileLoginLoopAnimationState extends State<_MobileLoginLoopAnimation>
+    with SingleTickerProviderStateMixin {
+  static const Duration _loopDuration = Duration(milliseconds: 2400);
+  static const Duration _frameFadeDuration = Duration(milliseconds: 120);
+  static const double _aspectRatio = 1916 / 821;
+
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _loopDuration)
+      ..repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    for (final asset in SixAnimationAssets.loginFrames) {
+      unawaited(precacheImage(AssetImage(asset), context));
+    }
+    _syncMotionPreference();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  int _currentFrameIndex() {
+    final index =
+        (_controller.value * SixAnimationAssets.loginFrames.length).floor();
+    return index.clamp(0, SixAnimationAssets.loginFrames.length - 1).toInt();
+  }
+
+  void _syncMotionPreference() {
+    final mediaQuery = MediaQuery.maybeOf(context);
+    final reduceMotion =
+        mediaQuery?.disableAnimations == true ||
+        mediaQuery?.accessibleNavigation == true;
+
+    if (reduceMotion && _controller.isAnimating) {
+      _controller.stop();
+    } else if (!reduceMotion && !_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
-      decoration: BoxDecoration(
-        color: SixMobilePalette.primary,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: SixMobilePalette.onPrimary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: SixMobilePalette.onPrimary.withValues(alpha: 0.16),
-              ),
+    final mediaQuery = MediaQuery.of(context);
+    final reduceMotion =
+        mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
+
+    return Semantics(
+      container: true,
+      image: true,
+      label: 'SixApp',
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: SixMobilePalette.primary,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: SixMobilePalette.primary),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: SixMobilePalette.heroShadow,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: const Icon(
-              Icons.storefront_rounded,
-              color: SixMobilePalette.onPrimary,
-              size: 22,
-            ),
+          ],
+        ),
+        child: AspectRatio(
+          aspectRatio: _aspectRatio,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final frameAsset =
+                  SixAnimationAssets.loginFrames[reduceMotion
+                      ? 0
+                      : _currentFrameIndex()];
+
+              return AnimatedSwitcher(
+                duration: reduceMotion ? Duration.zero : _frameFadeDuration,
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                child: Image.asset(
+                  frameAsset,
+                  key: ValueKey<String>(frameAsset),
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  filterQuality: FilterQuality.high,
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 18),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.onPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              height: 1.08,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.heroSupportingText,
-              fontSize: 14,
-              height: 1.45,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
