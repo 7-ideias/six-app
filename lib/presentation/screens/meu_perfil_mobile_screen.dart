@@ -273,13 +273,13 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
       context: context,
       showDragHandle: true,
       backgroundColor: SixMobilePalette.surface,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (BuildContext bottomSheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -290,14 +290,14 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _buildFotoOption(
                   bottomSheetContext,
                   icon: Icons.photo_camera_outlined,
                   title: _t('perfil.mobile.takePhoto', 'Tirar foto'),
                   source: ImageSource.camera,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _buildFotoOption(
                   bottomSheetContext,
                   icon: Icons.photo_library_outlined,
@@ -328,7 +328,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
           _selecionarFotoPerfil(source);
         },
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: SixMobilePalette.border),
@@ -336,11 +336,11 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
           child: Row(
             children: <Widget>[
               Icon(icon, color: SixMobilePalette.accent),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w700,
                   ),
@@ -361,21 +361,21 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon, size: 20, color: SixMobilePalette.accent),
-      prefixIconConstraints: const BoxConstraints(minWidth: 44),
+      prefixIconConstraints: BoxConstraints(minWidth: 44),
       filled: true,
       fillColor: SixMobilePalette.surface,
-      contentPadding: const EdgeInsets.fromLTRB(14, 15, 14, 15),
+      contentPadding: EdgeInsets.fromLTRB(14, 15, 14, 15),
       labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
         color: SixMobilePalette.mutedText,
         fontWeight: FontWeight.w500,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: SixMobilePalette.border),
+        borderSide: BorderSide(color: SixMobilePalette.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
+        borderSide: BorderSide(
           color: SixMobilePalette.highlightedBorder,
           width: 1.4,
         ),
@@ -423,13 +423,13 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
 
     return SixStaggeredEntry(
       delay: Duration(milliseconds: 70 * order),
-      beginOffset: const Offset(0, 0.035),
+      beginOffset: Offset(0, 0.035),
       child: Semantics(
         container: true,
         label: title,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: SixMobilePalette.surface,
             borderRadius: BorderRadius.circular(20),
@@ -438,7 +438,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
               BoxShadow(
                 color: SixMobilePalette.navigationShadow.withValues(alpha: 0.7),
                 blurRadius: 18,
-                offset: const Offset(0, 8),
+                offset: Offset(0, 8),
               ),
             ],
           ),
@@ -457,7 +457,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                     ),
                     child: Icon(icon, color: SixMobilePalette.accent, size: 22),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,7 +471,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Text(
                           subtitle,
                           maxLines: 2,
@@ -487,7 +487,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               ...children,
             ],
           ),
@@ -497,7 +497,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
   }
 
   Widget _fieldSpacing(Widget child) {
-    return Padding(padding: const EdgeInsets.only(bottom: 12), child: child);
+    return Padding(padding: EdgeInsets.only(bottom: 12), child: child);
   }
 
   Widget _buildProfilePhotoButton() {
@@ -525,7 +525,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
               ),
               child:
                   _salvandoFoto
-                      ? const Center(
+                      ? Center(
                         child: SizedBox(
                           width: 22,
                           height: 22,
@@ -558,7 +558,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                     width: 1.2,
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.photo_camera_outlined,
                   size: 13,
                   color: SixMobilePalette.accent,
@@ -583,11 +583,11 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     return SixStaggeredEntry(
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: SixMobilePalette.primary,
           borderRadius: BorderRadius.circular(22),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.heroShadow,
               blurRadius: 18,
@@ -598,7 +598,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         child: Row(
           children: <Widget>[
             _buildProfilePhotoButton(),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,7 +612,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     email.isEmpty
                         ? _t(
@@ -649,7 +649,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 24),
         children: <Widget>[
           _buildProfileSummary(context),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _buildSection(
             context: context,
             title: _t('perfil.personalData.title', 'Dados pessoais'),
@@ -743,7 +743,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _buildSection(
             context: context,
             title: _t('perfil.address.title', 'Endereço'),
@@ -837,7 +837,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
             backgroundColor: SixMobilePalette.surface,
             borderColor: SixMobilePalette.border,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           const _ProfileSkeletonSection(),
           SizedBox(height: 14),
           const _ProfileSkeletonSection(compact: true),
@@ -852,7 +852,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     return SafeArea(
       top: false,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           border: Border(top: BorderSide(color: SixMobilePalette.border)),
           boxShadow: <BoxShadow>[
@@ -864,7 +864,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
           child: Row(
             children: <Widget>[
               Expanded(
@@ -872,9 +872,9 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                   onPressed:
                       _salvando ? null : () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 48),
+                    minimumSize: Size(0, 48),
                     foregroundColor: SixMobilePalette.primary,
-                    side: const BorderSide(color: SixMobilePalette.border),
+                    side: BorderSide(color: SixMobilePalette.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -886,14 +886,14 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 flex: 2,
                 child: FilledButton.icon(
                   onPressed:
                       (_salvando || _carregandoInicial) ? null : _salvarPerfil,
                   style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 48),
+                    minimumSize: Size(0, 48),
                     backgroundColor: SixMobilePalette.accent,
                     foregroundColor: SixMobilePalette.onPrimary,
                     shape: RoundedRectangleBorder(
@@ -912,7 +912,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                               ),
                             ),
                           )
-                          : const Icon(Icons.save_outlined),
+                          : Icon(Icons.save_outlined),
                   label: Text(
                     _salvando
                         ? _t('common.saving', 'Salvando...')
@@ -939,7 +939,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
       accentColor: SixMobilePalette.accent,
       leading: IconButton(
         tooltip: _t('common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       bottomNavigationBar: _buildBottomBar(context),
@@ -967,7 +967,7 @@ class _ProfileSkeletonSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(20),
@@ -979,20 +979,20 @@ class _ProfileSkeletonSection extends StatelessWidget {
           Row(
             children: <Widget>[
               _skeletonBox(width: 42, height: 42, radius: 14),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     _skeletonBox(width: 144, height: 14),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     _skeletonBox(width: compact ? 190 : 250, height: 10),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           ...List<Widget>.generate(compact ? 3 : 5, (int index) {
             return Padding(
               padding: EdgeInsets.only(

@@ -30,10 +30,10 @@ class CatalogHealthMobileScreen extends StatelessWidget {
 class _CatalogHealthMobileView extends StatelessWidget {
   const _CatalogHealthMobileView();
 
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
 
   @override
   Widget build(BuildContext context) {
@@ -66,14 +66,14 @@ class _CatalogHealthMobileView extends StatelessWidget {
                     onRefresh: provider.reload,
                     child: ListView(
                       controller: scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
+                      physics: AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
                       children: <Widget>[
                         AnimatedSwitcher(
                           duration:
                               reduceMotion
                                   ? Duration.zero
-                                  : const Duration(milliseconds: 220),
+                                  : Duration(milliseconds: 220),
                           switchInCurve: Curves.easeOutCubic,
                           switchOutCurve: Curves.easeInCubic,
                           child: _buildState(
@@ -113,7 +113,7 @@ class _CatalogHealthMobileView extends StatelessWidget {
 
     if (provider.hasError) {
       return _CatalogErrorState(
-        key: const ValueKey<String>('catalog-health-error'),
+        key: ValueKey<String>('catalog-health-error'),
         onRetry: provider.reload,
       );
     }
@@ -121,7 +121,7 @@ class _CatalogHealthMobileView extends StatelessWidget {
     final CatalogHealthSummary? summary = provider.summary;
     if (summary == null || summary.isEmpty) {
       return _CatalogEmptyState(
-        key: const ValueKey<String>('catalog-health-empty'),
+        key: ValueKey<String>('catalog-health-empty'),
         canCreate: permissions.podeCadastrarProduto,
         onNewProduct: () => _openCreate(context, 'PRODUTO'),
         onNewService: () => _openCreate(context, 'SERVICO'),
@@ -129,7 +129,7 @@ class _CatalogHealthMobileView extends StatelessWidget {
     }
 
     return _CatalogSuccessState(
-      key: const ValueKey<String>('catalog-health-success'),
+      key: ValueKey<String>('catalog-health-success'),
       summary: summary,
       animationRevision: provider.loadRevision,
       canCreate: permissions.podeCadastrarProduto,
@@ -148,7 +148,7 @@ class _CatalogHealthMobileView extends StatelessWidget {
   void _openProducts(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const ProdutolistMobileScreen(tipoInicial: 'PRODUTO'),
+        builder: (_) => ProdutolistMobileScreen(tipoInicial: 'PRODUTO'),
       ),
     );
   }
@@ -156,7 +156,7 @@ class _CatalogHealthMobileView extends StatelessWidget {
   void _openServices(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const ProdutolistMobileScreen(tipoInicial: 'SERVICO'),
+        builder: (_) => ProdutolistMobileScreen(tipoInicial: 'SERVICO'),
       ),
     );
   }
@@ -248,10 +248,10 @@ class _CatalogSuccessState extends StatelessWidget {
           reduceMotion: reduceMotion,
         ),
       ),
-      const SizedBox(height: 16),
+      SizedBox(height: 16),
       _entry(
         reduceMotion: reduceMotion,
-        delay: const Duration(milliseconds: 120),
+        delay: Duration(milliseconds: 120),
         child: Row(
           children: <Widget>[
             Expanded(
@@ -262,7 +262,7 @@ class _CatalogSuccessState extends StatelessWidget {
                 onTap: onOpenProducts,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _CatalogEntryCard(
                 metric: services,
@@ -275,10 +275,10 @@ class _CatalogSuccessState extends StatelessWidget {
         ),
       ),
       if (canCreate) ...<Widget>[
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _entry(
           reduceMotion: reduceMotion,
-          delay: const Duration(milliseconds: 170),
+          delay: Duration(milliseconds: 170),
           child: Row(
             children: <Widget>[
               Expanded(
@@ -288,7 +288,7 @@ class _CatalogSuccessState extends StatelessWidget {
                   onTap: onNewProduct,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: _CatalogActionButton(
                   label: newServiceAction?.title ?? 'Novo serviço',
@@ -300,21 +300,21 @@ class _CatalogSuccessState extends StatelessWidget {
           ),
         ),
       ],
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       _entry(
         reduceMotion: reduceMotion,
-        delay: const Duration(milliseconds: 220),
+        delay: Duration(milliseconds: 220),
         child: _SectionTitle(
           title: summary.pendingSection.title,
           subtitle: summary.pendingSection.description,
         ),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       ...pendingMetrics.asMap().entries.map((
         MapEntry<int, CatalogHealthMetric> entry,
       ) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: EdgeInsets.only(bottom: 10),
           child: _entry(
             reduceMotion: reduceMotion,
             delay: Duration(milliseconds: 260 + (entry.key * 40)),
@@ -326,10 +326,10 @@ class _CatalogSuccessState extends StatelessWidget {
         );
       }),
       if (!canViewStock) ...<Widget>[
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         _entry(
           reduceMotion: reduceMotion,
-          delay: const Duration(milliseconds: 320),
+          delay: Duration(milliseconds: 320),
           child: const _RestrictedStockNotice(),
         ),
       ],
@@ -386,12 +386,12 @@ class _CatalogHealthHero extends StatelessWidget {
       label: '${health.title}. ${health.description}. $attentionLabel.',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 14),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.heroShadow,
               blurRadius: 16,
@@ -406,25 +406,25 @@ class _CatalogHealthHero extends StatelessWidget {
               summary.header.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               health.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.mutedText,
                 fontSize: 12,
                 height: 1.3,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Center(
               child: CatalogHealthScoreIndicator(
                 percentage: health.percentage,
@@ -491,9 +491,9 @@ Color _catalogSemanticColor(String code) {
     case 'VERMELHO':
       return SixMobilePalette.error;
     case 'AMARELO':
-      return const Color(0xFFFBBF24);
+      return Color(0xFFFBBF24);
     case 'VERDE':
-      return const Color(0xFF14B8A6);
+      return Color(0xFF14B8A6);
     case 'AZUL':
       return SixMobilePalette.accent;
     default:
@@ -524,8 +524,8 @@ class _CatalogEntryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 112),
-            padding: const EdgeInsets.all(14),
+            constraints: BoxConstraints(minHeight: 112),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: SixMobilePalette.border),
@@ -548,29 +548,29 @@ class _CatalogEntryCard extends StatelessWidget {
                         size: 20,
                       ),
                     ),
-                    const Spacer(),
-                    const Icon(
+                    Spacer(),
+                    Icon(
                       Icons.chevron_right_rounded,
                       color: SixMobilePalette.mutedText,
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 SixAnimatedNumberText(
                   value: metric.value.toString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontSize: 22,
                     height: 1,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: 5),
                 Text(
                   metric.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w900,
                   ),
@@ -607,7 +607,7 @@ class _CatalogActionButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: SixMobilePalette.accent,
           foregroundColor: SixMobilePalette.onPrimary,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 13),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -630,18 +630,18 @@ class _SectionTitle extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: SixMobilePalette.titleText,
             fontSize: 16,
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           subtitle,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             color: SixMobilePalette.mutedText,
             height: 1.3,
             fontSize: 12,
@@ -686,8 +686,8 @@ class _CatalogPendingCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 72),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            constraints: BoxConstraints(minHeight: 72),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: SixMobilePalette.border),
@@ -707,7 +707,7 @@ class _CatalogPendingCard extends StatelessWidget {
                     size: 21,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -716,18 +716,18 @@ class _CatalogPendingCard extends StatelessWidget {
                         metric.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         metric.subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -736,7 +736,7 @@ class _CatalogPendingCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Text(
                   stateText,
                   maxLines: 1,
@@ -747,8 +747,8 @@ class _CatalogPendingCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(width: 6),
-                const Icon(
+                SizedBox(width: 6),
+                Icon(
                   Icons.chevron_right_rounded,
                   color: SixMobilePalette.mutedText,
                 ),
@@ -770,13 +770,13 @@ class _RestrictedStockNotice extends StatelessWidget {
       container: true,
       label: 'Indicadores de estoque ocultos pelo seu acesso.',
       child: Container(
-        padding: const EdgeInsets.all(13),
+        padding: EdgeInsets.all(13),
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: SixMobilePalette.border),
         ),
-        child: const Row(
+        child: Row(
           children: <Widget>[
             Icon(
               Icons.lock_outline_rounded,
@@ -816,25 +816,25 @@ class _CatalogLoadingState extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const _SkeletonLine(width: 260),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           const _SkeletonLine(width: 132),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           const _SkeletonCard(height: 132),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Row(
-            children: const <Widget>[
+            children: <Widget>[
               Expanded(child: _SkeletonCard(height: 112)),
               SizedBox(width: 10),
               Expanded(child: _SkeletonCard(height: 112)),
             ],
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           const _SkeletonLine(width: 120),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           const _SkeletonCard(height: 72),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           const _SkeletonCard(height: 72),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           const _SkeletonCard(height: 72),
         ],
       ),
@@ -869,14 +869,14 @@ class _CatalogEmptyState extends StatelessWidget {
                   icon: Icons.add_rounded,
                   onTap: onNewProduct,
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _CatalogActionButton(
                   label: 'Novo serviço',
                   icon: Icons.design_services_outlined,
                   onTap: onNewService,
                 ),
               ]
-              : const <Widget>[],
+              : <Widget>[],
     );
   }
 }
@@ -895,8 +895,8 @@ class _CatalogErrorState extends StatelessWidget {
       actions: <Widget>[
         OutlinedButton.icon(
           onPressed: onRetry,
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Tentar novamente'),
+          icon: Icon(Icons.refresh_rounded),
+          label: Text('Tentar novamente'),
         ),
       ],
     );
@@ -938,7 +938,7 @@ class _StateCard extends StatelessWidget {
       label: '$title. $subtitle',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(22),
@@ -956,25 +956,22 @@ class _StateCard extends StatelessWidget {
               ),
               child: Icon(icon, color: SixMobilePalette.primary),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               subtitle,
-              style: const TextStyle(
-                color: SixMobilePalette.mutedText,
-                height: 1.35,
-              ),
+              style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
             ),
             if (actions.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               ...actions,
             ],
           ],

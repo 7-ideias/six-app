@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 
 import '../../core/exceptions/recuperacao_senha_exception.dart';
 import '../../core/services/recuperacao_senha_service.dart';
@@ -55,20 +56,25 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    const fieldFill = Color(0xFFF1F3F2);
-    const labelGrey = Color(0xFF8A8F8D);
-    const textDark = Color(0xFF1A1A1A);
+    final Color backgroundColor = SixAuthTokens.shellBackground(context);
+    final Color primary = SixAuthTokens.interactiveColor(context);
+    final Color foreground = SixAuthTokens.onInteractiveColor(context);
+    final Color fieldFill = SixAuthTokens.fieldFill(context);
+    final Color fieldBorder = SixAuthTokens.fieldBorder(context);
+    final Color labelGrey = SixAuthTokens.textMuted(context);
+    final Color textColor = SixAuthTokens.textPrimary(context);
+    final bool useAdaptiveBorder = SixAuthTokens.usesMobileAdaptiveColors(
+      context,
+    );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: textDark, size: 20),
+          icon: Icon(Icons.arrow_back_ios_rounded, color: textColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -79,24 +85,20 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Esqueceu a senha?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
-                  color: textDark,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Informe seu e-mail para\nrecuperar sua senha',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: labelGrey,
-                  height: 1.45,
-                ),
+                style: TextStyle(fontSize: 14, color: labelGrey, height: 1.45),
               ),
               const SizedBox(height: 32),
 
@@ -106,27 +108,37 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _enviarCodigo(),
-                style: const TextStyle(fontSize: 15, color: textDark),
+                cursorColor: primary,
+                style: TextStyle(fontSize: 15, color: textColor),
                 decoration: InputDecoration(
                   hintText: 'E-mail',
-                  hintStyle:
-                      const TextStyle(color: labelGrey, fontSize: 15),
+                  hintStyle: TextStyle(color: labelGrey, fontSize: 15),
                   filled: true,
                   fillColor: fieldFill,
                   contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16, horizontal: 14),
+                    vertical: 16,
+                    horizontal: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
+                    borderSide:
+                        useAdaptiveBorder
+                            ? BorderSide(color: fieldBorder)
+                            : BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
+                    borderSide:
+                        useAdaptiveBorder
+                            ? BorderSide(color: fieldBorder)
+                            : BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(
-                        color: primary.withValues(alpha: 0.4), width: 1.2),
+                      color: primary.withValues(alpha: 0.4),
+                      width: 1.2,
+                    ),
                   ),
                 ),
               ),
@@ -139,29 +151,30 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
                   onPressed: _isLoading ? null : _enviarCodigo,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: foreground,
                     disabledBackgroundColor: primary.withValues(alpha: 0.6),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.4,
+                  child:
+                      _isLoading
+                          ? SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              color: foreground,
+                              strokeWidth: 2.4,
+                            ),
+                          )
+                          : const Text(
+                            'Enviar código de verificação',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        )
-                      : const Text(
-                          'Enviar código de verificação',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                 ),
               ),
             ],

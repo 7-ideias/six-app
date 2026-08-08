@@ -22,12 +22,12 @@ class OperationalProcedureIntro extends StatelessWidget {
       label: '$title $demoLabel.',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 12,
@@ -45,13 +45,13 @@ class OperationalProcedureIntro extends StatelessWidget {
                 color: SixMobilePalette.softAccentSurface,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.fact_check_outlined,
                 color: SixMobilePalette.accent,
                 size: 21,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,14 +60,14 @@ class OperationalProcedureIntro extends StatelessWidget {
                     title,
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.titleText,
                       fontSize: 16,
                       height: 1.25,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 9),
+                  SizedBox(height: 9),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: OperationalProcedureDemoBadge(label: demoLabel),
@@ -117,7 +117,7 @@ class OperationalProcedureNewAction extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: SixMobilePalette.accent,
             foregroundColor: SixMobilePalette.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -142,7 +142,7 @@ class OperationalProcedureLoadingState extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const <Widget>[
+        children: <Widget>[
           OperationalProcedureIntro(),
           SizedBox(height: 14),
           _FilterSkeletonRow(),
@@ -168,8 +168,8 @@ class OperationalProcedureEmptyState extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const OperationalProcedureIntro(),
-        const SizedBox(height: 14),
+        OperationalProcedureIntro(),
+        SizedBox(height: 14),
         OperationalProcedureStateMessage(
           icon: Icons.fact_check_outlined,
           title: context.t(
@@ -262,7 +262,7 @@ class OperationalProcedureStateMessage extends StatelessWidget {
       label: '$title. $description',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(18),
@@ -272,31 +272,31 @@ class OperationalProcedureStateMessage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Icon(icon, color: SixMobilePalette.accent, size: 28),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               title,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 17,
                 height: 1.2,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               description,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.mutedText,
                 fontSize: 13,
                 height: 1.35,
               ),
             ),
             if (actionLabel != null && onAction != null) ...<Widget>[
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: onAction,
                 icon: Icon(actionIcon ?? Icons.chevron_right_rounded, size: 18),
@@ -308,10 +308,7 @@ class OperationalProcedureStateMessage extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: SixMobilePalette.accent,
                   foregroundColor: SixMobilePalette.onPrimary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -333,7 +330,7 @@ class _FilterSkeletonRow extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: const <Widget>[
+      children: <Widget>[
         _SkeletonBlock(width: 74, height: 40, radius: 999),
         _SkeletonBlock(width: 82, height: 40, radius: 999),
         _SkeletonBlock(width: 90, height: 40, radius: 999),
@@ -349,12 +346,12 @@ class _ProcedureCardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
+      padding: EdgeInsets.fromLTRB(14, 14, 12, 12),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.navigationShadow,
             blurRadius: 10,
@@ -366,27 +363,27 @@ class _ProcedureCardSkeleton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
-            children: const <Widget>[
+            children: <Widget>[
               Expanded(child: _SkeletonBlock(height: 18, radius: 8)),
               SizedBox(width: 12),
               _SkeletonBlock(width: 86, height: 30, radius: 999),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           const _SkeletonBlock(height: 12, radius: 7),
-          const SizedBox(height: 6),
-          const FractionallySizedBox(
+          SizedBox(height: 6),
+          FractionallySizedBox(
             widthFactor: 0.68,
             child: _SkeletonBlock(height: 12, radius: 7),
           ),
-          const SizedBox(height: 13),
-          const FractionallySizedBox(
+          SizedBox(height: 13),
+          FractionallySizedBox(
             widthFactor: 0.82,
             child: _SkeletonBlock(height: 16, radius: 8),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Row(
-            children: const <Widget>[
+            children: <Widget>[
               _SkeletonBlock(width: 92, height: 15, radius: 8),
               SizedBox(width: 12),
               _SkeletonBlock(width: 78, height: 15, radius: 8),

@@ -15,9 +15,9 @@ class ReceberMobileScreen extends StatelessWidget {
 
   final ReceberMobileNavigate? onNavigate;
 
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
   static const Color _accentColor = Color(0xFF16A34A);
   static const Color _serviceAccentColor = Color(0xFF0F766E);
 
@@ -38,7 +38,7 @@ class ReceberMobileScreen extends StatelessWidget {
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _t(context, 'common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       bodyBuilder: (
@@ -50,13 +50,13 @@ class ReceberMobileScreen extends StatelessWidget {
           top: false,
           child: ListView(
             controller: scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16, topInset + 14, 16, 24),
             children: <Widget>[
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 40),
+                delay: Duration(milliseconds: 40),
                 child: _ReceiveActionButton(
-                  key: const ValueKey<String>('receber-action-sales'),
+                  key: ValueKey<String>('receber-action-sales'),
                   title: _t(
                     context,
                     'atendimento.mobile.salesToReceiveTitle',
@@ -70,16 +70,14 @@ class ReceberMobileScreen extends StatelessWidget {
                   icon: Icons.point_of_sale_outlined,
                   badgeIcon: Icons.payments_rounded,
                   accentColor: _accentColor,
-                  onTap:
-                      () =>
-                          _go(context, const VendasNaoLiquidadasMobileScreen()),
+                  onTap: () => _go(context, VendasNaoLiquidadasMobileScreen()),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 95),
+                delay: Duration(milliseconds: 95),
                 child: _ReceiveActionButton(
-                  key: const ValueKey<String>('receber-action-services'),
+                  key: ValueKey<String>('receber-action-services'),
                   title: _t(
                     context,
                     'atendimento.mobile.servicesToReceiveTitle',
@@ -96,7 +94,7 @@ class ReceberMobileScreen extends StatelessWidget {
                   onTap:
                       () => _go(
                         context,
-                        const AtendimentosTecnicosPendentesPagamentoMobileScreen(),
+                        AtendimentosTecnicosPendentesPagamentoMobileScreen(),
                       ),
                 ),
               ),
@@ -145,7 +143,7 @@ class _ReceiveActionButton extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 16,
@@ -160,8 +158,8 @@ class _ReceiveActionButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             child: Container(
-              constraints: const BoxConstraints(minHeight: 118),
-              padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+              constraints: BoxConstraints(minHeight: 118),
+              padding: EdgeInsets.fromLTRB(16, 16, 14, 16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: accentColor.withAlpha(58)),
@@ -173,7 +171,7 @@ class _ReceiveActionButton extends StatelessWidget {
                     badgeIcon: badgeIcon,
                     accentColor: accentColor,
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -190,12 +188,12 @@ class _ReceiveActionButton extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 7),
+                        SizedBox(height: 7),
                         Text(
                           subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: SixMobilePalette.mutedText,
                             fontSize: 12.5,
                             height: 1.24,
@@ -205,7 +203,7 @@ class _ReceiveActionButton extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _ReceiveActionArrow(accentColor: accentColor),
                 ],
               ),

@@ -13,19 +13,19 @@ class AuthEntryMobile extends StatelessWidget {
   void _goToLogin(BuildContext context) {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const LoginPageMobile()));
+    ).push(MaterialPageRoute<void>(builder: (_) => LoginPageMobile()));
   }
 
   void _goToOnboarding(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SignupOnboardingMobile()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => SignupOnboardingMobile()));
   }
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: SixMobilePalette.primary,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
@@ -36,7 +36,7 @@ class AuthEntryMobile extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+                padding: EdgeInsets.fromLTRB(20, 18, 20, 24),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     minHeight: constraints.maxHeight - 42,
@@ -57,9 +57,9 @@ class AuthEntryMobile extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18),
                       SixStaggeredEntry(
-                        delay: const Duration(milliseconds: 70),
+                        delay: Duration(milliseconds: 70),
                         child: _ChoiceCard(
                           icon: Icons.login_rounded,
                           title: context.t(
@@ -79,9 +79,9 @@ class AuthEntryMobile extends StatelessWidget {
                           primary: true,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       SixStaggeredEntry(
-                        delay: const Duration(milliseconds: 120),
+                        delay: Duration(milliseconds: 120),
                         child: _ChoiceCard(
                           icon: Icons.storefront_rounded,
                           title: context.t(
@@ -100,7 +100,7 @@ class AuthEntryMobile extends StatelessWidget {
                           onPressed: () => _goToOnboarding(context),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -122,11 +122,11 @@ class _EntryHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+      padding: EdgeInsets.fromLTRB(22, 24, 22, 24),
       decoration: BoxDecoration(
         color: SixMobilePalette.primary,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.heroShadow,
             blurRadius: 10,
@@ -148,31 +148,31 @@ class _EntryHero extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10),
               child: Image.asset(
                 'assets/images/six-logo-flecha.webp',
                 fit: BoxFit.contain,
               ),
             ),
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Text(
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.onPrimary,
               fontSize: 28,
               fontWeight: FontWeight.w800,
               height: 1.08,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             subtitle,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.heroSupportingText,
               fontSize: 14,
               height: 1.45,
@@ -210,7 +210,7 @@ class _ChoiceCard extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: SixMobilePalette.surface,
             borderRadius: BorderRadius.circular(18),
@@ -220,7 +220,7 @@ class _ChoiceCard extends StatelessWidget {
                       ? SixMobilePalette.highlightedBorder
                       : SixMobilePalette.border,
             ),
-            boxShadow: const <BoxShadow>[
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: SixMobilePalette.navigationShadow,
                 blurRadius: 8,
@@ -250,13 +250,13 @@ class _ChoiceCard extends StatelessWidget {
                       size: 21,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.titleText,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -266,19 +266,19 @@ class _ChoiceCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 subtitle,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.mutedText,
                   fontSize: 13.5,
                   height: 1.45,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -300,9 +300,7 @@ class _ChoiceCard extends StatelessWidget {
                           onPressed: onPressed,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: SixMobilePalette.titleText,
-                            side: const BorderSide(
-                              color: SixMobilePalette.border,
-                            ),
+                            side: BorderSide(color: SixMobilePalette.border),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -329,7 +327,7 @@ class _ChoiceButtonLabel extends StatelessWidget {
       label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
     );
   }
 }

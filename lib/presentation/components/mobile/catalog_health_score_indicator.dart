@@ -32,7 +32,7 @@ class CatalogHealthScoreIndicator extends StatelessWidget {
     final TextScaler textScaler = MediaQuery.textScalerOf(context);
     final double ringSize = textScaler.scale(128).clamp(112.0, 148.0);
     final Duration duration =
-        reduceMotion ? Duration.zero : const Duration(milliseconds: 760);
+        reduceMotion ? Duration.zero : Duration(milliseconds: 760);
 
     return Semantics(
       container: true,
@@ -64,7 +64,7 @@ class CatalogHealthScoreIndicator extends StatelessWidget {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(18),
+                      padding: EdgeInsets.all(18),
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Column(
@@ -73,17 +73,17 @@ class CatalogHealthScoreIndicator extends StatelessWidget {
                             Text(
                               '${(progress * 100).round()}%',
                               maxLines: 1,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.titleText,
                                 fontSize: 32,
                                 height: 1,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 7),
+                            SizedBox(height: 7),
                             Container(
-                              constraints: const BoxConstraints(maxWidth: 104),
-                              padding: const EdgeInsets.symmetric(
+                              constraints: BoxConstraints(maxWidth: 104),
+                              padding: EdgeInsets.symmetric(
                                 horizontal: 10,
                                 vertical: 5,
                               ),
@@ -115,10 +115,10 @@ class CatalogHealthScoreIndicator extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
               color: SixMobilePalette.softNeutralSurface,
               borderRadius: BorderRadius.circular(14),
@@ -133,13 +133,13 @@ class CatalogHealthScoreIndicator extends StatelessWidget {
                   size: 16,
                   semanticLabel: null,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     attentionLabel,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.titleText,
                       fontSize: 12,
                       height: 1.25,
@@ -240,10 +240,10 @@ Color _semanticAccentColor(String code) {
     case 'AMARELO':
     case 'ALERTA':
     case 'ATENCAO':
-      return const Color(0xFFB7791F);
+      return Color(0xFFB7791F);
     case 'VERDE':
     case 'SAUDAVEL':
-      return const Color(0xFF0F766E);
+      return Color(0xFF0F766E);
     case 'AZUL':
       return SixMobilePalette.accent;
     default:

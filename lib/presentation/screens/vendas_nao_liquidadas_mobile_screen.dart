@@ -7,6 +7,7 @@ import '../../data/models/caixa_models.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
+import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -24,19 +25,25 @@ class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
 
 class _VendasNaoLiquidadasMobileScreenState
     extends State<VendasNaoLiquidadasMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
   static const Duration _stateTransitionDuration = Duration(milliseconds: 240);
 
   final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
   final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
       AgendaFinanceiraAcoesFinanceiras();
   final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _backgroundColor => _colors.background;
+  Color get _primaryColor => _colors.primary;
+  Color get _secondaryColor => _colors.secondary;
+  Color get _accentColor => _colors.accent;
+  Color get _surfaceColor => _colors.surface;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _softAccentSurface => _colors.softAccentSurface;
+  Color get _softSurface => _colors.softSurface;
+  Color get _borderColor => _colors.border;
+  Color get _heroShadow => _colors.heroShadow;
 
   bool _loading = true;
   bool _cancelando = false;
@@ -177,12 +184,10 @@ class _VendasNaoLiquidadasMobileScreenState
         return SafeArea(
           top: false,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+            padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -192,7 +197,7 @@ class _VendasNaoLiquidadasMobileScreenState
                   child: Container(
                     width: 46,
                     height: 5,
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(999),
@@ -208,7 +213,7 @@ class _VendasNaoLiquidadasMobileScreenState
                       fg: SixMobilePalette.error,
                       size: 44,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +228,7 @@ class _VendasNaoLiquidadasMobileScreenState
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             bottomSheetContext.t(
                               'vendasNaoLiquidadas.cancelarDescricao',
@@ -240,12 +245,12 @@ class _VendasNaoLiquidadasMobileScreenState
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 _cancelamentoResumo(venda),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 FilledButton.icon(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(true),
-                  icon: const Icon(Icons.check_circle_outline_rounded),
+                  icon: Icon(Icons.check_circle_outline_rounded),
                   label: Text(
                     bottomSheetContext.t(
                       'common.confirm',
@@ -255,22 +260,22 @@ class _VendasNaoLiquidadasMobileScreenState
                   style: FilledButton.styleFrom(
                     backgroundColor: SixMobilePalette.error,
                     foregroundColor: SixMobilePalette.onPrimary,
-                    minimumSize: const Size.fromHeight(50),
+                    minimumSize: Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(false),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: Icon(Icons.arrow_back_rounded),
                   label: Text(
                     bottomSheetContext.t('common.back', fallback: 'Voltar'),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _titleTextColor,
-                    minimumSize: const Size.fromHeight(46),
+                    minimumSize: Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -383,14 +388,14 @@ class _VendasNaoLiquidadasMobileScreenState
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _txt('common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       actions: <Widget>[
         IconButton(
           tooltip: _txt('common.refresh', 'Atualizar'),
           onPressed: _loading || _cancelando ? null : _carregar,
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
         ),
       ],
       bodyBuilder: _buildContent,
@@ -414,7 +419,7 @@ class _VendasNaoLiquidadasMobileScreenState
             onRefresh: _carregar,
             child: ListView(
               controller: scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
               children: <Widget>[
                 AnimatedSwitcher(
@@ -436,13 +441,13 @@ class _VendasNaoLiquidadasMobileScreenState
   Widget _buildState({required bool reduceMotion}) {
     if (_loading) {
       return _loadingState(
-        key: const ValueKey<String>('vendas-nao-liquidadas-loading'),
+        key: ValueKey<String>('vendas-nao-liquidadas-loading'),
       );
     }
 
     if (_erro != null) {
       return _estado(
-        key: const ValueKey<String>('vendas-nao-liquidadas-error'),
+        key: ValueKey<String>('vendas-nao-liquidadas-error'),
         icon: Icons.error_outline_rounded,
         titulo: _txt(
           'vendasNaoLiquidadas.erroTitulo',
@@ -466,19 +471,19 @@ class _VendasNaoLiquidadasMobileScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _entry(_header(reduceMotion: reduceMotion), reduceMotion: reduceMotion),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         _entry(
           _section(
             _txt('vendasNaoLiquidadas.secaoAbertas', 'Vendas em aberto'),
           ),
-          delay: const Duration(milliseconds: 70),
+          delay: Duration(milliseconds: 70),
           reduceMotion: reduceMotion,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         if (_vendas.isEmpty)
           _entry(
             _empty(),
-            delay: const Duration(milliseconds: 110),
+            delay: Duration(milliseconds: 110),
             reduceMotion: reduceMotion,
           )
         else
@@ -486,7 +491,7 @@ class _VendasNaoLiquidadasMobileScreenState
             MapEntry<int, VendaNaoLiquidadaModel> entry,
           ) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(bottom: 12),
               child: _entry(
                 _vendaCard(entry.value),
                 delay: Duration(milliseconds: 110 + entry.key * 40),
@@ -509,20 +514,16 @@ class _VendasNaoLiquidadasMobileScreenState
 
   Widget _header({required bool reduceMotion}) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(color: _heroShadow, blurRadius: 20, offset: Offset(0, 10)),
         ],
       ),
       child: Column(
@@ -535,7 +536,7 @@ class _VendasNaoLiquidadasMobileScreenState
                 bg: _withAlpha(SixMobilePalette.onPrimary, 0.12),
                 fg: SixMobilePalette.onPrimary,
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,18 +548,18 @@ class _VendasNaoLiquidadasMobileScreenState
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       _formatarQuantidadeVendas(_vendas.length),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.heroSupportingText,
                         fontWeight: FontWeight.w700,
                       ),
@@ -568,10 +569,10 @@ class _VendasNaoLiquidadasMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: _withAlpha(SixMobilePalette.onPrimary, 0.10),
               borderRadius: BorderRadius.circular(18),
@@ -584,13 +585,13 @@ class _VendasNaoLiquidadasMobileScreenState
               children: <Widget>[
                 Text(
                   _txt('vendasNaoLiquidadas.totalEmAberto', 'Total em aberto'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.heroLabelText,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 _AnimatedMetricValue(
                   key: ValueKey<String>(
                     'header-total-${_totalAberto.toStringAsFixed(2)}',
@@ -598,7 +599,7 @@ class _VendasNaoLiquidadasMobileScreenState
                   value: _totalAberto,
                   formatter: _formatarValor,
                   reduceMotion: reduceMotion,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.onPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -627,13 +628,13 @@ class _VendasNaoLiquidadasMobileScreenState
         borderRadius: BorderRadius.circular(22),
         onTap: _cancelando ? null : () => _abrirDetalhesVenda(venda),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: SixMobilePalette.border),
-            boxShadow: const <BoxShadow>[
+            border: Border.all(color: _borderColor),
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: SixMobilePalette.navigationShadow,
+                color: _colors.navigationShadow,
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -646,11 +647,11 @@ class _VendasNaoLiquidadasMobileScreenState
                 children: <Widget>[
                   _icon(
                     Icons.receipt_long_outlined,
-                    bg: SixMobilePalette.softAccentSurface,
+                    bg: _softAccentSurface,
                     fg: _accentColor,
                     size: 48,
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -659,18 +660,18 @@ class _VendasNaoLiquidadasMobileScreenState
                           venda.descricao,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _titleTextColor,
                             fontWeight: FontWeight.w900,
                             fontSize: 15,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           '${_txt('vendasNaoLiquidadas.criadaPor', 'Criada por')} $colaborador',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _mutedTextColor,
                             fontSize: 12,
                           ),
@@ -678,11 +679,11 @@ class _VendasNaoLiquidadasMobileScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   detailsButton,
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -696,7 +697,7 @@ class _VendasNaoLiquidadasMobileScreenState
                     ),
                 ],
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
@@ -709,17 +710,17 @@ class _VendasNaoLiquidadasMobileScreenState
                             'vendasNaoLiquidadas.valorAberto',
                             'Valor em aberto',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _mutedTextColor,
                             fontSize: 12,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           _formatarValor(venda.valorAberto),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _titleTextColor,
                             fontWeight: FontWeight.w900,
                             fontSize: 18,
@@ -728,11 +729,11 @@ class _VendasNaoLiquidadasMobileScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   _pill(
                     _txt('vendasNaoLiquidadas.verDetalhes', 'Ver detalhes'),
                     fg: _accentColor,
-                    bg: SixMobilePalette.softAccentSurface,
+                    bg: _softAccentSurface,
                   ),
                 ],
               ),
@@ -752,10 +753,10 @@ class _VendasNaoLiquidadasMobileScreenState
       ),
       child: IconButton.filled(
         style: IconButton.styleFrom(
-          backgroundColor: SixMobilePalette.softAccentSurface,
+          backgroundColor: _softAccentSurface,
           foregroundColor: _accentColor,
-          fixedSize: const Size(40, 40),
-          minimumSize: const Size(40, 40),
+          fixedSize: Size(40, 40),
+          minimumSize: Size(40, 40),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         tooltip: _txt(
@@ -763,7 +764,7 @@ class _VendasNaoLiquidadasMobileScreenState
           'Ver detalhes da venda',
         ),
         onPressed: _cancelando ? null : () => _abrirDetalhesVenda(venda),
-        icon: const Icon(Icons.add_rounded, size: 22),
+        icon: Icon(Icons.add_rounded, size: 22),
       ),
     );
   }
@@ -774,7 +775,7 @@ class _VendasNaoLiquidadasMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder: (BuildContext sheetContext) {
         return DraggableScrollableSheet(
           initialChildSize: 0.82,
@@ -811,7 +812,7 @@ class _VendasNaoLiquidadasMobileScreenState
     final bool podeCancelar = !_cancelando;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _backgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -819,29 +820,29 @@ class _VendasNaoLiquidadasMobileScreenState
         top: false,
         child: ListView(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+          padding: EdgeInsets.fromLTRB(18, 10, 18, 24),
           children: <Widget>[
             Center(
               child: Container(
                 width: 42,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: _borderColor,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _icon(
                   Icons.receipt_long_outlined,
-                  bg: SixMobilePalette.softAccentSurface,
+                  bg: _softAccentSurface,
                   fg: _accentColor,
                   size: 42,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,19 +851,19 @@ class _VendasNaoLiquidadasMobileScreenState
                         venda.descricao,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _titleTextColor,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           height: 1.15,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_txt('vendasNaoLiquidadas.criadaPor', 'Criada por')} $colaborador',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _mutedTextColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -875,11 +876,11 @@ class _VendasNaoLiquidadasMobileScreenState
                 IconButton(
                   tooltip: _txt('common.close', 'Fechar'),
                   onPressed: () => Navigator.of(sheetContext).pop(),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(Icons.close_rounded),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -894,14 +895,14 @@ class _VendasNaoLiquidadasMobileScreenState
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _vendaDetailActions(
               sheetContext: sheetContext,
               venda: venda,
               podeReceber: podeReceber,
               podeCancelar: podeCancelar,
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             _detailSection(
               title: _txt('vendasNaoLiquidadas.resumoVenda', 'Resumo da venda'),
               icon: Icons.assignment_outlined,
@@ -932,7 +933,7 @@ class _VendasNaoLiquidadasMobileScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _detailSection(
               title: _txt('vendasNaoLiquidadas.valores', 'Valores'),
               icon: Icons.payments_outlined,
@@ -966,9 +967,9 @@ class _VendasNaoLiquidadasMobileScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _recebimentosVendaSection(venda),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _itensVendaSection(venda),
           ],
         ),
@@ -1040,19 +1041,19 @@ class _VendasNaoLiquidadasMobileScreenState
             ? FilledButton.styleFrom(
               backgroundColor: _accentColor,
               foregroundColor: SixMobilePalette.onPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             )
             : OutlinedButton.styleFrom(
-              foregroundColor: _primaryColor,
-              side: const BorderSide(color: SixMobilePalette.border),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              foregroundColor: _titleTextColor,
+              side: BorderSide(color: _borderColor),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             );
     final Widget child = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(icon, size: 17),
-        const SizedBox(width: 7),
+        SizedBox(width: 7),
         Flexible(
           child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
@@ -1082,19 +1083,14 @@ class _VendasNaoLiquidadasMobileScreenState
         children: <Widget>[
           Row(
             children: <Widget>[
-              _icon(
-                icon,
-                bg: SixMobilePalette.softAccentSurface,
-                fg: _accentColor,
-                size: 38,
-              ),
-              const SizedBox(width: 10),
+              _icon(icon, bg: _softAccentSurface, fg: _accentColor, size: 38),
+              SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
@@ -1103,7 +1099,7 @@ class _VendasNaoLiquidadasMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ...children,
         ],
       ),
@@ -1113,7 +1109,7 @@ class _VendasNaoLiquidadasMobileScreenState
   Widget _detailLine(String label, String? value, {Color? valueColor}) {
     final String display = _blankAsDash(value);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1123,7 +1119,7 @@ class _VendasNaoLiquidadasMobileScreenState
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -1131,7 +1127,7 @@ class _VendasNaoLiquidadasMobileScreenState
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               display,
@@ -1155,7 +1151,7 @@ class _VendasNaoLiquidadasMobileScreenState
     Color? valueColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1165,7 +1161,7 @@ class _VendasNaoLiquidadasMobileScreenState
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -1173,7 +1169,7 @@ class _VendasNaoLiquidadasMobileScreenState
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: _AnimatedMetricValue(
               value: value,
@@ -1203,7 +1199,7 @@ class _VendasNaoLiquidadasMobileScreenState
               'vendasNaoLiquidadas.semRecebimentos',
               'Nenhum recebimento lançado.',
             ),
-            style: const TextStyle(color: _mutedTextColor),
+            style: TextStyle(color: _mutedTextColor),
           )
         else
           ...venda.recebimentos.reversed.map((
@@ -1276,7 +1272,7 @@ class _VendasNaoLiquidadasMobileScreenState
         if (venda.itens.isEmpty)
           Text(
             _txt('vendasNaoLiquidadas.semItens', 'Nenhum item vinculado.'),
-            style: const TextStyle(color: _mutedTextColor),
+            style: TextStyle(color: _mutedTextColor),
           )
         else
           ...venda.itens.map((VendaNaoLiquidadaItemModel item) {
@@ -1303,17 +1299,12 @@ class _VendasNaoLiquidadasMobileScreenState
     String? trailing,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _icon(
-            icon,
-            bg: SixMobilePalette.softNeutralSurface,
-            fg: _primaryColor,
-            size: 34,
-          ),
-          const SizedBox(width: 10),
+          _icon(icon, bg: _softSurface, fg: _primaryColor, size: 34),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1322,19 +1313,19 @@ class _VendasNaoLiquidadasMobileScreenState
                   _blankAsDash(title),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   _blankAsDash(subtitle),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _mutedTextColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -1345,13 +1336,13 @@ class _VendasNaoLiquidadasMobileScreenState
             ),
           ),
           if (trailing != null) ...<Widget>[
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Text(
               trailing,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _titleTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
@@ -1374,28 +1365,28 @@ class _VendasNaoLiquidadasMobileScreenState
         children: <Widget>[
           _icon(
             Icons.check_circle_outline_rounded,
-            bg: SixMobilePalette.softAccentSurface,
+            bg: _softAccentSurface,
             fg: _accentColor,
             size: 48,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             _txt('vendasNaoLiquidadas.vazioTitulo', 'Nenhuma venda em aberto'),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             _txt(
               'vendasNaoLiquidadas.vazioDescricao',
               'Quando uma venda for marcada para receber depois, ela aparecerá aqui.',
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _mutedTextColor, height: 1.4),
+            style: TextStyle(color: _mutedTextColor, height: 1.4),
           ),
         ],
       ),
@@ -1410,7 +1401,7 @@ class _VendasNaoLiquidadasMobileScreenState
   }) {
     return Padding(
       key: key,
-      padding: const EdgeInsets.only(top: 24),
+      padding: EdgeInsets.only(top: 24),
       child: _baseCard(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1421,29 +1412,29 @@ class _VendasNaoLiquidadasMobileScreenState
               fg: _accentColor,
               size: 64,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               titulo,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _titleTextColor,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               mensagem,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _mutedTextColor, height: 1.4),
+              style: TextStyle(color: _mutedTextColor, height: 1.4),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             OutlinedButton.icon(
               onPressed: _carregar,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: Icon(Icons.refresh_rounded),
               label: Text(_txt('common.refresh', 'Atualizar')),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(46),
+                minimumSize: Size.fromHeight(46),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -1468,15 +1459,15 @@ class _VendasNaoLiquidadasMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _loadingHeader(),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           _section(
             _txt('vendasNaoLiquidadas.secaoAbertas', 'Vendas em aberto'),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ...List<Widget>.generate(
             3,
             (int index) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(bottom: 12),
               child: _loadingVendaCard(),
             ),
           ),
@@ -1487,20 +1478,16 @@ class _VendasNaoLiquidadasMobileScreenState
 
   Widget _loadingHeader() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(color: _heroShadow, blurRadius: 20, offset: Offset(0, 10)),
         ],
       ),
       child: Column(
@@ -1513,23 +1500,23 @@ class _VendasNaoLiquidadasMobileScreenState
                 bg: _withAlpha(SixMobilePalette.onPrimary, 0.12),
                 fg: SixMobilePalette.onPrimary,
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     _skeletonLine(width: 190, colorOnDark: true),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     _skeletonLine(width: 150, height: 12, colorOnDark: true),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: _withAlpha(SixMobilePalette.onPrimary, 0.10),
               borderRadius: BorderRadius.circular(18),
@@ -1541,7 +1528,7 @@ class _VendasNaoLiquidadasMobileScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _skeletonLine(width: 98, height: 12, colorOnDark: true),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _skeletonLine(width: 150, height: 24, colorOnDark: true),
               ],
             ),
@@ -1560,28 +1547,28 @@ class _VendasNaoLiquidadasMobileScreenState
             children: <Widget>[
               _icon(
                 Icons.receipt_long_outlined,
-                bg: SixMobilePalette.softAccentSurface,
+                bg: _softAccentSurface,
                 fg: _accentColor,
                 size: 48,
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     _skeletonLine(width: double.infinity, height: 16),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     _skeletonLine(width: 160, height: 12),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _skeletonLine(width: 220, height: 28),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _skeletonLine(width: 145, height: 20),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _skeletonLine(width: double.infinity, height: 42),
         ],
       ),
@@ -1599,14 +1586,14 @@ class _VendasNaoLiquidadasMobileScreenState
           alignment: Alignment.center,
           child: Container(
             width: 220,
-            padding: const EdgeInsets.all(18),
+            padding: EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: _surfaceColor,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: SixMobilePalette.border),
-              boxShadow: const <BoxShadow>[
+              border: Border.all(color: _borderColor),
+              boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: SixMobilePalette.navigationShadow,
+                  color: _colors.navigationShadow,
                   blurRadius: 16,
                   offset: Offset(0, 8),
                 ),
@@ -1615,24 +1602,24 @@ class _VendasNaoLiquidadasMobileScreenState
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const LinearProgressIndicator(minHeight: 3),
-                const SizedBox(height: 14),
+                LinearProgressIndicator(minHeight: 3),
+                SizedBox(height: 14),
                 Text(
                   _txt('vendasNaoLiquidadas.processando', 'Processando ação'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   _txt(
                     'vendasNaoLiquidadas.aguarde',
                     'Estamos concluindo a operação.',
                   ),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
               ],
             ),
@@ -1644,11 +1631,11 @@ class _VendasNaoLiquidadasMobileScreenState
 
   Widget _cancelamentoResumo(VendaNaoLiquidadaModel venda) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: SixMobilePalette.softNeutralSurface,
+        color: _softSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: SixMobilePalette.border),
+        border: Border.all(color: _borderColor),
       ),
       child: Row(
         children: <Widget>[
@@ -1660,29 +1647,29 @@ class _VendasNaoLiquidadasMobileScreenState
                   venda.descricao,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   _formatarData(venda.dataCompetencia),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Flexible(
             child: Text(
               _formatarValor(venda.valorAberto),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _titleTextColor,
                 fontWeight: FontWeight.w900,
               ),
@@ -1695,14 +1682,14 @@ class _VendasNaoLiquidadasMobileScreenState
 
   Widget _baseCard({required Widget child}) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(color: _borderColor),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: SixMobilePalette.navigationShadow,
+            color: _colors.navigationShadow,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -1729,24 +1716,27 @@ class _VendasNaoLiquidadasMobileScreenState
     );
   }
 
-  Widget _pill(
-    String label, {
-    Color fg = _mutedTextColor,
-    Color bg = SixMobilePalette.softNeutralSurface,
-  }) {
+  Widget _pill(String label, {Color? fg, Color? bg}) {
+    final Color foreground = fg ?? _mutedTextColor;
+    final Color background = bg ?? _softSurface;
+
     return Container(
-      constraints: const BoxConstraints(maxWidth: 260),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      constraints: BoxConstraints(maxWidth: 260),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: bg,
+        color: background,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: SixMobilePalette.border),
+        border: Border.all(color: _borderColor),
       ),
       child: Text(
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w800),
+        style: TextStyle(
+          color: foreground,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -1763,7 +1753,7 @@ class _VendasNaoLiquidadasMobileScreenState
         color:
             colorOnDark
                 ? _withAlpha(SixMobilePalette.onPrimary, 0.18)
-                : _withAlpha(SixMobilePalette.border, 0.55),
+                : _withAlpha(_borderColor, 0.55),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -1772,7 +1762,7 @@ class _VendasNaoLiquidadasMobileScreenState
   Widget _section(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: _titleTextColor,
         fontSize: 16,
         fontWeight: FontWeight.w900,
@@ -1804,7 +1794,7 @@ class _AnimatedMetricValue extends StatelessWidget {
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: value.toDouble()),
-      duration: const Duration(milliseconds: 620),
+      duration: Duration(milliseconds: 620),
       curve: Curves.easeOutCubic,
       builder: (BuildContext context, double animatedValue, Widget? child) {
         return _text(formatter(animatedValue));

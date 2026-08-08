@@ -8,7 +8,14 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 
 class EmpresaConfiguracaoMobile extends StatefulWidget {
-  const EmpresaConfiguracaoMobile({super.key});
+  const EmpresaConfiguracaoMobile({
+    super.key,
+    this.carregarEmpresa,
+    this.salvarEmpresa,
+  });
+
+  final Future<EmpresaModel> Function()? carregarEmpresa;
+  final Future<EmpresaModel> Function(EmpresaModel empresa)? salvarEmpresa;
 
   @override
   State<EmpresaConfiguracaoMobile> createState() =>
@@ -55,7 +62,9 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
     });
 
     try {
-      final EmpresaModel empresa = await _empresaService.buscarDadosDaEmpresa();
+      final EmpresaModel empresa =
+          await (widget.carregarEmpresa?.call() ??
+              _empresaService.buscarDadosDaEmpresa());
       if (!mounted) return;
       setState(() {
         _aplicarEmpresa(empresa, atualizarEstado: false);
@@ -91,8 +100,9 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
     });
 
     try {
-      final EmpresaModel atualizada = await _empresaService
-          .atualizarDadosDaEmpresa(empresa);
+      final EmpresaModel atualizada =
+          await (widget.salvarEmpresa?.call(empresa) ??
+              _empresaService.atualizarDadosDaEmpresa(empresa));
       if (!mounted) return;
       setState(() {
         _empresaOriginal = atualizada;
@@ -169,7 +179,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
         IconButton(
           tooltip: context.t('common.refresh', fallback: 'Atualizar'),
           onPressed: _salvando ? null : _carregarEmpresa,
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
         ),
       ],
       bodyBuilder: _buildBody,
@@ -192,20 +202,18 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
         onRefresh: _salvando ? () async {} : _carregarEmpresa,
         child: ListView(
           controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 112),
           children: <Widget>[
             _MotionEntry(
               enabled: !reduceMotion,
-              delay: const Duration(milliseconds: 80),
+              delay: Duration(milliseconds: 80),
               child: _buildSummaryCard(context),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             AnimatedSwitcher(
               duration:
-                  reduceMotion
-                      ? Duration.zero
-                      : const Duration(milliseconds: 220),
+                  reduceMotion ? Duration.zero : Duration(milliseconds: 220),
               child:
                   _carregando
                       ? const _EmpresaMobileSkeleton(
@@ -221,22 +229,22 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
 
   Widget _buildLoadedContent(BuildContext context, bool reduceMotion) {
     return Column(
-      key: const ValueKey<String>('empresa-loaded'),
+      key: ValueKey<String>('empresa-loaded'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (_erro != null) ...<Widget>[
           _buildErrorCard(context),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
         ],
         _MotionEntry(
           enabled: !reduceMotion,
-          delay: const Duration(milliseconds: 130),
+          delay: Duration(milliseconds: 130),
           child: _buildFormCard(context),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         _MotionEntry(
           enabled: !reduceMotion,
-          delay: const Duration(milliseconds: 180),
+          delay: Duration(milliseconds: 180),
           child: _buildStatusCard(context),
         ),
       ],
@@ -247,7 +255,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
     return Semantics(
       container: true,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: SixMobilePalette.primary,
           borderRadius: BorderRadius.circular(20),
@@ -255,7 +263,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
             BoxShadow(
               color: SixMobilePalette.heroShadow.withValues(alpha: 0.78),
               blurRadius: 18,
-              offset: const Offset(0, 10),
+              offset: Offset(0, 10),
             ),
           ],
         ),
@@ -271,12 +279,12 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                   color: SixMobilePalette.onPrimary.withValues(alpha: 0.18),
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.storefront_rounded,
                 color: SixMobilePalette.onPrimary,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,13 +296,13 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.onPrimary,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     context.t(
                       'empresa.configuracao.summarySubtitle',
@@ -303,7 +311,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.heroSupportingText,
                       fontSize: 12.5,
                       height: 1.35,
@@ -320,7 +328,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
 
   Widget _buildErrorCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: SixMobilePalette.errorBorder.withValues(alpha: 0.20),
         borderRadius: BorderRadius.circular(18),
@@ -329,16 +337,16 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.error_outline_rounded,
             color: SixMobilePalette.error,
             size: 22,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               _erro!,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.error,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -346,7 +354,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           TextButton(
             onPressed: _salvando ? null : _carregarEmpresa,
             child: Text(
@@ -360,7 +368,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
 
   Widget _buildFormCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(20),
@@ -369,7 +377,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
           BoxShadow(
             color: SixMobilePalette.navigationShadow.withValues(alpha: 0.50),
             blurRadius: 16,
-            offset: const Offset(0, 8),
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -379,7 +387,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             _buildSectionHeader(context),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _EmpresaMobileTextField(
               controller: _nomeEmpresaController,
               label: context.t(
@@ -393,7 +401,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
               icon: Icons.apartment_rounded,
               isRequired: true,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _EmpresaMobileTextField(
               controller: _nomeFantasiaController,
               label: context.t(
@@ -406,7 +414,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
               ),
               icon: Icons.storefront_rounded,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _EmpresaMobileTextField(
               controller: _documentoController,
               label: context.t(
@@ -440,13 +448,13 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
               color: SixMobilePalette.highlightedBorder.withValues(alpha: 0.48),
             ),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.domain_rounded,
             color: SixMobilePalette.accent,
             size: 22,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,13 +466,13 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.titleText,
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 context.t(
                   'empresa.configuracao.identitySubtitle',
@@ -473,7 +481,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.mutedText,
                   fontSize: 12.5,
                   height: 1.35,
@@ -489,7 +497,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
   Widget _buildStatusCard(BuildContext context) {
     final bool hasData = _empresaOriginal != null;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -503,7 +511,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
             color: SixMobilePalette.accent,
             size: 22,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,13 +528,13 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                       ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   context.t(
                     'empresa.configuracao.statusSubtitle',
@@ -535,7 +543,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                   ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     fontSize: 12,
                     height: 1.35,
@@ -553,17 +561,17 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+        padding: EdgeInsets.fromLTRB(16, 10, 16, 14),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface.withValues(alpha: 0.96),
-          border: const Border(
+          border: Border(
             top: BorderSide(color: SixMobilePalette.border, width: 0.6),
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow.withValues(alpha: 0.75),
               blurRadius: 18,
-              offset: const Offset(0, -8),
+              offset: Offset(0, -8),
             ),
           ],
         ),
@@ -576,7 +584,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                 onPressed: _salvando ? null : _carregarEmpresa,
                 style: OutlinedButton.styleFrom(
                   padding: EdgeInsets.zero,
-                  side: const BorderSide(color: SixMobilePalette.border),
+                  side: BorderSide(color: SixMobilePalette.border),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -590,18 +598,18 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: FilledButton.icon(
                 onPressed: _salvando || _carregando ? null : _salvar,
                 icon:
                     _salvando
-                        ? const SizedBox(
+                        ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Icon(Icons.save_rounded),
+                        : Icon(Icons.save_rounded),
                 label: Text(
                   _salvando
                       ? context.t('common.saving', fallback: 'Salvando...')
@@ -650,28 +658,25 @@ class _EmpresaMobileTextField extends StatelessWidget {
         prefixIcon: Icon(icon, size: 21),
         filled: true,
         fillColor: SixMobilePalette.softNeutralSurface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 15,
-        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 15),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: SixMobilePalette.border),
+          borderSide: BorderSide(color: SixMobilePalette.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: SixMobilePalette.border),
+          borderSide: BorderSide(color: SixMobilePalette.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
+          borderSide: BorderSide(
             color: SixMobilePalette.highlightedBorder,
             width: 1.2,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: SixMobilePalette.errorBorder),
+          borderSide: BorderSide(color: SixMobilePalette.errorBorder),
         ),
       ),
       validator: (String? value) {
@@ -697,7 +702,7 @@ class _EmpresaMobileSkeleton extends StatelessWidget {
       liveRegion: true,
       label: context.t('common.loading', fallback: 'Carregando...'),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(20),
@@ -705,7 +710,7 @@ class _EmpresaMobileSkeleton extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: const <Widget>[
+          children: <Widget>[
             Row(
               children: <Widget>[
                 _SkeletonBox(width: 42, height: 42, radius: 14),
@@ -765,7 +770,7 @@ class _SkeletonBox extends StatelessWidget {
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.42, end: 1),
-      duration: const Duration(milliseconds: 760),
+      duration: Duration(milliseconds: 760),
       curve: Curves.easeInOut,
       builder: (BuildContext context, double value, Widget? child) {
         return Opacity(opacity: value, child: child);

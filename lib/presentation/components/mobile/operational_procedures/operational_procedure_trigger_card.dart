@@ -47,8 +47,8 @@ class OperationalProcedureTriggerCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             onTap: onTap,
             child: Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
+              margin: EdgeInsets.only(bottom: 10),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: SixMobilePalette.border),
@@ -64,7 +64,7 @@ class OperationalProcedureTriggerCard extends StatelessWidget {
                         color: SixMobilePalette.secondary,
                         size: 22,
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,28 +73,28 @@ class OperationalProcedureTriggerCard extends StatelessWidget {
                               operation,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.titleText,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            SizedBox(height: 3),
                             Text(
                               moment,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.titleText,
                                 fontWeight: FontWeight.w700,
                                 height: 1.25,
                               ),
                             ),
-                            const SizedBox(height: 5),
+                            SizedBox(height: 5),
                             Text(
                               '$activation • $enforcement',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.mutedText,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -112,7 +112,7 @@ class OperationalProcedureTriggerCard extends StatelessWidget {
                           ),
                           Text(
                             status,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: SixMobilePalette.mutedText,
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
@@ -122,20 +122,20 @@ class OperationalProcedureTriggerCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Row(
                     children: <Widget>[
                       TextButton.icon(
                         onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        icon: Icon(Icons.edit_outlined, size: 18),
                         label: Text(
                           context.t('common.edit', fallback: 'Editar'),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       TextButton.icon(
                         onPressed: onDelete,
-                        icon: const Icon(Icons.delete_outline, size: 18),
+                        icon: Icon(Icons.delete_outline, size: 18),
                         label: Text(
                           context.t(
                             'procedimentos.deleteTrigger',

@@ -24,15 +24,15 @@ class ColaboradoresUsuarioMobileScreen extends StatefulWidget {
 
 class _ColaboradoresUsuarioMobileScreenState
     extends State<ColaboradoresUsuarioMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _softSurfaceColor = SixMobilePalette.softNeutralSurface;
-  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.border;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
 
   late final ColaboradorUsuarioApiClient _api;
   final TextEditingController _search = TextEditingController();
@@ -277,12 +277,12 @@ class _ColaboradoresUsuarioMobileScreenState
         IconButton(
           tooltip: _t('common.refresh', 'Atualizar'),
           onPressed: _loading ? null : _reload,
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
         ),
         IconButton(
           tooltip: _t('colaboradores.newCollaborator', 'Novo colaborador'),
           onPressed: _loading ? null : _openNovoColaborador,
-          icon: const Icon(Icons.group_add_outlined),
+          icon: Icon(Icons.group_add_outlined),
         ),
       ],
       bodyBuilder: (
@@ -308,19 +308,19 @@ class _ColaboradoresUsuarioMobileScreenState
       onRefresh: _reload,
       child: ListView(
         controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
         children: <Widget>[
           _entry(order: 0, child: _headerCard()),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _entry(order: 1, child: _summaryRow()),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _entry(order: 2, child: _searchBox()),
           if (_erro != null) ...<Widget>[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _inlineError(_erro!),
           ],
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: <Widget>[
               Expanded(
@@ -335,10 +335,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 7,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(999),
@@ -346,7 +343,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 ),
                 child: Text(
                   _formatCount(_items.length),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _primaryColor,
                     fontWeight: FontWeight.w900,
                   ),
@@ -354,7 +351,7 @@ class _ColaboradoresUsuarioMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           if (_items.isEmpty)
             _emptyState()
           else
@@ -376,7 +373,7 @@ class _ColaboradoresUsuarioMobileScreenState
     if (reduceMotion) return child;
     return SixStaggeredEntry(
       delay: Duration(milliseconds: 45 * order.clamp(0, 8)),
-      beginOffset: const Offset(0, 0.035),
+      beginOffset: Offset(0, 0.035),
       child: child,
     );
   }
@@ -384,15 +381,15 @@ class _ColaboradoresUsuarioMobileScreenState
   Widget _headerCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.heroShadow,
             blurRadius: 18,
@@ -410,22 +407,22 @@ class _ColaboradoresUsuarioMobileScreenState
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
             ),
-            child: const Icon(Icons.badge_outlined, color: Colors.white),
+            child: Icon(Icons.badge_outlined, color: Colors.white),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
                   _t('colaboradores.businessTeam', 'Equipe do comércio'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: 5),
                 Text(
                   _t(
                     'colaboradores.businessTeamSubtitle',
@@ -436,10 +433,10 @@ class _ColaboradoresUsuarioMobileScreenState
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 FilledButton.icon(
                   onPressed: _loading ? null : _openNovoColaborador,
-                  icon: const Icon(Icons.group_add_outlined, size: 18),
+                  icon: Icon(Icons.group_add_outlined, size: 18),
                   label: Text(
                     _t('colaboradores.newCollaborator', 'Novo colaborador'),
                   ),
@@ -487,7 +484,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 _formatCount(_colaboradores.length),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _summaryCard(
                 Icons.alternate_email_rounded,
@@ -497,7 +494,7 @@ class _ColaboradoresUsuarioMobileScreenState
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Row(
           children: <Widget>[
             Expanded(
@@ -507,7 +504,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 _formatCount(comCelular),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _summaryCard(
                 Icons.manage_accounts_outlined,
@@ -529,11 +526,10 @@ class _ColaboradoresUsuarioMobileScreenState
     bool highlight = false,
   }) {
     final Color iconColor = highlight ? Colors.orange.shade800 : _primaryColor;
-    final Color bgColor =
-        highlight ? const Color(0xFFFFF7ED) : _softAccentColor;
+    final Color bgColor = highlight ? Color(0xFFFFF7ED) : _softAccentColor;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -551,23 +547,23 @@ class _ColaboradoresUsuarioMobileScreenState
             ),
             child: Icon(icon, color: iconColor, size: 19),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: _mutedTextColor,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontSize: 18,
               fontWeight: FontWeight.w900,
@@ -580,7 +576,7 @@ class _ColaboradoresUsuarioMobileScreenState
 
   Widget _searchBox() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
@@ -594,13 +590,13 @@ class _ColaboradoresUsuarioMobileScreenState
             'colaboradores.searchCollaborator',
             'Buscar colaborador...',
           ),
-          prefixIcon: const Icon(Icons.search_rounded),
+          prefixIcon: Icon(Icons.search_rounded),
           suffixIcon:
               _search.text.isEmpty
                   ? null
                   : IconButton(
                     tooltip: _t('common.clear', 'Limpar'),
-                    icon: const Icon(Icons.close_rounded),
+                    icon: Icon(Icons.close_rounded),
                     onPressed: () {
                       _search.clear();
                       setState(() => _filter = '');
@@ -619,8 +615,8 @@ class _ColaboradoresUsuarioMobileScreenState
 
   Widget _colaboradorCard(ColaboradorUsuarioResumo colaborador) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
@@ -637,13 +633,13 @@ class _ColaboradoresUsuarioMobileScreenState
                 backgroundColor: _softAccentColor,
                 child: Text(
                   _initials(colaborador.nome),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _primaryColor,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,23 +653,20 @@ class _ColaboradoresUsuarioMobileScreenState
                           : colaborador.nome,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       colaborador.nomeDeGuerra.isEmpty
                           ? _t('colaboradores.noNickname', 'Sem nome de guerra')
                           : colaborador.nomeDeGuerra,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: _mutedTextColor, fontSize: 12),
                     ),
                   ],
                 ),
@@ -681,7 +674,7 @@ class _ColaboradoresUsuarioMobileScreenState
               _status(_t('common.active', 'Ativo')),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -701,23 +694,23 @@ class _ColaboradoresUsuarioMobileScreenState
               _chip(Icons.badge_outlined, colaborador.idUnicoPessoal),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _accessHint(colaborador),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: <Widget>[
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => _showDetails(colaborador),
-                  icon: const Icon(Icons.info_outline_rounded, size: 18),
+                  icon: Icon(Icons.info_outline_rounded, size: 18),
                   label: Text(_t('colaboradores.summary', 'Resumo')),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () => _openEditar(colaborador),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  icon: Icon(Icons.edit_outlined, size: 18),
                   label: Text(_t('common.edit', 'Editar')),
                 ),
               ),
@@ -730,9 +723,9 @@ class _ColaboradoresUsuarioMobileScreenState
 
   Widget _chip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: _borderColor),
       ),
@@ -740,14 +733,14 @@ class _ColaboradoresUsuarioMobileScreenState
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: 14, color: _primaryColor),
-          const SizedBox(width: 5),
+          SizedBox(width: 5),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 190),
+            constraints: BoxConstraints(maxWidth: 190),
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _primaryColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -762,7 +755,7 @@ class _ColaboradoresUsuarioMobileScreenState
   Widget _status(String label) {
     final Color color = Colors.green.shade700;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
@@ -782,12 +775,12 @@ class _ColaboradoresUsuarioMobileScreenState
     final bool semEmail = colaborador.email.trim().isEmpty;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: semEmail ? const Color(0xFFFFF7ED) : const Color(0xFFEFF6FF),
+        color: semEmail ? Color(0xFFFFF7ED) : Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: semEmail ? const Color(0xFFFED7AA) : const Color(0xFFBFDBFE),
+          color: semEmail ? Color(0xFFFED7AA) : Color(0xFFBFDBFE),
         ),
       ),
       child: Row(
@@ -799,7 +792,7 @@ class _ColaboradoresUsuarioMobileScreenState
             color: semEmail ? Colors.orange.shade800 : _primaryColor,
             size: 19,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               semEmail
@@ -813,7 +806,7 @@ class _ColaboradoresUsuarioMobileScreenState
                   ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -824,7 +817,7 @@ class _ColaboradoresUsuarioMobileScreenState
   Widget _emptyState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
@@ -836,35 +829,35 @@ class _ColaboradoresUsuarioMobileScreenState
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.group_add_outlined, color: _primaryColor),
+            child: Icon(Icons.group_add_outlined, color: _primaryColor),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             _t(
               'colaboradores.noCollaboratorFound',
               'Nenhum colaborador encontrado',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             _t(
               'colaboradores.emptySubtitle',
               'Convide colaboradores para vendas, atendimento e gestão diária.',
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _mutedTextColor),
+            style: TextStyle(color: _mutedTextColor),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           FilledButton.icon(
             onPressed: _openNovoColaborador,
-            icon: const Icon(Icons.group_add_outlined),
+            icon: Icon(Icons.group_add_outlined),
             label: Text(
               _t('colaboradores.newCollaborator', 'Novo colaborador'),
             ),
@@ -877,12 +870,12 @@ class _ColaboradoresUsuarioMobileScreenState
   Widget _errorState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.cloud_off_rounded, size: 44, color: _primaryColor),
-            const SizedBox(height: 12),
+            Icon(Icons.cloud_off_rounded, size: 44, color: _primaryColor),
+            SizedBox(height: 12),
             Text(
               _erro ??
                   _t(
@@ -891,10 +884,10 @@ class _ColaboradoresUsuarioMobileScreenState
                   ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             FilledButton.icon(
               onPressed: _reload,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: Icon(Icons.refresh_rounded),
               label: Text(_t('common.tryAgain', 'Tentar novamente')),
             ),
           ],
@@ -906,7 +899,7 @@ class _ColaboradoresUsuarioMobileScreenState
   Widget _inlineError(String message) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Theme.of(
@@ -924,7 +917,7 @@ class _ColaboradoresUsuarioMobileScreenState
       showDragHandle: true,
       builder: (BuildContext bottomSheetContext) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, 4, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -937,7 +930,7 @@ class _ColaboradoresUsuarioMobileScreenState
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               _detailRow(
                 _t('colaboradores.nickname', 'Nome de guerra'),
                 colaborador.nomeDeGuerra.isEmpty
@@ -964,7 +957,7 @@ class _ColaboradoresUsuarioMobileScreenState
                 _t('colaboradores.identifier', 'Identificador'),
                 colaborador.idUnicoPessoal,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -981,7 +974,7 @@ class _ColaboradoresUsuarioMobileScreenState
 
   Widget _detailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -989,7 +982,7 @@ class _ColaboradoresUsuarioMobileScreenState
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontWeight: FontWeight.w700,
               ),
@@ -999,7 +992,7 @@ class _ColaboradoresUsuarioMobileScreenState
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -1030,13 +1023,13 @@ class _ColaboradorConviteMobileSheet extends StatefulWidget {
 
 class _ColaboradorConviteMobileSheetState
     extends State<_ColaboradorConviteMobileSheet> {
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.border;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ColaboradorConviteWebService _service = ColaboradorConviteWebService();
@@ -1165,12 +1158,12 @@ class _ColaboradorConviteMobileSheetState
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.92,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _backgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+        padding: EdgeInsets.fromLTRB(18, 12, 18, 24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -1182,12 +1175,12 @@ class _ColaboradorConviteMobileSheetState
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: Color(0xFFCBD5E1),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Row(
                 children: <Widget>[
                   Container(
@@ -1197,12 +1190,9 @@ class _ColaboradorConviteMobileSheetState
                       color: _softAccentColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.group_add_outlined,
-                      color: _accentColor,
-                    ),
+                    child: Icon(Icons.group_add_outlined, color: _accentColor),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1212,19 +1202,19 @@ class _ColaboradorConviteMobileSheetState
                             'colaboradores.newCollaborator',
                             'Novo colaborador',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _titleTextColor,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Text(
                           _t(
                             'colaboradores.createInviteSubtitle',
                             'Gere um convite com permissões iniciais.',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _mutedTextColor,
                             height: 1.25,
                           ),
@@ -1235,11 +1225,11 @@ class _ColaboradorConviteMobileSheetState
                   IconButton(
                     tooltip: _t('common.close', 'Fechar'),
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
+                    icon: Icon(Icons.close_rounded),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               TextFormField(
                 controller: _nome,
                 decoration: _input(
@@ -1255,7 +1245,7 @@ class _ColaboradorConviteMobileSheetState
                             )
                             : null,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               TextFormField(
                 controller: _email,
                 decoration: _input(
@@ -1272,7 +1262,7 @@ class _ColaboradorConviteMobileSheetState
                             )
                             : null,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               TextFormField(
                 controller: _celular,
                 decoration: _input(
@@ -1281,14 +1271,14 @@ class _ColaboradorConviteMobileSheetState
                 ),
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Text(
                 _t('colaboradores.initialPermissions', 'Permissões iniciais'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               _switchCard(
                 _t('colaboradores.sales', 'Vendas'),
                 _t('colaboradores.canCreateSales', 'Pode criar vendas.'),
@@ -1337,19 +1327,19 @@ class _ColaboradorConviteMobileSheetState
                 _gerenciaPermissoes,
                 (bool value) => setState(() => _gerenciaPermissoes = value),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: _loading ? null : _criarConvite,
                   icon:
                       _loading
-                          ? const SizedBox(
+                          ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Icon(Icons.send_outlined),
+                          : Icon(Icons.send_outlined),
                   label: Text(
                     _loading
                         ? _t(
@@ -1361,10 +1351,10 @@ class _ColaboradorConviteMobileSheetState
                 ),
               ),
               if (convite != null) ...<Widget>[
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(14),
+                  padding: EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: _softAccentColor,
                     borderRadius: BorderRadius.circular(18),
@@ -1377,19 +1367,19 @@ class _ColaboradorConviteMobileSheetState
                     children: <Widget>[
                       Text(
                         _t('colaboradores.inviteCreated', 'Convite criado'),
-                        style: const TextStyle(fontWeight: FontWeight.w900),
+                        style: TextStyle(fontWeight: FontWeight.w900),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       SelectableText(
                         _linkConvite(convite),
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: _copiarLink,
-                          icon: const Icon(Icons.copy_outlined),
+                          icon: Icon(Icons.copy_outlined),
                           label: Text(_t('common.copy', 'Copiar')),
                         ),
                       ),
@@ -1421,8 +1411,8 @@ class _ColaboradorConviteMobileSheetState
     ValueChanged<bool> onChanged,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -1434,14 +1424,11 @@ class _ColaboradorConviteMobileSheetState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
+                Text(title, style: TextStyle(fontWeight: FontWeight.w800)),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
               ],
             ),
@@ -1469,13 +1456,13 @@ class _EditarColaboradorMobileSheet extends StatefulWidget {
 
 class _EditarColaboradorMobileSheetState
     extends State<_EditarColaboradorMobileSheet> {
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.border;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nome;
@@ -1608,12 +1595,12 @@ class _EditarColaboradorMobileSheetState
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.92,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _backgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+        padding: EdgeInsets.fromLTRB(18, 12, 18, 24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -1625,12 +1612,12 @@ class _EditarColaboradorMobileSheetState
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: Color(0xFFCBD5E1),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Row(
                 children: <Widget>[
                   Container(
@@ -1640,9 +1627,9 @@ class _EditarColaboradorMobileSheetState
                       color: _softAccentColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.edit_outlined, color: _accentColor),
+                    child: Icon(Icons.edit_outlined, color: _accentColor),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1652,19 +1639,19 @@ class _EditarColaboradorMobileSheetState
                             'colaboradores.editCollaborator',
                             'Editar colaborador',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _titleTextColor,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Text(
                           _t(
                             'colaboradores.editCollaboratorSubtitle',
                             'Atualize dados de acesso e permissões.',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _mutedTextColor,
                             height: 1.25,
                           ),
@@ -1675,11 +1662,11 @@ class _EditarColaboradorMobileSheetState
                   IconButton(
                     tooltip: _t('common.close', 'Fechar'),
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
+                    icon: Icon(Icons.close_rounded),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               TextFormField(
                 controller: _nome,
                 decoration: _input(
@@ -1695,7 +1682,7 @@ class _EditarColaboradorMobileSheetState
                             )
                             : null,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               TextFormField(
                 controller: _nomeDeGuerra,
                 decoration: _input(
@@ -1703,7 +1690,7 @@ class _EditarColaboradorMobileSheetState
                   Icons.badge_outlined,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               TextFormField(
                 controller: _email,
                 decoration: _input(
@@ -1712,7 +1699,7 @@ class _EditarColaboradorMobileSheetState
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               TextFormField(
                 controller: _celular,
                 decoration: _input(
@@ -1721,7 +1708,7 @@ class _EditarColaboradorMobileSheetState
                 ),
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Text(
                 _t(
                   'colaboradores.operationalPermissions',
@@ -1731,7 +1718,7 @@ class _EditarColaboradorMobileSheetState
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               _switchCard(
                 _t('colaboradores.sales', 'Vendas'),
                 _t(
@@ -1777,7 +1764,7 @@ class _EditarColaboradorMobileSheetState
                 _podeFinanceiro,
                 (bool value) => setState(() => _podeFinanceiro = value),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -1786,7 +1773,7 @@ class _EditarColaboradorMobileSheetState
                       child: Text(_t('common.cancel', 'Cancelar')),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: () {
@@ -1795,7 +1782,7 @@ class _EditarColaboradorMobileSheetState
                         }
                         Navigator.of(context).pop(_payload());
                       },
-                      icon: const Icon(Icons.save_outlined, size: 18),
+                      icon: Icon(Icons.save_outlined, size: 18),
                       label: Text(_t('common.save', 'Salvar')),
                     ),
                   ),
@@ -1825,8 +1812,8 @@ class _EditarColaboradorMobileSheetState
     ValueChanged<bool> onChanged,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -1838,14 +1825,11 @@ class _EditarColaboradorMobileSheetState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
+                Text(title, style: TextStyle(fontWeight: FontWeight.w800)),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
               ],
             ),
@@ -1877,7 +1861,7 @@ class _MobileColaboradoresLoading extends StatelessWidget {
       label: context.t('common.loading', fallback: 'Carregando...'),
       child: ListView(
         padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
-        children: const <Widget>[
+        children: <Widget>[
           _LoadingBlock(height: 130),
           SizedBox(height: 14),
           Row(

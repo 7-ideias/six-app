@@ -33,10 +33,10 @@ class OperationalProceduresMobileScreen extends StatelessWidget {
 class _OperationalProceduresMobileView extends StatelessWidget {
   const _OperationalProceduresMobileView();
 
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
 
   @override
   Widget build(BuildContext context) {
@@ -67,14 +67,14 @@ class _OperationalProceduresMobileView extends StatelessWidget {
                 onRefresh: provider.reload,
                 child: ListView(
                   controller: scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
+                  physics: AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
                   children: <Widget>[
                     AnimatedSwitcher(
                       duration:
                           reduceMotion
                               ? Duration.zero
-                              : const Duration(milliseconds: 220),
+                              : Duration(milliseconds: 220),
                       switchInCurve: Curves.easeOutCubic,
                       switchOutCurve: Curves.easeInCubic,
                       child: _buildState(
@@ -99,27 +99,27 @@ class _OperationalProceduresMobileView extends StatelessWidget {
     required bool reduceMotion,
   }) {
     if (provider.isLoading) {
-      return const OperationalProcedureLoadingState(
+      return OperationalProcedureLoadingState(
         key: ValueKey<String>('procedures-loading'),
       );
     }
 
     if (provider.hasError) {
       return OperationalProcedureErrorState(
-        key: const ValueKey<String>('procedures-error'),
+        key: ValueKey<String>('procedures-error'),
         onRetry: provider.reload,
       );
     }
 
     if (provider.isEmpty) {
       return OperationalProcedureEmptyState(
-        key: const ValueKey<String>('procedures-empty'),
+        key: ValueKey<String>('procedures-empty'),
         onCreate: () => _openCreate(context, provider),
       );
     }
 
     return _ProceduresSuccessState(
-      key: const ValueKey<String>('procedures-success'),
+      key: ValueKey<String>('procedures-success'),
       provider: provider,
       reduceMotion: reduceMotion,
       onCreate: () => _openCreate(context, provider),
@@ -215,32 +215,29 @@ class _ProceduresSuccessState extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        _entry(reduceMotion: reduceMotion, child: OperationalProcedureIntro()),
+        SizedBox(height: 14),
         _entry(
           reduceMotion: reduceMotion,
-          child: const OperationalProcedureIntro(),
-        ),
-        const SizedBox(height: 14),
-        _entry(
-          reduceMotion: reduceMotion,
-          delay: const Duration(milliseconds: 70),
+          delay: Duration(milliseconds: 70),
           child: OperationalProcedureFilters(
             selectedFilter: provider.filter,
             onChanged: provider.setFilter,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         if (procedures.isEmpty)
           _entry(
             reduceMotion: reduceMotion,
-            delay: const Duration(milliseconds: 110),
-            child: const OperationalProcedureFilteredEmptyNotice(),
+            delay: Duration(milliseconds: 110),
+            child: OperationalProcedureFilteredEmptyNotice(),
           )
         else
           ...procedures.asMap().entries.map((
             MapEntry<int, OperationalProcedure> entry,
           ) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(bottom: 12),
               child: _entry(
                 reduceMotion: reduceMotion,
                 delay: Duration(milliseconds: 110 + (entry.key * 45)),
@@ -251,10 +248,10 @@ class _ProceduresSuccessState extends StatelessWidget {
               ),
             );
           }),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         _entry(
           reduceMotion: reduceMotion,
-          delay: const Duration(milliseconds: 260),
+          delay: Duration(milliseconds: 260),
           child: OperationalProcedureNewAction(onTap: onCreate),
         ),
       ],

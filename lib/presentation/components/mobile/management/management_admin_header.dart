@@ -30,15 +30,15 @@ class ManagementAdminHeader extends StatelessWidget {
       label: '$title. $subtitle',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: <Color>[SixMobilePalette.primary, Color(0xFF374151)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.heroShadow,
               blurRadius: 12,
@@ -55,13 +55,13 @@ class ManagementAdminHeader extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.settings_outlined,
                 color: SixMobilePalette.onPrimary,
                 size: 20,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,19 +70,19 @@ class ManagementAdminHeader extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.onPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.15,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.heroSupportingText,
                       fontSize: 12.5,
                       height: 1.25,
@@ -90,12 +90,12 @@ class ManagementAdminHeader extends StatelessWidget {
                     ),
                   ),
                   if (hasCompany) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       companyName!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.heroSupportingText,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,

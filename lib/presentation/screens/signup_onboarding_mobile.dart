@@ -31,14 +31,14 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
   }
 
   void _goToCreateAccount() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const CreateAccountMobile()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => CreateAccountMobile()));
   }
 
   void _goToLogin() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const LoginPageMobile()),
+      MaterialPageRoute<void>(builder: (_) => LoginPageMobile()),
     );
   }
 
@@ -49,7 +49,7 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
     }
 
     _pageController.nextPage(
-      duration: const Duration(milliseconds: 320),
+      duration: Duration(milliseconds: 320),
       curve: Curves.easeOutCubic,
     );
   }
@@ -98,7 +98,7 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
     final bool isLastPage = _currentIndex == steps.length - 1;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: SixMobilePalette.primary,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
@@ -110,23 +110,23 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
                 child: Row(
                   children: <Widget>[
                     IconButton(
                       tooltip: context.t('common.back', fallback: 'Voltar'),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: SixMobilePalette.titleText,
                         size: 20,
                       ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     TextButton(
                       onPressed: _goToCreateAccount,
                       style: TextButton.styleFrom(
-                        foregroundColor: SixMobilePalette.secondary,
+                        foregroundColor: SixMobilePalette.mutedText,
                       ),
                       child: Text(
                         context.t('auth.onboarding.skip', fallback: 'Pular'),
@@ -137,7 +137,7 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
                 child: SixStaggeredEntry(
                   child: _OnboardingHeader(
                     title: context.t(
@@ -152,7 +152,7 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
@@ -161,7 +161,7 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
                       (index) => setState(() => _currentIndex = index),
                   itemBuilder: (context, index) {
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      padding: EdgeInsets.symmetric(horizontal: 5),
                       child: SixStaggeredEntry(
                         key: ValueKey<int>(index),
                         delay: Duration(milliseconds: 60 * index),
@@ -172,12 +172,12 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                padding: EdgeInsets.fromLTRB(20, 14, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     _PageDots(count: steps.length, activeIndex: _currentIndex),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     SizedBox(
                       height: 52,
                       child: ElevatedButton(
@@ -202,14 +202,14 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
                               ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     TextButton(
                       onPressed: _goToLogin,
                       child: Text(
@@ -218,8 +218,8 @@ class _SignupOnboardingMobileState extends State<SignupOnboardingMobile> {
                           fallback: 'Já tenho uma conta',
                         ),
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SixMobilePalette.secondary,
+                        style: TextStyle(
+                          color: SixMobilePalette.mutedText,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -256,11 +256,11 @@ class _OnboardingHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+      padding: EdgeInsets.fromLTRB(20, 22, 20, 22),
       decoration: BoxDecoration(
         color: SixMobilePalette.primary,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.heroShadow,
             blurRadius: 10,
@@ -281,30 +281,30 @@ class _OnboardingHeader extends StatelessWidget {
                 color: SixMobilePalette.onPrimary.withValues(alpha: 0.16),
               ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome_rounded,
               color: SixMobilePalette.onPrimary,
               size: 22,
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Text(
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.onPrimary,
               fontSize: 26,
               fontWeight: FontWeight.w800,
               height: 1.1,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             subtitle,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.heroSupportingText,
               fontSize: 14,
               height: 1.45,
@@ -326,13 +326,13 @@ class _OnboardingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        constraints: const BoxConstraints(maxHeight: 330),
-        padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+        constraints: BoxConstraints(maxHeight: 330),
+        padding: EdgeInsets.fromLTRB(22, 24, 22, 24),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 8,
@@ -354,24 +354,24 @@ class _OnboardingCard extends StatelessWidget {
               ),
               child: Icon(step.icon, color: SixMobilePalette.accent, size: 28),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               step.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
                 height: 1.12,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               step.subtitle,
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.mutedText,
                 fontSize: 15,
                 height: 1.5,
@@ -398,11 +398,11 @@ class _PageDots extends StatelessWidget {
       children: List<Widget>.generate(count, (index) {
         final bool active = index == activeIndex;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           width: active ? 22 : 8,
           height: 8,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
+          margin: EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: active ? SixMobilePalette.accent : SixMobilePalette.border,
             borderRadius: BorderRadius.circular(999),

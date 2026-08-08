@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/core/constants/six_animation_assets.dart';
-import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/presentation/components/six_web_splash_scene.dart';
 import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
@@ -79,12 +79,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _resolveNextPage() {
     if (kIsWeb) {
-      return const LoginPageWeb();
+      return LoginPageWeb();
     }
 
-    return widget.hasSeenOnboarding
-        ? const AuthGateMobile()
-        : OnboardingScreen();
+    return widget.hasSeenOnboarding ? AuthGateMobile() : OnboardingScreen();
   }
 
   int _currentFrameIndex() {
@@ -97,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return const Scaffold(
+      return Scaffold(
         body: SixWebSplashScene(subtitle: 'Preparando sua experiência web...'),
       );
     }
@@ -105,17 +103,20 @@ class _SplashScreenState extends State<SplashScreen>
     final mediaQuery = MediaQuery.of(context);
     final reduceMotion =
         mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: SixMobilePalette.surface,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: colors.surface,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: SixMobilePalette.surface,
+        backgroundColor: colors.surface,
         body: Semantics(
           container: true,
           image: true,

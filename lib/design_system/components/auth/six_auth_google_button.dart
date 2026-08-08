@@ -18,47 +18,50 @@ class SixAuthGoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color backgroundColor = SixAuthTokens.googleButtonBackground(context);
+    final Color foregroundColor = SixAuthTokens.textPrimary(context);
+    final Color borderColor = SixAuthTokens.googleButtonBorder(context);
+
     return SizedBox(
       height: SixAuthTokens.heightButtonGoogle,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: SixAuthTokens.colorButtonGoogleBg,
-          foregroundColor: SixAuthTokens.colorTextPrimary,
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
           elevation: 0,
-          side: const BorderSide(
-            color: SixAuthTokens.colorButtonGoogleBorder,
-          ),
+          side: BorderSide(color: borderColor),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(
               SixAuthTokens.radiusButtonGoogle,
             ),
           ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: SixAuthTokens.colorTextPrimary,
-                  strokeWidth: 2.0,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const _GoogleGlyph(),
-                  const SizedBox(width: 10),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: SixAuthTokens.fontSizeBody,
-                      fontWeight: FontWeight.w500,
-                      color: SixAuthTokens.colorTextPrimary,
-                    ),
+        child:
+            isLoading
+                ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: foregroundColor,
+                    strokeWidth: 2.0,
                   ),
-                ],
-              ),
+                )
+                : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const _GoogleGlyph(),
+                    const SizedBox(width: 10),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: SixAuthTokens.fontSizeBody,
+                        fontWeight: FontWeight.w500,
+                        color: foregroundColor,
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }

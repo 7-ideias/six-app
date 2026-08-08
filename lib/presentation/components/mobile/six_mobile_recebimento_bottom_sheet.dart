@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../data/models/caixa_models.dart';
 import '../../../data/models/recebimento_forma_input.dart';
 import '../../../data/services/caixa/caixa_api_client.dart';
-import '../../../design_system/themes/six_mobile_palette.dart';
+import '../../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../../l10n/six_i18n.dart';
 import '../../../providers/locale_settings_provider.dart';
 import '../mobile_motion.dart';
@@ -60,6 +60,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     this.permitirParcial = true,
     this.observacaoInicial,
     this.codigoTipoInicial,
+    this.caixaApiClient,
   });
 
   final String titulo;
@@ -71,6 +72,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
   final bool permitirParcial;
   final String? observacaoInicial;
   final String? codigoTipoInicial;
+  final CaixaApiClient? caixaApiClient;
 
   static Future<SixMobileRecebimentoResultado?> show(
     BuildContext context, {
@@ -83,6 +85,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     bool permitirParcial = true,
     String? observacaoInicial,
     String? codigoTipoInicial,
+    CaixaApiClient? caixaApiClient,
   }) {
     return showModalBottomSheet<SixMobileRecebimentoResultado>(
       context: context,
@@ -99,6 +102,7 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
             permitirParcial: permitirParcial,
             observacaoInicial: observacaoInicial,
             codigoTipoInicial: codigoTipoInicial,
+            caixaApiClient: caixaApiClient,
           ),
     );
   }
@@ -110,13 +114,9 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
 
 class _SixMobileRecebimentoBottomSheetState
     extends State<SixMobileRecebimentoBottomSheet> {
-  static const Color _accent = Color(0xFF2563EB);
-  static const Color _muted = Color(0xFF64748B);
-  static const Color _title = Color(0xFF0F172A);
-  static const Color _received = SixMobilePalette.error;
   static const Duration _numberMotionDuration = Duration(milliseconds: 680);
 
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  late final CaixaApiClient _caixaApiClient;
   final TextEditingController _observacaoController = TextEditingController();
   final List<_RecebimentoFormaDraft> _formas = <_RecebimentoFormaDraft>[];
 
@@ -124,6 +124,12 @@ class _SixMobileRecebimentoBottomSheetState
   String? _erroValor;
   SixMobileRecebimentoTipo _tipo = SixMobileRecebimentoTipo.total;
   List<SixMobileTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
+
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _accent => _colors.accent;
+  Color get _muted => _colors.mutedText;
+  Color get _title => _colors.titleText;
+  Color get _received => _colors.error;
 
   static const List<SixMobileTipoRecebimentoOpcao> _opcoesFallback =
       <SixMobileTipoRecebimentoOpcao>[
@@ -168,6 +174,7 @@ class _SixMobileRecebimentoBottomSheetState
   @override
   void initState() {
     super.initState();
+    _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
     _formas.add(
       _RecebimentoFormaDraft(
         opcao: _resolverInicial(_opcoes),
@@ -373,6 +380,7 @@ class _SixMobileRecebimentoBottomSheetState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final SixMobileColorScheme colors = _colors;
     final EdgeInsets viewInsets = MediaQuery.of(context).viewInsets;
     return SafeArea(
       top: false,
@@ -384,7 +392,7 @@ class _SixMobileRecebimentoBottomSheetState
           ),
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: colors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SingleChildScrollView(
@@ -398,7 +406,7 @@ class _SixMobileRecebimentoBottomSheetState
                     height: 5,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.outlineVariant,
+                      color: colors.border,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -422,7 +430,7 @@ class _SixMobileRecebimentoBottomSheetState
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: _muted,
+                              color: colors.mutedText,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -438,8 +446,8 @@ class _SixMobileRecebimentoBottomSheetState
                       widget.contato!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _muted,
+                      style: TextStyle(
+                        color: colors.mutedText,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -456,7 +464,10 @@ class _SixMobileRecebimentoBottomSheetState
                   minLines: 2,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    labelText: 'Observação',
+                    labelText: context.t(
+                      'recebimento.observacao',
+                      fallback: 'Observação',
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -468,8 +479,14 @@ class _SixMobileRecebimentoBottomSheetState
                   icon: const Icon(Icons.check_circle_outline),
                   label: Text(
                     _tipo == SixMobileRecebimentoTipo.total
-                        ? 'Receber total'
-                        : 'Receber parcial',
+                        ? context.t(
+                          'recebimento.receberTotal',
+                          fallback: 'Receber total',
+                        )
+                        : context.t(
+                          'recebimento.receberParcial',
+                          fallback: 'Receber parcial',
+                        ),
                   ),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
@@ -482,7 +499,7 @@ class _SixMobileRecebimentoBottomSheetState
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close_rounded),
-                  label: const Text('Voltar'),
+                  label: Text(context.t('common.back', fallback: 'Voltar')),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
@@ -530,7 +547,7 @@ class _SixMobileRecebimentoBottomSheetState
               'recebimento.valoresTitulo',
               fallback: 'Valores do recebimento',
             ),
-            style: const TextStyle(color: _title, fontWeight: FontWeight.w900),
+            style: TextStyle(color: _title, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
           _valorResumoItem(
@@ -610,7 +627,7 @@ class _SixMobileRecebimentoBottomSheetState
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _muted,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -694,15 +711,14 @@ class _SixMobileRecebimentoBottomSheetState
     required SixMobileRecebimentoTipo tipo,
   }) {
     final bool selecionado = _tipo == tipo;
+    final SixMobileColorScheme colors = _colors;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       height: 44,
       decoration: BoxDecoration(
-        color: selecionado ? _accent : Colors.white,
+        color: selecionado ? colors.accent : colors.surfaceElevated,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: selecionado ? _accent : const Color(0xFFCBD5E1),
-        ),
+        border: Border.all(color: selecionado ? colors.accent : colors.border),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -710,12 +726,16 @@ class _SixMobileRecebimentoBottomSheetState
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Icon(icon, size: 18, color: selecionado ? Colors.white : _accent),
+            Icon(
+              icon,
+              size: 18,
+              color: selecionado ? colors.onAccent : colors.accent,
+            ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: selecionado ? Colors.white : _title,
+                color: selecionado ? colors.onAccent : colors.titleText,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -726,25 +746,37 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   Widget _formasRecebimentoSection() {
+    final SixMobileColorScheme colors = _colors;
+
     if (_carregandoTipos) {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: colors.softSurface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: colors.border),
         ),
-        child: const Row(
+        child: Row(
           children: <Widget>[
-            SizedBox(
+            const SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 12),
-            Text(
-              'Carregando tipos de recebimento...',
-              style: TextStyle(fontWeight: FontWeight.w800),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                context.t(
+                  'recebimento.carregandoTipos',
+                  fallback: 'Carregando tipos de recebimento...',
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.titleText,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ],
         ),
@@ -769,16 +801,16 @@ class _SixMobileRecebimentoBottomSheetState
                   'recebimento.formasRecebimento',
                   fallback: 'Formas de recebimento',
                 ),
-                style: const TextStyle(
-                  color: _title,
+                style: TextStyle(
+                  color: colors.titleText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ),
             Text(
               '${context.t('recebimento.restante', fallback: 'Restante')} ${_formatarMoeda(restante < 0 ? 0 : restante)}',
-              style: const TextStyle(
-                color: _muted,
+              style: TextStyle(
+                color: colors.mutedText,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -829,12 +861,14 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {
+    final SixMobileColorScheme colors = _colors;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: colors.softSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -852,7 +886,7 @@ class _SixMobileRecebimentoBottomSheetState
                     labelText:
                         '${context.t('recebimento.valorForma', fallback: 'Valor da forma')} ${index + 1}',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: colors.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -900,15 +934,15 @@ class _SixMobileRecebimentoBottomSheetState
     required bool selecionado,
     required VoidCallback onTap,
   }) {
+    final SixMobileColorScheme colors = _colors;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       constraints: const BoxConstraints(minHeight: 38),
       decoration: BoxDecoration(
-        color: selecionado ? _accent : Colors.white,
+        color: selecionado ? colors.accent : colors.surfaceElevated,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: selecionado ? _accent : const Color(0xFFCBD5E1),
-        ),
+        border: Border.all(color: selecionado ? colors.accent : colors.border),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -921,13 +955,13 @@ class _SixMobileRecebimentoBottomSheetState
               Icon(
                 opcao.icon,
                 size: 16,
-                color: selecionado ? Colors.white : _accent,
+                color: selecionado ? colors.onAccent : colors.accent,
               ),
               const SizedBox(width: 7),
               Text(
                 opcao.descricao,
                 style: TextStyle(
-                  color: selecionado ? Colors.white : _title,
+                  color: selecionado ? colors.onAccent : colors.titleText,
                   fontWeight: FontWeight.w900,
                 ),
               ),

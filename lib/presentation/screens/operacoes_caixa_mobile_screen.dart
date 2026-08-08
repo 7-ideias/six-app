@@ -24,10 +24,10 @@ class OperacoesCaixaMobileScreen extends StatefulWidget {
 
 class _OperacoesCaixaMobileScreenState
     extends State<OperacoesCaixaMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
   static const Color _successColor = Color(0xFF047857);
   static const Color _warningColor = Color(0xFF92400E);
   static const Color _summaryGradientStart = Color(0xFF173DFF);
@@ -322,7 +322,7 @@ class _OperacoesCaixaMobileScreenState
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _txt('common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       actions: <Widget>[
@@ -332,7 +332,7 @@ class _OperacoesCaixaMobileScreenState
             'Nova movimentação',
           ),
           onPressed: _busy ? null : _abrirFormularioMovimentoSheet,
-          icon: const Icon(Icons.add_circle_outline_rounded),
+          icon: Icon(Icons.add_circle_outline_rounded),
         ),
         IconButton(
           tooltip: _txt(
@@ -340,7 +340,7 @@ class _OperacoesCaixaMobileScreenState
             'Configurações de fechamento',
           ),
           onPressed: _abrirConfiguracoesFechamento,
-          icon: const Icon(Icons.settings_outlined),
+          icon: Icon(Icons.settings_outlined),
         ),
       ],
       bodyBuilder: _buildContent,
@@ -364,7 +364,7 @@ class _OperacoesCaixaMobileScreenState
             onRefresh: () => _carregarDadosIniciais(),
             child: ListView(
               controller: scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
               children: <Widget>[
                 AnimatedSwitcher(
@@ -385,7 +385,7 @@ class _OperacoesCaixaMobileScreenState
   Widget _buildState({required bool reduceMotion}) {
     if (_erro != null && !_loading && _sessaoAtual == null) {
       return _stateMessage(
-        key: const ValueKey<String>('operacoes-caixa-error'),
+        key: ValueKey<String>('operacoes-caixa-error'),
         icon: Icons.error_outline_rounded,
         title: _txt(
           'caixa.operacoes.mobile.errorTitle',
@@ -419,35 +419,35 @@ class _OperacoesCaixaMobileScreenState
           _buildHeaderCard(loading: aguardandoDadosIniciais),
           reduceMotion: reduceMotion,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         if (aguardandoDadosIniciais)
           _entry(
             _buildInitialLoadingPanel(),
-            delay: const Duration(milliseconds: 70),
+            delay: Duration(milliseconds: 70),
             reduceMotion: reduceMotion,
           )
         else if (!_temCaixaAberto)
           _entry(
             _buildPainelAbertura(),
-            delay: const Duration(milliseconds: 70),
+            delay: Duration(milliseconds: 70),
             reduceMotion: reduceMotion,
           )
         else ...<Widget>[
           _entry(
             _buildResumoOperacional(),
-            delay: const Duration(milliseconds: 110),
+            delay: Duration(milliseconds: 110),
             reduceMotion: reduceMotion,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _entry(
             _buildPrepararFechamentoCard(),
-            delay: const Duration(milliseconds: 150),
+            delay: Duration(milliseconds: 150),
             reduceMotion: reduceMotion,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _entry(
             _buildHistorico(),
-            delay: const Duration(milliseconds: 190),
+            delay: Duration(milliseconds: 190),
             reduceMotion: reduceMotion,
           ),
         ],
@@ -463,8 +463,8 @@ class _OperacoesCaixaMobileScreenState
     if (reduceMotion) return child;
     return SixStaggeredEntry(
       delay: delay,
-      duration: const Duration(milliseconds: 340),
-      beginOffset: const Offset(0, 0.035),
+      duration: Duration(milliseconds: 340),
+      beginOffset: Offset(0, 0.035),
       child: child,
     );
   }
@@ -505,7 +505,7 @@ class _OperacoesCaixaMobileScreenState
     return Container(
       key: key,
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: _cardDecoration(),
       child: Column(
         children: <Widget>[
@@ -514,31 +514,31 @@ class _OperacoesCaixaMobileScreenState
             bg: _withAlpha(SixMobilePalette.error, 0.10),
             fg: SixMobilePalette.error,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               height: 1.35,
               fontWeight: FontWeight.w600,
             ),
           ),
           if (actionLabel != null && onAction != null) ...<Widget>[
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onAction,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: Icon(Icons.refresh_rounded),
               label: Text(actionLabel),
             ),
           ],
@@ -564,9 +564,9 @@ class _OperacoesCaixaMobileScreenState
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 15),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 15),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
@@ -580,7 +580,7 @@ class _OperacoesCaixaMobileScreenState
           BoxShadow(
             color: _withAlpha(_summaryGradientMiddle, 0.26),
             blurRadius: 20,
-            offset: const Offset(0, 12),
+            offset: Offset(0, 12),
           ),
         ],
       ),
@@ -615,7 +615,7 @@ class _OperacoesCaixaMobileScreenState
                     fg: SixMobilePalette.onPrimary,
                     size: 44,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,7 +627,7 @@ class _OperacoesCaixaMobileScreenState
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: SixMobilePalette.onPrimary,
                             fontSize: 20,
                             height: 1.1,
@@ -637,9 +637,9 @@ class _OperacoesCaixaMobileScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 178),
+                    constraints: BoxConstraints(maxWidth: 178),
                     child: _statusChip(
                       label: statusLabel,
                       icon:
@@ -653,7 +653,7 @@ class _OperacoesCaixaMobileScreenState
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
                 width: 30,
                 height: 4,
@@ -662,7 +662,7 @@ class _OperacoesCaixaMobileScreenState
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               Semantics(
                 container: true,
                 label: _txt(
@@ -713,7 +713,7 @@ class _OperacoesCaixaMobileScreenState
                 ),
               ),
               if (sessao != null && _temCaixaAberto) ...<Widget>[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _CaixaHeroCarousel(
                   semanticLabel: _txt(
                     'caixa.operacoes.mobile.sessionContext',
@@ -766,14 +766,14 @@ class _OperacoesCaixaMobileScreenState
               : '$label: ${_formatarValor(value)}',
       child: ExcludeSemantics(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+          padding: EdgeInsets.symmetric(vertical: 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Row(
                 children: <Widget>[
                   Icon(icon, color: accent, size: 16),
-                  const SizedBox(width: 5),
+                  SizedBox(width: 5),
                   Expanded(
                     child: Text(
                       label,
@@ -788,7 +788,7 @@ class _OperacoesCaixaMobileScreenState
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               AnimatedSwitcher(
                 duration: _transitionDuration,
                 switchInCurve: Curves.easeOutCubic,
@@ -803,7 +803,7 @@ class _OperacoesCaixaMobileScreenState
                         )
                         : _animatedCurrencyText(
                           value,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: SixMobilePalette.onPrimary,
                             fontSize: 13.5,
                             height: 1.05,
@@ -822,7 +822,7 @@ class _OperacoesCaixaMobileScreenState
     return Container(
       width: 1,
       height: 38,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: _withAlpha(SixMobilePalette.onPrimary, 0.18),
         borderRadius: BorderRadius.circular(999),
@@ -838,14 +838,14 @@ class _OperacoesCaixaMobileScreenState
     bool wide = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: 8),
       child: Semantics(
         container: true,
         label: '$label: $value',
         child: ExcludeSemantics(
           child: Container(
             width: wide ? 172 : 132,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: _withAlpha(SixMobilePalette.onPrimary, 0.09),
               borderRadius: BorderRadius.circular(999),
@@ -856,7 +856,7 @@ class _OperacoesCaixaMobileScreenState
             child: Row(
               children: <Widget>[
                 Icon(icon, color: accent, size: 16),
-                const SizedBox(width: 7),
+                SizedBox(width: 7),
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -873,12 +873,12 @@ class _OperacoesCaixaMobileScreenState
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         value,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.onPrimary,
                           fontSize: 12,
                           height: 1,
@@ -914,7 +914,7 @@ class _OperacoesCaixaMobileScreenState
             icon: Icons.store_mall_directory_outlined,
             onTap: _selecionarCaixa,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _textField(
             label: _txt(
               'caixa.operacoes.mobile.initialChange',
@@ -922,23 +922,23 @@ class _OperacoesCaixaMobileScreenState
             ),
             controller: _trocoInicialController,
             hint: _formatarDecimalDigitavel(0),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
             prefixText:
                 '${context.read<LocaleSettingsProvider>().currencyCode} ',
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _readOnlyInfo(
             label: _txt('caixa.operacoes.mobile.responsible', 'Responsável'),
             value: _nomeColaboradorAtual(),
             icon: Icons.person_outline_rounded,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           FilledButton.icon(
             onPressed: _busy ? null : _abrirCaixa,
-            icon: const Icon(Icons.play_arrow_rounded),
+            icon: Icon(Icons.play_arrow_rounded),
             label: Text(_txt('caixa.operacoes.mobile.openCash', 'Abrir caixa')),
             style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
+              minimumSize: Size.fromHeight(50),
               backgroundColor: SixMobilePalette.accent,
               foregroundColor: SixMobilePalette.onPrimary,
               shape: RoundedRectangleBorder(
@@ -969,13 +969,13 @@ class _OperacoesCaixaMobileScreenState
           onTap: _busy ? null : _abrirPrepararFechamentoSheet,
           child: Container(
             width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 92),
-            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+            constraints: BoxConstraints(minHeight: 92),
+            padding: EdgeInsets.fromLTRB(18, 16, 14, 16),
             decoration: BoxDecoration(
               color: SixMobilePalette.surface,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: SixMobilePalette.activeBorder),
-              boxShadow: const <BoxShadow>[
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: SixMobilePalette.navigationShadow,
                   blurRadius: 18,
@@ -991,7 +991,7 @@ class _OperacoesCaixaMobileScreenState
                   fg: SixMobilePalette.accent,
                   size: 52,
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1004,20 +1004,20 @@ class _OperacoesCaixaMobileScreenState
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 17,
                           height: 1.12,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       AnimatedSwitcher(
                         duration: _transitionDuration,
                         child:
                             loadingSomatorio
                                 ? _skeletonLine(
-                                  key: const ValueKey<String>(
+                                  key: ValueKey<String>(
                                     'prepare-closing-loading',
                                   ),
                                   width: 180,
@@ -1030,7 +1030,7 @@ class _OperacoesCaixaMobileScreenState
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: SixMobilePalette.mutedText,
                                     fontSize: 13,
                                     height: 1.25,
@@ -1041,8 +1041,8 @@ class _OperacoesCaixaMobileScreenState
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Icon(
+                SizedBox(width: 12),
+                Icon(
                   Icons.chevron_right_rounded,
                   color: SixMobilePalette.mutedText,
                   size: 26,
@@ -1076,15 +1076,15 @@ class _OperacoesCaixaMobileScreenState
             refreshSheet?.call();
           },
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           label: _txt('caixa.operacoes.mobile.amount', 'Valor'),
           controller: _valorController,
           hint: _formatarDecimalDigitavel(0),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: TextInputType.numberWithOptions(decimal: true),
           prefixText: '${context.read<LocaleSettingsProvider>().currencyCode} ',
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _selectorField(
           label: _txt(
             'caixa.operacoes.mobile.relatedMethod',
@@ -1102,7 +1102,7 @@ class _OperacoesCaixaMobileScreenState
             refreshSheet?.call();
           },
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           label: _txt(
             'caixa.operacoes.mobile.reference',
@@ -1112,7 +1112,7 @@ class _OperacoesCaixaMobileScreenState
           hint: 'MOV-001',
           keyboardType: TextInputType.text,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           label: _txt('caixa.operacoes.mobile.note', 'Observação'),
           controller: _observacaoController,
@@ -1123,7 +1123,7 @@ class _OperacoesCaixaMobileScreenState
           keyboardType: TextInputType.multiline,
           maxLines: 3,
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         CheckboxListTile(
           value: _vincularVenda,
           dense: true,
@@ -1133,7 +1133,7 @@ class _OperacoesCaixaMobileScreenState
               'caixa.operacoes.mobile.hasSaleLink',
               'Possui vínculo com venda',
             ),
-            style: const TextStyle(fontWeight: FontWeight.w800),
+            style: TextStyle(fontWeight: FontWeight.w800),
           ),
           subtitle: Text(
             _txt(
@@ -1150,7 +1150,7 @@ class _OperacoesCaixaMobileScreenState
                   },
           controlAffinity: ListTileControlAffinity.leading,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         FilledButton.icon(
           onPressed:
               _busy
@@ -1165,7 +1165,7 @@ class _OperacoesCaixaMobileScreenState
                       refreshSheet?.call();
                     }
                   },
-          icon: const Icon(Icons.save_outlined),
+          icon: Icon(Icons.save_outlined),
           label: Text(
             _txt(
               'caixa.operacoes.mobile.saveMovement',
@@ -1173,7 +1173,7 @@ class _OperacoesCaixaMobileScreenState
             ),
           ),
           style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(50),
+            minimumSize: Size.fromHeight(50),
             backgroundColor: SixMobilePalette.accent,
             foregroundColor: SixMobilePalette.onPrimary,
             shape: RoundedRectangleBorder(
@@ -1181,7 +1181,7 @@ class _OperacoesCaixaMobileScreenState
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed:
               _busy
@@ -1190,12 +1190,12 @@ class _OperacoesCaixaMobileScreenState
                     _limparFormularioMovimento();
                     refreshSheet?.call();
                   },
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
           label: Text(
             _txt('caixa.operacoes.mobile.clearForm', 'Limpar formulário'),
           ),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(46),
+            minimumSize: Size.fromHeight(46),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -1223,13 +1223,13 @@ class _OperacoesCaixaMobileScreenState
           onTap: _abrirConferenciaPorFormaSheet,
           child: Container(
             width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 90),
-            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+            constraints: BoxConstraints(minHeight: 90),
+            padding: EdgeInsets.fromLTRB(18, 16, 14, 16),
             decoration: BoxDecoration(
               color: SixMobilePalette.surface,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: SixMobilePalette.activeBorder),
-              boxShadow: const <BoxShadow>[
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: SixMobilePalette.navigationShadow,
                   blurRadius: 18,
@@ -1245,7 +1245,7 @@ class _OperacoesCaixaMobileScreenState
                   fg: SixMobilePalette.accent,
                   size: 52,
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1258,20 +1258,20 @@ class _OperacoesCaixaMobileScreenState
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 17,
                           height: 1.12,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       AnimatedSwitcher(
                         duration: _transitionDuration,
                         child:
                             loadingSomatorio
                                 ? _skeletonLine(
-                                  key: const ValueKey<String>(
+                                  key: ValueKey<String>(
                                     'method-summary-loading',
                                   ),
                                   width: 190,
@@ -1284,7 +1284,7 @@ class _OperacoesCaixaMobileScreenState
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: SixMobilePalette.mutedText,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -1294,8 +1294,8 @@ class _OperacoesCaixaMobileScreenState
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Icon(
+                SizedBox(width: 12),
+                Icon(
                   Icons.chevron_right_rounded,
                   color: SixMobilePalette.mutedText,
                   size: 26,
@@ -1315,7 +1315,7 @@ class _OperacoesCaixaMobileScreenState
           (_ResumoTipoRecebimentoData linha) =>
               _summaryLine(linha.label, _formatarValor(linha.valor)),
         ),
-        const Divider(height: 22),
+        Divider(height: 22),
         _checkItem(
           checked: _temCaixaAberto,
           title: _txt('caixa.operacoes.mobile.cashOpen', 'Caixa aberto'),
@@ -1344,7 +1344,7 @@ class _OperacoesCaixaMobileScreenState
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -1362,7 +1362,7 @@ class _OperacoesCaixaMobileScreenState
                 fg: SixMobilePalette.accent,
                 size: 40,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1374,13 +1374,13 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.titleText,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       _txt(
                         'caixa.operacoes.mobile.closingGuideSubtitle',
@@ -1388,7 +1388,7 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.mutedText,
                         fontSize: 12,
                         height: 1.25,
@@ -1400,7 +1400,7 @@ class _OperacoesCaixaMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           if (loadingSomatorio)
             _guiaFechamentoSkeleton()
           else ...<Widget>[
@@ -1408,7 +1408,7 @@ class _OperacoesCaixaMobileScreenState
               (_ResumoTipoRecebimentoData linha) =>
                   _summaryLine(linha.label, _formatarValor(linha.valor)),
             ),
-            const Divider(height: 22),
+            Divider(height: 22),
             _summaryLine(
               _txt('caixa.operacoes.mobile.expectedBalance', 'Saldo esperado'),
               _formatarValor(_resumo?.saldoEsperado ?? 0),
@@ -1423,9 +1423,9 @@ class _OperacoesCaixaMobileScreenState
     return Column(
       children: <Widget>[
         _skeletonLine(width: double.infinity, height: 13),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         _skeletonLine(width: 210, height: 13),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         _skeletonLine(width: 180, height: 13),
       ],
     );
@@ -1455,25 +1455,25 @@ class _OperacoesCaixaMobileScreenState
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             color: SixMobilePalette.titleText,
             fontSize: 15,
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           _txt(
             'caixa.operacoes.mobile.closingCheckSubtitle',
             'Informe os valores apurados no caixa físico ou nos meios digitais.',
           ),
-          style: const TextStyle(
+          style: TextStyle(
             color: SixMobilePalette.mutedText,
             height: 1.32,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         if (!temValorPrevisto)
           _emptyClosingValues()
         else ...<Widget>[
@@ -1485,7 +1485,7 @@ class _OperacoesCaixaMobileScreenState
               controller: _fechamentoDinheiroController,
               expectedValue: dinheiroPrevisto,
             ),
-            if (temPixPrevisto || temCartaoPrevisto) const SizedBox(height: 12),
+            if (temPixPrevisto || temCartaoPrevisto) SizedBox(height: 12),
           ],
           if (temPixPrevisto) ...<Widget>[
             _closingAmountField(
@@ -1495,7 +1495,7 @@ class _OperacoesCaixaMobileScreenState
               controller: _fechamentoPixController,
               expectedValue: pixPrevisto,
             ),
-            if (temCartaoPrevisto) const SizedBox(height: 12),
+            if (temCartaoPrevisto) SizedBox(height: 12),
           ],
           if (temCartaoPrevisto) ...<Widget>[
             _closingAmountField(
@@ -1508,7 +1508,7 @@ class _OperacoesCaixaMobileScreenState
             ),
           ],
         ],
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _readOnlyInfo(
           label: _txt(
             'caixa.operacoes.mobile.expectedBalance',
@@ -1517,7 +1517,7 @@ class _OperacoesCaixaMobileScreenState
           value: _formatarValor(resumo?.saldoEsperado ?? 0),
           icon: Icons.account_balance_wallet_outlined,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           label: _txt(
             'caixa.operacoes.mobile.closingNote',
@@ -1531,7 +1531,7 @@ class _OperacoesCaixaMobileScreenState
           keyboardType: TextInputType.multiline,
           maxLines: 3,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         FilledButton.icon(
           onPressed:
               _busy
@@ -1546,12 +1546,12 @@ class _OperacoesCaixaMobileScreenState
                       refreshSheet?.call();
                     }
                   },
-          icon: const Icon(Icons.task_alt_rounded),
+          icon: Icon(Icons.task_alt_rounded),
           label: Text(
             _txt('caixa.operacoes.mobile.finishClosing', 'Concluir fechamento'),
           ),
           style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(50),
+            minimumSize: Size.fromHeight(50),
             backgroundColor: SixMobilePalette.accent,
             foregroundColor: SixMobilePalette.onPrimary,
             shape: RoundedRectangleBorder(
@@ -1559,7 +1559,7 @@ class _OperacoesCaixaMobileScreenState
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed:
               _busy
@@ -1571,12 +1571,12 @@ class _OperacoesCaixaMobileScreenState
                     _fechamentoObservacaoController.clear();
                     refreshSheet?.call();
                   },
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
           label: Text(
             _txt('caixa.operacoes.mobile.clearClosing', 'Limpar conferência'),
           ),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(46),
+            minimumSize: Size.fromHeight(46),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -1595,7 +1595,7 @@ class _OperacoesCaixaMobileScreenState
       label: label,
       controller: controller,
       hint: _formatarDecimalDigitavel(expectedValue),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: TextInputType.numberWithOptions(decimal: true),
       prefixText: '${context.read<LocaleSettingsProvider>().currencyCode} ',
     );
   }
@@ -1603,7 +1603,7 @@ class _OperacoesCaixaMobileScreenState
   Widget _emptyClosingValues() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -1611,19 +1611,19 @@ class _OperacoesCaixaMobileScreenState
       ),
       child: Row(
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
             color: SixMobilePalette.mutedText,
             size: 20,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               _txt(
                 'caixa.operacoes.mobile.noExpectedClosingValues',
                 'Nenhuma forma possui valor previsto para conferência.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.mutedText,
                 height: 1.3,
                 fontWeight: FontWeight.w700,
@@ -1683,7 +1683,7 @@ class _OperacoesCaixaMobileScreenState
                 children: movimentosVisiveis
                     .map(
                       (MovimentoCaixa movimento) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                        padding: EdgeInsets.only(bottom: 10),
                         child: _movimentoCard(movimento),
                       ),
                     )
@@ -1703,7 +1703,7 @@ class _OperacoesCaixaMobileScreenState
       child: Column(
         children: <Widget>[
           _movimentoSkeletonCard(),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _movimentoSkeletonCard(),
         ],
       ),
@@ -1713,7 +1713,7 @@ class _OperacoesCaixaMobileScreenState
   Widget _movimentoSkeletonCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -1722,15 +1722,15 @@ class _OperacoesCaixaMobileScreenState
       child: Row(
         children: <Widget>[
           _skeletonLine(width: 42, height: 42, radius: 14),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _skeletonLine(width: 160, height: 14),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _skeletonLine(width: 110, height: 12),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _skeletonLine(width: double.infinity, height: 11),
               ],
             ),
@@ -1756,7 +1756,7 @@ class _OperacoesCaixaMobileScreenState
           onTap: () => _abrirDetalhesMovimentoSheet(movimento),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+            padding: EdgeInsets.fromLTRB(12, 11, 10, 11),
             decoration: BoxDecoration(
               color: SixMobilePalette.softNeutralSurface,
               borderRadius: BorderRadius.circular(16),
@@ -1772,7 +1772,7 @@ class _OperacoesCaixaMobileScreenState
                   fg: color,
                   size: 38,
                 ),
-                const SizedBox(width: 11),
+                SizedBox(width: 11),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1784,15 +1784,15 @@ class _OperacoesCaixaMobileScreenState
                               _labelTipo(movimento.tipoMovimento),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.titleText,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 116),
+                            constraints: BoxConstraints(maxWidth: 116),
                             child: Text(
                               _formatarValor(movimento.valor),
                               maxLines: 1,
@@ -1807,7 +1807,7 @@ class _OperacoesCaixaMobileScreenState
                           ),
                         ],
                       ),
-                      const SizedBox(height: 7),
+                      SizedBox(height: 7),
                       Wrap(
                         spacing: 8,
                         runSpacing: 4,
@@ -1826,8 +1826,8 @@ class _OperacoesCaixaMobileScreenState
                     ],
                   ),
                 ),
-                const SizedBox(width: 6),
-                const Icon(
+                SizedBox(width: 6),
+                Icon(
                   Icons.chevron_right_rounded,
                   color: SixMobilePalette.mutedText,
                   size: 24,
@@ -1872,19 +1872,19 @@ class _OperacoesCaixaMobileScreenState
               ScrollController scrollController,
             ) {
               return Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: SixMobilePalette.surface,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+                  padding: EdgeInsets.fromLTRB(18, 12, 18, 22),
                   children: <Widget>[
                     Center(
                       child: Container(
                         width: 46,
                         height: 5,
-                        margin: const EdgeInsets.only(bottom: 16),
+                        margin: EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
                           color: SixMobilePalette.border,
                           borderRadius: BorderRadius.circular(999),
@@ -1902,7 +1902,7 @@ class _OperacoesCaixaMobileScreenState
                           fg: color,
                           size: 44,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1914,18 +1914,18 @@ class _OperacoesCaixaMobileScreenState
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: SixMobilePalette.titleText,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 _labelTipo(movimento.tipoMovimento),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: SixMobilePalette.mutedText,
                                   height: 1.35,
                                   fontWeight: FontWeight.w600,
@@ -1934,16 +1934,16 @@ class _OperacoesCaixaMobileScreenState
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         IconButton(
                           tooltip: _txt('common.close', 'Fechar'),
                           onPressed: () => Navigator.of(sheetContext).pop(),
-                          icon: const Icon(Icons.close_rounded),
+                          icon: Icon(Icons.close_rounded),
                           color: SixMobilePalette.mutedText,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     Text(
                       _formatarValor(movimento.valor),
                       maxLines: 1,
@@ -1954,7 +1954,7 @@ class _OperacoesCaixaMobileScreenState
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -1981,7 +1981,7 @@ class _OperacoesCaixaMobileScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     _movementDetailTile(
                       icon: Icons.payments_outlined,
                       label: _txt(
@@ -1990,7 +1990,7 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       value: forma,
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _movementDetailTile(
                       icon: Icons.person_outline_rounded,
                       label: _txt(
@@ -1999,7 +1999,7 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       value: movimento.nomeColaborador,
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _movementDetailTile(
                       icon: Icons.schedule_rounded,
                       label: _txt(
@@ -2008,7 +2008,7 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       value: _formatarDataHora(movimento.dataHoraMovimento),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _movementDetailTile(
                       icon: Icons.receipt_long_outlined,
                       label: _txt(
@@ -2017,7 +2017,7 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       value: referencia,
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _movementDetailTile(
                       icon: Icons.notes_rounded,
                       label: _txt('caixa.operacoes.mobile.note', 'Observação'),
@@ -2025,7 +2025,7 @@ class _OperacoesCaixaMobileScreenState
                       multiline: true,
                     ),
                     if (!cancelada) ...<Widget>[
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       OutlinedButton.icon(
                         onPressed:
                             _busy
@@ -2034,14 +2034,12 @@ class _OperacoesCaixaMobileScreenState
                                   Navigator.of(sheetContext).pop();
                                   await _cancelarMovimento(movimento);
                                 },
-                        icon: const Icon(Icons.cancel_outlined),
+                        icon: Icon(Icons.cancel_outlined),
                         label: Text(_txt('common.cancel', 'Cancelar')),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: SixMobilePalette.error,
-                          minimumSize: const Size.fromHeight(48),
-                          side: const BorderSide(
-                            color: SixMobilePalette.errorBorder,
-                          ),
+                          minimumSize: Size.fromHeight(48),
+                          side: BorderSide(color: SixMobilePalette.errorBorder),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -2066,7 +2064,7 @@ class _OperacoesCaixaMobileScreenState
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -2077,7 +2075,7 @@ class _OperacoesCaixaMobileScreenState
             multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: <Widget>[
           Icon(icon, color: SixMobilePalette.accent, size: 19),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2086,18 +2084,18 @@ class _OperacoesCaixaMobileScreenState
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   value,
                   maxLines: multiline ? 5 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     height: 1.3,
                     fontWeight: FontWeight.w900,
@@ -2120,7 +2118,7 @@ class _OperacoesCaixaMobileScreenState
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2134,7 +2132,7 @@ class _OperacoesCaixaMobileScreenState
                 fg: SixMobilePalette.accent,
                 size: 40,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2143,18 +2141,18 @@ class _OperacoesCaixaMobileScreenState
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.titleText,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.mutedText,
                         fontSize: 12,
                         height: 1.25,
@@ -2164,13 +2162,10 @@ class _OperacoesCaixaMobileScreenState
                   ],
                 ),
               ),
-              if (trailing != null) ...<Widget>[
-                const SizedBox(width: 8),
-                trailing,
-              ],
+              if (trailing != null) ...<Widget>[SizedBox(width: 8), trailing],
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           child,
         ],
       ),
@@ -2194,8 +2189,8 @@ class _OperacoesCaixaMobileScreenState
           borderRadius: BorderRadius.circular(18),
           onTap: _busy ? null : onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 58),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            constraints: BoxConstraints(minHeight: 58),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: SixMobilePalette.border),
@@ -2203,7 +2198,7 @@ class _OperacoesCaixaMobileScreenState
             child: Row(
               children: <Widget>[
                 Icon(icon, color: SixMobilePalette.accent, size: 20),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2213,18 +2208,18 @@ class _OperacoesCaixaMobileScreenState
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         value,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontWeight: FontWeight.w900,
                         ),
@@ -2232,7 +2227,7 @@ class _OperacoesCaixaMobileScreenState
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.keyboard_arrow_down_rounded,
                   color: SixMobilePalette.mutedText,
                 ),
@@ -2263,17 +2258,14 @@ class _OperacoesCaixaMobileScreenState
         prefixText: prefixText,
         filled: true,
         fillColor: SixMobilePalette.softNeutralSurface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 16,
-        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: SixMobilePalette.border),
+          borderSide: BorderSide(color: SixMobilePalette.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
+          borderSide: BorderSide(
             color: SixMobilePalette.highlightedBorder,
             width: 1.4,
           ),
@@ -2300,8 +2292,8 @@ class _OperacoesCaixaMobileScreenState
     return Container(
       width: fullWidth ? double.infinity : null,
       constraints:
-          fullWidth ? null : const BoxConstraints(minWidth: 142, maxWidth: 240),
-      padding: const EdgeInsets.all(12),
+          fullWidth ? null : BoxConstraints(minWidth: 142, maxWidth: 240),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -2310,7 +2302,7 @@ class _OperacoesCaixaMobileScreenState
       child: Row(
         children: <Widget>[
           Icon(icon, color: SixMobilePalette.accent, size: 19),
-          const SizedBox(width: 9),
+          SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2319,18 +2311,18 @@ class _OperacoesCaixaMobileScreenState
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w900,
                   ),
@@ -2345,7 +2337,7 @@ class _OperacoesCaixaMobileScreenState
 
   Widget _summaryLine(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -2353,7 +2345,7 @@ class _OperacoesCaixaMobileScreenState
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontWeight: FontWeight.w800,
               ),
@@ -2361,7 +2353,7 @@ class _OperacoesCaixaMobileScreenState
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w900,
             ),
@@ -2373,7 +2365,7 @@ class _OperacoesCaixaMobileScreenState
 
   Widget _checkItem({required bool checked, required String title}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         children: <Widget>[
           Icon(
@@ -2381,11 +2373,11 @@ class _OperacoesCaixaMobileScreenState
             size: 19,
             color: checked ? _successColor : SixMobilePalette.mutedText,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontWeight: FontWeight.w800,
               ),
@@ -2401,13 +2393,13 @@ class _OperacoesCaixaMobileScreenState
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(icon, size: 15, color: SixMobilePalette.mutedText),
-        const SizedBox(width: 5),
+        SizedBox(width: 5),
         Flexible(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -2447,7 +2439,7 @@ class _OperacoesCaixaMobileScreenState
     required Color border,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999),
@@ -2457,7 +2449,7 @@ class _OperacoesCaixaMobileScreenState
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: 12, color: foreground),
-          const SizedBox(width: 5),
+          SizedBox(width: 5),
           Flexible(
             child: Text(
               label,
@@ -2496,7 +2488,7 @@ class _OperacoesCaixaMobileScreenState
     return TweenAnimationBuilder<double>(
       key: ValueKey<String>('caixa-currency-${value.toStringAsFixed(2)}'),
       tween: Tween<double>(begin: 0, end: value),
-      duration: const Duration(milliseconds: 620),
+      duration: Duration(milliseconds: 620),
       curve: Curves.easeOutCubic,
       builder: (BuildContext context, double animatedValue, Widget? child) {
         return Text(
@@ -2522,7 +2514,7 @@ class _OperacoesCaixaMobileScreenState
             color: _withAlpha(Colors.black, 0.22),
             alignment: Alignment.center,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               decoration: BoxDecoration(
                 color: SixMobilePalette.surface,
                 borderRadius: BorderRadius.circular(20),
@@ -2531,18 +2523,18 @@ class _OperacoesCaixaMobileScreenState
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  const SizedBox(
+                  SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2.4),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Text(
                     _txt(
                       'caixa.operacoes.mobile.processing',
                       'Processando operação',
                     ),
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    style: TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ],
               ),
@@ -2558,7 +2550,7 @@ class _OperacoesCaixaMobileScreenState
       color: SixMobilePalette.surface,
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(color: SixMobilePalette.border),
-      boxShadow: const <BoxShadow>[
+      boxShadow: <BoxShadow>[
         BoxShadow(
           color: SixMobilePalette.navigationShadow,
           blurRadius: 14,
@@ -2684,19 +2676,19 @@ class _OperacoesCaixaMobileScreenState
               ScrollController scrollController,
             ) {
               return Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: SixMobilePalette.surface,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+                  padding: EdgeInsets.fromLTRB(18, 12, 18, 22),
                   children: <Widget>[
                     Center(
                       child: Container(
                         width: 46,
                         height: 5,
-                        margin: const EdgeInsets.only(bottom: 16),
+                        margin: EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
                           color: SixMobilePalette.border,
                           borderRadius: BorderRadius.circular(999),
@@ -2712,7 +2704,7 @@ class _OperacoesCaixaMobileScreenState
                           fg: SixMobilePalette.accent,
                           size: 44,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2724,19 +2716,19 @@ class _OperacoesCaixaMobileScreenState
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: SixMobilePalette.titleText,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 _txt(
                                   'caixa.operacoes.mobile.methodSummarySubtitle',
                                   'Resumo pelos tipos configurados no caixa.',
                                 ),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: SixMobilePalette.mutedText,
                                   height: 1.35,
                                   fontWeight: FontWeight.w600,
@@ -2747,7 +2739,7 @@ class _OperacoesCaixaMobileScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     _buildResumoOperacionalDetalhado(),
                   ],
                 ),
@@ -2780,8 +2772,8 @@ class _OperacoesCaixaMobileScreenState
             return SafeArea(
               top: false,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-                decoration: const BoxDecoration(
+                padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
+                decoration: BoxDecoration(
                   color: SixMobilePalette.surface,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
@@ -2793,7 +2785,7 @@ class _OperacoesCaixaMobileScreenState
                       child: Container(
                         width: 46,
                         height: 5,
-                        margin: const EdgeInsets.only(bottom: 16),
+                        margin: EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
                           color: SixMobilePalette.border,
                           borderRadius: BorderRadius.circular(999),
@@ -2809,7 +2801,7 @@ class _OperacoesCaixaMobileScreenState
                           fg: SixMobilePalette.accent,
                           size: 44,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2819,19 +2811,19 @@ class _OperacoesCaixaMobileScreenState
                                   'caixa.operacoes.mobile.closingSettings',
                                   'Configurações de fechamento',
                                 ),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: SixMobilePalette.titleText,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 _txt(
                                   'caixa.operacoes.mobile.closingSettingsSubtitle',
                                   'Preferências locais para orientar a conferência do caixa.',
                                 ),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: SixMobilePalette.mutedText,
                                   height: 1.35,
                                   fontWeight: FontWeight.w600,
@@ -2842,7 +2834,7 @@ class _OperacoesCaixaMobileScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     _settingsSwitchTile(
                       title: _txt(
                         'caixa.operacoes.mobile.registerDifferenceAsExpense',
@@ -2859,7 +2851,7 @@ class _OperacoesCaixaMobileScreenState
                             () => _registrarDiferencaComoDespesa = value,
                           ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _settingsSwitchTile(
                       title: _txt(
                         'caixa.operacoes.mobile.requestManagerDifferenceApproval',
@@ -2897,7 +2889,7 @@ class _OperacoesCaixaMobileScreenState
       container: true,
       toggled: value,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+        padding: EdgeInsets.fromLTRB(12, 12, 8, 12),
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(18),
@@ -2911,7 +2903,7 @@ class _OperacoesCaixaMobileScreenState
               fg: SixMobilePalette.accent,
               size: 40,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2920,19 +2912,19 @@ class _OperacoesCaixaMobileScreenState
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.titleText,
                       fontSize: 13,
                       height: 1.18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.mutedText,
                       fontSize: 11.5,
                       height: 1.25,
@@ -2942,7 +2934,7 @@ class _OperacoesCaixaMobileScreenState
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Switch.adaptive(value: value, onChanged: onChanged),
           ],
         ),
@@ -3024,7 +3016,7 @@ class _OperacoesCaixaMobileScreenState
                             : '${_txt('caixa.operacoes.mobile.entrySubtitleFilled', 'Preencha os dados da operação')} ${_labelTipo(_tipoSelecionado!)}.';
 
                     return Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: SixMobilePalette.surface,
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(28),
@@ -3032,13 +3024,13 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       child: ListView(
                         controller: scrollController,
-                        padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+                        padding: EdgeInsets.fromLTRB(18, 12, 18, 22),
                         children: <Widget>[
                           Center(
                             child: Container(
                               width: 46,
                               height: 5,
-                              margin: const EdgeInsets.only(bottom: 16),
+                              margin: EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
                                 color: SixMobilePalette.border,
                                 borderRadius: BorderRadius.circular(999),
@@ -3054,7 +3046,7 @@ class _OperacoesCaixaMobileScreenState
                                 fg: SixMobilePalette.accent,
                                 size: 44,
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3066,16 +3058,16 @@ class _OperacoesCaixaMobileScreenState
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: SixMobilePalette.titleText,
                                         fontSize: 18,
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4),
                                     Text(
                                       subtitle,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: SixMobilePalette.mutedText,
                                         height: 1.35,
                                         fontWeight: FontWeight.w600,
@@ -3084,17 +3076,17 @@ class _OperacoesCaixaMobileScreenState
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               IconButton(
                                 tooltip: _txt('common.close', 'Fechar'),
                                 onPressed:
                                     () => Navigator.of(sheetContext).pop(),
-                                icon: const Icon(Icons.close_rounded),
+                                icon: Icon(Icons.close_rounded),
                                 color: SixMobilePalette.mutedText,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: 18),
                           _buildFormularioMovimentoContent(
                             refreshSheet: refreshSheet,
                             onSaved: () {
@@ -3158,7 +3150,7 @@ class _OperacoesCaixaMobileScreenState
                     ScrollController scrollController,
                   ) {
                     return Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: SixMobilePalette.surface,
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(28),
@@ -3166,13 +3158,13 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       child: ListView(
                         controller: scrollController,
-                        padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+                        padding: EdgeInsets.fromLTRB(18, 12, 18, 22),
                         children: <Widget>[
                           Center(
                             child: Container(
                               width: 46,
                               height: 5,
-                              margin: const EdgeInsets.only(bottom: 16),
+                              margin: EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
                                 color: SixMobilePalette.border,
                                 borderRadius: BorderRadius.circular(999),
@@ -3188,7 +3180,7 @@ class _OperacoesCaixaMobileScreenState
                                 fg: SixMobilePalette.accent,
                                 size: 44,
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3200,19 +3192,19 @@ class _OperacoesCaixaMobileScreenState
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: SixMobilePalette.titleText,
                                         fontSize: 18,
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4),
                                     Text(
                                       _txt(
                                         'caixa.operacoes.mobile.prepareClosingSheetSubtitle',
                                         'Use o guia por forma para conferir os valores antes de encerrar.',
                                       ),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: SixMobilePalette.mutedText,
                                         height: 1.35,
                                         fontWeight: FontWeight.w600,
@@ -3221,19 +3213,19 @@ class _OperacoesCaixaMobileScreenState
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               IconButton(
                                 tooltip: _txt('common.close', 'Fechar'),
                                 onPressed:
                                     () => Navigator.of(sheetContext).pop(),
-                                icon: const Icon(Icons.close_rounded),
+                                icon: Icon(Icons.close_rounded),
                                 color: SixMobilePalette.mutedText,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: 18),
                           _buildGuiaFechamentoPorForma(),
-                          const SizedBox(height: 14),
+                          SizedBox(height: 14),
                           _buildFechamentoConferenciaContent(
                             refreshSheet: refreshSheet,
                             onClosed: () {
@@ -3494,8 +3486,8 @@ class _OperacoesCaixaMobileScreenState
         return SafeArea(
           top: false,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-            decoration: const BoxDecoration(
+            padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
+            decoration: BoxDecoration(
               color: SixMobilePalette.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
@@ -3507,7 +3499,7 @@ class _OperacoesCaixaMobileScreenState
                   child: Container(
                     width: 46,
                     height: 5,
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                       color: SixMobilePalette.border,
                       borderRadius: BorderRadius.circular(999),
@@ -3531,23 +3523,23 @@ class _OperacoesCaixaMobileScreenState
                               : SixMobilePalette.accent,
                       size: 44,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: SixMobilePalette.titleText,
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             message,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: SixMobilePalette.mutedText,
                               height: 1.35,
                             ),
@@ -3557,10 +3549,10 @@ class _OperacoesCaixaMobileScreenState
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 FilledButton.icon(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(true),
-                  icon: const Icon(Icons.check_circle_outline_rounded),
+                  icon: Icon(Icons.check_circle_outline_rounded),
                   label: Text(confirmLabel),
                   style: FilledButton.styleFrom(
                     backgroundColor:
@@ -3568,20 +3560,20 @@ class _OperacoesCaixaMobileScreenState
                             ? SixMobilePalette.error
                             : SixMobilePalette.accent,
                     foregroundColor: SixMobilePalette.onPrimary,
-                    minimumSize: const Size.fromHeight(50),
+                    minimumSize: Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(false),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: Icon(Icons.arrow_back_rounded),
                   label: Text(_txt('common.back', 'Voltar')),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: SixMobilePalette.titleText,
-                    minimumSize: const Size.fromHeight(46),
+                    minimumSize: Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -3979,13 +3971,13 @@ class _CaixaHeroCarouselState extends State<_CaixaHeroCarousel> {
       try {
         await _controller.animateTo(
           hintOffset,
-          duration: const Duration(milliseconds: 220),
+          duration: Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
         );
         if (!mounted || !_controller.hasClients) return;
         await _controller.animateTo(
           0,
-          duration: const Duration(milliseconds: 260),
+          duration: Duration(milliseconds: 260),
           curve: Curves.easeInOutCubic,
         );
       } catch (_) {
@@ -4007,7 +3999,7 @@ class _CaixaHeroCarouselState extends State<_CaixaHeroCarousel> {
       child: SingleChildScrollView(
         controller: _controller,
         scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
+        physics: BouncingScrollPhysics(),
         clipBehavior: Clip.none,
         child: widget.child,
       ),
@@ -4084,7 +4076,7 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
       expand: false,
       builder: (BuildContext context, ScrollController scrollController) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: SixMobilePalette.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
@@ -4092,7 +4084,7 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
             top: false,
             child: Column(
               children: <Widget>[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Container(
                   width: 42,
                   height: 5,
@@ -4101,9 +4093,9 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
                     children: <Widget>[
                       Container(
@@ -4113,12 +4105,12 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                           color: SixMobilePalette.softAccentSurface,
                           borderRadius: BorderRadius.circular(15),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.tune_rounded,
                           color: SixMobilePalette.accent,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4127,18 +4119,18 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                               widget.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.titleText,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            SizedBox(height: 3),
                             Text(
                               widget.subtitle,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.mutedText,
                                 fontSize: 12,
                                 height: 1.25,
@@ -4150,20 +4142,20 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                       IconButton(
                         tooltip: context.t('common.close', fallback: 'Fechar'),
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
                     onChanged: (String value) => setState(() => _query = value),
                     decoration: InputDecoration(
                       hintText: widget.searchHint,
-                      prefixIcon: const Icon(Icons.search_rounded),
+                      prefixIcon: Icon(Icons.search_rounded),
                       suffixIcon:
                           _query.isEmpty
                               ? null
@@ -4172,7 +4164,7 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                                   'common.clear',
                                   fallback: 'Limpar',
                                 ),
-                                icon: const Icon(Icons.close_rounded),
+                                icon: Icon(Icons.close_rounded),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _query = '');
@@ -4182,27 +4174,25 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                       fillColor: SixMobilePalette.surface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: SixMobilePalette.border,
-                        ),
+                        borderSide: BorderSide(color: SixMobilePalette.border),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Expanded(
                   child:
                       filtered.isEmpty
                           ? Center(
                             child: Padding(
-                              padding: const EdgeInsets.all(24),
+                              padding: EdgeInsets.all(24),
                               child: Text(
                                 context.t(
                                   'common.noResults',
                                   fallback: 'Nenhum resultado encontrado',
                                 ),
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: SixMobilePalette.mutedText,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -4211,10 +4201,9 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                           )
                           : ListView.separated(
                             controller: scrollController,
-                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                            padding: EdgeInsets.fromLTRB(18, 0, 18, 18),
                             itemCount: filtered.length,
-                            separatorBuilder:
-                                (_, __) => const SizedBox(height: 8),
+                            separatorBuilder: (_, __) => SizedBox(height: 8),
                             itemBuilder: (BuildContext context, int index) {
                               final _SelectorOption<T> option = filtered[index];
                               final bool selected =
@@ -4232,7 +4221,7 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                                         context,
                                       ).pop(option.value),
                                   child: Container(
-                                    padding: const EdgeInsets.all(14),
+                                    padding: EdgeInsets.all(14),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(18),
                                       border: Border.all(
@@ -4264,7 +4253,7 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                                             size: 20,
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment:
@@ -4274,7 +4263,7 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                                                 option.title,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   color:
                                                       SixMobilePalette
                                                           .titleText,
@@ -4284,13 +4273,13 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                                               if (option
                                                   .subtitle
                                                   .isNotEmpty) ...<Widget>[
-                                                const SizedBox(height: 3),
+                                                SizedBox(height: 3),
                                                 Text(
                                                   option.subtitle,
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     color:
                                                         SixMobilePalette
                                                             .mutedText,
@@ -4303,7 +4292,7 @@ class _OperacoesCaixaMobileSelectorSheetState<T>
                                           ),
                                         ),
                                         if (selected)
-                                          const Icon(
+                                          Icon(
                                             Icons.check_circle_rounded,
                                             color: SixMobilePalette.accent,
                                           ),

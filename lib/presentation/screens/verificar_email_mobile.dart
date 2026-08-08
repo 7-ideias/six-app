@@ -33,10 +33,14 @@ class _VerificarEmailMobileState extends State<VerificarEmailMobile> {
   static const int _codeLength = 6;
   static const int _resendCooldownSeconds = 45;
 
-  final List<TextEditingController> _controllers =
-      List.generate(_codeLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(_codeLength, (_) => FocusNode());
+  final List<TextEditingController> _controllers = List.generate(
+    _codeLength,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(
+    _codeLength,
+    (_) => FocusNode(),
+  );
 
   final RegistroOtpService _otpService = RegistroOtpService();
   final NovaEmpresaService _novaEmpresaService = NovaEmpresaService();
@@ -182,20 +186,22 @@ class _VerificarEmailMobileState extends State<VerificarEmailMobile> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    const fieldFill = Color(0xFFF1F3F2);
-    const labelGrey = Color(0xFF8A8F8D);
-    const textDark = Color(0xFF1A1A1A);
+    final Color backgroundColor = SixAuthTokens.shellBackground(context);
+    final Color primary = SixAuthTokens.interactiveColor(context);
+    final Color foreground = SixAuthTokens.onInteractiveColor(context);
+    final Color fieldFill = SixAuthTokens.fieldFill(context);
+    final Color fieldBorder = SixAuthTokens.fieldBorder(context);
+    final Color labelGrey = SixAuthTokens.textMuted(context);
+    final Color textColor = SixAuthTokens.textPrimary(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: textDark, size: 20),
+          icon: Icon(Icons.arrow_back_ios_rounded, color: textColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -206,27 +212,28 @@ class _VerificarEmailMobileState extends State<VerificarEmailMobile> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Verificar código',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
-                  color: textDark,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 10),
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     color: labelGrey,
                     height: 1.45,
                   ),
                   children: [
                     const TextSpan(
-                      text: 'Digite o código de 6 dígitos que\nenviamos para o e-mail ',
+                      text:
+                          'Digite o código de 6 dígitos que\nenviamos para o e-mail ',
                     ),
                     TextSpan(
                       text: widget.email,
@@ -248,7 +255,9 @@ class _VerificarEmailMobileState extends State<VerificarEmailMobile> {
                     controller: _controllers[i],
                     focusNode: _focusNodes[i],
                     fillColor: fieldFill,
+                    borderColor: fieldBorder,
                     activeBorder: primary,
+                    textColor: textColor,
                     onChanged: (v) => _onDigitChanged(i, v),
                     onKey: (event) => _onKey(i, event),
                   );
@@ -258,38 +267,37 @@ class _VerificarEmailMobileState extends State<VerificarEmailMobile> {
 
               // ── Reenviar código ───────────────────────────────────────
               Center(
-                child: _resendSecondsLeft > 0
-                    ? Text(
-                        'Não recebeu? Reenviar em ${_resendSecondsLeft}s',
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          color: labelGrey,
-                        ),
-                      )
-                    : GestureDetector(
-                        onTap: _isResending ? null : _reenviarCodigo,
-                        behavior: HitTestBehavior.opaque,
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              color: labelGrey,
-                            ),
-                            children: [
-                              const TextSpan(text: 'Não recebeu? '),
-                              TextSpan(
-                                text: _isResending
-                                    ? 'Enviando...'
-                                    : 'Reenviar código',
-                                style: TextStyle(
-                                  color: primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                child:
+                    _resendSecondsLeft > 0
+                        ? Text(
+                          'Não recebeu? Reenviar em ${_resendSecondsLeft}s',
+                          style: TextStyle(fontSize: 13.5, color: labelGrey),
+                        )
+                        : GestureDetector(
+                          onTap: _isResending ? null : _reenviarCodigo,
+                          behavior: HitTestBehavior.opaque,
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: labelGrey,
                               ),
-                            ],
+                              children: [
+                                const TextSpan(text: 'Não recebeu? '),
+                                TextSpan(
+                                  text:
+                                      _isResending
+                                          ? 'Enviando...'
+                                          : 'Reenviar código',
+                                  style: TextStyle(
+                                    color: primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
               ),
               const SizedBox(height: 28),
 
@@ -300,29 +308,30 @@ class _VerificarEmailMobileState extends State<VerificarEmailMobile> {
                   onPressed: _isValidating ? null : _validar,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: foreground,
                     disabledBackgroundColor: primary.withValues(alpha: 0.6),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: _isValidating
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.4,
+                  child:
+                      _isValidating
+                          ? SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              color: foreground,
+                              strokeWidth: 2.4,
+                            ),
+                          )
+                          : const Text(
+                            'Validar',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        )
-                      : const Text(
-                          'Validar',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                 ),
               ),
             ],
@@ -338,7 +347,9 @@ class _OtpBox extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final Color fillColor;
+  final Color borderColor;
   final Color activeBorder;
+  final Color textColor;
   final ValueChanged<String> onChanged;
   final KeyEventResult Function(KeyEvent) onKey;
 
@@ -346,7 +357,9 @@ class _OtpBox extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.fillColor,
+    required this.borderColor,
     required this.activeBorder,
+    required this.textColor,
     required this.onChanged,
     required this.onKey,
   });
@@ -365,10 +378,11 @@ class _OtpBox extends StatelessWidget {
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           maxLength: 6, // aceita paste de 6 dígitos no primeiro campo
-          style: const TextStyle(
+          cursorColor: activeBorder,
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A1A),
+            color: textColor,
           ),
           decoration: InputDecoration(
             counterText: '',
@@ -377,15 +391,11 @@ class _OtpBox extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: SixAuthTokens.colorFieldBorder,
-              ),
+              borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: SixAuthTokens.colorFieldBorder,
-              ),
+              borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

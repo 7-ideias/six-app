@@ -5,7 +5,12 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import '../../core/services/notificacao_service.dart';
 
 class NotificacoesMobileScreen extends StatefulWidget {
-  const NotificacoesMobileScreen({super.key});
+  const NotificacoesMobileScreen({
+    super.key,
+    this.marcarComoLidasAoAbrir = true,
+  });
+
+  final bool marcarComoLidasAoAbrir;
 
   @override
   State<NotificacoesMobileScreen> createState() =>
@@ -13,11 +18,17 @@ class NotificacoesMobileScreen extends StatefulWidget {
 }
 
 class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _surfaceElevatedColor => SixMobilePalette.surfaceElevated;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _iconSurfaceColor => SixMobilePalette.iconSurface;
+  static Color get _errorColor => SixMobilePalette.error;
+  static Color get _errorBorderColor => SixMobilePalette.errorBorder;
 
   final NotificacaoService _notificacaoService = NotificacaoService();
 
@@ -26,7 +37,9 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
     super.initState();
     _notificacaoService.addListener(_onNotificacoesChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notificacaoService.marcarTodasComoLidas();
+      if (widget.marcarComoLidasAoAbrir) {
+        _notificacaoService.marcarTodasComoLidas();
+      }
     });
   }
 
@@ -64,7 +77,7 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
         if (events.isNotEmpty)
           IconButton(
             tooltip: 'Limpar notificações',
-            icon: const Icon(Icons.delete_outline_rounded),
+            icon: Icon(Icons.delete_outline_rounded),
             onPressed: _notificacaoService.limpar,
           ),
       ],
@@ -94,13 +107,13 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _borderColor),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(
             Icons.notifications_none_rounded,
@@ -134,23 +147,23 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
     List<SixNotificationEvent> events,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontSize: 16,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.1,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           ...events.map(
             (SixNotificationEvent event) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(bottom: 12),
               child: _buildNotificationCard(context, event),
             ),
           ),
@@ -164,24 +177,29 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
     SixNotificationEvent event,
   ) {
     return Material(
-      color: _surfaceColor,
+      color: event.isUnread ? _surfaceElevatedColor : _surfaceColor,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () => _showEventDetails(context, event),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
+            color: event.isUnread ? _surfaceElevatedColor : _surfaceColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color:
                   event.isError
-                      ? const Color(0xFFFECACA)
-                      : const Color(0xFFE2E8F0),
+                      ? _errorBorderColor
+                      : event.isUnread
+                      ? _accentColor.withValues(alpha: 0.58)
+                      : _borderColor,
             ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x0F000000),
+                color: SixMobilePalette.navigationShadow.withValues(
+                  alpha: 0.70,
+                ),
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -199,16 +217,13 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                     decoration: BoxDecoration(
                       color:
                           event.isError
-                              ? const Color(0xFFFEF2F2)
-                              : const Color(0xFFF1F5F9),
+                              ? _errorBorderColor.withValues(alpha: 0.22)
+                              : _iconSurfaceColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
                       _iconFor(event),
-                      color:
-                          event.isError
-                              ? const Color(0xFFDC2626)
-                              : _primaryColor,
+                      color: event.isError ? _errorColor : _primaryColor,
                       size: 23,
                     ),
                   ),
@@ -216,22 +231,22 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                     Positioned(
                       right: -2,
                       top: -2,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color:
-                              event.isError
-                                  ? const Color(0xFFDC2626)
-                                  : _accentColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                      child: Semantics(
+                        label: 'Notificação não lida',
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: event.isError ? _errorColor : _accentColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _surfaceColor, width: 2),
+                          ),
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +258,7 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                             event.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: _titleTextColor,
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -252,7 +267,7 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                         ),
                         Text(
                           event.timeLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _mutedTextColor,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -260,18 +275,18 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       event.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
                         height: 1.35,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -284,8 +299,8 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
+              SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded, color: _mutedTextColor),
             ],
           ),
         ),
@@ -295,15 +310,18 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
 
   Widget _buildChip(String label, {bool isError = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: isError ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF),
+        color:
+            isError
+                ? _errorBorderColor.withValues(alpha: 0.22)
+                : _softAccentColor,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: isError ? const Color(0xFFDC2626) : _accentColor,
+          color: isError ? _errorColor : _accentColor,
           fontSize: 10,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.2,
@@ -316,32 +334,32 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: _surfaceColor,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (BuildContext context) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   event.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   event.description,
-                  style: const TextStyle(color: _mutedTextColor, height: 1.4),
+                  style: TextStyle(color: _mutedTextColor, height: 1.4),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildDetailRow('Entidade', event.entity),
                 _buildDetailRow('Canal', event.channel),
                 _buildDetailRow('Status', event.status),
@@ -366,14 +384,14 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
           SizedBox(
             width: 86,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontWeight: FontWeight.w700,
               ),
@@ -382,7 +400,7 @@ class _NotificacoesMobileScreenState extends State<NotificacoesMobileScreen> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _titleTextColor,
                 fontWeight: FontWeight.w800,
               ),

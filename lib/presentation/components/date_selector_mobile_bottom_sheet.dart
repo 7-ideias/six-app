@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 
 class DateSelectorMobileBottomSheet extends StatefulWidget {
   const DateSelectorMobileBottomSheet({
@@ -23,13 +24,16 @@ class DateSelectorMobileBottomSheet extends StatefulWidget {
 
 class _DateSelectorMobileBottomSheetState
     extends State<DateSelectorMobileBottomSheet> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _softNeutralColor => SixMobilePalette.softNeutralSurface;
 
   late DateTime _selectedDate;
   late DateTime _visibleMonth;
@@ -54,7 +58,7 @@ class _DateSelectorMobileBottomSheetState
       expand: false,
       builder: (BuildContext context, ScrollController scrollController) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _backgroundColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
@@ -94,7 +98,7 @@ class _DateSelectorMobileBottomSheetState
       width: 42,
       height: 5,
       decoration: BoxDecoration(
-        color: const Color(0xFFCBD5E1),
+        color: SixMobilePalette.activeBorder,
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -109,10 +113,10 @@ class _DateSelectorMobileBottomSheetState
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: _softAccentColor,
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(Icons.event_available_outlined, color: _primaryColor),
+            child: Icon(Icons.event_available_outlined, color: _accentColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -123,14 +127,14 @@ class _DateSelectorMobileBottomSheetState
                   widget.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 3),
-                const Text(
+                Text(
                   'Escolha uma data sem sair do atendimento.',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -157,15 +161,15 @@ class _DateSelectorMobileBottomSheetState
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: <Color>[_primaryColor, Color(0xFF123B69)],
+        gradient: LinearGradient(
+          colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x1F0B1F3A),
+            color: SixMobilePalette.heroShadow,
             blurRadius: 18,
             offset: Offset(0, 8),
           ),
@@ -181,7 +185,10 @@ class _DateSelectorMobileBottomSheetState
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0x26FFFFFF)),
             ),
-            child: const Icon(Icons.calendar_month_rounded, color: Colors.white),
+            child: Icon(
+              Icons.calendar_month_rounded,
+              color: SixMobilePalette.onPrimary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -192,8 +199,8 @@ class _DateSelectorMobileBottomSheetState
                   _formatDate(_selectedDate),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: SixMobilePalette.onPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.2,
@@ -204,8 +211,8 @@ class _DateSelectorMobileBottomSheetState
                   _weekdayName(_selectedDate),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
+                  style: TextStyle(
+                    color: SixMobilePalette.heroSupportingText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -237,7 +244,7 @@ class _DateSelectorMobileBottomSheetState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
+          Text(
             'Atalhos rápidos',
             style: TextStyle(
               color: _titleTextColor,
@@ -248,25 +255,33 @@ class _DateSelectorMobileBottomSheetState
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: shortcuts.map((shortcut) {
-              final bool selected = _isSameDay(shortcut.date, _selectedDate);
-              return ChoiceChip(
-                selected: selected,
-                label: Text(shortcut.label),
-                onSelected: (_) => _selectDate(shortcut.date),
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : _primaryColor,
-                  fontWeight: FontWeight.w800,
-                ),
-                selectedColor: _accentColor,
-                backgroundColor: const Color(0xFFF8FAFC),
-                side: BorderSide(
-                  color: selected ? _accentColor : _borderColor,
-                ),
-                showCheckmark: false,
-                visualDensity: VisualDensity.compact,
-              );
-            }).toList(growable: false),
+            children: shortcuts
+                .map((shortcut) {
+                  final bool selected = _isSameDay(
+                    shortcut.date,
+                    _selectedDate,
+                  );
+                  return ChoiceChip(
+                    selected: selected,
+                    label: Text(shortcut.label),
+                    onSelected: (_) => _selectDate(shortcut.date),
+                    labelStyle: TextStyle(
+                      color:
+                          selected
+                              ? SixMobilePalette.onAccent
+                              : _titleTextColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    selectedColor: _accentColor,
+                    backgroundColor: _softNeutralColor,
+                    side: BorderSide(
+                      color: selected ? _accentColor : _borderColor,
+                    ),
+                    showCheckmark: false,
+                    visualDensity: VisualDensity.compact,
+                  );
+                })
+                .toList(growable: false),
           ),
         ],
       ),
@@ -304,6 +319,8 @@ class _DateSelectorMobileBottomSheetState
           visualDensity: VisualDensity.compact,
           onPressed: canGoPrevious ? () => _changeMonth(-1) : null,
           icon: const Icon(Icons.chevron_left_rounded),
+          color: _titleTextColor,
+          disabledColor: _mutedTextColor.withValues(alpha: 0.38),
         ),
         Expanded(
           child: Text(
@@ -311,7 +328,7 @@ class _DateSelectorMobileBottomSheetState
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontSize: 16,
               fontWeight: FontWeight.w900,
@@ -322,38 +339,47 @@ class _DateSelectorMobileBottomSheetState
           visualDensity: VisualDensity.compact,
           onPressed: canGoNext ? () => _changeMonth(1) : null,
           icon: const Icon(Icons.chevron_right_rounded),
+          color: _titleTextColor,
+          disabledColor: _mutedTextColor.withValues(alpha: 0.38),
         ),
       ],
     );
   }
 
   Widget _weekdayHeader() {
-    const List<String> weekdays = <String>['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const List<String> weekdays = <String>[
+      'Dom',
+      'Seg',
+      'Ter',
+      'Qua',
+      'Qui',
+      'Sex',
+      'Sáb',
+    ];
     return Row(
-      children: weekdays.map((String day) {
-        return Expanded(
-          child: Text(
-            day,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: _mutedTextColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        );
-      }).toList(growable: false),
+      children: weekdays
+          .map((String day) {
+            return Expanded(
+              child: Text(
+                day,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _mutedTextColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
   Widget _monthGrid() {
     final DateTime firstDay = DateTime(_visibleMonth.year, _visibleMonth.month);
     final int leadingEmptyCells = firstDay.weekday % DateTime.daysPerWeek;
-    final int daysInMonth = DateTime(
-      _visibleMonth.year,
-      _visibleMonth.month + 1,
-      0,
-    ).day;
+    final int daysInMonth =
+        DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
     final int totalCells = leadingEmptyCells + daysInMonth;
     final int rows = (totalCells / DateTime.daysPerWeek).ceil();
 
@@ -392,7 +418,7 @@ class _DateSelectorMobileBottomSheetState
   Widget _footer(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _backgroundColor,
         border: Border(top: BorderSide(color: _borderColor)),
       ),
@@ -521,10 +547,10 @@ class _DayCell extends StatelessWidget {
     required this.onTap,
   });
 
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _borderColor = Color(0xFFE2E8F0);
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _borderColor => SixMobilePalette.border;
 
   final DateTime date;
   final bool selected;
@@ -534,10 +560,11 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color foregroundColor = !enabled
-        ? _mutedTextColor.withOpacity(0.38)
-        : selected
-            ? Colors.white
+    final Color foregroundColor =
+        !enabled
+            ? _mutedTextColor.withValues(alpha: 0.38)
+            : selected
+            ? SixMobilePalette.onAccent
             : _primaryColor;
 
     return Material(
@@ -554,11 +581,12 @@ class _DayCell extends StatelessWidget {
             color: selected ? _accentColor : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected
-                  ? _accentColor
-                  : today
-                      ? _accentColor.withOpacity(0.42)
-                      : _borderColor.withOpacity(enabled ? 1 : 0),
+              color:
+                  selected
+                      ? _accentColor
+                      : today
+                      ? _accentColor.withValues(alpha: 0.42)
+                      : _borderColor.withValues(alpha: enabled ? 1 : 0),
             ),
           ),
           child: Text(

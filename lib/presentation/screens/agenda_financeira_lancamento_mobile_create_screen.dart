@@ -9,7 +9,14 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 class AgendaFinanceiraLancamentoMobileCreateScreen extends StatefulWidget {
-  const AgendaFinanceiraLancamentoMobileCreateScreen({super.key});
+  const AgendaFinanceiraLancamentoMobileCreateScreen({
+    super.key,
+    this.service,
+    this.caixaApiClient,
+  });
+
+  final AgendaFinanceiraLancamentoService? service;
+  final CaixaApiClient? caixaApiClient;
 
   @override
   State<AgendaFinanceiraLancamentoMobileCreateScreen> createState() =>
@@ -18,20 +25,21 @@ class AgendaFinanceiraLancamentoMobileCreateScreen extends StatefulWidget {
 
 class _AgendaFinanceiraLancamentoMobileCreateScreenState
     extends State<AgendaFinanceiraLancamentoMobileCreateScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.border;
-  static const Color _softBlueColor = SixMobilePalette.softAccentSurface;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
+  static Color get _softBlueColor => SixMobilePalette.softAccentSurface;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final AgendaFinanceiraLancamentoService _service =
-      AgendaFinanceiraLancamentoService();
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  late final AgendaFinanceiraLancamentoService _service =
+      widget.service ?? AgendaFinanceiraLancamentoService();
+  late final CaixaApiClient _caixaApiClient =
+      widget.caixaApiClient ?? HttpCaixaApiClient();
 
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _contatoController = TextEditingController();
@@ -106,7 +114,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       scrolledSurfaceOpacity: 0.66,
       leading: IconButton(
         tooltip: 'Voltar',
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: _salvando ? null : () => Navigator.of(context).maybePop(),
       ),
       bottomNavigationBar: _buildBottomBar(),
@@ -125,33 +133,33 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
         key: _formKey,
         child: ListView(
           controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 112),
           children: <Widget>[
             SixStaggeredEntry(child: _buildHeaderCard()),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 60),
+              delay: Duration(milliseconds: 60),
               child: _buildMainSection(),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 110),
+              delay: Duration(milliseconds: 110),
               child: _buildValueSection(),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 160),
+              delay: Duration(milliseconds: 160),
               child: _buildDateSection(),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 210),
+              delay: Duration(milliseconds: 210),
               child: _buildContactSection(),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 260),
+              delay: Duration(milliseconds: 260),
               child: _buildExtraSection(),
             ),
           ],
@@ -162,15 +170,15 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.heroShadow,
             blurRadius: 18,
@@ -184,17 +192,17 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
+              color: Color(0x1AFFFFFF),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0x33FFFFFF)),
+              border: Border.all(color: Color(0x33FFFFFF)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.add_card_rounded,
               color: SixMobilePalette.onPrimary,
             ),
           ),
-          const SizedBox(width: 12),
-          const Expanded(
+          SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -233,7 +241,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       icon: Icons.receipt_long_outlined,
       children: <Widget>[
         _buildTypeSelector(),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           controller: _descricaoController,
           label: 'Descrição',
@@ -242,7 +250,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
               (String? value) =>
                   (value ?? '').trim().isEmpty ? 'Informe a descrição.' : null,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Row(
           children: <Widget>[
             Expanded(
@@ -259,7 +267,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                     ),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _selectorTile(
                 label: 'Origem',
@@ -290,14 +298,14 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           controller: _valorController,
           label: 'Valor total',
           icon: Icons.attach_money_rounded,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: TextInputType.numberWithOptions(decimal: true),
           validator:
               (String? value) =>
                   _toDouble(value) <= 0
                       ? 'Informe um valor maior que zero.'
                       : null,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _selectorTile(
           label:
               _carregandoTiposRecebimento
@@ -340,7 +348,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                 onSelected: (DateTime value) => _dataVencimento = value,
               ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Row(
           children: <Widget>[
             Expanded(
@@ -356,7 +364,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                     ),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _selectorTile(
                 label: 'Operação',
@@ -387,19 +395,19 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           label: _tipoSelecionado == 'Receber' ? 'Cliente' : 'Fornecedor',
           icon: Icons.person_outline,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           controller: _categoriaController,
           label: 'Categoria',
           icon: Icons.sell_outlined,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           controller: _responsavelController,
           label: 'Responsável',
           icon: Icons.badge_outlined,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           controller: _centroCustoController,
           label: 'Centro de custo',
@@ -420,13 +428,13 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           label: 'Referência',
           icon: Icons.tag_outlined,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           controller: _documentoFiscalController,
           label: 'Documento fiscal',
           icon: Icons.description_outlined,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _textField(
           controller: _observacoesController,
           label: 'Observações',
@@ -458,9 +466,9 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                           },
                   borderRadius: BorderRadius.circular(18),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                    duration: Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.all(13),
+                    padding: EdgeInsets.all(13),
                     decoration: BoxDecoration(
                       color: selected ? _primaryColor : _softBlueColor,
                       borderRadius: BorderRadius.circular(18),
@@ -475,17 +483,23 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                           tipo == 'Receber'
                               ? Icons.south_west_rounded
                               : Icons.north_east_rounded,
-                          color: selected ? Colors.white : _accentColor,
+                          color:
+                              selected
+                                  ? SixMobilePalette.onPrimary
+                                  : _accentColor,
                           size: 18,
                         ),
-                        const SizedBox(width: 7),
+                        SizedBox(width: 7),
                         Flexible(
                           child: Text(
                             tipo,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: selected ? Colors.white : _titleTextColor,
+                              color:
+                                  selected
+                                      ? SixMobilePalette.onPrimary
+                                      : _titleTextColor,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -507,14 +521,14 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     required List<Widget> children,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x0F000000),
+            color: SixMobilePalette.navigationShadow.withValues(alpha: 0.70),
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -534,7 +548,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                 ),
                 child: Icon(icon, color: _accentColor, size: 19),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,17 +557,17 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
                         height: 1.35,
@@ -564,7 +578,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           ...children,
         ],
       ),
@@ -594,15 +608,15 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
         fillColor: SixMobilePalette.softNeutralSurface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _borderColor),
+          borderSide: BorderSide(color: _borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _borderColor),
+          borderSide: BorderSide(color: _borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _accentColor, width: 1.4),
+          borderSide: BorderSide(color: _accentColor, width: 1.4),
         ),
       ),
     );
@@ -618,7 +632,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       onTap: _salvando ? null : onTap,
       borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(18),
@@ -627,7 +641,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
         child: Row(
           children: <Widget>[
             Icon(icon, color: _accentColor, size: 20),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,18 +650,18 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _mutedTextColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _titleTextColor,
                       fontWeight: FontWeight.w900,
                     ),
@@ -655,10 +669,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
                 ],
               ),
             ),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: _mutedTextColor,
-            ),
+            Icon(Icons.keyboard_arrow_down_rounded, color: _mutedTextColor),
           ],
         ),
       ),
@@ -669,8 +680,8 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.fromLTRB(16, 10, 16, 16),
+        decoration: BoxDecoration(
           color: _surfaceColor,
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -685,26 +696,26 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _salvando ? null : () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded),
-                label: const Text('Cancelar'),
+                icon: Icon(Icons.close_rounded),
+                label: Text('Cancelar'),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               flex: 2,
               child: FilledButton.icon(
                 onPressed: _salvando ? null : _salvar,
                 icon:
                     _salvando
-                        ? const SizedBox(
+                        ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: SixMobilePalette.onPrimary,
                           ),
                         )
-                        : const Icon(Icons.check_rounded),
+                        : Icon(Icons.check_rounded),
                 label: Text(_salvando ? 'Salvando...' : 'Salvar lançamento'),
               ),
             ),
@@ -725,7 +736,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder:
           (BuildContext context) => _AgendaMobileOptionSheet(
             title: titulo,
@@ -743,7 +754,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     required ValueChanged<DateTime> onSelected,
   }) async {
     final DateTime firstDate = DateTime(2020);
-    final DateTime lastDate = _inicioHoje().add(const Duration(days: 3650));
+    final DateTime lastDate = _inicioHoje().add(Duration(days: 3650));
     final DateTime initial =
         atual.isBefore(firstDate)
             ? firstDate
@@ -753,7 +764,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder: (BuildContext context) {
         return DateSelectorMobileBottomSheet(
           title: titulo,
@@ -1072,7 +1083,7 @@ class _AgendaMobileOptionSheet extends StatelessWidget {
         16,
         MediaQuery.of(context).viewInsets.bottom + 18,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SixMobilePalette.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -1092,26 +1103,26 @@ class _AgendaMobileOptionSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
+            SizedBox(height: 6),
+            Text(
               'Toque em uma opção para aplicar.',
               style: TextStyle(color: SixMobilePalette.mutedText, fontSize: 13),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Flexible(
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: values.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, __) => SizedBox(height: 8),
                 itemBuilder: (BuildContext context, int index) {
                   final String value = values[index];
                   final bool isSelected = value == selected;
@@ -1119,7 +1130,7 @@ class _AgendaMobileOptionSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     onTap: () => Navigator.of(context).pop(value),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 13,
                       ),
@@ -1148,7 +1159,7 @@ class _AgendaMobileOptionSheet extends StatelessWidget {
                                     : SixMobilePalette.accent,
                             size: 19,
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               value,

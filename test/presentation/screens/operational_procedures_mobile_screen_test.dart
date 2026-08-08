@@ -1,13 +1,16 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_card.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_filters.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_state_views.dart';
+import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
+import 'package:sixpos/providers/management_overview_provider.dart';
 
 void main() {
   testWidgets('shows procedures with success state', (tester) async {
@@ -234,17 +237,68 @@ void main() {
     );
   });
 
-  test('declares procedures entry in management settings section', () {
-    final source =
-        File(
-          'lib/presentation/screens/gestao_mobile_screen.dart',
-        ).readAsStringSync();
+  testWidgets('opens procedures from management settings section', (
+    tester,
+  ) async {
+    Widget? navigatedPage;
 
-    expect(source, contains("'gestao.settings.item.procedures.title'"));
-    expect(source, contains("'gestao.settings.item.procedures.subtitle'"));
-    expect(source, contains('ManagementSettingsMaturity.experimental'));
-    expect(source, contains('const OperationalProceduresMobileScreen()'));
+    await _pumpManagementSettings(
+      tester,
+      onNavigate: (_, Widget page) {
+        navigatedPage = page;
+      },
+    );
+
+    await tester.ensureVisible(find.text('Procedimentos'));
+    await tester.tap(find.text('Procedimentos'));
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(navigatedPage, isA<OperationalProceduresMobileScreen>());
   });
+}
+
+Future<void> _pumpManagementSettings(
+  WidgetTester tester, {
+  required ManagementMobileNavigate onNavigate,
+}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(390, 900);
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+
+  final ManagementOverviewProvider overviewProvider =
+      ManagementOverviewProvider(initialSnapshot: _emptyManagementSnapshot);
+
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
+          value: ColaboradorAutorizacoesProvider(),
+        ),
+        ChangeNotifierProvider<EmpresaProvider>.value(value: EmpresaProvider()),
+      ],
+      child: MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(390, 900),
+            devicePixelRatio: 1,
+            disableAnimations: true,
+            accessibleNavigation: true,
+          ),
+          child: GestaoMobileScreen(
+            overviewProvider: overviewProvider,
+            initialSectionIndex: 3,
+            showBottomNavigationBar: false,
+            onNavigate: onNavigate,
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 700));
 }
 
 Future<void> _pumpProcedures(
@@ -276,6 +330,13 @@ Future<void> _pumpProcedures(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 260));
 }
+
+const ManagementOverviewSnapshot _emptyManagementSnapshot =
+    ManagementOverviewSnapshot(
+      catalog: ManagementSectionLoadState<ManagementCatalogOverview>.empty(),
+      people: ManagementSectionLoadState<ManagementPeopleOverview>.empty(),
+      finance: ManagementSectionLoadState<ManagementFinanceOverview>.empty(),
+    );
 
 Future<void> _pumpComponent(
   WidgetTester tester,

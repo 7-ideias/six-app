@@ -24,12 +24,12 @@ class OperationalProcedureTriggerSummary extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.route_outlined,
             color: SixMobilePalette.secondary,
             size: 18,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Expanded(
             child: Text(
               text,

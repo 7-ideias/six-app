@@ -34,10 +34,10 @@ class OperationalProcedureEditorMobileScreen extends StatefulWidget {
 
 class _OperationalProcedureEditorMobileScreenState
     extends State<OperationalProcedureEditorMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
 
   late OperationalProcedure _draft;
   late final TextEditingController _nameController;
@@ -98,13 +98,13 @@ class _OperationalProcedureEditorMobileScreenState
               fallback: 'Pré-visualizar',
             ),
             onPressed: _openPreview,
-            icon: const Icon(Icons.play_circle_outline_rounded),
+            icon: Icon(Icons.play_circle_outline_rounded),
           ),
           TextButton(
             onPressed: _save,
             child: Text(
               context.t('common.save', fallback: 'Salvar'),
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.onPrimary,
                 fontWeight: FontWeight.w900,
               ),
@@ -122,11 +122,11 @@ class _OperationalProcedureEditorMobileScreenState
               key: _formKey,
               child: ListView(
                 controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
                 children: <Widget>[
                   _DemoNotice(),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _SectionCard(
                     title: context.t(
                       'procedimentos.generalInfo',
@@ -156,7 +156,7 @@ class _OperationalProcedureEditorMobileScreenState
                             _updateDraft(_draft.copyWith(name: value.trim()));
                           },
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         TextFormField(
                           controller: _descriptionController,
                           minLines: 2,
@@ -173,7 +173,7 @@ class _OperationalProcedureEditorMobileScreenState
                             );
                           },
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         _SelectorTile(
                           label: context.t(
                             'procedimentos.operationContext',
@@ -186,7 +186,7 @@ class _OperationalProcedureEditorMobileScreenState
                           icon: Icons.storefront_outlined,
                           onTap: _selectOperationType,
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         _SelectorTile(
                           label: context.t(
                             'procedimentos.momentField',
@@ -196,7 +196,7 @@ class _OperationalProcedureEditorMobileScreenState
                           icon: Icons.schedule_outlined,
                           onTap: _selectMoment,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         SwitchListTile.adaptive(
                           value: _draft.isActive,
                           contentPadding: EdgeInsets.zero,
@@ -234,7 +234,7 @@ class _OperationalProcedureEditorMobileScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _SectionCard(
                     title: context.t(
                       'procedimentos.whenExecute',
@@ -242,7 +242,7 @@ class _OperationalProcedureEditorMobileScreenState
                     ),
                     trailing: TextButton.icon(
                       onPressed: _addTrigger,
-                      icon: const Icon(Icons.add_rounded),
+                      icon: Icon(Icons.add_rounded),
                       label: Text(
                         context.t(
                           'procedimentos.addTrigger',
@@ -252,7 +252,7 @@ class _OperationalProcedureEditorMobileScreenState
                     ),
                     child: _buildTriggersSection(reduceMotion),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _SectionCard(
                     title: context.t(
                       'procedimentos.stages',
@@ -260,7 +260,7 @@ class _OperationalProcedureEditorMobileScreenState
                     ),
                     trailing: TextButton.icon(
                       onPressed: _addStage,
-                      icon: const Icon(Icons.add_rounded),
+                      icon: Icon(Icons.add_rounded),
                       label: Text(
                         context.t(
                           'procedimentos.addStage',
@@ -276,19 +276,19 @@ class _OperationalProcedureEditorMobileScreenState
                             liveRegion: true,
                             child: Text(
                               _structureError!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.error,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                         ],
                         AnimatedSwitcher(
                           duration:
                               reduceMotion
                                   ? Duration.zero
-                                  : const Duration(milliseconds: 180),
+                                  : Duration(milliseconds: 180),
                           child:
                               _draft.stages.isEmpty
                                   ? _EmptyInline(
@@ -307,16 +307,16 @@ class _OperationalProcedureEditorMobileScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   OperationalProcedureNewAction(
                     onTap: _save,
                     label: context.t('common.save', fallback: 'Salvar'),
                     icon: Icons.check_rounded,
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: _openPreview,
-                    icon: const Icon(Icons.play_circle_outline_rounded),
+                    icon: Icon(Icons.play_circle_outline_rounded),
                     label: Text(
                       context.t(
                         'procedimentos.previewAction',
@@ -344,8 +344,8 @@ class _OperationalProcedureEditorMobileScreenState
         itemCount: itemCount,
       ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(16),
@@ -361,11 +361,11 @@ class _OperationalProcedureEditorMobileScreenState
               '${stage.order}. ${stage.title}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w900),
+              style: TextStyle(fontWeight: FontWeight.w900),
             ),
             subtitle: Text(
               OperationalProcedureI18n.itemCount(context, itemCount),
-              style: const TextStyle(color: SixMobilePalette.mutedText),
+              style: TextStyle(color: SixMobilePalette.mutedText),
             ),
             trailing: Wrap(
               spacing: 2,
@@ -376,7 +376,7 @@ class _OperationalProcedureEditorMobileScreenState
                     fallback: 'Editar etapa',
                   ),
                   onPressed: () => _editStage(stage),
-                  icon: const Icon(Icons.edit_outlined),
+                  icon: Icon(Icons.edit_outlined),
                 ),
                 IconButton(
                   tooltip: context.t(
@@ -384,7 +384,7 @@ class _OperationalProcedureEditorMobileScreenState
                     fallback: 'Excluir etapa',
                   ),
                   onPressed: () => _deleteStage(stage),
-                  icon: const Icon(Icons.delete_outline),
+                  icon: Icon(Icons.delete_outline),
                 ),
               ],
             ),
@@ -394,13 +394,13 @@ class _OperationalProcedureEditorMobileScreenState
                   alignment: Alignment.centerLeft,
                   child: Text(
                     stage.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.mutedText,
                       height: 1.3,
                     ),
                   ),
                 ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               ...stage.items.map((ProcedureItem item) {
                 return _ItemRow(
                   item: item,
@@ -412,7 +412,7 @@ class _OperationalProcedureEditorMobileScreenState
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: () => _addItem(stage),
-                  icon: const Icon(Icons.add_rounded),
+                  icon: Icon(Icons.add_rounded),
                   label: Text(
                     context.t(
                       'procedimentos.addItem',
@@ -430,12 +430,11 @@ class _OperationalProcedureEditorMobileScreenState
 
   Widget _buildTriggersSection(bool reduceMotion) {
     return AnimatedSwitcher(
-      duration:
-          reduceMotion ? Duration.zero : const Duration(milliseconds: 180),
+      duration: reduceMotion ? Duration.zero : Duration(milliseconds: 180),
       child:
           _draft.triggers.isEmpty
               ? _EmptyInline(
-                key: const ValueKey<String>('triggers-empty'),
+                key: ValueKey<String>('triggers-empty'),
                 message: context.t(
                   'procedimentos.noTriggers',
                   fallback: 'Nenhum gatilho configurado.',
@@ -456,12 +455,12 @@ class _OperationalProcedureEditorMobileScreenState
                       fallback:
                           '${_draft.triggers.length} gatilho(s) configurado(s)',
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.mutedText,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   ..._draft.triggers.map((ProcedureTrigger trigger) {
                     return OperationalProcedureTriggerCard(
                       trigger: trigger,
@@ -835,7 +834,7 @@ class _DemoNotice extends StatelessWidget {
             fallback: 'Dados demonstrativos',
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: Text(
             context.t(
@@ -843,7 +842,7 @@ class _DemoNotice extends StatelessWidget {
               fallback:
                   'As alterações serão mantidas apenas durante esta sessão.',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.heroSupportingText,
               fontWeight: FontWeight.w700,
               height: 1.25,
@@ -869,12 +868,12 @@ class _SectionCard extends StatelessWidget {
       label: title,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 10,
@@ -890,7 +889,7 @@ class _SectionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.titleText,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -900,7 +899,7 @@ class _SectionCard extends StatelessWidget {
                 if (trailing != null) Flexible(child: trailing!),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             child,
           ],
         ),
@@ -934,8 +933,8 @@ class _SelectorTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 58),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            constraints: BoxConstraints(minHeight: 58),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
               border: Border.all(color: SixMobilePalette.border),
@@ -943,25 +942,25 @@ class _SelectorTile extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 Icon(icon, color: SixMobilePalette.secondary, size: 20),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
                         label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         value,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontWeight: FontWeight.w900,
                         ),
@@ -969,7 +968,7 @@ class _SelectorTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.keyboard_arrow_down_rounded,
                   color: SixMobilePalette.mutedText,
                 ),
@@ -1016,7 +1015,7 @@ class _OptionSheet<T> extends StatelessWidget {
                     descriptionBuilder == null
                         ? null
                         : Text(descriptionBuilder!(value)),
-                trailing: isSelected ? const Icon(Icons.check_rounded) : null,
+                trailing: isSelected ? Icon(Icons.check_rounded) : null,
                 selected: isSelected,
                 onTap: () => Navigator.of(context).pop(value),
               );
@@ -1086,7 +1085,7 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             TextFormField(
               controller: _descriptionController,
               minLines: 2,
@@ -1098,7 +1097,7 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _SheetActions(
               saveLabel: context.t(
                 'procedimentos.saveStage',
@@ -1112,7 +1111,7 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
                     title: _titleController.text.trim(),
                     description: _descriptionController.text.trim(),
                     order: widget.stage?.order ?? 0,
-                    items: widget.stage?.items ?? const <ProcedureItem>[],
+                    items: widget.stage?.items ?? <ProcedureItem>[],
                   ),
                 );
               },
@@ -1143,7 +1142,7 @@ class _ItemRow extends StatelessWidget {
       container: true,
       label: 'Item: ${item.title}. Tipo $type. $requiredLabel.',
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.only(bottom: 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -1152,7 +1151,7 @@ class _ItemRow extends StatelessWidget {
               color: SixMobilePalette.secondary,
               size: 20,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1161,13 +1160,13 @@ class _ItemRow extends StatelessWidget {
                     item.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                   Text(
                     '$type • $requiredLabel',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.mutedText,
                       fontSize: 12,
                     ),
@@ -1181,7 +1180,7 @@ class _ItemRow extends StatelessWidget {
                 fallback: 'Editar item',
               ),
               onPressed: onEdit,
-              icon: const Icon(Icons.edit_outlined),
+              icon: Icon(Icons.edit_outlined),
             ),
             IconButton(
               tooltip: context.t(
@@ -1189,7 +1188,7 @@ class _ItemRow extends StatelessWidget {
                 fallback: 'Excluir item',
               ),
               onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline),
+              icon: Icon(Icons.delete_outline),
             ),
           ],
         ),
@@ -1211,19 +1210,16 @@ class _EmptyInline extends StatelessWidget {
       children: <Widget>[
         Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             color: SixMobilePalette.mutedText,
             fontWeight: FontWeight.w800,
           ),
         ),
         if (description != null) ...<Widget>[
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             description!,
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
-              height: 1.35,
-            ),
+            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
           ),
         ],
       ],
@@ -1240,7 +1236,7 @@ class _SheetSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1265,16 +1261,16 @@ class _SheetSurface extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             child,
           ],
         ),
@@ -1299,7 +1295,7 @@ class _SheetActions extends StatelessWidget {
             child: Text(context.t('common.cancel', fallback: 'Cancelar')),
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: FilledButton(onPressed: onSave, child: Text(saveLabel)),
         ),
@@ -1324,12 +1320,9 @@ class _ConfirmSheet extends StatelessWidget {
         children: <Widget>[
           Text(
             message,
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
-              height: 1.35,
-            ),
+            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: <Widget>[
               Expanded(
@@ -1343,7 +1336,7 @@ class _ConfirmSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: FilledButton(
                   onPressed: () => Navigator.of(context).pop(true),

@@ -376,8 +376,7 @@ class _RegionalizacaoMobileScreenState
       SnackBar(
         content: Text(mensagem),
         behavior: SnackBarBehavior.floating,
-        backgroundColor:
-            erro ? SixMobilePalette.error : const Color(0xFF16A34A),
+        backgroundColor: erro ? SixMobilePalette.error : Color(0xFF16A34A),
       ),
     );
   }
@@ -398,7 +397,7 @@ class _RegionalizacaoMobileScreenState
       accentColor: SixMobilePalette.accent,
       leading: IconButton(
         tooltip: context.t('common.back', fallback: 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       bodyBuilder: (
@@ -412,7 +411,7 @@ class _RegionalizacaoMobileScreenState
           children: <Widget>[
             if (_carregando || provider.regionalizacaoLoading)
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 130),
+                delay: Duration(milliseconds: 130),
                 child: SixBackendLoading(
                   title: context.t(
                     'configuracoes.regionalizationLoadingTitle',
@@ -429,30 +428,30 @@ class _RegionalizacaoMobileScreenState
               )
             else ...<Widget>[
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 120),
+                delay: Duration(milliseconds: 120),
                 child: _buildDisplayOverviewCard(context),
               ),
               if (_erro != null && _erro!.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _buildErrorCard(context),
               ],
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 170),
+                delay: Duration(milliseconds: 170),
                 child: _buildLanguageCard(context),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 220),
+                delay: Duration(milliseconds: 220),
                 child: _buildFormatCard(context),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 270),
+                delay: Duration(milliseconds: 270),
                 child: _buildFinancialCard(context),
               ),
             ],
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             _buildActions(context, provider),
           ],
         );
@@ -470,10 +469,10 @@ class _RegionalizacaoMobileScreenState
         '${_idiomaSelecionado.locale.languageCode}-${_paisSelecionado.value}';
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 196),
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+      constraints: BoxConstraints(minHeight: 196),
+      padding: EdgeInsets.fromLTRB(20, 22, 20, 22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
@@ -483,7 +482,7 @@ class _RegionalizacaoMobileScreenState
           ],
         ),
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Color(0x3D3D00D8),
             blurRadius: 20,
@@ -511,7 +510,7 @@ class _RegionalizacaoMobileScreenState
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             top: -2,
             right: -2,
             child: ExcludeSemantics(
@@ -522,7 +521,7 @@ class _RegionalizacaoMobileScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Padding(
-                padding: const EdgeInsets.only(right: 78),
+                padding: EdgeInsets.only(right: 78),
                 child: Text(
                   context.t(
                     'configuracoes.displayLanguageRegionCurrency',
@@ -530,7 +529,7 @@ class _RegionalizacaoMobileScreenState
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.onPrimary,
                     fontSize: 16,
                     height: 1.18,
@@ -538,9 +537,9 @@ class _RegionalizacaoMobileScreenState
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Padding(
-                padding: const EdgeInsets.only(right: 72),
+                padding: EdgeInsets.only(right: 72),
                 child: Text(
                   context.t(
                     'configuracoes.regionalizationPreviewDescription',
@@ -549,7 +548,7 @@ class _RegionalizacaoMobileScreenState
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.heroSupportingText,
                     fontSize: 12.5,
                     height: 1.24,
@@ -557,16 +556,16 @@ class _RegionalizacaoMobileScreenState
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
                 width: 30,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF38BDF8),
+                  color: Color(0xFF38BDF8),
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              const SizedBox(height: 34),
+              SizedBox(height: 34),
               LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   final List<Widget> metrics = <Widget>[
@@ -621,7 +620,7 @@ class _RegionalizacaoMobileScreenState
                   );
                 },
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               Align(
                 alignment: Alignment.center,
                 child: _RegionalizacaoLocaleBadge(
@@ -663,7 +662,7 @@ class _RegionalizacaoMobileScreenState
             subtitle: _idiomaSelecionado.description(context),
             onTap: () => _selecionarIdioma(context),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SelectionField(
             icon: Icons.flag_rounded,
             title: context.t(
@@ -688,7 +687,7 @@ class _RegionalizacaoMobileScreenState
                       (value) => setState(() => _paisSelecionado = value),
                 ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SelectionField(
             icon: Icons.schedule_rounded,
             title: context.t(
@@ -755,7 +754,7 @@ class _RegionalizacaoMobileScreenState
                       (value) => setState(() => _dateFormatSelecionado = value),
                 ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SelectionField(
             icon: Icons.access_time_rounded,
             title: context.t(
@@ -780,7 +779,7 @@ class _RegionalizacaoMobileScreenState
                       (value) => setState(() => _timeFormatSelecionado = value),
                 ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SelectionField(
             icon: Icons.looks_one_rounded,
             title: context.t(
@@ -814,7 +813,7 @@ class _RegionalizacaoMobileScreenState
                       }),
                 ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SelectionField(
             icon: Icons.view_week_rounded,
             title: context.t(
@@ -847,7 +846,7 @@ class _RegionalizacaoMobileScreenState
                       }),
                 ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SelectionField(
             icon: Icons.today_rounded,
             title: context.t(
@@ -915,12 +914,12 @@ class _RegionalizacaoMobileScreenState
                       (value) => setState(() => _moedaSelecionada = value),
                 ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _DecimalStepper(
             value: _decimalPlaces,
             onChanged: (value) => setState(() => _decimalPlaces = value),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _SwitchTile(
             icon: Icons.currency_exchange_rounded,
             title: context.t(
@@ -935,7 +934,7 @@ class _RegionalizacaoMobileScreenState
             onChanged:
                 (value) => setState(() => _allowMultipleCurrencies = value),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SwitchTile(
             icon: Icons.price_check_rounded,
             title: context.t(
@@ -957,24 +956,21 @@ class _RegionalizacaoMobileScreenState
 
   Widget _buildErrorCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
+        color: Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: SixMobilePalette.errorBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Icon(
-            Icons.error_outline_rounded,
-            color: SixMobilePalette.error,
-          ),
-          const SizedBox(width: 10),
+          Icon(Icons.error_outline_rounded, color: SixMobilePalette.error),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               _erro!,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.error,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -1001,22 +997,22 @@ class _RegionalizacaoMobileScreenState
         Expanded(
           child: OutlinedButton.icon(
             onPressed: saving ? null : _carregarRegionalizacao,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: Icon(Icons.refresh_rounded),
             label: Text(context.t('common.refresh', fallback: 'Atualizar')),
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: FilledButton.icon(
             onPressed: saving || _carregando ? null : _salvar,
             icon:
                 saving
-                    ? const SizedBox(
+                    ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                    : const Icon(Icons.save_rounded),
+                    : Icon(Icons.save_rounded),
             label: Text(
               saving
                   ? context.t('common.saving', fallback: 'Salvando...')
@@ -1150,7 +1146,7 @@ class _RegionalizacaoSummaryIllustration extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             right: 0,
             top: 0,
             child: _RegionalizacaoSummaryLayer(
@@ -1208,7 +1204,7 @@ class _RegionalizacaoSummaryLayer extends StatelessWidget {
             BoxShadow(
               color: SixMobilePalette.primary.withValues(alpha: 0.24),
               blurRadius: 12,
-              offset: const Offset(0, 5),
+              offset: Offset(0, 5),
             ),
           ],
         ),
@@ -1241,26 +1237,26 @@ class _RegionalizacaoSummaryMetric extends StatelessWidget {
             color: SixMobilePalette.onPrimary.withValues(alpha: 0.86),
             size: 16,
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.onPrimary,
               fontSize: 17,
               height: 1,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.heroSupportingText,
               fontSize: 12,
               height: 1.12,
@@ -1284,7 +1280,7 @@ class _RegionalizacaoLocaleBadge extends StatelessWidget {
     return Semantics(
       label: '$label: $value',
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: SixMobilePalette.onPrimary.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(999),
@@ -1296,17 +1292,17 @@ class _RegionalizacaoLocaleBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(
+            Icon(
               Icons.public_rounded,
               color: SixMobilePalette.onPrimary,
               size: 14,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               '$label $value',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.onPrimary,
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
@@ -1335,12 +1331,12 @@ class _MobileSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.navigationShadow,
             blurRadius: 14,
@@ -1355,7 +1351,7 @@ class _MobileSectionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _IconBox(icon: icon),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1364,18 +1360,18 @@ class _MobileSectionCard extends StatelessWidget {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.titleText,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       subtitle,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.mutedText,
                         fontSize: 12.5,
                         height: 1.28,
@@ -1386,7 +1382,7 @@ class _MobileSectionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           child,
         ],
       ),
@@ -1443,7 +1439,7 @@ class _SelectionField extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: SixMobilePalette.border),
@@ -1451,7 +1447,7 @@ class _SelectionField extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 Icon(icon, color: SixMobilePalette.accent, size: 20),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1460,30 +1456,30 @@ class _SelectionField extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         value,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       if (subtitle.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: SixMobilePalette.mutedText,
                             fontSize: 11.5,
                           ),
@@ -1492,8 +1488,8 @@ class _SelectionField extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(
+                SizedBox(width: 8),
+                Icon(
                   Icons.keyboard_arrow_down_rounded,
                   color: SixMobilePalette.mutedText,
                 ),
@@ -1515,7 +1511,7 @@ class _DecimalStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(16),
@@ -1523,12 +1519,8 @@ class _DecimalStepper extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(
-            Icons.pin_rounded,
-            color: SixMobilePalette.accent,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
+          Icon(Icons.pin_rounded, color: SixMobilePalette.accent, size: 20),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1540,16 +1532,16 @@ class _DecimalStepper extends StatelessWidget {
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   value.toString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -1563,7 +1555,7 @@ class _DecimalStepper extends StatelessWidget {
             tooltip: context.t('common.decrease', fallback: 'Diminuir'),
             onPressed: value <= 0 ? null : () => onChanged(value - 1),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           _StepButton(
             icon: Icons.add_rounded,
             tooltip: context.t('common.increase', fallback: 'Aumentar'),
@@ -1593,7 +1585,7 @@ class _StepButton extends StatelessWidget {
       onPressed: onPressed,
       icon: Icon(icon),
       style: IconButton.styleFrom(
-        minimumSize: const Size(38, 38),
+        minimumSize: Size(38, 38),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
@@ -1618,7 +1610,7 @@ class _SwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(16),
@@ -1627,7 +1619,7 @@ class _SwitchTile extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Icon(icon, color: SixMobilePalette.accent, size: 20),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1636,18 +1628,18 @@ class _SwitchTile extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   subtitle,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     fontSize: 11.5,
                     height: 1.24,
@@ -1728,7 +1720,7 @@ class _OptionPickerSheetState extends State<_OptionPickerSheet> {
                 hint: widget.searchHint,
                 onChanged: (String value) => setState(() => _query = value),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
             ],
             Expanded(
               child:
@@ -1743,7 +1735,7 @@ class _OptionPickerSheetState extends State<_OptionPickerSheet> {
                           bottom: MediaQuery.paddingOf(context).bottom + 8,
                         ),
                         itemCount: filteredOptions.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (_, __) => SizedBox(height: 8),
                         itemBuilder: (BuildContext context, int index) {
                           final _RegionalizacaoOption option =
                               filteredOptions[index];
@@ -1792,7 +1784,7 @@ class _LanguagePickerSheet extends StatelessWidget {
             bottom: MediaQuery.paddingOf(context).bottom + 8,
           ),
           itemCount: options.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => SizedBox(height: 8),
           itemBuilder: (BuildContext context, int index) {
             final _LanguageOption option = options[index];
             final bool isSelected = option == selected;
@@ -1855,8 +1847,8 @@ class _PickerShell extends StatelessWidget {
         return SafeArea(
           top: false,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            decoration: const BoxDecoration(
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+            decoration: BoxDecoration(
               color: SixMobilePalette.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
@@ -1873,7 +1865,7 @@ class _PickerShell extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Row(
                   children: <Widget>[
                     Expanded(
@@ -1881,7 +1873,7 @@ class _PickerShell extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
@@ -1891,11 +1883,11 @@ class _PickerShell extends StatelessWidget {
                     IconButton(
                       tooltip: context.t('common.close', fallback: 'Fechar'),
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
+                      icon: Icon(Icons.close_rounded),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Semantics(
                   button: true,
                   child: TextButton(
@@ -1903,7 +1895,7 @@ class _PickerShell extends StatelessWidget {
                     child: Text(cancelLabel),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Expanded(child: builder(context, scrollController)),
               ],
             ),
@@ -1945,8 +1937,8 @@ class _PickerOptionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 66),
-            padding: const EdgeInsets.all(12),
+            constraints: BoxConstraints(minHeight: 66),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -1990,7 +1982,7 @@ class _PickerOptionTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1999,18 +1991,18 @@ class _PickerOptionTile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                           height: 1.2,
@@ -2019,17 +2011,17 @@ class _PickerOptionTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 160),
+                  duration: Duration(milliseconds: 160),
                   child:
                       selected
-                          ? const Icon(
+                          ? Icon(
                             Icons.check_circle_rounded,
                             key: ValueKey<String>('selected'),
                             color: SixMobilePalette.accent,
                           )
-                          : const Icon(
+                          : Icon(
                             Icons.radio_button_unchecked_rounded,
                             key: ValueKey<String>('unselected'),
                             color: SixMobilePalette.mutedText,
@@ -2057,24 +2049,21 @@ class _SheetSearchField extends StatelessWidget {
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: const Icon(Icons.search_rounded),
+        prefixIcon: Icon(Icons.search_rounded),
         filled: true,
         fillColor: SixMobilePalette.softNeutralSurface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: SixMobilePalette.border),
+          borderSide: BorderSide(color: SixMobilePalette.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: SixMobilePalette.border),
+          borderSide: BorderSide(color: SixMobilePalette.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
+          borderSide: BorderSide(
             color: SixMobilePalette.highlightedBorder,
             width: 1.4,
           ),
@@ -2094,7 +2083,7 @@ class _PickerEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -2106,26 +2095,26 @@ class _PickerEmptyState extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: SixMobilePalette.border),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.search_off_rounded,
                 color: SixMobilePalette.mutedText,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.mutedText,
                 fontSize: 12,
                 height: 1.25,

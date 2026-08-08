@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_area_components.dart';
@@ -56,7 +57,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   static const Duration _sectionTransitionDuration = Duration(
     milliseconds: 380,
   );
-  static const Color _catalogAccent = SixMobilePalette.accent;
   static const Color _peopleAccent = Color(0xFF059669);
   static const Color _financeAccent = Color(0xFF0891B2);
   static const Color _attentionAccent = Color(0xFFD97706);
@@ -109,7 +109,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     if (kIsWeb) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future<void>.delayed(const Duration(milliseconds: 180), () {
+      Future<void>.delayed(Duration(milliseconds: 180), () {
         if (mounted) connectStomp();
       });
     });
@@ -117,14 +117,16 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     final Widget shell = SixMobilePageShell(
       title: context.t('gestao.title', fallback: 'Gestão'),
-      backgroundColor: SixMobilePalette.background,
-      primaryColor: SixMobilePalette.primary,
-      secondaryColor: SixMobilePalette.secondary,
-      accentColor: SixMobilePalette.accent,
+      backgroundColor: colors.background,
+      primaryColor: colors.primary,
+      secondaryColor: colors.secondary,
+      accentColor: colors.accent,
       automaticallyImplyLeading: false,
-      leading: const SixMobileAppBarProfileAction(),
+      leading: SixMobileAppBarProfileAction(),
       actions: <Widget>[
         IconButton(
           tooltip: context.t(
@@ -139,7 +141,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       bottomNavigationBar:
           kIsWeb || !widget.showBottomNavigationBar
               ? null
-              : const NavBarMobile(initialIndex: 0),
+              : NavBarMobile(initialIndex: 0),
     );
 
     final ManagementOverviewProvider? injectedProvider =
@@ -175,7 +177,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             top: -6,
             child: SixPulsingBadge(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: SixMobilePalette.notificationBadge,
                   borderRadius: BorderRadius.circular(999),
@@ -186,7 +188,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 ),
                 child: Text(
                   _badgeText(naoLidas),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.onPrimary,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
@@ -217,7 +219,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       right: false,
       child: ListView(
         controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           0,
           topInset,
@@ -227,7 +229,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         children: <Widget>[
           // Compact section selector
           SixStaggeredEntry(
-            delay: const Duration(milliseconds: 80),
+            delay: Duration(milliseconds: 80),
             child: ManagementSectionSelector(
               sections: sections
                   .map(
@@ -244,13 +246,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               },
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Section content
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+            padding: EdgeInsets.symmetric(horizontal: _horizontalPadding),
             child: SixStaggeredEntry(
-              delay: const Duration(milliseconds: 180),
+              delay: Duration(milliseconds: 180),
               child: _buildSmoothSectionTransition(
                 context,
                 transitionKey: 'section-${selectedSection.title}',
@@ -278,13 +280,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final String? companyName = _resolveCompanyName(context);
 
     return KeyedSubtree(
-      key: const ValueKey<String>('management-area-settings'),
+      key: ValueKey<String>('management-area-settings'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           // Admin header
           SixStaggeredEntry(
-            delay: const Duration(milliseconds: 60),
+            delay: Duration(milliseconds: 60),
             child: ManagementAdminHeader(
               title: context.t(
                 'gestao.settings.adminHeader.title',
@@ -297,7 +299,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               companyName: companyName,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Settings groups
           ...section.settingsGroups!.asMap().entries.map((
@@ -366,13 +368,13 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(left: 2, bottom: 12),
+          padding: EdgeInsets.only(left: 2, bottom: 12),
           child: Text(
             context.t('gestao.overview.generalTitle', fallback: 'Visão geral'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.titleText,
+            style: TextStyle(
+              color: context.sixMobileColors.titleText,
               fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
@@ -389,16 +391,16 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           variant: _summaryVariantForSection(section),
         ),
         if (stateMessage != null) ...<Widget>[
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           stateMessage,
         ],
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         ManagementActionGroup(
           title: section.actionGroupTitle,
           items: _actionDataForSection(context, section),
         ),
         if (contextualBlock != null) ...<Widget>[
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           contextualBlock,
         ],
       ],
@@ -443,6 +445,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     ManagementOverviewSnapshot snapshot, {
     required bool podeAcessarCatalogo,
   }) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     switch (section.type) {
       case _ManagementSectionType.catalog:
         final ManagementSectionLoadState<ManagementCatalogOverview> state =
@@ -457,7 +461,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 fallback: 'Produtos',
               ),
               icon: Icons.shopping_bag_outlined,
-              accentColor: _catalogAccent,
+              accentColor: colors.accent,
               value: data?.productServiceCount,
               loading: state.isLoading,
             ),
@@ -501,7 +505,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Clientes',
             ),
             icon: Icons.people_alt_outlined,
-            accentColor: _catalogAccent,
+            accentColor: colors.accent,
             value: data?.clientCount,
             loading: state.isLoading,
           ),
@@ -574,7 +578,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           ),
         ];
       case _ManagementSectionType.settings:
-        return const <ManagementMetricData>[];
+        return <ManagementMetricData>[];
     }
   }
 
@@ -617,8 +621,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             'gestao.finance.openSchedule',
             fallback: 'Abrir agenda',
           ),
-          onAction:
-              () => _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+          onAction: () => _navigateTo(context, AgendaFinanceiraMobileScreen()),
         );
       case _ManagementSectionType.settings:
         return null;
@@ -714,7 +717,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             'gestao.catalog.lowStockAction',
             fallback: 'Ver itens',
           ),
-          onAction: () => _navigateTo(context, const EstoqueMobileScreen()),
+          onAction: () => _navigateTo(context, EstoqueMobileScreen()),
         );
       case _ManagementSectionType.people:
         return ManagementAttentionBlock(
@@ -752,8 +755,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Abrir agenda',
             ),
             onAction:
-                () =>
-                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+                () => _navigateTo(context, AgendaFinanceiraMobileScreen()),
           );
         }
         return null;
@@ -827,7 +829,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       switchOutCurve: Curves.easeInCubic,
       transitionBuilder: (Widget transitionChild, Animation<double> animation) {
         final Animation<Offset> slideAnimation = Tween<Offset>(
-          begin: const Offset(0, 0.03),
+          begin: Offset(0, 0.03),
           end: Offset.zero,
         ).animate(
           CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
@@ -850,6 +852,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   List<_ManagementSection> _managementSections(BuildContext context) {
     final bool podeAcessarCatalogo =
         context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+    final SixMobileColorScheme colors = context.sixMobileColors;
 
     return <_ManagementSection>[
       _ManagementSection(
@@ -861,7 +864,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           fallback: 'Produtos, categorias e estoque',
         ),
         icon: Icons.inventory_2_outlined,
-        accentColor: _catalogAccent,
+        accentColor: colors.accent,
         actionGroupTitle:
             context
                 .t('gestao.overview.mainActions', fallback: 'Ações principais')
@@ -878,10 +881,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                 fallback: 'Saúde, cadastro e revisão do catálogo',
               ),
               icon: Icons.shopping_bag_outlined,
-              accentColor: _catalogAccent,
+              accentColor: colors.accent,
               emphasis: ManagementActionEmphasis.primary,
-              onTap:
-                  () => _navigateTo(context, const CatalogHealthMobileScreen()),
+              onTap: () => _navigateTo(context, CatalogHealthMobileScreen()),
             ),
           _ManagementItem(
             title: context.t(
@@ -898,7 +900,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             onTap:
                 () => _navigateTo(
                   context,
-                  const CategoriasProdutosServicosMobileScreen(),
+                  CategoriasProdutosServicosMobileScreen(),
                 ),
           ),
           _ManagementItem(
@@ -910,7 +912,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.warehouse_outlined,
             accentColor: _attentionAccent,
             emphasis: ManagementActionEmphasis.operational,
-            onTap: () => _navigateTo(context, const EstoqueMobileScreen()),
+            onTap: () => _navigateTo(context, EstoqueMobileScreen()),
           ),
         ],
       ),
@@ -936,10 +938,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               fallback: 'Base de atendimento e relacionamento',
             ),
             icon: Icons.people_alt_outlined,
-            accentColor: _catalogAccent,
+            accentColor: colors.accent,
             emphasis: ManagementActionEmphasis.primary,
-            onTap:
-                () => _navigateTo(context, const ClientesUsuarioMobileScreen()),
+            onTap: () => _navigateTo(context, ClientesUsuarioMobileScreen()),
           ),
           _ManagementItem(
             title: context.t(
@@ -954,10 +955,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             accentColor: _peopleAccent,
             emphasis: ManagementActionEmphasis.secondary,
             onTap:
-                () => _navigateTo(
-                  context,
-                  const ColaboradoresUsuarioMobileScreen(),
-                ),
+                () => _navigateTo(context, ColaboradoresUsuarioMobileScreen()),
           ),
           _ManagementItem(
             title: context.t(
@@ -1005,9 +1003,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.event_note_outlined,
             accentColor: _financeAccent,
             emphasis: ManagementActionEmphasis.primary,
-            onTap:
-                () =>
-                    _navigateTo(context, const AgendaFinanceiraMobileScreen()),
+            onTap: () => _navigateTo(context, AgendaFinanceiraMobileScreen()),
           ),
           _ManagementItem(
             title: context.t(
@@ -1067,11 +1063,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           fallback: 'Empresa, idioma e integrações',
         ),
         icon: Icons.settings_outlined,
-        accentColor: SixMobilePalette.primary,
+        accentColor: colors.primary,
         actionGroupTitle: '',
         isSettingsCentral: true,
         settingsGroups: _settingsGroups(context),
-        items: const <_ManagementItem>[],
+        items: <_ManagementItem>[],
       ),
     ];
   }
@@ -1093,8 +1089,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
             icon: Icons.storefront_outlined,
             maturity: ManagementSettingsMaturity.functional,
-            onTap:
-                () => _navigateTo(context, const EmpresaConfiguracaoMobile()),
+            onTap: () => _navigateTo(context, EmpresaConfiguracaoMobile()),
           ),
           ManagementSettingsItemData(
             title: context.t(
@@ -1107,8 +1102,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
             icon: Icons.language_outlined,
             maturity: ManagementSettingsMaturity.functional,
-            onTap:
-                () => _navigateTo(context, const RegionalizacaoMobileScreen()),
+            onTap: () => _navigateTo(context, RegionalizacaoMobileScreen()),
           ),
         ],
       ),
@@ -1154,10 +1148,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.fact_check_outlined,
             maturity: ManagementSettingsMaturity.experimental,
             onTap:
-                () => _navigateTo(
-                  context,
-                  const OperationalProceduresMobileScreen(),
-                ),
+                () => _navigateTo(context, OperationalProceduresMobileScreen()),
           ),
         ],
       ),
@@ -1226,7 +1217,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   String _badgeText(int count) => count > 9 ? '+9' : count.toString();
 
   void _openNotifications(BuildContext context) {
-    _navigateTo(context, const NotificacoesMobileScreen());
+    _navigateTo(context, NotificacoesMobileScreen());
   }
 
   void _navigateTo(BuildContext context, Widget page) {

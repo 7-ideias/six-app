@@ -41,12 +41,12 @@ class OperationalProcedureExecutionSummary extends StatelessWidget {
       label: resolvedTitle,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 10,
@@ -65,48 +65,45 @@ class OperationalProcedureExecutionSummary extends StatelessWidget {
                     fallback: 'Dados demonstrativos',
                   ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Text(
               resolvedTitle,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               message ??
                   context.t(
                     'procedimentos.previewSummarySavedMessage',
                     fallback: 'Nenhuma resposta foi salva.',
                   ),
-              style: const TextStyle(
-                color: SixMobilePalette.mutedText,
-                height: 1.35,
-              ),
+              style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Text(
               OperationalProcedureI18n.answeredActionsSummary(
                 context,
                 completed,
                 total,
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               OperationalProcedureI18n.optionalPendingSummary(
                 context,
                 optionalPending,
               ),
-              style: const TextStyle(color: SixMobilePalette.mutedText),
+              style: TextStyle(color: SixMobilePalette.mutedText),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Row(
               children: <Widget>[
                 Expanded(
@@ -120,7 +117,7 @@ class OperationalProcedureExecutionSummary extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: FilledButton(
                     onPressed: onClose,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_maturity_badge.dart';
@@ -25,6 +26,8 @@ class ManagementAreaHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return Semantics(
       container: true,
       header: true,
@@ -32,14 +35,14 @@ class ManagementAreaHeader extends StatelessWidget {
       label: '$selectedLabel: $title',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+        padding: EdgeInsets.fromLTRB(14, 13, 14, 13),
         decoration: BoxDecoration(
-          color: SixMobilePalette.surface,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: SixMobilePalette.activeBorder, width: 0.7),
-          boxShadow: const <BoxShadow>[
+          border: Border.all(color: colors.strongBorder, width: 0.7),
+          boxShadow: <BoxShadow>[
             BoxShadow(
-              color: SixMobilePalette.navigationShadow,
+              color: colors.navigationShadow,
               blurRadius: 14,
               offset: Offset(0, 6),
             ),
@@ -56,7 +59,7 @@ class ManagementAreaHeader extends StatelessWidget {
               ),
               child: Icon(icon, color: accentColor, size: 22),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,19 +68,19 @@ class ManagementAreaHeader extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SixMobilePalette.titleText,
+                    style: TextStyle(
+                      color: colors.titleText,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Text(
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SixMobilePalette.mutedText,
+                    style: TextStyle(
+                      color: colors.mutedText,
                       fontSize: 12.5,
                       height: 1.3,
                       fontWeight: FontWeight.w500,
@@ -94,7 +97,7 @@ class ManagementAreaHeader extends StatelessWidget {
 }
 
 class ManagementMetricData {
-  const ManagementMetricData({
+  ManagementMetricData({
     this.id,
     required this.label,
     required this.icon,
@@ -162,13 +165,11 @@ class ManagementSummaryCard extends StatelessWidget {
 
           return AnimatedContainer(
             duration:
-                reduceMotion
-                    ? Duration.zero
-                    : const Duration(milliseconds: 220),
+                reduceMotion ? Duration.zero : Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
             width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 192),
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+            constraints: BoxConstraints(minHeight: 192),
+            padding: EdgeInsets.fromLTRB(20, 22, 20, 22),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -180,7 +181,7 @@ class ManagementSummaryCard extends StatelessWidget {
                 BoxShadow(
                   color: _shadowColor.withValues(alpha: 0.26),
                   blurRadius: 20,
-                  offset: const Offset(0, 12),
+                  offset: Offset(0, 12),
                 ),
               ],
             ),
@@ -224,7 +225,7 @@ class ManagementSummaryCard extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.onPrimary,
                           fontSize: 16,
                           height: 1.18,
@@ -232,7 +233,7 @@ class ManagementSummaryCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Container(
                       width: 30,
                       height: 4,
@@ -260,17 +261,17 @@ class ManagementSummaryCard extends StatelessWidget {
 
   List<Color> get _gradientColors {
     return switch (variant) {
-      ManagementSummaryCardVariant.catalog => const <Color>[
+      ManagementSummaryCardVariant.catalog => <Color>[
         _catalogStart,
         _catalogMiddle,
         _catalogEnd,
       ],
-      ManagementSummaryCardVariant.people => const <Color>[
+      ManagementSummaryCardVariant.people => <Color>[
         _peopleStart,
         _peopleMiddle,
         _peopleEnd,
       ],
-      ManagementSummaryCardVariant.finance => const <Color>[
+      ManagementSummaryCardVariant.finance => <Color>[
         _financeStart,
         _financeMiddle,
         _financeEnd,
@@ -302,7 +303,7 @@ class _SummaryMetricLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (metrics.isEmpty) return const SizedBox.shrink();
+    if (metrics.isEmpty) return SizedBox.shrink();
 
     if (compact) {
       return LayoutBuilder(
@@ -396,7 +397,7 @@ class _SummaryMetric extends StatelessWidget {
               height: 36,
               child:
                   metric.loading
-                      ? const Center(
+                      ? Center(
                         child: _ManagementSkeletonBlock(
                           width: 42,
                           height: 24,
@@ -416,7 +417,7 @@ class _SummaryMetric extends StatelessWidget {
                         reduceMotion: reduceMotion,
                       ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               metric.label,
               maxLines: 2,
@@ -466,7 +467,7 @@ class _SummaryMetricValue extends StatelessWidget {
       valueChild = TweenAnimationBuilder<int>(
         key: ValueKey<int>(value!),
         tween: IntTween(begin: 0, end: value!),
-        duration: const Duration(milliseconds: 560),
+        duration: Duration(milliseconds: 560),
         curve: Curves.easeOutCubic,
         builder: (BuildContext context, int animatedValue, Widget? child) {
           return Text(
@@ -498,12 +499,12 @@ class _SummaryMetricValue extends StatelessWidget {
                 key: attentionDotKey,
                 width: 11,
                 height: 11,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Color(0xFFFACC15),
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
             ],
             valueChild,
           ],
@@ -546,7 +547,7 @@ class _CatalogSummaryIllustration extends StatelessWidget {
             child: _CatalogLayer(
               width: 33,
               height: 43,
-              colors: const <Color>[Color(0xFF253DFF), Color(0xFF7C3AED)],
+              colors: <Color>[Color(0xFF253DFF), Color(0xFF7C3AED)],
               opacity: 0.44,
             ),
           ),
@@ -559,7 +560,7 @@ class _CatalogSummaryIllustration extends StatelessWidget {
             child: _CatalogLayer(
               width: 36,
               height: 48,
-              colors: const <Color>[Color(0xFF0EA5E9), Color(0xFF4338CA)],
+              colors: <Color>[Color(0xFF0EA5E9), Color(0xFF4338CA)],
               opacity: 0.70,
             ),
           ),
@@ -570,7 +571,7 @@ class _CatalogSummaryIllustration extends StatelessWidget {
           child: _CatalogLayer(
             width: 39,
             height: 52,
-            colors: const <Color>[Color(0xFF38BDF8), Color(0xFF4F46E5)],
+            colors: <Color>[Color(0xFF38BDF8), Color(0xFF4F46E5)],
             opacity: 1,
             child: Center(
               child: Transform.rotate(
@@ -586,7 +587,7 @@ class _CatalogSummaryIllustration extends StatelessWidget {
                       width: 0.8,
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.sell_rounded,
                     size: 13,
                     color: SixMobilePalette.onPrimary,
@@ -638,7 +639,7 @@ class _CatalogLayer extends StatelessWidget {
             BoxShadow(
               color: SixMobilePalette.primary.withValues(alpha: 0.24),
               blurRadius: 12,
-              offset: const Offset(0, 5),
+              offset: Offset(0, 5),
             ),
           ],
         ),
@@ -661,8 +662,8 @@ class _PeopleSummaryIllustration extends StatelessWidget {
           top: 4,
           child: _GlowCircle(
             size: 45,
-            colors: const <Color>[Color(0xFF34D399), Color(0xFF2563EB)],
-            child: const Icon(
+            colors: <Color>[Color(0xFF34D399), Color(0xFF2563EB)],
+            child: Icon(
               Icons.groups_2_rounded,
               color: SixMobilePalette.onPrimary,
               size: 24,
@@ -674,8 +675,8 @@ class _PeopleSummaryIllustration extends StatelessWidget {
           top: 23,
           child: _GlowCircle(
             size: 23,
-            colors: const <Color>[Color(0xFF93C5FD), Color(0xFF14B8A6)],
-            child: const Icon(
+            colors: <Color>[Color(0xFF93C5FD), Color(0xFF14B8A6)],
+            child: Icon(
               Icons.person_rounded,
               color: SixMobilePalette.onPrimary,
               size: 13,
@@ -700,8 +701,8 @@ class _FinanceSummaryIllustration extends StatelessWidget {
           top: 7,
           child: _GlowCircle(
             size: 48,
-            colors: const <Color>[Color(0xFF22D3EE), Color(0xFF4F46E5)],
-            child: const Icon(
+            colors: <Color>[Color(0xFF22D3EE), Color(0xFF4F46E5)],
+            child: Icon(
               Icons.account_balance_wallet_rounded,
               color: SixMobilePalette.onPrimary,
               size: 24,
@@ -717,7 +718,7 @@ class _FinanceSummaryIllustration extends StatelessWidget {
               width: 25,
               height: 31,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: <Color>[Color(0xFFBAE6FD), Color(0xFF38BDF8)],
                 ),
                 borderRadius: BorderRadius.circular(7),
@@ -725,11 +726,11 @@ class _FinanceSummaryIllustration extends StatelessWidget {
                   BoxShadow(
                     color: SixMobilePalette.primary.withValues(alpha: 0.18),
                     blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.attach_money_rounded,
                 color: SixMobilePalette.accent,
                 size: 16,
@@ -773,7 +774,7 @@ class _GlowCircle extends StatelessWidget {
           BoxShadow(
             color: SixMobilePalette.primary.withValues(alpha: 0.22),
             blurRadius: 12,
-            offset: const Offset(0, 5),
+            offset: Offset(0, 5),
           ),
         ],
       ),
@@ -838,6 +839,7 @@ class _ManagementMetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final String semanticValue =
         metric.semanticValue ??
         metric.value?.toString() ??
@@ -849,8 +851,8 @@ class _ManagementMetricCard extends StatelessWidget {
       label: '${metric.label}: $semanticValue',
       liveRegion: metric.loading,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 88),
-        padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
+        constraints: BoxConstraints(minHeight: 88),
+        padding: EdgeInsets.fromLTRB(11, 10, 11, 10),
         decoration: BoxDecoration(
           color: metric.accentColor.withValues(alpha: 0.075),
           borderRadius: BorderRadius.circular(16),
@@ -869,15 +871,15 @@ class _ManagementMetricCard extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: SixMobilePalette.surface,
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(metric.icon, color: metric.accentColor, size: 16),
                 ),
-                const Spacer(),
+                Spacer(),
               ],
             ),
-            const SizedBox(height: 9),
+            SizedBox(height: 9),
             if (metric.loading)
               const _ManagementSkeletonBlock(width: 44, height: 20)
             else
@@ -886,13 +888,13 @@ class _ManagementMetricCard extends StatelessWidget {
                 valueText: metric.valueText ?? unavailableLabel,
                 reduceMotion: reduceMotion,
               ),
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
             Text(
               metric.label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: SixMobilePalette.mutedText,
+              style: TextStyle(
+                color: colors.mutedText,
                 fontSize: 11.5,
                 height: 1.18,
                 fontWeight: FontWeight.w700,
@@ -918,8 +920,9 @@ class _MetricValueText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const TextStyle style = TextStyle(
-      color: SixMobilePalette.titleText,
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final TextStyle style = TextStyle(
+      color: colors.titleText,
       fontSize: 19,
       fontWeight: FontWeight.w900,
       height: 1,
@@ -942,7 +945,7 @@ class _MetricValueText extends StatelessWidget {
     return TweenAnimationBuilder<int>(
       key: ValueKey<int>(target),
       tween: IntTween(begin: 0, end: target),
-      duration: const Duration(milliseconds: 520),
+      duration: Duration(milliseconds: 520),
       curve: Curves.easeOutCubic,
       builder: (BuildContext context, int value, Widget? child) {
         return Text(value.toString(), maxLines: 1, style: style);
@@ -952,7 +955,7 @@ class _MetricValueText extends StatelessWidget {
 }
 
 class ManagementActionItemData {
-  const ManagementActionItemData({
+  ManagementActionItemData({
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -992,17 +995,18 @@ class ManagementActionGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 9),
+          padding: EdgeInsets.only(left: 4, bottom: 9),
           child: Text(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
+            style: TextStyle(
+              color: colors.mutedText,
               fontSize: 11.5,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.7,
@@ -1069,15 +1073,16 @@ class ManagementActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final double opacity = item.isEnabled ? 1 : 0.58;
     final Color borderColor =
         item.emphasis == ManagementActionEmphasis.primary && item.isEnabled
             ? item.accentColor.withValues(alpha: 0.34)
-            : SixMobilePalette.activeBorder;
+            : colors.strongBorder;
     final Color backgroundColor =
         item.emphasis == ManagementActionEmphasis.primary && item.isEnabled
             ? item.accentColor.withValues(alpha: 0.075)
-            : SixMobilePalette.surface;
+            : colors.surface;
     final String? statusLabel = item.statusLabel;
 
     return Semantics(
@@ -1096,9 +1101,9 @@ class ManagementActionTile extends StatelessWidget {
             borderRadius: borderRadius,
             onTap: item.isEnabled ? item.onTap : null,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.fromLTRB(12, 12, 11, 12),
+              padding: EdgeInsets.fromLTRB(12, 12, 11, 12),
               decoration: BoxDecoration(
                 color: backgroundColor,
                 borderRadius: borderRadius,
@@ -1106,9 +1111,9 @@ class ManagementActionTile extends StatelessWidget {
                 boxShadow:
                     item.emphasis == ManagementActionEmphasis.primary &&
                             item.isEnabled
-                        ? const <BoxShadow>[
+                        ? <BoxShadow>[
                           BoxShadow(
-                            color: SixMobilePalette.navigationShadow,
+                            color: colors.navigationShadow,
                             blurRadius: 14,
                             offset: Offset(0, 5),
                           ),
@@ -1124,19 +1129,17 @@ class ManagementActionTile extends StatelessWidget {
                       color:
                           item.isEnabled
                               ? item.accentColor.withValues(alpha: 0.12)
-                              : SixMobilePalette.softNeutralSurface,
+                              : colors.softSurface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       item.icon,
                       color:
-                          item.isEnabled
-                              ? item.accentColor
-                              : SixMobilePalette.secondary,
+                          item.isEnabled ? item.accentColor : colors.secondary,
                       size: 21,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1148,8 +1151,8 @@ class ManagementActionTile extends StatelessWidget {
                                 item.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: SixMobilePalette.titleText,
+                                style: TextStyle(
+                                  color: colors.titleText,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -1157,7 +1160,7 @@ class ManagementActionTile extends StatelessWidget {
                             ),
                             if (statusLabel != null &&
                                 statusLabel.trim().isNotEmpty) ...<Widget>[
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               ManagementSettingsMaturityBadge(
                                 maturity: item.maturity,
                                 label: statusLabel,
@@ -1165,13 +1168,13 @@ class ManagementActionTile extends StatelessWidget {
                             ],
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           item.subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: SixMobilePalette.mutedText,
+                          style: TextStyle(
+                            color: colors.mutedText,
                             fontSize: 12.2,
                             height: 1.32,
                             fontWeight: FontWeight.w500,
@@ -1180,15 +1183,12 @@ class ManagementActionTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Icon(
                     item.isEnabled
                         ? Icons.chevron_right_rounded
                         : Icons.lock_outline_rounded,
-                    color:
-                        item.isEnabled
-                            ? item.accentColor
-                            : SixMobilePalette.mutedText,
+                    color: item.isEnabled ? item.accentColor : colors.mutedText,
                     size: item.isEnabled ? 23 : 17,
                   ),
                 ],
@@ -1221,6 +1221,7 @@ class ManagementAttentionBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final bool hasAction =
         actionLabel != null &&
         actionLabel!.trim().isNotEmpty &&
@@ -1232,7 +1233,7 @@ class ManagementAttentionBlock extends StatelessWidget {
       label: '$title. $message',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
+        padding: EdgeInsets.fromLTRB(13, 12, 13, 12),
         decoration: BoxDecoration(
           color: toneColor.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(17),
@@ -1245,12 +1246,12 @@ class ManagementAttentionBlock extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: SixMobilePalette.surface,
+                color: colors.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: toneColor, size: 19),
             ),
-            const SizedBox(width: 11),
+            SizedBox(width: 11),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1259,32 +1260,32 @@ class ManagementAttentionBlock extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SixMobilePalette.titleText,
+                    style: TextStyle(
+                      color: colors.titleText,
                       fontSize: 13.3,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Text(
                     message,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SixMobilePalette.mutedText,
+                    style: TextStyle(
+                      color: colors.mutedText,
                       fontSize: 12,
                       height: 1.32,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (hasAction) ...<Widget>[
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
                         style: TextButton.styleFrom(
-                          minimumSize: const Size(0, 32),
-                          padding: const EdgeInsets.symmetric(
+                          minimumSize: Size(0, 32),
+                          padding: EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 6,
                           ),
@@ -1292,12 +1293,12 @@ class ManagementAttentionBlock extends StatelessWidget {
                           foregroundColor: toneColor,
                         ),
                         onPressed: onAction,
-                        icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+                        icon: Icon(Icons.arrow_forward_rounded, size: 15),
                         label: Text(
                           actionLabel!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          style: TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
                     ),
@@ -1356,6 +1357,7 @@ class _ManagementSkeletonBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     return Container(
       width: width,
       height: height,
@@ -1363,7 +1365,7 @@ class _ManagementSkeletonBlock extends StatelessWidget {
         color:
             light
                 ? SixMobilePalette.onPrimary.withValues(alpha: 0.30)
-                : SixMobilePalette.border.withValues(alpha: 0.42),
+                : colors.border.withValues(alpha: 0.42),
         borderRadius: BorderRadius.circular(9),
       ),
     );

@@ -20,9 +20,15 @@ class AtendimentoTecnicoEditarMobileScreen extends StatefulWidget {
   const AtendimentoTecnicoEditarMobileScreen({
     super.key,
     required this.atendimento,
+    this.service,
+    this.clienteApiClient,
+    this.colaboradorApiClient,
   });
 
   final AtendimentoTecnicoModel atendimento;
+  final AtendimentoTecnicoService? service;
+  final ClienteUsuarioApiClient? clienteApiClient;
+  final ColaboradorUsuarioApiClient? colaboradorApiClient;
 
   @override
   State<AtendimentoTecnicoEditarMobileScreen> createState() =>
@@ -31,20 +37,26 @@ class AtendimentoTecnicoEditarMobileScreen extends StatefulWidget {
 
 class _AtendimentoTecnicoEditarMobileScreenState
     extends State<AtendimentoTecnicoEditarMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
+  static Color get _softAccentSurfaceColor =>
+      SixMobilePalette.softAccentSurface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
+  static Color get _onPrimaryColor => SixMobilePalette.onPrimary;
+  static Color get _heroSupportingTextColor =>
+      SixMobilePalette.heroSupportingText;
+  static Color get _heroShadowColor => SixMobilePalette.heroShadow;
+  static Color get _cardShadowColor => SixMobilePalette.navigationShadow;
 
-  final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
-  final ClienteUsuarioApiClient _clienteApiClient =
-      HttpClienteUsuarioApiClient();
-  final ColaboradorUsuarioApiClient _colaboradorApiClient =
-      HttpColaboradorUsuarioApiClient();
+  late final AtendimentoTecnicoService _service;
+  late final ClienteUsuarioApiClient _clienteApiClient;
+  late final ColaboradorUsuarioApiClient _colaboradorApiClient;
   final List<_AtendimentoItemEditavelMobile> _itens =
       <_AtendimentoItemEditavelMobile>[];
 
@@ -59,10 +71,8 @@ class _AtendimentoTecnicoEditarMobileScreenState
   late final TextEditingController _diagnosticoController;
   late final TextEditingController _observacaoAuditoriaController;
 
-  List<_ClienteAtendimentoMobile> _clientes =
-      const <_ClienteAtendimentoMobile>[];
-  List<_ResponsavelTecnicoMobile> _responsaveis =
-      const <_ResponsavelTecnicoMobile>[];
+  List<_ClienteAtendimentoMobile> _clientes = <_ClienteAtendimentoMobile>[];
+  List<_ResponsavelTecnicoMobile> _responsaveis = <_ResponsavelTecnicoMobile>[];
   _ClienteAtendimentoMobile? _clienteSelecionado;
   _ResponsavelTecnicoMobile? _responsavelSelecionado;
   late DateTime _validadeOrcamentoEm;
@@ -79,9 +89,14 @@ class _AtendimentoTecnicoEditarMobileScreenState
   @override
   void initState() {
     super.initState();
+    _service = widget.service ?? AtendimentoTecnicoService();
+    _clienteApiClient =
+        widget.clienteApiClient ?? HttpClienteUsuarioApiClient();
+    _colaboradorApiClient =
+        widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
     final AtendimentoTecnicoModel atendimento = widget.atendimento;
     final AtendimentoTecnicoEquipamentoModel equipamento =
-        atendimento.equipamento ?? const AtendimentoTecnicoEquipamentoModel();
+        atendimento.equipamento ?? AtendimentoTecnicoEquipamentoModel();
 
     _clienteSelecionado = _clienteInicial(atendimento);
     _responsavelSelecionado = _responsavelInicial(atendimento);
@@ -113,8 +128,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
     );
 
     _validadeOrcamentoEm = _normalizarData(
-      atendimento.validadeOrcamentoEm ??
-          DateTime.now().add(const Duration(days: 7)),
+      atendimento.validadeOrcamentoEm ?? DateTime.now().add(Duration(days: 7)),
     );
     _vencimentoFinanceiroEm = _normalizarData(
       atendimento.dataVencimentoEm ?? _validadeOrcamentoEm,
@@ -310,7 +324,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _t('common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       bodyBuilder: _buildContent,
@@ -328,9 +342,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
         onRefresh: _carregarCadastros,
         child: ListView(
           controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
-          children: <Widget>[_hero(), const SizedBox(height: 16), _formCard()],
+          children: <Widget>[_hero(), SizedBox(height: 16), _formCard()],
         ),
       ),
     );
@@ -345,17 +359,17 @@ class _AtendimentoTecnicoEditarMobileScreenState
             : _clienteLabel(widget.atendimento);
     final String? responsavel = _responsavelSelecionado?.nome;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x260B1F3A),
+            color: _heroShadowColor,
             blurRadius: 22,
             offset: Offset(0, 12),
           ),
@@ -367,13 +381,13 @@ class _AtendimentoTecnicoEditarMobileScreenState
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
+              color: Color(0x1AFFFFFF),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x33FFFFFF)),
+              border: Border.all(color: Color(0x33FFFFFF)),
             ),
-            child: const Icon(Icons.edit_note_rounded, color: Colors.white),
+            child: Icon(Icons.edit_note_rounded, color: _onPrimaryColor),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,21 +396,21 @@ class _AtendimentoTecnicoEditarMobileScreenState
                   widget.atendimento.numero,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _onPrimaryColor,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   responsavel == null || responsavel.trim().isEmpty
                       ? '$cliente • ${_itens.length} item(ns)'
                       : '$cliente • $responsavel',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
+                  style: TextStyle(
+                    color: _heroSupportingTextColor,
                     height: 1.35,
                   ),
                 ),
@@ -414,15 +428,15 @@ class _AtendimentoTecnicoEditarMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _sectionTitle('Dados principais'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           if (_carregandoDados) ...<Widget>[
-            const LinearProgressIndicator(minHeight: 3),
-            const SizedBox(height: 12),
+            LinearProgressIndicator(minHeight: 3),
+            SizedBox(height: 12),
           ],
           _clienteSelectorField(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _responsavelSelectorField(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
             controller: _descricaoController,
             decoration: _inputDecoration(
@@ -430,9 +444,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
               icon: Icons.notes_outlined,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _sectionTitle('Equipamento'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
             controller: _tipoController,
             decoration: _inputDecoration(
@@ -440,7 +454,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
               icon: Icons.devices_other_outlined,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: <Widget>[
               Expanded(
@@ -452,7 +466,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: _modeloController,
@@ -464,7 +478,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: <Widget>[
               Expanded(
@@ -476,7 +490,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: _imeiController,
@@ -488,7 +502,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
             controller: _acessoriosController,
             minLines: 2,
@@ -499,9 +513,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
               alignLabelWithHint: true,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _sectionTitle('Relato técnico'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
             controller: _defeitoController,
             minLines: 3,
@@ -512,7 +526,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
               alignLabelWithHint: true,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
             controller: _diagnosticoController,
             minLines: 2,
@@ -523,15 +537,15 @@ class _AtendimentoTecnicoEditarMobileScreenState
               alignLabelWithHint: true,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _sectionTitle('Datas'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _dateTile(
             label: 'Entrega prevista',
             value: _formatarData(_dataEntregaPrevista),
             onTap: _selecionarEntregaPrevista,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Row(
             children: <Widget>[
               Expanded(
@@ -541,7 +555,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
                   onTap: _selecionarValidade,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: _dateTile(
                   label: 'Vencimento financeiro',
@@ -551,11 +565,11 @@ class _AtendimentoTecnicoEditarMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _itensSection(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _sectionTitle('Auditoria'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
             controller: _observacaoAuditoriaController,
             minLines: 2,
@@ -566,7 +580,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
               alignLabelWithHint: true,
             ),
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -574,12 +588,12 @@ class _AtendimentoTecnicoEditarMobileScreenState
               onPressed: _salvando ? null : _salvar,
               icon:
                   _salvando
-                      ? const SizedBox(
+                      ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2.3),
                       )
-                      : const Icon(Icons.save_outlined),
+                      : Icon(Icons.save_outlined),
               label: Text(_salvando ? 'Salvando...' : 'Salvar atendimento'),
             ),
           ),
@@ -602,7 +616,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
           decoration: _inputDecoration(
             label: 'Cliente',
             icon: Icons.person_search_outlined,
-            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+            suffixIcon: Icon(Icons.keyboard_arrow_down_rounded),
           ),
           child: Text(
             hasSelection ? cliente.nome : 'Selecione um cliente',
@@ -632,7 +646,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
           decoration: _inputDecoration(
             label: 'Responsável técnico',
             icon: Icons.engineering_outlined,
-            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+            suffixIcon: Icon(Icons.keyboard_arrow_down_rounded),
           ),
           child: Text(
             hasSelection ? responsavel.nome : 'Selecione o responsável',
@@ -654,7 +668,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder: (BuildContext context) {
         return _ClienteAtendimentoSelectorMobile(
           clientes: _clientes,
@@ -715,7 +729,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
           isScrollControlled: true,
           useSafeArea: true,
           backgroundColor: Colors.transparent,
-          barrierColor: const Color(0x66000000),
+          barrierColor: Color(0x66000000),
           builder: (BuildContext context) {
             return _ResponsavelTecnicoSelectorMobile(
               responsaveis: _responsaveis,
@@ -730,9 +744,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
 
   Widget _itensSection() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: _softSurfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
       ),
@@ -741,28 +755,28 @@ class _AtendimentoTecnicoEditarMobileScreenState
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Icon(Icons.inventory_2_outlined, color: _accentColor),
-              const SizedBox(width: 8),
+              Icon(Icons.inventory_2_outlined, color: _accentColor),
+              SizedBox(width: 8),
               Expanded(child: _sectionTitle('Produtos e serviços')),
               Text(
                 _formatarMoeda(_totalItens),
-                style: const TextStyle(
+                style: TextStyle(
                   color: _titleTextColor,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           if (_itens.isEmpty) _emptyItens() else ..._itens.map(_itemTile),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             height: 48,
             child: OutlinedButton.icon(
               onPressed: _salvando ? null : _abrirSelecaoItens,
-              icon: const Icon(Icons.add_shopping_cart_rounded),
-              label: const Text('Adicionar produto ou serviço'),
+              icon: Icon(Icons.add_shopping_cart_rounded),
+              label: Text('Adicionar produto ou serviço'),
             ),
           ),
         ],
@@ -773,13 +787,13 @@ class _AtendimentoTecnicoEditarMobileScreenState
   Widget _emptyItens() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SixMobilePalette.surfaceElevated,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
       ),
-      child: const Text(
+      child: Text(
         'Nenhum produto ou serviço vinculado. Adicione itens para compor o atendimento.',
         style: TextStyle(color: _mutedTextColor, height: 1.35),
       ),
@@ -789,11 +803,11 @@ class _AtendimentoTecnicoEditarMobileScreenState
   Widget _itemTile(_AtendimentoItemEditavelMobile item) {
     final bool servico = item.isServico;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SixMobilePalette.surfaceElevated,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _borderColor),
         ),
@@ -805,7 +819,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: _softAccentSurfaceColor,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
@@ -816,7 +830,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
                     size: 21,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,17 +839,17 @@ class _AtendimentoTecnicoEditarMobileScreenState
                         item.descricao,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _titleTextColor,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         '${servico ? 'Serviço' : 'Produto'} • ${_formatarMoeda(item.valorUnitario)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _mutedTextColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -846,12 +860,12 @@ class _AtendimentoTecnicoEditarMobileScreenState
                 ),
                 IconButton(
                   onPressed: _salvando ? null : () => _removerItem(item),
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  color: const Color(0xFFEF4444),
+                  icon: Icon(Icons.delete_outline_rounded),
+                  color: SixMobilePalette.error,
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Row(
               children: <Widget>[
                 _quantityButton(
@@ -859,10 +873,10 @@ class _AtendimentoTecnicoEditarMobileScreenState
                   onTap: _salvando ? null : () => _alterarQuantidade(item, -1),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: EdgeInsets.symmetric(horizontal: 14),
                   child: Text(
                     '${item.quantidade}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _titleTextColor,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -873,10 +887,10 @@ class _AtendimentoTecnicoEditarMobileScreenState
                   icon: Icons.add_rounded,
                   onTap: _salvando ? null : () => _alterarQuantidade(item, 1),
                 ),
-                const Spacer(),
+                Spacer(),
                 Text(
                   _formatarMoeda(item.total),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontWeight: FontWeight.w900,
                   ),
@@ -894,7 +908,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
     required VoidCallback? onTap,
   }) {
     return Material(
-      color: const Color(0xFFEFF6FF),
+      color: _softAccentSurfaceColor,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -913,7 +927,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
       context,
       MaterialPageRoute<dynamic>(
         builder:
-            (_) => const ProdutolistMobileScreen(
+            (_) => ProdutolistMobileScreen(
               isSelecao: true,
               permitirSelecaoMultipla: true,
             ),
@@ -1039,13 +1053,13 @@ class _AtendimentoTecnicoEditarMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder: (BuildContext context) {
         return DateSelectorMobileBottomSheet(
           title: title,
           initialDate: initial,
           firstDate: primeiraData,
-          lastDate: inicio.add(const Duration(days: 365)),
+          lastDate: inicio.add(Duration(days: 365)),
           applyButtonLabel: applyButtonLabel,
         );
       },
@@ -1102,7 +1116,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Atendimento atualizado.'),
           behavior: SnackBarBehavior.floating,
         ),
@@ -1119,14 +1133,14 @@ class _AtendimentoTecnicoEditarMobileScreenState
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x0F000000),
+            color: _cardShadowColor,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -1139,7 +1153,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: _titleTextColor,
         fontSize: 15,
         fontWeight: FontWeight.w900,
@@ -1153,13 +1167,13 @@ class _AtendimentoTecnicoEditarMobileScreenState
     required VoidCallback onTap,
   }) {
     return Material(
-      color: const Color(0xFFF8FAFC),
+      color: _softSurfaceColor,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: _borderColor),
@@ -1171,27 +1185,23 @@ class _AtendimentoTecnicoEditarMobileScreenState
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _mutedTextColor,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Row(
                 children: <Widget>[
-                  const Icon(
-                    Icons.event_outlined,
-                    size: 17,
-                    color: _accentColor,
-                  ),
-                  const SizedBox(width: 6),
+                  Icon(Icons.event_outlined, size: 17, color: _accentColor),
+                  SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1220,20 +1230,20 @@ class _AtendimentoTecnicoEditarMobileScreenState
       prefixIcon: icon == null ? null : Icon(icon, size: 21),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: _softSurfaceColor,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: _borderColor),
+        borderSide: BorderSide(color: _borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: _borderColor),
+        borderSide: BorderSide(color: _borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: _accentColor, width: 1.4),
+        borderSide: BorderSide(color: _accentColor, width: 1.4),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
     );
   }
 
@@ -1476,7 +1486,7 @@ class _ClienteAtendimentoSelectorMobileState
         }
         return ListView.separated(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+          padding: EdgeInsets.fromLTRB(18, 0, 18, 22),
           itemBuilder: (BuildContext context, int index) {
             final _ClienteAtendimentoMobile cliente = clientes[index];
             return _SelectorItem(
@@ -1487,7 +1497,7 @@ class _ClienteAtendimentoSelectorMobileState
               onTap: () => Navigator.of(context).pop(cliente),
             );
           },
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (_, __) => SizedBox(height: 10),
           itemCount: clientes.length,
         );
       },
@@ -1557,7 +1567,7 @@ class _ResponsavelTecnicoSelectorMobileState
         }
         return ListView.separated(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+          padding: EdgeInsets.fromLTRB(18, 0, 18, 22),
           itemBuilder: (BuildContext context, int index) {
             final _ResponsavelTecnicoMobile responsavel = responsaveis[index];
             return _SelectorItem(
@@ -1568,7 +1578,7 @@ class _ResponsavelTecnicoSelectorMobileState
               onTap: () => Navigator.of(context).pop(responsavel),
             );
           },
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (_, __) => SizedBox(height: 10),
           itemCount: responsaveis.length,
         );
       },
@@ -1596,13 +1606,14 @@ class _SelectorShell extends StatelessWidget {
     this.leadingAction,
   });
 
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softAccentSurfaceColor =>
+      SixMobilePalette.softAccentSurface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
 
   final String title;
   final String subtitle;
@@ -1623,7 +1634,7 @@ class _SelectorShell extends StatelessWidget {
       expand: false,
       builder: (BuildContext context, ScrollController scrollController) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _backgroundColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
@@ -1631,48 +1642,48 @@ class _SelectorShell extends StatelessWidget {
             top: false,
             child: Column(
               children: <Widget>[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Container(
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: SixMobilePalette.activeBorder,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
                     children: <Widget>[
                       Container(
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: _softAccentSurfaceColor,
                           borderRadius: BorderRadius.circular(15),
                         ),
-                        child: Icon(icon, color: _primaryColor),
+                        child: Icon(icon, color: _accentColor),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
                               title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _titleTextColor,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            SizedBox(height: 3),
                             Text(
                               subtitle,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _mutedTextColor,
                                 fontSize: 12,
                                 height: 1.25,
@@ -1683,55 +1694,52 @@ class _SelectorShell extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 if (leadingAction != null) ...<Widget>[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    padding: EdgeInsets.symmetric(horizontal: 18),
                     child: leadingAction!,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                 ],
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: searchController,
                     onChanged: onSearchChanged,
                     decoration: InputDecoration(
                       hintText: searchHint,
-                      prefixIcon: const Icon(Icons.search_rounded),
+                      prefixIcon: Icon(Icons.search_rounded),
                       suffixIcon:
                           searchController.text.isEmpty
                               ? null
                               : IconButton(
-                                icon: const Icon(Icons.close_rounded),
+                                icon: Icon(Icons.close_rounded),
                                 onPressed: onClearSearch,
                               ),
                       filled: true,
                       fillColor: _surfaceColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: _borderColor),
+                        borderSide: BorderSide(color: _borderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: _borderColor),
+                        borderSide: BorderSide(color: _borderColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: _accentColor,
-                          width: 1.4,
-                        ),
+                        borderSide: BorderSide(color: _accentColor, width: 1.4),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Expanded(child: childBuilder(scrollController)),
               ],
             ),
@@ -1770,20 +1778,20 @@ class _SelectorInlineAction extends StatelessWidget {
 class _SelectorEmptyState extends StatelessWidget {
   const _SelectorEmptyState({required this.text});
 
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
 
   final String text;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+      padding: EdgeInsets.fromLTRB(18, 18, 18, 22),
       children: <Widget>[
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(22),
+          padding: EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: _surfaceColor,
             borderRadius: BorderRadius.circular(22),
@@ -1792,7 +1800,7 @@ class _SelectorEmptyState extends StatelessWidget {
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _mutedTextColor),
+            style: TextStyle(color: _mutedTextColor),
           ),
         ),
       ],
@@ -1809,12 +1817,16 @@ class _SelectorItem extends StatelessWidget {
     required this.onTap,
   });
 
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softAccentSurfaceColor =>
+      SixMobilePalette.softAccentSurface;
+  static Color get _iconSurfaceColor => SixMobilePalette.iconSurface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
+  static Color get _highlightedBorderColor =>
+      SixMobilePalette.highlightedBorder;
 
   final String title;
   final String subtitle;
@@ -1831,14 +1843,14 @@ class _SelectorItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(13),
+          padding: EdgeInsets.all(13),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            color: selected ? _softAccentSurfaceColor : _surfaceColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              color: selected ? _highlightedBorderColor : _borderColor,
               width: selected ? 1.2 : 1,
             ),
           ),
@@ -1849,13 +1861,13 @@ class _SelectorItem extends StatelessWidget {
                 backgroundColor:
                     selected
                         ? _accentColor.withValues(alpha: 0.12)
-                        : const Color(0xFFF1F5F9),
+                        : _iconSurfaceColor,
                 child: Icon(
                   icon,
-                  color: selected ? _accentColor : _primaryColor,
+                  color: selected ? _accentColor : _titleTextColor,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1864,32 +1876,29 @@ class _SelectorItem extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     if (subtitle.trim().isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _mutedTextColor,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: _mutedTextColor, fontSize: 12),
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               AnimatedOpacity(
                 opacity: selected ? 1 : 0,
-                duration: const Duration(milliseconds: 140),
-                child: const Icon(
+                duration: Duration(milliseconds: 140),
+                child: Icon(
                   Icons.check_circle_rounded,
                   color: _accentColor,
                   size: 22,

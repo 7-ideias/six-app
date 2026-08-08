@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 
 class SixMobileAnimatedGradientBackground extends StatefulWidget {
   const SixMobileAnimatedGradientBackground({
@@ -77,8 +78,11 @@ class _SixMobileAnimatedGradientBackgroundState
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color effectiveBaseColor = _themeAwareBaseColor(isDark);
+
     return DecoratedBox(
-      decoration: BoxDecoration(color: widget.baseColor),
+      decoration: BoxDecoration(color: effectiveBaseColor),
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
@@ -89,11 +93,12 @@ class _SixMobileAnimatedGradientBackgroundState
                 return CustomPaint(
                   painter: _SixAmbientGradientPainter(
                     progress: _controller.value,
-                    baseColor: widget.baseColor,
+                    baseColor: effectiveBaseColor,
                     primaryColor: widget.primaryColor,
                     secondaryColor: widget.secondaryColor,
                     accentColor: widget.accentColor,
                     intensity: widget.intensity,
+                    isDark: isDark,
                   ),
                 );
               },
@@ -102,17 +107,33 @@ class _SixMobileAnimatedGradientBackgroundState
             CustomPaint(
               painter: _SixAmbientGradientPainter(
                 progress: 0,
-                baseColor: widget.baseColor,
+                baseColor: effectiveBaseColor,
                 primaryColor: widget.primaryColor,
                 secondaryColor: widget.secondaryColor,
                 accentColor: widget.accentColor,
                 intensity: widget.intensity,
+                isDark: isDark,
               ),
             ),
           widget.child,
         ],
       ),
     );
+  }
+
+  Color _themeAwareBaseColor(bool isDark) {
+    if (!isDark) {
+      return widget.baseColor;
+    }
+
+    final Brightness baseBrightness = ThemeData.estimateBrightnessForColor(
+      widget.baseColor,
+    );
+    if (baseBrightness == Brightness.light) {
+      return SixMobilePalette.backgroundDark;
+    }
+
+    return widget.baseColor;
   }
 }
 
@@ -124,6 +145,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     required this.secondaryColor,
     required this.accentColor,
     required this.intensity,
+    required this.isDark,
   });
 
   final double progress;
@@ -132,6 +154,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
   final Color secondaryColor;
   final Color accentColor;
   final double intensity;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -141,6 +164,13 @@ class _SixAmbientGradientPainter extends CustomPainter {
 
     final Color midBlue = Color.lerp(primaryColor, secondaryColor, 0.50)!;
     final Color softBlue = Color.lerp(secondaryColor, baseColor, 0.70)!;
+    final Color terminalColor = isDark ? baseColor : Colors.white;
+    final Color neutralAuraColor =
+        isDark ? Color.lerp(baseColor, accentColor, 0.16)! : Colors.white;
+    final double firstNeutralOpacity =
+        isDark ? 0.06 + (0.18 * i) : 0.18 + (0.50 * i);
+    final double secondNeutralOpacity =
+        isDark ? 0.07 + (0.20 * i) : 0.20 + (0.55 * i);
 
     final Paint basePaint =
         Paint()
@@ -152,7 +182,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
               midBlue.withOpacity(0.90),
               softBlue,
               baseColor,
-              Colors.white,
+              terminalColor,
             ],
             stops: const <double>[0, 0.16, 0.42, 0.72, 1],
           ).createShader(rect);
@@ -182,7 +212,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: Colors.white.withOpacity(0.18 + (0.50 * i)),
+      color: neutralAuraColor.withOpacity(firstNeutralOpacity),
       radiusFactor: 0.64 + (0.12 * math.sin(t + 2.3).abs()),
       x: 0.52 + 0.20 * math.sin(t + 2.3),
       y: 0.34 + 0.05 * math.cos(t * 1.1 + 1.4),
@@ -201,7 +231,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
     _paintAura(
       canvas,
       size,
-      color: Colors.white.withOpacity(0.20 + (0.55 * i)),
+      color: neutralAuraColor.withOpacity(secondNeutralOpacity),
       radiusFactor: 0.72 + (0.14 * math.sin(t + 4.2).abs()),
       x: 0.34 + 0.24 * math.sin(t + 4.2),
       y: 0.58 + 0.06 * math.cos(t + 3.5),
@@ -251,6 +281,7 @@ class _SixAmbientGradientPainter extends CustomPainter {
         baseColor != oldDelegate.baseColor ||
         primaryColor != oldDelegate.primaryColor ||
         secondaryColor != oldDelegate.secondaryColor ||
-        accentColor != oldDelegate.accentColor;
+        accentColor != oldDelegate.accentColor ||
+        isDark != oldDelegate.isDark;
   }
 }

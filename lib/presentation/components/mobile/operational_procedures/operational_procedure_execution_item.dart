@@ -37,8 +37,8 @@ class OperationalProcedureExecutionItem extends StatelessWidget {
       ),
       child: Container(
         width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
           color:
               pending
@@ -63,27 +63,27 @@ class OperationalProcedureExecutionItem extends StatelessWidget {
                   color: SixMobilePalette.secondary,
                   size: 22,
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
                         item.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontWeight: FontWeight.w900,
                           height: 1.25,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         OperationalProcedureI18n.executionItemStatus(
                           context,
                           type: typeLabel,
                           requiredLabel: requiredLabel,
                         ),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -95,17 +95,17 @@ class OperationalProcedureExecutionItem extends StatelessWidget {
               ],
             ),
             if (item.guidance.trim().isNotEmpty) ...<Widget>[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 item.guidance,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.mutedText,
                   height: 1.35,
                 ),
               ),
             ],
             if (pending) ...<Widget>[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Semantics(
                 liveRegion: true,
                 child: Text(
@@ -113,24 +113,24 @@ class OperationalProcedureExecutionItem extends StatelessWidget {
                     'procedimentos.previewRequiredPending',
                     fallback: 'Responda esta ação obrigatória para continuar.',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.error,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _buildControl(context),
             if (isSimulatedResponseType(item.responseType)) ...<Widget>[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 context.t(
                   'procedimentos.simulatedResourceNotice',
                   fallback:
                       'Recurso demonstrativo. Nenhum dado real será capturado.',
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.mutedText,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -217,7 +217,7 @@ class OperationalProcedureExecutionItem extends StatelessWidget {
                   context,
                   response!.numberValue!,
                 ),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        keyboardType: TextInputType.numberWithOptions(decimal: true),
         decoration: InputDecoration(
           hintText:
               item.configuration.hasPlaceholder
@@ -253,7 +253,7 @@ class OperationalProcedureExecutionItem extends StatelessWidget {
       ),
       ProcedureResponseType.multipleChoice => _MultipleChoiceControl(
         options: item.options,
-        selected: response?.selectedOptions ?? const <String>[],
+        selected: response?.selectedOptions ?? <String>[],
         onChanged:
             (List<String> value) =>
                 _emit(completed: value.isNotEmpty, selectedOptions: value),
@@ -439,12 +439,12 @@ class _YesNoControl extends StatelessWidget {
             ButtonSegment<bool>(
               value: true,
               label: Text(context.t('common.yes', fallback: 'Sim')),
-              icon: const Icon(Icons.thumb_up_alt_outlined),
+              icon: Icon(Icons.thumb_up_alt_outlined),
             ),
             ButtonSegment<bool>(
               value: false,
               label: Text(context.t('common.no', fallback: 'Não')),
-              icon: const Icon(Icons.thumb_down_alt_outlined),
+              icon: Icon(Icons.thumb_down_alt_outlined),
             ),
           ],
           selected: value == null ? <bool>{} : <bool>{value!},
@@ -454,12 +454,12 @@ class _YesNoControl extends StatelessWidget {
           },
         ),
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 180),
+          duration: Duration(milliseconds: 180),
           child:
               showNegativeText
                   ? Padding(
-                    key: const ValueKey<String>('negative-text'),
-                    padding: const EdgeInsets.only(top: 12),
+                    key: ValueKey<String>('negative-text'),
+                    padding: EdgeInsets.only(top: 12),
                     child: TextFormField(
                       initialValue: negativeTextValue,
                       minLines: 2,
@@ -474,7 +474,7 @@ class _YesNoControl extends StatelessWidget {
                       onChanged: onNegativeTextChanged,
                     ),
                   )
-                  : const SizedBox.shrink(),
+                  : SizedBox.shrink(),
         ),
       ],
     );
@@ -507,14 +507,14 @@ class _DateControl extends StatelessWidget {
               (_) => _DateSheet(
                 dates: <DateTime>[
                   now,
-                  now.add(const Duration(days: 1)),
-                  now.add(const Duration(days: 7)),
+                  now.add(Duration(days: 1)),
+                  now.add(Duration(days: 7)),
                 ],
               ),
         );
         if (selected != null) onChanged(selected);
       },
-      icon: const Icon(Icons.calendar_today_rounded),
+      icon: Icon(Icons.calendar_today_rounded),
       label: Text(label),
     );
   }
@@ -545,7 +545,7 @@ class _SingleChoiceControl extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => onChanged(option),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     children: <Widget>[
                       Icon(
@@ -557,7 +557,7 @@ class _SingleChoiceControl extends StatelessWidget {
                                 ? SixMobilePalette.accent
                                 : SixMobilePalette.mutedText,
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(child: Text(option)),
                     ],
                   ),
@@ -632,10 +632,10 @@ class _ImeiControl extends StatelessWidget {
           ),
           onChanged: onChanged,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: onDemo,
-          icon: const Icon(Icons.science_outlined),
+          icon: Icon(Icons.science_outlined),
           label: Text(
             context.t(
               'procedimentos.previewUseDemoImei',
@@ -724,11 +724,11 @@ class _DateSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 18),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -743,26 +743,26 @@ class _DateSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Text(
             context.t(
               'procedimentos.previewSelectDate',
               fallback: 'Selecionar data',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ...dates.map((DateTime date) {
             final String label = OperationalProcedureI18n.formatDate(
               context,
               date,
             );
             return ListTile(
-              leading: const Icon(Icons.calendar_today_rounded),
+              leading: Icon(Icons.calendar_today_rounded),
               title: Text(label),
               onTap: () => Navigator.of(context).pop(date),
             );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -135,6 +136,7 @@ class _SixMobileAppBarProfileActionState
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final Color foregroundColor =
         IconTheme.of(context).color ?? SixMobilePalette.onPrimary;
     final bool hasLightForeground =
@@ -153,11 +155,11 @@ class _SixMobileAppBarProfileActionState
           borderColor:
               hasLightForeground
                   ? foregroundColor.withValues(alpha: 0.28)
-                  : SixMobilePalette.border.withValues(alpha: 0.85),
+                  : colors.border.withValues(alpha: 0.85),
           backgroundColor:
               hasLightForeground
                   ? foregroundColor.withValues(alpha: 0.12)
-                  : SixMobilePalette.surface.withValues(alpha: 0.96),
+                  : colors.surface.withValues(alpha: 0.96),
           iconColor: foregroundColor,
         ),
       ),

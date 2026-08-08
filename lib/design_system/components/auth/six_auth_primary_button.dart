@@ -19,15 +19,21 @@ class SixAuthPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color backgroundColor = SixAuthTokens.buttonPrimaryBackground(
+      context,
+    );
+    final Color foregroundColor = SixAuthTokens.buttonPrimaryForeground(
+      context,
+    );
+
     return SizedBox(
       height: SixAuthTokens.heightButtonPrimary,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: SixAuthTokens.colorButtonPrimaryBg,
-          foregroundColor: SixAuthTokens.colorButtonPrimaryFg,
-          disabledBackgroundColor: SixAuthTokens.colorButtonPrimaryBg
-              .withValues(alpha: 0.6),
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
+          disabledBackgroundColor: backgroundColor.withValues(alpha: 0.6),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(
@@ -35,22 +41,23 @@ class SixAuthPrimaryButton extends StatelessWidget {
             ),
           ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                  color: SixAuthTokens.colorButtonPrimaryFg,
-                  strokeWidth: 2.4,
+        child:
+            isLoading
+                ? SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    color: foregroundColor,
+                    strokeWidth: 2.4,
+                  ),
+                )
+                : Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: SixAuthTokens.fontSizeButtonPrimary,
+                    fontWeight: SixAuthTokens.fontWeightButtonPrimary,
+                  ),
                 ),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: SixAuthTokens.fontSizeButtonPrimary,
-                  fontWeight: SixAuthTokens.fontWeightButtonPrimary,
-                ),
-              ),
       ),
     );
   }

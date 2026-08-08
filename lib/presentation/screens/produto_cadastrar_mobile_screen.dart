@@ -23,10 +23,14 @@ class CadastroProdutoMobileScreen extends StatefulWidget {
     super.key,
     this.produtoParaEdicao,
     this.tipoInicial = ProdutoCadastroFormUtils.tipoProduto,
+    this.produtoService,
+    this.categoriaApiClient,
   });
 
   final ProdutoModel? produtoParaEdicao;
   final String tipoInicial;
+  final ProdutoService? produtoService;
+  final CategoriaCatalogoApiClient? categoriaApiClient;
 
   @override
   State<CadastroProdutoMobileScreen> createState() =>
@@ -49,23 +53,24 @@ class _ProdutoImagemSlot {
 
 class _CadastroProdutoMobileScreenState
     extends State<CadastroProdutoMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.border;
-  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
-  static const Color _softNeutralColor = SixMobilePalette.softNeutralSurface;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _softNeutralColor => SixMobilePalette.softNeutralSurface;
 
   static const int _maxImageSlots = 5;
 
   final _formKey = GlobalKey<FormState>();
-  final ProdutoService _produtoService = ProdutoService();
-  final CategoriaCatalogoApiClient _categoriaApiClient =
-      HttpCategoriaCatalogoApiClient();
+  late final ProdutoService _produtoService =
+      widget.produtoService ?? ProdutoService();
+  late final CategoriaCatalogoApiClient _categoriaApiClient =
+      widget.categoriaApiClient ?? HttpCategoriaCatalogoApiClient();
   final ImagePicker _imagePicker = ImagePicker();
   final ScrollController _slotsScrollController = ScrollController();
 
@@ -86,8 +91,7 @@ class _CadastroProdutoMobileScreenState
 
   late String _tipoSelecionado;
   String? _produtoEmEdicaoId;
-  List<CategoriaCatalogoModel> _categoriasCatalogo =
-      const <CategoriaCatalogoModel>[];
+  List<CategoriaCatalogoModel> _categoriasCatalogo = <CategoriaCatalogoModel>[];
   bool _carregandoCategorias = false;
   String? _erroCategorias;
   String? _categoriaSelecionadaId;
@@ -222,7 +226,7 @@ class _CadastroProdutoMobileScreenState
       _valorVendaEntradaController.text = entrada.valorDaVenda.toString();
     }
 
-    final imagens = produto.imagens ?? const <ProdutoImagemModel>[];
+    final imagens = produto.imagens ?? <ProdutoImagemModel>[];
     for (int i = 0; i < imagens.length && i < _imagemSlots.length; i++) {
       _imagemSlots[i].image = imagens[i];
     }
@@ -316,7 +320,7 @@ class _CadastroProdutoMobileScreenState
   Future<void> _abrirGestaoCategorias() async {
     final bool? alterouCategorias = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => const CategoriasProdutosServicosMobileScreen(),
+        builder: (_) => CategoriasProdutosServicosMobileScreen(),
       ),
     );
 
@@ -346,7 +350,7 @@ class _CadastroProdutoMobileScreenState
 
     await _slotsScrollController.animateTo(
       hintOffset,
-      duration: const Duration(milliseconds: 330),
+      duration: Duration(milliseconds: 330),
       curve: Curves.easeOutCubic,
     );
 
@@ -356,7 +360,7 @@ class _CadastroProdutoMobileScreenState
 
     await _slotsScrollController.animateTo(
       0,
-      duration: const Duration(milliseconds: 360),
+      duration: Duration(milliseconds: 360),
       curve: Curves.easeOutCubic,
     );
   }
@@ -537,7 +541,7 @@ class _CadastroProdutoMobileScreenState
       context: context,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x47000000),
+      barrierColor: Color(0x47000000),
       useSafeArea: true,
       builder: (BuildContext context) {
         return _MobileBottomSheetFrame(
@@ -549,16 +553,16 @@ class _CadastroProdutoMobileScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const _MobileSheetHandle(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
                   _t('produto.mobile.imageSheetTitle', 'Imagem do produto'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _ImageActionTile(
                   icon: Icons.photo_camera_outlined,
                   title: _t('produto.mobile.takePhoto', 'Tirar foto'),
@@ -574,7 +578,7 @@ class _CadastroProdutoMobileScreenState
                     );
                   },
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _ImageActionTile(
                   icon: Icons.upload_file_outlined,
                   title: _t(
@@ -594,7 +598,7 @@ class _CadastroProdutoMobileScreenState
                   },
                 ),
                 if (slot.image != null) ...[
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   _ImageActionTile(
                     icon: Icons.delete_outline,
                     title: _t('produto.mobile.removeImage', 'Remover imagem'),
@@ -628,28 +632,28 @@ class _CadastroProdutoMobileScreenState
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: _surfaceColor,
-      hintStyle: const TextStyle(color: _mutedTextColor),
-      labelStyle: const TextStyle(color: _mutedTextColor),
-      floatingLabelStyle: const TextStyle(
+      hintStyle: TextStyle(color: _mutedTextColor),
+      labelStyle: TextStyle(color: _mutedTextColor),
+      floatingLabelStyle: TextStyle(
         color: _accentColor,
         fontWeight: FontWeight.w800,
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: _borderColor),
+        borderSide: BorderSide(color: _borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: _accentColor, width: 1.4),
+        borderSide: BorderSide(color: _accentColor, width: 1.4),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: SixMobilePalette.errorBorder),
+        borderSide: BorderSide(color: SixMobilePalette.errorBorder),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: SixMobilePalette.error, width: 1.4),
+        borderSide: BorderSide(color: SixMobilePalette.error, width: 1.4),
       ),
     );
   }
@@ -664,6 +668,12 @@ class _CadastroProdutoMobileScreenState
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      cursorColor: _accentColor,
+      style: TextStyle(
+        color: _titleTextColor,
+        fontSize: 14.5,
+        fontWeight: FontWeight.w600,
+      ),
       decoration: _inputDecoration(label, hintText: hintText),
       validator:
           requiredField
@@ -697,7 +707,7 @@ class _CadastroProdutoMobileScreenState
       context: context,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x47000000),
+      barrierColor: Color(0x47000000),
       useSafeArea: true,
       builder: (BuildContext context) {
         return _MobileBottomSheetFrame(
@@ -763,10 +773,10 @@ class _CadastroProdutoMobileScreenState
         ),
         if (_carregandoCategorias)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: EdgeInsets.only(top: 8),
             child: Row(
               children: <Widget>[
-                const SizedBox(
+                SizedBox(
                   height: 14,
                   width: 14,
                   child: CircularProgressIndicator(
@@ -774,17 +784,14 @@ class _CadastroProdutoMobileScreenState
                     color: _accentColor,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _t(
                       'produto.mobile.loadingCategories',
                       'Buscando categorias...',
                     ),
-                    style: const TextStyle(
-                      color: _mutedTextColor,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: _mutedTextColor, fontSize: 12),
                   ),
                 ),
               ],
@@ -792,7 +799,7 @@ class _CadastroProdutoMobileScreenState
           ),
         if (_erroCategorias != null && !_carregandoCategorias)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: EdgeInsets.only(top: 8),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -800,7 +807,7 @@ class _CadastroProdutoMobileScreenState
               children: <Widget>[
                 Text(
                   _erroCategorias!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.error,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
@@ -808,7 +815,7 @@ class _CadastroProdutoMobileScreenState
                 ),
                 OutlinedButton.icon(
                   onPressed: _isLoading ? null : _carregarCategoriasCatalogo,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  icon: Icon(Icons.refresh_rounded, size: 18),
                   label: Text(_t('common.tryAgain', 'Tentar novamente')),
                 ),
               ],
@@ -818,7 +825,7 @@ class _CadastroProdutoMobileScreenState
             _erroCategorias == null &&
             categorias.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: EdgeInsets.only(top: 8),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -829,11 +836,11 @@ class _CadastroProdutoMobileScreenState
                     'produto.mobile.noCategoriesForType',
                     'Nenhuma categoria disponível para este tipo.',
                   ),
-                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
                 TextButton.icon(
                   onPressed: _isLoading ? null : _abrirGestaoCategorias,
-                  icon: const Icon(Icons.category_outlined, size: 18),
+                  icon: Icon(Icons.category_outlined, size: 18),
                   label: Text(
                     _t(
                       'produto.mobile.manageCategories',
@@ -857,7 +864,7 @@ class _CadastroProdutoMobileScreenState
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x47000000),
+      barrierColor: Color(0x47000000),
       useSafeArea: true,
       builder: (BuildContext sheetContext) {
         return DraggableScrollableSheet(
@@ -867,7 +874,7 @@ class _CadastroProdutoMobileScreenState
           maxChildSize: 0.9,
           builder: (BuildContext context, ScrollController scrollController) {
             return _MobileBottomSheetFrame(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: _CategoriaSelectorSheet(
                 title: _t(
                   'produto.mobile.categorySheetTitle',
@@ -933,15 +940,15 @@ class _CadastroProdutoMobileScreenState
   Widget _buildHeaderCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: SixMobilePalette.heroShadow,
             blurRadius: 22,
@@ -971,7 +978,7 @@ class _CadastroProdutoMobileScreenState
                   color: SixMobilePalette.onPrimary,
                 ),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -988,13 +995,13 @@ class _CadastroProdutoMobileScreenState
                           ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
                       _isModoEdicao
                           ? _t(
@@ -1007,7 +1014,7 @@ class _CadastroProdutoMobileScreenState
                           ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.heroSupportingText,
                         height: 1.35,
                       ),
@@ -1017,7 +1024,7 @@ class _CadastroProdutoMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _StatusPill(ativo: _ativo),
         ],
       ),
@@ -1029,14 +1036,14 @@ class _CadastroProdutoMobileScreenState
       builder: (BuildContext context, BoxConstraints constraints) {
         if (constraints.maxWidth < 360) {
           return Column(
-            children: <Widget>[first, const SizedBox(height: 12), second],
+            children: <Widget>[first, SizedBox(height: 12), second],
           );
         }
 
         return Row(
           children: <Widget>[
             Expanded(child: first),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(child: second),
           ],
         );
@@ -1065,12 +1072,12 @@ class _CadastroProdutoMobileScreenState
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: SixMobilePalette.navigationShadow,
             blurRadius: 16,
@@ -1092,7 +1099,7 @@ class _CadastroProdutoMobileScreenState
                 ),
                 child: Icon(icon, color: _accentColor, size: 22),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1101,18 +1108,18 @@ class _CadastroProdutoMobileScreenState
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       subtitle,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
                         height: 1.3,
@@ -1123,7 +1130,7 @@ class _CadastroProdutoMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           child,
         ],
       ),
@@ -1151,7 +1158,7 @@ class _CadastroProdutoMobileScreenState
                     '$_totalImagensSelecionadas / $_maxImageSlots '
                     '${_t('produto.mobile.imagesCountSuffix', 'imagens')}',
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               _SmallInfoPill(
                 icon: Icons.ads_click_outlined,
                 label:
@@ -1160,9 +1167,9 @@ class _CadastroProdutoMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildImagemAtiva(slot),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -1175,7 +1182,7 @@ class _CadastroProdutoMobileScreenState
                           ImageSource.camera,
                           _slotSelecionadoIndex,
                         ),
-                icon: const Icon(Icons.photo_camera_outlined),
+                icon: Icon(Icons.photo_camera_outlined),
                 label: Text(_t('produto.mobile.takePhoto', 'Tirar foto')),
               ),
               OutlinedButton.icon(
@@ -1186,7 +1193,7 @@ class _CadastroProdutoMobileScreenState
                           ImageSource.gallery,
                           _slotSelecionadoIndex,
                         ),
-                icon: const Icon(Icons.upload_file_outlined),
+                icon: Icon(Icons.upload_file_outlined),
                 label: Text(
                   slot.image == null
                       ? _t('produto.mobile.uploadShort', 'Upload')
@@ -1199,19 +1206,19 @@ class _CadastroProdutoMobileScreenState
                       _isLoading || slot.isLoading
                           ? null
                           : () => _removerImagemDoSlot(_slotSelecionadoIndex),
-                  icon: const Icon(Icons.delete_outline),
+                  icon: Icon(Icons.delete_outline),
                   label: Text(_t('produto.mobile.remove', 'Remover')),
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           SizedBox(
             height: 92,
             child: ListView.separated(
               controller: _slotsScrollController,
               scrollDirection: Axis.horizontal,
               itemCount: _maxImageSlots,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, __) => SizedBox(width: 10),
               itemBuilder: (context, index) => _buildMiniaturaSlot(index),
             ),
           ),
@@ -1253,7 +1260,7 @@ class _CadastroProdutoMobileScreenState
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.28),
-                    child: const Center(
+                    child: Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
@@ -1263,10 +1270,7 @@ class _CadastroProdutoMobileScreenState
                   left: 10,
                   bottom: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.56),
                       borderRadius: BorderRadius.circular(999),
@@ -1275,7 +1279,7 @@ class _CadastroProdutoMobileScreenState
                       slot.image?.origem == 'UPLOAD'
                           ? _t('produto.mobile.imageUploadTag', 'Upload mobile')
                           : _t('produto.mobile.imageSavedTag', 'Imagem salva'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -1289,7 +1293,7 @@ class _CadastroProdutoMobileScreenState
                 child: CircleAvatar(
                   radius: 18,
                   backgroundColor: Colors.black.withValues(alpha: 0.56),
-                  child: const Icon(
+                  child: Icon(
                     Icons.more_horiz,
                     color: SixMobilePalette.onPrimary,
                     size: 20,
@@ -1307,28 +1311,21 @@ class _CadastroProdutoMobileScreenState
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(
-          Icons.add_photo_alternate_outlined,
-          size: 42,
-          color: _accentColor,
-        ),
-        const SizedBox(height: 10),
+        Icon(Icons.add_photo_alternate_outlined, size: 42, color: _accentColor),
+        SizedBox(height: 10),
         Text(
           _t('produto.mobile.emptyImageSlotTitle', 'Nenhuma imagem neste slot'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: _titleTextColor,
-            fontWeight: FontWeight.w900,
-          ),
+          style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w900),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           _t(
             'produto.mobile.emptyImageSlotSubtitle',
             'Toque para tirar foto ou fazer upload',
           ),
           textAlign: TextAlign.center,
-          style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+          style: TextStyle(color: _mutedTextColor, fontSize: 12),
         ),
       ],
     );
@@ -1349,10 +1346,10 @@ class _CadastroProdutoMobileScreenState
         onTap: () => setState(() => _slotSelecionadoIndex = index),
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           width: 82,
-          padding: const EdgeInsets.all(6),
+          padding: EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: selected ? _softAccentColor : _surfaceColor,
             borderRadius: BorderRadius.circular(16),
@@ -1372,7 +1369,7 @@ class _CadastroProdutoMobileScreenState
                   ),
                   child:
                       slot.isLoading
-                          ? const Center(
+                          ? Center(
                             child: SizedBox(
                               height: 18,
                               width: 18,
@@ -1384,7 +1381,7 @@ class _CadastroProdutoMobileScreenState
                           )
                           : hasImage
                           ? _buildImageContent(slot, fit: BoxFit.cover)
-                          : const Center(
+                          : Center(
                             child: Icon(
                               Icons.add_photo_alternate_outlined,
                               color: _mutedTextColor,
@@ -1393,7 +1390,7 @@ class _CadastroProdutoMobileScreenState
                           ),
                 ),
               ),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Text(
                 '${index + 1}',
                 style: TextStyle(
@@ -1429,15 +1426,15 @@ class _CadastroProdutoMobileScreenState
           if (loadingProgress == null) {
             return child;
           }
-          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+          return Center(child: CircularProgressIndicator(strokeWidth: 2));
         },
         errorBuilder: (_, __, ___) {
-          return const Center(child: Icon(Icons.broken_image_outlined));
+          return Center(child: Icon(Icons.broken_image_outlined));
         },
       );
     }
 
-    return const Center(child: Icon(Icons.broken_image_outlined));
+    return Center(child: Icon(Icons.broken_image_outlined));
   }
 
   Uint8List? _decodeDataUrl(String? value) {
@@ -1480,23 +1477,23 @@ class _CadastroProdutoMobileScreenState
             ),
             requiredField: true,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildTextField(
             controller: _codigoController,
             label: _t('produto.mobile.skuLabel', 'Código de barras / SKU'),
             hintText: _t('produto.mobile.skuHint', 'Ex.: 789000000001'),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildTipoField(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildCategoriaField(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildTextField(
             controller: _modeloController,
             label: _t('produto.mobile.modelLabel', 'Modelo'),
             hintText: ProdutoCadastroFormUtils.modeloPadrao,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildTextField(
             controller: _grupoController,
             label: _t('produto.mobile.groupLabel', 'Grupo'),
@@ -1524,9 +1521,9 @@ class _CadastroProdutoMobileScreenState
             controller: _precoVendaController,
             label: _t('produto.mobile.salePriceLabel', 'Preço de venda'),
             hintText: _decimalInputHint(),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildFieldPair(
             first: _buildTextField(
               controller: _estoqueMinController,
@@ -1539,24 +1536,20 @@ class _CadastroProdutoMobileScreenState
               keyboardType: TextInputType.number,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildFieldPair(
             first: _buildTextField(
               controller: _quantidadeEntradaController,
               label: _t('produto.mobile.entryQtyLabel', 'Entrada'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
             ),
             second: _buildTextField(
               controller: _valorCustoController,
               label: _t('produto.mobile.costLabel', 'Custo'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildTextField(
             controller: _valorVendaEntradaController,
             label: _t(
@@ -1567,7 +1560,7 @@ class _CadastroProdutoMobileScreenState
               'produto.mobile.entrySaleValueHint',
               'Usa o preço de venda se ficar vazio',
             ),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
           ),
         ],
       ),
@@ -1589,7 +1582,7 @@ class _CadastroProdutoMobileScreenState
             label: _t('produto.mobile.warrantyLabel', 'Tempo da garantia'),
             hintText: _t('produto.mobile.warrantyHint', 'Ex.: 90 dias'),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildTextField(
             controller: _valorComissaoController,
             label: _t(
@@ -1597,9 +1590,9 @@ class _CadastroProdutoMobileScreenState
               'Valor fixo da comissão',
             ),
             hintText: _decimalInputHint(),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _SwitchCard(
             title: _t('produto.mobile.activeProductTitle', 'Produto ativo'),
             subtitle: _t(
@@ -1610,7 +1603,7 @@ class _CadastroProdutoMobileScreenState
             onChanged:
                 _isLoading ? null : (value) => setState(() => _ativo = value),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SwitchCard(
             title: _t(
               'produto.mobile.changePriceAtSaleTitle',
@@ -1627,7 +1620,7 @@ class _CadastroProdutoMobileScreenState
                     : (value) =>
                         setState(() => _podeAlterarValorNaHora = value),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SwitchCard(
             title: _t(
               'produto.mobile.specialCommissionTitle',
@@ -1676,32 +1669,32 @@ class _CadastroProdutoMobileScreenState
             key: _formKey,
             child: ListView(
               controller: scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: AlwaysScrollableScrollPhysics(),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 112),
               children: [
                 _buildStaggeredEntry(
-                  delay: const Duration(milliseconds: 60),
+                  delay: Duration(milliseconds: 60),
                   child: _buildHeaderCard(),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildStaggeredEntry(
-                  delay: const Duration(milliseconds: 110),
+                  delay: Duration(milliseconds: 110),
                   child: _buildFotoCard(),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildStaggeredEntry(
-                  delay: const Duration(milliseconds: 160),
+                  delay: Duration(milliseconds: 160),
                   child: _buildDadosPrincipaisCard(),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildStaggeredEntry(
-                  delay: const Duration(milliseconds: 210),
+                  delay: Duration(milliseconds: 210),
                   child: _buildEstoquePrecoCard(),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildStaggeredEntry(
-                  delay: const Duration(milliseconds: 260),
+                  delay: Duration(milliseconds: 260),
                   child: _buildRegrasCard(),
                 ),
               ],
@@ -1717,8 +1710,8 @@ class _CadastroProdutoMobileScreenState
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
+        decoration: BoxDecoration(
           color: _surfaceColor,
           border: Border(top: BorderSide(color: _borderColor)),
           boxShadow: [
@@ -1738,14 +1731,14 @@ class _CadastroProdutoMobileScreenState
                 child: Text(_t('common.cancel', 'Cancelar')),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               flex: 2,
               child: FilledButton.icon(
                 onPressed: _isLoading ? null : _salvar,
                 icon:
                     _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                           height: 18,
                           width: 18,
                           child: CircularProgressIndicator(
@@ -1753,7 +1746,7 @@ class _CadastroProdutoMobileScreenState
                             color: SixMobilePalette.onPrimary,
                           ),
                         )
-                        : const Icon(Icons.save_outlined),
+                        : Icon(Icons.save_outlined),
                 label: Text(
                   _isLoading
                       ? _t('common.saving', 'Salvando...')
@@ -1790,12 +1783,12 @@ class _MobileBottomSheetFrame extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
         padding: padding,
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(28),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.heroShadow,
               blurRadius: 28,
@@ -1859,8 +1852,8 @@ class _MobileSelectorField extends StatelessWidget {
           onTap: effectiveEnabled ? onTap : null,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 58),
-            padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+            constraints: BoxConstraints(minHeight: 58),
+            padding: EdgeInsets.fromLTRB(14, 10, 12, 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -1881,7 +1874,7 @@ class _MobileSelectorField extends StatelessWidget {
                   ),
                   child: Icon(icon, color: SixMobilePalette.accent, size: 19),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1891,13 +1884,13 @@ class _MobileSelectorField extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         value,
                         maxLines: 1,
@@ -1914,9 +1907,9 @@ class _MobileSelectorField extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 if (loading)
-                  const SizedBox(
+                  SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
@@ -1970,13 +1963,13 @@ class _TipoProdutoSelectorSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const _MobileSheetHandle(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _SheetTitleBlock(
             icon: Icons.tune_rounded,
             title: title,
             subtitle: subtitle,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _SelectionOptionTile(
             icon: Icons.inventory_2_outlined,
             title: productLabel,
@@ -1987,7 +1980,7 @@ class _TipoProdutoSelectorSheet extends StatelessWidget {
                   context,
                 ).pop(ProdutoCadastroFormUtils.tipoProduto),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _SelectionOptionTile(
             icon: Icons.design_services_outlined,
             title: serviceLabel,
@@ -2078,20 +2071,26 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const _MobileSheetHandle(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _SheetTitleBlock(
             icon: Icons.category_outlined,
             title: widget.title,
             subtitle: widget.subtitle,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           TextField(
             controller: _searchController,
             onChanged: (String value) => setState(() => _query = value),
             textInputAction: TextInputAction.search,
+            cursorColor: SixMobilePalette.accent,
+            style: TextStyle(
+              color: SixMobilePalette.titleText,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+            ),
             decoration: InputDecoration(
               hintText: widget.searchHint,
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.search_rounded,
                 color: SixMobilePalette.accent,
               ),
@@ -2104,7 +2103,7 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
                           _searchController.clear();
                           setState(() => _query = '');
                         },
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded),
                       ),
               filled: true,
               fillColor: SixMobilePalette.softNeutralSurface,
@@ -2112,13 +2111,13 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(
+              contentPadding: EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 14,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Expanded(
             child: ListView(
               controller: widget.scrollController,
@@ -2137,7 +2136,7 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
                         context,
                       ).pop(const _CategoriaSelectionResult(null)),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 ...filtered.map((CategoriaCatalogoModel categoria) {
                   final bool selected =
                       categoria.id == widget.selectedCategoryId;
@@ -2147,7 +2146,7 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
                           : (categoria.ativo ? '' : widget.inactiveLabel);
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: EdgeInsets.only(bottom: 10),
                     child: _SelectionOptionTile(
                       icon: Icons.sell_outlined,
                       title:
@@ -2165,7 +2164,7 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
                   );
                 }),
                 if (filtered.isEmpty) ...<Widget>[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _SelectorEmptyState(
                     title: widget.emptyTitle,
                     subtitle: widget.emptySubtitle,
@@ -2174,12 +2173,12 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: widget.onManageCategories,
-              icon: const Icon(Icons.category_outlined),
+              icon: Icon(Icons.category_outlined),
               label: Text(
                 widget.manageLabel,
                 maxLines: 1,
@@ -2217,7 +2216,7 @@ class _SheetTitleBlock extends StatelessWidget {
           ),
           child: Icon(icon, color: SixMobilePalette.accent, size: 20),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2226,18 +2225,18 @@ class _SheetTitleBlock extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.titleText,
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
                 subtitle,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.mutedText,
                   fontSize: 12,
                   height: 1.3,
@@ -2285,7 +2284,7 @@ class _SelectionOptionTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(18),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
@@ -2308,7 +2307,7 @@ class _SelectionOptionTile extends StatelessWidget {
                   ),
                   child: Icon(icon, color: SixMobilePalette.accent, size: 21),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2317,18 +2316,18 @@ class _SelectionOptionTile extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       if (subtitle.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Text(
                           subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: SixMobilePalette.mutedText,
                             fontSize: 12,
                             height: 1.3,
@@ -2338,20 +2337,17 @@ class _SelectionOptionTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 if (trailingLabel != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                     decoration: BoxDecoration(
                       color: SixMobilePalette.accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       trailingLabel!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.accent,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
@@ -2386,7 +2382,7 @@ class _SelectorEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -2394,25 +2390,25 @@ class _SelectorEmptyState extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.search_off_rounded,
             color: SixMobilePalette.mutedText,
             size: 28,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontSize: 12,
               height: 1.3,
@@ -2431,17 +2427,22 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color background =
-        ativo ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2);
+        ativo
+            ? (isDark ? const Color(0xFF052E1A) : const Color(0xFFDCFCE7))
+            : (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2));
     final Color foreground =
-        ativo ? const Color(0xFF15803D) : SixMobilePalette.error;
+        ativo
+            ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D))
+            : (isDark ? const Color(0xFFFCA5A5) : SixMobilePalette.error);
     final String label =
         ativo
             ? context.t('common.active', fallback: 'Ativo')
             : context.t('common.inactive', fallback: 'Inativo');
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999),
@@ -2470,7 +2471,7 @@ class _SmallInfoPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Flexible(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: SixMobilePalette.softAccentSurface,
           borderRadius: BorderRadius.circular(999),
@@ -2479,13 +2480,13 @@ class _SmallInfoPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 14, color: SixMobilePalette.accent),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.accent,
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
@@ -2519,7 +2520,11 @@ class _ImageActionTile extends StatelessWidget {
     final foreground =
         isDanger ? SixMobilePalette.error : SixMobilePalette.accent;
     final background =
-        isDanger ? const Color(0xFFFEF2F2) : SixMobilePalette.softAccentSurface;
+        isDanger
+            ? (Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF450A0A)
+                : const Color(0xFFFEF2F2))
+            : SixMobilePalette.softAccentSurface;
 
     return Semantics(
       button: true,
@@ -2531,7 +2536,7 @@ class _ImageActionTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(18),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: SixMobilePalette.border),
@@ -2547,7 +2552,7 @@ class _ImageActionTile extends StatelessWidget {
                   ),
                   child: Icon(icon, color: foreground),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2564,12 +2569,12 @@ class _ImageActionTile extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                         ),
@@ -2603,7 +2608,7 @@ class _SwitchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+      padding: EdgeInsets.fromLTRB(14, 12, 10, 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: SixMobilePalette.border),
@@ -2618,17 +2623,17 @@ class _SwitchCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   subtitle,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     fontSize: 12,
                     height: 1.3,

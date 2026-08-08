@@ -32,16 +32,23 @@ class SixAuthInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color textColor = SixAuthTokens.textPrimary(context);
+    final Color hintColor = SixAuthTokens.fieldHint(context);
+    final Color labelColor = SixAuthTokens.fieldLabel(context);
+    final Color fillColor = SixAuthTokens.fieldFill(context);
+    final Color borderColor = SixAuthTokens.fieldBorder(context);
+    final Color focusedBorderColor = SixAuthTokens.fieldBorderFocused(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: SixAuthTokens.fontSizeLabel,
               fontWeight: SixAuthTokens.fontWeightLabel,
-              color: SixAuthTokens.colorFieldLabel,
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 6),
@@ -55,38 +62,33 @@ class SixAuthInput extends StatelessWidget {
             textInputAction: textInputAction,
             onSubmitted: onSubmitted,
             autofocus: autofocus,
-            style: const TextStyle(
+            cursorColor: focusedBorderColor,
+            style: TextStyle(
               fontSize: SixAuthTokens.fontSizeBody,
-              color: SixAuthTokens.colorTextPrimary,
+              color: textColor,
             ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(
-                color: SixAuthTokens.colorFieldHint,
+              hintStyle: TextStyle(
+                color: hintColor,
                 fontSize: SixAuthTokens.fontSizeBody,
               ),
               suffixIcon: suffix,
+              suffixIconColor: SixAuthTokens.dividerText(context),
               filled: true,
-              fillColor: SixAuthTokens.colorFieldFill,
+              fillColor: fillColor,
               contentPadding: SixAuthTokens.paddingInput,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(SixAuthTokens.radiusInput),
-                borderSide: const BorderSide(
-                  color: SixAuthTokens.colorFieldBorder,
-                ),
+                borderSide: BorderSide(color: borderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(SixAuthTokens.radiusInput),
-                borderSide: const BorderSide(
-                  color: SixAuthTokens.colorFieldBorder,
-                ),
+                borderSide: BorderSide(color: borderColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(SixAuthTokens.radiusInput),
-                borderSide: const BorderSide(
-                  color: SixAuthTokens.colorFieldBorderFocused,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: focusedBorderColor, width: 1.5),
               ),
             ),
           ),
