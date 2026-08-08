@@ -246,52 +246,196 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   Widget _loadingState(ScrollController scrollController, double topInset) {
-    return ListView(
-      controller: scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
-      children: <Widget>[
-        _loadingBlock(height: 128),
-        const SizedBox(height: 16),
-        Row(
-          children: <Widget>[
-            Expanded(child: _loadingBlock(height: 94)),
-            const SizedBox(width: 12),
-            Expanded(child: _loadingBlock(height: 94)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: <Widget>[
-            Expanded(child: _loadingBlock(height: 94)),
-            const SizedBox(width: 12),
-            Expanded(child: _loadingBlock(height: 94)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _loadingBlock(height: 96),
-        const SizedBox(height: 16),
-        _loadingBlock(height: 132),
-        const SizedBox(height: 12),
-        _loadingBlock(height: 132),
-      ],
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: _t(
+        'atendimentoTecnico.mobile.loading',
+        'Carregando atendimentos técnicos',
+      ),
+      child: ListView(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+        children: <Widget>[
+          _loadingHeroSkeleton(),
+          const SizedBox(height: 16),
+          _loadingSummaryGrid(),
+          const SizedBox(height: 16),
+          _loadingStatusOverviewSkeleton(),
+          const SizedBox(height: 14),
+          _loadingFilterSkeleton(),
+          const SizedBox(height: 14),
+          _loadingSearchSkeleton(),
+          const SizedBox(height: 16),
+          const _AtendimentoSkeletonBlock(width: 168, height: 18, radius: 8),
+          const SizedBox(height: 12),
+          const _AtendimentoCardSkeleton(),
+          const SizedBox(height: 12),
+          const _AtendimentoCardSkeleton(),
+          const SizedBox(height: 12),
+          const _AtendimentoCardSkeleton(),
+        ],
+      ),
     );
   }
 
-  Widget _loadingBlock({required double height}) {
+  Widget _loadingHeroSkeleton() {
+    return _card(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _iconBox(Icons.fact_check_outlined, size: 40),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _AtendimentoSkeletonBlock(height: 18, radius: 8),
+                SizedBox(height: 9),
+                _AtendimentoSkeletonBlock(height: 12, radius: 7),
+                SizedBox(height: 6),
+                FractionallySizedBox(
+                  widthFactor: 0.72,
+                  child: _AtendimentoSkeletonBlock(height: 12, radius: 7),
+                ),
+                SizedBox(height: 13),
+                _AtendimentoSkeletonBlock(width: 126, height: 28, radius: 999),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _loadingSummaryGrid() {
+    final List<IconData> icons = <IconData>[
+      Icons.assignment_turned_in_outlined,
+      Icons.account_balance_wallet_outlined,
+      Icons.verified_rounded,
+      Icons.payments_outlined,
+    ];
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double width = (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: icons
+              .map(
+                (IconData icon) => SizedBox(
+                  width: width,
+                  child: _loadingSummaryCardSkeleton(icon),
+                ),
+              )
+              .toList(growable: false),
+        );
+      },
+    );
+  }
+
+  Widget _loadingSummaryCardSkeleton(IconData icon) {
     return Container(
-      height: height,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _iconBox(icon, size: 38),
+          const SizedBox(height: 12),
+          const _AtendimentoSkeletonBlock(width: 88, height: 12, radius: 7),
+          const SizedBox(height: 8),
+          const _AtendimentoSkeletonBlock(width: 58, height: 22, radius: 8),
+          const SizedBox(height: 7),
+          const _AtendimentoSkeletonBlock(height: 11, radius: 7),
+        ],
+      ),
+    );
+  }
+
+  Widget _loadingStatusOverviewSkeleton() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              _iconBox(Icons.flag_outlined, size: 42),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _AtendimentoSkeletonBlock(height: 16, radius: 8),
+                    SizedBox(height: 7),
+                    FractionallySizedBox(
+                      widthFactor: 0.76,
+                      child: _AtendimentoSkeletonBlock(height: 12, radius: 7),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const _StatusOverviewSkeletonRow(),
+          SizedBox(height: 10),
+          const _StatusOverviewSkeletonRow(),
+          SizedBox(height: 10),
+          const _StatusOverviewSkeletonRow(),
+        ],
+      ),
+    );
+  }
+
+  Widget _loadingFilterSkeleton() {
+    return _card(
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _AtendimentoSkeletonBlock(width: 132, height: 16, radius: 8),
+          SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _AtendimentoSkeletonBlock(width: 74, height: 38, radius: 999),
+              _AtendimentoSkeletonBlock(width: 92, height: 38, radius: 999),
+              _AtendimentoSkeletonBlock(width: 108, height: 38, radius: 999),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _loadingSearchSkeleton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
       ),
-      child: const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2.4),
-        ),
+      child: Row(
+        children: const <Widget>[
+          Icon(Icons.search_rounded, color: _accentColor, size: 22),
+          SizedBox(width: 10),
+          Expanded(child: _AtendimentoSkeletonBlock(height: 14, radius: 8)),
+        ],
       ),
     );
   }
@@ -2496,6 +2640,264 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
+}
+
+class _AtendimentoCardSkeleton extends StatelessWidget {
+  const _AtendimentoCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: SixMobilePalette.border),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: SixMobilePalette.navigationShadow,
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          const Widget content = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _AtendimentoSkeletonBlock(height: 18, radius: 8),
+              SizedBox(height: 8),
+              FractionallySizedBox(
+                widthFactor: 0.74,
+                child: _AtendimentoSkeletonBlock(height: 12, radius: 7),
+              ),
+              SizedBox(height: 13),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: <Widget>[
+                  _AtendimentoSkeletonBlock(width: 86, height: 26, radius: 999),
+                  _AtendimentoSkeletonBlock(
+                    width: 124,
+                    height: 26,
+                    radius: 999,
+                  ),
+                  _AtendimentoSkeletonBlock(width: 78, height: 26, radius: 999),
+                ],
+              ),
+            ],
+          );
+          const Widget detailsButton = _AtendimentoSkeletonActionButton();
+
+          if (constraints.maxWidth < 290) {
+            return const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    _AtendimentoSkeletonIconBox(
+                      Icons.devices_other_outlined,
+                      size: 44,
+                    ),
+                    Spacer(),
+                    detailsButton,
+                  ],
+                ),
+                SizedBox(height: 12),
+                content,
+              ],
+            );
+          }
+
+          return const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _AtendimentoSkeletonIconBox(
+                Icons.devices_other_outlined,
+                size: 44,
+              ),
+              SizedBox(width: 12),
+              Expanded(child: content),
+              SizedBox(width: 10),
+              detailsButton,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _StatusOverviewSkeletonRow extends StatelessWidget {
+  const _StatusOverviewSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: <Widget>[
+        Expanded(child: _AtendimentoSkeletonBlock(height: 14, radius: 8)),
+        SizedBox(width: 10),
+        _AtendimentoSkeletonBlock(width: 42, height: 26, radius: 999),
+      ],
+    );
+  }
+}
+
+class _AtendimentoSkeletonActionButton extends StatelessWidget {
+  const _AtendimentoSkeletonActionButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: SixMobilePalette.softAccentSurface,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Icon(
+          Icons.add_rounded,
+          color: SixMobilePalette.accent,
+          size: 22,
+        ),
+      ),
+    );
+  }
+}
+
+class _AtendimentoSkeletonIconBox extends StatelessWidget {
+  const _AtendimentoSkeletonIconBox(this.icon, {this.size = 44});
+
+  final IconData icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: SixMobilePalette.softAccentSurface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Icon(icon, color: SixMobilePalette.accent, size: size * 0.52),
+      ),
+    );
+  }
+}
+
+class _AtendimentoSkeletonBlock extends StatefulWidget {
+  const _AtendimentoSkeletonBlock({
+    this.width,
+    required this.height,
+    this.radius = 18,
+  });
+
+  final double? width;
+  final double height;
+  final double radius;
+
+  @override
+  State<_AtendimentoSkeletonBlock> createState() =>
+      _AtendimentoSkeletonBlockState();
+}
+
+class _AtendimentoSkeletonBlockState extends State<_AtendimentoSkeletonBlock>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1120),
+    );
+    _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncPulse();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _syncPulse() {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    if (reduceMotion) {
+      _controller.stop();
+      _controller.value = 0;
+      return;
+    }
+
+    if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (BuildContext context, Widget? child) {
+          final bool reduceMotion =
+              MediaQuery.disableAnimationsOf(context) ||
+              MediaQuery.accessibleNavigationOf(context);
+          final double progress = reduceMotion ? 0 : _pulse.value;
+          final Color silver = Color.alphaBlend(
+            SixMobilePalette.activeBorder.withValues(alpha: 0.48),
+            SixMobilePalette.surface,
+          );
+          final Color fill =
+              Color.lerp(
+                SixMobilePalette.softNeutralSurface,
+                silver,
+                progress,
+              )!;
+          final Color border =
+              Color.lerp(
+                SixMobilePalette.border,
+                SixMobilePalette.activeBorder,
+                progress * 0.7,
+              )!;
+
+          return Container(
+            width: widget.width ?? double.infinity,
+            height: widget.height,
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(widget.radius),
+              border: Border.all(color: border),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: SixMobilePalette.activeBorder.withValues(
+                    alpha: 0.10 * progress,
+                  ),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _SummaryItem {
