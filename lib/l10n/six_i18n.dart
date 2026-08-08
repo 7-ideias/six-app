@@ -741,10 +741,21 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroTitle': 'O que você deseja fazer?',
     'atendimento.mobile.heroSubtitle':
         'Venda, serviço ou recebimento em poucos passos',
+    'atendimento.mobile.chooseOperation': 'Escolha a operação para iniciar.',
     'atendimento.mobile.newSaleTitle': 'Nova venda',
     'atendimento.mobile.newSaleSubtitle': 'Vender produtos',
-    'atendimento.mobile.newServiceTitle': 'Novo serviço',
-    'atendimento.mobile.newServiceSubtitle': 'Abrir atendimento técnico',
+    'atendimento.mobile.consultSalesTitle': 'Consultar vendas',
+    'atendimento.mobile.consultSalesSubtitle': 'Consultar histórico de vendas',
+    'atendimento.mobile.newServiceTitle': 'Serviços',
+    'atendimento.mobile.newServiceSubtitle': 'Criar ou acompanhar',
+    'atendimento.mobile.servicesMenuTitle': 'Serviços',
+    'atendimento.mobile.createServiceTitle': 'Novo serviço',
+    'atendimento.mobile.createServiceSubtitle':
+        'Abrir novo atendimento técnico',
+    'atendimento.mobile.consultServicesInProgressTitle':
+        'Consultar serviços em andamento',
+    'atendimento.mobile.consultServicesInProgressSubtitle':
+        'Ver atendimentos técnicos ativos',
     'atendimento.mobile.receiveTitle': 'Receber',
     'atendimento.mobile.receiveSubtitle': 'Vendas em aberto',
     'atendimento.mobile.followToday': 'Acompanhe hoje',
@@ -757,6 +768,32 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.cashOperationsTitle': 'Operações de caixa',
     'atendimento.mobile.cashOperationsSubtitle': 'Abrir e movimentar',
     'atendimento.mobile.counterLoadError': 'Não foi possível atualizar agora',
+    'atendimento.mobile.servicesToReceiveTitle': 'Serviços a receber',
+    'atendimento.mobile.servicesToReceiveSubtitle':
+        'Atendimentos técnicos com financeiro aberto',
+    'atendimento.mobile.technicalServicesPendingPaymentTitle':
+        'Atendimentos técnicos pendentes de pagamento',
+    'atendimento.mobile.pendingPaymentsLoadingTitle': 'Carregando atendimentos',
+    'atendimento.mobile.pendingPaymentsLoadingSubtitle':
+        'Buscando serviços com financeiro em aberto.',
+    'atendimento.mobile.pendingPaymentHeaderTitle': 'Financeiro aberto',
+    'atendimento.mobile.pendingPaymentTotalOpen': 'Total em aberto',
+    'atendimento.mobile.pendingPaymentSection': 'Atendimentos com saldo',
+    'atendimento.mobile.pendingPaymentErrorTitle': 'Não foi possível carregar',
+    'atendimento.mobile.pendingPaymentErrorMessage':
+        'Tente atualizar os atendimentos técnicos em instantes.',
+    'atendimento.mobile.pendingPaymentEmptyTitle': 'Nenhum serviço a receber',
+    'atendimento.mobile.pendingPaymentEmptyMessage':
+        'Os atendimentos técnicos estão sem financeiro em aberto.',
+    'atendimento.mobile.onePendingPaymentService':
+        '1 atendimento com financeiro aberto',
+    'atendimento.mobile.pendingPaymentServices':
+        'atendimentos com financeiro aberto',
+    'atendimento.mobile.serviceNumber': 'Atendimento',
+    'atendimento.mobile.openValue': 'Valor em aberto',
+    'atendimento.mobile.totalValue': 'Valor total',
+    'atendimento.mobile.dueDate': 'Vence em',
+    'atendimento.mobile.noDueDate': 'Sem vencimento',
     'operacao.mobile.returnTitle': 'Devoluções',
     'operacao.mobile.returnSubtitle': 'Registrar devolução',
     'operacao.mobile.returnUnavailable': 'Em breve',
@@ -1416,10 +1453,20 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroTitle': 'What do you want to do?',
     'atendimento.mobile.heroSubtitle':
         'Sale, service or receipt in a few steps',
+    'atendimento.mobile.chooseOperation': 'Choose the operation to start.',
     'atendimento.mobile.newSaleTitle': 'New sale',
     'atendimento.mobile.newSaleSubtitle': 'Sell products',
-    'atendimento.mobile.newServiceTitle': 'New service',
-    'atendimento.mobile.newServiceSubtitle': 'Open technical service',
+    'atendimento.mobile.consultSalesTitle': 'View sales',
+    'atendimento.mobile.consultSalesSubtitle': 'View sales history',
+    'atendimento.mobile.newServiceTitle': 'Services',
+    'atendimento.mobile.newServiceSubtitle': 'Create or track',
+    'atendimento.mobile.servicesMenuTitle': 'Services',
+    'atendimento.mobile.createServiceTitle': 'New service',
+    'atendimento.mobile.createServiceSubtitle': 'Open new technical service',
+    'atendimento.mobile.consultServicesInProgressTitle':
+        'View services in progress',
+    'atendimento.mobile.consultServicesInProgressSubtitle':
+        'See active technical services',
     'atendimento.mobile.receiveTitle': 'Receive',
     'atendimento.mobile.receiveSubtitle': 'Open sales',
     'atendimento.mobile.followToday': 'Track today',
@@ -1432,6 +1479,33 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.cashOperationsTitle': 'Cash operations',
     'atendimento.mobile.cashOperationsSubtitle': 'Open and move',
     'atendimento.mobile.counterLoadError': 'Could not update right now',
+    'atendimento.mobile.servicesToReceiveTitle': 'Services to receive',
+    'atendimento.mobile.servicesToReceiveSubtitle':
+        'Technical services with open financial balance',
+    'atendimento.mobile.technicalServicesPendingPaymentTitle':
+        'Technical services pending payment',
+    'atendimento.mobile.pendingPaymentsLoadingTitle':
+        'Loading technical services',
+    'atendimento.mobile.pendingPaymentsLoadingSubtitle':
+        'Fetching services with open financial balance.',
+    'atendimento.mobile.pendingPaymentHeaderTitle': 'Open financial balance',
+    'atendimento.mobile.pendingPaymentTotalOpen': 'Total open',
+    'atendimento.mobile.pendingPaymentSection': 'Services with balance',
+    'atendimento.mobile.pendingPaymentErrorTitle': 'Could not load',
+    'atendimento.mobile.pendingPaymentErrorMessage':
+        'Try refreshing technical services in a moment.',
+    'atendimento.mobile.pendingPaymentEmptyTitle': 'No services to receive',
+    'atendimento.mobile.pendingPaymentEmptyMessage':
+        'Technical services have no open financial balance.',
+    'atendimento.mobile.onePendingPaymentService':
+        '1 service with open financial balance',
+    'atendimento.mobile.pendingPaymentServices':
+        'services with open financial balance',
+    'atendimento.mobile.serviceNumber': 'Service',
+    'atendimento.mobile.openValue': 'Open amount',
+    'atendimento.mobile.totalValue': 'Total amount',
+    'atendimento.mobile.dueDate': 'Due on',
+    'atendimento.mobile.noDueDate': 'No due date',
     'operacao.mobile.returnTitle': 'Returns',
     'operacao.mobile.returnSubtitle': 'Register return',
     'operacao.mobile.returnUnavailable': 'Coming soon',
@@ -2113,10 +2187,20 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.title': 'Atención',
     'atendimento.mobile.heroTitle': '¿Qué deseas hacer?',
     'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
+    'atendimento.mobile.chooseOperation': 'Elige la operación para iniciar.',
     'atendimento.mobile.newSaleTitle': 'Nueva venta',
     'atendimento.mobile.newSaleSubtitle': 'Vender productos',
-    'atendimento.mobile.newServiceTitle': 'Nuevo servicio',
-    'atendimento.mobile.newServiceSubtitle': 'Abrir atención técnica',
+    'atendimento.mobile.consultSalesTitle': 'Consultar ventas',
+    'atendimento.mobile.consultSalesSubtitle': 'Consultar historial de ventas',
+    'atendimento.mobile.newServiceTitle': 'Servicios',
+    'atendimento.mobile.newServiceSubtitle': 'Crear o acompañar',
+    'atendimento.mobile.servicesMenuTitle': 'Servicios',
+    'atendimento.mobile.createServiceTitle': 'Nuevo servicio',
+    'atendimento.mobile.createServiceSubtitle': 'Abrir nueva atención técnica',
+    'atendimento.mobile.consultServicesInProgressTitle':
+        'Consultar servicios en curso',
+    'atendimento.mobile.consultServicesInProgressSubtitle':
+        'Ver atenciones técnicas activas',
     'atendimento.mobile.receiveTitle': 'Cobrar',
     'atendimento.mobile.receiveSubtitle': 'Ventas abiertas',
     'atendimento.mobile.followToday': 'Seguimiento de hoy',
@@ -2129,6 +2213,32 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.cashOperationsTitle': 'Operaciones de caja',
     'atendimento.mobile.cashOperationsSubtitle': 'Abrir y mover',
     'atendimento.mobile.counterLoadError': 'No fue posible actualizar ahora',
+    'atendimento.mobile.servicesToReceiveTitle': 'Servicios por cobrar',
+    'atendimento.mobile.servicesToReceiveSubtitle':
+        'Atenciones técnicas con financiero abierto',
+    'atendimento.mobile.technicalServicesPendingPaymentTitle':
+        'Atenciones técnicas pendientes de pago',
+    'atendimento.mobile.pendingPaymentsLoadingTitle': 'Cargando atenciones',
+    'atendimento.mobile.pendingPaymentsLoadingSubtitle':
+        'Buscando servicios con financiero abierto.',
+    'atendimento.mobile.pendingPaymentHeaderTitle': 'Financiero abierto',
+    'atendimento.mobile.pendingPaymentTotalOpen': 'Total abierto',
+    'atendimento.mobile.pendingPaymentSection': 'Atenciones con saldo',
+    'atendimento.mobile.pendingPaymentErrorTitle': 'No fue posible cargar',
+    'atendimento.mobile.pendingPaymentErrorMessage':
+        'Intenta actualizar las atenciones técnicas en instantes.',
+    'atendimento.mobile.pendingPaymentEmptyTitle': 'Ningún servicio por cobrar',
+    'atendimento.mobile.pendingPaymentEmptyMessage':
+        'Las atenciones técnicas no tienen financiero abierto.',
+    'atendimento.mobile.onePendingPaymentService':
+        '1 atención con financiero abierto',
+    'atendimento.mobile.pendingPaymentServices':
+        'atenciones con financiero abierto',
+    'atendimento.mobile.serviceNumber': 'Atención',
+    'atendimento.mobile.openValue': 'Valor abierto',
+    'atendimento.mobile.totalValue': 'Valor total',
+    'atendimento.mobile.dueDate': 'Vence el',
+    'atendimento.mobile.noDueDate': 'Sin vencimiento',
     'operacao.mobile.returnTitle': 'Devoluciones',
     'operacao.mobile.returnSubtitle': 'Registrar devolución',
     'operacao.mobile.returnUnavailable': 'Próximamente',

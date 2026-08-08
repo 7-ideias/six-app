@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
-import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
-import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -12,12 +10,11 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
-import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/nova_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/pdv_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/receber_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/servicos_atendimento_mobile_screen.dart';
 
 import '../components/nav_bar_mobile.dart';
 
@@ -73,10 +70,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   final NotificacaoService _notificacoes = NotificacaoService();
 
   TelaInicialModel? _resumo;
-  bool _loading = true;
-  String? _erro;
   int _totalNotificacoesConhecidas = 0;
-  bool _openingNewSale = false;
 
   @override
   void initState() {
@@ -128,21 +122,12 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   }
 
   Future<void> _carregarResumo() async {
-    setState(() {
-      _loading = true;
-      _erro = null;
-    });
-
     try {
       final TelaInicialModel resumo = await _api.getResumo();
       if (!mounted) return;
       setState(() => _resumo = resumo);
     } catch (error) {
-      if (!mounted) return;
-      setState(() => _erro = error.toString());
       debugPrint('[AtendimentoMobileScreen] Erro ao buscar resumo: $error');
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -181,62 +166,64 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   ) {
     return SafeArea(
       top: false,
-      child: RefreshIndicator(
-        edgeOffset: topInset,
-        displacement: 18,
-        color: _accent,
-        backgroundColor: SixMobilePalette.surface,
-        onRefresh: _carregarResumo,
-        child: ListView(
-          controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
-          children: <Widget>[
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 40),
-              child: _AtendimentoHeroCard(
-                title: _txt(
-                  'atendimento.mobile.heroTitle',
-                  'O que você deseja fazer?',
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double textScale = MediaQuery.textScalerOf(context).scale(1);
+          final _AtendimentoLayoutSizing sizing =
+              _AtendimentoLayoutSizing.resolve(
+                viewportHeight: constraints.maxHeight,
+                contentWidth: constraints.maxWidth - 32,
+                topInset: topInset,
+                textScale: textScale,
+              );
+
+          return RefreshIndicator(
+            edgeOffset: topInset,
+            displacement: 18,
+            color: _accent,
+            backgroundColor: SixMobilePalette.surface,
+            onRefresh: _carregarResumo,
+            child: ListView(
+              controller: scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+              children: <Widget>[
+                SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 40),
+                  child: _AtendimentoHeroCard(
+                    title: _txt(
+                      'atendimento.mobile.heroTitle',
+                      'O que você deseja fazer?',
+                    ),
+                    subtitle: _txt(
+                      'atendimento.mobile.heroSubtitle',
+                      'Venda, serviço ou recebimento em poucos passos',
+                    ),
+                    assetPath: _heroAsset,
+                  ),
                 ),
-                subtitle: _txt(
-                  'atendimento.mobile.heroSubtitle',
-                  'Venda, serviço ou recebimento em poucos passos',
+                const SizedBox(height: 16),
+                SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 95),
+                  child: _AtendimentoActionsRow(
+                    actions: _primaryActions(),
+                    prominence: _AtendimentoActionProminence.primary,
+                    heightBoost: sizing.primaryRowExtraHeight,
+                  ),
                 ),
-                assetPath: _heroAsset,
-              ),
+                const SizedBox(height: 12),
+                SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 130),
+                  child: _AtendimentoActionsRow(
+                    actions: _secondaryActions(),
+                    prominence: _AtendimentoActionProminence.compact,
+                    heightBoost: sizing.compactRowExtraHeight,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 95),
-              child: _AtendimentoActionsRow(
-                actions: _primaryActions(),
-                prominence: _AtendimentoActionProminence.primary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 130),
-              child: _AtendimentoActionsRow(
-                actions: _secondaryActions(),
-                prominence: _AtendimentoActionProminence.compact,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _SectionTitle(
-              title: _txt('atendimento.mobile.followToday', 'Acompanhe hoje'),
-            ),
-            const SizedBox(height: 12),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 160),
-              child: _AtendimentoActionListCard(
-                hasError: _erro != null,
-                rows: _followUpRows(),
-                loadingLabel: _txt('common.loading', 'Carregando...'),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -289,18 +276,18 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         subtitle: _txt('atendimento.mobile.newSaleSubtitle', 'Vender produtos'),
         assetPath: _saleAsset,
         accentColor: _accent,
-        onTap: _startNewSale,
+        onTap: _openSalesMenu,
       ),
       _PrimaryActionData(
         id: 'new-service',
-        title: _txt('atendimento.mobile.newServiceTitle', 'Novo serviço'),
+        title: _txt('atendimento.mobile.newServiceTitle', 'Serviços'),
         subtitle: _txt(
           'atendimento.mobile.newServiceSubtitle',
-          'Abrir atendimento técnico',
+          'Criar ou acompanhar',
         ),
         assetPath: _serviceAsset,
         accentColor: _serviceAccent,
-        onTap: () => _go(const AtendimentoTecnicoMobileScreen()),
+        onTap: () => _go(const ServicosAtendimentoMobileScreen()),
       ),
     ];
   }
@@ -316,7 +303,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetPath: _receiveAsset,
         accentColor: _receiveAccent,
-        onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
+        onTap: () => _go(const ReceberMobileScreen()),
         badgeValue: _resumo?.totalVendasAbertas,
       ),
       _PrimaryActionData(
@@ -346,75 +333,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     ];
   }
 
-  List<_AtendimentoListRowData> _followUpRows() {
-    final bool hasError = _erro != null;
-    final String errorSubtitle = _txt(
-      'atendimento.mobile.counterLoadError',
-      'Não foi possível atualizar agora',
-    );
-
-    return <_AtendimentoListRowData>[
-      _AtendimentoListRowData(
-        id: 'sales',
-        title: _txt(
-          'atendimento.mobile.salesToReceiveTitle',
-          'Vendas a receber',
-        ),
-        subtitle:
-            hasError
-                ? errorSubtitle
-                : _txt(
-                  'atendimento.mobile.salesToReceiveSubtitle',
-                  'Vendas não liquidadas',
-                ),
-        icon: Icons.point_of_sale_outlined,
-        accentColor: _accent,
-        showCounter: true,
-        value: _resumo?.totalVendasAbertas,
-        loading: _loading,
-        hasError: hasError,
-        onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
-      ),
-      _AtendimentoListRowData(
-        id: 'services',
-        title: _txt(
-          'atendimento.mobile.servicesInProgressTitle',
-          'Serviços em andamento',
-        ),
-        subtitle:
-            hasError
-                ? errorSubtitle
-                : _txt(
-                  'atendimento.mobile.servicesInProgressSubtitle',
-                  'Atendimentos técnicos ativos',
-                ),
-        icon: Icons.fact_check_outlined,
-        accentColor: _serviceAccent,
-        showCounter: true,
-        value: _resumo?.totalAtendimentoTecnicoEmAndamento,
-        loading: _loading,
-        hasError: hasError,
-        onTap: () => _go(const AtendimentosTecnicosMobileScreen()),
-      ),
-    ];
+  void _openSalesMenu() {
+    _go(NovaVendaMobileScreen(procedureCoordinator: _procedureCoordinator));
   }
-
-  Future<void> _startNewSale() async {
-    if (_openingNewSale) return;
-    _openingNewSale = true;
-    try {
-      final ProcedureFlowResult result = await _procedureCoordinator.execute(
-        context: context,
-        operationPoint: ProcedureOperationPoint.saleStartBefore,
-      );
-      if (!mounted) return;
-      if (result.shouldContinue) _openNewSale();
-    } finally {
-      _openingNewSale = false;
-    }
-  }
-
-  void _openNewSale() => _go(const PdvMobileScreen());
 
   void _go(Widget page) {
     final AtendimentoMobileNavigate? navigate = widget.onNavigate;
@@ -438,8 +359,6 @@ class _AtendimentoHeroCard extends StatelessWidget {
   final String subtitle;
   final String assetPath;
 
-  static const Color _surface = Color(0xFFF7FAFF);
-
   @override
   Widget build(BuildContext context) {
     final double textScale = MediaQuery.textScalerOf(context).scale(1);
@@ -453,14 +372,14 @@ class _AtendimentoHeroCard extends StatelessWidget {
           final double width = constraints.maxWidth;
           final bool compact = width < 350 || textScale >= 1.2;
           final bool tightText = textScale >= 1.35;
-          final double illustrationWidth = (width * (compact ? 0.43 : 0.49))
-              .clamp(118.0, 184.0);
+          final double illustrationWidth =
+              (width * (compact ? 0.43 : 0.49) * 1.12).clamp(132.0, 206.0);
           final double illustrationHeight = (compact
                   ? illustrationWidth * 0.94
                   : illustrationWidth * 0.98)
-              .clamp(104.0, 158.0);
-          final double illustrationRightOffset = compact ? -24 : -28;
-          final double illustrationBottomOffset = compact ? -22 : -26;
+              .clamp(117.0, 177.0);
+          final double illustrationRightOffset = compact ? -34 : -38;
+          final double illustrationBottomOffset = compact ? -30 : -35;
           final double titleSize = tightText ? 18 : (compact ? 20 : 22);
 
           return Container(
@@ -472,18 +391,8 @@ class _AtendimentoHeroCard extends StatelessWidget {
               compact ? 16 : 18,
             ),
             decoration: BoxDecoration(
-              color: _surface,
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: SixMobilePalette.highlightedBorder.withAlpha(70),
-              ),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: SixMobilePalette.navigationShadow,
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
@@ -552,14 +461,60 @@ class _AtendimentoHeroCard extends StatelessWidget {
 
 enum _AtendimentoActionProminence { primary, compact }
 
+class _AtendimentoLayoutSizing {
+  const _AtendimentoLayoutSizing({
+    required this.primaryRowExtraHeight,
+    required this.compactRowExtraHeight,
+  });
+
+  final double primaryRowExtraHeight;
+  final double compactRowExtraHeight;
+
+  static _AtendimentoLayoutSizing resolve({
+    required double viewportHeight,
+    required double contentWidth,
+    required double topInset,
+    required double textScale,
+  }) {
+    if (!viewportHeight.isFinite) {
+      return const _AtendimentoLayoutSizing(
+        primaryRowExtraHeight: 0,
+        compactRowExtraHeight: 0,
+      );
+    }
+
+    final bool compactHero = contentWidth < 350 || textScale >= 1.2;
+    final double scaleExtra = (textScale - 1).clamp(0.0, 0.8).toDouble();
+    final double heroHeight = compactHero ? 142 : 154;
+    final double primaryHeight = 190 + (scaleExtra * 82);
+    final double compactHeight = 146 + (scaleExtra * 58);
+    final double verticalPadding = topInset + 10 + 24;
+    const double verticalGaps = 16 + 12;
+    final double baseContentHeight =
+        heroHeight + primaryHeight + compactHeight + verticalGaps;
+    final double availableHeight = viewportHeight - verticalPadding;
+    final double extraHeight =
+        (availableHeight - baseContentHeight)
+            .clamp(0.0, double.infinity)
+            .toDouble();
+
+    return _AtendimentoLayoutSizing(
+      primaryRowExtraHeight: extraHeight * 0.54,
+      compactRowExtraHeight: extraHeight * 0.46,
+    );
+  }
+}
+
 class _AtendimentoActionsRow extends StatelessWidget {
   const _AtendimentoActionsRow({
     required this.actions,
     required this.prominence,
+    this.heightBoost = 0,
   });
 
   final List<_PrimaryActionData> actions;
   final _AtendimentoActionProminence prominence;
+  final double heightBoost;
 
   @override
   Widget build(BuildContext context) {
@@ -569,7 +524,8 @@ class _AtendimentoActionsRow extends StatelessWidget {
         final double textScale = MediaQuery.textScalerOf(context).scale(1);
         final double gap =
             prominence == _AtendimentoActionProminence.primary ? 12 : 8;
-        final double cardHeight = _resolveCardHeight(textScale: textScale);
+        final double cardHeight =
+            _resolveCardHeight(textScale: textScale) + heightBoost;
 
         return SizedBox(
           height: cardHeight,
@@ -656,7 +612,7 @@ class _PrimaryActionCard extends StatelessWidget {
             ],
           ),
           child: Material(
-            color: SixMobilePalette.surface,
+            color: data.accentColor.withAlpha(13),
             borderRadius: BorderRadius.circular(radius),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
@@ -737,14 +693,27 @@ class _ActionCardContent extends StatelessWidget {
         constraints.maxWidth < (_isPrimary ? 150 : 102) || rowWidth < 340;
     final bool compactText = textScale >= 1.22;
     final bool compact = compactWidth || compactText;
+    final double extraHeightFactor =
+        ((constraints.maxHeight - (_isPrimary ? 168 : 130)) /
+                (_isPrimary ? 120 : 90))
+            .clamp(0.0, 1.0)
+            .toDouble();
     final double imageCircleSize =
-        _isPrimary ? (compact ? 66 : 78) : (compact ? 42 : 50);
+        _isPrimary
+            ? ((compact ? 68 : 82) + (extraHeightFactor * 10)) * 1.4
+            : ((compact ? 45 : 54) + (extraHeightFactor * 8)) * 1.4;
     final double imageSize =
-        _isPrimary ? (compact ? 58 : 68) : (compact ? 38 : 45);
+        _isPrimary
+            ? ((compact ? 60 : 72) + (extraHeightFactor * 9)) * 1.4
+            : ((compact ? 40 : 48) + (extraHeightFactor * 7)) * 1.4;
     final double titleSize =
-        _isPrimary ? (compact ? 12.6 : 14.4) : (compact ? 9.8 : 10.8);
+        _isPrimary
+            ? (compact ? 13.1 : 15.0) + (extraHeightFactor * 0.8)
+            : (compact ? 10.4 : 11.4) + (extraHeightFactor * 0.7);
     final double subtitleSize =
-        _isPrimary ? (compact ? 10.0 : 10.8) : (compact ? 8.5 : 9.2);
+        _isPrimary
+            ? (compact ? 10.5 : 11.3) + (extraHeightFactor * 0.6)
+            : (compact ? 9.0 : 9.7) + (extraHeightFactor * 0.5);
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -894,242 +863,6 @@ class _ActionCounterBadge extends StatelessWidget {
   }
 }
 
-class _AtendimentoActionListCard extends StatelessWidget {
-  const _AtendimentoActionListCard({
-    required this.rows,
-    required this.loadingLabel,
-    this.hasError = false,
-  });
-
-  final List<_AtendimentoListRowData> rows;
-  final String loadingLabel;
-  final bool hasError;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color borderColor =
-        hasError ? SixMobilePalette.errorBorder : SixMobilePalette.border;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.navigationShadow,
-            blurRadius: 14,
-            offset: Offset(0, 7),
-          ),
-        ],
-      ),
-      child: Material(
-        color: SixMobilePalette.surface,
-        borderRadius: BorderRadius.circular(22),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: borderColor),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              for (int index = 0; index < rows.length; index += 1) ...<Widget>[
-                _AtendimentoActionListRow(
-                  data: rows[index],
-                  loadingLabel: loadingLabel,
-                ),
-                if (index < rows.length - 1)
-                  const Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: SixMobilePalette.border,
-                  ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AtendimentoActionListRow extends StatelessWidget {
-  const _AtendimentoActionListRow({
-    required this.data,
-    required this.loadingLabel,
-  });
-
-  final _AtendimentoListRowData data;
-  final String loadingLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final String trailingSemantic = _trailingSemantic;
-    final String semanticLabel =
-        trailingSemantic.isEmpty
-            ? '${data.title}. ${data.subtitle}'
-            : '${data.title}. ${data.subtitle}. $trailingSemantic';
-    final Widget content = Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-      child: Row(
-        children: <Widget>[
-          _ListIcon(
-            icon: data.icon,
-            accentColor: data.accentColor,
-            enabled: true,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _ListTexts(
-              title: data.title,
-              subtitle: data.subtitle,
-              enabled: true,
-              error: data.hasError,
-            ),
-          ),
-          const SizedBox(width: 10),
-          _buildTrailing(),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: SixMobilePalette.mutedText,
-            size: 24,
-          ),
-        ],
-      ),
-    );
-
-    return Semantics(
-      container: true,
-      button: true,
-      enabled: true,
-      label: semanticLabel,
-      child: InkWell(
-        key: ValueKey<String>('atendimento-row-${data.id}'),
-        onTap: data.onTap,
-        child: content,
-      ),
-    );
-  }
-
-  String get _trailingSemantic {
-    if (data.showCounter) {
-      if (data.loading) return loadingLabel;
-      return data.value?.toString() ?? '--';
-    }
-    return '';
-  }
-
-  Widget _buildTrailing() {
-    if (data.showCounter) {
-      if (data.loading) {
-        return Semantics(
-          liveRegion: true,
-          label: loadingLabel,
-          child: const _CounterSkeleton(),
-        );
-      }
-
-      return ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 34),
-        child: SixAnimatedNumberText(
-          key: ValueKey<String>(
-            'atendimento-counter-${data.id}-${data.value ?? 'empty'}',
-          ),
-          value: data.value?.toString() ?? '--',
-          style: const TextStyle(
-            color: SixMobilePalette.titleText,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-}
-
-class _ListIcon extends StatelessWidget {
-  const _ListIcon({
-    required this.icon,
-    required this.accentColor,
-    required this.enabled,
-  });
-
-  final IconData icon;
-  final Color accentColor;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color foreground = enabled ? accentColor : SixMobilePalette.mutedText;
-    final Color background =
-        enabled
-            ? accentColor.withAlpha(20)
-            : SixMobilePalette.softNeutralSurface;
-
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Icon(icon, color: foreground, size: 22),
-    );
-  }
-}
-
-class _ListTexts extends StatelessWidget {
-  const _ListTexts({
-    required this.title,
-    required this.subtitle,
-    required this.enabled,
-    required this.error,
-  });
-
-  final String title;
-  final String subtitle;
-  final bool enabled;
-  final bool error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color:
-                enabled
-                    ? SixMobilePalette.titleText
-                    : SixMobilePalette.mutedText,
-            fontSize: 15,
-            height: 1.15,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: error ? SixMobilePalette.error : SixMobilePalette.mutedText,
-            fontSize: 12,
-            height: 1.22,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _SoonChip extends StatelessWidget {
   const _SoonChip({required this.label, this.compact = false});
 
@@ -1179,46 +912,6 @@ class _SoonChip extends StatelessWidget {
   }
 }
 
-class _CounterSkeleton extends StatelessWidget {
-  const _CounterSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 22,
-      decoration: BoxDecoration(
-        color: SixMobilePalette.border.withAlpha(170),
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      header: true,
-      child: Text(
-        title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: SixMobilePalette.titleText,
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.1,
-        ),
-      ),
-    );
-  }
-}
-
 class _PrimaryActionData {
   const _PrimaryActionData({
     required this.id,
@@ -1241,30 +934,4 @@ class _PrimaryActionData {
   final bool enabled;
   final int? badgeValue;
   final String? statusLabel;
-}
-
-class _AtendimentoListRowData {
-  const _AtendimentoListRowData({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accentColor,
-    this.onTap,
-    this.showCounter = false,
-    this.value,
-    this.loading = false,
-    this.hasError = false,
-  });
-
-  final String id;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accentColor;
-  final VoidCallback? onTap;
-  final bool showCounter;
-  final int? value;
-  final bool loading;
-  final bool hasError;
 }

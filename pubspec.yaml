@@ -73,6 +73,11 @@ flutter:
     - "assets/images/atendimento mobile/acao-nova-venda.webp"
     - "assets/images/atendimento mobile/acao-novo-servico.webp"
     - "assets/images/atendimento mobile/acao-receber.webp"
+    - "assets/images/vendas mobile/vendas.webp"
+    - "assets/images/vendas mobile/recebimento.webp"
+    - "assets/images/vendas mobile/consultar.webp"
+    - "assets/images/servicos mobile/servico.webp"
+    - "assets/images/servicos mobile/consultar.webp"
     - assets/images/onboading/1-bem-vindo.webp
     - assets/images/onboading/2-cadastro-rapido.webp
     - assets/images/onboading/3-gestao-tecnica.webp
