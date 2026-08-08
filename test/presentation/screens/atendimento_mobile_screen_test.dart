@@ -13,9 +13,9 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_pendentes_pagamento_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/nova_venda_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/receber_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/servicos_atendimento_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/opcoes_servicos_atendimento_mobile_screen.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 void main() {
@@ -412,7 +412,7 @@ Future<List<String>> _pumpServicos(
           size: size,
           devicePixelRatio: 1,
         ),
-        child: ServicosAtendimentoMobileScreen(
+        child: OpcoesServicosAtendimentoMobileScreen(
           onNavigate:
               (_, Widget page) => navigations.add(page.runtimeType.toString()),
         ),
@@ -455,7 +455,7 @@ Future<List<String>> _pumpNovaVenda(
           size: size,
           devicePixelRatio: 1,
         ),
-        child: NovaVendaMobileScreen(
+        child: OpcoesVendaMobileScreen(
           procedureCoordinator: procedureCoordinator,
           onNavigate:
               (_, Widget page) => navigations.add(page.runtimeType.toString()),

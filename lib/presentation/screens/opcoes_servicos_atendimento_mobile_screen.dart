@@ -10,8 +10,8 @@ import 'atendimentos_tecnicos_mobile_screen.dart';
 typedef ServicosAtendimentoMobileNavigate =
     void Function(BuildContext context, Widget page);
 
-class ServicosAtendimentoMobileScreen extends StatelessWidget {
-  const ServicosAtendimentoMobileScreen({super.key, this.onNavigate});
+class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
+  const OpcoesServicosAtendimentoMobileScreen({super.key, this.onNavigate});
 
   final ServicosAtendimentoMobileNavigate? onNavigate;
 
@@ -24,8 +24,8 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
       'assets/images/servicos mobile/servico.webp';
   static const String _consultAsset =
       'assets/images/servicos mobile/consultar.webp';
-  static const double _serviceCardMinHeight = 226;
-  static const double _serviceCardGap = 14;
+  static const double _serviceCardHeight = 136;
+  static const double _serviceCardGap = 10;
 
   String _t(BuildContext context, String key, String fallback) =>
       context.t(key, fallback: fallback);
@@ -57,20 +57,12 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               const double horizontalPadding = 16;
-              const double topPadding = 10;
+              const double topPadding = 8;
               const double bottomPadding = 24;
-              const int cardCount = 2;
-              const double totalGaps = _serviceCardGap * (cardCount - 1);
-              final double availableCardsHeight =
-                  constraints.maxHeight -
-                  topInset -
-                  topPadding -
-                  bottomPadding -
-                  totalGaps;
               final double cardHeight =
-                  availableCardsHeight > _serviceCardMinHeight * cardCount
-                      ? availableCardsHeight / cardCount
-                      : _serviceCardMinHeight;
+                  constraints.maxWidth < 340
+                      ? _serviceCardHeight - 8
+                      : _serviceCardHeight;
 
               return ListView(
                 controller: scrollController,
@@ -164,7 +156,7 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
         key: key,
         height: height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
@@ -175,16 +167,14 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
         ),
         child: Material(
           color: SixMobilePalette.surface,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
             child: Container(
-              constraints: const BoxConstraints(
-                minHeight: _serviceCardMinHeight,
-              ),
+              constraints: BoxConstraints(minHeight: height),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: accentColor.withAlpha(58)),
               ),
               child: Stack(
@@ -198,7 +188,7 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: accentColor,
                         borderRadius: const BorderRadius.horizontal(
-                          left: Radius.circular(22),
+                          left: Radius.circular(20),
                         ),
                       ),
                     ),
@@ -209,73 +199,63 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
                       BoxConstraints constraints,
                     ) {
                       final bool tight = constraints.maxWidth < 330;
-                      final double imageWidth = (constraints.maxWidth *
-                              (tight ? 0.35 : 0.38))
-                          .clamp(104.0, 148.0);
-                      final double rightTextPadding = tight ? 52 : 58;
+                      final double imageSize = (constraints.maxWidth *
+                              (tight ? 0.25 : 0.28))
+                          .clamp(76.0, 98.0);
 
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: <Widget>[
-                          Positioned(
-                            left: tight ? 18 : 22,
-                            top: tight ? 18 : 20,
-                            bottom: tight ? 18 : 20,
-                            width: imageWidth,
-                            child: _buildServiceActionImage(
-                              assetPath: assetPath,
-                              badgeIcon: badgeIcon,
-                              accentColor: accentColor,
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                imageWidth + (tight ? 34 : 42),
-                                tight ? 20 : 22,
-                                rightTextPadding,
-                                tight ? 20 : 22,
-                              ),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      title,
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: accentColor,
-                                        fontSize: tight ? 18 : 20,
-                                        height: 1.08,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                    SizedBox(height: tight ? 7 : 8),
-                                    Text(
-                                      subtitle,
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: SixMobilePalette.mutedText,
-                                        fontSize: 12.5,
-                                        height: 1.24,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                      return Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          tight ? 18 : 21,
+                          tight ? 14 : 16,
+                          tight ? 12 : 14,
+                          tight ? 14 : 16,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            SizedBox.square(
+                              dimension: imageSize,
+                              child: _buildServiceActionImage(
+                                assetPath: assetPath,
+                                badgeIcon: badgeIcon,
+                                accentColor: accentColor,
                               ),
                             ),
-                          ),
-                          Positioned(
-                            right: tight ? 16 : 18,
-                            bottom: tight ? 18 : 20,
-                            child: _buildServiceActionArrow(accentColor),
-                          ),
-                        ],
+                            SizedBox(width: tight ? 14 : 16),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    title,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: accentColor,
+                                      fontSize: tight ? 16.5 : 17.5,
+                                      height: 1.08,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  SizedBox(height: tight ? 7 : 8),
+                                  Text(
+                                    subtitle,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: SixMobilePalette.mutedText,
+                                      fontSize: tight ? 11.2 : 12,
+                                      height: 1.2,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: tight ? 8 : 10),
+                            _buildServiceActionArrow(accentColor),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -297,8 +277,8 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final double frameSize = constraints.biggest.shortestSide.clamp(
-            104.0,
-            168.0,
+            76.0,
+            98.0,
           );
 
           return Align(
@@ -331,10 +311,10 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: accentColor.withAlpha(18),
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Transform.scale(
-              scale: 1.36,
+              scale: 1.12,
               child: Image.asset(
                 assetPath,
                 fit: BoxFit.cover,
@@ -358,14 +338,14 @@ class ServicosAtendimentoMobileScreen extends StatelessWidget {
           right: -3,
           bottom: -3,
           child: Container(
-            width: 31,
-            height: 31,
+            width: 27,
+            height: 27,
             decoration: BoxDecoration(
               color: SixMobilePalette.surface,
               shape: BoxShape.circle,
               border: Border.all(color: accentColor.withAlpha(78)),
             ),
-            child: Icon(badgeIcon, color: accentColor, size: 18),
+            child: Icon(badgeIcon, color: accentColor, size: 16),
           ),
         ),
       ],

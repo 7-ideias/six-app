@@ -13,8 +13,8 @@ import 'vendas_nao_liquidadas_mobile_screen.dart';
 typedef NovaVendaMobileNavigate =
     void Function(BuildContext context, Widget page);
 
-class NovaVendaMobileScreen extends StatefulWidget {
-  const NovaVendaMobileScreen({
+class OpcoesVendaMobileScreen extends StatefulWidget {
+  const OpcoesVendaMobileScreen({
     super.key,
     this.procedureCoordinator,
     this.onNavigate,
@@ -24,10 +24,10 @@ class NovaVendaMobileScreen extends StatefulWidget {
   final NovaVendaMobileNavigate? onNavigate;
 
   @override
-  State<NovaVendaMobileScreen> createState() => _NovaVendaMobileScreenState();
+  State<OpcoesVendaMobileScreen> createState() => _OpcoesVendaMobileScreenState();
 }
 
-class _NovaVendaMobileScreenState extends State<NovaVendaMobileScreen> {
+class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
   static const Color _backgroundColor = SixMobilePalette.background;
   static const Color _primaryColor = SixMobilePalette.primary;
   static const Color _secondaryColor = SixMobilePalette.secondary;
@@ -39,8 +39,9 @@ class _NovaVendaMobileScreenState extends State<NovaVendaMobileScreen> {
       'assets/images/vendas mobile/recebimento.webp';
   static const String _consultAsset =
       'assets/images/vendas mobile/consultar.webp';
-  static const double _operationCardMinHeight = 158;
-  static const double _operationCardGap = 12;
+  static const double _operationCardHeight = 136;
+  static const double _operationCompactCardHeight = 112;
+  static const double _operationCardGap = 10;
 
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;
   bool _openingNewSale = false;
@@ -58,7 +59,7 @@ class _NovaVendaMobileScreenState extends State<NovaVendaMobileScreen> {
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title: _t(context, 'atendimento.mobile.newSaleTitle', 'Nova venda'),
+      title: _t(context, 'atendimento.mobile.salesMenuTitle', 'Vendas'),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -84,18 +85,14 @@ class _NovaVendaMobileScreenState extends State<NovaVendaMobileScreen> {
               const double horizontalPadding = 16;
               const double topPadding = 8;
               const double bottomPadding = 24;
-              const int cardCount = 3;
-              const double totalGaps = _operationCardGap * (cardCount - 1);
-              final double availableCardsHeight =
-                  constraints.maxHeight -
-                  topInset -
-                  topPadding -
-                  bottomPadding -
-                  totalGaps;
               final double cardHeight =
-                  availableCardsHeight > _operationCardMinHeight * cardCount
-                      ? availableCardsHeight / cardCount
-                      : _operationCardMinHeight;
+                  constraints.maxWidth < 340
+                      ? _operationCardHeight - 8
+                      : _operationCardHeight;
+              final double compactCardHeight =
+                  constraints.maxWidth < 340
+                      ? _operationCompactCardHeight - 6
+                      : _operationCompactCardHeight;
 
               return ListView(
                 controller: scrollController,
@@ -160,7 +157,8 @@ class _NovaVendaMobileScreenState extends State<NovaVendaMobileScreen> {
                     delay: const Duration(milliseconds: 140),
                     child: _OperationActionCard(
                       key: const ValueKey<String>('nova-venda-action-history'),
-                      height: cardHeight,
+                      height: compactCardHeight,
+                      compact: true,
                       title: _t(
                         context,
                         'atendimento.mobile.consultSalesTitle',
@@ -232,6 +230,7 @@ class _OperationActionCard extends StatelessWidget {
     this.badge,
     this.loading = false,
     this.height,
+    this.compact = false,
   });
 
   final String title;
@@ -243,6 +242,7 @@ class _OperationActionCard extends StatelessWidget {
   final String? badge;
   final bool loading;
   final double? height;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +275,7 @@ class _OperationActionCard extends StatelessWidget {
       child: Container(
         height: height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color:
@@ -289,18 +289,23 @@ class _OperationActionCard extends StatelessWidget {
         ),
         child: Material(
           color: surfaceColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: effectiveTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
-              constraints: const BoxConstraints(
-                minHeight: _NovaVendaMobileScreenState._operationCardMinHeight,
+              constraints: BoxConstraints(
+                minHeight:
+                    height ??
+                    (compact
+                        ? _OpcoesVendaMobileScreenState
+                            ._operationCompactCardHeight
+                        : _OpcoesVendaMobileScreenState._operationCardHeight),
               ),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: borderColor),
               ),
               child: Stack(
@@ -314,7 +319,7 @@ class _OperationActionCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: enabled ? accentColor : SixMobilePalette.border,
                         borderRadius: const BorderRadius.horizontal(
-                          left: Radius.circular(24),
+                          left: Radius.circular(20),
                         ),
                       ),
                     ),
@@ -325,96 +330,81 @@ class _OperationActionCard extends StatelessWidget {
                       BoxConstraints constraints,
                     ) {
                       final bool tight = constraints.maxWidth < 330;
-                      final double illustrationWidth = (constraints.maxWidth *
-                              (tight ? 0.46 : 0.48))
-                          .clamp(126.0, 184.0);
-                      final double textRightPadding = (illustrationWidth -
-                              (tight ? 20 : 28))
-                          .clamp(104.0, 158.0);
+                      final double illustrationSize = (constraints.maxWidth *
+                              (tight ? 0.25 : 0.28))
+                          .clamp(compact ? 68.0 : 76.0, compact ? 84.0 : 98.0);
 
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: <Widget>[
-                          Positioned(
-                            right: tight ? -26 : -30,
-                            top: tight ? 4 : 0,
-                            bottom: tight ? 4 : 0,
-                            width: illustrationWidth,
-                            child: _OperationIllustrationPane(
-                              accentColor: accentColor,
-                              enabled: enabled,
-                              child: illustration,
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                tight ? 18 : 21,
-                                tight ? 14 : 16,
-                                textRightPadding,
-                                tight ? 14 : 16,
-                              ),
-                              child: Stack(
+                      return Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          tight ? 18 : 21,
+                          compact ? 13 : 16,
+                          tight ? 12 : 14,
+                          compact ? 13 : 16,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Padding(
-                                      padding: EdgeInsets.only(
-                                        bottom: tight ? 24 : 28,
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            title,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: titleColor,
-                                              fontSize: tight ? 17 : 19,
-                                              height: 1.06,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                          SizedBox(height: tight ? 6 : 7),
-                                          Text(
-                                            subtitle,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: subtitleColor,
-                                              fontSize: tight ? 11.4 : 12.2,
-                                              height: 1.18,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          if (badgeText != null &&
-                                              badgeText.isNotEmpty) ...<Widget>[
-                                            SizedBox(height: tight ? 6 : 7),
-                                            _OperationStatusBadge(
-                                              label: badgeText,
-                                              accentColor: accentColor,
-                                            ),
-                                          ],
-                                        ],
-                                      ),
+                                  Text(
+                                    title,
+                                    maxLines: compact ? 1 : 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: titleColor,
+                                      fontSize:
+                                          compact
+                                              ? (tight ? 15.5 : 16.5)
+                                              : (tight ? 17 : 18.5),
+                                      height: 1.08,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                                  Align(
-                                    alignment: Alignment.bottomLeft,
-                                    child: _OperationActionTrailing(
+                                  SizedBox(height: compact ? 5 : 6),
+                                  Text(
+                                    subtitle,
+                                    maxLines: compact ? 1 : 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: subtitleColor,
+                                      fontSize:
+                                          compact
+                                              ? (tight ? 10.8 : 11.4)
+                                              : (tight ? 11.4 : 12.2),
+                                      height: 1.18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (badgeText != null &&
+                                      badgeText.isNotEmpty) ...<Widget>[
+                                    SizedBox(height: compact ? 6 : 7),
+                                    _OperationStatusBadge(
+                                      label: badgeText,
                                       accentColor: accentColor,
-                                      loading: loading,
-                                      enabled: enabled,
                                     ),
-                                  ),
+                                  ],
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                            SizedBox(width: tight ? 8 : 10),
+                            SizedBox.square(
+                              dimension: illustrationSize,
+                              child: _OperationIllustrationPane(
+                                accentColor: accentColor,
+                                enabled: enabled,
+                                child: illustration,
+                              ),
+                            ),
+                            SizedBox(width: tight ? 8 : 10),
+                            _OperationActionTrailing(
+                              accentColor: accentColor,
+                              loading: loading,
+                              enabled: enabled,
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -477,7 +467,7 @@ class _OperationAssetIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Transform.scale(
-      scale: 1.34,
+      scale: 1.12,
       child: Image.asset(
         assetPath,
         fit: BoxFit.contain,

@@ -11,10 +11,10 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/nova_venda_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/receber_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/servicos_atendimento_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/opcoes_servicos_atendimento_mobile_screen.dart';
 
 import '../components/nav_bar_mobile.dart';
 
@@ -287,7 +287,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetPath: _serviceAsset,
         accentColor: _serviceAccent,
-        onTap: () => _go(const ServicosAtendimentoMobileScreen()),
+        onTap: () => _go(const OpcoesServicosAtendimentoMobileScreen()),
       ),
     ];
   }
@@ -334,7 +334,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   }
 
   void _openSalesMenu() {
-    _go(NovaVendaMobileScreen(procedureCoordinator: _procedureCoordinator));
+    _go(OpcoesVendaMobileScreen(procedureCoordinator: _procedureCoordinator));
   }
 
   void _go(Widget page) {

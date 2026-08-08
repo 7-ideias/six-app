@@ -139,6 +139,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Link de assinatura não retornado pelo backend.',
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Não foi possível abrir a assinatura.',
+    'atendimentoTecnico.mobile.loading': 'Carregando atendimentos técnicos',
     'auth.loginRequiredFields': 'Por favor, preencha o e-mail e a senha',
     'auth.loginTitleMobile': 'Entrar',
     'auth.loginSubtitleMobile':
@@ -742,6 +743,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroSubtitle':
         'Venda, serviço ou recebimento em poucos passos',
     'atendimento.mobile.chooseOperation': 'Escolha a operação para iniciar.',
+    'atendimento.mobile.salesMenuTitle': 'Vendas',
     'atendimento.mobile.newSaleTitle': 'Nova venda',
     'atendimento.mobile.newSaleSubtitle': 'Vender produtos',
     'atendimento.mobile.consultSalesTitle': 'Consultar vendas',
@@ -898,6 +900,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'The backend did not return a signature link.',
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Could not open the signature.',
+    'atendimentoTecnico.mobile.loading': 'Loading technical services',
     'procedimentos.title': 'Procedures',
     'procedimentos.subtitle': 'Guides for sales, service and deliveries',
     'procedimentos.introTitle':
@@ -1454,6 +1457,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroSubtitle':
         'Sale, service or receipt in a few steps',
     'atendimento.mobile.chooseOperation': 'Choose the operation to start.',
+    'atendimento.mobile.salesMenuTitle': 'Sales',
     'atendimento.mobile.newSaleTitle': 'New sale',
     'atendimento.mobile.newSaleSubtitle': 'Sell products',
     'atendimento.mobile.consultSalesTitle': 'View sales',
@@ -1614,6 +1618,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'El backend no devolvió un link de firma.',
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'No se pudo abrir la firma.',
+    'atendimentoTecnico.mobile.loading': 'Cargando servicios técnicos',
     'auth.loginRequiredFields':
         'Completa el correo electrónico y la contraseña',
     'auth.loginTitleMobile': 'Entrar',
@@ -2188,6 +2193,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroTitle': '¿Qué deseas hacer?',
     'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
     'atendimento.mobile.chooseOperation': 'Elige la operación para iniciar.',
+    'atendimento.mobile.salesMenuTitle': 'Ventas',
     'atendimento.mobile.newSaleTitle': 'Nueva venta',
     'atendimento.mobile.newSaleSubtitle': 'Vender productos',
     'atendimento.mobile.consultSalesTitle': 'Consultar ventas',
