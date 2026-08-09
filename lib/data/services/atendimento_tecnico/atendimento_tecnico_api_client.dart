@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -18,11 +19,12 @@ class AtendimentoTecnicoApiClient {
       Uri.parse('${AppConfig.baseUrl}/dominios/atendimento-tecnico/base'),
       headers: await _headers(),
     );
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return AtendimentoTecnicoDominiosBaseModel.fromJson(
       jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
@@ -36,13 +38,15 @@ class AtendimentoTecnicoApiClient {
       ),
       headers: await _headers(),
     );
-    if (response.statusCode == 204)
+    if (response.statusCode == 204) {
       return <DominioStatusAtendimentoCustomizacaoModel>[];
-    if (response.statusCode != 200)
+    }
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     final decoded = jsonDecode(_decodeBody(response));
     if (decoded is! List) return <DominioStatusAtendimentoCustomizacaoModel>[];
     return decoded
@@ -62,11 +66,12 @@ class AtendimentoTecnicoApiClient {
       headers: await _headers(),
       body: jsonEncode(customizacoes),
     );
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     final decoded = jsonDecode(_decodeBody(response));
     if (decoded is! List) return <DominioStatusAtendimentoCustomizacaoModel>[];
     return decoded
@@ -81,17 +86,34 @@ class AtendimentoTecnicoApiClient {
       headers: await _headers(),
     );
     if (response.statusCode == 204) return <AtendimentoTecnicoModel>[];
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     final decoded = jsonDecode(_decodeBody(response));
     if (decoded is! List) return <AtendimentoTecnicoModel>[];
     return decoded
         .whereType<Map<String, dynamic>>()
         .map(AtendimentoTecnicoModel.fromJson)
         .toList(growable: false);
+  }
+
+  Future<AtendimentoTecnicoModel> buscarPorId(String id) async {
+    final response = await _httpClient.get(
+      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id'),
+      headers: await _headers(),
+    );
+    if (response.statusCode != 200) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+    return AtendimentoTecnicoModel.fromJson(
+      jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
+    );
   }
 
   Future<AtendimentoTecnicoModel> criar(
@@ -108,11 +130,12 @@ class AtendimentoTecnicoApiClient {
       headers: await _headers(),
       body: jsonEncode(body),
     );
-    if (response.statusCode != 201)
+    if (response.statusCode != 201) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return AtendimentoTecnicoModel.fromJson(
       jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
@@ -129,15 +152,16 @@ class AtendimentoTecnicoApiClient {
             dataVencimentoEm ?? input.validadeOrcamentoEm,
           );
     final response = await _httpClient.put(
-      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/' + id),
+      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id'),
       headers: await _headers(),
       body: jsonEncode(body),
     );
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return AtendimentoTecnicoModel.fromJson(
       jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
@@ -148,17 +172,16 @@ class AtendimentoTecnicoApiClient {
     required AtendimentoTecnicoRecebimentoInput input,
   }) async {
     final response = await _httpClient.post(
-      Uri.parse(
-        '${AppConfig.baseUrl}/atendimentos-tecnicos/' + id + '/recebimentos',
-      ),
+      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id/recebimentos'),
       headers: await _headers(),
       body: jsonEncode(input.toJson()),
     );
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return AtendimentoTecnicoModel.fromJson(
       jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
@@ -172,7 +195,7 @@ class AtendimentoTecnicoApiClient {
     String? observacao,
   }) async {
     final response = await _httpClient.patch(
-      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/' + id + '/status'),
+      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id/status'),
       headers: await _headers(),
       body: jsonEncode(<String, dynamic>{
         'statusId': statusId,
@@ -181,11 +204,12 @@ class AtendimentoTecnicoApiClient {
         'observacao': observacao,
       }),
     );
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return AtendimentoTecnicoModel.fromJson(
       jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
     );
@@ -211,13 +235,33 @@ class AtendimentoTecnicoApiClient {
     );
   }
 
+  Future<AtendimentoTecnicoPdfResponseModel> gerarPdf({
+    required String id,
+  }) async {
+    final response = await _httpClient
+        .get(
+          Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id/pdf'),
+          headers: await _headers(),
+        )
+        .timeout(const Duration(seconds: 45));
+    if (response.statusCode != 200) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+    return AtendimentoTecnicoPdfResponseModel.fromJson(
+      jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
+    );
+  }
+
   Future<Map<String, dynamic>> gerarLinkAssinatura({
     required String id,
     required String baseUrl,
   }) async {
     final response = await _httpClient.post(
       Uri.parse(
-        '${AppConfig.baseUrl}/atendimentos-tecnicos/' + id + '/assinatura/link',
+        '${AppConfig.baseUrl}/atendimentos-tecnicos/$id/assinatura/link',
       ),
       headers: await _headers(),
       body: jsonEncode(<String, dynamic>{
@@ -225,11 +269,12 @@ class AtendimentoTecnicoApiClient {
         'validadeMinutos': 1440,
       }),
     );
-    if (response.statusCode != 201)
+    if (response.statusCode != 201) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return jsonDecode(_decodeBody(response)) as Map<String, dynamic>;
   }
 
@@ -324,11 +369,12 @@ class AtendimentoTecnicoApiClient {
       },
     );
     final response = await _httpClient.get(uri, headers: _publicHeaders());
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return jsonDecode(_decodeBody(response)) as Map<String, dynamic>;
   }
 
@@ -355,11 +401,12 @@ class AtendimentoTecnicoApiClient {
         'observacao': observacao,
       }),
     );
-    if (response.statusCode != 201)
+    if (response.statusCode != 201) {
       throw AtendimentoTecnicoApiException(
         statusCode: response.statusCode,
         body: _decodeBody(response),
       );
+    }
     return jsonDecode(_decodeBody(response)) as Map<String, dynamic>;
   }
 
@@ -371,7 +418,7 @@ class AtendimentoTecnicoApiClient {
       'idUnicoDaEmpresa': idUnicoDaEmpresa ?? '',
       'Content-Type': 'application/json; charset=utf-8',
       'Accept': 'application/json; charset=utf-8',
-      'Authorization': 'Bearer ' + (jwtToken ?? ''),
+      'Authorization': 'Bearer ${jwtToken ?? ''}',
     };
   }
 

@@ -4,12 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' as sharing;
 
 import '../../core/config/app_config.dart';
+import '../../core/services/pdf_file_share_service.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
+import '../../domain/services/atendimento_tecnico/atendimento_pdf_share_service.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -23,11 +25,13 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
   const AtendimentosTecnicosMobileScreen({
     super.key,
     this.service,
+    this.pdfShareService,
     this.colaboradorApiClient,
     this.caixaApiClient,
   });
 
   final AtendimentoTecnicoService? service;
+  final AtendimentoPdfShareService? pdfShareService;
   final ColaboradorUsuarioApiClient? colaboradorApiClient;
   final CaixaApiClient? caixaApiClient;
 
@@ -61,6 +65,7 @@ class _AtendimentosTecnicosMobileScreenState
   static Color get _cardShadowColor => SixMobilePalette.navigationShadow;
 
   late final AtendimentoTecnicoService _service;
+  late final AtendimentoPdfShareService _pdfShareService;
   late final ColaboradorUsuarioApiClient _colaboradorApiClient;
   final TextEditingController _searchController = TextEditingController();
 
@@ -76,6 +81,9 @@ class _AtendimentosTecnicosMobileScreenState
   void initState() {
     super.initState();
     _service = widget.service ?? AtendimentoTecnicoService();
+    _pdfShareService =
+        widget.pdfShareService ??
+        AtendimentoPdfShareService(atendimentoService: _service);
     _colaboradorApiClient =
         widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
     _future = _carregar();
@@ -1220,6 +1228,11 @@ class _AtendimentosTecnicosMobileScreenState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> statusDisponiveis,
   ) async {
+    final Future<AtendimentoTecnicoModel> detalhesFuture = _service.buscarPorId(
+      atendimento.id,
+    );
+    bool gerandoPdf = false;
+    bool sheetAberto = true;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1233,16 +1246,52 @@ class _AtendimentosTecnicosMobileScreenState
           maxChildSize: 0.96,
           expand: false,
           builder: (BuildContext context, ScrollController scrollController) {
-            return _atendimentoDetalhesSheet(
-              sheetContext: sheetContext,
-              scrollController: scrollController,
-              atendimento: atendimento,
-              statusDisponiveis: statusDisponiveis,
+            return StatefulBuilder(
+              builder: (BuildContext detailContext, StateSetter setSheetState) {
+                return FutureBuilder<AtendimentoTecnicoModel>(
+                  future: detalhesFuture,
+                  builder: (BuildContext context, snapshot) {
+                    final AtendimentoTecnicoModel detalhes =
+                        snapshot.data ?? atendimento;
+                    final bool carregando =
+                        snapshot.connectionState != ConnectionState.done &&
+                        !snapshot.hasData;
+                    final bool falhou = snapshot.hasError && !snapshot.hasData;
+                    return _atendimentoDetalhesSheet(
+                      sheetContext: sheetContext,
+                      scrollController: scrollController,
+                      atendimento: detalhes,
+                      statusDisponiveis: statusDisponiveis,
+                      carregandoDetalhes: carregando,
+                      erroDetalhes: falhou,
+                      gerandoPdf: gerandoPdf,
+                      onCompartilharPdf:
+                          falhou
+                              ? null
+                              : (BuildContext originContext) async {
+                                if (gerandoPdf) return;
+                                setSheetState(() => gerandoPdf = true);
+                                try {
+                                  await _compartilharPdfAtendimento(
+                                    detalhes,
+                                    originContext: originContext,
+                                  );
+                                } finally {
+                                  if (mounted && sheetAberto) {
+                                    setSheetState(() => gerandoPdf = false);
+                                  }
+                                }
+                              },
+                    );
+                  },
+                );
+              },
             );
           },
         );
       },
     );
+    sheetAberto = false;
   }
 
   Widget _atendimentoDetalhesSheet({
@@ -1250,6 +1299,11 @@ class _AtendimentosTecnicosMobileScreenState
     required ScrollController scrollController,
     required AtendimentoTecnicoModel atendimento,
     required List<DominioOpcaoModel> statusDisponiveis,
+    required bool carregandoDetalhes,
+    required bool erroDetalhes,
+    required bool gerandoPdf,
+    required Future<void> Function(BuildContext originContext)?
+    onCompartilharPdf,
   }) {
     final String equipamento = _equipamentoTitulo(atendimento);
     final String cliente = _clienteLabel(atendimento);
@@ -1258,229 +1312,255 @@ class _AtendimentosTecnicosMobileScreenState
         MediaQuery.disableAnimationsOf(sheetContext) ||
         MediaQuery.accessibleNavigationOf(sheetContext);
     final double valorJaRecebido = _valorRecebidoAtendimento(atendimento);
+    final bool acaoEmProcessamento = _processandoAcao || gerandoPdf;
     final bool podeReceber =
         !atendimento.operacaoLiquidada &&
         atendimento.valorEmAberto > 0 &&
-        !_processandoAcao;
+        !acaoEmProcessamento;
     final bool podeAlterarStatus =
-        statusDisponiveis.isNotEmpty && !_processandoAcao;
+        statusDisponiveis.isNotEmpty && !acaoEmProcessamento;
+
+    final Widget content = ListView(
+      controller: scrollController,
+      padding: EdgeInsets.fromLTRB(18, 10, 18, 24),
+      children: <Widget>[
+        Center(
+          child: Container(
+            width: 42,
+            height: 5,
+            decoration: BoxDecoration(
+              color: _borderColor,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ),
+        SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _iconBox(Icons.devices_other_outlined, size: 42),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    equipamento,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      height: 1.15,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '${atendimento.numero} • $cliente',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _sharePdfHeaderButton(
+              gerando: gerandoPdf,
+              habilitado: !carregandoDetalhes && !erroDetalhes,
+              onPressed: onCompartilharPdf,
+            ),
+            IconButton(
+              tooltip: _t('common.close', 'Fechar'),
+              onPressed: () => Navigator.of(sheetContext).pop(),
+              icon: Icon(Icons.close_rounded),
+            ),
+          ],
+        ),
+        if (carregandoDetalhes) ...<Widget>[
+          SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 3,
+              backgroundColor: _softSurfaceColor,
+              color: _accentColor,
+            ),
+          ),
+        ],
+        if (erroDetalhes) ...<Widget>[
+          SizedBox(height: 12),
+          _detailInlineWarning(
+            _t(
+              'atendimentoTecnico.mobile.detailLoadError',
+              'Não foi possível carregar os dados atualizados do atendimento.',
+            ),
+          ),
+        ],
+        SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            _chip(status, Icons.flag_outlined),
+            atendimento.operacaoLiquidada
+                ? _chip('Financeiro liquidado', Icons.price_check_rounded)
+                : _chip(
+                  'Financeiro aberto',
+                  Icons.account_balance_wallet_outlined,
+                ),
+            if (atendimento.assinaturaAprovada)
+              _chip('Assinado', Icons.verified_rounded),
+            if (atendimento.requerNovaAssinatura)
+              _alertChip('Assinatura pendente', Icons.draw_outlined),
+            if (_entregaAtrasada(atendimento))
+              _alertChip('Entrega atrasada', Icons.warning_amber_rounded),
+          ],
+        ),
+        SizedBox(height: 16),
+        _detailActions(
+          sheetContext: sheetContext,
+          atendimento: atendimento,
+          statusDisponiveis: statusDisponiveis,
+          podeReceber: podeReceber,
+          podeAlterarStatus: podeAlterarStatus,
+          acaoEmProcessamento: acaoEmProcessamento,
+        ),
+        SizedBox(height: 18),
+        _detailSection(
+          title: 'Resumo da ordem de serviço',
+          icon: Icons.assignment_outlined,
+          children: <Widget>[
+            _detailLine('Cliente', cliente),
+            _detailLine('Técnico', _tecnicoLabelAtendimento(atendimento)),
+            _detailLine('Status', status),
+            _detailLine(
+              'Versão do orçamento',
+              'v${atendimento.versaoOrcamento}',
+            ),
+            _detailLine(
+              'Atualização',
+              _formatarDataHora(atendimento.dataAtualizacao),
+            ),
+            _detailLine(
+              'Entrega prevista',
+              _formatarData(atendimento.dataEntregaPrevista),
+            ),
+            _detailLine(
+              'Validade do orçamento',
+              _formatarData(atendimento.validadeOrcamentoEm),
+            ),
+            _detailLine(
+              'Vencimento',
+              _formatarData(atendimento.dataVencimentoEm),
+            ),
+            if (atendimento.assinaturaAprovada)
+              _detailLine('Assinatura', _assinaturaResumo(atendimento)),
+            if (atendimento.requerNovaAssinatura)
+              _detailLine(
+                'Assinatura',
+                'Pendente para a versão atual do orçamento',
+              ),
+          ],
+        ),
+        SizedBox(height: 14),
+        _detailSection(
+          title: 'Equipamento e diagnóstico',
+          icon: Icons.devices_other_outlined,
+          children: <Widget>[
+            _detailLine('Tipo', atendimento.equipamento?.tipo),
+            _detailLine('Marca', atendimento.equipamento?.marca),
+            _detailLine('Modelo', atendimento.equipamento?.modelo),
+            _detailLine(
+              'Número de série',
+              atendimento.equipamento?.numeroSerie,
+            ),
+            _detailLine('IMEI', atendimento.equipamento?.imei),
+            _detailLine('Acessórios', atendimento.equipamento?.acessorios),
+            _detailLine(
+              'Observações de entrada',
+              atendimento.equipamento?.observacoesEntrada,
+            ),
+            _detailLine('Defeito relatado', atendimento.defeitoRelatado),
+            _detailLine('Diagnóstico técnico', atendimento.diagnosticoTecnico),
+          ],
+        ),
+        SizedBox(height: 14),
+        _detailSection(
+          title: 'Valores',
+          icon: Icons.payments_outlined,
+          children: <Widget>[
+            _detailMoneyLine(
+              'Produtos',
+              atendimento.valorTotalProdutos,
+              reduceMotion: reduceMotion,
+            ),
+            _detailMoneyLine(
+              'Serviços',
+              atendimento.valorTotalServicos,
+              reduceMotion: reduceMotion,
+            ),
+            _detailMoneyLine(
+              _t('atendimentoTecnico.mobile.valorOriginal', 'Valor original'),
+              atendimento.valorTotalAtendimento,
+              reduceMotion: reduceMotion,
+              valueColor: _titleTextColor,
+            ),
+            _detailMoneyLine(
+              _t(
+                'atendimentoTecnico.mobile.valorJaRecebido',
+                'Valor já recebido',
+              ),
+              -valorJaRecebido,
+              reduceMotion: reduceMotion,
+              valueColor:
+                  valorJaRecebido > 0
+                      ? SixMobilePalette.error
+                      : _mutedTextColor,
+            ),
+            _detailMoneyLine(
+              _t('atendimentoTecnico.mobile.valorEmAberto', 'Valor em aberto'),
+              atendimento.valorEmAberto,
+              reduceMotion: reduceMotion,
+              valueColor:
+                  atendimento.valorEmAberto > 0
+                      ? _accentColor
+                      : _titleTextColor,
+            ),
+            _detailLine(
+              'Liquidação',
+              atendimento.operacaoLiquidada ? 'Liquidada' : 'Não liquidada',
+            ),
+          ],
+        ),
+        SizedBox(height: 14),
+        _itemsSection(atendimento),
+        SizedBox(height: 14),
+        _recebimentosSection(atendimento),
+        SizedBox(height: 14),
+        _historicoStatusSection(atendimento, statusDisponiveis),
+        SizedBox(height: 14),
+        _auditoriaSection(atendimento),
+      ],
+    );
 
     return Container(
       decoration: BoxDecoration(
         color: _backgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: SafeArea(
         top: false,
-        child: ListView(
-          controller: scrollController,
-          padding: EdgeInsets.fromLTRB(18, 10, 18, 24),
+        child: Stack(
           children: <Widget>[
-            Center(
-              child: Container(
-                width: 42,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: _borderColor,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _iconBox(Icons.devices_other_outlined, size: 42),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        equipamento,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _titleTextColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          height: 1.15,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${atendimento.numero} • $cliente',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _mutedTextColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: _t('common.close', 'Fechar'),
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  icon: Icon(Icons.close_rounded),
-                ),
-              ],
-            ),
-            SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                _chip(status, Icons.flag_outlined),
-                atendimento.operacaoLiquidada
-                    ? _chip('Financeiro liquidado', Icons.price_check_rounded)
-                    : _chip(
-                      'Financeiro aberto',
-                      Icons.account_balance_wallet_outlined,
-                    ),
-                if (atendimento.assinaturaAprovada)
-                  _chip('Assinado', Icons.verified_rounded),
-                if (atendimento.requerNovaAssinatura)
-                  _alertChip('Assinatura pendente', Icons.draw_outlined),
-                if (_entregaAtrasada(atendimento))
-                  _alertChip('Entrega atrasada', Icons.warning_amber_rounded),
-              ],
-            ),
-            SizedBox(height: 16),
-            _detailActions(
-              sheetContext: sheetContext,
-              atendimento: atendimento,
-              statusDisponiveis: statusDisponiveis,
-              podeReceber: podeReceber,
-              podeAlterarStatus: podeAlterarStatus,
-            ),
-            SizedBox(height: 18),
-            _detailSection(
-              title: 'Resumo da ordem de serviço',
-              icon: Icons.assignment_outlined,
-              children: <Widget>[
-                _detailLine('Cliente', cliente),
-                _detailLine('Técnico', _tecnicoLabelAtendimento(atendimento)),
-                _detailLine('Status', status),
-                _detailLine(
-                  'Versão do orçamento',
-                  'v${atendimento.versaoOrcamento}',
-                ),
-                _detailLine(
-                  'Atualização',
-                  _formatarDataHora(atendimento.dataAtualizacao),
-                ),
-                _detailLine(
-                  'Entrega prevista',
-                  _formatarData(atendimento.dataEntregaPrevista),
-                ),
-                _detailLine(
-                  'Validade do orçamento',
-                  _formatarData(atendimento.validadeOrcamentoEm),
-                ),
-                _detailLine(
-                  'Vencimento',
-                  _formatarData(atendimento.dataVencimentoEm),
-                ),
-                if (atendimento.assinaturaAprovada)
-                  _detailLine('Assinatura', _assinaturaResumo(atendimento)),
-                if (atendimento.requerNovaAssinatura)
-                  _detailLine(
-                    'Assinatura',
-                    'Pendente para a versão atual do orçamento',
-                  ),
-              ],
-            ),
-            SizedBox(height: 14),
-            _detailSection(
-              title: 'Equipamento e diagnóstico',
-              icon: Icons.devices_other_outlined,
-              children: <Widget>[
-                _detailLine('Tipo', atendimento.equipamento?.tipo),
-                _detailLine('Marca', atendimento.equipamento?.marca),
-                _detailLine('Modelo', atendimento.equipamento?.modelo),
-                _detailLine(
-                  'Número de série',
-                  atendimento.equipamento?.numeroSerie,
-                ),
-                _detailLine('IMEI', atendimento.equipamento?.imei),
-                _detailLine('Acessórios', atendimento.equipamento?.acessorios),
-                _detailLine(
-                  'Observações de entrada',
-                  atendimento.equipamento?.observacoesEntrada,
-                ),
-                _detailLine('Defeito relatado', atendimento.defeitoRelatado),
-                _detailLine(
-                  'Diagnóstico técnico',
-                  atendimento.diagnosticoTecnico,
-                ),
-              ],
-            ),
-            SizedBox(height: 14),
-            _detailSection(
-              title: 'Valores',
-              icon: Icons.payments_outlined,
-              children: <Widget>[
-                _detailMoneyLine(
-                  'Produtos',
-                  atendimento.valorTotalProdutos,
-                  reduceMotion: reduceMotion,
-                ),
-                _detailMoneyLine(
-                  'Serviços',
-                  atendimento.valorTotalServicos,
-                  reduceMotion: reduceMotion,
-                ),
-                _detailMoneyLine(
-                  _t(
-                    'atendimentoTecnico.mobile.valorOriginal',
-                    'Valor original',
-                  ),
-                  atendimento.valorTotalAtendimento,
-                  reduceMotion: reduceMotion,
-                  valueColor: _titleTextColor,
-                ),
-                _detailMoneyLine(
-                  _t(
-                    'atendimentoTecnico.mobile.valorJaRecebido',
-                    'Valor já recebido',
-                  ),
-                  -valorJaRecebido,
-                  reduceMotion: reduceMotion,
-                  valueColor:
-                      valorJaRecebido > 0
-                          ? SixMobilePalette.error
-                          : _mutedTextColor,
-                ),
-                _detailMoneyLine(
-                  _t(
-                    'atendimentoTecnico.mobile.valorEmAberto',
-                    'Valor em aberto',
-                  ),
-                  atendimento.valorEmAberto,
-                  reduceMotion: reduceMotion,
-                  valueColor:
-                      atendimento.valorEmAberto > 0
-                          ? _accentColor
-                          : _titleTextColor,
-                ),
-                _detailLine(
-                  'Liquidação',
-                  atendimento.operacaoLiquidada ? 'Liquidada' : 'Não liquidada',
-                ),
-              ],
-            ),
-            SizedBox(height: 14),
-            _itemsSection(atendimento),
-            SizedBox(height: 14),
-            _recebimentosSection(atendimento),
-            SizedBox(height: 14),
-            _historicoStatusSection(atendimento, statusDisponiveis),
-            SizedBox(height: 14),
-            _auditoriaSection(atendimento),
+            content,
+            if (gerandoPdf) Positioned.fill(child: _pdfLoadingOverlay()),
           ],
         ),
       ),
@@ -1493,6 +1573,7 @@ class _AtendimentosTecnicosMobileScreenState
     required List<DominioOpcaoModel> statusDisponiveis,
     required bool podeReceber,
     required bool podeAlterarStatus,
+    required bool acaoEmProcessamento,
   }) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -1524,7 +1605,7 @@ class _AtendimentosTecnicosMobileScreenState
                 label: 'Editar',
                 icon: Icons.edit_note_rounded,
                 onPressed:
-                    _processandoAcao
+                    acaoEmProcessamento
                         ? null
                         : () => _runAfterClosingSheet(
                           sheetContext,
@@ -1544,7 +1625,7 @@ class _AtendimentosTecnicosMobileScreenState
                         ),
                 icon: Icons.ios_share_rounded,
                 onPressed:
-                    _processandoAcao || _gerandoLinkStatus
+                    acaoEmProcessamento || _gerandoLinkStatus
                         ? null
                         : () => _runAfterClosingSheet(
                           sheetContext,
@@ -1608,6 +1689,157 @@ class _AtendimentosTecnicosMobileScreenState
     return filled
         ? FilledButton(onPressed: onPressed, style: style, child: child)
         : OutlinedButton(onPressed: onPressed, style: style, child: child);
+  }
+
+  Widget _sharePdfHeaderButton({
+    required bool gerando,
+    required bool habilitado,
+    required Future<void> Function(BuildContext originContext)? onPressed,
+  }) {
+    final String tooltip = _t(
+      'atendimentoTecnico.mobile.sharePdfTooltip',
+      'Compartilhar atendimento',
+    );
+    return Builder(
+      builder: (BuildContext buttonContext) {
+        return Semantics(
+          button: true,
+          label: tooltip,
+          enabled: habilitado && !gerando && onPressed != null,
+          child: IconButton(
+            tooltip: tooltip,
+            style: IconButton.styleFrom(
+              fixedSize: Size(46, 46),
+              minimumSize: Size(46, 46),
+              foregroundColor: _accentColor,
+              backgroundColor:
+                  gerando ? _softSurfaceColor : _softAccentSurfaceColor,
+            ),
+            onPressed:
+                habilitado && !gerando && onPressed != null
+                    ? () => onPressed(buttonContext)
+                    : null,
+            icon:
+                gerando
+                    ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+                      ),
+                    )
+                    : Icon(Icons.send_rounded, size: 21),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _pdfLoadingOverlay() {
+    final String title = _t(
+      'atendimentoTecnico.mobile.pdfLoadingTitle',
+      'Gerando PDF do atendimento',
+    );
+    final String subtitle = _t(
+      'atendimentoTecnico.mobile.pdfLoadingSubtitle',
+      'Aguarde enquanto o documento é preparado.',
+    );
+
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: title,
+      child: AbsorbPointer(
+        absorbing: true,
+        child: Container(
+          color: _backgroundColor.withValues(alpha: 0.88),
+          padding: EdgeInsets.all(24),
+          child: Center(
+            child: Container(
+              constraints: BoxConstraints(maxWidth: 320),
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 16),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _highlightedBorderColor),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: _cardShadowColor,
+                    blurRadius: 18,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      height: 1.2,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailInlineWarning(String message) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _softAccentSurfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _highlightedBorderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Icons.info_outline_rounded, color: _accentColor, size: 18),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: _titleTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _runAfterClosingSheet(BuildContext sheetContext, VoidCallback action) {
@@ -2023,6 +2255,84 @@ class _AtendimentosTecnicosMobileScreenState
     } finally {
       if (mounted) setState(() => _processandoAcao = false);
     }
+  }
+
+  Future<void> _compartilharPdfAtendimento(
+    AtendimentoTecnicoModel atendimento, {
+    required BuildContext originContext,
+  }) async {
+    if (_processandoAcao) return;
+    setState(() => _processandoAcao = true);
+    try {
+      final AtendimentoPdfShareResult result = await _pdfShareService
+          .compartilharAtendimento(
+            atendimentoId: atendimento.id,
+            sharePositionOrigin: _shareOrigin(originContext),
+          );
+      if (!mounted) return;
+      if (result.disposition == PdfFileShareDisposition.downloaded) {
+        _mostrarMensagem(
+          _t(
+            'atendimentoTecnico.mobile.pdfDownloaded',
+            'PDF baixado com sucesso.',
+          ),
+        );
+      }
+    } on AtendimentoPdfShareException catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(_mensagemErroCompartilharPdf(error.failure));
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.mobile.pdfShareError',
+          'Não foi possível compartilhar o documento.',
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _processandoAcao = false);
+    }
+  }
+
+  Rect? _shareOrigin(BuildContext originContext) {
+    final RenderObject? renderObject = originContext.findRenderObject();
+    final RenderObject? overlayObject =
+        Overlay.of(context).context.findRenderObject();
+    if (renderObject is RenderBox && overlayObject is RenderBox) {
+      final Offset origin = renderObject.localToGlobal(
+        Offset.zero,
+        ancestor: overlayObject,
+      );
+      return origin & renderObject.size;
+    }
+    return null;
+  }
+
+  String _mensagemErroCompartilharPdf(AtendimentoPdfShareFailure failure) {
+    return switch (failure) {
+      AtendimentoPdfShareFailure.permissionDenied => _t(
+        'atendimentoTecnico.mobile.pdfPermissionDenied',
+        'Você não possui permissão para compartilhar este atendimento.',
+      ),
+      AtendimentoPdfShareFailure.notFound => _t(
+        'atendimentoTecnico.mobile.pdfNotFound',
+        'Atendimento não encontrado.',
+      ),
+      AtendimentoPdfShareFailure.invalidFile => _t(
+        'atendimentoTecnico.mobile.pdfInvalidFile',
+        'O arquivo recebido é inválido.',
+      ),
+      AtendimentoPdfShareFailure.shareUnavailable => _t(
+        'atendimentoTecnico.mobile.pdfShareUnavailable',
+        'Não foi possível compartilhar o documento.',
+      ),
+      AtendimentoPdfShareFailure.connectionFailed ||
+      AtendimentoPdfShareFailure.timeout ||
+      AtendimentoPdfShareFailure.generationFailed => _t(
+        'atendimentoTecnico.mobile.pdfGenerationError',
+        'Não foi possível gerar o PDF do atendimento.',
+      ),
+    };
   }
 
   Future<void> _compartilharStatusPublico(
