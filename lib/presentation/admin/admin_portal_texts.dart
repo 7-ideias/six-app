@@ -16,11 +16,14 @@ class AdminPortalTexts {
     if (backendValue != null && backendValue.trim().isNotEmpty) {
       return backendValue;
     }
-    return _adminDefaults[_localeCode]?[key] ?? _adminDefaults['pt']![key] ?? '';
+    return _adminDefaults[_localeCode]?[key] ??
+        _adminDefaults['pt']![key] ??
+        '';
   }
 
   String get portalTitle => _text('adminPortalTitle');
   String get dashboard => _text('adminDashboard');
+  String get users => _text('adminUsers');
   String get dashboardTitle => _text('adminDashboardTitle');
   String get dashboardSubtitle => _text('adminDashboardSubtitle');
   String get currentPage => _text('adminCurrentPage');
@@ -73,12 +76,15 @@ class AdminPortalTexts {
   }
 }
 
-const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, String>>{
+const Map<String, Map<String, String>>
+_adminDefaults = <String, Map<String, String>>{
   'pt': <String, String>{
     'adminPortalTitle': 'Portal Administrativo',
     'adminDashboard': 'Dashboard',
+    'adminUsers': 'Usuários',
     'adminDashboardTitle': 'Visão administrativa',
-    'adminDashboardSubtitle': 'Acompanhe a situação geral das empresas cadastradas no Six.',
+    'adminDashboardSubtitle':
+        'Acompanhe a situação geral das empresas cadastradas no Six.',
     'adminCurrentPage': 'Dashboard administrativo',
     'adminOnline': 'Sistema online',
     'adminRefresh': 'Atualizar',
@@ -90,7 +96,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminErrorTitle': 'Não foi possível carregar o dashboard.',
     'adminErrorAction': 'Tentar novamente',
     'adminEmptyTitle': 'Nenhuma empresa cadastrada ainda',
-    'adminEmptySubtitle': 'Assim que houver empresas cadastradas, os indicadores aparecerão aqui.',
+    'adminEmptySubtitle':
+        'Assim que houver empresas cadastradas, os indicadores aparecerão aqui.',
     'adminTotalCompanies': 'Empresas cadastradas',
     'adminActiveCompanies': 'Empresas ativas',
     'adminInactiveCompanies': 'Empresas inativas',
@@ -100,7 +107,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminInactiveCompaniesHint': 'Calculado como total menos ativas.',
     'adminActivePercentHint': 'Ativas sobre o total cadastrado.',
     'adminOverviewTitle': 'Distribuição das empresas',
-    'adminOverviewSubtitle': 'Resumo calculado a partir dos dados reais retornados pelo backend.',
+    'adminOverviewSubtitle':
+        'Resumo calculado a partir dos dados reais retornados pelo backend.',
     'adminStatusSummaryTitle': 'Resumo da base',
     'adminActiveLabel': 'Ativas',
     'adminInactiveLabel': 'Inativas',
@@ -108,7 +116,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminInfrastructureTitle': 'Infraestrutura',
     'adminDatabasesTitle': 'Bancos monitorados',
     'adminActuatorTitle': 'Saúde do backend',
-    'adminComingSoon': 'Novas configurações administrativas serão adicionadas aqui conforme forem definidas.',
+    'adminComingSoon':
+        'Novas configurações administrativas serão adicionadas aqui conforme forem definidas.',
     'adminMenu': 'Abrir menu administrativo',
     'adminGreetingMorning': 'Bom dia',
     'adminGreetingAfternoon': 'Boa tarde',
@@ -117,8 +126,10 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
   'en': <String, String>{
     'adminPortalTitle': 'Admin Portal',
     'adminDashboard': 'Dashboard',
+    'adminUsers': 'Users',
     'adminDashboardTitle': 'Administrative overview',
-    'adminDashboardSubtitle': 'Track the overall status of companies registered in Six.',
+    'adminDashboardSubtitle':
+        'Track the overall status of companies registered in Six.',
     'adminCurrentPage': 'Admin dashboard',
     'adminOnline': 'System online',
     'adminRefresh': 'Refresh',
@@ -130,7 +141,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminErrorTitle': 'Unable to load the dashboard.',
     'adminErrorAction': 'Try again',
     'adminEmptyTitle': 'No companies registered yet',
-    'adminEmptySubtitle': 'Once companies are registered, indicators will appear here.',
+    'adminEmptySubtitle':
+        'Once companies are registered, indicators will appear here.',
     'adminTotalCompanies': 'Registered companies',
     'adminActiveCompanies': 'Active companies',
     'adminInactiveCompanies': 'Inactive companies',
@@ -148,7 +160,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminInfrastructureTitle': 'Infrastructure',
     'adminDatabasesTitle': 'Monitored databases',
     'adminActuatorTitle': 'Backend health',
-    'adminComingSoon': 'New administrative settings will be added here as they are defined.',
+    'adminComingSoon':
+        'New administrative settings will be added here as they are defined.',
     'adminMenu': 'Open admin menu',
     'adminGreetingMorning': 'Good morning',
     'adminGreetingAfternoon': 'Good afternoon',
@@ -157,8 +170,10 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
   'es': <String, String>{
     'adminPortalTitle': 'Portal Administrativo',
     'adminDashboard': 'Dashboard',
+    'adminUsers': 'Usuarios',
     'adminDashboardTitle': 'Visión administrativa',
-    'adminDashboardSubtitle': 'Acompaña la situación general de las empresas registradas en Six.',
+    'adminDashboardSubtitle':
+        'Acompaña la situación general de las empresas registradas en Six.',
     'adminCurrentPage': 'Dashboard administrativo',
     'adminOnline': 'Sistema en línea',
     'adminRefresh': 'Actualizar',
@@ -170,7 +185,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminErrorTitle': 'No fue posible cargar el dashboard.',
     'adminErrorAction': 'Intentar nuevamente',
     'adminEmptyTitle': 'Aún no hay empresas registradas',
-    'adminEmptySubtitle': 'Cuando haya empresas registradas, los indicadores aparecerán aquí.',
+    'adminEmptySubtitle':
+        'Cuando haya empresas registradas, los indicadores aparecerán aquí.',
     'adminTotalCompanies': 'Empresas registradas',
     'adminActiveCompanies': 'Empresas activas',
     'adminInactiveCompanies': 'Empresas inactivas',
@@ -180,7 +196,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminInactiveCompaniesHint': 'Calculado como total menos activas.',
     'adminActivePercentHint': 'Activas sobre el total registrado.',
     'adminOverviewTitle': 'Distribución de empresas',
-    'adminOverviewSubtitle': 'Resumen calculado a partir de datos reales del backend.',
+    'adminOverviewSubtitle':
+        'Resumen calculado a partir de datos reales del backend.',
     'adminStatusSummaryTitle': 'Resumen de la base',
     'adminActiveLabel': 'Activas',
     'adminInactiveLabel': 'Inactivas',
@@ -188,7 +205,8 @@ const Map<String, Map<String, String>> _adminDefaults = <String, Map<String, Str
     'adminInfrastructureTitle': 'Infraestructura',
     'adminDatabasesTitle': 'Bancos monitoreados',
     'adminActuatorTitle': 'Salud del backend',
-    'adminComingSoon': 'Nuevas configuraciones administrativas serán agregadas aquí conforme sean definidas.',
+    'adminComingSoon':
+        'Nuevas configuraciones administrativas serán agregadas aquí conforme sean definidas.',
     'adminMenu': 'Abrir menú administrativo',
     'adminGreetingMorning': 'Buenos días',
     'adminGreetingAfternoon': 'Buenas tardes',
