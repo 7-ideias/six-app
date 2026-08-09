@@ -80,11 +80,17 @@ class AtendimentoTecnicoApiClient {
         .toList(growable: false);
   }
 
-  Future<List<AtendimentoTecnicoModel>> listar() async {
-    final response = await _httpClient.get(
-      Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos'),
-      headers: await _headers(),
+  Future<List<AtendimentoTecnicoModel>> listar({String? status}) async {
+    final String? normalizedStatus = _blankAsNull(status);
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/atendimentos-tecnicos',
+    ).replace(
+      queryParameters:
+          normalizedStatus == null
+              ? null
+              : <String, String>{'status': normalizedStatus},
     );
+    final response = await _httpClient.get(uri, headers: await _headers());
     if (response.statusCode == 204) return <AtendimentoTecnicoModel>[];
     if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
@@ -428,6 +434,11 @@ class AtendimentoTecnicoApiClient {
   };
 
   String _decodeBody(http.Response response) => utf8.decode(response.bodyBytes);
+
+  String? _blankAsNull(String? value) {
+    final String text = value?.trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
 
   String _dateOnly(DateTime value) {
     final year = value.year.toString().padLeft(4, '0');

@@ -183,6 +183,35 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Não foi possível abrir a assinatura.',
     'atendimentoTecnico.mobile.loading': 'Carregando atendimentos técnicos',
+    'atendimentoTecnico.mobile.dashboardTitle': 'Dashboard técnico',
+    'atendimentoTecnico.mobile.dashboardDescription': '',
+    'atendimentoTecnico.mobile.emptyTitle': 'Nenhum atendimento encontrado',
+    'atendimentoTecnico.mobile.emptyMessage':
+        'Tente buscar por cliente, equipamento, status ou número.',
+    'atendimentoTecnico.mobile.errorTitle':
+        'Não foi possível carregar os atendimentos',
+    'atendimentoTecnico.mobile.recentSection': 'Atendimentos recentes',
+    'atendimentoTecnico.mobile.filteredSection': 'Resultado do filtro',
+    'atendimentoTecnico.mobile.waitingApprovalTitle':
+        'Orçamentos aguardando aprovação',
+    'atendimentoTecnico.mobile.waitingApprovalDescription':
+        'Serviços enviados ao cliente que ainda precisam de aprovação.',
+    'atendimentoTecnico.mobile.waitingApprovalEmptyTitle':
+        'Nenhum orçamento aguardando aprovação no momento.',
+    'atendimentoTecnico.mobile.waitingApprovalEmptyMessage':
+        'Quando um orçamento for enviado e estiver aguardando a decisão do cliente, ele aparecerá aqui.',
+    'atendimentoTecnico.mobile.waitingApprovalErrorTitle':
+        'Não foi possível consultar os orçamentos. Tente novamente.',
+    'atendimentoTecnico.mobile.waitingApprovalLoading':
+        'Carregando orçamentos aguardando aprovação',
+    'atendimentoTecnico.mobile.waitingApprovalSection':
+        'Orçamentos aguardando aprovação',
+    'atendimentoTecnico.mobile.waitingApprovalFilteredSection':
+        'Resultado do filtro',
+    'atendimentoTecnico.mobile.currentStatusOption': 'Status atual',
+    'atendimentoTecnico.mobile.selectStatusOption': 'Toque para selecionar',
+    'technicalService.status.waitingCustomerAproval':
+        'Aguardando aprovação do cliente',
     'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartilhar atendimento',
     'atendimentoTecnico.mobile.pdfLoadingTitle': 'Gerando PDF do atendimento',
     'atendimentoTecnico.mobile.pdfLoadingSubtitle':
@@ -819,6 +848,10 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Consultar serviços em andamento',
     'atendimento.mobile.consultServicesInProgressSubtitle':
         'Ver atendimentos técnicos ativos',
+    'atendimento.mobile.waitingApprovalBudgetsTitle':
+        'Orçamentos aguardando aprovação',
+    'atendimento.mobile.waitingApprovalBudgetsSubtitle':
+        'Consulte serviços que ainda precisam da aprovação do cliente',
     'atendimento.mobile.receiveTitle': 'Receber',
     'atendimento.mobile.receiveSubtitle': 'Vendas em aberto',
     'atendimento.mobile.followToday': 'Acompanhe hoje',

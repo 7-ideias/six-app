@@ -20,6 +20,7 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
   static Color get _secondaryColor => SixMobilePalette.secondary;
   static const Color _accentColor = Color(0xFF7C3AED);
   static const Color _consultAccentColor = Color(0xFF0F766E);
+  static Color get _approvalAccentColor => SixMobilePalette.accent;
   static const String _serviceAsset =
       'assets/images/servicos mobile/servico.webp';
   static const String _consultAsset =
@@ -120,6 +121,35 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                               _go(context, AtendimentosTecnicosMobileScreen()),
                     ),
                   ),
+                  SizedBox(height: _serviceCardGap),
+                  SixStaggeredEntry(
+                    delay: Duration(milliseconds: 150),
+                    child: _buildServiceActionCard(
+                      key: ValueKey<String>('servicos-action-waiting-approval'),
+                      height: cardHeight,
+                      title: _t(
+                        context,
+                        'atendimento.mobile.waitingApprovalBudgetsTitle',
+                        'Orçamentos aguardando aprovação',
+                      ),
+                      subtitle: _t(
+                        context,
+                        'atendimento.mobile.waitingApprovalBudgetsSubtitle',
+                        'Consulte serviços que ainda precisam da aprovação do cliente',
+                      ),
+                      assetPath: _consultAsset,
+                      badgeIcon: Icons.pending_actions_rounded,
+                      accentColor: _approvalAccentColor,
+                      onTap:
+                          () => _go(
+                            context,
+                            AtendimentosTecnicosMobileScreen(
+                              listContext:
+                                  AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
+                            ),
+                          ),
+                    ),
+                  ),
                 ],
               );
             },
@@ -215,29 +245,34 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                             Expanded(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
-                                  Text(
-                                    title,
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: accentColor,
-                                      fontSize: tight ? 16.5 : 17.5,
-                                      height: 1.08,
-                                      fontWeight: FontWeight.w900,
+                                  Flexible(
+                                    child: Text(
+                                      title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: accentColor,
+                                        fontSize: tight ? 16.5 : 17.5,
+                                        height: 1.08,
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
                                   ),
                                   SizedBox(height: tight ? 7 : 8),
-                                  Text(
-                                    subtitle,
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: SixMobilePalette.mutedText,
-                                      fontSize: tight ? 11.2 : 12,
-                                      height: 1.2,
-                                      fontWeight: FontWeight.w600,
+                                  Flexible(
+                                    child: Text(
+                                      subtitle,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: SixMobilePalette.mutedText,
+                                        fontSize: tight ? 11.2 : 12,
+                                        height: 1.2,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ],

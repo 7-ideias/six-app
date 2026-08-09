@@ -62,6 +62,13 @@ void main() {
         expect(_scaffoldBackground(tester), themeCase.colors.background);
         expect(find.text('Novo serviço'), findsOneWidget);
         expect(find.text('Consultar serviços em andamento'), findsOneWidget);
+        expect(find.text('Orçamentos aguardando aprovação'), findsOneWidget);
+        expect(
+          find.text(
+            'Consulte serviços que ainda precisam da aprovação do cliente',
+          ),
+          findsOneWidget,
+        );
         expect(
           _hasMaterialAncestorColor(
             tester,
@@ -75,10 +82,18 @@ void main() {
         await tester.pump();
         await tester.tap(find.text('Consultar serviços em andamento'));
         await tester.pump();
+        await tester.tap(find.text('Orçamentos aguardando aprovação'));
+        await tester.pump();
 
-        expect(destinations, hasLength(2));
+        expect(destinations, hasLength(3));
         expect(destinations.first, isA<AtendimentoTecnicoMobileScreen>());
-        expect(destinations.last, isA<AtendimentosTecnicosMobileScreen>());
+        expect(destinations[1], isA<AtendimentosTecnicosMobileScreen>());
+        final AtendimentosTecnicosMobileScreen approvalPage =
+            destinations.last as AtendimentosTecnicosMobileScreen;
+        expect(
+          approvalPage.listContext.statusFilter,
+          'WAITING_CUSTOMER_APROVAL',
+        );
       },
     );
 
@@ -320,6 +335,99 @@ void main() {
           lastScrollable: true,
         );
         expect(find.text('Histórico de auditoria'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'waiting approval query uses contextual status and texts in ${themeCase.description} mode',
+      (WidgetTester tester) async {
+        final _FakeAtendimentoTecnicoService service =
+            _FakeAtendimentoTecnicoService();
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: service,
+          listContext:
+              const AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
+        );
+
+        expect(service.lastListStatus, 'WAITING_CUSTOMER_APROVAL');
+        expect(find.text('Orçamentos aguardando aprovação'), findsWidgets);
+        expect(
+          find.text(
+            'Serviços enviados ao cliente que ainda precisam de aprovação.',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Nenhum orçamento aguardando aprovação no momento.'),
+          420,
+          scrollable: _verticalScrollable(),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('Nenhum orçamento aguardando aprovação no momento.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'Quando um orçamento for enviado e estiver aguardando a decisão do cliente, ele aparecerá aqui.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'waiting approval status is friendly and API errors remain contextual in ${themeCase.description} mode',
+      (WidgetTester tester) async {
+        final _FakeAtendimentoTecnicoService service =
+            _FakeAtendimentoTecnicoService(
+              atendimentos: <AtendimentoTecnicoModel>[
+                _atendimento(
+                  numero: 'OS-WAITING',
+                  statusCodigo: 'WAITING_CUSTOMER_APROVAL',
+                  statusNome: '',
+                ),
+              ],
+            );
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: service,
+          listContext:
+              const AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
+        );
+
+        expect(service.lastListStatus, 'WAITING_CUSTOMER_APROVAL');
+        expect(
+          find.textContaining('Aguardando aprovação do cliente'),
+          findsWidgets,
+        );
+        expect(find.textContaining('WAITING_CUSTOMER_APROVAL'), findsNothing);
+
+        final _FakeAtendimentoTecnicoService errorService =
+            _FakeAtendimentoTecnicoService(throwOnList: true);
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: errorService,
+          listContext:
+              const AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
+        );
+
+        expect(errorService.lastListStatus, 'WAITING_CUSTOMER_APROVAL');
+        expect(
+          find.text(
+            'Não foi possível consultar os orçamentos. Tente novamente.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Tentar novamente'), findsOneWidget);
       },
     );
 
@@ -1190,6 +1298,8 @@ Future<void> _pumpTechnicalList(
   double textScale = 1,
   CaixaApiClient? caixaApiClient,
   AtendimentoPdfShareService? pdfShareService,
+  AtendimentosTecnicosMobileListContext listContext =
+      const AtendimentosTecnicosMobileListContext.standard(),
 }) {
   return _pumpMobile(
     tester,
@@ -1202,6 +1312,7 @@ Future<void> _pumpTechnicalList(
       service: service,
       pdfShareService: pdfShareService,
       caixaApiClient: caixaApiClient,
+      listContext: listContext,
       colaboradorApiClient: _FakeColaboradorUsuarioApiClient(
         <ColaboradorUsuarioResumo>[_tecnico(nome: 'Técnica Six')],
       ),
@@ -1612,6 +1723,11 @@ final AtendimentoTecnicoDominiosBaseModel _dominios =
         _status(8, 'ENTREGUE', 'Entregue', finalizador: true),
         _status(9, 'CANCELADO', 'Cancelada', finalizador: true),
         _status(10, 'PENDENTE_PAGAMENTO', 'Pendente de pagamento'),
+        _status(
+          11,
+          'WAITING_CUSTOMER_APROVAL',
+          'Aguardando aprovação do cliente',
+        ),
       ],
       statusOrcamentoAtendimento: const <DominioOpcaoModel>[],
       tiposItem: const <DominioOpcaoModel>[],
@@ -1650,6 +1766,7 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
   AtendimentoTecnicoRecebimentoInput? lastReceiveInput;
   DominioOpcaoModel? lastStatus;
   String? lastStatusObservation;
+  String? lastListStatus;
 
   @override
   Future<AtendimentoTecnicoDominiosBaseModel> buscarDominiosBase() async {
@@ -1657,8 +1774,9 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
   }
 
   @override
-  Future<List<AtendimentoTecnicoModel>> listar() {
+  Future<List<AtendimentoTecnicoModel>> listar({String? status}) {
     listCalls++;
+    lastListStatus = status;
     if (throwOnList) {
       return Future<List<AtendimentoTecnicoModel>>.error(StateError('offline'));
     }

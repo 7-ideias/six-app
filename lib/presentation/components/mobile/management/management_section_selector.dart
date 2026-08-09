@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 
 /// Data for a selectable management section tab.
@@ -28,31 +29,20 @@ class ManagementSectionSelector extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 8),
       child: Semantics(
         container: true,
-        child: Container(
-          key: ValueKey<String>('management-section-selector-surface'),
-          height: 52,
-          padding: EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: SixMobilePalette.surface.withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: SixMobilePalette.activeBorder, width: 1),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: SixMobilePalette.navigationShadow,
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
+        child: SizedBox(
+          height: 44,
           child: Row(
             children: <Widget>[
               for (int index = 0; index < sections.length; index += 1)
                 Expanded(
-                  child: _SectionSegment(
-                    key: ValueKey<String>('management-section-tab-$index'),
-                    tab: sections[index],
-                    isSelected: index == selectedIndex,
-                    onTap: () => onSectionSelected(index),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2),
+                    child: _SectionSegment(
+                      key: ValueKey<String>('management-section-tab-$index'),
+                      tab: sections[index],
+                      isSelected: index == selectedIndex,
+                      onTap: () => onSectionSelected(index),
+                    ),
                   ),
                 ),
             ],
@@ -77,11 +67,16 @@ class _SectionSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final bool reduceMotion =
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
     final Color foregroundColor =
-        isSelected ? SixMobilePalette.accent : SixMobilePalette.secondary;
+        isSelected ? SixMobilePalette.onPrimary : colors.titleText;
+    final Color segmentColor =
+        isSelected ? colors.accent : colors.surfaceElevated;
+    final Color segmentBorderColor =
+        isSelected ? colors.accent : colors.border.withValues(alpha: 0.72);
 
     return Semantics(
       button: true,
@@ -99,11 +94,9 @@ class _SectionSegment extends StatelessWidget {
             height: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: 5, vertical: 7),
             decoration: BoxDecoration(
-              color:
-                  isSelected
-                      ? SixMobilePalette.accent.withValues(alpha: 0.10)
-                      : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
+              color: segmentColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: segmentBorderColor),
             ),
             child: Center(
               child: FittedBox(

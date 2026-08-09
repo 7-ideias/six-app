@@ -21,6 +21,101 @@ import '../components/mobile_motion.dart';
 import 'atendimento_tecnico_editar_mobile_screen.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
 
+class AtendimentosTecnicosMobileListContext {
+  const AtendimentosTecnicosMobileListContext({
+    required this.titleKey,
+    required this.titleFallback,
+    required this.heroTitleKey,
+    required this.heroTitleFallback,
+    required this.descriptionKey,
+    required this.descriptionFallback,
+    required this.emptyTitleKey,
+    required this.emptyTitleFallback,
+    required this.emptyMessageKey,
+    required this.emptyMessageFallback,
+    required this.errorTitleKey,
+    required this.errorTitleFallback,
+    required this.loadingLabelKey,
+    required this.loadingLabelFallback,
+    this.statusFilter,
+    this.sectionTitleKey,
+    this.sectionTitleFallback,
+    this.filteredSectionTitleKey,
+    this.filteredSectionTitleFallback,
+  });
+
+  const AtendimentosTecnicosMobileListContext.standard()
+    : this(
+        titleKey: 'atendimentoTecnico.mobile.listTitle',
+        titleFallback: 'Atendimentos técnicos',
+        heroTitleKey: 'atendimentoTecnico.mobile.dashboardTitle',
+        heroTitleFallback: 'Dashboard técnico',
+        descriptionKey: 'atendimentoTecnico.mobile.dashboardDescription',
+        descriptionFallback: '',
+        emptyTitleKey: 'atendimentoTecnico.mobile.emptyTitle',
+        emptyTitleFallback: 'Nenhum atendimento encontrado',
+        emptyMessageKey: 'atendimentoTecnico.mobile.emptyMessage',
+        emptyMessageFallback:
+            'Tente buscar por cliente, equipamento, status ou número.',
+        errorTitleKey: 'atendimentoTecnico.mobile.errorTitle',
+        errorTitleFallback: 'Não foi possível carregar os atendimentos',
+        loadingLabelKey: 'atendimentoTecnico.mobile.loading',
+        loadingLabelFallback: 'Carregando atendimentos técnicos',
+        sectionTitleKey: 'atendimentoTecnico.mobile.recentSection',
+        sectionTitleFallback: 'Atendimentos recentes',
+        filteredSectionTitleKey: 'atendimentoTecnico.mobile.filteredSection',
+        filteredSectionTitleFallback: 'Resultado do filtro',
+      );
+
+  const AtendimentosTecnicosMobileListContext.waitingCustomerApproval()
+    : this(
+        titleKey: 'atendimentoTecnico.mobile.waitingApprovalTitle',
+        titleFallback: 'Orçamentos aguardando aprovação',
+        heroTitleKey: 'atendimentoTecnico.mobile.waitingApprovalTitle',
+        heroTitleFallback: 'Orçamentos aguardando aprovação',
+        descriptionKey: 'atendimentoTecnico.mobile.waitingApprovalDescription',
+        descriptionFallback:
+            'Serviços enviados ao cliente que ainda precisam de aprovação.',
+        emptyTitleKey: 'atendimentoTecnico.mobile.waitingApprovalEmptyTitle',
+        emptyTitleFallback: 'Nenhum orçamento aguardando aprovação no momento.',
+        emptyMessageKey:
+            'atendimentoTecnico.mobile.waitingApprovalEmptyMessage',
+        emptyMessageFallback:
+            'Quando um orçamento for enviado e estiver aguardando a decisão do cliente, ele aparecerá aqui.',
+        errorTitleKey: 'atendimentoTecnico.mobile.waitingApprovalErrorTitle',
+        errorTitleFallback:
+            'Não foi possível consultar os orçamentos. Tente novamente.',
+        loadingLabelKey: 'atendimentoTecnico.mobile.waitingApprovalLoading',
+        loadingLabelFallback: 'Carregando orçamentos aguardando aprovação',
+        statusFilter: 'WAITING_CUSTOMER_APROVAL',
+        sectionTitleKey: 'atendimentoTecnico.mobile.waitingApprovalSection',
+        sectionTitleFallback: 'Orçamentos aguardando aprovação',
+        filteredSectionTitleKey:
+            'atendimentoTecnico.mobile.waitingApprovalFilteredSection',
+        filteredSectionTitleFallback: 'Resultado do filtro',
+      );
+
+  final String titleKey;
+  final String titleFallback;
+  final String heroTitleKey;
+  final String heroTitleFallback;
+  final String descriptionKey;
+  final String descriptionFallback;
+  final String emptyTitleKey;
+  final String emptyTitleFallback;
+  final String emptyMessageKey;
+  final String emptyMessageFallback;
+  final String errorTitleKey;
+  final String errorTitleFallback;
+  final String loadingLabelKey;
+  final String loadingLabelFallback;
+  final String? statusFilter;
+  final String? sectionTitleKey;
+  final String? sectionTitleFallback;
+  final String? filteredSectionTitleKey;
+  final String? filteredSectionTitleFallback;
+}
+
 class AtendimentosTecnicosMobileScreen extends StatefulWidget {
   const AtendimentosTecnicosMobileScreen({
     super.key,
@@ -28,12 +123,14 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
     this.pdfShareService,
     this.colaboradorApiClient,
     this.caixaApiClient,
+    this.listContext = const AtendimentosTecnicosMobileListContext.standard(),
   });
 
   final AtendimentoTecnicoService? service;
   final AtendimentoPdfShareService? pdfShareService;
   final ColaboradorUsuarioApiClient? colaboradorApiClient;
   final CaixaApiClient? caixaApiClient;
+  final AtendimentosTecnicosMobileListContext listContext;
 
   @override
   State<AtendimentosTecnicosMobileScreen> createState() =>
@@ -100,7 +197,7 @@ class _AtendimentosTecnicosMobileScreenState
   Future<_AtendimentosTecnicosMobileState> _carregar() async {
     final List<dynamic> results = await Future.wait<dynamic>(<Future<dynamic>>[
       _service.buscarDominiosBase(),
-      _service.listar(),
+      _service.listar(status: widget.listContext.statusFilter),
       _colaboradorApiClient.listarTecnicosAssistenciaTecnica(),
     ]);
     return _AtendimentosTecnicosMobileState(
@@ -151,7 +248,7 @@ class _AtendimentosTecnicosMobileScreenState
     );
 
     return SixMobilePageShell(
-      title: _t('atendimentoTecnico.mobile.listTitle', 'Atendimentos técnicos'),
+      title: _t(widget.listContext.titleKey, widget.listContext.titleFallback),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -204,7 +301,12 @@ class _AtendimentosTecnicosMobileScreenState
 
         final _AtendimentosTecnicosMobileState state = snapshot.data!;
         final List<AtendimentoTecnicoModel> atendimentos = state.atendimentos;
-        final List<AtendimentoTecnicoModel> filtrados = _filtrar(atendimentos);
+        final List<DominioOpcaoModel> statusDisponiveis =
+            state.dominios.statusAtendimentoTecnico;
+        final List<AtendimentoTecnicoModel> filtrados = _filtrar(
+          atendimentos,
+          statusDisponiveis,
+        );
 
         return RefreshIndicator(
           onRefresh: _recarregar,
@@ -225,12 +327,12 @@ class _AtendimentosTecnicosMobileScreenState
               SizedBox(height: 16),
               SixStaggeredEntry(
                 delay: Duration(milliseconds: 180),
-                child: _statusOverview(atendimentos),
+                child: _statusOverview(atendimentos, statusDisponiveis),
               ),
               SizedBox(height: 14),
               SixStaggeredEntry(
                 delay: Duration(milliseconds: 220),
-                child: _statusFilter(atendimentos),
+                child: _statusFilter(atendimentos, statusDisponiveis),
               ),
               SizedBox(height: 14),
               SixStaggeredEntry(
@@ -245,8 +347,18 @@ class _AtendimentosTecnicosMobileScreenState
               SizedBox(height: 16),
               _sectionTitle(
                 !_hasAnyFilter
-                    ? 'Atendimentos recentes'
-                    : 'Resultado do filtro',
+                    ? _t(
+                      widget.listContext.sectionTitleKey ??
+                          'atendimentoTecnico.mobile.recentSection',
+                      widget.listContext.sectionTitleFallback ??
+                          'Atendimentos recentes',
+                    )
+                    : _t(
+                      widget.listContext.filteredSectionTitleKey ??
+                          'atendimentoTecnico.mobile.filteredSection',
+                      widget.listContext.filteredSectionTitleFallback ??
+                          'Resultado do filtro',
+                    ),
               ),
               SizedBox(height: 12),
               if (filtrados.isEmpty)
@@ -264,7 +376,7 @@ class _AtendimentosTecnicosMobileScreenState
                           delay: Duration(milliseconds: 340 + entry.key * 45),
                           child: _atendimentoCard(
                             entry.value,
-                            state.dominios.statusAtendimentoTecnico,
+                            statusDisponiveis,
                           ),
                         ),
                       ),
@@ -281,8 +393,8 @@ class _AtendimentosTecnicosMobileScreenState
       container: true,
       liveRegion: true,
       label: _t(
-        'atendimentoTecnico.mobile.loading',
-        'Carregando atendimentos técnicos',
+        widget.listContext.loadingLabelKey,
+        widget.listContext.loadingLabelFallback,
       ),
       child: ListView(
         controller: scrollController,
@@ -490,7 +602,10 @@ class _AtendimentosTecnicosMobileScreenState
                 _iconBox(Icons.cloud_off_rounded),
                 SizedBox(height: 14),
                 Text(
-                  'Não foi possível carregar os atendimentos',
+                  _t(
+                    widget.listContext.errorTitleKey,
+                    widget.listContext.errorTitleFallback,
+                  ),
                   style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 17,
@@ -508,7 +623,7 @@ class _AtendimentosTecnicosMobileScreenState
                 FilledButton.icon(
                   onPressed: _recarregar,
                   icon: Icon(Icons.refresh_rounded),
-                  label: Text('Tentar novamente'),
+                  label: Text(_t('common.tryAgain', 'Tentar novamente')),
                 ),
               ],
             ),
@@ -525,6 +640,23 @@ class _AtendimentosTecnicosMobileScreenState
     final int pendentes = _totalPendentes(atendimentos);
     final bool filtrando =
         _statusSelecionado != null || _searchController.text.trim().isNotEmpty;
+    final bool hasContextDescription =
+        widget.listContext.descriptionFallback.trim().isNotEmpty;
+    final String contextDescription =
+        hasContextDescription
+            ? _t(
+              widget.listContext.descriptionKey,
+              widget.listContext.descriptionFallback,
+            ).trim()
+            : '';
+    final String description =
+        contextDescription.isNotEmpty
+            ? contextDescription
+            : filtrando
+            ? '${atendimentos.length} de $totalGeral atendimento(s) no filtro.'
+            : pendentes == 1
+            ? '1 atendimento ainda precisa de atenção.'
+            : '$pendentes atendimentos ainda precisam de atenção.';
 
     return Container(
       padding: EdgeInsets.all(20),
@@ -556,7 +688,10 @@ class _AtendimentosTecnicosMobileScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Dashboard técnico',
+                  _t(
+                    widget.listContext.heroTitleKey,
+                    widget.listContext.heroTitleFallback,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -567,11 +702,7 @@ class _AtendimentosTecnicosMobileScreenState
                 ),
                 SizedBox(height: 6),
                 Text(
-                  filtrando
-                      ? '${atendimentos.length} de $totalGeral atendimento(s) no filtro.'
-                      : pendentes == 1
-                      ? '1 atendimento ainda precisa de atenção.'
-                      : '$pendentes atendimentos ainda precisam de atenção.',
+                  description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -710,9 +841,12 @@ class _AtendimentosTecnicosMobileScreenState
         : SixAnimatedNumberText(value: value, style: style);
   }
 
-  Widget _statusOverview(List<AtendimentoTecnicoModel> atendimentos) {
+  Widget _statusOverview(
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) {
     final List<_StatusCount> status =
-        _statusCounts(atendimentos).take(4).toList();
+        _statusCounts(atendimentos, statusDisponiveis).take(4).toList();
 
     return _card(
       child: Column(
@@ -798,8 +932,14 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _statusFilter(List<AtendimentoTecnicoModel> atendimentos) {
-    final List<_StatusCount> statuses = _statusCounts(atendimentos);
+  Widget _statusFilter(
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) {
+    final List<_StatusCount> statuses = _statusCounts(
+      atendimentos,
+      statusDisponiveis,
+    );
     final int total = atendimentos.length;
 
     return Container(
@@ -1083,7 +1223,7 @@ class _AtendimentosTecnicosMobileScreenState
     List<DominioOpcaoModel> statusDisponiveis,
   ) {
     final String cliente = _clienteLabel(atendimento);
-    final String status = _statusLabel(atendimento);
+    final String status = _statusLabel(atendimento, statusDisponiveis);
     final String equipamento = _equipamentoTitulo(atendimento);
     final bool pendente = !atendimento.operacaoLiquidada;
     final bool entregaAtrasada = _entregaAtrasada(atendimento);
@@ -1307,7 +1447,7 @@ class _AtendimentosTecnicosMobileScreenState
   }) {
     final String equipamento = _equipamentoTitulo(atendimento);
     final String cliente = _clienteLabel(atendimento);
-    final String status = _statusLabel(atendimento);
+    final String status = _statusLabel(atendimento, statusDisponiveis);
     final bool reduceMotion =
         MediaQuery.disableAnimationsOf(sheetContext) ||
         MediaQuery.accessibleNavigationOf(sheetContext);
@@ -2430,7 +2570,7 @@ class _AtendimentosTecnicosMobileScreenState
               atendimento: atendimento,
               status: statusDisponiveis,
               statusAtual: _statusAtual(atendimento, statusDisponiveis),
-              statusAtualLabel: _statusLabel(atendimento),
+              statusAtualLabel: _statusLabel(atendimento, statusDisponiveis),
             );
           },
         );
@@ -2461,7 +2601,10 @@ class _AtendimentosTecnicosMobileScreenState
           _iconBox(Icons.search_off_rounded),
           SizedBox(height: 12),
           Text(
-            'Nenhum atendimento encontrado',
+            _t(
+              widget.listContext.emptyTitleKey,
+              widget.listContext.emptyTitleFallback,
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _titleTextColor,
@@ -2470,7 +2613,10 @@ class _AtendimentosTecnicosMobileScreenState
           ),
           SizedBox(height: 5),
           Text(
-            'Tente buscar por cliente, equipamento, status ou número.',
+            _t(
+              widget.listContext.emptyMessageKey,
+              widget.listContext.emptyMessageFallback,
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(color: _mutedTextColor, height: 1.3),
           ),
@@ -2597,6 +2743,7 @@ class _AtendimentosTecnicosMobileScreenState
 
   List<AtendimentoTecnicoModel> _filtrar(
     List<AtendimentoTecnicoModel> atendimentos,
+    List<DominioOpcaoModel> statusDisponiveis,
   ) {
     final String termo = _searchController.text.trim().toLowerCase();
     final String? statusSelecionado = _statusSelecionado;
@@ -2627,7 +2774,8 @@ class _AtendimentosTecnicosMobileScreenState
             return false;
           }
           if (statusSelecionado != null &&
-              _statusLabel(atendimento) != statusSelecionado) {
+              _statusLabel(atendimento, statusDisponiveis) !=
+                  statusSelecionado) {
             return false;
           }
 
@@ -2640,7 +2788,7 @@ class _AtendimentosTecnicosMobileScreenState
                 atendimento.numero,
                 _clienteLabel(atendimento),
                 _tecnicoLabelAtendimento(atendimento),
-                _statusLabel(atendimento),
+                _statusLabel(atendimento, statusDisponiveis),
                 equipamento?.tipo ?? '',
                 equipamento?.marca ?? '',
                 equipamento?.modelo ?? '',
@@ -2802,10 +2950,13 @@ class _AtendimentosTecnicosMobileScreenState
     return 'Até ${_formatarData(fim!)}';
   }
 
-  List<_StatusCount> _statusCounts(List<AtendimentoTecnicoModel> atendimentos) {
+  List<_StatusCount> _statusCounts(
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) {
     final Map<String, int> counts = <String, int>{};
     for (final AtendimentoTecnicoModel atendimento in atendimentos) {
-      final String label = _statusLabel(atendimento);
+      final String label = _statusLabel(atendimento, statusDisponiveis);
       counts[label] = (counts[label] ?? 0) + 1;
     }
 
@@ -2856,11 +3007,17 @@ class _AtendimentosTecnicosMobileScreenState
     return cliente.isEmpty ? 'Cliente não informado' : cliente;
   }
 
-  String _statusLabel(AtendimentoTecnicoModel atendimento) {
+  String _statusLabel(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
     final String statusBackend = atendimento.statusNomePtBr?.trim() ?? '';
     if (statusBackend.isNotEmpty) return statusBackend;
-    final String codigo = atendimento.statusCodigo.trim();
-    return codigo.isEmpty ? 'Sem status' : codigo;
+    final String label = _statusLabelPorCodigo(
+      atendimento.statusCodigo,
+      status,
+    );
+    return label == '-' ? 'Sem status' : label;
   }
 
   String _statusLabelPorCodigo(String? codigo, List<DominioOpcaoModel> status) {
@@ -2872,6 +3029,12 @@ class _AtendimentosTecnicosMobileScreenState
         return label.isEmpty ? item.codigo : label;
       }
     }
+    if (normalized == 'WAITING_CUSTOMER_APROVAL') {
+      return _t(
+        'technicalService.status.waitingCustomerAproval',
+        'Aguardando aprovação do cliente',
+      );
+    }
     return codigo!.trim();
   }
 
@@ -2879,12 +3042,12 @@ class _AtendimentosTecnicosMobileScreenState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
-    for (final DominioOpcaoModel opcao in status) {
-      if (opcao.id == atendimento.statusId) return opcao;
-    }
     final String codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
     for (final DominioOpcaoModel opcao in status) {
       if (opcao.codigo.trim().toUpperCase() == codigoAtual) return opcao;
+    }
+    for (final DominioOpcaoModel opcao in status) {
+      if (opcao.id == atendimento.statusId) return opcao;
     }
     return null;
   }
@@ -4113,7 +4276,15 @@ class _StatusAtendimentoMobileSheetState
                     ),
                     SizedBox(height: 3),
                     Text(
-                      status.codigo,
+                      selected
+                          ? _t(
+                            'atendimentoTecnico.mobile.currentStatusOption',
+                            'Status atual',
+                          )
+                          : _t(
+                            'atendimentoTecnico.mobile.selectStatusOption',
+                            'Toque para selecionar',
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -4142,6 +4313,10 @@ class _StatusAtendimentoMobileSheetState
   String _statusLabel(DominioOpcaoModel status) {
     final String nome = status.nomePadraoPtBr.trim();
     return nome.isEmpty ? status.codigo : nome;
+  }
+
+  String _t(String key, String fallback) {
+    return context.t(key, fallback: fallback);
   }
 
   String _normalize(String value) {
