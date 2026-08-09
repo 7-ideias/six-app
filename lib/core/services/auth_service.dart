@@ -14,12 +14,17 @@ class AuthService {
   static const String _refreshTokenKey = 'refreshToken';
   static const String _userDataKey = 'userData';
   static const String _empresaIdKey = 'idUnicoDaEmpresa';
+  static const String _accessTokenExpiresAtKey = 'accessTokenExpiresAt';
+  static const Duration _refreshSafetyWindow = Duration(seconds: 30);
+  static const Duration _refreshRetryDelay = Duration(seconds: 30);
+  static const Duration _fallbackRefreshDelay = Duration(minutes: 4);
 
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
   Timer? _refreshTimer;
+  Future<void>? _refreshFuture;
 
   http.Client _client() => createHttpClient();
 
@@ -65,7 +70,7 @@ class AuthService {
       final decoded = jsonDecode(response.body);
       final authData = AuthResponseModel.fromJson(decoded);
       await _saveAuthData(authData);
-      _startRefreshTimer();
+      _scheduleRefreshTimer(authData);
 
       try {
         await EmpresaService().buscarDadosDaEmpresa();
@@ -85,7 +90,7 @@ class AuthService {
   Future<AuthResponseModel> loginWithGoogle() async {
     final authData = await GoogleAuthService().signIn();
     await _saveAuthData(authData);
-    _startRefreshTimer();
+    _scheduleRefreshTimer(authData);
 
     try {
       await EmpresaService().buscarDadosDaEmpresa();
@@ -105,7 +110,7 @@ class AuthService {
   Future<AuthResponseModel> awaitWebGoogleLogin() async {
     final authData = await GoogleAuthService().awaitWebSignIn();
     await _saveAuthData(authData);
-    _startRefreshTimer();
+    _scheduleRefreshTimer(authData);
 
     try {
       await EmpresaService().buscarDadosDaEmpresa();
@@ -117,6 +122,24 @@ class AuthService {
   }
 
   Future<void> refreshToken() async {
+    final Future<void>? currentRefresh = _refreshFuture;
+    if (currentRefresh != null) {
+      return currentRefresh;
+    }
+
+    final Future<void> refreshFuture = _refreshTokenInternal();
+    _refreshFuture = refreshFuture;
+
+    try {
+      await refreshFuture;
+    } finally {
+      if (identical(_refreshFuture, refreshFuture)) {
+        _refreshFuture = null;
+      }
+    }
+  }
+
+  Future<void> _refreshTokenInternal() async {
     final String pathLogin = kIsWeb ? 'web' : 'mobile';
     final uri = Uri.parse('${AppConfig.baseUrl}/auth/$pathLogin/refresh');
 
@@ -132,6 +155,7 @@ class AuthService {
       final String? refreshTokenStr = await getRefreshToken();
 
       if (refreshTokenStr == null || refreshTokenStr.isEmpty) {
+        await _clearLocalAuthData();
         throw Exception('No refresh token found');
       }
 
@@ -146,20 +170,38 @@ class AuthService {
       final decoded = jsonDecode(response.body);
       final authData = AuthResponseModel.fromJson(decoded);
       await _saveAuthData(authData);
-      _startRefreshTimer();
+      _scheduleRefreshTimer(authData);
       return;
     }
 
-    await logout();
-    throw Exception('Falha ao atualizar token');
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      await _clearLocalAuthData();
+      throw Exception('Sessão expirada. Faça login novamente.');
+    }
+
+    throw Exception('Falha ao atualizar token (${response.statusCode})');
   }
 
-  void _startRefreshTimer() {
+  void _scheduleRefreshTimer(AuthResponseModel authData) {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
+
+    if (!kIsWeb && authData.refreshToken.trim().isEmpty) {
+      return;
+    }
+
+    final DateTime? expiresAt = _resolveAccessTokenExpiresAt(
+      authData.accessToken,
+      authData.expiresIn,
+    );
+    final Duration delay = _nextRefreshDelay(expiresAt);
+
+    _refreshTimer = Timer(delay, () async {
       try {
         await refreshToken();
-      } catch (_) {}
+      } catch (error) {
+        debugPrint('[AuthService] Refresh agendado falhou: $error');
+        await _scheduleRefreshRetryIfPossible();
+      }
     });
   }
 
@@ -168,6 +210,19 @@ class AuthService {
 
     await prefs.setString(_accessTokenKey, authData.accessToken);
     await prefs.setString(_userDataKey, jsonEncode(authData.usuario.toJson()));
+
+    final DateTime? expiresAt = _resolveAccessTokenExpiresAt(
+      authData.accessToken,
+      authData.expiresIn,
+    );
+    if (expiresAt == null) {
+      await prefs.remove(_accessTokenExpiresAtKey);
+    } else {
+      await prefs.setString(
+        _accessTokenExpiresAtKey,
+        expiresAt.toUtc().toIso8601String(),
+      );
+    }
 
     if (authData.idUnicoDaEmpresa.isNotEmpty) {
       await prefs.setString(_empresaIdKey, authData.idUnicoDaEmpresa.first);
@@ -180,7 +235,22 @@ class AuthService {
 
   Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accessTokenKey);
+    final String? accessToken = prefs.getString(_accessTokenKey);
+    if (accessToken == null || accessToken.trim().isEmpty) {
+      return accessToken;
+    }
+
+    if (await _shouldRefreshAccessToken(prefs, accessToken)) {
+      try {
+        await refreshToken();
+      } catch (error) {
+        debugPrint('[AuthService] Refresh sob demanda falhou: $error');
+      }
+
+      return prefs.getString(_accessTokenKey);
+    }
+
+    return accessToken;
   }
 
   Future<String?> getRefreshToken() async {
@@ -191,26 +261,40 @@ class AuthService {
   Future<void> logout() async {
     _refreshTimer?.cancel();
     _refreshTimer = null;
+    final String? refreshToken = await getRefreshToken();
 
     final baseUrl = AppConfig.baseUrl;
     if (baseUrl.isNotEmpty) {
       final pathLogout = kIsWeb ? 'web' : 'mobile';
       final uri = Uri.parse('$baseUrl/auth/$pathLogout/logout');
       try {
-        await _client().post(
-          uri,
-          headers: const {'Content-Type': 'application/json'},
-        );
+        if (kIsWeb) {
+          await _client().post(
+            uri,
+            headers: const {'Content-Type': 'application/json'},
+          );
+        } else if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+          await _client().post(
+            uri,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': refreshToken}),
+          );
+        }
       } catch (e) {
         debugPrint('[AuthService] logout remoto falhou: $e');
       }
     }
 
+    await _clearLocalAuthData();
+  }
+
+  Future<void> _clearLocalAuthData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
     await prefs.remove(_userDataKey);
     await prefs.remove(_empresaIdKey);
+    await prefs.remove(_accessTokenExpiresAtKey);
 
     try {
       await GoogleAuthService().signOut();
@@ -275,6 +359,107 @@ class AuthService {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<bool> _shouldRefreshAccessToken(
+    SharedPreferences prefs,
+    String accessToken,
+  ) async {
+    final DateTime? expiresAt =
+        _readStoredAccessTokenExpiresAt(prefs) ??
+        _readJwtExpiresAt(accessToken);
+    if (expiresAt == null) {
+      return false;
+    }
+
+    final DateTime refreshAt = expiresAt.subtract(_refreshSafetyWindow);
+    return !DateTime.now().isBefore(refreshAt);
+  }
+
+  DateTime? _readStoredAccessTokenExpiresAt(SharedPreferences prefs) {
+    final String? raw = prefs.getString(_accessTokenExpiresAtKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+    return DateTime.tryParse(raw)?.toLocal();
+  }
+
+  DateTime? _resolveAccessTokenExpiresAt(String token, int expiresIn) {
+    final DateTime? jwtExpiresAt = _readJwtExpiresAt(token);
+    if (jwtExpiresAt != null) {
+      return jwtExpiresAt;
+    }
+    if (expiresIn <= 0) {
+      return null;
+    }
+    return DateTime.now().add(Duration(seconds: expiresIn));
+  }
+
+  DateTime? _readJwtExpiresAt(String? token) {
+    if (token == null || token.trim().isEmpty) {
+      return null;
+    }
+
+    final List<String> parts = token.split('.');
+    if (parts.length < 2) {
+      return null;
+    }
+
+    try {
+      final String normalized = base64Url.normalize(parts[1]);
+      final String payload = utf8.decode(base64Url.decode(normalized));
+      final dynamic decoded = jsonDecode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+      final dynamic exp = decoded['exp'];
+      if (exp is num) {
+        return DateTime.fromMillisecondsSinceEpoch(
+          exp.toInt() * 1000,
+          isUtc: true,
+        ).toLocal();
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Duration _nextRefreshDelay(DateTime? expiresAt) {
+    if (expiresAt == null) {
+      return _fallbackRefreshDelay;
+    }
+
+    final Duration remaining = expiresAt.difference(DateTime.now());
+    if (remaining <= Duration.zero) {
+      return Duration.zero;
+    }
+
+    final Duration delay = remaining - _refreshSafetyWindow;
+    if (delay <= Duration.zero) {
+      return const Duration(seconds: 1);
+    }
+
+    return delay;
+  }
+
+  Future<void> _scheduleRefreshRetryIfPossible() async {
+    if (!kIsWeb) {
+      final String? refreshToken = await getRefreshToken();
+      if (refreshToken == null || refreshToken.trim().isEmpty) {
+        return;
+      }
+    }
+
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer(_refreshRetryDelay, () async {
+      try {
+        await refreshToken();
+      } catch (error) {
+        debugPrint('[AuthService] Nova tentativa de refresh falhou: $error');
+        await _scheduleRefreshRetryIfPossible();
+      }
+    });
   }
 
   Future<String?> getUserEmail() async {

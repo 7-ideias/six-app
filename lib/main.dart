@@ -20,6 +20,7 @@ import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_we
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_theme_transition_overlay.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -286,6 +287,14 @@ class MyApp extends StatelessWidget {
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
+      themeAnimationDuration:
+          kIsWeb ? kThemeAnimationDuration : const Duration(milliseconds: 320),
+      themeAnimationCurve: kIsWeb ? Curves.linear : Curves.easeOutCubic,
+      builder: (BuildContext context, Widget? child) {
+        final Widget resolvedChild = child ?? const SizedBox.shrink();
+        if (kIsWeb) return resolvedChild;
+        return SixMobileThemeTransitionOverlay(child: resolvedChild);
+      },
       locale: localeProvider.currentLocale,
       supportedLocales: LocaleSettingsProvider.supportedLocales,
       localizationsDelegates: const [

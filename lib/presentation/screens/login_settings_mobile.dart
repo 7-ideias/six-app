@@ -38,6 +38,7 @@ class _AccountPanelColors {
     required this.title,
     required this.muted,
     required this.accent,
+    required this.error,
     required this.shadow,
     required this.secondaryShadow,
   });
@@ -58,6 +59,7 @@ class _AccountPanelColors {
   final Color title;
   final Color muted;
   final Color accent;
+  final Color error;
   final Color shadow;
   final Color secondaryShadow;
 
@@ -85,6 +87,7 @@ class _AccountPanelColors {
         title: SixMobilePalette.titleText,
         muted: SixMobilePalette.mutedText,
         accent: SixMobilePalette.accent,
+        error: SixMobilePalette.error,
         shadow: SixMobilePalette.heroShadow.withValues(alpha: 0.38),
         secondaryShadow: colorScheme.shadow.withValues(alpha: 0.08),
       );
@@ -127,13 +130,109 @@ class _AccountPanelColors {
       title: colorScheme.onSurface,
       muted: colorScheme.onSurfaceVariant.withValues(alpha: 0.82),
       accent: SixMobilePalette.highlightedBorder,
+      error: SixMobilePalette.error,
       shadow: colorScheme.shadow.withValues(alpha: 0.44),
       secondaryShadow: colorScheme.shadow.withValues(alpha: 0.24),
     );
   }
+
+  static _AccountPanelColors lerp(
+    _AccountPanelColors begin,
+    _AccountPanelColors end,
+    double t,
+  ) {
+    return _AccountPanelColors(
+      panelStart: Color.lerp(begin.panelStart, end.panelStart, t)!,
+      panelMiddle: Color.lerp(begin.panelMiddle, end.panelMiddle, t)!,
+      panelEnd: Color.lerp(begin.panelEnd, end.panelEnd, t)!,
+      headerStart: Color.lerp(begin.headerStart, end.headerStart, t)!,
+      headerMiddle: Color.lerp(begin.headerMiddle, end.headerMiddle, t)!,
+      headerEnd: Color.lerp(begin.headerEnd, end.headerEnd, t)!,
+      surface: Color.lerp(begin.surface, end.surface, t)!,
+      softSurface: Color.lerp(begin.softSurface, end.softSurface, t)!,
+      iconSurface: Color.lerp(begin.iconSurface, end.iconSurface, t)!,
+      border: Color.lerp(begin.border, end.border, t)!,
+      cardBorder: Color.lerp(begin.cardBorder, end.cardBorder, t)!,
+      panelBorder: Color.lerp(begin.panelBorder, end.panelBorder, t)!,
+      headerBorder: Color.lerp(begin.headerBorder, end.headerBorder, t)!,
+      title: Color.lerp(begin.title, end.title, t)!,
+      muted: Color.lerp(begin.muted, end.muted, t)!,
+      accent: Color.lerp(begin.accent, end.accent, t)!,
+      error: Color.lerp(begin.error, end.error, t)!,
+      shadow: Color.lerp(begin.shadow, end.shadow, t)!,
+      secondaryShadow:
+          Color.lerp(begin.secondaryShadow, end.secondaryShadow, t)!,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _AccountPanelColors &&
+            other.panelStart == panelStart &&
+            other.panelMiddle == panelMiddle &&
+            other.panelEnd == panelEnd &&
+            other.headerStart == headerStart &&
+            other.headerMiddle == headerMiddle &&
+            other.headerEnd == headerEnd &&
+            other.surface == surface &&
+            other.softSurface == softSurface &&
+            other.iconSurface == iconSurface &&
+            other.border == border &&
+            other.cardBorder == cardBorder &&
+            other.panelBorder == panelBorder &&
+            other.headerBorder == headerBorder &&
+            other.title == title &&
+            other.muted == muted &&
+            other.accent == accent &&
+            other.error == error &&
+            other.shadow == shadow &&
+            other.secondaryShadow == secondaryShadow;
+  }
+
+  @override
+  int get hashCode => Object.hashAll(<Object>[
+    panelStart,
+    panelMiddle,
+    panelEnd,
+    headerStart,
+    headerMiddle,
+    headerEnd,
+    surface,
+    softSurface,
+    iconSurface,
+    border,
+    cardBorder,
+    panelBorder,
+    headerBorder,
+    title,
+    muted,
+    accent,
+    error,
+    shadow,
+    secondaryShadow,
+  ]);
 }
 
-class LoginSettingsMobile extends StatelessWidget {
+class _AccountPanelColorsTween extends Tween<_AccountPanelColors> {
+  _AccountPanelColorsTween({super.end});
+
+  @override
+  _AccountPanelColors lerp(double t) {
+    final _AccountPanelColors? begin = this.begin;
+    final _AccountPanelColors? end = this.end;
+
+    if (begin == null && end == null) {
+      throw StateError('Account panel color tween requires a target value.');
+    }
+    if (begin == null) return end!;
+    if (end == null) return begin;
+
+    return _AccountPanelColors.lerp(begin, end, t);
+  }
+}
+
+class LoginSettingsMobile extends StatefulWidget {
   const LoginSettingsMobile({
     super.key,
     required this.profileImage,
@@ -144,13 +243,23 @@ class LoginSettingsMobile extends StatelessWidget {
   final String? profileImage;
   final Future<void> Function(ImageSource source) onPickImage;
   final bool isUpdatingImage;
+
+  @override
+  State<LoginSettingsMobile> createState() => _LoginSettingsMobileState();
+}
+
+class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
   static Future<void>? _profileLoadFuture;
 
   @override
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>();
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+    final _AccountPanelColors targetColors = _AccountPanelColors.resolve(
+      context,
+    );
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final String themeTitle = context.t(
       'account.settings.theme.dark.title',
       fallback: 'Tema escuro',
@@ -171,204 +280,220 @@ class LoginSettingsMobile extends StatelessWidget {
       fallback: isDarkMode ? 'Desativar tema escuro' : 'Ativar tema escuro',
     );
 
-    return SafeArea(
-      left: false,
-      child: Material(
-        color: Colors.transparent,
-        child: ClipRRect(
-          borderRadius: BorderRadius.horizontal(left: Radius.circular(28)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: <Color>[
-                    colors.panelStart,
-                    colors.panelMiddle,
-                    colors.panelEnd,
-                  ],
-                ),
-                borderRadius: BorderRadius.horizontal(
-                  left: Radius.circular(28),
-                ),
-                border: Border(
-                  left: BorderSide(color: colors.panelBorder, width: 0.8),
-                ),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: colors.shadow,
-                    blurRadius: 34,
-                    spreadRadius: 1,
-                    offset: Offset(-12, 0),
-                  ),
-                  BoxShadow(
-                    color: colors.secondaryShadow,
-                    blurRadius: 18,
-                    offset: Offset(-4, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: <Widget>[
-                  _buildHeader(context),
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.fromLTRB(16, 14, 16, 18),
-                      children: <Widget>[
-                        _buildSectionLabel(
-                          context,
-                          context.t(
-                            'account.settings.section.account',
-                            fallback: 'Conta',
-                          ),
-                        ),
-                        _buildGroupedCard(
-                          context,
-                          items: <_GroupedItemData>[
-                            _GroupedItemData(
-                              icon: Icons.person_outline_rounded,
-                              title: context.t(
-                                'account.settings.profile.title',
-                                fallback: 'Meu perfil',
-                              ),
-                              subtitle: context.t(
-                                'account.settings.profile.subtitle',
-                                fallback: 'Dados pessoais e acesso',
-                              ),
-                              semanticsLabel: context.t(
-                                'account.settings.profile.open',
-                                fallback: 'Abrir meu perfil',
-                              ),
-                              onTap:
-                                  () => _openScreen(
-                                    context,
-                                    MeuPerfilMobileScreen(),
-                                  ),
-                            ),
-                            _GroupedItemData(
-                              icon:
-                                  isDarkMode
-                                      ? Icons.dark_mode_rounded
-                                      : Icons.light_mode_rounded,
-                              title: themeTitle,
-                              subtitle: themeSubtitle,
-                              semanticsLabel: themeSemantics,
-                              onTap: () => _toggleTheme(context, !isDarkMode),
-                              trailing: Switch.adaptive(
-                                value: isDarkMode,
-                                activeThumbColor: colors.accent,
-                                activeTrackColor: colors.accent.withValues(
-                                  alpha: 0.34,
-                                ),
-                                inactiveThumbColor: colors.surface,
-                                inactiveTrackColor: colors.softSurface,
-                                onChanged:
-                                    (bool value) =>
-                                        _toggleTheme(context, value),
-                              ),
-                            ),
-                            _GroupedItemData(
-                              icon: Icons.tune_rounded,
-                              title: context.t(
-                                'account.settings.preferences.title',
-                                fallback: 'Preferências',
-                              ),
-                              subtitle: context.t(
-                                'account.settings.preferences.subtitle',
-                                fallback: 'Ajustes individuais do app',
-                              ),
-                              semanticsLabel: context.t(
-                                'account.settings.preferences.open',
-                                fallback: 'Abrir preferências',
-                              ),
-                              comingSoon: true,
-                            ),
-                            _GroupedItemData(
-                              icon: Icons.privacy_tip_outlined,
-                              title: context.t(
-                                'account.settings.privacy.title',
-                                fallback: 'Gerenciar meus dados',
-                              ),
-                              subtitle: context.t(
-                                'account.settings.privacy.subtitle',
-                                fallback: 'Dados e privacidade',
-                              ),
-                              semanticsLabel: context.t(
-                                'account.settings.privacy.open',
-                                fallback: 'Abrir gerenciamento dos meus dados',
-                              ),
-                              comingSoon: true,
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 20),
-
-                        _buildSectionLabel(
-                          context,
-                          context.t(
-                            'account.settings.section.about',
-                            fallback: 'Sobre',
-                          ),
-                        ),
-                        _buildGroupedCard(
-                          context,
-                          items: <_GroupedItemData>[
-                            _GroupedItemData(
-                              icon: Icons.help_outline_rounded,
-                              title: context.t(
-                                'account.settings.support.title',
-                                fallback: 'Ajuda e suporte',
-                              ),
-                              subtitle: context.t(
-                                'account.settings.support.subtitle',
-                                fallback: 'Dúvidas e contato',
-                              ),
-                              semanticsLabel: context.t(
-                                'account.settings.support.open',
-                                fallback: 'Abrir ajuda e suporte',
-                              ),
-                              comingSoon: true,
-                            ),
-                            _GroupedItemData(
-                              icon: Icons.description_outlined,
-                              title: context.t(
-                                'account.settings.terms.title',
-                                fallback: 'Termos e políticas',
-                              ),
-                              subtitle: context.t(
-                                'account.settings.terms.subtitle',
-                                fallback: 'Uso, privacidade e licenças',
-                              ),
-                              semanticsLabel: context.t(
-                                'account.settings.terms.open',
-                                fallback: 'Abrir termos e políticas',
-                              ),
-                              comingSoon: true,
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 20),
-                        _buildLogoutItem(context),
+    return TweenAnimationBuilder<_AccountPanelColors>(
+      tween: _AccountPanelColorsTween(end: targetColors),
+      duration: reduceMotion ? Duration.zero : Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      builder: (
+        BuildContext context,
+        _AccountPanelColors colors,
+        Widget? child,
+      ) {
+        return SafeArea(
+          left: false,
+          child: Material(
+            color: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.horizontal(left: Radius.circular(28)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[
+                        colors.panelStart,
+                        colors.panelMiddle,
+                        colors.panelEnd,
                       ],
                     ),
+                    borderRadius: BorderRadius.horizontal(
+                      left: Radius.circular(28),
+                    ),
+                    border: Border(
+                      left: BorderSide(color: colors.panelBorder, width: 0.8),
+                    ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: colors.shadow,
+                        blurRadius: 34,
+                        spreadRadius: 1,
+                        offset: Offset(-12, 0),
+                      ),
+                      BoxShadow(
+                        color: colors.secondaryShadow,
+                        blurRadius: 18,
+                        offset: Offset(-4, 8),
+                      ),
+                    ],
                   ),
-                  _buildVersionFooter(context),
-                ],
+                  child: Column(
+                    children: <Widget>[
+                      _buildHeader(context, colors),
+                      Expanded(
+                        child: ListView(
+                          padding: EdgeInsets.fromLTRB(16, 14, 16, 18),
+                          children: <Widget>[
+                            _buildSectionLabel(
+                              context,
+                              colors,
+                              context.t(
+                                'account.settings.section.account',
+                                fallback: 'Conta',
+                              ),
+                            ),
+                            _buildGroupedCard(
+                              context,
+                              colors: colors,
+                              items: <_GroupedItemData>[
+                                _GroupedItemData(
+                                  icon: Icons.person_outline_rounded,
+                                  title: context.t(
+                                    'account.settings.profile.title',
+                                    fallback: 'Meu perfil',
+                                  ),
+                                  subtitle: context.t(
+                                    'account.settings.profile.subtitle',
+                                    fallback: 'Dados pessoais e acesso',
+                                  ),
+                                  semanticsLabel: context.t(
+                                    'account.settings.profile.open',
+                                    fallback: 'Abrir meu perfil',
+                                  ),
+                                  onTap:
+                                      () => _openScreen(
+                                        context,
+                                        MeuPerfilMobileScreen(),
+                                      ),
+                                ),
+                                _GroupedItemData(
+                                  icon:
+                                      isDarkMode
+                                          ? Icons.dark_mode_rounded
+                                          : Icons.light_mode_rounded,
+                                  title: themeTitle,
+                                  subtitle: themeSubtitle,
+                                  semanticsLabel: themeSemantics,
+                                  onTap:
+                                      () => _toggleTheme(context, !isDarkMode),
+                                  trailing: Switch.adaptive(
+                                    value: isDarkMode,
+                                    activeThumbColor: colors.accent,
+                                    activeTrackColor: colors.accent.withValues(
+                                      alpha: 0.34,
+                                    ),
+                                    inactiveThumbColor: colors.surface,
+                                    inactiveTrackColor: colors.softSurface,
+                                    onChanged:
+                                        (bool value) =>
+                                            _toggleTheme(context, value),
+                                  ),
+                                ),
+                                _GroupedItemData(
+                                  icon: Icons.tune_rounded,
+                                  title: context.t(
+                                    'account.settings.preferences.title',
+                                    fallback: 'Preferências',
+                                  ),
+                                  subtitle: context.t(
+                                    'account.settings.preferences.subtitle',
+                                    fallback: 'Ajustes individuais do app',
+                                  ),
+                                  semanticsLabel: context.t(
+                                    'account.settings.preferences.open',
+                                    fallback: 'Abrir preferências',
+                                  ),
+                                  comingSoon: true,
+                                ),
+                                _GroupedItemData(
+                                  icon: Icons.privacy_tip_outlined,
+                                  title: context.t(
+                                    'account.settings.privacy.title',
+                                    fallback: 'Gerenciar meus dados',
+                                  ),
+                                  subtitle: context.t(
+                                    'account.settings.privacy.subtitle',
+                                    fallback: 'Dados e privacidade',
+                                  ),
+                                  semanticsLabel: context.t(
+                                    'account.settings.privacy.open',
+                                    fallback:
+                                        'Abrir gerenciamento dos meus dados',
+                                  ),
+                                  comingSoon: true,
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 20),
+
+                            _buildSectionLabel(
+                              context,
+                              colors,
+                              context.t(
+                                'account.settings.section.about',
+                                fallback: 'Sobre',
+                              ),
+                            ),
+                            _buildGroupedCard(
+                              context,
+                              colors: colors,
+                              items: <_GroupedItemData>[
+                                _GroupedItemData(
+                                  icon: Icons.help_outline_rounded,
+                                  title: context.t(
+                                    'account.settings.support.title',
+                                    fallback: 'Ajuda e suporte',
+                                  ),
+                                  subtitle: context.t(
+                                    'account.settings.support.subtitle',
+                                    fallback: 'Dúvidas e contato',
+                                  ),
+                                  semanticsLabel: context.t(
+                                    'account.settings.support.open',
+                                    fallback: 'Abrir ajuda e suporte',
+                                  ),
+                                  comingSoon: true,
+                                ),
+                                _GroupedItemData(
+                                  icon: Icons.description_outlined,
+                                  title: context.t(
+                                    'account.settings.terms.title',
+                                    fallback: 'Termos e políticas',
+                                  ),
+                                  subtitle: context.t(
+                                    'account.settings.terms.subtitle',
+                                    fallback: 'Uso, privacidade e licenças',
+                                  ),
+                                  semanticsLabel: context.t(
+                                    'account.settings.terms.open',
+                                    fallback: 'Abrir termos e políticas',
+                                  ),
+                                  comingSoon: true,
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 20),
+                            _buildLogoutItem(context, colors),
+                          ],
+                        ),
+                      ),
+                      _buildVersionFooter(context, colors),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, _AccountPanelColors colors) {
     final UsuarioProvider usuarioProvider = UsuarioProvider();
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
     final String closeLabel = context.t(
       'account.settings.close',
       fallback: 'Fechar configurações',
@@ -401,7 +526,11 @@ class LoginSettingsMobile extends StatelessWidget {
               ),
               child: Row(
                 children: <Widget>[
-                  _buildAvatar(context, usuario?.foto ?? profileImage),
+                  _buildAvatar(
+                    context,
+                    colors,
+                    usuario?.foto ?? widget.profileImage,
+                  ),
                   SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -443,8 +572,11 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(BuildContext context, String? currentProfileImage) {
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+  Widget _buildAvatar(
+    BuildContext context,
+    _AccountPanelColors colors,
+    String? currentProfileImage,
+  ) {
     final String avatarLabel = context.t(
       'account.settings.avatar.change',
       fallback: 'Alterar foto do perfil',
@@ -468,8 +600,8 @@ class LoginSettingsMobile extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: <Color>[
-                    SixMobilePalette.primary.withValues(alpha: 0.10),
-                    SixMobilePalette.accent.withValues(alpha: 0.14),
+                    colors.accent.withValues(alpha: 0.10),
+                    colors.accent.withValues(alpha: 0.14),
                   ],
                 ),
                 border: Border.all(
@@ -478,7 +610,7 @@ class LoginSettingsMobile extends StatelessWidget {
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: SixMobilePalette.heroShadow.withValues(alpha: 0.42),
+                    color: colors.shadow.withValues(alpha: 0.42),
                     blurRadius: 18,
                     offset: Offset(0, 8),
                   ),
@@ -488,7 +620,7 @@ class LoginSettingsMobile extends StatelessWidget {
                 radius: 30,
                 backgroundColor: colors.softSurface,
                 child:
-                    isUpdatingImage
+                    widget.isUpdatingImage
                         ? SizedBox(
                           width: 22,
                           height: 22,
@@ -522,15 +654,10 @@ class LoginSettingsMobile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: colors.surface,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: SixMobilePalette.highlightedBorder,
-                    width: 1.2,
-                  ),
+                  border: Border.all(color: colors.accent, width: 1.2),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: SixMobilePalette.navigationShadow.withValues(
-                        alpha: 0.7,
-                      ),
+                      color: colors.secondaryShadow.withValues(alpha: 0.7),
                       blurRadius: 8,
                       offset: Offset(0, 3),
                     ),
@@ -549,9 +676,11 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionLabel(BuildContext context, String label) {
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
-
+  Widget _buildSectionLabel(
+    BuildContext context,
+    _AccountPanelColors colors,
+    String label,
+  ) {
     return Padding(
       padding: EdgeInsets.fromLTRB(4, 0, 4, 10),
       child: Text(
@@ -568,10 +697,9 @@ class LoginSettingsMobile extends StatelessWidget {
 
   Widget _buildGroupedCard(
     BuildContext context, {
+    required _AccountPanelColors colors,
     required List<_GroupedItemData> items,
   }) {
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
-
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
@@ -585,6 +713,7 @@ class LoginSettingsMobile extends StatelessWidget {
               final _GroupedItemData item = entry.value;
               return _buildGroupedTile(
                 context,
+                colors: colors,
                 item: item,
                 isFirst: index == 0,
                 isLast: index == items.length - 1,
@@ -596,11 +725,11 @@ class LoginSettingsMobile extends StatelessWidget {
 
   Widget _buildGroupedTile(
     BuildContext context, {
+    required _AccountPanelColors colors,
     required _GroupedItemData item,
     required bool isFirst,
     required bool isLast,
   }) {
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
     final bool isEnabled = !item.comingSoon;
     final String comingSoonLabel = context.t(
       'gestao.settings.badge.comingSoon',
@@ -715,7 +844,7 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildLogoutItem(BuildContext context) {
+  Widget _buildLogoutItem(BuildContext context, _AccountPanelColors colors) {
     final String logoutLabel = context.t(
       'account.settings.logout',
       fallback: 'Sair da conta',
@@ -728,8 +857,8 @@ class LoginSettingsMobile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          hoverColor: SixMobilePalette.error.withValues(alpha: 0.06),
-          splashColor: SixMobilePalette.error.withValues(alpha: 0.08),
+          hoverColor: colors.error.withValues(alpha: 0.06),
+          splashColor: colors.error.withValues(alpha: 0.08),
           onTap: () => _confirmLogoutWithSwipe(context),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
@@ -737,14 +866,14 @@ class LoginSettingsMobile extends StatelessWidget {
               children: <Widget>[
                 Icon(
                   Icons.logout_rounded,
-                  color: SixMobilePalette.error.withValues(alpha: 0.8),
+                  color: colors.error.withValues(alpha: 0.8),
                   size: 20,
                 ),
                 SizedBox(width: 10),
                 Text(
                   logoutLabel,
                   style: TextStyle(
-                    color: SixMobilePalette.error.withValues(alpha: 0.8),
+                    color: colors.error.withValues(alpha: 0.8),
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -757,8 +886,7 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildVersionFooter(BuildContext context) {
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+  Widget _buildVersionFooter(BuildContext context, _AccountPanelColors colors) {
     final String version = AppConfig.appVersion.trim();
     final String buildNumber = AppConfig.appBuildNumber.trim();
     final String versionLabel =
@@ -929,17 +1057,13 @@ class LoginSettingsMobile extends StatelessWidget {
                               color: colors.surface,
                               borderRadius: BorderRadius.circular(13),
                               border: Border.all(
-                                color: SixMobilePalette.error.withValues(
-                                  alpha: 0.18,
-                                ),
+                                color: colors.error.withValues(alpha: 0.18),
                                 width: 0.8,
                               ),
                             ),
                             child: Icon(
                               Icons.logout_rounded,
-                              color: SixMobilePalette.error.withValues(
-                                alpha: 0.82,
-                              ),
+                              color: colors.error.withValues(alpha: 0.82),
                               size: 20,
                             ),
                           ),
@@ -1058,7 +1182,7 @@ class LoginSettingsMobile extends StatelessWidget {
 
   Widget _buildPhotoPreview(BuildContext context, String? currentProfileImage) {
     final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
-    final String imageValue = currentProfileImage ?? profileImage ?? '';
+    final String imageValue = currentProfileImage ?? widget.profileImage ?? '';
 
     return Center(
       child: Container(
@@ -1109,7 +1233,7 @@ class LoginSettingsMobile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         onTap: () async {
           Navigator.of(context).pop();
-          await onPickImage(source);
+          await widget.onPickImage(source);
         },
         child: Container(
           padding: EdgeInsets.all(14),
@@ -1224,7 +1348,7 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
                       widthFactor: progress,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: SixMobilePalette.error.withValues(alpha: 0.12),
+                          color: widget.colors.error.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(17),
                         ),
                       ),
@@ -1266,14 +1390,14 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
                         color: widget.colors.surface,
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(
-                          color: SixMobilePalette.error.withValues(
+                          color: widget.colors.error.withValues(
                             alpha: _confirmed ? 0.38 : 0.18,
                           ),
                           width: 0.9,
                         ),
                         boxShadow: <BoxShadow>[
                           BoxShadow(
-                            color: SixMobilePalette.navigationShadow.withValues(
+                            color: widget.colors.secondaryShadow.withValues(
                               alpha: 0.85,
                             ),
                             blurRadius: 12,
@@ -1285,7 +1409,7 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
                         _confirmed
                             ? Icons.check_rounded
                             : Icons.arrow_forward_rounded,
-                        color: SixMobilePalette.error.withValues(alpha: 0.82),
+                        color: widget.colors.error.withValues(alpha: 0.82),
                         size: 21,
                       ),
                     ),
