@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 
 import '../../firebase_options.dart';
 import '../config/app_config.dart';
-import '../ui/app_feedback.dart';
 import 'auth_service.dart';
 import 'notification_service.dart';
 import 'notificacao_service.dart';
@@ -23,8 +22,8 @@ class FirebasePushNotificationService {
   FirebasePushNotificationService({
     AuthService? authService,
     http.Client? httpClient,
-  })  : _authService = authService ?? AuthService(),
-        _httpClient = httpClient ?? http.Client();
+  }) : _authService = authService ?? AuthService(),
+       _httpClient = httpClient ?? http.Client();
 
   static bool _firebaseInicializado = false;
   static bool _listenersConfigurados = false;
@@ -52,8 +51,9 @@ class FirebasePushNotificationService {
       _firebaseInicializado = true;
       return true;
     } catch (e) {
-      debugPrint('[FirebasePushNotificationService] Falha ao inicializar Firebase: $e');
-      AppFeedback.show('Falha ao inicializar Firebase. Notificações push podem não funcionar.');
+      debugPrint(
+        '[FirebasePushNotificationService] Falha ao inicializar Firebase: $e',
+      );
       return false;
     }
   }
@@ -87,8 +87,6 @@ class FirebasePushNotificationService {
   }
 
   Future<void> syncTokenForLoggedUser() async {
-    AppFeedback.show('Sincronizando notificações push...');
-
     final bool firebaseOk = await _inicializarFirebaseParaRegistro();
     if (!firebaseOk) {
       return;
@@ -100,17 +98,18 @@ class FirebasePushNotificationService {
 
     final String? token = await _obterTokenFcm();
     if (token == null || token.trim().isEmpty) {
-      AppFeedback.show('Firebase não retornou token FCM.');
+      debugPrint(
+        '[FirebasePushNotificationService] Firebase não retornou token FCM.',
+      );
       return;
     }
 
-    AppFeedback.show('Token Firebase obtido. Registrando no backend...');
     await _registrarTokenNoBackend(token);
 
-    _tokenRefreshSubscription ??=
-        FirebaseMessaging.instance.onTokenRefresh.listen((String novoToken) {
-      _registrarTokenNoBackend(novoToken);
-    });
+    _tokenRefreshSubscription ??= FirebaseMessaging.instance.onTokenRefresh
+        .listen((String novoToken) {
+          _registrarTokenNoBackend(novoToken);
+        });
   }
 
   Future<bool> _inicializarFirebaseParaRegistro() async {
@@ -120,18 +119,21 @@ class FirebasePushNotificationService {
       );
 
       if (!inicializado) {
-        AppFeedback.show('Firebase não inicializou no aparelho.');
-      } else {
-        AppFeedback.show('Firebase inicializado no aparelho.');
+        debugPrint(
+          '[FirebasePushNotificationService] Firebase não inicializado para registro.',
+        );
       }
 
       return inicializado;
     } on TimeoutException {
-      AppFeedback.show('Tempo esgotado ao inicializar Firebase.');
+      debugPrint(
+        '[FirebasePushNotificationService] Tempo esgotado ao inicializar Firebase.',
+      );
       return false;
     } catch (e) {
-      debugPrint('[FirebasePushNotificationService] Erro ao inicializar Firebase: $e');
-      AppFeedback.show('Erro ao inicializar Firebase.');
+      debugPrint(
+        '[FirebasePushNotificationService] Erro ao inicializar Firebase: $e',
+      );
       return false;
     }
   }
@@ -142,13 +144,12 @@ class FirebasePushNotificationService {
     }
 
     unawaited(
-      initializeOnAppStart()
-          .timeout(const Duration(seconds: 8))
-          .catchError((Object e) {
+      initializeOnAppStart().timeout(const Duration(seconds: 8)).catchError((
+        Object e,
+      ) {
         debugPrint(
           '[FirebasePushNotificationService] Listeners push não configurados: $e',
         );
-        AppFeedback.show('Listeners push não configurados. Registro do token continuará.');
       }),
     );
   }
@@ -161,38 +162,42 @@ class FirebasePushNotificationService {
 
       switch (settings.authorizationStatus) {
         case AuthorizationStatus.authorized:
-          AppFeedback.show('Permissão de notificações autorizada.');
           break;
         case AuthorizationStatus.provisional:
-          AppFeedback.show('Permissão provisória de notificações.');
           break;
         case AuthorizationStatus.denied:
-          debugPrint('[FirebasePushNotificationService] Permissão de push negada.');
-          AppFeedback.show('Permissão de notificações negada. Tentando registrar token mesmo assim.');
+          debugPrint(
+            '[FirebasePushNotificationService] Permissão de push negada.',
+          );
           break;
         case AuthorizationStatus.notDetermined:
-          AppFeedback.show('Permissão de notificações ainda não definida.');
           break;
       }
     } on TimeoutException {
-      // AppFeedback.show('Tempo esgotado ao solicitar permissão. Tentando registrar token.');
+      debugPrint(
+        '[FirebasePushNotificationService] Tempo esgotado ao solicitar permissão.',
+      );
     } catch (e) {
-      // debugPrint('[FirebasePushNotificationService] Falha ao solicitar permissão: $e');
-      // AppFeedback.show('Falha ao solicitar permissão. Tentando registrar token.');
+      debugPrint(
+        '[FirebasePushNotificationService] Falha ao solicitar permissão: $e',
+      );
     }
   }
 
   Future<String?> _obterTokenFcm() async {
     try {
       return await FirebaseMessaging.instance.getToken().timeout(
-            const Duration(seconds: 12),
-          );
+        const Duration(seconds: 12),
+      );
     } on TimeoutException {
-      // AppFeedback.show('Tempo esgotado ao obter token Firebase.');
+      debugPrint(
+        '[FirebasePushNotificationService] Tempo esgotado ao obter token Firebase.',
+      );
       return null;
     } catch (e) {
-      // debugPrint('[FirebasePushNotificationService] Firebase não retornou token FCM: $e');
-      // AppFeedback.show('Erro ao obter token Firebase.');
+      debugPrint(
+        '[FirebasePushNotificationService] Erro ao obter token Firebase: $e',
+      );
       return null;
     }
   }
@@ -210,12 +215,9 @@ class FirebasePushNotificationService {
         accessToken.trim().isEmpty ||
         idUnicoDaEmpresa == null ||
         idUnicoDaEmpresa.trim().isEmpty) {
-      // debugPrint(
-      //   '[FirebasePushNotificationService] Token FCM aguardando sessão autenticada.',
-      // );
-      // AppFeedback.show(
-      //   'Token FCM aguardando sessão autenticada.',
-      // );
+      debugPrint(
+        '[FirebasePushNotificationService] Token FCM aguardando sessão autenticada.',
+      );
       return;
     }
 
@@ -239,21 +241,15 @@ class FirebasePushNotificationService {
       );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        // debugPrint(
-        //   '[FirebasePushNotificationService] Backend recusou token FCM: '
-        //   '${response.statusCode} ${response.body}',
-        // );
-        // AppFeedback.show(
-        //   'Backend recusou token FCM: ${response.statusCode}.',
-        // );
-      } else {
-        // AppFeedback.show('Push registrado no backend.');
+        debugPrint(
+          '[FirebasePushNotificationService] Backend recusou token FCM: '
+          '${response.statusCode} ${response.body}',
+        );
       }
     } catch (e) {
-      // debugPrint('[FirebasePushNotificationService] Falha ao enviar token FCM: $e');
-      // AppFeedback.show(
-      //   'Falha ao enviar token FCM.',
-      // );
+      debugPrint(
+        '[FirebasePushNotificationService] Falha ao enviar token FCM: $e',
+      );
     }
   }
 
@@ -275,7 +271,8 @@ class FirebasePushNotificationService {
       'canal': 'FIREBASE_PUSH',
       'recebidoEmIso': DateTime.now().toIso8601String(),
       if (message.messageId != null) 'messageId': message.messageId,
-      if (message.sentTime != null) 'sentTime': message.sentTime!.toIso8601String(),
+      if (message.sentTime != null)
+        'sentTime': message.sentTime!.toIso8601String(),
     };
 
     NotificacaoService().registrarPayload(payload);

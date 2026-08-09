@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../data/models/streak_models.dart';
+import '../../providers/locale_settings_provider.dart';
+import '../../providers/streak_provider.dart';
 import '../navigation/mobile_navigation_controller.dart';
 import 'gestao_mobile_screen.dart';
 import 'home_page_mobile_screen.dart';
@@ -21,7 +25,7 @@ class MobileMainShell extends StatefulWidget {
 }
 
 class _MobileMainShellState extends State<MobileMainShell>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static const Duration _transitionDuration = Duration(milliseconds: 340);
   static const Curve _transitionCurve = Curves.easeOutQuart;
   static const double _slideDistance = 12;
@@ -53,15 +57,27 @@ class _MobileMainShellState extends State<MobileMainShell>
     _pages[widget.initialIndex] = _createPage(widget.initialIndex);
     _selectedIndex = widget.initialIndex;
 
+    WidgetsBinding.instance.addObserver(this);
     _navigationController.addListener(_onNavigationChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _registrarOfensivaMobile();
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _navigationController.removeListener(_onNavigationChanged);
     _navigationController.dispose();
     _transitionController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _registrarOfensivaMobile();
+    }
   }
 
   void _onNavigationChanged() {
@@ -98,6 +114,17 @@ class _MobileMainShellState extends State<MobileMainShell>
           'Índice de navegação inválido',
         );
     }
+  }
+
+  Future<void> _registrarOfensivaMobile() async {
+    if (!mounted) {
+      return;
+    }
+    final String timezone = context.read<LocaleSettingsProvider>().timeZone;
+    await context.read<StreakProvider>().registerActivity(
+      platform: StreakPlatform.mobile,
+      timezone: timezone,
+    );
   }
 
   @override

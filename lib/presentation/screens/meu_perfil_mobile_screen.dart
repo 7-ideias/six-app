@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/components/mobile/streak_summary_mobile_card.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
@@ -10,6 +12,8 @@ import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 
 import '../../data/models/usuario_model.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../providers/locale_settings_provider.dart';
+import '../../providers/streak_provider.dart';
 import '../../providers/usuario_provider.dart';
 
 class MeuPerfilMobileScreen extends StatefulWidget {
@@ -54,7 +58,16 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _buscarDados();
+      _carregarOfensiva();
     });
+  }
+
+  Future<void> _carregarOfensiva() async {
+    if (!mounted) {
+      return;
+    }
+    final String timezone = context.read<LocaleSettingsProvider>().timeZone;
+    await context.read<StreakProvider>().load(timezone: timezone);
   }
 
   Future<void> _buscarDados() async {
@@ -649,6 +662,17 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 24),
         children: <Widget>[
           _buildProfileSummary(context),
+          SizedBox(height: 14),
+          Consumer<StreakProvider>(
+            builder: (BuildContext context, StreakProvider provider, _) {
+              return StreakSummaryMobileCard(
+                streaks: provider.streaks,
+                loading: provider.loading,
+                hasError: provider.hasError,
+                onRetry: _carregarOfensiva,
+              );
+            },
+          ),
           SizedBox(height: 14),
           _buildSection(
             context: context,

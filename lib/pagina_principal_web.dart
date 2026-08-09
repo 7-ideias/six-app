@@ -35,6 +35,7 @@ import 'data/models/cliente_usuario_model.dart';
 import 'data/models/caixa_models.dart';
 import 'data/models/produto_model.dart';
 import 'data/models/operacao_models.dart';
+import 'data/models/streak_models.dart';
 import 'core/di/caixa_module.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
@@ -44,6 +45,7 @@ import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'providers/locale_settings_provider.dart';
+import 'providers/streak_provider.dart';
 import 'top_navigation_bar_web.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
@@ -286,6 +288,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
 
     _configurarWebSocket();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _registrarOfensivaWeb();
+    });
   }
 
   @override
@@ -374,6 +379,17 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     connectStomp();
     _iniciarMonitoramentoComunicacaoBackend();
+  }
+
+  Future<void> _registrarOfensivaWeb() async {
+    if (!mounted) {
+      return;
+    }
+    final String timezone = context.read<LocaleSettingsProvider>().timeZone;
+    await context.read<StreakProvider>().registerActivity(
+      platform: StreakPlatform.web,
+      timezone: timezone,
+    );
   }
 
   void _iniciarMonitoramentoComunicacaoBackend() {

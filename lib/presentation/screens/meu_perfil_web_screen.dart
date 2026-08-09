@@ -2,12 +2,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
+import 'package:sixpos/presentation/components/web/streak_summary_web_card.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 
 import '../../data/models/usuario_model.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../providers/locale_settings_provider.dart';
+import '../../providers/streak_provider.dart';
 import '../../providers/usuario_provider.dart';
 
 void showMeuPerfilWebDialog(BuildContext context) {
@@ -76,7 +80,16 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _buscarDados();
+      _carregarOfensiva();
     });
+  }
+
+  Future<void> _carregarOfensiva() async {
+    if (!mounted) {
+      return;
+    }
+    final String timezone = context.read<LocaleSettingsProvider>().timeZone;
+    await context.read<StreakProvider>().load(timezone: timezone);
   }
 
   Future<void> _buscarDados() async {
@@ -617,6 +630,17 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Column(
         children: <Widget>[
+          Consumer<StreakProvider>(
+            builder: (BuildContext context, StreakProvider provider, _) {
+              return StreakSummaryWebCard(
+                streaks: provider.streaks,
+                loading: provider.loading,
+                hasError: provider.hasError,
+                onRetry: _carregarOfensiva,
+              );
+            },
+          ),
+          const SizedBox(height: 16),
           _buildSectionCard(
             context: context,
             title: 'Dados pessoais',
