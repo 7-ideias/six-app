@@ -16,7 +16,16 @@ import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import '../components/mobile_motion.dart';
 
 class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
-  const VendasNaoLiquidadasMobileScreen({super.key});
+  const VendasNaoLiquidadasMobileScreen({
+    super.key,
+    this.apiClient,
+    this.acoesFinanceiras,
+    this.caixaApiClient,
+  });
+
+  final VendaNaoLiquidadaApiClient? apiClient;
+  final AgendaFinanceiraAcoesFinanceiras? acoesFinanceiras;
+  final CaixaApiClient? caixaApiClient;
 
   @override
   State<VendasNaoLiquidadasMobileScreen> createState() =>
@@ -27,10 +36,9 @@ class _VendasNaoLiquidadasMobileScreenState
     extends State<VendasNaoLiquidadasMobileScreen> {
   static const Duration _stateTransitionDuration = Duration(milliseconds: 240);
 
-  final VendaNaoLiquidadaApiClient _api = VendaNaoLiquidadaApiClient();
-  final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras =
-      AgendaFinanceiraAcoesFinanceiras();
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  late final VendaNaoLiquidadaApiClient _api;
+  late final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras;
+  late final CaixaApiClient _caixaApiClient;
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
   Color get _backgroundColor => _colors.background;
@@ -57,6 +65,10 @@ class _VendasNaoLiquidadasMobileScreenState
   @override
   void initState() {
     super.initState();
+    _api = widget.apiClient ?? VendaNaoLiquidadaApiClient();
+    _acoesFinanceiras =
+        widget.acoesFinanceiras ?? AgendaFinanceiraAcoesFinanceiras();
+    _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
     _carregar();
   }
 
@@ -98,6 +110,7 @@ class _VendasNaoLiquidadasMobileScreenState
           codigoTipoInicial: venda.codigoTipoRecebimento,
           permitirParcial: true,
           observacaoInicial: 'Recebimento realizado no PDV mobile.',
+          caixaApiClient: _caixaApiClient,
         );
 
     if (resultado == null) return;
@@ -619,6 +632,13 @@ class _VendasNaoLiquidadasMobileScreenState
         venda.nomeColaboradorCriacao.trim().isEmpty
             ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
             : venda.nomeColaboradorCriacao.trim();
+    final String cliente =
+        venda.nomeCliente.trim().isEmpty
+            ? _txt(
+              'vendasNaoLiquidadas.clienteNaoInformado',
+              'Cliente não informado',
+            )
+            : venda.nomeCliente.trim();
     final Widget detailsButton = _cardDetailsButton(venda);
 
     return Material(
@@ -668,6 +688,17 @@ class _VendasNaoLiquidadasMobileScreenState
                         ),
                         SizedBox(height: 4),
                         Text(
+                          cliente,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: 3),
+                        Text(
                           '${_txt('vendasNaoLiquidadas.criadaPor', 'Criada por')} $colaborador',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -690,6 +721,12 @@ class _VendasNaoLiquidadasMobileScreenState
                 children: <Widget>[
                   _pill(_formatarData(venda.dataCompetencia)),
                   _pill(_formatarQuantidadeItens(quantidadeItens)),
+                  if (venda.status.trim().isNotEmpty)
+                    _pill(
+                      venda.status,
+                      fg: _accentColor,
+                      bg: _softAccentSurface,
+                    ),
                   if (venda.dataVencimento != null)
                     _pill(
                       '${_txt('vendasNaoLiquidadas.venceEm', 'Vence em')} '
