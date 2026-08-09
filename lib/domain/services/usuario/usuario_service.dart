@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/models/usuario_model.dart';
 import '../../../data/services/usuario/usuario_api_client.dart';
@@ -10,15 +13,54 @@ class UsuarioService {
   UsuarioService._internal();
 
   final UsuarioApiClient _apiClient = HttpUsuarioApiClient();
+  static const String _preferenciasCacheKey =
+      'sixapp.preferenciasIndividuaisDoUsuario';
 
   Future<String?> buscarDadosDoUsuario_atualizaProviders() async {
     try {
       final UsuarioModel usuario = await _apiClient.buscarDadosPessoais();
       UsuarioProvider().setUsuario(usuario);
+      await salvarPreferenciasIndividuaisNoCache(
+        usuario.preferenciasIndividuaisDoUsuario,
+      );
       return usuario.preferenciasIndividuaisDoUsuario.idiomaDePreferencia;
     } catch (e) {
       debugPrint('Erro na requisição de dados do usuário: $e');
       rethrow;
+    }
+  }
+
+  Future<PreferenciasIndividuaisDoUsuarioModel?>
+  carregarPreferenciasIndividuaisDoCache() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? raw = prefs.getString(_preferenciasCacheKey);
+      if (raw == null || raw.trim().isEmpty) {
+        return null;
+      }
+      final dynamic decoded = jsonDecode(raw);
+      return PreferenciasIndividuaisDoUsuarioModel.fromJson(decoded);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao carregar cache de preferencias individuais: $error\n$stackTrace',
+      );
+      return null;
+    }
+  }
+
+  Future<void> salvarPreferenciasIndividuaisNoCache(
+    PreferenciasIndividuaisDoUsuarioModel preferencias,
+  ) async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _preferenciasCacheKey,
+        jsonEncode(preferencias.toJson()),
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao salvar cache de preferencias individuais: $error\n$stackTrace',
+      );
     }
   }
 
@@ -31,6 +73,10 @@ class UsuarioService {
     String? modoDeExibicaoServicosWeb,
     String? modoDeExibicaoServicosMobile,
     bool? ocultarValoresFinanceirosWeb,
+    String? agendaFinanceiraPeriodoWeb,
+    String? agendaFinanceiraTipoWeb,
+    String? agendaFinanceiraStatusWeb,
+    List<String>? agendaFinanceiraTipoDePagamentoWeb,
   }) async {
     final Map<String, dynamic> body = <String, dynamic>{};
     if (idiomaDePreferencia != null) {
@@ -61,7 +107,25 @@ class UsuarioService {
     if (ocultarValoresFinanceirosWeb != null) {
       body['ocultarValoresFinanceirosWeb'] = ocultarValoresFinanceirosWeb;
     }
+    if (agendaFinanceiraPeriodoWeb != null) {
+      body['agendaFinanceiraPeriodoWeb'] = agendaFinanceiraPeriodoWeb;
+    }
+    if (agendaFinanceiraTipoWeb != null) {
+      body['agendaFinanceiraTipoWeb'] = agendaFinanceiraTipoWeb;
+    }
+    if (agendaFinanceiraStatusWeb != null) {
+      body['agendaFinanceiraStatusWeb'] = agendaFinanceiraStatusWeb;
+    }
+    if (agendaFinanceiraTipoDePagamentoWeb != null) {
+      body['agendaFinanceiraTipoDePagamentoWeb'] =
+          agendaFinanceiraTipoDePagamentoWeb;
+    }
 
+    if (body.isEmpty) {
+      return;
+    }
+
+    await _sincronizarPreferenciasLocais(body);
     await _apiClient.atualizarPreferenciasIndividuais(body);
   }
 
@@ -69,7 +133,11 @@ class UsuarioService {
     try {
       final UsuarioModel? usuarioAtualizado = await _apiClient
           .atualizarDadosPessoais(usuario);
-      UsuarioProvider().setUsuario(usuarioAtualizado ?? usuario);
+      final UsuarioModel usuarioSincronizado = usuarioAtualizado ?? usuario;
+      UsuarioProvider().setUsuario(usuarioSincronizado);
+      await salvarPreferenciasIndividuaisNoCache(
+        usuarioSincronizado.preferenciasIndividuaisDoUsuario,
+      );
     } catch (e) {
       debugPrint('Erro na atualização de dados do usuário: $e');
       rethrow;
@@ -84,6 +152,42 @@ class UsuarioService {
     final UsuarioModel? usuarioAtualizado = await _apiClient
         .atualizarDadosPessoais(atualizado);
 
-    UsuarioProvider().setUsuario(usuarioAtualizado ?? atualizado);
+    final UsuarioModel usuarioSincronizado = usuarioAtualizado ?? atualizado;
+    UsuarioProvider().setUsuario(usuarioSincronizado);
+    await salvarPreferenciasIndividuaisNoCache(
+      usuarioSincronizado.preferenciasIndividuaisDoUsuario,
+    );
+  }
+
+  Future<void> _sincronizarPreferenciasLocais(
+    Map<String, dynamic> atualizacaoParcial,
+  ) async {
+    UsuarioModel? usuarioAtual = UsuarioProvider().usuario;
+    final PreferenciasIndividuaisDoUsuarioModel? preferenciasCache =
+        await carregarPreferenciasIndividuaisDoCache();
+    final PreferenciasIndividuaisDoUsuarioModel preferenciasAtuais =
+        usuarioAtual?.preferenciasIndividuaisDoUsuario ??
+        preferenciasCache ??
+        PreferenciasIndividuaisDoUsuarioModel.padrao();
+
+    final Map<String, dynamic> preferenciasMescladas = <String, dynamic>{
+      ...preferenciasAtuais.toJson(),
+      ...atualizacaoParcial,
+    };
+    final PreferenciasIndividuaisDoUsuarioModel preferenciasAtualizadas =
+        PreferenciasIndividuaisDoUsuarioModel.fromJson(preferenciasMescladas);
+
+    await salvarPreferenciasIndividuaisNoCache(preferenciasAtualizadas);
+
+    if (usuarioAtual == null) {
+      return;
+    }
+
+    UsuarioProvider().setUsuario(
+      usuarioAtual.copyWith(
+        preferenciasIndividuaisDoUsuario: preferenciasAtualizadas,
+        enviarPreferenciasIndividuaisDoUsuario: true,
+      ),
+    );
   }
 }

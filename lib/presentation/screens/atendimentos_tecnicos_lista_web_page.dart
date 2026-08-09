@@ -386,8 +386,13 @@ class _AtendimentosTecnicosListaWebPageState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
-    final nomeBackend = atendimento.statusNomePtBr?.trim() ?? '';
-    if (nomeBackend.isNotEmpty) return nomeBackend;
+    final nomeBackend = _localizedLabel(
+      pt: atendimento.statusNomePtBr,
+      en: atendimento.statusNomeEnUs,
+      es: atendimento.statusNomeEsEs,
+      fallback: '',
+    );
+    if (nomeBackend != '-') return nomeBackend;
     return _statusLabelPorCodigo(atendimento.statusCodigo, status);
   }
 
@@ -396,12 +401,37 @@ class _AtendimentosTecnicosListaWebPageState
     if (normalizado.isEmpty) return 'Sem status anterior';
     for (final opcao in status) {
       if (opcao.codigo.trim().toUpperCase() == normalizado) {
-        return opcao.nomePadraoPtBr.trim().isEmpty
-            ? opcao.codigo
-            : opcao.nomePadraoPtBr;
+        return _statusOptionLabel(opcao);
       }
     }
     return normalizado;
+  }
+
+  String _statusOptionLabel(DominioOpcaoModel status) {
+    return _localizedLabel(
+      pt: status.nomePadraoPtBr,
+      en: status.nomePadraoEnUs,
+      es: status.nomePadraoEsEs,
+      fallback: status.codigo,
+    );
+  }
+
+  String _localizedLabel({
+    required String? pt,
+    required String? en,
+    required String? es,
+    required String fallback,
+  }) {
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final selected = switch (languageCode) {
+      'en' => en,
+      'es' => es,
+      _ => pt,
+    };
+    final label = selected?.trim() ?? '';
+    if (label.isNotEmpty) return label;
+    final fallbackTrimmed = fallback.trim();
+    return fallbackTrimmed.isEmpty ? '-' : fallbackTrimmed;
   }
 
   DominioOpcaoModel? _statusEtapaAtual(
@@ -415,33 +445,31 @@ class _AtendimentosTecnicosListaWebPageState
         return opcao;
       }
     }
+    if (_statusAtendimentoEntregue(atendimento)) {
+      for (final opcao in status) {
+        if (_statusEntregue(opcao)) return opcao;
+      }
+    }
     return null;
   }
 
-  List<DominioOpcaoModel> _statusFlowSteps(
-    AtendimentoTecnicoModel atendimento,
-    List<DominioOpcaoModel> status,
-  ) {
+  List<DominioOpcaoModel> _statusFlowSteps(List<DominioOpcaoModel> status) {
     final steps = status.toList(growable: false)
       ..sort((a, b) => a.ordem.compareTo(b.ordem));
-    final current = _statusEtapaAtual(atendimento, steps);
-    final codigoAtual = atendimento.statusCodigo.trim().toUpperCase();
-    final filtered = steps
-        .where(
-          (step) =>
-              !step.finalizador ||
-              step.id == current?.id ||
-              step.codigo.trim().toUpperCase() == codigoAtual,
-        )
+    final visible = steps
+        .where((step) => !_statusOcultoNaBarraDeProgresso(step))
         .toList(growable: false);
-    return filtered.isEmpty ? steps : filtered;
+    if (visible.isEmpty) return const <DominioOpcaoModel>[];
+    final int entregueIndex = visible.indexWhere(_statusEntregue);
+    if (entregueIndex < 0) return visible;
+    return visible.take(entregueIndex + 1).toList(growable: false);
   }
 
   double _statusProgressValue(
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
-    final steps = _statusFlowSteps(atendimento, status);
+    final steps = _statusFlowSteps(status);
     if (steps.isEmpty) return 0;
     final current = _statusEtapaAtual(atendimento, steps);
     if (current == null) return 0;
@@ -455,8 +483,63 @@ class _AtendimentosTecnicosListaWebPageState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
-    final current = _statusEtapaAtual(atendimento, status);
+    final current = _statusEtapaAtual(atendimento, _statusFlowSteps(status));
     return _colorFromHex(current?.cor, theme.colorScheme.primary);
+  }
+
+  bool _statusAtendimentoEntregue(AtendimentoTecnicoModel atendimento) {
+    return _statusTextoEntregue(atendimento.statusCodigo) ||
+        _statusTextoEntregue(atendimento.statusNomePtBr ?? '') ||
+        _statusTextoEntregue(atendimento.statusNomeEnUs ?? '') ||
+        _statusTextoEntregue(atendimento.statusNomeEsEs ?? '');
+  }
+
+  bool _statusEntregue(DominioOpcaoModel status) {
+    return _statusTextoEntregue(status.codigo) ||
+        _statusTextoEntregue(status.i18nKey) ||
+        _statusTextoEntregue(status.nomePadraoPtBr) ||
+        _statusTextoEntregue(status.nomePadraoEnUs) ||
+        _statusTextoEntregue(status.nomePadraoEsEs);
+  }
+
+  bool _statusOcultoNaBarraDeProgresso(DominioOpcaoModel status) {
+    return _statusTextoCanceladoOuSemReparo(status.codigo) ||
+        _statusTextoCanceladoOuSemReparo(status.i18nKey) ||
+        _statusTextoCanceladoOuSemReparo(status.nomePadraoPtBr) ||
+        _statusTextoCanceladoOuSemReparo(status.nomePadraoEnUs) ||
+        _statusTextoCanceladoOuSemReparo(status.nomePadraoEsEs);
+  }
+
+  bool _statusTextoEntregue(String value) {
+    final normalized = _normalizarTextoStatus(value);
+    return normalized == 'ENTREGUE' ||
+        normalized == 'DELIVERED' ||
+        normalized == 'ENTREGADO' ||
+        normalized.startsWith('ENTREGUE ') ||
+        normalized.startsWith('ENTREGUE(') ||
+        normalized.startsWith('DELIVERED ') ||
+        normalized.startsWith('DELIVERED(') ||
+        normalized.startsWith('ENTREGADO ') ||
+        normalized.startsWith('ENTREGADO(');
+  }
+
+  bool _statusTextoCanceladoOuSemReparo(String value) {
+    final normalized = _normalizarTextoStatus(value);
+    return normalized == 'CANCELED' ||
+        normalized == 'CANCELLED' ||
+        normalized == 'CANCELADO' ||
+        normalized == 'CANCELADA' ||
+        normalized == 'SEM REPARO' ||
+        normalized == 'NO REPAIR' ||
+        normalized.startsWith('CANCEL') ||
+        normalized.startsWith('SEM REPARO ') ||
+        normalized.startsWith('SEM REPARO(') ||
+        normalized.startsWith('NO REPAIR ') ||
+        normalized.startsWith('NO REPAIR(');
+  }
+
+  String _normalizarTextoStatus(String value) {
+    return value.trim().toUpperCase().replaceAll('_', ' ').replaceAll('-', ' ');
   }
 
   Color _colorFromHex(String? value, Color fallback) {
@@ -2062,49 +2145,116 @@ class _AtendimentosTecnicosListaWebPageState
     final colorScheme = theme.colorScheme;
     final progress = _statusProgressValue(atendimento, status);
     final color = _statusProgressColor(theme, atendimento, status);
-    final steps = _statusFlowSteps(atendimento, status);
+    final steps = _statusFlowSteps(status);
+    if (steps.isEmpty) return const SizedBox.shrink();
+    final current = _statusEtapaAtual(atendimento, steps);
+    final String currentLabel =
+        current == null
+            ? _statusLabel(atendimento, status)
+            : _statusOptionLabel(current);
+    final String progressLabel = '${_formatarInteiro(progress * 100)}%';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          context.t(
-            'atendimentoTecnico.publicStatus.progressShort',
-            fallback: 'Progresso do serviço',
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.055),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(Icons.route_outlined, size: 17, color: color),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      context.t(
+                        'atendimentoTecnico.publicStatus.progressShort',
+                        fallback: 'Progresso do serviço',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      currentLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: color.withValues(alpha: 0.28)),
+                ),
+                child: Text(
+                  progressLabel,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
+          const SizedBox(height: 11),
+          _statusBulletProgressBar(
+            theme: theme,
+            progress: progress,
+            steps: steps,
+            color: color,
+            valueKey:
+                'web-status-progress-${atendimento.id}-'
+                '${atendimento.statusCodigo}-${steps.length}',
           ),
-        ),
-        const SizedBox(height: 7),
-        _statusBulletProgressBar(
-          theme: theme,
-          progress: progress,
-          steps: steps.length,
-          color: color,
-          valueKey:
-              'web-status-progress-${atendimento.id}-${atendimento.statusCodigo}',
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _statusBulletProgressBar({
     required ThemeData theme,
     required double progress,
-    required int steps,
+    required List<DominioOpcaoModel> steps,
     required Color color,
     required String valueKey,
   }) {
     final colorScheme = theme.colorScheme;
-    const double height = 22;
-    const double trackHeight = 6;
-    const double bulletSize = 13;
-    final int safeSteps = steps <= 0 ? 1 : steps;
+    const double trackHeight = 10;
+    const double bulletSize = 22;
+    final int safeSteps = steps.isEmpty ? 1 : steps.length;
     final double safeProgress = progress.clamp(0, 1).toDouble();
     final double completedSteps = safeProgress * safeSteps;
     final int currentStep = completedSteps.ceil().clamp(0, safeSteps).toInt();
@@ -2117,58 +2267,125 @@ class _AtendimentosTecnicosListaWebPageState
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
         if (!width.isFinite || width <= 0) return const SizedBox.shrink();
-        return SizedBox(
-          height: height,
-          child: Stack(
-            alignment: Alignment.centerLeft,
-            children: <Widget>[
-              Positioned(
-                left: bulletSize / 2,
-                right: bulletSize / 2,
-                top: (height - trackHeight) / 2,
-                child: Container(
-                  height: trackHeight,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.72,
-                    ),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: bulletSize / 2,
-                top: (height - trackHeight) / 2,
-                child: TweenAnimationBuilder<double>(
-                  key: ValueKey<String>(valueKey),
-                  tween: Tween<double>(begin: 0, end: lineProgress),
-                  duration: const Duration(milliseconds: 980),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, _) {
-                    return Container(
-                      width: (width - bulletSize) * value,
+        final bool showLabels = width >= 640 && steps.length <= 9;
+        const double progressHeight = 32;
+        return Column(
+          children: <Widget>[
+            SizedBox(
+              height: progressHeight,
+              child: Stack(
+                alignment: Alignment.centerLeft,
+                children: <Widget>[
+                  Positioned(
+                    left: bulletSize / 2,
+                    right: bulletSize / 2,
+                    top: (progressHeight - trackHeight) / 2,
+                    child: Container(
                       height: trackHeight,
                       decoration: BoxDecoration(
-                        color: color,
+                        color: colorScheme.surface.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: colorScheme.outline.withValues(alpha: 0.10),
+                        ),
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                  Positioned(
+                    left: bulletSize / 2,
+                    top: (progressHeight - trackHeight) / 2,
+                    child: TweenAnimationBuilder<double>(
+                      key: ValueKey<String>(valueKey),
+                      tween: Tween<double>(begin: 0, end: lineProgress),
+                      duration: const Duration(milliseconds: 1100),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) {
+                        return Container(
+                          width: (width - bulletSize) * value,
+                          height: trackHeight,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: <Color>[
+                                color.withValues(alpha: 0.78),
+                                color,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.22),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  for (int index = 0; index < safeSteps; index++)
+                    _statusProgressBullet(
+                      width: width,
+                      height: progressHeight,
+                      bulletSize: bulletSize,
+                      index: index,
+                      steps: safeSteps,
+                      currentStep: currentStep,
+                      color: color,
+                      colorScheme: colorScheme,
+                    ),
+                ],
               ),
-              for (int index = 0; index < safeSteps; index++)
-                _statusProgressBullet(
-                  width: width,
-                  height: height,
-                  bulletSize: bulletSize,
-                  index: index,
-                  steps: safeSteps,
-                  currentStep: currentStep,
-                  color: color,
-                  colorScheme: colorScheme,
-                ),
+            ),
+            if (showLabels) ...<Widget>[
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  for (int index = 0; index < steps.length; index++)
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: index == 0 ? 0 : 4,
+                          right: index == steps.length - 1 ? 0 : 4,
+                        ),
+                        child: Text(
+                          _statusOptionLabel(steps[index]),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign:
+                              index == 0
+                                  ? TextAlign.left
+                                  : index == steps.length - 1
+                                  ? TextAlign.right
+                                  : TextAlign.center,
+                          style: TextStyle(
+                            color:
+                                index < currentStep
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurfaceVariant.withValues(
+                                      alpha: 0.76,
+                                    ),
+                            fontSize: 10.5,
+                            fontWeight:
+                                index < currentStep
+                                    ? FontWeight.w900
+                                    : FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
-          ),
+          ],
         );
       },
     );
@@ -2186,6 +2403,7 @@ class _AtendimentosTecnicosListaWebPageState
   }) {
     final double position = steps == 1 ? 0 : index / (steps - 1);
     final bool reached = index < currentStep;
+    final bool active = reached && index == currentStep - 1;
     return Positioned(
       left: (width - bulletSize) * position,
       top: (height - bulletSize) / 2,
@@ -2200,17 +2418,39 @@ class _AtendimentosTecnicosListaWebPageState
             color:
                 reached
                     ? color
-                    : colorScheme.outlineVariant.withValues(alpha: 0.95),
-            width: reached ? 2 : 1.2,
+                    : colorScheme.outlineVariant.withValues(alpha: 0.90),
+            width: reached ? (active ? 2.8 : 2) : 1.3,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: (reached ? color : Colors.black).withValues(alpha: 0.10),
-              blurRadius: reached ? 8 : 5,
-              offset: const Offset(0, 2),
+              color: (reached ? color : Colors.black).withValues(
+                alpha: reached ? 0.20 : 0.08,
+              ),
+              blurRadius: reached ? (active ? 14 : 10) : 7,
+              offset: const Offset(0, 3),
             ),
+            if (active)
+              BoxShadow(
+                color: color.withValues(alpha: 0.18),
+                blurRadius: 0,
+                spreadRadius: 5,
+              ),
           ],
         ),
+        child:
+            reached
+                ? Icon(
+                  Icons.check_rounded,
+                  size: bulletSize * 0.62,
+                  color: Colors.white,
+                )
+                : Container(
+                  margin: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.72),
+                    shape: BoxShape.circle,
+                  ),
+                ),
       ),
     );
   }

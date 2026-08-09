@@ -222,6 +222,169 @@ extension ModoDeExibicaoUsuarioApi on ModoDeExibicaoUsuario {
   }
 }
 
+enum AgendaFinanceiraPeriodoWebPreferencia {
+  hoje,
+  proximos7Dias,
+  esteMes,
+  proximoMes,
+  personalizado,
+}
+
+extension AgendaFinanceiraPeriodoWebPreferenciaApi
+    on AgendaFinanceiraPeriodoWebPreferencia {
+  String get codigo {
+    switch (this) {
+      case AgendaFinanceiraPeriodoWebPreferencia.hoje:
+        return 'HOJE';
+      case AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias:
+        return 'PROXIMOS_7_DIAS';
+      case AgendaFinanceiraPeriodoWebPreferencia.esteMes:
+        return 'ESTE_MES';
+      case AgendaFinanceiraPeriodoWebPreferencia.proximoMes:
+        return 'PROXIMO_MES';
+      case AgendaFinanceiraPeriodoWebPreferencia.personalizado:
+        return 'PERSONALIZADO';
+    }
+  }
+
+  static AgendaFinanceiraPeriodoWebPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'HOJE':
+        return AgendaFinanceiraPeriodoWebPreferencia.hoje;
+      case 'PROXIMOS_7_DIAS':
+      case 'PROXIMOS7DIAS':
+        return AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias;
+      case 'ESTE_MES':
+      case 'ESTE_MÊS':
+        return AgendaFinanceiraPeriodoWebPreferencia.esteMes;
+      case 'PROXIMO_MES':
+      case 'PRÓXIMO_MÊS':
+        return AgendaFinanceiraPeriodoWebPreferencia.proximoMes;
+      case 'PERSONALIZADO':
+      case 'INTERVALO_PERSONALIZADO':
+        return AgendaFinanceiraPeriodoWebPreferencia.personalizado;
+      default:
+        return null;
+    }
+  }
+
+  static AgendaFinanceiraPeriodoWebPreferencia fromCodigo(
+    dynamic value,
+    AgendaFinanceiraPeriodoWebPreferencia fallback,
+  ) {
+    return tryFromCodigo(value) ?? fallback;
+  }
+}
+
+enum AgendaFinanceiraTipoWebPreferencia { todos, receber, pagar }
+
+extension AgendaFinanceiraTipoWebPreferenciaApi
+    on AgendaFinanceiraTipoWebPreferencia {
+  String get codigo {
+    switch (this) {
+      case AgendaFinanceiraTipoWebPreferencia.todos:
+        return 'TODOS';
+      case AgendaFinanceiraTipoWebPreferencia.receber:
+        return 'RECEBER';
+      case AgendaFinanceiraTipoWebPreferencia.pagar:
+        return 'PAGAR';
+    }
+  }
+
+  static AgendaFinanceiraTipoWebPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'TODOS':
+        return AgendaFinanceiraTipoWebPreferencia.todos;
+      case 'RECEBER':
+        return AgendaFinanceiraTipoWebPreferencia.receber;
+      case 'PAGAR':
+        return AgendaFinanceiraTipoWebPreferencia.pagar;
+      default:
+        return null;
+    }
+  }
+
+  static AgendaFinanceiraTipoWebPreferencia fromCodigo(
+    dynamic value,
+    AgendaFinanceiraTipoWebPreferencia fallback,
+  ) {
+    return tryFromCodigo(value) ?? fallback;
+  }
+}
+
+enum AgendaFinanceiraStatusWebPreferencia {
+  todos,
+  previsto,
+  pendente,
+  venceHoje,
+  vencido,
+  pago,
+  recebido,
+  parcial,
+  cancelado,
+}
+
+extension AgendaFinanceiraStatusWebPreferenciaApi
+    on AgendaFinanceiraStatusWebPreferencia {
+  String get codigo {
+    switch (this) {
+      case AgendaFinanceiraStatusWebPreferencia.todos:
+        return 'TODOS';
+      case AgendaFinanceiraStatusWebPreferencia.previsto:
+        return 'PREVISTO';
+      case AgendaFinanceiraStatusWebPreferencia.pendente:
+        return 'PENDENTE';
+      case AgendaFinanceiraStatusWebPreferencia.venceHoje:
+        return 'VENCE_HOJE';
+      case AgendaFinanceiraStatusWebPreferencia.vencido:
+        return 'VENCIDO';
+      case AgendaFinanceiraStatusWebPreferencia.pago:
+        return 'PAGO';
+      case AgendaFinanceiraStatusWebPreferencia.recebido:
+        return 'RECEBIDO';
+      case AgendaFinanceiraStatusWebPreferencia.parcial:
+        return 'PARCIAL';
+      case AgendaFinanceiraStatusWebPreferencia.cancelado:
+        return 'CANCELADO';
+    }
+  }
+
+  static AgendaFinanceiraStatusWebPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'TODOS':
+        return AgendaFinanceiraStatusWebPreferencia.todos;
+      case 'PREVISTO':
+        return AgendaFinanceiraStatusWebPreferencia.previsto;
+      case 'PENDENTE':
+        return AgendaFinanceiraStatusWebPreferencia.pendente;
+      case 'VENCE_HOJE':
+        return AgendaFinanceiraStatusWebPreferencia.venceHoje;
+      case 'VENCIDO':
+        return AgendaFinanceiraStatusWebPreferencia.vencido;
+      case 'PAGO':
+        return AgendaFinanceiraStatusWebPreferencia.pago;
+      case 'RECEBIDO':
+        return AgendaFinanceiraStatusWebPreferencia.recebido;
+      case 'PARCIAL':
+        return AgendaFinanceiraStatusWebPreferencia.parcial;
+      case 'CANCELADO':
+        return AgendaFinanceiraStatusWebPreferencia.cancelado;
+      default:
+        return null;
+    }
+  }
+
+  static AgendaFinanceiraStatusWebPreferencia fromCodigo(
+    dynamic value,
+    AgendaFinanceiraStatusWebPreferencia fallback,
+  ) {
+    return tryFromCodigo(value) ?? fallback;
+  }
+}
+
 class PreferenciasIndividuaisDoUsuarioModel {
   final String idiomaDePreferencia;
   final ModoDeExibicaoUsuario modoDeExibicaoProdutosWeb;
@@ -229,6 +392,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final ModoDeExibicaoUsuario modoDeExibicaoServicosWeb;
   final ModoDeExibicaoUsuario modoDeExibicaoServicosMobile;
   final bool ocultarValoresFinanceirosWeb;
+  final AgendaFinanceiraPeriodoWebPreferencia agendaFinanceiraPeriodoWeb;
+  final AgendaFinanceiraTipoWebPreferencia agendaFinanceiraTipoWeb;
+  final AgendaFinanceiraStatusWebPreferencia agendaFinanceiraStatusWeb;
+  final List<String> agendaFinanceiraTipoDePagamentoWeb;
 
   PreferenciasIndividuaisDoUsuarioModel({
     this.idiomaDePreferencia = '',
@@ -239,6 +406,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
     ModoDeExibicaoUsuario? modoDeExibicaoServicosWeb,
     ModoDeExibicaoUsuario? modoDeExibicaoServicosMobile,
     required this.ocultarValoresFinanceirosWeb,
+    AgendaFinanceiraPeriodoWebPreferencia? agendaFinanceiraPeriodoWeb,
+    AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
+    AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
+    List<String>? agendaFinanceiraTipoDePagamentoWeb,
   }) : modoDeExibicaoProdutosWeb =
            modoDeExibicaoProdutosWeb ??
            modoDeExibicaoProdutos ??
@@ -254,7 +425,18 @@ class PreferenciasIndividuaisDoUsuarioModel {
        modoDeExibicaoServicosMobile =
            modoDeExibicaoServicosMobile ??
            modoDeExibicaoServicos ??
-           ModoDeExibicaoUsuario.vertical;
+           ModoDeExibicaoUsuario.vertical,
+       agendaFinanceiraPeriodoWeb =
+           agendaFinanceiraPeriodoWeb ??
+           AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
+       agendaFinanceiraTipoWeb =
+           agendaFinanceiraTipoWeb ?? AgendaFinanceiraTipoWebPreferencia.todos,
+       agendaFinanceiraStatusWeb =
+           agendaFinanceiraStatusWeb ??
+           AgendaFinanceiraStatusWebPreferencia.todos,
+       agendaFinanceiraTipoDePagamentoWeb = List<String>.unmodifiable(
+         _normalizarListaDeStrings(agendaFinanceiraTipoDePagamentoWeb),
+       );
 
   ModoDeExibicaoUsuario get modoDeExibicaoProdutos =>
       kIsWeb ? modoDeExibicaoProdutosWeb : modoDeExibicaoProdutosMobile;
@@ -270,6 +452,11 @@ class PreferenciasIndividuaisDoUsuarioModel {
       modoDeExibicaoServicosWeb: ModoDeExibicaoUsuario.grade,
       modoDeExibicaoServicosMobile: ModoDeExibicaoUsuario.vertical,
       ocultarValoresFinanceirosWeb: false,
+      agendaFinanceiraPeriodoWeb:
+          AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
+      agendaFinanceiraTipoWeb: AgendaFinanceiraTipoWebPreferencia.todos,
+      agendaFinanceiraStatusWeb: AgendaFinanceiraStatusWebPreferencia.todos,
+      agendaFinanceiraTipoDePagamentoWeb: const <String>[],
     );
   }
 
@@ -314,6 +501,23 @@ class PreferenciasIndividuaisDoUsuarioModel {
           padrao.modoDeExibicaoServicosMobile,
       ocultarValoresFinanceirosWeb:
           json['ocultarValoresFinanceirosWeb'] == true,
+      agendaFinanceiraPeriodoWeb:
+          AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
+            json['agendaFinanceiraPeriodoWeb'],
+            padrao.agendaFinanceiraPeriodoWeb,
+          ),
+      agendaFinanceiraTipoWeb: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
+        json['agendaFinanceiraTipoWeb'],
+        padrao.agendaFinanceiraTipoWeb,
+      ),
+      agendaFinanceiraStatusWeb:
+          AgendaFinanceiraStatusWebPreferenciaApi.fromCodigo(
+            json['agendaFinanceiraStatusWeb'],
+            padrao.agendaFinanceiraStatusWeb,
+          ),
+      agendaFinanceiraTipoDePagamentoWeb: _normalizarListaDeStrings(
+        json['agendaFinanceiraTipoDePagamentoWeb'],
+      ),
     );
   }
 
@@ -328,6 +532,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'modoDeExibicaoServicosWeb': modoDeExibicaoServicosWeb.codigo,
       'modoDeExibicaoServicosMobile': modoDeExibicaoServicosMobile.codigo,
       'ocultarValoresFinanceirosWeb': ocultarValoresFinanceirosWeb,
+      'agendaFinanceiraPeriodoWeb': agendaFinanceiraPeriodoWeb.codigo,
+      'agendaFinanceiraTipoWeb': agendaFinanceiraTipoWeb.codigo,
+      'agendaFinanceiraStatusWeb': agendaFinanceiraStatusWeb.codigo,
+      'agendaFinanceiraTipoDePagamentoWeb': agendaFinanceiraTipoDePagamentoWeb,
     };
   }
 
@@ -340,6 +548,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
     ModoDeExibicaoUsuario? modoDeExibicaoServicosWeb,
     ModoDeExibicaoUsuario? modoDeExibicaoServicosMobile,
     bool? ocultarValoresFinanceirosWeb,
+    AgendaFinanceiraPeriodoWebPreferencia? agendaFinanceiraPeriodoWeb,
+    AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
+    AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
+    List<String>? agendaFinanceiraTipoDePagamentoWeb,
   }) {
     return PreferenciasIndividuaisDoUsuarioModel(
       idiomaDePreferencia: idiomaDePreferencia ?? this.idiomaDePreferencia,
@@ -365,6 +577,34 @@ class PreferenciasIndividuaisDoUsuarioModel {
               : this.modoDeExibicaoServicosMobile),
       ocultarValoresFinanceirosWeb:
           ocultarValoresFinanceirosWeb ?? this.ocultarValoresFinanceirosWeb,
+      agendaFinanceiraPeriodoWeb:
+          agendaFinanceiraPeriodoWeb ?? this.agendaFinanceiraPeriodoWeb,
+      agendaFinanceiraTipoWeb:
+          agendaFinanceiraTipoWeb ?? this.agendaFinanceiraTipoWeb,
+      agendaFinanceiraStatusWeb:
+          agendaFinanceiraStatusWeb ?? this.agendaFinanceiraStatusWeb,
+      agendaFinanceiraTipoDePagamentoWeb:
+          agendaFinanceiraTipoDePagamentoWeb ??
+          this.agendaFinanceiraTipoDePagamentoWeb,
     );
+  }
+
+  static List<String> _normalizarListaDeStrings(dynamic value) {
+    if (value is Iterable) {
+      return value
+          .map((item) => item?.toString().trim() ?? '')
+          .where((item) => item.isNotEmpty)
+          .toSet()
+          .toList(growable: false);
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return value
+          .split(',')
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toSet()
+          .toList(growable: false);
+    }
+    return <String>[];
   }
 }
