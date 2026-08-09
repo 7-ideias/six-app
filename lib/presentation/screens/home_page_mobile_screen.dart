@@ -15,6 +15,7 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
@@ -286,7 +287,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       modulo: 'geral',
       telaAtual: 'inicio_mobile',
       child: SixMobilePageShell(
-        title: 'Início',
+        title: context.t('mobile.nav.dash', fallback: widget.title),
         backgroundColor: _backgroundColor,
         primaryColor: _primaryColor,
         secondaryColor: _secondaryColor,
@@ -306,7 +307,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
           SizedBox(width: 6),
         ],
         bodyBuilder: _buildHomeContent,
-        bottomNavigationBar: kIsWeb ? null : NavBarMobile(initialIndex: 1),
+        bottomNavigationBar:
+            kIsWeb
+                ? null
+                : NavBarMobile(
+                  initialIndex: MobileNavigationController.dashIndex,
+                ),
       ),
     );
   }

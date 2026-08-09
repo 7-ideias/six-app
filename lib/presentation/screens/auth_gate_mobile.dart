@@ -6,6 +6,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/empresa_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
+import '../navigation/mobile_navigation_controller.dart';
 import 'auth_entry_mobile.dart';
 import 'mobile_main_shell.dart';
 
@@ -63,7 +64,10 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   void _goToHome() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => const MobileMainShell(initialIndex: 1),
+        builder:
+            (_) => const MobileMainShell(
+              initialIndex: MobileNavigationController.dashIndex,
+            ),
       ),
     );
   }

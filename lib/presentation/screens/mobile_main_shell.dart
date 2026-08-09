@@ -6,8 +6,13 @@ import 'home_page_mobile_screen.dart';
 import 'atendimento_mobile_screen.dart';
 
 class MobileMainShell extends StatefulWidget {
-  const MobileMainShell({super.key, this.initialIndex = 1})
-    : assert(initialIndex >= 0 && initialIndex <= 2);
+  const MobileMainShell({
+    super.key,
+    this.initialIndex = MobileNavigationController.dashIndex,
+  }) : assert(
+         initialIndex >= MobileNavigationController.firstIndex &&
+             initialIndex <= MobileNavigationController.lastIndex,
+       );
 
   final int initialIndex;
 
@@ -80,11 +85,11 @@ class _MobileMainShellState extends State<MobileMainShell>
 
   Widget _createPage(int index) {
     switch (index) {
-      case 0:
+      case MobileNavigationController.dashIndex:
+        return const HomePageMobile(title: 'dash');
+      case MobileNavigationController.managementIndex:
         return const GestaoMobileScreen();
-      case 1:
-        return const HomePageMobile(title: 'Início');
-      case 2:
+      case MobileNavigationController.serviceIndex:
         return const AtendimentoMobileScreen();
       default:
         throw ArgumentError.value(

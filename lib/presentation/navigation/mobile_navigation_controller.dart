@@ -1,10 +1,14 @@
 import 'package:flutter/widgets.dart';
 
 class MobileNavigationController extends ValueNotifier<int> {
-  MobileNavigationController({int initialIndex = 1}) : super(initialIndex);
+  MobileNavigationController({int initialIndex = dashIndex})
+    : super(initialIndex);
 
-  static const int firstIndex = 0;
-  static const int lastIndex = 2;
+  static const int dashIndex = 0;
+  static const int managementIndex = 1;
+  static const int serviceIndex = 2;
+  static const int firstIndex = dashIndex;
+  static const int lastIndex = serviceIndex;
 
   void select(int index) {
     final bool isValid = index >= firstIndex && index <= lastIndex;
@@ -19,8 +23,8 @@ class MobileNavigationScope
   const MobileNavigationScope({
     super.key,
     required MobileNavigationController controller,
-    required Widget child,
-  }) : super(notifier: controller, child: child);
+    required super.child,
+  }) : super(notifier: controller);
 
   static MobileNavigationController? maybeOf(BuildContext context) {
     return context
