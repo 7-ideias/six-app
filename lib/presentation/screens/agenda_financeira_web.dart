@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,7 +7,10 @@ import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
 import '../../providers/locale_settings_provider.dart';
@@ -26,6 +31,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   final AgendaFinanceiraAcoesFinanceiras _acoesService =
       AgendaFinanceiraAcoesFinanceiras();
   final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   static const String _periodoIntervaloPersonalizado =
       'Intervalo personalizado';
@@ -137,8 +144,76 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final bool abriuOverlay = await _abrirComoOverlayInicialSeNecessario();
       if (abriuOverlay || !mounted) return;
+      await _restaurarPreferenciasAgendaFinanceira();
       await _carregarTiposPagamentoConfigurados();
+      await _restaurarPreferenciasAgendaFinanceira();
+      await _restaurarPreferenciasAgendaFinanceiraBackend();
       await _consultar();
+    });
+  }
+
+  Future<void> _restaurarPreferenciasAgendaFinanceira() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null) {
+      return;
+    }
+    _aplicarPreferenciasAgendaFinanceira(preferencias);
+  }
+
+  Future<void> _restaurarPreferenciasAgendaFinanceiraBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null) {
+        return;
+      }
+      _aplicarPreferenciasAgendaFinanceira(preferencias);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias da agenda financeira: $error\n$stackTrace',
+      );
+    }
+  }
+
+  void _aplicarPreferenciasAgendaFinanceira(
+    PreferenciasIndividuaisDoUsuarioModel preferencias,
+  ) {
+    final String periodo = _periodoLabelPreferencia(
+      preferencias.agendaFinanceiraPeriodoWeb,
+    );
+    final String tipo = _tipoLabelPreferencia(
+      preferencias.agendaFinanceiraTipoWeb,
+    );
+    final String status = _statusLabelPreferencia(
+      preferencias.agendaFinanceiraStatusWeb,
+    );
+    final Set<String> formasPagamento =
+        preferencias.agendaFinanceiraTipoDePagamentoWeb
+            .map(_formaPagamentoLabelPorCodigoPreferencia)
+            .whereType<String>()
+            .where(_tiposRecebimentoFiltro.contains)
+            .toSet();
+
+    setState(() {
+      if (_periodos.contains(periodo)) {
+        _periodoSelecionado = periodo;
+      }
+      if (_tipos.contains(tipo)) {
+        _tipoSelecionado = tipo;
+      }
+      if (_status.contains(status)) {
+        _statusSelecionado = status;
+      }
+      _formasPagamentoSelecionadas
+        ..clear()
+        ..addAll(formasPagamento);
+      if (_usaPeriodoPersonalizado) {
+        _ajustarPeriodoPersonalizadoSeguro();
+      }
     });
   }
 
@@ -450,6 +525,187 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         _ajustarPeriodoPersonalizadoSeguro();
       }
     });
+    _salvarPreferenciasAgendaFinanceira(
+      agendaFinanceiraPeriodoWeb: _periodoCodigoPreferencia(periodo),
+    );
+  }
+
+  void _selecionarTipo(String? tipo) {
+    if (tipo == null || !_tipos.contains(tipo)) {
+      return;
+    }
+    setState(() => _tipoSelecionado = tipo);
+    _salvarPreferenciasAgendaFinanceira(
+      agendaFinanceiraTipoWeb: _tipoCodigoPreferencia(tipo),
+    );
+  }
+
+  void _selecionarStatus(String? status) {
+    if (status == null || !_status.contains(status)) {
+      return;
+    }
+    setState(() => _statusSelecionado = status);
+    _salvarPreferenciasAgendaFinanceira(
+      agendaFinanceiraStatusWeb: _statusCodigoPreferencia(status),
+    );
+  }
+
+  void _selecionarTiposPagamento(Set<String> resultado) {
+    final Set<String> valoresValidos =
+        resultado
+            .where((forma) => _tiposRecebimentoFiltro.contains(forma))
+            .toSet();
+    setState(() {
+      _formasPagamentoSelecionadas
+        ..clear()
+        ..addAll(valoresValidos);
+    });
+    _salvarPreferenciasAgendaFinanceira(
+      agendaFinanceiraTipoDePagamentoWeb: _codigosTipoPagamentoPreferencia(
+        valoresValidos,
+      ),
+    );
+  }
+
+  void _salvarPreferenciasAgendaFinanceira({
+    String? agendaFinanceiraPeriodoWeb,
+    String? agendaFinanceiraTipoWeb,
+    String? agendaFinanceiraStatusWeb,
+    List<String>? agendaFinanceiraTipoDePagamentoWeb,
+  }) {
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            agendaFinanceiraPeriodoWeb: agendaFinanceiraPeriodoWeb,
+            agendaFinanceiraTipoWeb: agendaFinanceiraTipoWeb,
+            agendaFinanceiraStatusWeb: agendaFinanceiraStatusWeb,
+            agendaFinanceiraTipoDePagamentoWeb:
+                agendaFinanceiraTipoDePagamentoWeb,
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar preferencias da agenda financeira: $error\n$stackTrace',
+            );
+          }),
+    );
+  }
+
+  String _periodoCodigoPreferencia(String periodo) {
+    switch (periodo) {
+      case 'Hoje':
+        return AgendaFinanceiraPeriodoWebPreferencia.hoje.codigo;
+      case 'Este mês':
+        return AgendaFinanceiraPeriodoWebPreferencia.esteMes.codigo;
+      case 'Próximo mês':
+        return AgendaFinanceiraPeriodoWebPreferencia.proximoMes.codigo;
+      case _periodoIntervaloPersonalizado:
+        return AgendaFinanceiraPeriodoWebPreferencia.personalizado.codigo;
+      default:
+        return AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias.codigo;
+    }
+  }
+
+  String _periodoLabelPreferencia(
+    AgendaFinanceiraPeriodoWebPreferencia periodo,
+  ) {
+    switch (periodo) {
+      case AgendaFinanceiraPeriodoWebPreferencia.hoje:
+        return 'Hoje';
+      case AgendaFinanceiraPeriodoWebPreferencia.esteMes:
+        return 'Este mês';
+      case AgendaFinanceiraPeriodoWebPreferencia.proximoMes:
+        return 'Próximo mês';
+      case AgendaFinanceiraPeriodoWebPreferencia.personalizado:
+        return _periodoIntervaloPersonalizado;
+      case AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias:
+        return 'Próximos 7 dias';
+    }
+  }
+
+  String _tipoCodigoPreferencia(String tipo) {
+    switch (tipo) {
+      case 'Receber':
+        return AgendaFinanceiraTipoWebPreferencia.receber.codigo;
+      case 'Pagar':
+        return AgendaFinanceiraTipoWebPreferencia.pagar.codigo;
+      default:
+        return AgendaFinanceiraTipoWebPreferencia.todos.codigo;
+    }
+  }
+
+  String _tipoLabelPreferencia(AgendaFinanceiraTipoWebPreferencia tipo) {
+    switch (tipo) {
+      case AgendaFinanceiraTipoWebPreferencia.receber:
+        return 'Receber';
+      case AgendaFinanceiraTipoWebPreferencia.pagar:
+        return 'Pagar';
+      case AgendaFinanceiraTipoWebPreferencia.todos:
+        return 'Todos';
+    }
+  }
+
+  String _statusCodigoPreferencia(String status) {
+    switch (status) {
+      case 'Previsto':
+        return AgendaFinanceiraStatusWebPreferencia.previsto.codigo;
+      case 'Pendente':
+        return AgendaFinanceiraStatusWebPreferencia.pendente.codigo;
+      case 'Vence hoje':
+        return AgendaFinanceiraStatusWebPreferencia.venceHoje.codigo;
+      case 'Vencido':
+        return AgendaFinanceiraStatusWebPreferencia.vencido.codigo;
+      case 'Pago':
+        return AgendaFinanceiraStatusWebPreferencia.pago.codigo;
+      case 'Recebido':
+        return AgendaFinanceiraStatusWebPreferencia.recebido.codigo;
+      case 'Parcial':
+        return AgendaFinanceiraStatusWebPreferencia.parcial.codigo;
+      case 'Cancelado':
+        return AgendaFinanceiraStatusWebPreferencia.cancelado.codigo;
+      default:
+        return AgendaFinanceiraStatusWebPreferencia.todos.codigo;
+    }
+  }
+
+  String _statusLabelPreferencia(AgendaFinanceiraStatusWebPreferencia status) {
+    switch (status) {
+      case AgendaFinanceiraStatusWebPreferencia.previsto:
+        return 'Previsto';
+      case AgendaFinanceiraStatusWebPreferencia.pendente:
+        return 'Pendente';
+      case AgendaFinanceiraStatusWebPreferencia.venceHoje:
+        return 'Vence hoje';
+      case AgendaFinanceiraStatusWebPreferencia.vencido:
+        return 'Vencido';
+      case AgendaFinanceiraStatusWebPreferencia.pago:
+        return 'Pago';
+      case AgendaFinanceiraStatusWebPreferencia.recebido:
+        return 'Recebido';
+      case AgendaFinanceiraStatusWebPreferencia.parcial:
+        return 'Parcial';
+      case AgendaFinanceiraStatusWebPreferencia.cancelado:
+        return 'Cancelado';
+      case AgendaFinanceiraStatusWebPreferencia.todos:
+        return 'Todos';
+    }
+  }
+
+  List<String> _codigosTipoPagamentoPreferencia(Set<String> formasPagamento) {
+    return formasPagamento
+        .map(_codigoTipoFormaPagamentoSelecionada)
+        .whereType<String>()
+        .where((codigo) => codigo.trim().isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  String? _formaPagamentoLabelPorCodigoPreferencia(String codigo) {
+    final String codigoNormalizado = codigo.trim().toLowerCase();
+    if (codigoNormalizado.isEmpty) {
+      return null;
+    }
+    return _descricaoPorBackendFormaPagamento[codigoNormalizado] ??
+        _descricaoPorBackendFormaPagamento[codigo.trim().toUpperCase()];
   }
 
   void _ajustarPeriodoPersonalizadoSeguro() {
@@ -1355,18 +1611,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               _selecionarDataFimPersonalizada,
             ),
           ],
-          _drop(
-            'Tipo',
-            _tipoSelecionado,
-            _tipos,
-            (v) => setState(() => _tipoSelecionado = v!),
-          ),
-          _drop(
-            'Status',
-            _statusSelecionado,
-            _status,
-            (v) => setState(() => _statusSelecionado = v!),
-          ),
+          _drop('Tipo', _tipoSelecionado, _tipos, _selecionarTipo),
+          _drop('Status', _statusSelecionado, _status, _selecionarStatus),
           _multiSelectTipoPagamento(theme),
           FilledButton.icon(
             onPressed:
@@ -1398,13 +1644,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           _tiposRecebimentoFiltro.where((forma) => forma != 'Todos').toList(),
       selectedValues: _formasPagamentoSelecionadas,
       icon: Icons.payments_outlined,
-      onChanged: (resultado) {
-        setState(() {
-          _formasPagamentoSelecionadas
-            ..clear()
-            ..addAll(resultado);
-        });
-      },
+      onChanged: _selecionarTiposPagamento,
     );
   }
 

@@ -1,0 +1,7 @@
+interface:
+  display_name: "SixApp Preferências Individuais"
+  short_description: "Persiste preferências do usuário no Web e Mobile"
+  default_prompt: "Use $sixapp-user-preferences para implementar esta preferência individual do usuário no Mobile, Web ou ambos, persistindo-a no backend e no cache local e restaurando-a na inicialização da aplicação."
+
+policy:
+  allow_implicit_invocation: true

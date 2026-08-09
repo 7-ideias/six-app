@@ -27,7 +27,7 @@ class HttpUsuarioApiClient implements UsuarioApiClient {
   );
 
   static final Uri _preferenciasUri = Uri.parse(
-    '${AppConfig.baseUrl}/private/api/dados-pessoais/preferencias',
+    '${AppConfig.baseUrl}/private/api/eventos/atualizacoes-simples',
   );
 
   @override
@@ -67,13 +67,28 @@ class HttpUsuarioApiClient implements UsuarioApiClient {
   Future<void> atualizarPreferenciasIndividuais(
     Map<String, dynamic> body,
   ) async {
-    final http.Response response = await _httpClient.patch(
+    if (body.isEmpty) {
+      return;
+    }
+
+    final Map<String, dynamic> eventBody = <String, dynamic>{
+      'tipo': 'PREFERENCIAS_INDIVIDUAIS_DO_USUARIO',
+      'origem': 'sixapp-flutter',
+      'recurso': 'preferenciasIndividuaisDoUsuario',
+      'acao': 'ATUALIZAR_PARCIAL',
+      'ocorridoEm': DateTime.now().toUtc().toIso8601String(),
+      'payload': body,
+    };
+
+    final http.Response response = await _httpClient.post(
       _preferenciasUri,
       headers: await _headers(),
-      body: jsonEncode(body),
+      body: jsonEncode(eventBody),
     );
 
-    if (response.statusCode != 200 && response.statusCode != 204) {
+    if (response.statusCode != 200 &&
+        response.statusCode != 202 &&
+        response.statusCode != 204) {
       throw UsuarioApiException(statusCode: response.statusCode);
     }
   }
