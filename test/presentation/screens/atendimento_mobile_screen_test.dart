@@ -12,6 +12,7 @@ import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_tecnico_s
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_pendentes_pagamento_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/receber_mobile_screen.dart';
@@ -160,13 +161,18 @@ void main() {
     }
   });
 
-  testWidgets('menu de serviços abre criação e consulta técnica', (
+  testWidgets('menu de serviços abre criação, consulta técnica e orçamentos', (
     WidgetTester tester,
   ) async {
-    final List<String> navigations = await _pumpServicos(tester);
+    final List<Widget> navigations = await _pumpServicos(tester);
 
     expect(find.text('Novo serviço'), findsOneWidget);
     expect(find.text('Consultar serviços em andamento'), findsOneWidget);
+    expect(find.text('Orçamentos aguardando aprovação'), findsOneWidget);
+    expect(
+      find.text('Consulte serviços que ainda precisam da aprovação do cliente'),
+      findsOneWidget,
+    );
 
     await tester.tap(
       find.byKey(const ValueKey<String>('servicos-action-new-service')),
@@ -176,11 +182,26 @@ void main() {
       find.byKey(const ValueKey<String>('servicos-action-in-progress')),
     );
     await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('servicos-action-waiting-approval')),
+    );
+    await tester.pump();
 
-    expect(navigations, <String>[
-      'AtendimentoTecnicoMobileScreen',
-      'AtendimentosTecnicosMobileScreen',
-    ]);
+    expect(
+      navigations.map((Widget page) => page.runtimeType.toString()),
+      <String>[
+        'AtendimentoTecnicoMobileScreen',
+        'AtendimentosTecnicosMobileScreen',
+        'AtendimentosTecnicosMobileScreen',
+      ],
+    );
+    final AtendimentosTecnicosMobileScreen approvalPage =
+        navigations.last as AtendimentosTecnicosMobileScreen;
+    expect(approvalPage.listContext.statusFilter, 'WAITING_CUSTOMER_APROVAL');
+    expect(
+      approvalPage.listContext.titleFallback,
+      'Orçamentos aguardando aprovação',
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -390,11 +411,11 @@ Future<List<String>> _pumpAtendimento(
   return navigations;
 }
 
-Future<List<String>> _pumpServicos(
+Future<List<Widget>> _pumpServicos(
   WidgetTester tester, {
   Size size = const Size(390, 900),
 }) async {
-  final List<String> navigations = <String>[];
+  final List<Widget> navigations = <Widget>[];
 
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
@@ -413,8 +434,7 @@ Future<List<String>> _pumpServicos(
           devicePixelRatio: 1,
         ),
         child: OpcoesServicosAtendimentoMobileScreen(
-          onNavigate:
-              (_, Widget page) => navigations.add(page.runtimeType.toString()),
+          onNavigate: (_, Widget page) => navigations.add(page),
         ),
       ),
     ),
@@ -570,7 +590,7 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
   final List<AtendimentoTecnicoModel> atendimentos;
 
   @override
-  Future<List<AtendimentoTecnicoModel>> listar() async {
+  Future<List<AtendimentoTecnicoModel>> listar({String? status}) async {
     return atendimentos;
   }
 }

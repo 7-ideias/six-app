@@ -928,11 +928,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       scrolledSurfaceOpacity: 0.66,
       actions: <Widget>[
         IconButton(
-          tooltip: _txt('pdv.openCashOperations', 'Operações de caixa'),
-          onPressed: _busyOrLoadingSession ? null : _abrirOperacoesCaixaMobile,
-          icon: Icon(Icons.point_of_sale_rounded),
-        ),
-        IconButton(
           tooltip: 'Ler código',
           onPressed:
               _enviando || _buscandoCodigo || !_caixaAbertoParaVenda
@@ -1204,7 +1199,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                                 _enviando || !_caixaAbertoParaVenda
                                     ? null
                                     : _abrirSelecaoProduto,
-                            primary: true,
                             compact: true,
                           ),
                         ),
@@ -1229,29 +1223,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
-                    _buildQuickActionButton(
-                      label: _txt(
-                        'pdv.openCashOperations',
-                        'Operações de caixa',
-                      ),
-                      helper:
-                          _caixaAbertoParaVenda
-                              ? _txt(
-                                'pdv.cashSessionReviewActionHint',
-                                'Conferir sessão',
-                              )
-                              : _txt(
-                                'pdv.cashSessionOpenOrRefreshHint',
-                                'Abrir ou atualizar sessão',
-                              ),
-                      icon: Icons.point_of_sale_rounded,
-                      onTap:
-                          _busyOrLoadingSession
-                              ? null
-                              : _abrirOperacoesCaixaMobile,
-                      compact: true,
-                    ),
                   ],
                 )
                 : Column(
@@ -1269,7 +1240,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                             _enviando || !_caixaAbertoParaVenda
                                 ? null
                                 : _abrirSelecaoProduto,
-                        primary: true,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -1291,33 +1261,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                                 ? null
                                 : _abrirScannerCodigoBarras,
                         loading: _buscandoCodigo,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    SixStaggeredEntry(
-                      delay: Duration(milliseconds: 190),
-                      duration: _entryDuration,
-                      beginOffset: Offset(0, 0.035),
-                      child: _buildQuickActionButton(
-                        label: _txt(
-                          'pdv.openCashOperations',
-                          'Operações de caixa',
-                        ),
-                        helper:
-                            _caixaAbertoParaVenda
-                                ? _txt(
-                                  'pdv.cashSessionReviewActionHint',
-                                  'Conferir sessão',
-                                )
-                                : _txt(
-                                  'pdv.cashSessionOpenOrRefreshHint',
-                                  'Abrir ou atualizar sessão',
-                                ),
-                        icon: Icons.point_of_sale_rounded,
-                        onTap:
-                            _busyOrLoadingSession
-                                ? null
-                                : _abrirOperacoesCaixaMobile,
                       ),
                     ),
                   ],
@@ -1389,7 +1332,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 child: Icon(
                   _editandoVendaNaoLiquidada
                       ? Icons.receipt_long_outlined
-                      : Icons.point_of_sale_outlined,
+                      : Icons.shopping_bag_outlined,
                   color: SixMobilePalette.onPrimary,
                 ),
               ),
@@ -1549,9 +1492,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               height: 1.25,
             ),
           ),
-          SizedBox(height: 4),
-          _buildSessaoCaixaMobileChip(),
-          SizedBox(height: 8),
+          SizedBox(height: 10),
           Text(
             _editandoVendaNaoLiquidada
                 ? 'Escolha uma opção abaixo para continuar.'
@@ -1570,39 +1511,141 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  Widget _buildSessaoCaixaMobileChip() {
+  Widget _buildSessaoCaixaMobileChip({bool alignLeft = true}) {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final _SessaoCaixaMobileView view = _sessaoCaixaMobileView(l10n);
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: double.infinity),
-        padding: EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-        decoration: BoxDecoration(
-          color: view.backgroundColor,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: view.borderColor),
+    final Widget badge = Container(
+      constraints: BoxConstraints(maxWidth: double.infinity),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: view.backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: view.borderColor),
+      ),
+      child: Text(
+        view.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: view.foregroundColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(view.icon, size: 15, color: view.foregroundColor),
-            SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                view.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: view.foregroundColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
+      ),
+    );
+
+    if (!alignLeft) {
+      return badge;
+    }
+
+    return Align(alignment: Alignment.centerLeft, child: badge);
+  }
+
+  Widget _buildSessaoAtivaOverlayBadge() {
+    if (!_caixaAbertoParaVenda) {
+      return SizedBox.shrink();
+    }
+
+    return _buildSessaoCaixaMobileChip(alignLeft: false);
+  }
+
+  Widget _buildSessionBadgeIcon({
+    required IconData icon,
+    required Color iconColor,
+    required Color surfaceColor,
+    required BorderRadius borderRadius,
+    Border? border,
+    List<BoxShadow>? boxShadow,
+    double size = 46,
+    double iconSize = 24,
+  }) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: <Widget>[
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: borderRadius,
+              border: border,
+              boxShadow: boxShadow,
+            ),
+            child: Icon(icon, color: iconColor, size: iconSize),
+          ),
+          Positioned(
+            top: -8,
+            right: -76,
+            child: _buildSessaoAtivaOverlayBadge(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInitialSessionBadgeIcon() {
+    return _buildSessionBadgeIcon(
+      icon: Icons.shopping_bag_outlined,
+      iconColor: SixMobilePalette.accent,
+      iconSize: 26,
+      size: _initialIllustrationInnerSize,
+      surfaceColor: SixMobilePalette.surface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: SixMobilePalette.activeBorder),
+      boxShadow: <BoxShadow>[
+        BoxShadow(
+          color: SixMobilePalette.navigationShadow,
+          blurRadius: 10,
+          offset: Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInitialIllustrationDecoration() {
+    return Container(
+      width: _initialIllustrationSize,
+      height: _initialIllustrationSize,
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: SixMobilePalette.border),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          Positioned(
+            top: 20,
+            right: 22,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: SixMobilePalette.softAccentSurface,
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            left: 24,
+            bottom: 24,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: _withAlpha(SixMobilePalette.accent, 0.10),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          _buildInitialSessionBadgeIcon(),
+        ],
       ),
     );
   }
@@ -1611,7 +1654,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     if (_carregandoSessaoCaixa) {
       return _SessaoCaixaMobileView(
         label: l10n?.pdvCashSessionChecking ?? 'Verificando sessão do caixa',
-        icon: Icons.sync_rounded,
         foregroundColor: SixMobilePalette.primary,
         backgroundColor: _withAlpha(SixMobilePalette.primary, 0.09),
         borderColor: _withAlpha(SixMobilePalette.primary, 0.14),
@@ -1621,7 +1663,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     if (_erroSessaoCaixa) {
       return _SessaoCaixaMobileView(
         label: l10n?.pdvCashSessionUnavailable ?? 'Sessão indisponível',
-        icon: Icons.cloud_off_outlined,
         foregroundColor: SixMobilePalette.error,
         backgroundColor: _withAlpha(SixMobilePalette.error, 0.08),
         borderColor: _withAlpha(SixMobilePalette.error, 0.16),
@@ -1633,7 +1674,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       final Color warningColor = _warningColor;
       return _SessaoCaixaMobileView(
         label: l10n?.pdvCashSessionNotOpen ?? 'Sem sessão aberta',
-        icon: Icons.point_of_sale_outlined,
         foregroundColor: warningColor,
         backgroundColor: _withAlpha(warningColor, 0.10),
         borderColor: _withAlpha(warningColor, 0.18),
@@ -1647,7 +1687,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     return _SessaoCaixaMobileView(
       label: _labelSessaoCaixa(sessao, l10n),
-      icon: aberta ? Icons.point_of_sale_outlined : Icons.lock_clock_outlined,
       foregroundColor: foreground,
       backgroundColor: _withAlpha(foreground, aberta ? 0.11 : 0.10),
       borderColor: _withAlpha(foreground, aberta ? 0.16 : 0.18),
@@ -1664,82 +1703,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   String _labelSessaoCaixa(CaixaSessao sessao, AppLocalizations? l10n) {
-    final String nomeCaixa = sessao.nomeCaixa.trim();
-    final String statusLabel =
-        _sessaoCaixaAberta(sessao)
-            ? (l10n?.pdvWebSessionActive ?? 'Sessão ativa')
-            : (l10n?.pdvCashSessionClosed ?? 'Sessão fechada');
-
-    if (nomeCaixa.isEmpty) {
-      return statusLabel;
-    }
-
-    return '$nomeCaixa · $statusLabel';
+    return _sessaoCaixaAberta(sessao)
+        ? (l10n?.pdvWebSessionActive ?? 'Sessão ativa')
+        : (l10n?.pdvCashSessionClosed ?? 'Sessão fechada');
   }
 
   Widget _buildMinimalShoppingIllustration() {
     return Semantics(
       label: 'Ilustração de compra',
       image: true,
-      child: Container(
-        width: _initialIllustrationSize,
-        height: _initialIllustrationSize,
-        decoration: BoxDecoration(
-          color: SixMobilePalette.softNeutralSurface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: SixMobilePalette.border),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: <Widget>[
-            Positioned(
-              top: 20,
-              right: 22,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: SixMobilePalette.softAccentSurface,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 24,
-              bottom: 24,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: _withAlpha(SixMobilePalette.accent, 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            Container(
-              width: _initialIllustrationInnerSize,
-              height: _initialIllustrationInnerSize,
-              decoration: BoxDecoration(
-                color: SixMobilePalette.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: SixMobilePalette.activeBorder),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: SixMobilePalette.navigationShadow,
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.shopping_bag_outlined,
-                color: SixMobilePalette.accent,
-                size: 26,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: _buildInitialIllustrationDecoration(),
     );
   }
 
@@ -2750,14 +2723,12 @@ class _FormaPagamentoMobile {
 class _SessaoCaixaMobileView {
   const _SessaoCaixaMobileView({
     required this.label,
-    required this.icon,
     required this.foregroundColor,
     required this.backgroundColor,
     required this.borderColor,
   });
 
   final String label;
-  final IconData icon;
   final Color foregroundColor;
   final Color backgroundColor;
   final Color borderColor;

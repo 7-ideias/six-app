@@ -24,8 +24,8 @@ class AtendimentoTecnicoService {
     return _apiClient.salvarCustomizacoesStatusAtendimento(customizacoes);
   }
 
-  Future<List<AtendimentoTecnicoModel>> listar() {
-    return _apiClient.listar();
+  Future<List<AtendimentoTecnicoModel>> listar({String? status}) {
+    return _apiClient.listar(status: status);
   }
 
   Future<AtendimentoTecnicoModel> buscarPorId(String id) {
