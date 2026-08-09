@@ -81,6 +81,49 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.lastUpdatedAt': 'Última atualização às',
     'common.notInformed': 'Não informada',
     'common.generating': 'Gerando...',
+    'common.saving': 'Salvando...',
+    'empresa.configuracao.title': 'Empresa',
+    'empresa.configuracao.loadError':
+        'Não foi possível carregar os dados da empresa.',
+    'empresa.configuracao.saveSuccess':
+        'Dados da empresa atualizados com sucesso.',
+    'empresa.configuracao.saveError':
+        'Não foi possível salvar os dados da empresa.',
+    'empresa.configuracao.summaryTitle': 'Dados do comércio',
+    'empresa.configuracao.summarySubtitle':
+        'Atualize as informações usadas nos documentos e no atendimento.',
+    'empresa.configuracao.identityTitle': 'Identidade da empresa',
+    'empresa.configuracao.identitySubtitle':
+        'Revise os dados principais antes de salvar as alterações.',
+    'empresa.configuracao.legalName': 'Razão social',
+    'empresa.configuracao.legalNameHint': 'Nome legal da empresa',
+    'empresa.configuracao.tradeName': 'Nome fantasia',
+    'empresa.configuracao.tradeNameHint': 'Nome comercial usado no atendimento',
+    'empresa.configuracao.document': 'Documento da empresa',
+    'empresa.configuracao.documentHint': 'CNPJ ou documento fiscal equivalente',
+    'empresa.configuracao.requiredField': 'Informe este campo.',
+    'empresa.configuracao.readyToEdit': 'Dados prontos para edição.',
+    'empresa.configuracao.waitingData': 'Aguardando dados da empresa.',
+    'empresa.configuracao.statusSubtitle':
+        'As informações salvas aparecem nos documentos e comprovantes do comércio.',
+    'empresa.configuracao.saveChanges': 'Salvar alterações',
+    'empresa.configuracao.logoTitle': 'Logo da empresa',
+    'empresa.configuracao.logoSubtitle':
+        'Adicione uma imagem nítida, de preferência quadrada.',
+    'empresa.configuracao.logoRegistered':
+        'Imagem pronta para salvar no cadastro do comércio.',
+    'empresa.configuracao.logoSelect': 'Selecionar logo',
+    'empresa.configuracao.logoChange': 'Trocar logo',
+    'empresa.configuracao.logoRemove': 'Remover',
+    'empresa.configuracao.logoSheetTitle': 'Cadastrar logo',
+    'empresa.configuracao.logoSheetSubtitle':
+        'Escolha uma imagem da galeria ou tire uma foto.',
+    'empresa.configuracao.logoFromGallery': 'Escolher da galeria',
+    'empresa.configuracao.logoFromCamera': 'Usar câmera',
+    'empresa.configuracao.logoLoadError': 'Não foi possível carregar o logo.',
+    'empresa.configuracao.logoTooLarge': 'Escolha uma imagem de até 1 MB.',
+    'empresa.configuracao.logoSemantics': 'Logo cadastrado da empresa.',
+    'empresa.configuracao.logoEmptySemantics': 'Nenhum logo cadastrado.',
     'catalogHealth.mobile.attentionItems': '{count} itens precisam de atenção',
     'catalogHealth.status.critical': 'Crítico',
     'catalogHealth.status.warning': 'Atenção',
@@ -852,6 +895,46 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.lastUpdatedAt': 'Last updated at',
     'common.notInformed': 'Not informed',
     'common.generating': 'Generating...',
+    'common.saving': 'Saving...',
+    'empresa.configuracao.title': 'Company',
+    'empresa.configuracao.loadError': 'Could not load company data.',
+    'empresa.configuracao.saveSuccess': 'Company data updated successfully.',
+    'empresa.configuracao.saveError': 'Could not save company data.',
+    'empresa.configuracao.summaryTitle': 'Business data',
+    'empresa.configuracao.summarySubtitle':
+        'Update the information used in documents and service.',
+    'empresa.configuracao.identityTitle': 'Company identity',
+    'empresa.configuracao.identitySubtitle':
+        'Review the main data before saving changes.',
+    'empresa.configuracao.legalName': 'Legal name',
+    'empresa.configuracao.legalNameHint': 'Company legal name',
+    'empresa.configuracao.tradeName': 'Trade name',
+    'empresa.configuracao.tradeNameHint': 'Commercial name used during service',
+    'empresa.configuracao.document': 'Company document',
+    'empresa.configuracao.documentHint': 'Tax ID or equivalent fiscal document',
+    'empresa.configuracao.requiredField': 'Fill in this field.',
+    'empresa.configuracao.readyToEdit': 'Data ready for editing.',
+    'empresa.configuracao.waitingData': 'Waiting for company data.',
+    'empresa.configuracao.statusSubtitle':
+        'Saved information appears in business documents and receipts.',
+    'empresa.configuracao.saveChanges': 'Save changes',
+    'empresa.configuracao.logoTitle': 'Company logo',
+    'empresa.configuracao.logoSubtitle':
+        'Add a clear image, preferably square.',
+    'empresa.configuracao.logoRegistered':
+        'Image ready to save in the business profile.',
+    'empresa.configuracao.logoSelect': 'Select logo',
+    'empresa.configuracao.logoChange': 'Change logo',
+    'empresa.configuracao.logoRemove': 'Remove',
+    'empresa.configuracao.logoSheetTitle': 'Add logo',
+    'empresa.configuracao.logoSheetSubtitle':
+        'Choose an image from the gallery or take a photo.',
+    'empresa.configuracao.logoFromGallery': 'Choose from gallery',
+    'empresa.configuracao.logoFromCamera': 'Use camera',
+    'empresa.configuracao.logoLoadError': 'Could not load the logo.',
+    'empresa.configuracao.logoTooLarge': 'Choose an image up to 1 MB.',
+    'empresa.configuracao.logoSemantics': 'Company logo registered.',
+    'empresa.configuracao.logoEmptySemantics': 'No logo registered.',
     'atendimentoTecnico.status': 'Status',
     'atendimentoTecnico.customerNotInformed': 'Customer not informed',
     'atendimentoTecnico.expectedDelivery': 'Expected delivery',
@@ -1566,6 +1649,51 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.lastUpdatedAt': 'Última actualización a las',
     'common.notInformed': 'No informado',
     'common.generating': 'Generando...',
+    'common.saving': 'Guardando...',
+    'empresa.configuracao.title': 'Empresa',
+    'empresa.configuracao.loadError':
+        'No se pudieron cargar los datos de la empresa.',
+    'empresa.configuracao.saveSuccess':
+        'Datos de la empresa actualizados correctamente.',
+    'empresa.configuracao.saveError':
+        'No se pudieron guardar los datos de la empresa.',
+    'empresa.configuracao.summaryTitle': 'Datos del comercio',
+    'empresa.configuracao.summarySubtitle':
+        'Actualiza la información usada en documentos y atención.',
+    'empresa.configuracao.identityTitle': 'Identidad de la empresa',
+    'empresa.configuracao.identitySubtitle':
+        'Revisa los datos principales antes de guardar los cambios.',
+    'empresa.configuracao.legalName': 'Razón social',
+    'empresa.configuracao.legalNameHint': 'Nombre legal de la empresa',
+    'empresa.configuracao.tradeName': 'Nombre comercial',
+    'empresa.configuracao.tradeNameHint':
+        'Nombre comercial usado en la atención',
+    'empresa.configuracao.document': 'Documento de la empresa',
+    'empresa.configuracao.documentHint':
+        'Identificación fiscal o documento equivalente',
+    'empresa.configuracao.requiredField': 'Completa este campo.',
+    'empresa.configuracao.readyToEdit': 'Datos listos para edición.',
+    'empresa.configuracao.waitingData': 'Esperando datos de la empresa.',
+    'empresa.configuracao.statusSubtitle':
+        'La información guardada aparece en documentos y comprobantes del comercio.',
+    'empresa.configuracao.saveChanges': 'Guardar cambios',
+    'empresa.configuracao.logoTitle': 'Logo de la empresa',
+    'empresa.configuracao.logoSubtitle':
+        'Agrega una imagen nítida, preferiblemente cuadrada.',
+    'empresa.configuracao.logoRegistered':
+        'Imagen lista para guardar en el perfil del comercio.',
+    'empresa.configuracao.logoSelect': 'Seleccionar logo',
+    'empresa.configuracao.logoChange': 'Cambiar logo',
+    'empresa.configuracao.logoRemove': 'Eliminar',
+    'empresa.configuracao.logoSheetTitle': 'Registrar logo',
+    'empresa.configuracao.logoSheetSubtitle':
+        'Elige una imagen de la galería o toma una foto.',
+    'empresa.configuracao.logoFromGallery': 'Elegir de la galería',
+    'empresa.configuracao.logoFromCamera': 'Usar cámara',
+    'empresa.configuracao.logoLoadError': 'No se pudo cargar el logo.',
+    'empresa.configuracao.logoTooLarge': 'Elige una imagen de hasta 1 MB.',
+    'empresa.configuracao.logoSemantics': 'Logo registrado de la empresa.',
+    'empresa.configuracao.logoEmptySemantics': 'Ningún logo registrado.',
     'atendimentoTecnico.status': 'Estado',
     'atendimentoTecnico.customerNotInformed': 'Cliente no informado',
     'atendimentoTecnico.expectedDelivery': 'Entrega prevista',
