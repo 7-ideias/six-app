@@ -14,8 +14,23 @@ import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile_motion.dart';
 import '../components/six_backend_loading.dart';
 
+typedef OperacoesCaixaUsuarioLoader = Future<void> Function();
+typedef OperacoesCaixaCollaboratorNameProvider = String Function();
+typedef OperacoesCaixaNowProvider = DateTime Function();
+
 class OperacoesCaixaMobileScreen extends StatefulWidget {
-  const OperacoesCaixaMobileScreen({super.key});
+  const OperacoesCaixaMobileScreen({
+    super.key,
+    this.caixaService,
+    this.usuarioAtualLoader,
+    this.collaboratorNameProvider,
+    this.nowProvider,
+  });
+
+  final CaixaService? caixaService;
+  final OperacoesCaixaUsuarioLoader? usuarioAtualLoader;
+  final OperacoesCaixaCollaboratorNameProvider? collaboratorNameProvider;
+  final OperacoesCaixaNowProvider? nowProvider;
 
   @override
   State<OperacoesCaixaMobileScreen> createState() =>
@@ -28,15 +43,16 @@ class _OperacoesCaixaMobileScreenState
   static Color get _primaryColor => SixMobilePalette.primary;
   static Color get _secondaryColor => SixMobilePalette.secondary;
   static Color get _accentColor => SixMobilePalette.accent;
-  static const Color _successColor = Color(0xFF047857);
-  static const Color _warningColor = Color(0xFF92400E);
+  static const Color _successColorLight = Color(0xFF047857);
+  static const Color _successColorDark = Color(0xFF34D399);
+  static const Color _warningColorLight = Color(0xFF92400E);
+  static const Color _warningColorDark = Color(0xFFF59E0B);
   static const Color _summaryGradientStart = Color(0xFF173DFF);
   static const Color _summaryGradientMiddle = Color(0xFF3D00D8);
   static const Color _summaryGradientEnd = Color(0xFF2700A8);
   static const Color _summaryTraceColor = Color(0xFF38BDF8);
   static const Duration _transitionDuration = Duration(milliseconds: 240);
 
-  final CaixaService _caixaService = CaixaModule.caixaService;
   final TextEditingController _trocoInicialController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _observacaoController = TextEditingController();
@@ -49,6 +65,10 @@ class _OperacoesCaixaMobileScreenState
       TextEditingController();
   final TextEditingController _fechamentoObservacaoController =
       TextEditingController();
+
+  late final CaixaService _caixaService;
+  late final OperacoesCaixaUsuarioLoader _usuarioAtualLoader;
+  late final OperacoesCaixaNowProvider _nowProvider;
 
   bool _loading = true;
   bool _loadingMovimentos = false;
@@ -75,6 +95,13 @@ class _OperacoesCaixaMobileScreenState
   @override
   void initState() {
     super.initState();
+    _caixaService = widget.caixaService ?? CaixaModule.caixaService;
+    _usuarioAtualLoader =
+        widget.usuarioAtualLoader ??
+        () async {
+          await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+        };
+    _nowProvider = widget.nowProvider ?? DateTime.now;
     _carregarDadosIniciais();
   }
 
@@ -93,6 +120,25 @@ class _OperacoesCaixaMobileScreenState
 
   static Color _withAlpha(Color color, double opacity) {
     return color.withAlpha((opacity.clamp(0.0, 1.0) * 255).round());
+  }
+
+  Color get _successColor =>
+      Theme.of(context).brightness == Brightness.dark
+          ? _successColorDark
+          : _successColorLight;
+
+  Color get _warningColor =>
+      Theme.of(context).brightness == Brightness.dark
+          ? _warningColorDark
+          : _warningColorLight;
+
+  Color _foregroundForSemantic(Color background) {
+    final Brightness brightness = ThemeData.estimateBrightnessForColor(
+      background,
+    );
+    return brightness == Brightness.dark
+        ? SixMobilePalette.onPrimary
+        : SixMobilePalette.backgroundDark;
   }
 
   bool get _temCaixaAberto {
@@ -230,7 +276,7 @@ class _OperacoesCaixaMobileScreenState
 
   Future<void> _carregarUsuarioAtualSilencioso() async {
     try {
-      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      await _usuarioAtualLoader();
     } catch (_) {
       // O nome do colaborador é apoio visual; não deve bloquear o caixa.
     }
@@ -940,7 +986,7 @@ class _OperacoesCaixaMobileScreenState
             style: FilledButton.styleFrom(
               minimumSize: Size.fromHeight(50),
               backgroundColor: SixMobilePalette.accent,
-              foregroundColor: SixMobilePalette.onPrimary,
+              foregroundColor: SixMobilePalette.onAccent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
@@ -1175,7 +1221,7 @@ class _OperacoesCaixaMobileScreenState
           style: FilledButton.styleFrom(
             minimumSize: Size.fromHeight(50),
             backgroundColor: SixMobilePalette.accent,
-            foregroundColor: SixMobilePalette.onPrimary,
+            foregroundColor: SixMobilePalette.onAccent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
@@ -1553,7 +1599,7 @@ class _OperacoesCaixaMobileScreenState
           style: FilledButton.styleFrom(
             minimumSize: Size.fromHeight(50),
             backgroundColor: SixMobilePalette.accent,
-            foregroundColor: SixMobilePalette.onPrimary,
+            foregroundColor: SixMobilePalette.onAccent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
@@ -1641,7 +1687,7 @@ class _OperacoesCaixaMobileScreenState
             ? _movimentos
                 .where(
                   (MovimentoCaixa movimento) =>
-                      _isSameDay(movimento.dataHoraMovimento, DateTime.now()),
+                      _isSameDay(movimento.dataHoraMovimento, _nowProvider()),
                 )
                 .toList(growable: false)
             : _movimentos;
@@ -3559,7 +3605,10 @@ class _OperacoesCaixaMobileScreenState
                         danger
                             ? SixMobilePalette.error
                             : SixMobilePalette.accent,
-                    foregroundColor: SixMobilePalette.onPrimary,
+                    foregroundColor:
+                        danger
+                            ? _foregroundForSemantic(SixMobilePalette.error)
+                            : SixMobilePalette.onAccent,
                     minimumSize: Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
@@ -3842,6 +3891,11 @@ class _OperacoesCaixaMobileScreenState
   }
 
   String _nomeColaboradorAtual() {
+    final String? provided = widget.collaboratorNameProvider?.call().trim();
+    if (provided != null && provided.isNotEmpty) {
+      return provided;
+    }
+
     final usuario = UsuarioProvider().usuario;
     if (usuario == null) {
       return _txt('caixa.operacoes.mobile.collaborator', 'Colaborador');
