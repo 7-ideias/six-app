@@ -449,6 +449,34 @@ class AtendimentoTecnicoModel {
   }
 }
 
+class AtendimentoTecnicoPdfResponseModel {
+  const AtendimentoTecnicoPdfResponseModel({
+    required this.fileName,
+    required this.mimeType,
+    required this.base64,
+    required this.sizeBytes,
+    this.generatedAt,
+  });
+
+  final String fileName;
+  final String mimeType;
+  final String base64;
+  final int sizeBytes;
+  final DateTime? generatedAt;
+
+  factory AtendimentoTecnicoPdfResponseModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AtendimentoTecnicoPdfResponseModel(
+      fileName: json['fileName']?.toString() ?? '',
+      mimeType: json['mimeType']?.toString() ?? '',
+      base64: json['base64']?.toString() ?? '',
+      sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+      generatedAt: DateTime.tryParse(json['generatedAt']?.toString() ?? ''),
+    );
+  }
+}
+
 class AtendimentoTecnicoStatusPublicoLinkModel {
   const AtendimentoTecnicoStatusPublicoLinkModel({
     required this.status,

@@ -28,6 +28,10 @@ class AtendimentoTecnicoService {
     return _apiClient.listar();
   }
 
+  Future<AtendimentoTecnicoModel> buscarPorId(String id) {
+    return _apiClient.buscarPorId(id);
+  }
+
   Future<AtendimentoTecnicoModel> criar(
     AtendimentoTecnicoCreateInput input, {
     DateTime? dataVencimentoEm,
@@ -77,6 +81,10 @@ class AtendimentoTecnicoService {
     String? observacao,
   }) {
     return _apiClient.cancelar(id: id, observacao: observacao);
+  }
+
+  Future<AtendimentoTecnicoPdfResponseModel> gerarPdf({required String id}) {
+    return _apiClient.gerarPdf(id: id);
   }
 
   Future<Map<String, dynamic>> gerarLinkAssinatura({

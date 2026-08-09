@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sixpos/core/services/pdf_file_share_service.dart';
 import 'package:sixpos/data/models/atendimento_tecnico_models.dart';
 import 'package:sixpos/data/models/caixa_completo_movimentos_models.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
@@ -20,6 +21,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/domain/models/aparencia_models.dart';
 import 'package:sixpos/domain/models/regionalizacao_models.dart';
+import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_pdf_share_service.dart';
 import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_editar_mobile_screen.dart';
@@ -259,6 +261,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Resumo da ordem de serviço'), findsOneWidget);
+        expect(find.byTooltip('Compartilhar atendimento'), findsOneWidget);
+        expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+        expect(service.detailCalls, 1);
         expect(
           _hasDecoratedAncestorColor(
             tester,
@@ -315,6 +320,149 @@ void main() {
           lastScrollable: true,
         );
         expect(find.text('Histórico de auditoria'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'technical detail shares pdf once and keeps close button in ${themeCase.description} mode',
+      (WidgetTester tester) async {
+        final _FakeAtendimentoTecnicoService service =
+            _FakeAtendimentoTecnicoService(
+              atendimentos: <AtendimentoTecnicoModel>[
+                _atendimento(
+                  numero: 'OS-PDF',
+                  statusCodigo: 'EM_ANDAMENTO',
+                  statusNome: 'Em andamento',
+                ),
+              ],
+            );
+        final _FakeAtendimentoPdfShareService pdfShareService =
+            _FakeAtendimentoPdfShareService(
+              completer: Completer<AtendimentoPdfShareResult>(),
+            );
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: service,
+          pdfShareService: pdfShareService,
+        );
+
+        await _dragUntilTextVisible(tester, 'OS-PDF');
+        await tester.pump();
+        final Finder detailsButton = find.byTooltip(
+          'Ver detalhes do atendimento',
+        );
+        await tester.tap(detailsButton.first);
+        await tester.pumpAndSettle();
+
+        expect(service.detailCalls, 1);
+        expect(pdfShareService.calls, 0);
+        expect(find.byTooltip('Compartilhar atendimento'), findsOneWidget);
+        expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsWidgets);
+
+        await tester.tap(find.byTooltip('Compartilhar atendimento'));
+        await tester.pump();
+        await tester.tap(
+          find.byTooltip('Compartilhar atendimento'),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+
+        expect(pdfShareService.calls, 1);
+        expect(pdfShareService.lastAtendimentoId, 'os-pdf');
+        expect(pdfShareService.lastSharePositionOrigin, isNotNull);
+        expect(find.byType(CircularProgressIndicator), findsWidgets);
+        expect(find.text('Gerando PDF do atendimento'), findsOneWidget);
+        expect(
+          find.text('Aguarde enquanto o documento é preparado.'),
+          findsOneWidget,
+        );
+
+        pdfShareService.completer!.complete(
+          const AtendimentoPdfShareResult(
+            disposition: PdfFileShareDisposition.shared,
+            fileName: 'atendimento-tecnico-os-pdf.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 20,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(pdfShareService.calls, 1);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('Gerando PDF do atendimento'), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.close_rounded).last);
+        await tester.pumpAndSettle();
+        expect(find.text('Resumo da ordem de serviço'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'technical detail shows friendly pdf errors and download fallback in ${themeCase.description} mode',
+      (WidgetTester tester) async {
+        final _FakeAtendimentoTecnicoService service =
+            _FakeAtendimentoTecnicoService(
+              atendimentos: <AtendimentoTecnicoModel>[
+                _atendimento(
+                  numero: 'OS-ERRO-PDF',
+                  statusCodigo: 'EM_ANDAMENTO',
+                  statusNome: 'Em andamento',
+                ),
+              ],
+            );
+        final _FakeAtendimentoPdfShareService invalidPdfShareService =
+            _FakeAtendimentoPdfShareService(
+              failure: AtendimentoPdfShareFailure.invalidFile,
+            );
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: service,
+          pdfShareService: invalidPdfShareService,
+        );
+
+        await _dragUntilTextVisible(tester, 'OS-ERRO-PDF');
+        await tester.pump();
+        await tester.tap(find.byTooltip('Ver detalhes do atendimento').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Compartilhar atendimento'));
+        await tester.pumpAndSettle();
+
+        expect(invalidPdfShareService.calls, 1);
+        expect(find.text('O arquivo recebido é inválido.'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.close_rounded).last);
+        await tester.pumpAndSettle();
+
+        final _FakeAtendimentoPdfShareService downloadedPdfShareService =
+            _FakeAtendimentoPdfShareService(
+              result: const AtendimentoPdfShareResult(
+                disposition: PdfFileShareDisposition.downloaded,
+                fileName: 'atendimento-tecnico-os-erro-pdf.pdf',
+                mimeType: 'application/pdf',
+                sizeBytes: 24,
+              ),
+            );
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: service,
+          pdfShareService: downloadedPdfShareService,
+        );
+        await _dragUntilTextVisible(tester, 'OS-ERRO-PDF');
+        await tester.pump();
+        await tester.tap(find.byTooltip('Ver detalhes do atendimento').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Compartilhar atendimento'));
+        await tester.pumpAndSettle();
+
+        expect(downloadedPdfShareService.calls, 1);
+        expect(find.text('PDF baixado com sucesso.'), findsOneWidget);
       },
     );
 
@@ -1041,6 +1189,7 @@ Future<void> _pumpTechnicalList(
   Size size = const Size(390, 940),
   double textScale = 1,
   CaixaApiClient? caixaApiClient,
+  AtendimentoPdfShareService? pdfShareService,
 }) {
   return _pumpMobile(
     tester,
@@ -1051,6 +1200,7 @@ Future<void> _pumpTechnicalList(
     child: AtendimentosTecnicosMobileScreen(
       key: UniqueKey(),
       service: service,
+      pdfShareService: pdfShareService,
       caixaApiClient: caixaApiClient,
       colaboradorApiClient: _FakeColaboradorUsuarioApiClient(
         <ColaboradorUsuarioResumo>[_tecnico(nome: 'Técnica Six')],
@@ -1484,6 +1634,7 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
   final bool throwOnUpdate;
 
   int listCalls = 0;
+  int detailCalls = 0;
   int createCalls = 0;
   int updateCalls = 0;
   int receiveCalls = 0;
@@ -1514,6 +1665,20 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
     final Completer<List<AtendimentoTecnicoModel>>? completer = listCompleter;
     if (completer != null) return completer.future;
     return Future<List<AtendimentoTecnicoModel>>.value(atendimentos);
+  }
+
+  @override
+  Future<AtendimentoTecnicoModel> buscarPorId(String id) async {
+    detailCalls++;
+    return atendimentos.firstWhere(
+      (AtendimentoTecnicoModel atendimento) => atendimento.id == id,
+      orElse:
+          () => _atendimento(
+            numero: id.toUpperCase(),
+            statusCodigo: 'EM_ANDAMENTO',
+            statusNome: 'Em andamento',
+          ),
+    );
   }
 
   @override
@@ -1604,6 +1769,46 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
       token: 'token',
       link: 'https://six.test/status/token',
     );
+  }
+}
+
+class _FakeAtendimentoPdfShareService extends AtendimentoPdfShareService {
+  _FakeAtendimentoPdfShareService({
+    this.completer,
+    this.failure,
+    this.result = const AtendimentoPdfShareResult(
+      disposition: PdfFileShareDisposition.shared,
+      fileName: 'atendimento-tecnico-os-test.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 16,
+    ),
+  });
+
+  Completer<AtendimentoPdfShareResult>? completer;
+  final AtendimentoPdfShareFailure? failure;
+  final AtendimentoPdfShareResult result;
+
+  int calls = 0;
+  String? lastAtendimentoId;
+  Rect? lastSharePositionOrigin;
+
+  @override
+  Future<AtendimentoPdfShareResult> compartilharAtendimento({
+    required String atendimentoId,
+    Rect? sharePositionOrigin,
+  }) {
+    calls++;
+    lastAtendimentoId = atendimentoId;
+    lastSharePositionOrigin = sharePositionOrigin;
+    final AtendimentoPdfShareFailure? failure = this.failure;
+    if (failure != null) {
+      return Future<AtendimentoPdfShareResult>.error(
+        AtendimentoPdfShareException(failure),
+      );
+    }
+    final Completer<AtendimentoPdfShareResult>? completer = this.completer;
+    if (completer != null) return completer.future;
+    return Future<AtendimentoPdfShareResult>.value(result);
   }
 }
 

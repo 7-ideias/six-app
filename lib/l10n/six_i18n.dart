@@ -183,6 +183,24 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Não foi possível abrir a assinatura.',
     'atendimentoTecnico.mobile.loading': 'Carregando atendimentos técnicos',
+    'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartilhar atendimento',
+    'atendimentoTecnico.mobile.pdfLoadingTitle': 'Gerando PDF do atendimento',
+    'atendimentoTecnico.mobile.pdfLoadingSubtitle':
+        'Aguarde enquanto o documento é preparado.',
+    'atendimentoTecnico.mobile.detailLoadError':
+        'Não foi possível carregar os dados atualizados do atendimento.',
+    'atendimentoTecnico.mobile.pdfDownloaded': 'PDF baixado com sucesso.',
+    'atendimentoTecnico.mobile.pdfPermissionDenied':
+        'Você não possui permissão para compartilhar este atendimento.',
+    'atendimentoTecnico.mobile.pdfNotFound': 'Atendimento não encontrado.',
+    'atendimentoTecnico.mobile.pdfInvalidFile':
+        'O arquivo recebido é inválido.',
+    'atendimentoTecnico.mobile.pdfShareUnavailable':
+        'Não foi possível compartilhar o documento.',
+    'atendimentoTecnico.mobile.pdfShareError':
+        'Não foi possível compartilhar o documento.',
+    'atendimentoTecnico.mobile.pdfGenerationError':
+        'Não foi possível gerar o PDF do atendimento.',
     'auth.loginRequiredFields': 'Por favor, preencha o e-mail e a senha',
     'auth.loginTitleMobile': 'Entrar',
     'auth.loginSubtitleMobile':
@@ -984,6 +1002,22 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Could not open the signature.',
     'atendimentoTecnico.mobile.loading': 'Loading technical services',
+    'atendimentoTecnico.mobile.sharePdfTooltip': 'Share service',
+    'atendimentoTecnico.mobile.pdfLoadingTitle': 'Generating service PDF',
+    'atendimentoTecnico.mobile.pdfLoadingSubtitle':
+        'Please wait while the document is prepared.',
+    'atendimentoTecnico.mobile.detailLoadError':
+        'Could not load the latest service data.',
+    'atendimentoTecnico.mobile.pdfDownloaded': 'PDF downloaded successfully.',
+    'atendimentoTecnico.mobile.pdfPermissionDenied':
+        'You do not have permission to share this service.',
+    'atendimentoTecnico.mobile.pdfNotFound': 'Service not found.',
+    'atendimentoTecnico.mobile.pdfInvalidFile': 'The received file is invalid.',
+    'atendimentoTecnico.mobile.pdfShareUnavailable':
+        'Could not share the document.',
+    'atendimentoTecnico.mobile.pdfShareError': 'Could not share the document.',
+    'atendimentoTecnico.mobile.pdfGenerationError':
+        'Could not generate the service PDF.',
     'procedimentos.title': 'Procedures',
     'procedimentos.subtitle': 'Guides for sales, service and deliveries',
     'procedimentos.introTitle':
@@ -1747,6 +1781,24 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'No se pudo abrir la firma.',
     'atendimentoTecnico.mobile.loading': 'Cargando servicios técnicos',
+    'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartir servicio',
+    'atendimentoTecnico.mobile.pdfLoadingTitle': 'Generando PDF del servicio',
+    'atendimentoTecnico.mobile.pdfLoadingSubtitle':
+        'Espera mientras se prepara el documento.',
+    'atendimentoTecnico.mobile.detailLoadError':
+        'No se pudieron cargar los datos actualizados del servicio.',
+    'atendimentoTecnico.mobile.pdfDownloaded': 'PDF descargado correctamente.',
+    'atendimentoTecnico.mobile.pdfPermissionDenied':
+        'No tienes permiso para compartir este servicio.',
+    'atendimentoTecnico.mobile.pdfNotFound': 'Servicio no encontrado.',
+    'atendimentoTecnico.mobile.pdfInvalidFile':
+        'El archivo recibido no es válido.',
+    'atendimentoTecnico.mobile.pdfShareUnavailable':
+        'No se pudo compartir el documento.',
+    'atendimentoTecnico.mobile.pdfShareError':
+        'No se pudo compartir el documento.',
+    'atendimentoTecnico.mobile.pdfGenerationError':
+        'No se pudo generar el PDF del servicio.',
     'auth.loginRequiredFields':
         'Completa el correo electrónico y la contraseña',
     'auth.loginTitleMobile': 'Entrar',
