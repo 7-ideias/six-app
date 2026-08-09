@@ -23,10 +23,42 @@ import '../components/mobile_motion.dart';
 import 'operacoes_caixa_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
+typedef PdvMobileProductSelectionLauncher = Future<dynamic> Function();
+typedef PdvMobileBarcodeScannerLauncher = Future<String?> Function();
+typedef PdvMobileBarcodeProductLoader =
+    Future<List<ProdutoModel>> Function(BuildContext context, String tipo);
+typedef PdvMobileCashOperationsLauncher = Future<void> Function();
+typedef PdvMobileCurrentUserIdProvider = Future<String?> Function();
+typedef PdvMobileCurrentUserNameProvider = String Function();
+typedef PdvMobileNowProvider = DateTime Function();
+
 class PdvMobileScreen extends StatefulWidget {
-  const PdvMobileScreen({super.key, this.vendaNaoLiquidada});
+  const PdvMobileScreen({
+    super.key,
+    this.vendaNaoLiquidada,
+    this.operacaoService,
+    this.caixaService,
+    this.vendaNaoLiquidadaApiClient,
+    this.productSelectionLauncher,
+    this.barcodeScannerLauncher,
+    this.barcodeProductLoader,
+    this.cashOperationsLauncher,
+    this.currentUserIdProvider,
+    this.currentUserNameProvider,
+    this.nowProvider,
+  });
 
   final VendaNaoLiquidadaModel? vendaNaoLiquidada;
+  final OperacaoService? operacaoService;
+  final CaixaService? caixaService;
+  final VendaNaoLiquidadaApiClient? vendaNaoLiquidadaApiClient;
+  final PdvMobileProductSelectionLauncher? productSelectionLauncher;
+  final PdvMobileBarcodeScannerLauncher? barcodeScannerLauncher;
+  final PdvMobileBarcodeProductLoader? barcodeProductLoader;
+  final PdvMobileCashOperationsLauncher? cashOperationsLauncher;
+  final PdvMobileCurrentUserIdProvider? currentUserIdProvider;
+  final PdvMobileCurrentUserNameProvider? currentUserNameProvider;
+  final PdvMobileNowProvider? nowProvider;
 
   @override
   State<PdvMobileScreen> createState() => _PdvMobileScreenState();
@@ -65,10 +97,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     _FormaPagamentoMobile('TIPO10', 'Outros', Icons.more_horiz_outlined),
   ];
 
-  final OperacaoService _operacaoService = OperacaoModule.operacaoService;
-  final CaixaService _caixaService = CaixaModule.caixaService;
-  final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient =
-      VendaNaoLiquidadaApiClient();
+  late final OperacaoService _operacaoService;
+  late final CaixaService _caixaService;
+  late final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient;
   final List<_VendaItemMobile> _itens = <_VendaItemMobile>[];
   final Set<String> _formasSelecionadas = <String>{};
   final Map<String, TextEditingController> _valorPorForma =
@@ -96,9 +127,23 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return color.withAlpha((opacity.clamp(0.0, 1.0) * 255).round());
   }
 
+  Color get _warningColor =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFFF59E0B)
+          : const Color(0xFF92400E);
+
+  Color get _successColor =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF34D399)
+          : const Color(0xFF047857);
+
   @override
   void initState() {
     super.initState();
+    _operacaoService = widget.operacaoService ?? OperacaoModule.operacaoService;
+    _caixaService = widget.caixaService ?? CaixaModule.caixaService;
+    _vendaNaoLiquidadaApiClient =
+        widget.vendaNaoLiquidadaApiClient ?? VendaNaoLiquidadaApiClient();
     final venda = widget.vendaNaoLiquidada;
     if (venda != null) {
       _itens.addAll(
@@ -202,10 +247,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _abrirOperacoesCaixaMobile() async {
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(builder: (_) => OperacoesCaixaMobileScreen()),
-    );
+    final PdvMobileCashOperationsLauncher? cashOperationsLauncher =
+        widget.cashOperationsLauncher;
+    if (cashOperationsLauncher != null) {
+      await cashOperationsLauncher();
+    } else {
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute<void>(builder: (_) => OperacoesCaixaMobileScreen()),
+      );
+    }
 
     if (!mounted) return;
     await _carregarSessaoCaixa();
@@ -307,6 +358,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _abrirSelecaoProduto() async {
+    final PdvMobileProductSelectionLauncher? productSelectionLauncher =
+        widget.productSelectionLauncher;
+    final NavigatorState navigator = Navigator.of(context);
+
     if (!await _garantirCaixaAbertoParaVenda()) {
       return;
     }
@@ -314,16 +369,18 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       return;
     }
 
-    final dynamic result = await Navigator.push<dynamic>(
-      context,
-      MaterialPageRoute<dynamic>(
-        builder:
-            (_) => ProdutolistMobileScreen(
-              isSelecao: true,
-              permitirSelecaoMultipla: true,
-            ),
-      ),
-    );
+    final dynamic result =
+        productSelectionLauncher != null
+            ? await productSelectionLauncher()
+            : await navigator.push<dynamic>(
+              MaterialPageRoute<dynamic>(
+                builder:
+                    (_) => ProdutolistMobileScreen(
+                      isSelecao: true,
+                      permitirSelecaoMultipla: true,
+                    ),
+              ),
+            );
 
     if (!mounted || result == null) return;
 
@@ -340,6 +397,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Future<void> _abrirScannerCodigoBarras() async {
     if (_enviando || _buscandoCodigo) return;
+    final PdvMobileBarcodeScannerLauncher? barcodeScannerLauncher =
+        widget.barcodeScannerLauncher;
+    final NavigatorState navigator = Navigator.of(context);
+
     if (!await _garantirCaixaAbertoParaVenda()) {
       return;
     }
@@ -347,12 +408,14 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       return;
     }
 
-    final codigo = await Navigator.push<String>(
-      context,
-      MaterialPageRoute<String>(
-        builder: (_) => const _BarcodeScannerMobileScreen(),
-      ),
-    );
+    final String? codigo =
+        barcodeScannerLauncher != null
+            ? await barcodeScannerLauncher()
+            : await navigator.push<String>(
+              MaterialPageRoute<String>(
+                builder: (_) => const _BarcodeScannerMobileScreen(),
+              ),
+            );
 
     if (codigo == null || codigo.trim().isEmpty) return;
     await _buscarEAdicionarProdutoPorCodigo(codigo.trim());
@@ -363,12 +426,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     setState(() => _buscandoCodigo = true);
     try {
-      List<ProdutoModel> produtos = <ProdutoModel>[];
-      await ProdutoHelper.retornarProdutosList(
-        context,
-        tipo: 'PRODUTO',
-        onSucesso: (lista) => produtos = lista,
-      );
+      final List<ProdutoModel> produtos =
+          await _carregarProdutosParaCodigoBarras();
 
       final codigoNormalizado = codigo.toLowerCase();
       ProdutoModel? encontrado;
@@ -394,6 +453,22 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     } finally {
       if (mounted) setState(() => _buscandoCodigo = false);
     }
+  }
+
+  Future<List<ProdutoModel>> _carregarProdutosParaCodigoBarras() async {
+    final PdvMobileBarcodeProductLoader? barcodeProductLoader =
+        widget.barcodeProductLoader;
+    if (barcodeProductLoader != null) {
+      return barcodeProductLoader(context, 'PRODUTO');
+    }
+
+    List<ProdutoModel> produtos = <ProdutoModel>[];
+    await ProdutoHelper.retornarProdutosList(
+      context,
+      tipo: 'PRODUTO',
+      onSucesso: (lista) => produtos = lista,
+    );
+    return produtos;
   }
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
@@ -617,9 +692,17 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         return;
       }
 
-      final idColaborador = await AuthService().getUserId() ?? '';
-      final nomeColaborador = _nomeColaboradorAtual();
-      final dataOperacao = DateTime.now();
+      final PdvMobileCurrentUserIdProvider? currentUserIdProvider =
+          widget.currentUserIdProvider;
+      final PdvMobileCurrentUserNameProvider? currentUserNameProvider =
+          widget.currentUserNameProvider;
+      final PdvMobileNowProvider? nowProvider = widget.nowProvider;
+      final idColaborador =
+          await (currentUserIdProvider?.call() ?? AuthService().getUserId()) ??
+          '';
+      final nomeColaborador =
+          currentUserNameProvider?.call() ?? _nomeColaboradorAtual();
+      final dataOperacao = nowProvider?.call() ?? DateTime.now();
       final input = OperacaoVendaInput(
         descricao:
             receberDepois
@@ -954,7 +1037,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildCaixaObrigatorioNotice() {
     final Color color =
-        _erroSessaoCaixa ? SixMobilePalette.error : Color(0xFF92400E);
+        _erroSessaoCaixa ? SixMobilePalette.error : _warningColor;
     final String title =
         _carregandoSessaoCaixa
             ? _txt(
@@ -1547,7 +1630,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     final CaixaSessao? sessao = _sessaoCaixa;
     if (sessao == null) {
-      const Color warningColor = Color(0xFF92400E);
+      final Color warningColor = _warningColor;
       return _SessaoCaixaMobileView(
         label: l10n?.pdvCashSessionNotOpen ?? 'Sem sessão aberta',
         icon: Icons.point_of_sale_outlined,
@@ -1558,8 +1641,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
 
     final bool aberta = _sessaoCaixaAberta(sessao);
-    const Color successColor = Color(0xFF047857);
-    const Color warningColor = Color(0xFF92400E);
+    final Color successColor = _successColor;
+    final Color warningColor = _warningColor;
     final Color foreground = aberta ? successColor : warningColor;
 
     return _SessaoCaixaMobileView(
