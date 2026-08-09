@@ -14,6 +14,7 @@ import 'package:sixpos/presentation/components/mobile/management/management_sett
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
@@ -141,7 +142,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       bottomNavigationBar:
           kIsWeb || !widget.showBottomNavigationBar
               ? null
-              : NavBarMobile(initialIndex: 0),
+              : NavBarMobile(
+                initialIndex: MobileNavigationController.managementIndex,
+              ),
     );
 
     final ManagementOverviewProvider? injectedProvider =

@@ -8,6 +8,7 @@ import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/six_lottie_action_overlay.dart';
+import '../navigation/mobile_navigation_controller.dart';
 import 'mobile_main_shell.dart';
 
 class PostLoginSplashMobilePage extends StatefulWidget {
@@ -39,7 +40,10 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(
-        builder: (_) => const MobileMainShell(initialIndex: 1),
+        builder:
+            (_) => const MobileMainShell(
+              initialIndex: MobileNavigationController.dashIndex,
+            ),
       ),
       (route) => false,
     );
@@ -70,11 +74,13 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
       final regionalizacao = await regionalizacaoService.buscarRegionalizacao();
       if (!mounted) return;
       await context.read<LocaleSettingsProvider>().applyAuthenticatedLocale(
-            idiomaDePreferencia: idiomaDePreferencia,
-            regionalizacao: regionalizacao,
-          );
+        idiomaDePreferencia: idiomaDePreferencia,
+        regionalizacao: regionalizacao,
+      );
     } catch (error) {
-      debugPrint('Erro ao aplicar idioma/regionalizacao no login mobile: $error');
+      debugPrint(
+        'Erro ao aplicar idioma/regionalizacao no login mobile: $error',
+      );
     }
   }
 
