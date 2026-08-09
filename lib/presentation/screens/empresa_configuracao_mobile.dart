@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/core/services/empresa_service.dart';
 import 'package:sixpos/data/models/empresa_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -23,16 +27,20 @@ class EmpresaConfiguracaoMobile extends StatefulWidget {
 }
 
 class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
+  static const int _maxLogoBytes = 1024 * 1024;
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nomeEmpresaController = TextEditingController();
   final TextEditingController _nomeFantasiaController = TextEditingController();
   final TextEditingController _documentoController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
   final EmpresaService _empresaService = EmpresaService();
 
   bool _carregando = true;
   bool _salvando = false;
+  bool _selecionandoLogo = false;
   String? _erro;
-  EmpresaModel? _empresaOriginal;
+  String? _logoBase64;
 
   @override
   void initState() {
@@ -92,6 +100,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
       nomeEmpresa: _nomeEmpresaController.text.trim(),
       nomeFantasia: _nomeFantasiaController.text.trim(),
       documentoNoBrasilCNPJ: _documentoController.text.trim(),
+      logoBase64: _logoBase64,
     );
 
     setState(() {
@@ -105,7 +114,7 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
               _empresaService.atualizarDadosDaEmpresa(empresa));
       if (!mounted) return;
       setState(() {
-        _empresaOriginal = atualizada;
+        _aplicarEmpresa(atualizada, atualizarEstado: false);
         _salvando = false;
       });
       _mostrarMensagem(
@@ -130,12 +139,12 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
 
   void _aplicarEmpresa(EmpresaModel empresa, {required bool atualizarEstado}) {
     void apply() {
-      _empresaOriginal = empresa;
       _nomeEmpresaController.text = _limparPlaceholder(empresa.nomeEmpresa);
       _nomeFantasiaController.text = _limparPlaceholder(empresa.nomeFantasia);
       _documentoController.text = _limparPlaceholder(
         empresa.documentoNoBrasilCNPJ,
       );
+      _logoBase64 = _limparLogo(empresa.logoBase64);
     }
 
     if (atualizarEstado) {
@@ -148,6 +157,102 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
   String _limparPlaceholder(String value) {
     final String normalizado = value.trim();
     return normalizado.toUpperCase() == 'NO DATA' ? '' : normalizado;
+  }
+
+  String _limparLogo(String? value) {
+    final String normalizado = (value ?? '').trim();
+    return normalizado.toUpperCase() == 'NO DATA' ? '' : normalizado;
+  }
+
+  Future<void> _abrirSelecionadorLogo() async {
+    if (_carregando || _salvando || _selecionandoLogo) return;
+
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.46),
+      useSafeArea: true,
+      builder: (BuildContext context) {
+        return const _EmpresaLogoSourceSheet();
+      },
+    );
+
+    if (source == null || !mounted) return;
+    await _selecionarLogo(source);
+  }
+
+  Future<void> _selecionarLogo(ImageSource source) async {
+    setState(() => _selecionandoLogo = true);
+
+    try {
+      final XFile? arquivo = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 768,
+        maxHeight: 768,
+        imageQuality: 82,
+      );
+
+      if (!mounted) return;
+
+      if (arquivo == null) {
+        setState(() => _selecionandoLogo = false);
+        return;
+      }
+
+      final Uint8List bytes = await arquivo.readAsBytes();
+
+      if (!mounted) return;
+
+      if (bytes.isEmpty) {
+        throw const FormatException('Imagem vazia.');
+      }
+
+      if (bytes.length > _maxLogoBytes) {
+        setState(() => _selecionandoLogo = false);
+        _mostrarMensagem(
+          context.t(
+            'empresa.configuracao.logoTooLarge',
+            fallback: 'Escolha uma imagem de até 1 MB.',
+          ),
+          erro: true,
+        );
+        return;
+      }
+
+      final String mimeType =
+          arquivo.mimeType ?? _mimeTypeFromName(arquivo.name) ?? 'image/jpeg';
+
+      setState(() {
+        _logoBase64 = 'data:$mimeType;base64,${base64Encode(bytes)}';
+        _selecionandoLogo = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _selecionandoLogo = false);
+      _mostrarMensagem(
+        context.t(
+          'empresa.configuracao.logoLoadError',
+          fallback: 'Não foi possível carregar o logo.',
+        ),
+        erro: true,
+      );
+    }
+  }
+
+  void _removerLogo() {
+    if (_carregando || _salvando || _selecionandoLogo) return;
+    setState(() => _logoBase64 = '');
+  }
+
+  String? _mimeTypeFromName(String name) {
+    final String lower = name.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    if (lower.endsWith('.heic')) return 'image/heic';
+    if (lower.endsWith('.heif')) return 'image/heif';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    return null;
   }
 
   void _mostrarMensagem(String mensagem, {bool erro = false}) {
@@ -175,13 +280,6 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
         color: SixMobilePalette.onPrimary,
         onPressed: () => Navigator.of(context).maybePop(),
       ),
-      actions: <Widget>[
-        IconButton(
-          tooltip: context.t('common.refresh', fallback: 'Atualizar'),
-          onPressed: _salvando ? null : _carregarEmpresa,
-          icon: Icon(Icons.refresh_rounded),
-        ),
-      ],
       bodyBuilder: _buildBody,
       bottomNavigationBar: _buildBottomActions(context),
     );
@@ -240,12 +338,6 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
           enabled: !reduceMotion,
           delay: Duration(milliseconds: 130),
           child: _buildFormCard(context),
-        ),
-        SizedBox(height: 14),
-        _MotionEntry(
-          enabled: !reduceMotion,
-          delay: Duration(milliseconds: 180),
-          child: _buildStatusCard(context),
         ),
       ],
     );
@@ -388,6 +480,13 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
           children: <Widget>[
             _buildSectionHeader(context),
             SizedBox(height: 16),
+            _EmpresaLogoPicker(
+              logoValue: _logoBase64,
+              isBusy: _selecionandoLogo,
+              onSelect: _abrirSelecionadorLogo,
+              onRemove: _removerLogo,
+            ),
+            SizedBox(height: 14),
             _EmpresaMobileTextField(
               controller: _nomeEmpresaController,
               label: context.t(
@@ -494,69 +593,6 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
     );
   }
 
-  Widget _buildStatusCard(BuildContext context) {
-    final bool hasData = _empresaOriginal != null;
-    return Container(
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: SixMobilePalette.softNeutralSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: SixMobilePalette.activeBorder),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(
-            hasData ? Icons.verified_outlined : Icons.info_outline_rounded,
-            color: SixMobilePalette.accent,
-            size: 22,
-          ),
-          SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  hasData
-                      ? context.t(
-                        'empresa.configuracao.readyToEdit',
-                        fallback: 'Dados prontos para edição.',
-                      )
-                      : context.t(
-                        'empresa.configuracao.waitingData',
-                        fallback: 'Aguardando dados da empresa.',
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: SixMobilePalette.titleText,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  context.t(
-                    'empresa.configuracao.statusSubtitle',
-                    fallback:
-                        'As informações salvas aparecem nos documentos e comprovantes do comércio.',
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: SixMobilePalette.mutedText,
-                    fontSize: 12,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBottomActions(BuildContext context) {
     return SafeArea(
       top: false,
@@ -577,28 +613,6 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
         ),
         child: Row(
           children: <Widget>[
-            SizedBox(
-              width: 52,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: _salvando ? null : _carregarEmpresa,
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  side: BorderSide(color: SixMobilePalette.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Icon(
-                  Icons.refresh_rounded,
-                  color:
-                      _salvando
-                          ? SixMobilePalette.mutedText
-                          : SixMobilePalette.primary,
-                ),
-              ),
-            ),
-            SizedBox(width: 10),
             Expanded(
               child: FilledButton.icon(
                 onPressed: _salvando || _carregando ? null : _salvar,
@@ -626,6 +640,424 @@ class _EmpresaConfiguracaoMobileState extends State<EmpresaConfiguracaoMobile> {
         ),
       ),
     );
+  }
+}
+
+class _EmpresaLogoPicker extends StatelessWidget {
+  const _EmpresaLogoPicker({
+    required this.logoValue,
+    required this.isBusy,
+    required this.onSelect,
+    required this.onRemove,
+  });
+
+  final String? logoValue;
+  final bool isBusy;
+  final VoidCallback onSelect;
+  final VoidCallback onRemove;
+
+  bool get _hasLogo => (logoValue ?? '').trim().isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label:
+          _hasLogo
+              ? context.t(
+                'empresa.configuracao.logoSemantics',
+                fallback: 'Logo cadastrado da empresa.',
+              )
+              : context.t(
+                'empresa.configuracao.logoEmptySemantics',
+                fallback: 'Nenhum logo cadastrado.',
+              ),
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.softNeutralSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: SixMobilePalette.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _EmpresaLogoPreview(logoValue: logoValue, isBusy: isBusy),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    context.t(
+                      'empresa.configuracao.logoTitle',
+                      fallback: 'Logo da empresa',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: SixMobilePalette.titleText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    _hasLogo
+                        ? context.t(
+                          'empresa.configuracao.logoRegistered',
+                          fallback:
+                              'Imagem pronta para salvar no cadastro do comércio.',
+                        )
+                        : context.t(
+                          'empresa.configuracao.logoSubtitle',
+                          fallback:
+                              'Adicione uma imagem nítida, de preferência quadrada.',
+                        ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: SixMobilePalette.mutedText,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      FilledButton.icon(
+                        onPressed: isBusy ? null : onSelect,
+                        style: FilledButton.styleFrom(
+                          minimumSize: Size(0, 38),
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        icon: Icon(
+                          _hasLogo
+                              ? Icons.change_circle_outlined
+                              : Icons.add_photo_alternate_outlined,
+                          size: 18,
+                        ),
+                        label: Text(
+                          _hasLogo
+                              ? context.t(
+                                'empresa.configuracao.logoChange',
+                                fallback: 'Trocar logo',
+                              )
+                              : context.t(
+                                'empresa.configuracao.logoSelect',
+                                fallback: 'Selecionar logo',
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (_hasLogo)
+                        TextButton.icon(
+                          onPressed: isBusy ? null : onRemove,
+                          icon: Icon(Icons.delete_outline_rounded, size: 18),
+                          label: Text(
+                            context.t(
+                              'empresa.configuracao.logoRemove',
+                              fallback: 'Remover',
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmpresaLogoPreview extends StatelessWidget {
+  const _EmpresaLogoPreview({required this.logoValue, required this.isBusy});
+
+  final String? logoValue;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    final Uint8List? bytes = _decodeLogoBytes(logoValue);
+    final String value = (logoValue ?? '').trim();
+    final bool isUrl =
+        value.startsWith('http://') || value.startsWith('https://');
+    final Widget content;
+
+    if (bytes != null) {
+      content = Image.memory(
+        bytes,
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => _buildFallback(),
+      );
+    } else if (isUrl) {
+      content = Image.network(
+        value,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => _buildFallback(),
+      );
+    } else {
+      content = _buildFallback();
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        Container(
+          width: 82,
+          height: 82,
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: SixMobilePalette.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: SixMobilePalette.activeBorder),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: content,
+        ),
+        if (isBusy)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: SixMobilePalette.surface.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFallback() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: SixMobilePalette.iconSurface,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.image_outlined,
+          color: SixMobilePalette.accent,
+          size: 28,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmpresaLogoSourceSheet extends StatelessWidget {
+  const _EmpresaLogoSourceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          margin: EdgeInsets.all(10),
+          padding: EdgeInsets.fromLTRB(16, 10, 16, 16),
+          decoration: BoxDecoration(
+            color: SixMobilePalette.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: SixMobilePalette.border),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: SixMobilePalette.navigationShadow.withValues(
+                  alpha: 0.82,
+                ),
+                blurRadius: 24,
+                offset: Offset(0, -8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.activeBorder,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: SixMobilePalette.softAccentSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: SixMobilePalette.highlightedBorder.withValues(
+                          alpha: 0.48,
+                        ),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.add_photo_alternate_outlined,
+                      color: SixMobilePalette.accent,
+                      size: 22,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          context.t(
+                            'empresa.configuracao.logoSheetTitle',
+                            fallback: 'Cadastrar logo',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: SixMobilePalette.titleText,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          context.t(
+                            'empresa.configuracao.logoSheetSubtitle',
+                            fallback:
+                                'Escolha uma imagem da galeria ou tire uma foto.',
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: SixMobilePalette.mutedText,
+                            fontSize: 12.5,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              _EmpresaLogoSourceOption(
+                icon: Icons.photo_library_outlined,
+                title: context.t(
+                  'empresa.configuracao.logoFromGallery',
+                  fallback: 'Escolher da galeria',
+                ),
+                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+              ),
+              SizedBox(height: 8),
+              _EmpresaLogoSourceOption(
+                icon: Icons.photo_camera_outlined,
+                title: context.t(
+                  'empresa.configuracao.logoFromCamera',
+                  fallback: 'Usar câmera',
+                ),
+                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmpresaLogoSourceOption extends StatelessWidget {
+  const _EmpresaLogoSourceOption({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: SixMobilePalette.softNeutralSurface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, color: SixMobilePalette.accent, size: 22),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: SixMobilePalette.titleText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: SixMobilePalette.mutedText,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Uint8List? _decodeLogoBytes(String? value) {
+  final String normalizado = (value ?? '').trim();
+  if (normalizado.isEmpty ||
+      normalizado.startsWith('http://') ||
+      normalizado.startsWith('https://')) {
+    return null;
+  }
+
+  String payload = normalizado;
+  if (payload.toLowerCase().startsWith('data:') && payload.contains(',')) {
+    payload = payload.substring(payload.indexOf(',') + 1);
+  }
+
+  try {
+    return base64Decode(
+      base64.normalize(
+        payload
+            .replaceAll(RegExp(r'\s+'), '')
+            .replaceAll('-', '+')
+            .replaceAll('_', '/'),
+      ),
+    );
+  } catch (_) {
+    return null;
   }
 }
 
@@ -728,6 +1160,8 @@ class _EmpresaMobileSkeleton extends StatelessWidget {
               ],
             ),
             SizedBox(height: 18),
+            _SkeletonBox(width: double.infinity, height: 108, radius: 18),
+            SizedBox(height: 12),
             _SkeletonBox(width: double.infinity, height: 58, radius: 16),
             SizedBox(height: 12),
             _SkeletonBox(width: double.infinity, height: 58, radius: 16),
