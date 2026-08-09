@@ -49,17 +49,18 @@ class AdminNavigationShell extends StatelessWidget {
             backgroundColor: AdminPalette.background,
             drawer: Drawer(width: sidebarWidth, child: sidebar),
             body: Builder(
-              builder: (BuildContext scaffoldContext) => _AdminNavigationMainArea(
-                texts: texts,
-                compact: true,
-                pageTitle: pageTitle,
-                refreshing: refreshing,
-                loggingOut: loggingOut,
-                onOpenMenu: () => Scaffold.of(scaffoldContext).openDrawer(),
-                onRefresh: onRefresh,
-                onLogout: onLogout,
-                child: child,
-              ),
+              builder:
+                  (BuildContext scaffoldContext) => _AdminNavigationMainArea(
+                    texts: texts,
+                    compact: true,
+                    pageTitle: pageTitle,
+                    refreshing: refreshing,
+                    loggingOut: loggingOut,
+                    onOpenMenu: () => Scaffold.of(scaffoldContext).openDrawer(),
+                    onRefresh: onRefresh,
+                    onLogout: onLogout,
+                    child: child,
+                  ),
             ),
           );
         }
@@ -119,7 +120,9 @@ class _AdminNavigationMainArea extends StatelessWidget {
         children: <Widget>[
           Container(
             height: 72,
-            padding: EdgeInsets.symmetric(horizontal: compact ? AdminSpacing.lg : AdminSpacing.xl),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AdminSpacing.lg : AdminSpacing.xl,
+            ),
             decoration: const BoxDecoration(
               color: AdminPalette.background,
               border: Border(bottom: BorderSide(color: AdminPalette.border)),
@@ -181,17 +184,27 @@ class _AdminNavigationMainArea extends StatelessWidget {
                 IconButton(
                   tooltip: texts.refresh,
                   onPressed: refreshing ? null : onRefresh,
-                  icon: refreshing
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.refresh_rounded),
+                  icon:
+                      refreshing
+                          ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.refresh_rounded),
                 ),
                 const SizedBox(width: 6),
                 IconButton(
                   tooltip: texts.logout,
                   onPressed: loggingOut ? null : onLogout,
-                  icon: loggingOut
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.logout_rounded),
+                  icon:
+                      loggingOut
+                          ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.logout_rounded),
                 ),
               ],
             ),
@@ -237,8 +250,13 @@ class _AdminNavigationSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _AdminNavigationTexts navigationTexts = _AdminNavigationTexts.of(context);
-    final String displayName = _firstNotEmpty(userInfo.name, texts.userFallback);
+    final _AdminNavigationTexts navigationTexts = _AdminNavigationTexts.of(
+      context,
+    );
+    final String displayName = _firstNotEmpty(
+      userInfo.name,
+      texts.userFallback,
+    );
     final String displayEmail = _firstNotEmpty(userInfo.email, texts.userRole);
 
     return DecoratedBox(
@@ -264,7 +282,11 @@ class _AdminNavigationSidebar extends StatelessWidget {
                     ),
                     child: const Text(
                       '6',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -276,7 +298,10 @@ class _AdminNavigationSidebar extends StatelessWidget {
                           'Six',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontWeight: FontWeight.w900, color: AdminPalette.dark),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: AdminPalette.dark,
+                          ),
                         ),
                         Text(
                           texts.portalTitle,
@@ -302,6 +327,13 @@ class _AdminNavigationSidebar extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               AdminNavItem(
+                icon: Icons.groups_rounded,
+                label: texts.users,
+                selected: currentRoute == '/admin/usuarios',
+                onTap: () => _navigate(context, '/admin/usuarios'),
+              ),
+              const SizedBox(height: 6),
+              AdminNavItem(
                 icon: Icons.lightbulb_rounded,
                 label: navigationTexts.newIdeas,
                 selected: currentRoute == '/admin/novas-ideias',
@@ -322,7 +354,10 @@ class _AdminNavigationSidebar extends StatelessWidget {
                       backgroundColor: AdminPalette.dark,
                       child: Text(
                         _initials(displayName),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -334,7 +369,10 @@ class _AdminNavigationSidebar extends StatelessWidget {
                             displayName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w900, color: AdminPalette.dark),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: AdminPalette.dark,
+                            ),
                           ),
                           Text(
                             displayEmail,
@@ -355,9 +393,14 @@ class _AdminNavigationSidebar extends StatelessWidget {
               const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed: loggingOut ? null : onLogout,
-                icon: loggingOut
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.logout_rounded, size: 18),
+                icon:
+                    loggingOut
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.logout_rounded, size: 18),
                 label: Text(texts.logout),
               ),
             ],
@@ -383,10 +426,16 @@ class _AdminNavigationSidebar extends StatelessWidget {
   }
 
   String _initials(String value) {
-    final List<String> parts = value.trim().split(RegExp(r'\s+')).where((String part) => part.isNotEmpty).toList();
+    final List<String> parts =
+        value
+            .trim()
+            .split(RegExp(r'\s+'))
+            .where((String part) => part.isNotEmpty)
+            .toList();
     if (parts.isEmpty) return 'S';
     if (parts.length == 1) return parts.first.characters.first.toUpperCase();
-    return '${parts.first.characters.first}${parts.last.characters.first}'.toUpperCase();
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
   }
 }
 
@@ -397,8 +446,12 @@ class _AdminNavigationTexts {
 
   factory _AdminNavigationTexts.of(BuildContext context) {
     final String language = Localizations.localeOf(context).languageCode;
-    if (language == 'en') return const _AdminNavigationTexts(newIdeas: 'New ideas');
-    if (language == 'es') return const _AdminNavigationTexts(newIdeas: 'Nuevas ideas');
+    if (language == 'en') {
+      return const _AdminNavigationTexts(newIdeas: 'New ideas');
+    }
+    if (language == 'es') {
+      return const _AdminNavigationTexts(newIdeas: 'Nuevas ideas');
+    }
     return const _AdminNavigationTexts(newIdeas: 'Novas ideias');
   }
 }
