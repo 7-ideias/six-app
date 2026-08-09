@@ -23,6 +23,14 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
+      - name: Observação sobre deploy Vercel
+        run: |
+          echo "O deploy Web da Vercel não é executado por este workflow do GitHub Actions."
+          echo "A Vercel usa sua própria configuração de CI/CD definida em vercel.json."
+          echo "installCommand: bash install_flutter.sh"
+          echo "buildCommand: export PATH=\"\$PWD/flutter/bin:\$PATH\" && flutter --version && flutter pub get && flutter gen-l10n && flutter build web --release"
+          echo "outputDirectory: build/web"
+
 #      - name: Build Android APK
 #        run: flutter build apk --release
 

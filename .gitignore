@@ -8,3 +8,5 @@
 pubspec.lock
 .DS_Store
 /.flutter-plugins-dependencies
+/linux/
+/docs/firebase.json
